@@ -1,0 +1,50 @@
+@import 'style/variables.module';
+
+.screen {
+  height: $device-height;
+  width: $device-width;
+  background-color: $pink;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-direction: column;
+}
+
+.title {
+  color: $aubergine;
+  margin-top: 32px;
+  margin-left: 40px;
+
+  @include text-style(120px, 120px, -0.04em);
+}
+
+.subtitle {
+  color: $aubergine;
+
+  @include text-style(72px, 72px, -0.03em);
+}
+
+.buttonBackground {
+  background: $aubergine;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+}
+
+.button {
+  transform: scale(3);
+  color: $pink;
+}
+
+.subtitleAndButton {
+  width: 720px;
+  margin-left: 40px;
+  margin-right: 48px;
+  margin-bottom: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}

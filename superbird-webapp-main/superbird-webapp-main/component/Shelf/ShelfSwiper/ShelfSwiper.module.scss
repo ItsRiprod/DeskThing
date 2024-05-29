@@ -1,0 +1,16 @@
+/* stylelint-disable */
+
+.container {
+  overflow: visible !important; // Override swiper default behaviour
+
+  :global {
+    .swiper-wrapper {
+      // Push previous slide out of view
+      .swiper-slide-prev {
+        transform: translateX(-18px);
+      }
+    }
+  }
+}
+
+/* stylelint-enable */

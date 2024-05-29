@@ -1,0 +1,29 @@
+@import 'style/variables.module';
+
+.scrubbingBackdrop {
+  position: absolute;
+  width: $device-width;
+  height: $device-height;
+  background: rgb(0 0 0 / 85%);
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: $scrubbing-overlay-z-index;
+}
+
+.time {
+  width: $device-width - 80px;
+  height: $device-height - 180px;
+  display: flex;
+  justify-content: space-between;
+
+  span {
+    @include text-style(72px, 72px, -0.03em);
+
+    height: 72px;
+    color: $white;
+    align-self: flex-end;
+  }
+}

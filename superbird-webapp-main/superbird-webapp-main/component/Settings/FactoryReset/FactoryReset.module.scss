@@ -1,0 +1,23 @@
+@import 'style/variables.module';
+
+.factoryReset {
+  width: $device-width;
+  height: $device-height;
+  padding: 68px 112px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.description {
+  @include text-style(32px, 40px, 0);
+
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}

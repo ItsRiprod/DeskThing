@@ -1,0 +1,20 @@
+@font-face {
+  font-family: spotify-circular;
+  src: url('./fonts/CircularSpUIv3T-Book.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: spotify-circular;
+  src: url('./fonts/CircularSpUIv3T-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: spotify-circular;
+  src: url('./fonts/CircularSpUIv3T-Black.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+}

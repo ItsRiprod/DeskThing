@@ -1,0 +1,33 @@
+@import 'style/variables.module';
+
+.enter {
+  opacity: 0;
+}
+
+.enterActive {
+  opacity: 1;
+
+  @include transition-opacity;
+}
+
+.exit {
+  opacity: 1;
+}
+
+.exitActive {
+  opacity: 0;
+
+  @include transition-opacity;
+}
+
+.timer {
+  width: 100%;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+}
+
+.timerDiv {
+  width: 90px;
+  height: 40px;
+}

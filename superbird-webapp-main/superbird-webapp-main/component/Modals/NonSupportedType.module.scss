@@ -1,0 +1,25 @@
+@import 'style/variables.module';
+
+.nonSupportedType {
+  height: 365px;
+  width: 560px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.icon {
+  margin-top: 59px;
+  color: $black;
+}
+
+.text {
+  margin-top: 24px;
+  color: $black;
+
+  @include text-style(36px, 40px, -0.02em);
+
+  text-align: center;
+  width: 420px;
+  font-weight: bold;
+}

@@ -1,0 +1,18 @@
+@import 'style/variables.module';
+
+$progress-backgroud-color: rgb(93 93 93);
+
+.progressBar {
+  margin-left: 16px;
+  height: 8px;
+  width: 200px;
+  background-color: $progress-backgroud-color;
+  clip-path: inset(0 0 0 0 round 4px);
+  transform: translateY(2px);
+}
+
+.progress {
+  background-color: $green-light;
+  clip-path: inset(0 0 0 0 round 4px);
+  height: 100%;
+}

@@ -1,0 +1,16 @@
+$artwork-container-width: 248px;
+$artwork-container-height: 248px;
+
+.artworkTransitionGroup {
+  display: flex;
+}
+
+.transitionContainer {
+  position: absolute;
+}
+
+.artwork {
+  width: $artwork-container-width;
+  height: $artwork-container-height;
+  box-shadow: 0 16px 32px rgb(0 0 0 / 20%);
+}

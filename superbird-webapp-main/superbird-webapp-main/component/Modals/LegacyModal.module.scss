@@ -1,0 +1,25 @@
+@import 'style/variables.module';
+
+.legacyModal {
+  z-index: $overlay-z-index;
+  position: absolute;
+  display: flex;
+  width: 800px;
+  height: 480px;
+  background-color: $backdrop-overlay;
+}
+
+.content {
+  position: relative;
+  margin: auto;
+  border-radius: 15px;
+  box-shadow: 0 0 15px 2px black;
+  background-color: $white;
+}
+
+.icon {
+  margin-top: -12px;
+  position: absolute;
+  right: -74px;
+  color: $white;
+}

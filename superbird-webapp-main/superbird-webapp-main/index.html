@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <link rel="preload" as="image" href="images/appstart.png">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=800,height=480,initial-scale=1,maximum-scale=1,user-scalable=no">
+    <meta name="HandheldFriendly" content="true" />
+    <title>Superbird</title>
+    <script>Object.defineProperty(window, "__vite_is_modern_browser", { value: false, writable: false })</script><!-- force load of legacy bundle so it can be loaded from file URI -->
+</head>
+
+<body style="background-color:#282828">
+    <div id="root" onmousedown="event.preventDefault?event.preventDefault():event.returnValue=!1"
+        oncontextmenu="return!1"><img width="800" height="480" src="images/appstart.png" alt="appstart" /></div>
+    <script type="module" src="/index.tsx"></script>
+</body>
+
+</html>

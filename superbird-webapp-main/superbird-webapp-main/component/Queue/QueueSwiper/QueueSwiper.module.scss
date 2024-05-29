@@ -1,0 +1,14 @@
+@import 'style/variables.module';
+
+$dial-center-diff: 68px;
+
+.container {
+  position: relative;
+  width: 100%;
+  height: $device-height + $dial-center-diff;
+  overflow: hidden;
+}
+
+.queueSlideScrolled {
+  transform: translateY(48px);
+}

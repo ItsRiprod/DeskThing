@@ -1,0 +1,107 @@
+@import 'style/variables.module';
+
+$transition-duration: 800ms;
+$transition-delay: 1000ms;
+$jellyfish-wrapper-padding: 40px;
+
+.learnVoiceStep {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 400px;
+  margin: 40px 128px 40px 40px;
+}
+
+.headerAndTitle {
+  position: relative;
+}
+
+.transition {
+  position: absolute;
+}
+
+.voiceActive {
+  position: absolute;
+  transition: opacity 200ms;
+  opacity: 0.1;
+}
+
+.header {
+  color: $green;
+  font-weight: bold;
+  margin-bottom: 24px;
+}
+
+.errorContent {
+  margin-bottom: 32px;
+}
+
+.animationAppear {
+  opacity: 0;
+  transform: translateY(24px);
+}
+
+.animationAppearActive {
+  @include transition-opacity-transform(
+    $transition-duration,
+    $easing-function-ease-out-cubic,
+    $transition-delay
+  );
+
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.animationAppearDone {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.animationEnter {
+  opacity: 0;
+  transform: translateY(24px);
+}
+
+.animationEnterActive {
+  @include transition-opacity-transform(
+    $transition-duration,
+    $easing-function-ease-out-cubic,
+    $transition-delay
+  );
+
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.animationEnterDone {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.animationExit {
+  opacity: 1;
+}
+
+.animationExitActive {
+  @include transition-opacity(500ms, $easing-function-ease-out-cubic);
+
+  opacity: 0;
+}
+
+.animationExitDone {
+  opacity: 0;
+}
+
+.skipOrJellyfish {
+  width: 128px;
+  height: 128px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.jellyfishContainer {
+  position: absolute;
+  bottom: $jellyfish-wrapper-padding;
+  left: $jellyfish-wrapper-padding;
+}
