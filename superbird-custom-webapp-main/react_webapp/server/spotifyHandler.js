@@ -14,7 +14,7 @@ let access_token = null;
 let refresh_token = null;
 
 app.get('/login', (req, res) => {
-    const scope = 'user-read-currently-playing user-read-playback-state';
+    const scope = 'user-read-currently-playing user-read-playback-state user-modify-playback-state';
     const auth_url = 'https://accounts.spotify.com/authorize?' +
       qs.stringify({
         response_type: 'code',
@@ -135,10 +135,122 @@ app.get('/login', (req, res) => {
     }
   };
  
+  const skipToNext = async () => {
+    try {
+      // Ensure access_token is available and valid
+      if (!access_token) {
+        throw new Error('Access token is not available. Please authenticate first.');
+      }
+      const api_url = 'https://api.spotify.com/v1/me/player/next';
+  
+      await axios.post(api_url, null, {
+        headers: {
+          'Authorization': `Bearer ${access_token}`
+        }
+      });
+      
+      return { success: true };
+    } catch (error) {
+      // Handle token expiration and refresh
+      if (error.response && error.response.status === 401) {
+        try {
+          console.error("Error skipping track", error.response.data.error);
+          await refreshAccessToken();
+          return await skipToNext();
+        } catch (refreshError) {
+          console.error('Error refreshing token:', refreshError);
+          throw refreshError;
+        }
+      } else {
+        console.error('Error skipping to next track:', error);
+        throw error;
+      }
+    }
+  };
+
+  const skipToPrev = async () => {
+    try {
+      // Ensure access_token is available and valid
+      if (!access_token) {
+        throw new Error('Access token is not available. Please authenticate first.');
+      }
+      const api_url = 'https://api.spotify.com/v1/me/player/previous';
+  
+      await axios.post(api_url, null, {
+        headers: {
+          'Authorization': `Bearer ${access_token}`
+        }
+      });
+  
+      return { success: true };
+    } catch (error) {
+      // Handle token expiration and refresh
+      if (error.response && error.response.status === 401) {
+        try {
+          console.error("Error skipping to previous track", error.response.data.error);
+          await refreshAccessToken();
+          return await skipToPrev();
+        } catch (refreshError) {
+          console.error('Error refreshing token:', refreshError);
+          throw refreshError;
+        }
+      } else {
+        console.error('Error skipping to previous track:', error);
+        throw error;
+      }
+    }
+  };
+  
+  const play = async (uri, position) => {
+    try {
+      // Ensure access_token is available and valid
+      if (!access_token) {
+        throw new Error('Access token is not available. Please authenticate first.');
+      }
+      const api_url = 'https://api.spotify.com/v1/me/player/play';
+      
+      const body = uri ? { context_uri: uri, position_ms: position || 0 } : null;
+
+      await axios.put(api_url, body, {
+        headers: {
+          'Authorization': `Bearer ${access_token}`
+        }
+      });
+  
+      return { success: true };
+    } catch (error) {
+      return { success: false };
+    }
+  };
+  const pause = async () => {
+    try {
+      // Ensure access_token is available and valid
+      if (!access_token) {
+        throw new Error('Access token is not available. Please authenticate first.');
+      }
+      const api_url = 'https://api.spotify.com/v1/me/player/pause';
+      
+
+      await axios.put(api_url, null, {
+        headers: {
+          'Authorization': `Bearer ${access_token}`
+        }
+      });
+  
+      return { success: true };
+    } catch (error) {
+      // Handle token expiration and refresh
+      return { success: false };
+    }
+  };
 
   module.exports = {
     getCurrentPlayback,
-    getCurrentDevice
+    getCurrentDevice,
+    skipToNext,
+    play,
+    pause,
+    skipToPrev
   };
 
   const port = process.env.PORT || 8888;

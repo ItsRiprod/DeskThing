@@ -1,0 +1,39 @@
+@import 'style/variables.module';
+
+.withTransition {
+  @include transition-transform;
+}
+
+.titleContainer {
+  display: flex;
+  opacity: 0.5;
+  padding: 28px 0;
+  margin: -28px 0;
+
+  &.active {
+    opacity: 1;
+  }
+
+  &.hidden {
+    opacity: 0;
+  }
+}
+
+.titleIcon {
+  display: flex;
+  align-items: center;
+}
+
+.titleText {
+  @include text-style(32px, 40px, -0.02em);
+
+  font-weight: bold;
+  color: $white;
+  white-space: nowrap;
+
+  @include transition-opacity;
+
+  &.hidden {
+    opacity: 0;
+  }
+}

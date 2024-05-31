@@ -1,0 +1,55 @@
+@import 'style/variables.module';
+
+.screen {
+  background: $aubergine;
+  height: $device-height;
+  width: $device-width;
+  padding: 32px 48px 40px;
+}
+
+.title {
+  color: $pink;
+
+  @include text-style(120px, 120px, -0.04em);
+
+  width: 704px;
+}
+
+.subtitle {
+  color: $pink;
+
+  @include text-style(36px, 48px, -0.02em);
+
+  max-width: 408px;
+}
+
+.content {
+  margin-top: 32px;
+  width: 704px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.texts {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.qrContainer {
+  height: 256px;
+  width: 256px;
+  background-color: white;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.needHelp {
+  color: $pink;
+
+  @include text-style(36px, 40px, -0.02em);
+
+  font-weight: bold;
+}

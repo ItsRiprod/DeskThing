@@ -1,0 +1,10 @@
+@import 'style/variables.module';
+
+.nowPlayingWrapper {
+  display: flex;
+  align-items: baseline;
+}
+
+.nowPlayingText {
+  margin-left: 12px;
+}

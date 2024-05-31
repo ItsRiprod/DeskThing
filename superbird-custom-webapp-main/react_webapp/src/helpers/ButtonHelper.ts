@@ -34,7 +34,7 @@ function mapButton(event: string): Button {
     case 'Escape':
       return Button.FRONT_BUTTON;
     default:
-      throw new Error("I don't know this button");
+      throw new Error("I don't know this button " + event);
   }
 }
 

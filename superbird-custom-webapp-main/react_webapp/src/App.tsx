@@ -19,10 +19,11 @@ const App: React.FC = (): JSX.Element => {
       name: null,
       progress_ms: 1,
       artistName: null,
+      uri: 'none',
     },
   });
 
-  // TODO: Move to @./helpers/WebSocketService.ts 
+  // TODO: Move to @./helpers/WebSocketService.ts
   const { sendMessage, lastMessage, readyState } = useWebSocket('ws://localhost:8891', {
     onOpen: () => console.log('Connected to WebSocket server'),
     onMessage: (event) => {
@@ -31,6 +32,9 @@ const App: React.FC = (): JSX.Element => {
         switch (data.type) {
           case 'response':
             setMessage(data.data);
+            if (data.refresh) {
+              setTimeout(handleGetSongData, 500);
+            }
             break;
           case 'trackData':
             setSongData(data);
@@ -104,59 +108,55 @@ const App: React.FC = (): JSX.Element => {
   };
 
   const handleNextTrack = () => {
-    if (local) {
-      const data = {
-        type: 'command',
-        command: 'next_track',
-        spotify: false,
-      };
-      sendMessage(JSON.stringify(data));
-    } else {
-      const data = {
-        type: 'command',
-        command: 'next_track',
-        spotify: true,
-      };
-      sendMessage(JSON.stringify(data));
-    }
+    const data = {
+      type: 'command',
+      command: 'next_track',
+      spotify: !local,
+      uri: songData.data.uri,
+    };
+    sendMessage(JSON.stringify(data));
   };
   const handlePreviousTrack = () => {
-    if (local) {
-      const data = {
-        type: 'command',
-        command: 'previous_track',
-        spotify: false,
-      };
-      sendMessage(JSON.stringify(data));
-    }
+    const data = {
+      type: 'command',
+      command: 'previous_track',
+      spotify: !local,
+      uri: songData.data.uri,
+    };
+    sendMessage(JSON.stringify(data));
   };
   const handlePauseTrack = () => {
-    if (local) {
-      const data = {
-        type: 'command',
-        command: 'pause_track',
-        spotify: false,
-      };
-      sendMessage(JSON.stringify(data));
-    }
+    setPlay((prev) => !prev);
+    const data = {
+      type: 'command',
+      command: 'pause_track',
+      spotify: !local,
+      uri: songData.data.uri,
+    };
+    sendMessage(JSON.stringify(data));
   };
+
+  const handlePlayTrack = () => {
+    setPlay((prev) => !prev);
+    const data = {
+      type: 'command',
+      command: 'play_track',
+      spotify: !local,
+      uri: songData.data.uri,
+      //position: songData.data.progress_ms,
+    };
+    sendMessage(JSON.stringify(data));
+  };
+
+  // Getting Stuff
+
   const handleGetBoards = () => {
     if (local) {
       const data = {
         type: 'command',
         command: 'pause_track',
         spotify: false,
-      };
-      sendMessage(JSON.stringify(data));
-    }
-  };
-  const handlePlayTrack = () => {
-    if (local) {
-      setPlay((prev) => !prev);
-      const data = {
-        type: 'command',
-        command: 'play_track',
-        spotify: false,
+        uri: songData.data.uri,
       };
       sendMessage(JSON.stringify(data));
     }
@@ -192,15 +192,27 @@ const App: React.FC = (): JSX.Element => {
       <header className="App-header">
         <div className="debug">
           <div className="debug_pullTab"></div>
-          <p>Current Button: {button}</p>
-          <p>Response: {message}</p>
-          <p>IsLocal: {local ? 'true' : 'false'}</p>
-          <button
-            style={{ background: 'gray', aspectRatio: '1', border: 'none', padding: '15px' }}
-            onClick={handleSendMessage}
-          >
-            {'->'}
-          </button>
+          <div className="debug_content">
+            <div className="debug_header">
+              <p>Button: {button}</p>
+              <button
+                className="button playbackButton"
+                onClick={
+                  local
+                    ? handleGetDeviceData
+                    : () => {
+                        setLocal(true);
+                      }
+                }
+              >
+                Playback: {local ? 'Computer' : 'Spotify'}
+              </button>
+              <button className="button getDeviceInfo" onClick={handleSendMessage}>
+                {'Send Command'}
+              </button>
+            </div>
+            <code>Response: {message}</code>
+          </div>
         </div>
         {/* Body Elements*/}
         <div className="body">
@@ -211,38 +223,40 @@ const App: React.FC = (): JSX.Element => {
         </div>
         {/* Footer Elements*/}
         <div className="audioPlayer">
-          <div className="songInformation">
-            <div className="songTitle">
-              {songData?.data.name + ' - ' + songData?.data.artistName || 'Track Name'}
-            </div>
-            <div className="progressBar_container">
-              <CountUpTimer
-                onSongEnd={handleGetSongData}
-                start={songData?.data.progress_ms || 0}
-                end={songData?.data.duration_ms || 0}
-                play={play}
-              />
-            </div>
-          </div>
-          <div className="buttonContainer">
-            <button className="button getSongInfo" onClick={handleGetDeviceData}>
-              <img src={songData?.data.photo || ''} alt="Icon" />
-            </button>
-            <button className="button previous" onClick={handlePreviousTrack}>
-              <svg
-                data-encore-id="icon"
-                role="img"
-                aria-hidden="true"
-                viewBox="0 0 16 16"
-                className="icon"
-                width="100"
-                height="100"
-              >
-                <path d="M3.3 1a.7.7 0 0 1 .7.7v5.15l9.95-5.744a.7.7 0 0 1 1.05.606v12.575a.7.7 0 0 1-1.05.607L4 9.149V14.3a.7.7 0 0 1-.7.7H1.7a.7.7 0 0 1-.7-.7V1.7a.7.7 0 0 1 .7-.7h1.6z"></path>
-              </svg>
-            </button>
-            <button className="button play" onClick={handlePlayTrack}>
-              {play ? (
+          <button className="button getSongInfo" onClick={handleGetDeviceData}>
+            <img width="170px" src={songData?.data.photo || ''} alt="Switch to Spotify" />
+          </button>
+          <div className="audioPlayer_controls">
+            {local ? (
+              <div className="songInformation">
+                <div className="songTitle">{' ' + ' - ' + ' '}</div>
+                <div className="progressBar_container">
+                  <div
+                    className="progressBar_progress"
+                    style={{
+                      width: `0%`,
+                    }}
+                  />
+                  <p className="progressBar_timer">--:--</p>
+                </div>
+              </div>
+            ) : (
+              <div className="songInformation">
+                <div className="songTitle">
+                  {songData?.data.name + ' - ' + songData?.data.artistName || 'Track Name'}
+                </div>
+                <div className="progressBar_container">
+                  <CountUpTimer
+                    onSongEnd={handleGetSongData}
+                    start={songData?.data.progress_ms || 0}
+                    end={songData?.data.duration_ms || 0}
+                    play={play}
+                  />
+                </div>
+              </div>
+            )}
+            <div className="buttonContainer">
+              <button className="button previous" onClick={handlePreviousTrack}>
                 <svg
                   data-encore-id="icon"
                   role="img"
@@ -252,9 +266,37 @@ const App: React.FC = (): JSX.Element => {
                   width="100"
                   height="100"
                 >
-                  <path d="M2.7 1a.7.7 0 0 0-.7.7v12.6a.7.7 0 0 0 .7.7h2.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7H2.7zm8 0a.7.7 0 0 0-.7.7v12.6a.7.7 0 0 0 .7.7h2.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7h-2.6z"></path>
+                  <path d="M3.3 1a.7.7 0 0 1 .7.7v5.15l9.95-5.744a.7.7 0 0 1 1.05.606v12.575a.7.7 0 0 1-1.05.607L4 9.149V14.3a.7.7 0 0 1-.7.7H1.7a.7.7 0 0 1-.7-.7V1.7a.7.7 0 0 1 .7-.7h1.6z"></path>
                 </svg>
-              ) : (
+              </button>
+              <button className="button play" onClick={play ? handlePauseTrack : handlePlayTrack}>
+                {play ? (
+                  <svg
+                    data-encore-id="icon"
+                    role="img"
+                    aria-hidden="true"
+                    viewBox="0 0 16 16"
+                    className="icon"
+                    width="100"
+                    height="100"
+                  >
+                    <path d="M2.7 1a.7.7 0 0 0-.7.7v12.6a.7.7 0 0 0 .7.7h2.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7H2.7zm8 0a.7.7 0 0 0-.7.7v12.6a.7.7 0 0 0 .7.7h2.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7h-2.6z"></path>
+                  </svg>
+                ) : (
+                  <svg
+                    data-encore-id="icon"
+                    role="img"
+                    aria-hidden="true"
+                    viewBox="0 0 16 16"
+                    className="icon"
+                    width="100"
+                    height="100"
+                  >
+                    <path d="M3 1.713a.7.7 0 0 1 1.05-.607l10.89 6.288a.7.7 0 0 1 0 1.212L4.05 14.894A.7.7 0 0 1 3 14.288V1.713z"></path>
+                  </svg>
+                )}
+              </button>
+              <button className="button next" onClick={handleNextTrack}>
                 <svg
                   data-encore-id="icon"
                   role="img"
@@ -264,23 +306,10 @@ const App: React.FC = (): JSX.Element => {
                   width="100"
                   height="100"
                 >
-                  <path d="M3 1.713a.7.7 0 0 1 1.05-.607l10.89 6.288a.7.7 0 0 1 0 1.212L4.05 14.894A.7.7 0 0 1 3 14.288V1.713z"></path>
+                  <path d="M12.7 1a.7.7 0 0 0-.7.7v5.15L2.05 1.107A.7.7 0 0 0 1 1.712v12.575a.7.7 0 0 0 1.05.607L12 9.149V14.3a.7.7 0 0 0 .7.7h1.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7h-1.6z"></path>
                 </svg>
-              )}
-            </button>
-            <button className="button next" onClick={handleNextTrack}>
-              <svg
-                data-encore-id="icon"
-                role="img"
-                aria-hidden="true"
-                viewBox="0 0 16 16"
-                className="icon"
-                width="100"
-                height="100"
-              >
-                <path d="M12.7 1a.7.7 0 0 0-.7.7v5.15L2.05 1.107A.7.7 0 0 0 1 1.712v12.575a.7.7 0 0 0 1.05.607L12 9.149V14.3a.7.7 0 0 0 .7.7h1.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7h-1.6z"></path>
-              </svg>
-            </button>
+              </button>
+            </div>
           </div>
         </div>
       </header>

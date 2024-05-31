@@ -114,14 +114,32 @@
 
 */
 .debug {
-  background: var(--bg-tinted-base);
+  background: var(--bg-elevated-base);
   position: fixed;
   top: 0;
-  transform: translate(0px, -50px);
-  transition: transform 0.5s ease-out;
+  height: 300px;
+  transform: translate(0px, -295px);
+  transition: transform 0.2s ease-out;
   width: 100%;
   display: flex;
   justify-content: space-around;
+  
+}
+.debug_content {
+
+  height: 300px;
+  transition: transform 0.2s ease-out;
+  width: 100%;
+  overflow-y: scroll;
+  display: flex;
+  flex-direction: column;
+  
+}
+.debug_header {
+  top:0px;
+  display: flex;
+  justify-content: space-around;
+  background-color: var(--bg-tinted-base);
 }
 .debug:hover {
   transform: translate(0px, 0px);
@@ -132,14 +150,23 @@
   width: 100px;
   height: 15px;
   z-index: -5;
-  transform: translate(0px, 70px);
+  transform: translate(0px, 305px);
   border-radius: 5px;
   transition: background-color 0.3s;
 }
 .debug_pullTab:hover {
   background-color: var(--bg-tinted-press);
 }
-
+.debug code {
+  width: 100%;
+  background-color: var(--bg-tinted-base);
+}
+.getDeviceInfo {
+  width: 50px;
+  background-color: var(--bg-tinted-highlight);
+  border: none;
+  aspect-ratio: 1/1;
+}
 
 
 /*
@@ -176,9 +203,13 @@
   bottom:0px;
   width: 100vw;
   height: 160px;
-  transition: transform 0.5s ease-out;
+  display:flex;
+  transition: transform 0.3s ease-out;
   transform: translate(0px, 80px);
   background-color: var(--bg-tinted-base);
+}
+.audioPlayer_controls {
+  width: 100%;
 }
 .buttonContainer {
   display: flex;
@@ -187,6 +218,7 @@
   justify-content: space-around;
   font-size: calc(10px + 2vmin);
 }
+
 .button {
   height: 75px;
   aspect-ratio: 2/1;
@@ -208,6 +240,12 @@
   border: none;
   cursor: pointer;
   justify-content: center;
+}
+.getSongInfo {
+  height: 170px;
+  width: 170px;
+  overflow: hidden;
+  border-radius: 0px 15px 15px 0px;
 }
 .audioPlayer:hover {
   transform: translate(0px, 0px);
@@ -243,10 +281,14 @@
 
 */
 .songInformation {
-  /*Nothing Here*/
 } 
 .songTitle {
   font-size: 35px;
+  overflow: hidden;
+  max-height: 50px;
+  max-width:640px;
+  text-wrap: nowrap;
+  margin: auto;
 }
 .progressBar_container {
   margin:auto;

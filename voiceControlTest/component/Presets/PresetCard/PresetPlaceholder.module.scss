@@ -1,0 +1,16 @@
+@import 'style/variables.module';
+
+$preset-card-width: 168px;
+
+.presetPlaceholder {
+  text-align: center;
+
+  .title {
+    width: $preset-card-width;
+    color: $opacity-white-70;
+  }
+
+  .active {
+    color: $white;
+  }
+}

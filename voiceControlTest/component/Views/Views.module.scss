@@ -1,0 +1,35 @@
+@import 'style/variables.module';
+
+.viewArea {
+  height: $device-height;
+  width: $device-width;
+  position: relative;
+  overflow: hidden;
+}
+
+.view {
+  position: absolute;
+  top: 0;
+  transform: perspective(800px) translate3d(0, 530px, -160px);
+  width: 800px;
+  height: 480px;
+  filter: brightness(0.9);
+
+  @include transition-filter-transform;
+  @include rounded-corners;
+}
+
+.underCurrent {
+  transform: perspective(800px) translate3d(0, 10px, -40px);
+  filter: brightness(0.2);
+}
+
+.current {
+  transition-delay: 100ms;
+  transform: translateY(0);
+  filter: brightness(1);
+}
+
+.forceOnTop {
+  z-index: 1;
+}

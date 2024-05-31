@@ -1,0 +1,21 @@
+@import 'style/variables.module';
+
+.greenCircle {
+  stroke-dasharray: 440;
+  stroke-dashoffset: 1000;
+  stroke: $green-light;
+  stroke-linecap: round;
+  fill: transparent;
+  transform-origin: 50% 50%;
+}
+
+.spin {
+  display: flex;
+  animation: rotate 1s infinite linear;
+}
+
+@keyframes rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}

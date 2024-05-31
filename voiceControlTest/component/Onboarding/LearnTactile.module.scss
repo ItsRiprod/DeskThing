@@ -1,0 +1,17 @@
+@import 'style/variables.module';
+
+.learnTactile {
+  height: $device-height;
+  width: $device-width;
+  background-color: transparent;
+  position: relative;
+}
+
+.blockTouch {
+  height: $device-height;
+  width: $device-width;
+  position: absolute;
+  top: 0;
+  z-index: $onboarding-tactile-z-index + 1;
+  background-color: transparent;
+}

@@ -1,0 +1,14 @@
+@import 'style/variables.module';
+
+.animationExit {
+  opacity: 1;
+}
+
+.animationExitActive {
+  opacity: 0;
+  transition: opacity 1300ms $easing-function-ease-out-cubic;
+}
+
+.animationExitDone {
+  opacity: 0;
+}

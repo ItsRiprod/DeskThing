@@ -1,0 +1,51 @@
+@import 'style/variables.module';
+
+$dial-center-diff: 68px;
+$small-header-diff: 48px;
+
+.tracklist {
+  @include transition-transform;
+
+  width: $device-width;
+  height: $device-height + $small-header-diff;
+  position: relative;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+
+  &.smallHeader {
+    transform: translateY(-$small-header-diff);
+  }
+}
+
+.container {
+  position: relative;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: $device-height + $dial-center-diff;
+  overflow: hidden;
+  z-index: $overlay-z-index;
+}
+
+.emptyBody {
+  width: 100%;
+  height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  p {
+    width: 560px;
+    text-align: center;
+    transform: translateY(-48px);
+
+    @include text-style(28px, 32px, -0.01em);
+
+    color: $gray-70;
+  }
+}
+
+.trackSlideScrolled {
+  transform: translateY(48px);
+}

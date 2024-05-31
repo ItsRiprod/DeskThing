@@ -1,0 +1,19 @@
+@import 'style/variables.module';
+
+.powerTutorial {
+  width: $device-width;
+  height: $device-height;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.title {
+  margin-bottom: 32px;
+}
+
+.description {
+  text-align: center;
+  max-width: 560px;
+}

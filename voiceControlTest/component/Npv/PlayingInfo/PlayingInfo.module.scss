@@ -1,0 +1,59 @@
+@import 'style/variables.module';
+
+$info-container-width: 432px;
+$info-container-height: 248px;
+
+.playingInfo {
+  height: 100%;
+  width: 100%;
+  padding: 40px 40px 48px;
+  display: flex;
+}
+
+.animationEnterLeft {
+  opacity: 0;
+  transform: translateX(-24px);
+}
+
+.animationEnterRight {
+  opacity: 0;
+  transform: translateX(24px);
+}
+
+.animationEnterActive {
+  opacity: 1;
+  transform: translateX(0);
+
+  @include transition-opacity-transform;
+}
+
+.animationExit {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.animationExitLeft {
+  opacity: 0;
+  transform: translateX(-24px);
+
+  @include transition-opacity-transform;
+}
+
+.animationExitRight {
+  opacity: 0;
+  transform: translateX(24px);
+
+  @include transition-opacity-transform;
+}
+
+.info {
+  margin-left: 34px;
+  width: $info-container-width;
+  height: $info-container-height;
+}
+
+.playingInfoHeader {
+  display: flex;
+  justify-content: space-between;
+  height: 32px;
+}
