@@ -1,0 +1,52 @@
+@import 'style/variables.module';
+
+$info-container-width: 432px;
+
+.transitionContainer {
+  position: absolute;
+}
+
+.texts {
+  margin-top: 16px;
+}
+
+.songTitle {
+  color: $white;
+  font-weight: bold;
+  width: $info-container-width;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  display: -webkit-box;
+  word-break: break-word;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  padding-bottom: 5px;
+}
+
+.songTitleBig {
+  @include text-style(72px, 72px, -0.03em);
+}
+
+.songTitleMiddle {
+  @include text-style(52px, 56px, -0.03em);
+}
+
+.songTitleSmall {
+  @include text-style(44px, 47px, -0.02em);
+
+  max-height: 144px;
+}
+
+.artistTitle {
+  @include text-style(36px, 40px, -0.01em);
+
+  max-height: 80px;
+  margin-top: 16px;
+  width: $info-container-width;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  position: relative;
+  color: $white;
+  padding-bottom: 3px;
+}

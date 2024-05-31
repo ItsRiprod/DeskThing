@@ -1,0 +1,68 @@
+{
+  "name": "react_webapp",
+  "version": "0.1.0",
+  "private": true,
+  "homepage": "file:///usr/share/qt-superbird-app/webapp/",
+  "dependencies": {
+    "@testing-library/jest-dom": "^5.14.1",
+    "@testing-library/react": "^13.0.0",
+    "@testing-library/user-event": "^13.2.1",
+    "@types/jest": "^27.0.1",
+    "@types/node": "^16.7.13",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "axios": "^1.7.2",
+    "classnames": "^2.5.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mobx-react-lite": "^4.0.7",
+    "open": "^10.1.0",
+    "qs": "^6.12.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1",
+    "react-use-websocket": "^4.8.1",
+    "robotjs": "^0.6.0",
+    "socket.io-client": "^4.7.5",
+    "typescript": "^4.4.2",
+    "web-vitals": "^2.1.0",
+    "ws": "^8.17.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "check": "tsc --noEmit --incremental && eslint --ext .ts,.tsx . --cache",
+    "fmt": "prettier --write \"{src,main_process}/**/*\""
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.40.1",
+    "@typescript-eslint/parser": "^5.40.1",
+    "eslint": "^8.26.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-react": "^7.31.10",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-unused-imports": "^2.0.0",
+    "prettier": "^2.7.1"
+  }
+}

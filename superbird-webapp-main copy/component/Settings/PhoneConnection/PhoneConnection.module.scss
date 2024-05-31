@@ -1,0 +1,95 @@
+@import 'style/variables.module';
+
+.phoneConnection {
+  background: $black;
+  width: $device-width;
+  height: $device-height;
+}
+
+.phoneConnectionItem {
+  @include transition-background-opacity;
+
+  width: 100%;
+  height: 100%;
+  padding-left: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  .titles {
+    display: flex;
+    flex-direction: column;
+    width: 520px;
+  }
+}
+
+.addMorePhone {
+  height: 96px !important;
+}
+
+.title {
+  @include text-style(36px, 40px, -0.02em);
+
+  color: $opacity-white-50;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subtitle {
+  @include text-style(28px, 32px, -0.02em);
+
+  display: flex;
+  vertical-align: center;
+  color: $opacity-white-50;
+  margin-top: 10px;
+}
+
+.subtitleText {
+  margin-right: 24px;
+}
+
+.menuButton {
+  @include transition-margin-right;
+
+  width: 228px;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+
+  .menuIcon {
+    transform: scale(2);
+    color: $opacity-white-50;
+  }
+}
+
+.active {
+  background: $opacity-white-10;
+
+  .title {
+    color: $white;
+  }
+
+  .menuButton {
+    margin-right: 40px;
+
+    .menuIcon {
+      color: $white;
+    }
+  }
+
+  &.pressed {
+    opacity: 0.5;
+  }
+}
+
+.connected {
+  color: $green-light;
+}
+
+.pressed {
+  opacity: 0.5;
+  background: $opacity-white-10;
+}

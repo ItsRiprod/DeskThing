@@ -1,0 +1,23 @@
+@import 'style/variables.module';
+
+.headerWrapper {
+  height: 152px;
+  width: 100%;
+  padding-right: 72px;
+  z-index: $overlay-z-index + 10;
+  display: flex;
+
+  @include transition-background;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  @include transition-transform;
+
+  &.smallHeader {
+    transform: translateY(40px);
+  }
+}

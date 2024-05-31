@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32px" height="7px" viewBox="0 0 32 7" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 57.1 (83088) - https://sketch.com -->
+    <title>48/more-48</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <path d="M11,20.503 C9.343,20.503 8,21.846 8,23.503 C8,25.16 9.343,26.503 11,26.503 C12.657,26.503 14,25.16 14,23.503 C14,21.846 12.657,20.503 11,20.503 Z M24,20.503 C22.343,20.503 21,21.846 21,23.503 C21,25.16 22.343,26.503 24,26.503 C25.657,26.503 27,25.16 27,23.503 C27,21.846 25.657,20.503 24,20.503 Z M37,20.503 C35.343,20.503 34,21.846 34,23.503 C34,25.16 35.343,26.503 37,26.503 C38.657,26.503 40,25.16 40,23.503 C40,21.846 38.657,20.503 37,20.503 Z" id="path-1"></path>
+    </defs>
+    <g id="UX-Models---4x3---V1.1-" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="NPV-01-Copy-5" transform="translate(-728.000000, -36.000000)">
+            <g id="48/more-48" transform="translate(720.000000, 16.000000)">
+                <mask id="mask-2" fill="white">
+                    <use xlink:href="#path-1"></use>
+                </mask>
+                <use id="Shape" fill="#000000" fill-rule="nonzero" xlink:href="#path-1"></use>
+                <g id="Color" mask="url(#mask-2)" fill="#FFFFFF" fill-rule="evenodd">
+                    <rect x="0" y="0" width="48" height="48"></rect>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

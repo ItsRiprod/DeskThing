@@ -1,0 +1,57 @@
+@import 'style/variables.module';
+
+.promo {
+  width: 800px;
+  height: 480px;
+  display: flex;
+}
+
+.textAndConfirm {
+  background: $white;
+  height: 100%;
+  width: 422px;
+  padding: 40px 0 32px 40px;
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+}
+
+.text {
+  color: $aubergine;
+  max-width: 328px;
+}
+
+.subText {
+  color: $aubergine;
+  max-width: 315px;
+}
+
+.confirmButton {
+  background-color: $aubergine;
+  color: $white;
+}
+
+.imageAndOption {
+  background: $pink;
+  height: 100%;
+  width: 378px;
+  display: flex;
+  flex-direction: column;
+}
+
+.image {
+  border-radius: 16px;
+  width: 458px;
+  height: 274.8px;
+  box-shadow: 0 39px 44px -30px rgb(0 0 0 / 80%);
+  margin-top: 56px;
+  margin-left: -30px;
+}
+
+.optionButtonWrapper {
+  width: 100%;
+  margin-top: 29px;
+  display: flex;
+  justify-content: flex-end;
+  padding-right: 40px;
+}

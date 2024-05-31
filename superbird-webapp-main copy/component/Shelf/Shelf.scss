@@ -1,0 +1,8 @@
+@import 'style/variables.module';
+
+#shelf {
+  width: $device-width;
+  height: $device-height;
+  overflow: hidden;
+  border-radius: 0;
+}

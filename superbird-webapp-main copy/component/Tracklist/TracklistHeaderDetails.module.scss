@@ -1,0 +1,88 @@
+@import 'style/variables.module';
+
+$artwork-small-scale: 0.65;
+
+.infoWrapper {
+  margin-left: 40px;
+  width: 592px;
+  display: flex;
+  align-items: center;
+}
+
+.imageWrapper {
+  @include transition-transform;
+
+  transform-origin: top left;
+  margin-right: 24px;
+
+  &.smallHeader {
+    transform: scale($artwork-small-scale);
+  }
+}
+
+.titles {
+  @include transition-transform;
+
+  height: 88px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  &.moveLeftAndUp {
+    transform: translate(calc(-1 * 96px * (1 - $artwork-small-scale)), -8px);
+  }
+
+  &.moveLeftAndDown {
+    transform: translate(calc(-1 * 96px * (1 - $artwork-small-scale)), 8px);
+  }
+
+  &.moveUp {
+    transform: translateY(-8px);
+  }
+
+  &.moveDown {
+    transform: translateY(8px);
+  }
+}
+
+.tracklistTitle {
+  @include transition-transform;
+
+  transform-origin: top left;
+  width: 100%;
+  height: 50px;
+
+  @include text-style(44px, 48px, -0.03em);
+
+  color: $white;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: bold;
+
+  &.smallHeader {
+    transform: scale(calc(32 / 44));
+  }
+}
+
+.trackCount {
+  @include transition-opacity-transform;
+
+  width: 100%;
+  height: 32px;
+
+  @include text-style(28px, 32px, -0.01em);
+
+  color: $opacity-white-70;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &.smallHeader {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+}

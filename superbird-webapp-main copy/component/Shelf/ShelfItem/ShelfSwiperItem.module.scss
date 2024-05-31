@@ -1,0 +1,121 @@
+@use 'sass:math';
+
+// https://github.com/stylelint/stylelint/issues/5492
+@import 'style/variables.module'; /* stylelint-disable no-invalid-position-at-import-rule */
+
+$slide-width: 240px;
+
+.item {
+  opacity: 0.8;
+
+  @include transition-opacity-transform;
+}
+
+.pressed {
+  opacity: 0.7;
+}
+
+.buttonItem {
+  width: $slide-width;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+
+  @include transition-opacity-transform;
+}
+
+.buttonArtwork {
+  height: 240px;
+  width: $slide-width;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: $white;
+  opacity: 0.1;
+}
+
+.buttonIcon {
+  opacity: 0.8;
+}
+
+.titleContainer {
+  @include text-style(32px, 40px, -0.02em);
+
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 24px;
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.title {
+  flex: 1;
+  opacity: 0.7;
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.subtitle {
+  @include text-style(28px, 32px, -0.01em);
+
+  margin-top: 4px;
+  opacity: 0.7;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.activeBorder {
+  position: absolute;
+  width: 256px;
+  height: 256px;
+  top: -8px;
+  border: 4px solid white;
+  border-radius: 8px;
+}
+
+.artworkCenter {
+  position: absolute;
+  transform: translateY(math.div($slide-width, 2)) translateY(-50%);
+}
+
+.circle {
+  border-radius: 50%;
+}
+
+.activeSlide {
+  opacity: 1;
+
+  &.pressed {
+    opacity: 0.8;
+  }
+
+  &.notEnabled {
+    opacity: 0.8;
+  }
+
+  .title {
+    opacity: 1;
+  }
+
+  .subtitle {
+    opacity: 1;
+  }
+
+  .buttonIcon {
+    opacity: 1;
+  }
+}
+
+.notEnabled {
+  &.pressed {
+    opacity: 0.7;
+  }
+}

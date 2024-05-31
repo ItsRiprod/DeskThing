@@ -1,0 +1,50 @@
+@import 'style/variables.module';
+
+.controls {
+  width: 800px;
+  display: flex;
+  align-items: center;
+}
+
+.otherMedia {
+  background-color: $gray-20;
+}
+
+.controlButton {
+  height: 144px;
+  width: 160px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.touchArea {
+  width: 144px;
+  height: 112px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+}
+
+.touchAreaFullSize {
+  width: 100%;
+  height: 100%;
+  border-radius: unset;
+}
+
+.touchAreaDown {
+  background: $opacity-black-30;
+}
+
+.iconShuffleActive {
+  padding-top: 23px;
+}
+
+.disabledIcon {
+  svg {
+    path {
+      fill: $opacity-white-30;
+    }
+  }
+}

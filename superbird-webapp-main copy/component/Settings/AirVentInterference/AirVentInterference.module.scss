@@ -1,0 +1,131 @@
+@import 'style/variables.module';
+
+$support-text-gray: #7f7f7f;
+
+.aviHeader {
+  position: sticky;
+  background-color: $black;
+  z-index: $overlay-z-index + 20;
+  height: 128px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+
+  .iconLeft {
+    color: $white;
+    transform: scale(3);
+    position: absolute;
+    left: 20px;
+    width: 10%;
+    margin-left: 16px;
+  }
+
+  span {
+    margin-left: 40px;
+    color: $white;
+
+    @include text-style(44px, 48px, -0.02em);
+  }
+}
+
+.aviContainer {
+  height: 352px;
+  overflow: scroll;
+  background: $black;
+
+  .notification {
+    color: $white;
+    box-sizing: border-box;
+    height: 96px;
+    margin-bottom: 40px;
+    padding-left: 40px;
+    padding-right: 72px;
+    width: $device-width;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid rgb(255 255 255 / 20%);
+    border-bottom: 1px solid rgb(255 255 255 / 20%);
+    font-weight: 700;
+    margin-right: 72px;
+    @include text-style(36px, 48px, -0.02em);
+    @include transition-background-border;
+
+    &.pressed {
+      color: $white-70;
+      background: rgb(255 255 255 / 5%);
+    }
+
+    &.focused {
+      background: rgb(255 255 255 / 10%);
+      border: none;
+    }
+
+    &.pressed.focused {
+      background: rgb(255 255 255 / 5%);
+      border: none;
+    }
+  }
+
+  .texts {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 16px 40px 48px;
+    color: $gray-85;
+
+    p,
+    ul,
+    span {
+      width: 100%;
+    }
+
+    p {
+      @include text-style(32px, 48px, -0.03em);
+    }
+
+    .intro {
+      color: $gray-80;
+      margin-bottom: 36px;
+
+      svg {
+        transform: translateY(6px);
+      }
+    }
+
+    .thingsList {
+      margin-bottom: 24px;
+    }
+
+    ul {
+      margin-bottom: 32px;
+
+      li {
+        @include text-style(32px, 40px, -0.02em);
+
+        font-weight: 700;
+        margin-bottom: 14px;
+      }
+    }
+
+    .support {
+      @include text-style(28px, 32px, -0.01em);
+
+      margin: 0 8px;
+      color: $support-text-gray;
+
+      span {
+        font-weight: 700;
+      }
+    }
+  }
+}
+
+.onOff {
+  color: $positive;
+}
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  background: transparent; /* make scrollbar transparent */
+}

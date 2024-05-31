@@ -1,0 +1,25 @@
+@import 'style/variables.module';
+
+.screen {
+  background: $aubergine;
+  height: $device-height;
+  width: $device-width;
+  padding: 32px 48px 40px;
+}
+
+.title {
+  color: $pink;
+
+  @include text-style(120px, 120px, -0.04em);
+
+  width: 704px;
+}
+
+.subtitle {
+  color: $pink;
+  margin-top: 32px;
+
+  @include text-style(36px, 48px, -0.02em);
+
+  max-width: 700px;
+}

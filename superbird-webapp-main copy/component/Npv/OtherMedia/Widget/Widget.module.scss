@@ -1,0 +1,42 @@
+@import 'style/variables.module';
+
+.otherMediaWidget {
+  margin-top: 20px;
+  width: 720px;
+  height: 224px;
+  background-color: $gray-20;
+  border-radius: 16px;
+  display: flex;
+  overflow: hidden;
+}
+
+.artwork {
+  box-shadow: 0 16px 32px rgb(0 0 0 / 20%);
+}
+
+.metadata {
+  width: 100%;
+  padding: 12px 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  overflow: hidden;
+}
+
+.source {
+  color: $opacity-white-70;
+}
+
+.title {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.subtitle {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: white;
+}

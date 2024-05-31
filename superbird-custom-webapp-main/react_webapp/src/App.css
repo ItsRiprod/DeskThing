@@ -1,0 +1,271 @@
+.App {
+  text-align: center;
+
+  /* Colors */
+    /**
+     * The default background color of the base set.
+     */
+     --bg-base: #121212;
+    /**
+     * A background color that indicates the hover state of a component, or adds some oomph to a focus state.
+     */
+     --bg-highlight: #1a1a1a;
+    /**
+     * A background color that indicates the press state of a component.
+     */
+    --bg-press: #000000;
+ 
+        /**
+         * The default background color for elevated elements in the base set.
+         */
+         --bg-elevated-base: #242424;
+         --bg-elevated-highlight: #2a2a2a;
+         --bg-elevated-press: #000000;
+ 
+        /**
+         * The default background color for tinted elements in the base set.
+         */
+         --bg-tinted-base: rgba(255, 255, 255, 0.07);
+         --bg-tinted-highlight: rgba(255, 255, 255, 0.1);
+         --bg-tinted-press: rgba(255, 255, 255, 0.04);
+  
+
+        /**
+         * Fallback color
+         */
+         --bg-unsafe-basebase: #121212;
+        /**
+         * Fallback color
+         */
+         --bg-unsafe-highlight: #121212;
+        /**
+         * Fallback color
+         */
+         --bg-unsafe-press: #121212;
+ 
+
+    /**
+     * The default text color of the base set.
+     */
+     --text-base: #ffffff;
+    /**
+     * A subdued variant of the base text color.
+     */
+     --text-subdued: #a7a7a7;
+    /**
+     * A bright text color that contrasts with the set’s background colors. Often used to give key interactive elements more prominence.
+     */
+     --text-brightAccent: #1ed760;
+    /**
+     * A text color associated with negativity. Often used for errors, destructive actions, or to highlight negative metrics or data.
+     */
+     --text-negative: #f15e6c;
+    /**
+     * A text color associated with caution. Often used to highlight potential problems or slightly negative metrics or data.
+     */
+     --text-warning: #ffa42b;
+    /**
+     * A text color associated with positivity. Often used for success states, or to highlight positive metrics or data.
+     */
+     --text-positive: #1ed760;
+    /**
+     * A text color associated with system announcements and notifications.
+     */
+     --text-announcement: #3d91f4;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: var(--bg-base);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+/*
+
+============================================== Debug CSS ==============================================
+
+*/
+.debug {
+  background: var(--bg-tinted-base);
+  position: fixed;
+  top: 0;
+  transform: translate(0px, -50px);
+  transition: transform 0.5s ease-out;
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+}
+.debug:hover {
+  transform: translate(0px, 0px);
+}
+.debug_pullTab {
+  position: absolute;
+  background-color: var(--bg-tinted-highlight);
+  width: 100px;
+  height: 15px;
+  z-index: -5;
+  transform: translate(0px, 70px);
+  border-radius: 5px;
+  transition: background-color 0.3s;
+}
+.debug_pullTab:hover {
+  background-color: var(--bg-tinted-press);
+}
+
+
+
+/*
+============================================== Body CSS ==============================================
+
+*/
+.body {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+.getBoards {
+  height: 75px;
+  aspect-ratio: 2/1;
+  border: none;
+  border-radius: 5px;
+  --button-size: 82px;
+  height: var(--button-size);
+  width: var(--button-size);
+  align-items: center;
+  cursor: pointer;
+  color: var(--text-base);
+  background-color: var(--bg-highlight); 
+}
+/*
+============================================== Audio Player CSS ==============================================
+
+*/
+
+.audioPlayer {
+  padding-top: 3px;
+  position:fixed;
+  bottom:0px;
+  width: 100vw;
+  height: 160px;
+  transition: transform 0.5s ease-out;
+  transform: translate(0px, 80px);
+  background-color: var(--bg-tinted-base);
+}
+.buttonContainer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-around;
+  font-size: calc(10px + 2vmin);
+}
+.button {
+  height: 75px;
+  aspect-ratio: 2/1;
+  border: none;
+  border-radius: 5px;
+  --button-size: 82px;
+  background-color: transparent;
+  color: hsla(0, 0%, 100%, .7);
+  display: flex;
+  height: var(--button-size);
+  min-width: var(--button-size);
+  position: relative;
+  width: var(--button-size);
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  -ms-flex-pack: center;
+  border: none;
+  cursor: pointer;
+  justify-content: center;
+}
+.audioPlayer:hover {
+  transform: translate(0px, 0px);
+}
+
+.Log {
+  background-color: rgba(1, 1, 1, 1);
+  width: 85vw;
+  border-radius: 5px;
+}
+.icon {
+  fill: var(--bg-tinted-highlight);
+}
+
+.audio_pullTab {
+  position: absolute;
+  background-color: var(--bg-tinted-highlight);
+  width: 100px;
+  height: 15px;
+  z-index: -5;
+  transform: translate(0px, -35px);
+  
+  border-radius: 5px;
+  transition: background-color 0.3s;
+}
+.audio_pullTab:hover {
+  background-color: var(--bg-tinted-press);
+}
+
+/*
+
+----------------------- Song Information
+
+*/
+.songInformation {
+  /*Nothing Here*/
+} 
+.songTitle {
+  font-size: 35px;
+}
+.progressBar_container {
+  margin:auto;
+  width: 80%;
+  height: 25px;
+  background-color: var(--bg-tinted-base);
+  overflow:hidden;
+  border-radius: 15px;
+}
+.progressBar_progress {
+  position:static;
+  bottom: 0;
+  height: 25px;
+  transition: width 1s ease-out;
+  background-color: var(--text-brightAccent);
+}
+.progressBar_timer {
+  padding: 0;
+  margin: 0;
+  color: var(--text-base);
+  transform: translate(0px, -25px);
+}
