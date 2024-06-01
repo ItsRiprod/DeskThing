@@ -54,13 +54,28 @@ The TODOThing is a simple CarThing Chrome-based website that can communicate wit
    - Use the Spotify REST API to find your computer ID. Refer to the [Spotify REST API documentation](https://developer.spotify.com/documentation/web-api/reference/#/operations/get-information-about-the-users-current-playback) for detailed instructions.
 
 5. **Establish Communication:**
+   - Build project:
+     ```
+     npm run build
+     ```
    - Open port 8891:
      ```
      adb reverse tcp:8891 tcp:8891
      ```
+   - Remount the build to the carthing:
+     ```
+     adb shell "mountpoint /usr/share/qt-superbird-app/webapp/ > /dev/null && umount /usr/share/qt-superbird-app/webapp"
+     adb shell "rm -rf /tmp/webapp"
+     adb push "build/" /tmp/webapp
+     adb shell "mount --bind /tmp/webapp /usr/share/qt-superbird-app/webapp"
+     ```
+   - Restart chromium:
+     ```
+     adb shell supervisorctl restart chromium
+     ```
    - Start your server:
      ```
-     node server/server.js
+     start cmd.exe /k "node server/server.js"
      ```
 
 ---
@@ -74,7 +89,7 @@ It's 4:04 in the morning right now. I *will* update this later.
 - [superbird-tool](https://github.com/bishopdynamics/superbird-tool) - This is the CarThing image that is being used. Be sure to either include this link or steps on how to flash the CarThing.
 - [superbird-custom-webapp](https://github.com/pajowu/superbird-custom-webapp/tree/main) - The React web app framework that this project started with.
 
-.env file reference
+.env file reference for /TODOThing/server/.env
 ```
 SPOTIFY_API_ID= /* The spotify API ID obtained from dashboard  */
 SPOTIFY_CLIENT_SECRET= /* The spotify API secret obtained from dashboard */
@@ -86,3 +101,6 @@ DEVICE_ID= /* The device ID obtained from the spotify rest api */
 ---
 
 Ensure that your environment is correctly set up and all dependencies are installed. Good Luck!
+
+
+*The possibility of this bricking your device is very real - every step of this process is risky and i would do so with extreme caution.*
