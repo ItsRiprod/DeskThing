@@ -1,3 +1,5 @@
+// Remaps the Carthing buttons to events that can be used elsewhere in the code
+
 export enum Button {
   BUTTON_1,
   BUTTON_2,
@@ -44,11 +46,19 @@ function listenerKey(btn: Button, flv: EventFlavour): string {
 
 export default class ButtonHelper {
   listeners: Map<string, ((btn: Button, flv: EventFlavour) => void)[]>;
+  buttonStates: { [key: string]: EventFlavour };
+  callback: ((btn: Button, flv: EventFlavour) => void) | null = null;
+
   constructor() {
     this.listeners = new Map();
+    this.buttonStates = {};
     document.addEventListener('wheel', this.wheelEventHandler);
     document.addEventListener('keydown', this.keyDownEventHandler);
     document.addEventListener('keyup', this.keyUpEventHandler);
+  }
+
+  getButtonStates(): { [key: string]: EventFlavour } {
+    return { ...this.buttonStates };
   }
 
   addListener(btn: Button, flv: EventFlavour, fn: (btn: Button, flv: EventFlavour) => void): void {
@@ -57,6 +67,10 @@ export default class ButtonHelper {
   }
   removeListener(btn: Button, flv: EventFlavour): void {
     this.listeners.delete(listenerKey(btn, flv));
+  }
+
+  setCallback(callback: (btn: Button, flv: EventFlavour) => void): void {
+    this.callback = callback;
   }
 
   private wheelEventHandler = (event: WheelEvent) => {
@@ -72,13 +86,21 @@ export default class ButtonHelper {
     for (const listener of currentListeners) {
       listener(btn, flv);
     }
+    if (this.callback) {
+      this.callback(btn, flv);
+    }
   }
 
   private keyDownEventHandler = (event: KeyboardEvent) => {
-    this.notify(mapButton(event.code), EventFlavour.Down);
+    const button = mapButton(event.code);
+    this.buttonStates[button] = EventFlavour.Down;
+    this.notify(button, EventFlavour.Down);
   };
 
   private keyUpEventHandler = (event: KeyboardEvent) => {
-    this.notify(mapButton(event.code), EventFlavour.Up);
+    const button = mapButton(event.code);
+    this.buttonStates[button] = EventFlavour.Up;
+    this.notify(button, EventFlavour.Up);
   };
 }
+

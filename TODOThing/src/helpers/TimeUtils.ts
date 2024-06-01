@@ -1,3 +1,5 @@
+// Simple time utility to convert various types of times to various other types of times (used in the progress bar)
+
 export const msToTime = (duration: number): string => {
   let seconds: string | number = parseInt(String((duration / 1000) % 60), 10);
   let minutes: string | number = parseInt(String((duration / (1000 * 60)) % 60), 10);

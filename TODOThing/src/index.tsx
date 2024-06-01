@@ -1,14 +1,22 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import App from './App';
-//import ButtonHelper, { Button, EventFlavour } from './helpers/ButtonHelper';
 import ControlWebsocketHelper from './helpers/ControlWebsocketHelper';
+import Header from './components/Header/Header';
+import Footer from './components/Footer/Footer';
+import Views from './views/views';
+
 
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 root.render(
   <React.StrictMode>
-    <App />
+    <div className="App">
+      <header className="App-header">
+        <Header />
+        <Views />
+        <Footer />
+      </header>
+    </div>
   </React.StrictMode>
 );
 

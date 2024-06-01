@@ -1,0 +1,114 @@
+.audioPlayer {
+    padding-top: 3px;
+    position:fixed;
+    bottom:0px;
+    width: 100vw;
+    height: 160px;
+    display:flex;
+    transition: transform 0.3s ease-out;
+    transform: translate(0px, 80px);
+    background-color: var(--bg-tinted-base);
+  }
+  .audioPlayer_controls {
+    width: 100%;
+  }
+  .buttonContainer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+    font-size: calc(10px + 2vmin);
+  }
+  
+  .button {
+    height: 75px;
+    aspect-ratio: 2/1;
+    border: none;
+    border-radius: 5px;
+    --button-size: 82px;
+    background-color: transparent;
+    color: hsla(0, 0%, 100%, .7);
+    display: flex;
+    height: var(--button-size);
+    min-width: var(--button-size);
+    position: relative;
+    width: var(--button-size);
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    -webkit-box-pack: center;
+    -ms-flex-pack: center;
+    border: none;
+    cursor: pointer;
+    justify-content: center;
+  }
+  .getSongInfo {
+    height: 170px;
+    width: 170px;
+    overflow: hidden;
+    border-radius: 0px 15px 15px 0px;
+  }
+  .audioPlayer:hover {
+    transform: translate(0px, 0px);
+  }
+  
+  .Log {
+    background-color: rgba(1, 1, 1, 1);
+    width: 85vw;
+    border-radius: 5px;
+  }
+  .icon {
+    fill: var(--bg-tinted-highlight);
+  }
+  
+  .audio_pullTab {
+    position: absolute;
+    background-color: var(--bg-tinted-highlight);
+    width: 100px;
+    height: 15px;
+    z-index: -5;
+    transform: translate(0px, -35px);
+    
+    border-radius: 5px;
+    transition: background-color 0.3s;
+  }
+  .audio_pullTab:hover {
+    background-color: var(--bg-tinted-press);
+  }
+  
+  /*
+  
+  ----------------------- Song Information
+  
+  */
+  .songInformation {
+  } 
+  .songTitle {
+    font-size: 35px;
+    overflow: hidden;
+    max-height: 50px;
+    max-width:640px;
+    text-wrap: nowrap;
+    margin: auto;
+  }
+  .progressBar_container {
+    margin:auto;
+    width: 80%;
+    height: 25px;
+    background-color: var(--bg-tinted-base);
+    overflow:hidden;
+    border-radius: 15px;
+  }
+  .progressBar_progress {
+    position:static;
+    bottom: 0;
+    height: 25px;
+    transition: width 1s ease-out;
+    background-color: var(--text-brightAccent);
+  }
+  .progressBar_timer {
+    padding: 0;
+    margin: 0;
+    color: var(--text-base);
+    transform: translate(0px, -25px);
+  }

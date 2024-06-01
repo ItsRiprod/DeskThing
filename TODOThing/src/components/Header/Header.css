@@ -1,0 +1,54 @@
+.debug {
+    background: var(--bg-elevated-base);
+    position: fixed;
+    top: 0;
+    height: 300px;
+    transform: translate(0px, -295px);
+    transition: transform 0.2s ease-out;
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    
+  }
+  .debug_content {
+  
+    height: 300px;
+    transition: transform 0.2s ease-out;
+    width: 100%;
+    overflow-y: scroll;
+    display: flex;
+    flex-direction: column;
+    
+  }
+  .debug_header {
+    top:0px;
+    display: flex;
+    justify-content: space-around;
+    background-color: var(--bg-tinted-base);
+  }
+  .debug:hover {
+    transform: translate(0px, 0px);
+  }
+  .debug_pullTab {
+    position: absolute;
+    background-color: var(--bg-tinted-highlight);
+    width: 100px;
+    height: 15px;
+    z-index: -5;
+    transform: translate(0px, 305px);
+    border-radius: 5px;
+    transition: background-color 0.3s;
+  }
+  .debug_pullTab:hover {
+    background-color: var(--bg-tinted-press);
+  }
+  .debug code {
+    width: 100%;
+    background-color: var(--bg-tinted-base);
+  }
+  .getDeviceInfo {
+    width: 50px;
+    background-color: var(--bg-tinted-highlight);
+    border: none;
+    aspect-ratio: 1/1;
+  }

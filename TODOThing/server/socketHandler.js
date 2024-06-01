@@ -59,7 +59,7 @@ server.on('connection', async (socket) => {
           artistName: currentPlayback.item.artists[0].name,
           uri: currentPlayback.item.uri,
         };
-        socket.send(JSON.stringify({ type: 'trackData', data: returnData }));
+        socket.send(JSON.stringify({ type: 'song_data', data: returnData }));
       } catch (error) {
         socket.send(JSON.stringify({ type: 'error', data: error.message }));
       }
@@ -196,7 +196,7 @@ server.on('connection', async (socket) => {
                             is_playing: playbackState.is_playing,
                     }
                     socket.send(
-                      JSON.stringify({ type: 'deviceData', data: returnData })
+                      JSON.stringify({ type: 'device_data', data: returnData })
                     );
                   } catch (error) {
                     socket.send(

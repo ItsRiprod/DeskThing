@@ -1,3 +1,5 @@
+// Opens websocket 8890 so that the carthing doesnt crash
+
 export default class ControlWebsocketHelper {
   socket: WebSocket;
   constructor() {
