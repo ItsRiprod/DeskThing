@@ -1,27 +1,88 @@
-# carthing
- This is THE repo where I will be building my carthing app with Vite
+# CarThing TODOThing
 
-## *Built off the backs of giants*
+This is THE repo where I will be building my CarThing app with Vite.
 
-This is the CarThing TODOThing project. Integration with Trello while still being able to control your spotify music.
+## Built off the Backs of Giants
 
-Setup on this is so intense that I would recommend doing literally anything else before attempting...
+This is the CarThing TODOThing project. It integrates with Trello while still allowing you to control your Spotify music. *trello integration pending...*
 
+Setup is quite intense, so be prepared!
 
-Whats this?
+---
 
-Still interesting??
+## What It Does
 
+The TODOThing is a simple CarThing Chrome-based website that can communicate with a server run on the host via ADB (on port 8891) functioning as a socket. The CarThing can:
 
-Well first you need to set up adb on your computer (Android Development) and flash your carthing with the webapp 
+- Skip tracks
+- Get album art
+- Get artist names
+- Perform all basic Spotify player functionalities
 
-Then you need to build the react projects under... i shpose you'll have to find it if you get here before i reorganize things
+## How It Does It
 
-Then finally you'll have to find your spotify authentication key (should be prompted when you launch) along with your trello powerup (good luck) and then, and only then, will you be able to use both trello and spotify. 
+### Prerequisites
 
-Open port 8891 `adb reverse tcp:8891 tcp:8891` in order to establish communication between the car thing and your server `node server/server.js`
+1. **ADB Setup:**
+   - Install ADB on your computer (Android Development).
+   - Flash your CarThing with the web app using the [superbird-tool](https://github.com/bishopdynamics/superbird-tool).
 
+2. **React Project:**
+   - Build the React projects from the [superbird-custom-webapp framework](https://github.com/pajowu/superbird-custom-webapp/tree/main).
 
+3. **Spotify and Trello Integration:**
+   - Obtain your Spotify authentication key. You should be prompted when you launch the app.
+   - Set up your Trello power-up.
 
+### Detailed Setup Instructions
 
-It's 4:04 in the morning right now. I *will* update this later ~~optional~~
+1. **Flash Your CarThing:**
+   - Follow the instructions in the [superbird-tool repository](https://github.com/bishopdynamics/superbird-tool) to flash your CarThing device with the necessary image.
+
+2. **Build React Projects:**
+   - Clone and build the React projects from [superbird-custom-webapp](https://github.com/pajowu/superbird-custom-webapp/tree/main).
+
+3. **Configure Spotify App:**
+   - Create a Spotify app and get the app ID and key. Detailed steps can be found [here](https://developer.spotify.com/documentation/web-api/quick-start/).
+   - Add your Spotify app ID and key to a `.env` file:
+     ```
+     SPOTIFY_APP_ID=your_spotify_app_id
+     SPOTIFY_APP_KEY=your_spotify_app_key
+     ```
+
+4. **Find Your Computer ID:**
+   - Use the Spotify REST API to find your computer ID. Refer to the [Spotify REST API documentation](https://developer.spotify.com/documentation/web-api/reference/#/operations/get-information-about-the-users-current-playback) for detailed instructions.
+
+5. **Establish Communication:**
+   - Open port 8891:
+     ```
+     adb reverse tcp:8891 tcp:8891
+     ```
+   - Start your server:
+     ```
+     node server/server.js
+     ```
+
+---
+
+It's 4:04 in the morning right now. I *will* update this later.
+
+---
+
+### Additional Resources
+
+- [superbird-tool](https://github.com/bishopdynamics/superbird-tool) - This is the CarThing image that is being used. Be sure to either include this link or steps on how to flash the CarThing.
+- [superbird-custom-webapp](https://github.com/pajowu/superbird-custom-webapp/tree/main) - The React web app framework that this project started with.
+
+.env file reference
+```
+SPOTIFY_API_ID= /* The spotify API ID obtained from dashboard  */
+SPOTIFY_CLIENT_SECRET= /* The spotify API secret obtained from dashboard */
+SPOTIFY_REDIRECT_URI=http://localhost:8888/callback // The callback to go on the spotify app for auth
+PORT=8888 /* The Auth0 server port for authentication */
+DEVICE_ID= /* The device ID obtained from the spotify rest api */
+```
+
+---
+
+Ensure that your environment is correctly set up and all dependencies are installed. Good Luck!
