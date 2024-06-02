@@ -5,14 +5,15 @@
     width: 100vw;
     height: 160px;
     display:flex;
-    transition: transform 0.3s ease-out;
+    transition: transform 0.3s ease-out, background-color 0.2s ease-out;
     transform: translate(0px, 80px);
-    background-color: var(--bg-tinted-base);
+    background-color: var(--bg-base);
   }
   .audioPlayer_controls {
     width: 100%;
   }
   .buttonContainer {
+    overflow:hidden;
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -50,6 +51,7 @@
   }
   .audioPlayer:hover {
     transform: translate(0px, 0px);
+    background-color: var(--bg-press);
   }
   
   .Log {
@@ -93,8 +95,8 @@
   }
   .progressBar_container {
     margin:auto;
-    width: 80%;
-    height: 25px;
+    width: 90%;
+    height: 30px;
     background-color: var(--bg-tinted-base);
     overflow:hidden;
     border-radius: 15px;
@@ -102,13 +104,13 @@
   .progressBar_progress {
     position:static;
     bottom: 0;
-    height: 25px;
-    transition: width 1s ease-out;
+    height: 30px;
     background-color: var(--text-brightAccent);
   }
   .progressBar_timer {
     padding: 0;
     margin: 0;
     color: var(--text-base);
-    transform: translate(0px, -25px);
+    transform: translate(0px, -30px);
+    font-weight:bolder;
   }

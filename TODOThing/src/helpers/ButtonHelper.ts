@@ -10,6 +10,7 @@ export enum Button {
   SCROLL_RIGHT,
   SCROLL_PRESS,
   FRONT_BUTTON,
+  OTHER,
 }
 
 export enum EventFlavour {
@@ -36,7 +37,8 @@ function mapButton(event: string): Button {
     case 'Escape':
       return Button.FRONT_BUTTON;
     default:
-      throw new Error("I don't know this button " + event);
+      //throw new Error("I don't know this button " + event);
+      return Button.OTHER;
   }
 }
 
@@ -44,7 +46,7 @@ function listenerKey(btn: Button, flv: EventFlavour): string {
   return `${btn}_${flv}`;
 }
 
-export default class ButtonHelper {
+class ButtonHelper {
   listeners: Map<string, ((btn: Button, flv: EventFlavour) => void)[]>;
   buttonStates: { [key: string]: EventFlavour };
   callback: ((btn: Button, flv: EventFlavour) => void) | null = null;
@@ -104,3 +106,4 @@ export default class ButtonHelper {
   };
 }
 
+export default ButtonHelper;

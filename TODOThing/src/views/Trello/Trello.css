@@ -1,0 +1,33 @@
+.view_trello {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.board_list {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column;
+    overflow-x: scroll;
+    padding:50px;
+    gap: 25px;
+    height: 85vh;
+}
+
+.board_card {
+    width: 200px;
+    height: 125px;
+    background-color: var(--bg-elevated-highlight);
+    border-radius: 5px;
+    border: 1px solid var(--text-positive);
+    text-align: left;
+    color: var(--text-base);
+    padding: 10px;
+}
+
+.board_card:hover {
+    background-color: var(--bg-highlight);
+}
+button {
+    background-color: unset;
+}

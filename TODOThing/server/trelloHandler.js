@@ -1,54 +1,65 @@
 /* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-var-requires */
+
 const axios = require('axios');
-const apiKey = process.env.TRELLO_API_KEY;
-const token = process.env.TRELLO_TOKEN;
-const memberId = process.env.TRELLO_MEMBER_ID;
+const serverModule = require('./server.js');
+const { setTrelloAccessToken, getTrelloAccessToken, setTrelloTokenSecret, getTrelloTokenSecret, } = require('./dataHandler.js');
 
-//TODO: Actually do all of this
+const getTrelloOauth = serverModule.getTrelloOauth;
+const trello_key = process.env.TRELLO_KEY; // trello app key
+
+const port = process.env.PORT || 8888;
+const refreshTrelloToken = async () => {
+  try {
+    const open = (await import('open')).default;
+    await open(`http://localhost:${port}/trello/login`);
+  } catch (err) {
+    console.error('Error opening browser:', err);
+  }
+};
+
 const getTrelloBoards = async () => {
+  
   try {
+    const oauth = getTrelloOauth();
+    const accessToken = getTrelloAccessToken();
+    const accessTokenSecret = getTrelloTokenSecret();
+  
+    return new Promise((resolve, reject) => {
+      oauth.getProtectedResource(
+        "https://api.trello.com/1/members/me/boards",
+        "GET",
+        accessToken,
+        accessTokenSecret,
+        function (error, data, response) {
+          if (error) {
+            console.error("Error getting Trello boards:", error);
+            if (error.statusCode === 401) {
+              console.log("Access token expired. Refreshing...");
+              refreshTrelloToken();
+            }
+            reject(error);
+            return new Error(error);
+          }
 
-    const response = await axios.get(`https://api.trello.com/1/members/${memberId}/boards`, {
-      params: {
-        key: apiKey,
-        token: token,
-        fields: 'name,url',
-      },
+          // Assuming the response data is an array of board objects
+          if (data && data.length > 0) {
+            resolve(data);
+          } else {
+            console.log("No boards found.");
+            resolve([]);
+          }
+        }
+      );
     });
-
-    return response.data;
   } catch (error) {
-    console.error('Error fetching Trello boards:', error);
+
+    console.error("There was an error getting trello boards", error);
     throw error;
   }
-};
-const getTrelloCards = async (boardId, listId) => {
-  try {
-    const apiKey = process.env.TRELLO_API_KEY;
-    const token = process.env.TRELLO_TOKEN;
-
-    const response = await axios.get(`https://api.trello.com/1/lists/${listId}/cards`, {
-      params: {
-        key: apiKey,
-        token: token,
-        fields: 'name,url,desc,due',
-      },
-    });
-
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching Trello cards:', error);
-    throw error;
-  }
-};
+}
 
 module.exports = {
   getTrelloBoards,
-  getTrelloCards,
-};
-
-module.exports = {
-  getTrelloBoards,
-  getTrelloCards,
+  refreshTrelloToken,
 };

@@ -1,4 +1,3 @@
-
 const BASE_URL = 'ws://localhost:8891';
 
 type SocketEventListener = (msg: any) => void;
@@ -73,7 +72,8 @@ class WebSocketService {
   }
 }
 
-export default WebSocketService;
+const socket = new WebSocketService();
+export default socket;
 
 export type device_data = {
   is_playing: boolean;
@@ -92,4 +92,144 @@ export type song_data = {
   is_playing: boolean;
   artistName: string;
   uri: string;
+  playlistUri: string;
 };
+
+export type board_data = [
+  {
+    closed: boolean;
+    creationMethod: string;
+    dateClosed: string | null;
+    dateLastActivity: string;
+    dateLastView: string;
+    datePluginDisable: string | null;
+    desc: string;
+    descData: string | null;
+    enterpriseOwned: boolean;
+    id: string;
+    idBoardSource: string | null;
+    idEnterprise: string | null;
+    idMemberCreator: string;
+    idOrganization: string;
+    idTags: string[];
+    ixUpdate: string;
+    labelNames: {
+      green: string;
+      yellow: string;
+      orange: string;
+      red: string;
+      purple: string;
+      blue: string;
+      sky: string;
+      lime: string;
+      pink: string;
+      black: string;
+    };
+    limits: {
+      attachments: {
+        perCard: {
+          status: string;
+          disableAt: number;
+          warnAt: number;
+        };
+        perBoard: {
+          status: string;
+          disableAt: number;
+          warnAt: number;
+        };
+      };
+      boards: {
+        totalMembersPerBoard: {
+          status: string;
+          disableAt: number;
+          warnAt: number;
+        };
+        totalMembersPerWorkspace: {
+          status: string;
+          disableAt: number;
+          warnAt: number;
+        };
+      };
+      cards: {
+        openPerBoard: {
+          status: string;
+          disableAt: number;
+          warnAt: number;
+        };
+        openPerList: {
+          status: string;
+          disableAt: number;
+          warnAt: number;
+        };
+        totalPerBoard: {
+          status: string;
+          disableAt: number;
+          warnAt: number;
+        };
+      };
+      checklists: {
+        perCard: {
+          status: string;
+          disableAt: number;
+          warnAt: number;
+        };
+      };
+      checkItems: {
+        perChecklist: {
+          status: string;
+          disableAt: number;
+          warnAt: number;
+        };
+      };
+    };
+    memberships: {
+      id: string;
+      idMember: string;
+      memberType: string;
+      unconfirmed: boolean;
+      deactivated: boolean;
+    }[];
+    name: string;
+    nodeId: string;
+    pinned: boolean;
+    powerUps: string[];
+    prefs: {
+      permissionLevel: string;
+      hideVotes: boolean;
+      voting: string;
+      comments: string;
+      invitations: string;
+      selfJoin: boolean;
+      cardCovers: boolean;
+      isTemplate: boolean;
+      cardAging: string;
+      calendarFeedEnabled: boolean;
+      background: string;
+      backgroundColor: string | null;
+      backgroundImage: string | null;
+      backgroundImageScaled:
+        | {
+            width: number;
+            height: number;
+            url: string;
+          }[]
+        | null;
+      backgroundTile: boolean;
+      backgroundBrightness: string;
+      backgroundBottomColor: string | null;
+      backgroundTopColor: string | null;
+      canBePublic: boolean;
+      canBeEnterprise: boolean;
+      canBeOrg: boolean;
+      canBePrivate: boolean;
+      canInvite: boolean;
+    };
+    premiumFeatures: string[];
+    shortLink: string;
+    shortUrl: string;
+    starred: boolean;
+    subscribed: boolean;
+    templateGallery: string | null;
+    url: string;
+  }
+];

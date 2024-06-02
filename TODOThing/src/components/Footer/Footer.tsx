@@ -1,9 +1,7 @@
 import './Footer.css';
 import React, { useEffect, useState } from 'react';
 import CountUpTimer from '../CountUpTimer'; // Ensure you have CountUpTimer defined in another file
-import WebSocketService, { device_data, song_data } from '../../helpers/WebSocketService';
-
-const socket = new WebSocketService();
+import socket, { device_data, song_data } from '../../helpers/WebSocketService';
 
 const Footer: React.FC = () => {
   const [local, setLocal] = useState(true);
@@ -56,6 +54,22 @@ const Footer: React.FC = () => {
       socket.post(data2);
     }
   };
+  const setSpecificDuration = (ms: number) => {
+    if (socket.is_ready()) {
+      const data = {
+        type: 'command',
+        command: 'seek_track',
+        spotify: !local,
+        position_ms: ms,
+      };
+      socket.post(data);
+    }
+  };
+
+  const handlePlayPause = () => {
+    setPlay(!play);
+    play ? handleSendCommand('pause_track') : handleSendCommand('play_track');
+  };
 
   return (
     <div className="audioPlayer">
@@ -76,12 +90,14 @@ const Footer: React.FC = () => {
             <div className="songTitle">
               {songData?.name + ' - ' + songData?.artistName || 'Track Name'}
             </div>
-            <div className="progressBar_container">
+            <div>
               <CountUpTimer
                 onSongEnd={handleGetSongData}
                 start={songData?.progress_ms || 0}
                 end={songData?.duration_ms || 0}
                 play={play}
+                onTouchEnd={setSpecificDuration}
+                handleSendCommand={handleSendCommand}
               />
             </div>
           </div>
@@ -100,12 +116,7 @@ const Footer: React.FC = () => {
               <path d="M3.3 1a.7.7 0 0 1 .7.7v5.15l9.95-5.744a.7.7 0 0 1 1.05.606v12.575a.7.7 0 0 1-1.05.607L4 9.149V14.3a.7.7 0 0 1-.7.7H1.7a.7.7 0 0 1-.7-.7V1.7a.7.7 0 0 1 .7-.7h1.6z"></path>
             </svg>
           </button>
-          <button
-            className="button play"
-            onClick={
-              play ? () => handleSendCommand('pause_track') : () => handleSendCommand('play_track')
-            }
-          >
+          <button className="button play" onClick={handlePlayPause}>
             {play ? (
               <svg
                 data-encore-id="icon"

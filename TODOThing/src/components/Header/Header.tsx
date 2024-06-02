@@ -1,9 +1,7 @@
 import './Header.css';
 import React, { useEffect, useState } from 'react';
-import WebSocketService, { device_data } from '../../helpers/WebSocketService';
+import socket, { device_data } from '../../helpers/WebSocketService';
 import ButtonHelper, { Button, EventFlavour } from '../../helpers/ButtonHelper';
-
-const socket = new WebSocketService();
 
 const button_helper = new ButtonHelper();
 
@@ -15,7 +13,7 @@ const Header: React.FC = () => {
 
   useEffect(() => {
     button_helper.setCallback((btn: Button, flv: EventFlavour) => {
-      setButton(Button[btn]);
+      setButton(Button[btn] + ` ` + EventFlavour[flv]);
     });
   }, []);
 

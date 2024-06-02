@@ -4,7 +4,7 @@ import './index.css';
 import ControlWebsocketHelper from './helpers/ControlWebsocketHelper';
 import Header from './components/Header/Header';
 import Footer from './components/Footer/Footer';
-import Views from './views/views';
+import ViewManager from './views/views';
 
 
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
@@ -13,7 +13,7 @@ root.render(
     <div className="App">
       <header className="App-header">
         <Header />
-        <Views />
+        <ViewManager />
         <Footer />
       </header>
     </div>

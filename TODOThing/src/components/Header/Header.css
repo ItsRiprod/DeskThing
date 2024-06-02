@@ -31,7 +31,7 @@
   }
   .debug_pullTab {
     position: absolute;
-    background-color: var(--bg-tinted-highlight);
+    background-color: var(--bg-elevated-highlight);
     width: 100px;
     height: 15px;
     z-index: -5;
@@ -40,7 +40,7 @@
     transition: background-color 0.3s;
   }
   .debug_pullTab:hover {
-    background-color: var(--bg-tinted-press);
+    background-color: var(--bg-elevated-press);
   }
   .debug code {
     width: 100%;

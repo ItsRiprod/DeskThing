@@ -4,11 +4,14 @@ const axios = require('axios');
 const fs = require('fs');
 const { Server } = require('ws');
 const robot = require('robotjs');
-const { getCurrentPlayback, getCurrentDevice, skipToNext, play, pause, skipToPrev } = require('./spotifyHandler');
-const { getTrelloBoards, getTrelloCards } = require('./trelloHandler');
+const { getCurrentPlayback, getCurrentDevice, skipToNext, play, pause, skipToPrev, seek } = require('./spotifyHandler');
+const { getTrelloBoards } = require('./trelloHandler');
+
+
 // Create a WebSocket server that listens on port 8890
 const server = new Server({ port: 8891 });
 
+// Helper function for encoding images
 async function getImageData(url) {
     try {
         const response = await axios.get(url, {
@@ -22,6 +25,7 @@ async function getImageData(url) {
     }
 }
 
+// Process that runs once a client connects to the socket
 server.on('connection', async (socket) => {
   console.log('Client connected');
   
@@ -30,19 +34,23 @@ server.on('connection', async (socket) => {
   socket.on('message', async (message) => {
     console.log(`Received: ${message}`);
 
+    // Helper function to format and return the song data
     const returnSongData = async (oldUri = null) => {
       try {
         let newTrackUri;
         let currentPlayback;
         const startTime = Date.now(); // Store the start time
         const timeout = 10000;
+        let delay = 100;
     
-        // Wait until the track URI changes
+
         do {
           currentPlayback = await getCurrentPlayback();
           newTrackUri = currentPlayback.item.uri;
-          await new Promise(resolve => setTimeout(resolve, 500));
+          delay = delay * 1.3; // Delay increases by 30% each time
+          await new Promise(resolve => setTimeout(resolve, delay));
         } while (newTrackUri === oldUri && Date.now() - startTime < timeout);
+        
         if (newTrackUri === oldUri) {
           // Timeout reached, same song is playing
           socket.send(JSON.stringify({ type: 'error', data: 'Timeout reached, same song is playing' }));
@@ -58,6 +66,7 @@ server.on('connection', async (socket) => {
           is_playing: currentPlayback.is_playing,
           artistName: currentPlayback.item.artists[0].name,
           uri: currentPlayback.item.uri,
+          playlistUri: currentPlayback.context.uri,
         };
         socket.send(JSON.stringify({ type: 'song_data', data: returnData }));
       } catch (error) {
@@ -65,6 +74,7 @@ server.on('connection', async (socket) => {
       }
     };
 
+    // Helper function to send a response
     const sendResponse = async (message, spotify) => {
       try {
         socket.send(
@@ -75,8 +85,10 @@ server.on('connection', async (socket) => {
       }
     };
 
+    // Primary response logic
     try {
       const parsedMessage = JSON.parse(message);
+      // Switch case to go over types of messages 
       switch (parsedMessage.type) {
         case 'message':
           console.log(`Message: ${parsedMessage.data}`);
@@ -84,7 +96,6 @@ server.on('connection', async (socket) => {
           break;
         
         case 'command':
-          console.log(`Command: ${parsedMessage.command}`);
           switch(parsedMessage.command) {
             case 'next_track':
               if(parsedMessage.spotify) {
@@ -125,7 +136,7 @@ server.on('connection', async (socket) => {
                 try {
                   const response = await pause();
                   if (response) {
-                    await returnSongData(parsedMessage.uri);
+                    await returnSongData();
                   }
                 } catch (error) {
                   socket.send(
@@ -142,7 +153,25 @@ server.on('connection', async (socket) => {
                 try {
                   const response = await pause();
                   if (response) {
-                    await returnSongData(parsedMessage.uri);
+                    await returnSongData();
+                  }
+                } catch (error) {
+                  socket.send(
+                    JSON.stringify({ type: 'error', data: error.message })
+                  );
+                }
+              } else {
+                robot.keyTap('audio_stop');
+                sendResponse(`Command ${parsedMessage.command} executed`, parsedMessage.spotify);
+                }
+              break;
+            case 'seek_track':
+              if(parsedMessage.spotify) {
+                try {
+                  const response = await seek(parsedMessage.position_ms);
+                  if (response) {
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                    await returnSongData();
                   }
                 } catch (error) {
                   socket.send(
@@ -157,9 +186,10 @@ server.on('connection', async (socket) => {
             case 'play_track':
               if(parsedMessage.spotify) {
                 try {
-                  const response = await play();
-                  if (response) {
-                    await returnSongData(parsedMessage.uri);
+                    const response = await play();
+                    if (response) {
+                      await returnSongData();
+
                   }
                 } catch (error) {
                   socket.send(
@@ -211,7 +241,7 @@ server.on('connection', async (socket) => {
                             boards: boards,
                     }
                     socket.send(
-                      JSON.stringify({ type: 'boardData', data: returnData })
+                      JSON.stringify({ type: 'trello_board_data', data: boards })
                     );
                   } catch (error) {
                     socket.send(
@@ -221,14 +251,12 @@ server.on('connection', async (socket) => {
                 break;
             case 'card_info':
                 try {
-                  const boardId = '64bc09f6567fab00c5a0b6b4';
-                  const listId = '662f56f299216978d05e3e1e';
-                  const cards = await getTrelloCards(boardId, listId);
+                  const cards = null;// await getTrelloCards(boardId, listId);
                   const returnData = {
                     cards: cards,
                   };
                   socket.send(
-                    JSON.stringify({ type: 'boardData', data: returnData })
+                    JSON.stringify({ type: 'trello_card_data', data: returnData })
                   );
                 } catch (error) {
                   socket.send(

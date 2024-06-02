@@ -15,7 +15,9 @@
     "classnames": "^2.5.1",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "http": "^0.0.1-security",
     "mobx-react-lite": "^4.0.7",
+    "oauth": "^0.10.0",
     "open": "^10.1.0",
     "qs": "^6.12.1",
     "react": "^18.2.0",
@@ -25,6 +27,7 @@
     "robotjs": "^0.6.0",
     "socket.io-client": "^4.7.5",
     "typescript": "^4.4.2",
+    "url": "^0.11.3",
     "web-vitals": "^2.1.0",
     "ws": "^8.17.0"
   },
