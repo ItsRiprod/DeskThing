@@ -9,7 +9,8 @@ const Footer: React.FC = () => {
   const [play, setPlay] = useState(false);
 
   const handleDeviceData = (data: device_data) => {
-    setLocal(!data.device.is_active);
+    //setLocal(!data.device.is_active);
+    setLocal(false);
     setPlay(data.is_playing);
   };
 

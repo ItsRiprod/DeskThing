@@ -36,6 +36,7 @@ const getBackgroundColor = (base64ImageContent: string): Promise<[number, number
       }
     }
 
+    canvas.remove();
     const cmap = quantize(pixelArray, 5);
     const palette = cmap.palette();
     return palette[0];

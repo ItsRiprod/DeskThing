@@ -22,7 +22,8 @@ const Header: React.FC = () => {
   };
 
   const handleDeviceData = (data: device_data) => {
-    setLocal(data.device.is_active);
+    //setLocal(data.device.is_active);
+    setLocal(false);
   };
 
   useEffect(() => {

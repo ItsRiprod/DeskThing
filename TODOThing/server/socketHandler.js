@@ -5,7 +5,7 @@ const fs = require('fs');
 const { Server } = require('ws');
 const robot = require('robotjs');
 const { getCurrentPlayback, getCurrentDevice, skipToNext, play, pause, skipToPrev, seek } = require('./spotifyHandler');
-const { getTrelloBoards } = require('./trelloHandler');
+const { getTrelloBoards, getTrelloCardsFromBoard, getTrelloCardsFromList, getTrelloListsFromBoard } = require('./trelloHandler');
 
 
 // Create a WebSocket server that listens on port 8890
@@ -237,9 +237,6 @@ server.on('connection', async (socket) => {
             case 'boards_info':
                 try {
                     const boards = await getTrelloBoards();
-                    const returnData = {
-                            boards: boards,
-                    }
                     socket.send(
                       JSON.stringify({ type: 'trello_board_data', data: boards })
                     );
@@ -249,14 +246,38 @@ server.on('connection', async (socket) => {
                     );
                   }
                 break;
-            case 'card_info':
+            case 'cards_from_board':
                 try {
-                  const cards = null;// await getTrelloCards(boardId, listId);
-                  const returnData = {
-                    cards: cards,
-                  };
+                  const boardId = parsedMessage.data.board_id;
+                  const cards = await getTrelloCardsFromBoard(boardId)
                   socket.send(
-                    JSON.stringify({ type: 'trello_card_data', data: returnData })
+                    JSON.stringify({ type: 'trello_card_data', data: cards })
+                  );
+                } catch (error) {
+                  socket.send(
+                    JSON.stringify({ type: 'error', data: error.message })
+                  );
+                }
+                break;
+            case 'lists_from_board':
+                try {
+                  const boardId = parsedMessage.data.board_id;
+                  const cards = await getTrelloListsFromBoard(boardId)
+                  socket.send(
+                    JSON.stringify({ type: 'trello_list_data', data: cards })
+                  );
+                } catch (error) {
+                  socket.send(
+                    JSON.stringify({ type: 'error', data: error.message })
+                  );
+                }
+                break;
+            case 'cards_from_list':
+                try {
+                  const listId = parsedMessage.data.board_id;
+                  const cards = await getTrelloCardsFromList(listId)
+                  socket.send(
+                    JSON.stringify({ type: 'trello_card_data', data: cards })
                   );
                 } catch (error) {
                   socket.send(

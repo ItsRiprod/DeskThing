@@ -10,7 +10,14 @@ interface CountUpTimerProps {
   play: boolean;
 }
 
-const CountUpTimer: React.FC<CountUpTimerProps> = ({ start, end, onSongEnd, onTouchEnd, handleSendCommand, play }) => {
+const CountUpTimer: React.FC<CountUpTimerProps> = ({
+  start,
+  end,
+  onSongEnd,
+  onTouchEnd,
+  handleSendCommand,
+  play,
+}) => {
   const [ms, setMs] = useState(0);
   const [msEnd, setMsEnd] = useState(6000);
   const [touching, setTouching] = useState(false);
@@ -80,7 +87,6 @@ const CountUpTimer: React.FC<CountUpTimerProps> = ({ start, end, onSongEnd, onTo
         }}
       />
       <p className="progressBar_timer">{msToTime(ms)}</p>
-
     </div>
   );
 };

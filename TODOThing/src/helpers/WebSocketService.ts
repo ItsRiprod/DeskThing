@@ -233,3 +233,102 @@ export type board_data = [
     url: string;
   }
 ];
+
+export type list_data = [
+  {
+    closed: boolean;
+    color: string | null;
+    id: string;
+    idBoard: string;
+    name: string;
+    pos: number;
+    softLimit: any; // or null if you want to be more specific
+    subscribed: boolean;
+  }
+];
+
+interface Badge {
+  attachmentsByType: {
+    trello: {
+      board: number;
+      card: number;
+    };
+  };
+  location: boolean;
+  votes: number;
+  viewingMemberVoted: boolean;
+  subscribed: boolean;
+  fogbugz: string;
+  checkItems: number;
+  checkItemsChecked: number;
+  comments: number;
+  attachments: number;
+  description: boolean;
+  due: string;
+  start: string;
+  dueComplete: boolean;
+}
+
+interface DescData {
+  emoji: Record<string, unknown>;
+}
+
+interface Checklist {
+  id: string;
+}
+
+interface Label {
+  id: string;
+  idBoard: string;
+  name: string;
+  color: string;
+}
+
+interface Limits {
+  attachments: {
+    perBoard: Record<string, unknown>;
+  };
+}
+
+interface Cover {
+  color: string;
+  idUploadedBackground: boolean;
+  size: string;
+  brightness: string;
+  isTemplate: boolean;
+}
+
+interface BoardDataItem {
+  id: string;
+  address: string;
+  badges: Badge;
+  checkItemStates: string[];
+  closed: boolean;
+  coordinates: string;
+  creationMethod: string;
+  dateLastActivity: string;
+  desc: string;
+  descData: DescData;
+  due: string;
+  dueReminder: string;
+  idBoard: string;
+  idChecklists: Checklist[];
+  idLabels: Label[];
+  idList: string;
+  idMembers: string[];
+  idMembersVoted: string[];
+  idShort: number;
+  labels: string[];
+  limits: Limits;
+  locationName: string;
+  manualCoverAttachment: boolean;
+  name: string;
+  pos: number;
+  shortLink: string;
+  shortUrl: string;
+  subscribed: boolean;
+  url: string;
+  cover: Cover;
+}
+
+export type card_data = BoardDataItem[];

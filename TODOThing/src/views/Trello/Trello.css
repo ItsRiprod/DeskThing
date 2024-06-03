@@ -4,17 +4,16 @@
     overflow: hidden;
 }
 
-.board_list {
+.list {
     display: flex;
     flex-wrap: wrap;
     flex-direction: column;
     overflow-x: scroll;
     padding:50px;
-    gap: 25px;
-    height: 85vh;
+    height: 70vh;
 }
 
-.board_card {
+.card {
     width: 200px;
     height: 125px;
     background-color: var(--bg-elevated-highlight);
@@ -23,11 +22,21 @@
     text-align: left;
     color: var(--text-base);
     padding: 10px;
+    margin: 12px;
 }
 
-.board_card:hover {
+.card:hover {
     background-color: var(--bg-highlight);
 }
 button {
     background-color: unset;
+}
+
+.board_details {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column;
+    overflow-x: scroll;
+    padding:50px;
+    height: 85vh;
 }
