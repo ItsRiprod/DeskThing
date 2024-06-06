@@ -5,7 +5,7 @@ const fs = require('fs');
 const { Server } = require('ws');
 const robot = require('robotjs');
 const { getCurrentPlayback, getCurrentDevice, skipToNext, play, pause, skipToPrev, seek } = require('./spotifyHandler');
-const { getTrelloBoards, getTrelloCardsFromBoard, getTrelloCardsFromList, getTrelloListsFromBoard } = require('./trelloHandler');
+const { getTrelloBoards, getTrelloCardsFromBoard, getTrelloCardsFromList, getTrelloListsFromBoard, getTrelloBoardsFromOrganization, getTrelloOrganizations } = require('./trelloHandler');
 
 
 // Create a WebSocket server that listens on port 8890
@@ -13,22 +13,22 @@ const server = new Server({ port: 8891 });
 
 // Helper function for encoding images
 async function getImageData(url) {
-    try {
-        const response = await axios.get(url, {
-            responseType: 'arraybuffer'
-        });
-        const imageData = Buffer.from(response.data).toString('base64');
-        return `data:image/jpeg;base64,${imageData}`;
-    } catch (error) {
-        console.error('Error fetching image:', error);
-        throw error;
-    }
+  try {
+    const response = await axios.get(url, {
+      responseType: 'arraybuffer'
+    });
+    const imageData = Buffer.from(response.data).toString('base64');
+    return `data:image/jpeg;base64,${imageData}`;
+  } catch (error) {
+    console.error('Error fetching image:', error);
+    throw error;
+  }
 }
 
 // Process that runs once a client connects to the socket
 server.on('connection', async (socket) => {
   console.log('Client connected');
-  
+
 
   // Handle incoming messages from the client
   socket.on('message', async (message) => {
@@ -42,7 +42,7 @@ server.on('connection', async (socket) => {
         const startTime = Date.now(); // Store the start time
         const timeout = 10000;
         let delay = 100;
-    
+
 
         do {
           currentPlayback = await getCurrentPlayback();
@@ -50,7 +50,7 @@ server.on('connection', async (socket) => {
           delay = delay * 1.3; // Delay increases by 30% each time
           await new Promise(resolve => setTimeout(resolve, delay));
         } while (newTrackUri === oldUri && Date.now() - startTime < timeout);
-        
+
         if (newTrackUri === oldUri) {
           // Timeout reached, same song is playing
           socket.send(JSON.stringify({ type: 'error', data: 'Timeout reached, same song is playing' }));
@@ -78,7 +78,7 @@ server.on('connection', async (socket) => {
     const sendResponse = async (message, spotify) => {
       try {
         socket.send(
-          JSON.stringify({ type:'response', data: message, refresh: spotify || false  })
+          JSON.stringify({ type: 'response', data: message, refresh: spotify || false })
         );
       } catch (error) {
         console.error('Error sending message:', error);
@@ -94,11 +94,11 @@ server.on('connection', async (socket) => {
           console.log(`Message: ${parsedMessage.data}`);
           sendResponse(`Message ${parsedMessage.data} received`, false);
           break;
-        
+
         case 'command':
-          switch(parsedMessage.command) {
+          switch (parsedMessage.command) {
             case 'next_track':
-              if(parsedMessage.spotify) {
+              if (parsedMessage.spotify) {
                 try {
                   const response = await skipToNext();
                   if (response) {
@@ -115,7 +115,7 @@ server.on('connection', async (socket) => {
               sendResponse(`Command ${parsedMessage.command} executed`, false);
               break;
             case 'previous_track':
-              if(parsedMessage.spotify) {
+              if (parsedMessage.spotify) {
                 try {
                   const response = await skipToPrev();
                   if (response) {
@@ -129,10 +129,10 @@ server.on('connection', async (socket) => {
               } else {
                 robot.keyTap('audio_prev');
                 sendResponse(`Command ${parsedMessage.command} executed`, parsedMessage.spotify);
-                }
+              }
               break;
             case 'pause_track':
-              if(parsedMessage.spotify) {
+              if (parsedMessage.spotify) {
                 try {
                   const response = await pause();
                   if (response) {
@@ -149,7 +149,7 @@ server.on('connection', async (socket) => {
               sendResponse(`Command ${parsedMessage.command} executed`, false);
               break;
             case 'stop_track':
-              if(parsedMessage.spotify) {
+              if (parsedMessage.spotify) {
                 try {
                   const response = await pause();
                   if (response) {
@@ -163,10 +163,10 @@ server.on('connection', async (socket) => {
               } else {
                 robot.keyTap('audio_stop');
                 sendResponse(`Command ${parsedMessage.command} executed`, parsedMessage.spotify);
-                }
+              }
               break;
             case 'seek_track':
-              if(parsedMessage.spotify) {
+              if (parsedMessage.spotify) {
                 try {
                   const response = await seek(parsedMessage.position_ms);
                   if (response) {
@@ -181,14 +181,14 @@ server.on('connection', async (socket) => {
               } else {
                 robot.keyTap('audio_stop');
                 sendResponse(`Command ${parsedMessage.command} executed`, parsedMessage.spotify);
-                }
+              }
               break;
             case 'play_track':
-              if(parsedMessage.spotify) {
+              if (parsedMessage.spotify) {
                 try {
-                    const response = await play();
-                    if (response) {
-                      await returnSongData();
+                  const response = await play();
+                  if (response) {
+                    await returnSongData();
 
                   }
                 } catch (error) {
@@ -199,99 +199,125 @@ server.on('connection', async (socket) => {
               } else {
                 robot.keyTap('audio_play');
                 sendResponse(`Command ${parsedMessage.command} executed`, parsedMessage.spotify);
-                }
+              }
               break;
             default:
-                socket.send(JSON.stringify({ type: 'error', data: 'Unknown command' }));
-                break;
+              socket.send(JSON.stringify({ type: 'error', data: 'Unknown command' }));
+              break;
           }
 
           break;
         case 'get':
           console.log(`GET: ${parsedMessage.get}`);
-          switch(parsedMessage.get) {
+          switch (parsedMessage.get) {
             case 'song_info':
-                  returnSongData(null);
-                break;
+              returnSongData(null);
+              break;
             case 'device_info':
-                try {
-                    const playbackState = await getCurrentDevice();
-                    const returnData = {
-                            device: {
-                                id: playbackState.device.id,
-                                name: playbackState.device.name,
-                                is_active: playbackState.device.id == process.env.DEVICE_ID,
-                                volume_percent: playbackState.device.volume_percent,
-                            },
-                            is_playing: playbackState.is_playing,
-                    }
-                    socket.send(
-                      JSON.stringify({ type: 'device_data', data: returnData })
-                    );
-                  } catch (error) {
-                    socket.send(
-                      JSON.stringify({ type: 'error', data: error.message })
-                    );
-                  }
-                break;
+              try {
+                const playbackState = await getCurrentDevice();
+                const returnData = {
+                  device: {
+                    id: playbackState.device.id,
+                    name: playbackState.device.name,
+                    is_active: playbackState.device.id == process.env.DEVICE_ID,
+                    volume_percent: playbackState.device.volume_percent,
+                  },
+                  is_playing: playbackState.is_playing,
+                }
+                socket.send(
+                  JSON.stringify({ type: 'device_data', data: returnData })
+                );
+              } catch (error) {
+                socket.send(
+                  JSON.stringify({ type: 'error', data: error.message })
+                );
+              }
+              break;
             case 'boards_info':
-                try {
-                    const boards = await getTrelloBoards();
-                    socket.send(
-                      JSON.stringify({ type: 'trello_board_data', data: boards })
-                    );
-                  } catch (error) {
-                    socket.send(
-                      JSON.stringify({ type: 'error', data: error.message })
-                    );
-                  }
-                break;
+              try {
+                const boards = await getTrelloBoards();
+                socket.send(
+                  JSON.stringify({ type: 'trello_board_data', data: boards })
+                );
+              } catch (error) {
+                socket.send(
+                  JSON.stringify({ type: 'error', data: error.message })
+                );
+              }
+              break;
+            case 'org_info':
+              try {
+                const orgs = await getTrelloOrganizations();
+
+                socket.send(
+                  JSON.stringify({ type: 'trello_org_data', data: orgs })
+                );
+
+              } catch (error) {
+                socket.send(
+                  JSON.stringify({ type: 'error', data: error.message })
+                );
+              }
+              break;
+            case 'boards_from_org':
+              try {
+                const boards = await getTrelloBoardsFromOrganization(parsedMessage.data.id || null);
+                socket.send(
+                  JSON.stringify({ type: 'trello_board_data', data: boards })
+                );
+              } catch (error) {
+                socket.send(
+                  JSON.stringify({ type: 'error', data: error.message })
+                );
+              }
+              break;
             case 'cards_from_board':
-                try {
-                  const boardId = parsedMessage.data.board_id;
-                  const cards = await getTrelloCardsFromBoard(boardId)
-                  socket.send(
-                    JSON.stringify({ type: 'trello_card_data', data: cards })
-                  );
-                } catch (error) {
-                  socket.send(
-                    JSON.stringify({ type: 'error', data: error.message })
-                  );
-                }
-                break;
+              try {
+                const boardId = parsedMessage.data.id;
+                const cards = await getTrelloCardsFromBoard(boardId)
+                socket.send(
+                  JSON.stringify({ type: 'trello_card_data', data: cards })
+                );
+              } catch (error) {
+                socket.send(
+                  JSON.stringify({ type: 'error', data: error.message })
+                );
+              }
+              break;
             case 'lists_from_board':
-                try {
-                  const boardId = parsedMessage.data.board_id;
-                  const cards = await getTrelloListsFromBoard(boardId)
-                  socket.send(
-                    JSON.stringify({ type: 'trello_list_data', data: cards })
-                  );
-                } catch (error) {
-                  socket.send(
-                    JSON.stringify({ type: 'error', data: error.message })
-                  );
-                }
-                break;
+              try {
+                const boardId = parsedMessage.data.id;
+                const cards = await getTrelloListsFromBoard(boardId)
+                socket.send(
+                  JSON.stringify({ type: 'trello_list_data', data: cards })
+                );
+              } catch (error) {
+                socket.send(
+                  JSON.stringify({ type: 'error', data: error.message })
+                );
+              }
+              break;
             case 'cards_from_list':
-                try {
-                  const listId = parsedMessage.data.board_id;
-                  const cards = await getTrelloCardsFromList(listId)
-                  socket.send(
-                    JSON.stringify({ type: 'trello_card_data', data: cards })
-                  );
-                } catch (error) {
-                  socket.send(
-                    JSON.stringify({ type: 'error', data: error.message })
-                  );
-                }
-                break;
+              try {
+                const listId = parsedMessage.data.id;
+                const cards = await getTrelloCardsFromList(listId)
+                socket.send(
+                  JSON.stringify({ type: 'trello_card_data', data: cards })
+                );
+              } catch (error) {
+                socket.send(
+                  JSON.stringify({ type: 'error', data: error.message })
+                );
+              }
+              break;
             default:
-                socket.send(JSON.stringify({ type: 'error', data: 'Unknown command' }));
-                break;
+              socket.send(JSON.stringify({ type: 'error', data: 'Unknown command' }));
+              break;
           }
 
           break;
-        
+
         default:
           socket.send(JSON.stringify({ type: 'error', data: 'Unknown message type' }));
           break;

@@ -1,42 +1,143 @@
-.view_trello {
-    width: 100vw;
-    height: 100vh;
-    overflow: hidden;
-}
-
-.list {
-    display: flex;
-    flex-wrap: wrap;
-    flex-direction: column;
-    overflow-x: scroll;
-    padding:50px;
-    height: 70vh;
-}
-
-.card {
-    width: 200px;
-    height: 125px;
-    background-color: var(--bg-elevated-highlight);
-    border-radius: 5px;
-    border: 1px solid var(--text-positive);
-    text-align: left;
-    color: var(--text-base);
-    padding: 10px;
-    margin: 12px;
-}
-
-.card:hover {
-    background-color: var(--bg-highlight);
-}
 button {
     background-color: unset;
+    border: unset;
+    color: unset;
+    width: unset;
+    height: unset;
+    transition: background-color 0.5s;
+}
+.view_trello {
+    width: 100vw;
+    height: 75vh;
+    overflow: scroll;
+    background-color: var(--bg-base);
+    padding-top: 35px;
 }
 
-.board_details {
+.trello_default {
+    padding-top:25vh;
+}
+.trello_default button {
+    width: 200px;
+    height: 100px;
+    border: unset;
+    background-color: var(--bg-elevated-highlight);
+    border-radius: 15px;
+    color: unset;
+}
+.trello_default button:hover {
+    background-color: var(--bg-elevated-press);
+}
+.org_container {
     display: flex;
-    flex-wrap: wrap;
     flex-direction: column;
-    overflow-x: scroll;
-    padding:50px;
-    height: 85vh;
+    align-items: center;
+    color: white;
+}
+.org_item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 10px;
+    margin-bottom: 15px;
+    width: 95%;
+    border: 1px solid black;
+    border-radius: 5px;
+    background-color: var(--bg-elevated-highlight);
+    color: white;
+}
+.org_title {
+    text-align: left;
+    margin-left: 5px;
+}
+.org_desc {
+    margin-left: auto;
+    text-align: left;
+    width: 40%;
+}
+.img_alt {
+    min-width: 65px;
+    min-height: 65px;
+    background-color: var(--text-announcement);
+    border-radius: 25px;
+    align-content: center;
+    text-align: center;
+    color: white;
+    font-size: xx-large;
+}
+.closed {
+    background-color: var(--text-warning);
+}
+
+.boards_container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: white;
+}
+.board_item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 10px;
+    margin-bottom: 15px;
+    width: 95%;
+    border: 1px solid black;
+    border-radius: 5px;
+    background-color: var(--bg-elevated-highlight);
+    color: white;
+}
+.board_title {
+    text-align: left;
+    margin-left: 5px;
+}
+.board_starred {
+    margin-left: auto;
+    text-align: right;
+    width: 40%;
+}
+
+
+.list_container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    color: white;
+    padding: 15px;
+    align-content: center;
+}
+.list_item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 20px;
+    margin-bottom: 15px;
+    width: 300px;
+    min-width: fit-content;
+    margin-right: 15px;
+    height: 155px;
+    border: 1px solid black;
+    border-radius: 5px;
+    background-color: var(--bg-elevated-highlight);
+    color: white;
+}
+
+.card_container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    align-content: center;
+    color: white;
+}
+
+.card_item {
+    align-items: center;
+    padding: 20px;
+    margin-bottom: 15px;
+    width: 90vw;
+    height: 155px;
+    border: 1px solid black;
+    border-radius: 12px;
+    background-color: var(--bg-elevated-highlight);
+    color: white;
 }

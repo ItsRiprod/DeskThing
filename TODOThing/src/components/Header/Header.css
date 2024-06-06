@@ -1,7 +1,7 @@
 .debug {
-    background: var(--bg-elevated-base);
-    position: fixed;
-    top: 0;
+  background: var(--bg-elevated-base);
+  position: absolute;
+  top: 0;
     height: 300px;
     transform: translate(0px, -295px);
     transition: transform 0.2s ease-out;

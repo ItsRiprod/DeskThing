@@ -3,6 +3,7 @@ import ButtonHelper, { Button, EventFlavour } from '../helpers/ButtonHelper';
 import Spotify from './Spotify/Spotify';
 import Default from './default/default';
 import Trello from './Trello/Trello';
+import './views.css';
 
 const ViewManager = () => {
   const [currentView, setCurrentView] = useState('default');
@@ -53,7 +54,7 @@ const ViewManager = () => {
     }
   };
 
-  return <div>{renderView()}</div>;
+  return <div className="view_container">{renderView()}</div>;
 };
 
 export default ViewManager;

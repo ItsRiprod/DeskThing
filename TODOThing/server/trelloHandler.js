@@ -58,6 +58,86 @@ const getTrelloBoards = async () => {
     throw error;
   }
 }
+const getTrelloOrganizations = async () => {
+  
+  try {
+    const oauth = getTrelloOauth();
+    const accessToken = getTrelloAccessToken();
+    const accessTokenSecret = getTrelloTokenSecret();
+  
+    return new Promise((resolve, reject) => {
+      oauth.getProtectedResource(
+        "https://api.trello.com/1/members/me/organizations",
+        "GET",
+        accessToken,
+        accessTokenSecret,
+        function (error, data, response) {
+          if (error) {
+            console.error("Error getting Trello organizations:", error);
+            if (error.statusCode === 401) {
+              console.log("Access token expired. Refreshing...");
+              refreshTrelloToken();
+            }
+            reject(error);
+            return new Error(error);
+          }
+
+          // Assuming the response data is an array of board objects
+          if (data && data.length > 0) {
+            resolve(data);
+          } else {
+            console.log("No organizations found.");
+            resolve([]);
+          }
+        }
+      );
+    });
+  } catch (error) {
+
+    console.error("There was an error getting trello boards", error);
+    throw error;
+  }
+}
+const getTrelloBoardsFromOrganization = async (orgId) => {
+  
+  try {
+    const oauth = getTrelloOauth();
+    const accessToken = getTrelloAccessToken();
+    const accessTokenSecret = getTrelloTokenSecret();
+    const id = orgId;
+    return new Promise((resolve, reject) => {
+      oauth.getProtectedResource(
+        `https://api.trello.com/1/organizations/${id}/boards`,
+        "GET",
+        accessToken,
+        accessTokenSecret,
+        function (error, data, response) {
+          if (error) {
+            console.error("Error getting Trello boards from org:", error);
+            if (error.statusCode === 401) {
+              console.log("Access token expired. Refreshing...");
+              refreshTrelloToken();
+            }
+            reject(error);
+            return new Error(error);
+          }
+
+          // Assuming the response data is an array of board objects
+          if (data && data.length > 0) {
+            resolve(data);
+          } else {
+            console.log("No boards found.");
+            resolve([]);
+          }
+        }
+      );
+    });
+  } catch (error) {
+
+    console.error("There was an error getting trello boards", error);
+    throw error;
+  }
+}
 const getTrelloCardsFromBoard = async (boardId) => {
   
   try {
@@ -184,4 +264,6 @@ module.exports = {
   getTrelloCardsFromBoard,
   getTrelloCardsFromList,
   getTrelloListsFromBoard,
+  getTrelloBoardsFromOrganization,
+  getTrelloOrganizations,
 };

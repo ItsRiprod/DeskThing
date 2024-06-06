@@ -7,7 +7,8 @@
     display:flex;
     transition: transform 0.3s ease-out, background-color 0.2s ease-out;
     transform: translate(0px, 80px);
-    background-color: var(--bg-base);
+    background-color: var(--bg-highlight);
+    color: white;
   }
   .audioPlayer_controls {
     width: 100%;

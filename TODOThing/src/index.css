@@ -87,15 +87,9 @@ code {
      --text-announcement: #3d91f4;
 }
 
-.App-header {
-  background-color: var(--bg-base);
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+p, h1, h2, h3, h4, h5 {
+  padding: 0px;
+  margin: 0px;
 }
 
 .App-link {

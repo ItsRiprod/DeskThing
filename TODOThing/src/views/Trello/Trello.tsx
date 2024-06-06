@@ -1,52 +1,56 @@
 import './Trello.css';
 import React, { useEffect, useState } from 'react';
-import socket, { board_data, list_data, card_data } from '../../helpers/WebSocketService';
+import socket from '../../helpers/WebSocketService';
+
+import Organizations from './Organizations';
+import Boards from './Boards';
+import Cards from './Cards';
+import Lists from './Lists';
+
+interface defaultProps {
+  handleSendGet: (command: string, id: string) => void;
+}
+
+function Default({ handleSendGet }: defaultProps) {
+  return (
+    <div className="trello_default">
+      <h1>Default</h1>
+      <button onClick={() => handleSendGet('org_info', '')}>Send Get</button>
+    </div>
+  );
+}
 
 const Spotify: React.FC = () => {
-  const [boardData, setBoardData] = useState<board_data>();
-  const [boardkey, setBoardKey] = useState(-1);
-  const [cardData, setCardData] = useState<card_data>();
-  const [listData, setListData] = useState<list_data>();
+  const [data, setData] = useState<any>();
 
-  const handleBoardData = (data: string) => {
+  const handleTrelloData = (data: any) => {
     try {
-      const formattedData: board_data = JSON.parse(data);
-      setBoardData(formattedData);
-      console.log(formattedData);
+      const formattedData = JSON.parse(data.data);
+      const finalData = {
+        data: formattedData,
+        type: data.type,
+      }
+
+      setData(finalData);
+      console.log('Data:', finalData);
     } catch (error) {
-      console.error('Error parsing board data:', error);
-    }
-  };
-  const handleCardData = (data: string) => {
-    try {
-      const formattedData = JSON.parse(data);
-      setCardData(formattedData);
-      console.log(formattedData);
-    } catch (error) {
-      console.error('Error parsing board data:', error);
-    }
-  };
-  const handleListData = (data: string) => {
-    try {
-      const formattedData = JSON.parse(data);
-      setListData(formattedData);
-      console.log(formattedData);
-    } catch (error) {
-      console.error('Error parsing board data:', error);
+      console.error('Error parsing trello data:', error);
     }
   };
 
   useEffect(() => {
-    handleGetBoardData();
     const listener = (msg: any) => {
       if (msg.type === 'trello_board_data') {
-        handleBoardData(msg.data);
+        handleTrelloData(msg);
       }
       if (msg.type === 'trello_card_data') {
-        handleCardData(msg.data);
+        handleTrelloData(msg);
       }
       if (msg.type === 'trello_list_data') {
-        handleListData(msg.data);
+        handleTrelloData(msg);
+      }
+      if (msg.type === 'trello_org_data') {
+        handleTrelloData(msg);
       }
     };
 
@@ -57,83 +61,33 @@ const Spotify: React.FC = () => {
     };
   }, []);
 
-  const handleSendGet = (get: string, board_id = '') => {
+  const handleSendGet = (get: string, id = '') => {
     if (socket.is_ready()) {
       const data = {
         type: 'get',
         get: get,
-        data: { board_id: board_id || null },
+        data: { id: id || null },
       };
       socket.post(data);
     }
   };
 
-  const handleGetBoardData = () => {
-    handleSendGet('boards_info');
-  };
-  const handleGetCardDataFromBoard = (id: string) => {
-    handleSendGet('cards_from_board', id);
-  };
-  const handleGetCardDataFromList = (id: string) => {
-    handleSendGet('cards_from_list', id);
-  };
-  const handleGetListData = (id: string) => {
-    handleSendGet('lists_from_board', id);
-  };
-
-  const handleBoardClick = (key: number) => {
-    console.log('Board Clicked:', key);
-    if (boardData) {
-      const id = boardData[key].id;
-      handleGetListData(id);
-      setBoardKey(key);
+  const renderView = () => {
+    switch (data?.type || null) {
+      case 'trello_org_data':
+        return <Organizations data={data.data} handleSendGet={handleSendGet} />;
+      case 'trello_board_data':
+        return <Boards data={data.data} handleSendGet={handleSendGet} />;
+      case 'trello_card_data':
+        return <Cards data={data.data} handleSendGet={handleSendGet} />;
+      case 'trello_list_data':
+        return <Lists data={data.data} handleSendGet={handleSendGet} />;
+      case 'default':
+      default:
+        return <Default handleSendGet={handleSendGet} />;
     }
   };
-
-  return (
-    <div className="view_trello">
-      {boardData ? (
-        boardkey == -1 ? (
-          <div className="list">
-            {boardData.map((board, index) => (
-              <button className="card" onClick={() => handleBoardClick(index)} key={board.id}>
-                <h2>{board.name}</h2>
-              </button>
-            ))}
-          </div>
-        ) : cardData ? (
-          <div className="list">
-            {cardData.map((card, index) => (
-              <button className="card" key={card.id}>
-                <h1>{card.name}</h1>
-              </button>
-            ))}
-            <button onClick={() => setCardData(undefined)}>Go Back</button>
-          </div>
-        ) : listData ? (
-          <div className="list">
-            {listData.map((list, index) => (
-              <button
-                className="card"
-                onClick={() => handleGetCardDataFromList(list.id)}
-                key={list.id}
-              >
-                <h2>{list.name}</h2>
-              </button>
-            ))}
-            <button onClick={() => setBoardKey(-1)}>Go Back</button>
-          </div>
-        ) : (
-          <div></div>
-        )
-      ) : (
-        <div>
-          <button onClick={handleGetBoardData}>Get Boards</button>
-          <h1>Trello Stuff</h1>
-        </div>
-      )}
-    </div>
-  );
+  return <div className="view_trello">{renderView()}</div>;
 };
 
 export default Spotify;
