@@ -51,9 +51,39 @@ const getTrelloTokenSecret = () => {
   return data.trelloTokenSecret;
 };
 
+// Functions for weather stuff
+const setForecastData = (forecastData) => {
+  const data = readData();
+  data.forecastData = forecastData;
+  writeData(data);
+};
+
+// Function to get the Trello access token
+const getForecastData = () => {
+  const data = readData();
+  return data.forecastData;
+};
+
+// Function to set the Trello token secret
+const setWeatherData = (weatherData) => {
+  const data = readData();
+  data.weatherData = weatherData;
+  writeData(data);
+};
+
+// Function to get the Trello token secret
+const getWeatherData = () => {
+  const data = readData();
+  return data.weatherData;
+};
+
 module.exports = {
   setTrelloAccessToken,
   getTrelloAccessToken,
   setTrelloTokenSecret,
   getTrelloTokenSecret,
+  setForecastData,
+  getForecastData,
+  setWeatherData,
+  getWeatherData,
 };

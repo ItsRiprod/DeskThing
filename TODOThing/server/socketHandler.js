@@ -6,6 +6,7 @@ const { Server } = require('ws');
 const robot = require('robotjs');
 const { getCurrentPlayback, getCurrentDevice, skipToNext, play, pause, skipToPrev, seek } = require('./spotifyHandler');
 const { getTrelloBoards, getTrelloCardsFromBoard, getTrelloCardsFromList, getTrelloListsFromBoard, getTrelloBoardsFromOrganization, getTrelloOrganizations } = require('./trelloHandler');
+const { getCurrentWeather, getCityWeather, get12hrWeather } = require('./weatherHandler');
 
 
 // Create a WebSocket server that listens on port 8890
@@ -304,6 +305,35 @@ server.on('connection', async (socket) => {
                 const cards = await getTrelloCardsFromList(listId)
                 socket.send(
                   JSON.stringify({ type: 'trello_card_data', data: cards })
+                );
+              } catch (error) {
+                socket.send(
+                  JSON.stringify({ type: 'error', data: error.message })
+                );
+              }
+              break;
+            case 'weather_info':
+              try {
+                let weather_data = null;
+                if (parsedMessage.data.key) {
+                  weather_data = await getCityWeather()
+                } else {
+                  weather_data = await getCurrentWeather()
+                }
+                socket.send(
+                  JSON.stringify({ type: 'weather_data', data: weather_data })
+                );
+              } catch (error) {
+                socket.send(
+                  JSON.stringify({ type: 'error', data: error.message })
+                );
+              }
+              break;
+            case 'forecast_info':
+              try {
+                const forecast_data = await get12hrWeather()
+                socket.send(
+                  JSON.stringify({ type: 'forecast_data', data: forecast_data })
                 );
               } catch (error) {
                 socket.send(

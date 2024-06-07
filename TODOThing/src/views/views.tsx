@@ -3,6 +3,7 @@ import ButtonHelper, { Button, EventFlavour } from '../helpers/ButtonHelper';
 import Spotify from './Spotify/Spotify';
 import Default from './default/default';
 import Trello from './Trello/Trello';
+import Weather from './Weather/Weather';
 import './views.css';
 
 const ViewManager = () => {
@@ -20,7 +21,7 @@ const ViewManager = () => {
             setCurrentView('trello');
             break;
           case Button.BUTTON_3:
-            setCurrentView('view2');
+            setCurrentView('weather');
             break;
           case Button.BUTTON_4:
             setCurrentView('default');
@@ -46,8 +47,8 @@ const ViewManager = () => {
         return <Spotify />;
       case 'trello':
         return <Trello />;
-      case 'view2':
-        return <Default />;
+      case 'weather':
+        return <Weather />;
       case 'default':
       default:
         return <Default />;

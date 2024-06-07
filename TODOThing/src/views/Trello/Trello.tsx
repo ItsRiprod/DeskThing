@@ -29,7 +29,7 @@ const Spotify: React.FC = () => {
       const finalData = {
         data: formattedData,
         type: data.type,
-      }
+      };
 
       setData(finalData);
       console.log('Data:', finalData);

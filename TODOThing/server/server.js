@@ -149,7 +149,7 @@ const refreshAccessToken = async () => {
     }
   };
 
-  const port = process.env.PORT || 8888;
+  const port = process.env.PORT || 8881;
   app.listen(port, async () => {
     console.log(`Server is running on port ${port}.`);
   
@@ -173,4 +173,5 @@ const refreshAccessToken = async () => {
 
 require('./socketHandler');
 require('./spotifyHandler');
+require('./launchpadHandler');
 const { refreshTrelloToken } = require('./trelloHandler');

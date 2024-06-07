@@ -84,3 +84,24 @@ export const findContrastColor = (rgb: [number, number, number]): [number, numbe
 };
 
 export default getBackgroundColor;
+
+const calculateLuminance = (color: string) => {
+  const rgb = color.match(/\w\w/g)?.map((x) => parseInt(x, 16));
+  if (!rgb) return 0;
+
+  const [r, g, b] = rgb.map((v) => {
+    v /= 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+
+// Determine if white or black text is more readable on the background color
+export const getContrastingTextColor = (bgColor: string): string => {
+  const color = bgColor.replace('var(', '').replace(')', '');
+  const style = getComputedStyle(document.documentElement);
+  const hexColor = style.getPropertyValue(color).trim().substring(1);
+  const luminance = calculateLuminance(hexColor);
+  return luminance > 0.5 ? '#37474F' : '#FFFFFF';
+};
