@@ -65,8 +65,4 @@ input.ignoreTypes(false, false, false);
 // ... receive MIDI messages ...
 
 // Close the port when done.
-setTimeout(function() {
-  input.closePort();
-  input2.closePort();
-  output2.closePort();
-}, 10000000);
+

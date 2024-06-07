@@ -16,6 +16,9 @@ function Default({ handleSendGet }: defaultProps) {
     <div className="trello_default">
       <h1>Default</h1>
       <button onClick={() => handleSendGet('org_info', '')}>Send Get</button>
+      <button onClick={() => handleSendGet('cards_from_list', '662f56f299216978d05e3e1e')}>
+        Get TODO List
+      </button>
     </div>
   );
 }
@@ -32,7 +35,7 @@ const Spotify: React.FC = () => {
       };
 
       setData(finalData);
-      console.log('Data:', finalData);
+      //console.log('Data:', finalData);
     } catch (error) {
       console.error('Error parsing trello data:', error);
     }

@@ -6,8 +6,6 @@ interface CardsProps {
 }
 
 const Cards: React.FC<CardsProps> = ({ handleSendGet, data }) => {
-  handleSendGet('a', 'a');
-
   return (
     <div className="cards_container">
       {data.map((card: any) => (

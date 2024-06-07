@@ -13,11 +13,11 @@ const Weather: React.FC = () => {
 
   const handleWeatherData = (data: any) => {
     setWeatherData(data[0]);
-    console.log('Weather', data);
+    //console.log('Weather', data);
   };
   const handleForecastData = (data: any) => {
     setForecastData(data);
-    console.log('Forecast', data);
+    //console.log('Forecast', data);
   };
 
   useEffect(() => {

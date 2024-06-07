@@ -8,15 +8,13 @@ var http = require('http')
 var OAuth = require('oauth').OAuth
 var url = require('url')
 const { setTrelloAccessToken, getTrelloAccessToken, setTrelloTokenSecret, getTrelloTokenSecret, setSpotifyAccessToken, getSpotifyAccessToken, } = require('./dataHandler.js');
-
+require('dotenv').config();
 /*
 * If you do not have a MIDI keyboard OR MIDI Launchpad Mk2, then I would recommend setting this to FALSE.
 * I do have both of those, and this server will interact with them through ./launchpadHandler
 * disabling this will prevent that portion of code from running
 */
 const ENABLE_MIDI_DEVICES = true;
-
-require('dotenv').config();
 
 const client_id = process.env.SPOTIFY_API_ID; // bot id
 const client_secret = process.env.SPOTIFY_CLIENT_SECRET; // bot secret
