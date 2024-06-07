@@ -6168,13 +6168,6 @@ language-tags@^1.0.5:
   dependencies:
     language-subtag-registry "~0.3.2"
 
-launchpad-mini@^2.4.0:
-  version "2.4.0"
-  resolved "https://registry.npmjs.org/launchpad-mini/-/launchpad-mini-2.4.0.tgz"
-  integrity sha512-n+dJMcquUeniA4oEZ2NH9erSLKMurQkRqPCp2NNf2PCmRUhqAJOsthb/8lm1ttIFq4bRf31q8IJvaj4hRnZWZA==
-  dependencies:
-    midi "^2.0.0"
-
 leven@^3.1.0:
   version "3.1.0"
   resolved "https://registry.npmjs.org/leven/-/leven-3.1.0.tgz"

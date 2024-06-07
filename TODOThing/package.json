@@ -16,7 +16,7 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "http": "^0.0.1-security",
-    "launchpad-mini": "^2.4.0",
+    "midi": "^2.0.0",
     "mobx-react-lite": "^4.0.7",
     "oauth": "^0.10.0",
     "open": "^10.1.0",

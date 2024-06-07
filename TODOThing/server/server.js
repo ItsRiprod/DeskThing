@@ -7,8 +7,14 @@ const app = express();
 var http = require('http')
 var OAuth = require('oauth').OAuth
 var url = require('url')
-const { setTrelloAccessToken, getTrelloAccessToken, setTrelloTokenSecret, getTrelloTokenSecret, } = require('./dataHandler.js');
+const { setTrelloAccessToken, getTrelloAccessToken, setTrelloTokenSecret, getTrelloTokenSecret, setSpotifyAccessToken, getSpotifyAccessToken, } = require('./dataHandler.js');
 
+/*
+* If you do not have a MIDI keyboard OR MIDI Launchpad Mk2, then I would recommend setting this to FALSE.
+* I do have both of those, and this server will interact with them through ./launchpadHandler
+* disabling this will prevent that portion of code from running
+*/
+const ENABLE_MIDI_DEVICES = true;
 
 require('dotenv').config();
 
@@ -33,14 +39,11 @@ const oauth = new OAuth(requestURL, accessURL, trello_key, trello_secret, "1.0A"
 
 
 let trello_token, trello_tokenSecret;
-let access_token = null;
+
 let refresh_token = null;
 
 const getSpotifyRefreshToken = () => {
     return refresh_token;
-}
-const getSpotifyAccessToken = () => {
-    return access_token;
 }
 const getTrelloOauth = () => {
     return oauth;
@@ -77,12 +80,12 @@ app.get('/login', (req, res) => {
       const response = await axios.post(token_url, data, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
-      access_token = response.data.access_token;
+      const access_token = response.data.access_token;
       refresh_token = response.data.refresh_token;
 
       if (access_token && refresh_token) {
         res.send('Spotify Authorized!');
-
+      setSpotifyAccessToken(access_token);
       } else {
         console.error('Error getting tokens:', response.data);
         res.send('Error getting tokens.');
@@ -130,7 +133,15 @@ app.get('/trello/callback', async (req, res) => {
 
 
 const refreshAccessToken = async () => {
-    const token_url = 'https://accounts.spotify.com/api/token';
+  if (!refresh_token) {
+    try {
+      const open = (await import('open')).default;
+      await open(`http://localhost:${port}/login`);
+    } catch (err) {
+      console.error('Error opening browser:', err);
+    }
+  }
+  const token_url = 'https://accounts.spotify.com/api/token';
     const data = new URLSearchParams({
       grant_type: 'refresh_token',
       refresh_token: refresh_token,
@@ -141,7 +152,8 @@ const refreshAccessToken = async () => {
       const response = await axios.post(token_url, data, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
-      access_token = response.data.access_token;
+      const access_token = response.data.access_token;
+      setSpotifyAccessToken(access_token);
       return access_token;
     } catch (error) {
       console.error('Error refreshing access token:', error);
@@ -154,12 +166,12 @@ const refreshAccessToken = async () => {
     console.log(`Server is running on port ${port}.`);
   
     // Automatically open the default web browser
-    try {
-        const open = (await import('open')).default;
-        await open(`http://localhost:${port}/login`);
-      } catch (err) {
-        console.error('Error opening browser:', err);
-      }
+    //try {
+    //    const open = (await import('open')).default;
+    //    await open(`http://localhost:${port}/login`);
+    //  } catch (err) {
+    //    console.error('Error opening browser:', err);
+    //  }
   });
 
   module.exports = {
@@ -173,5 +185,6 @@ const refreshAccessToken = async () => {
 
 require('./socketHandler');
 require('./spotifyHandler');
-require('./launchpadHandler');
+if (ENABLE_MIDI_DEVICES)
+  require('./launchpadHandler');
 const { refreshTrelloToken } = require('./trelloHandler');

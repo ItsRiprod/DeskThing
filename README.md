@@ -30,9 +30,11 @@ The TODOThing is a simple CarThing Chrome-based website that can communicate wit
 2. **React Project:**
    - Build the React projects from the [superbird-custom-webapp framework](https://github.com/pajowu/superbird-custom-webapp/tree/main).
 
-3. **Spotify and Trello Integration:**
-   - Obtain your Spotify authentication key. You should be prompted when you launch the app.
+3. **Spotify, Accuweather, and Trello Integration:**
+   - Set up Spotify app
+    - Set up a spotify app and put the required keys into the 
    - Set up your Trello power-up.
+   - Set up Accuweather app
 
 ### Detailed Setup Instructions
 
@@ -96,6 +98,36 @@ SPOTIFY_CLIENT_SECRET= /* The spotify API secret obtained from dashboard */
 SPOTIFY_REDIRECT_URI=http://localhost:8888/callback // The callback to go on the spotify app for auth
 PORT=8888 /* The Auth0 server port for authentication */
 DEVICE_ID= /* The device ID obtained from the spotify rest api */
+TRELLO_TOKEN= // Trello bot token
+TRELLO_KEY= // Trello bot key
+TRELLO_SECRET= // Trello bot secret
+ACCUWEATHER_API_KEY= // Key obtained from AccuWeather app
+```
+
+If you are running from a .bat file, this is what it should look like:
+```
+@echo off
+
+cd /d "C:\*Path to car thing files*\carthing\TODOThing\"
+
+set SPOTIFY_API_ID= // The API key from a spotify app obtained from the dashboard
+set SPOTIFY_CLIENT_SECRET= // The spotify client secret obtained from the dashboard  
+set SPOTIFY_REDIRECT_URI=http://localhost:8888/callback // this is for authenticating yourself
+set PORT=8888 // Port that is used for authentication
+set DEVICE_ID= // ID of your device found in the spotify REST API - optional to know where you are playing music from
+set TRELLO_TOKEN= // Trello bot token
+set TRELLO_KEY= // Trello bot key
+set TRELLO_SECRET= // Trello bot secret
+set ACCUWEATHER_API_KEY= // Key obtained from AccuWeather app
+
+adb reverse tcp:8891 tcp:8891
+adb shell "mountpoint /usr/share/qt-superbird-app/webapp/ > /dev/null && umount /usr/share/qt-superbird-app/webapp"
+adb shell "rm -rf /tmp/webapp"
+adb push "build/" /tmp/webapp
+adb shell "mount --bind /tmp/webapp /usr/share/qt-superbird-app/webapp"
+adb shell supervisorctl restart chromium
+
+start cmd.exe /k "node server/server.js"
 ```
 
 ---

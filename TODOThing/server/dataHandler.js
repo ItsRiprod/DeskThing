@@ -37,6 +37,17 @@ const getTrelloAccessToken = () => {
   const data = readData();
   return data.trelloAccessToken;
 };
+const setSpotifyAccessToken = (accessToken) => {
+  const data = readData();
+  data.spotifyToken = accessToken;
+  writeData(data);
+};
+
+// Function to get the Trello access token
+const getSpotifyAccessToken = () => {
+  const data = readData();
+  return data.spotifyToken;
+};
 
 // Function to set the Trello token secret
 const setTrelloTokenSecret = (tokenSecret) => {
@@ -86,4 +97,6 @@ module.exports = {
   getForecastData,
   setWeatherData,
   getWeatherData,
+  setSpotifyAccessToken,
+  getSpotifyAccessToken,
 };

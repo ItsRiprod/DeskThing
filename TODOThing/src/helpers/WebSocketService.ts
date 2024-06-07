@@ -30,11 +30,13 @@ class WebSocketService {
     };
 
     webSocket.onclose = () => {
+      this.webSocket.close();
       setTimeout(this.reconnect.bind(this), 1000);
       return;
     };
     webSocket.onerror = () => {
-      setTimeout(this.reconnect.bind(this), 1000);
+      //setTimeout(this.reconnect.bind(this), 1000);
+      this.webSocket.close();
       return;
     };
   }

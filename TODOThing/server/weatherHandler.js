@@ -28,8 +28,8 @@ const getCurrentWeather = async () => {
         return storedData.data;
         }
         
+        console.log("GETTING NEW WEATHER DATA FROM SERVER\n--------------------------------------------------------");
         const api_url = `http://dataservice.accuweather.com/currentconditions/v1/${location_key}?apikey=${weather_key}&details=true`;
-        
         const response = await axios.get(api_url);
         console.log("Returing new data (Saving to file)");
         const newData = {
@@ -41,19 +41,24 @@ const getCurrentWeather = async () => {
       return response.data;
 
     } catch (error) {
+      if (error.response.data.Code === 'ServiceUnavailable') {
+        console.log('Exceeded Quota - Using cached data');
+        const storedData = await getWeatherData();
+        return storedData.data;
+      }
       // Handle token expiration and refresh
-        console.error('Error getting current playback:', error);
+        console.error('Error getting current weather:', error.response.data);
         throw error;
     }
   };
 const getCityWeather = async (loc_key) => {
     try {
-    
-      const api_url = `http://dataservice.accuweather.com/currentconditions/v1/${loc_key}?apikey=${weather_key}&details=true`;
-  
-      const response = await axios.get(api_url);
-  
-      return response.data;
+      throw new Error("Not implemented");
+      //const api_url = `http://dataservice.accuweather.com/currentconditions/v1/${loc_key}?apikey=${weather_key}&details=true`;
+  //
+      //const response = await axios.get(api_url);
+  //
+      //return response.data;
 
     } catch (error) {
       // Handle token expiration and refresh
@@ -69,7 +74,8 @@ const get12hrWeather = async () => {
           console.log("Returing logged forecast data");
           return storedData.data;
         }
-    
+
+      console.log("GETTING NEW FORECASTING DATA FROM SERVER\n--------------------------------------------------------");
       const api_url = `http://dataservice.accuweather.com/forecasts/v1/hourly/12hour/${location_key}?apikey=${weather_key}`;
   
       const response = await axios.get(api_url);
@@ -82,7 +88,12 @@ const get12hrWeather = async () => {
       return response.data;
 
     } catch (error) {
-        console.error('Error getting 12 hour weather:', error);
+        if (error.response.data.Code === 'ServiceUnavailable') {
+          console.log('Exceeded Quota - Using cached data');
+          const storedData = await getForecastData();
+          return storedData.data;
+        }
+        console.error('Error getting 12 hour weather:', error.response.data);
         throw error;
     }
   };
