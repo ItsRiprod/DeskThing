@@ -1,12 +1,9 @@
 /* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-var-requires */
-
-const axios = require('axios');
 const serverModule = require('./server.js');
 const { setTrelloPreferences, getTrelloAccessToken, getTrelloPreferences, getTrelloTokenSecret, } = require('./dataHandler.js');
 
 const getTrelloOauth = serverModule.getTrelloOauth;
-const trello_key = process.env.TRELLO_KEY; // trello app key
 
 const port = process.env.PORT || 8888;
 const refreshTrelloToken = async () => {

@@ -1,9 +1,0 @@
-@import 'style/variables.module';
-
-.swipeDownHandle {
-  position: absolute;
-  top: 0;
-  height: 10px;
-  width: $device-width;
-  z-index: $overlay-z-index;
-}
