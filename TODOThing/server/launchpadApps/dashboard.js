@@ -1,17 +1,16 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 /* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-var-requires */
-//const { Button } = require('../launchpadHandler');
 const Button = require('../launchpadUtil/Button');
+const launchpad = require('../launchpadUtil/launchpadIO');
 const os = require('os');
-
 
 let prevIdleTime = 0;
 let prevTotalTime = 0;
 
 const redShades = [7, 6, 5];
 const greenShades = [23, 22, 21];
-const yellowShades = [12, 11, 10];
+const yellowShades = [15, 14, 13];
 
 function getGrid() {
     // Define initial grid configuration
@@ -75,11 +74,11 @@ function getCpuUsageColor(cpuUsage) {
 
     // Determine the color based on CPU usage
     if (cpuUsage < 0.5) {
-        color = greenShades; // Use shades of green
-    } else if (cpuUsage >= 0.5 && cpuUsage < 0.7) {
-        color = yellowShades; // Use shades of yellow
+        color = greenShades;
+    } else if (cpuUsage >= 0.5 && cpuUsage < 0.8) {
+        color = yellowShades;
     } else {
-        color = redShades; // Use shades of red
+        color = redShades;
     }
 
     return color;
@@ -118,6 +117,19 @@ function getCpuPercentage() {
     return percentageCpu;
 }
 
-module.exports = { getGrid, updateGrid };
+// Handle button press events using the LaunchpadIO instance
+function handleMessage(deltaTime, message) {
+    const [type, buttonNum, data2] = message;
+    if (type === 144 && data2 > 0) { // Note On message with velocity > 0
+        const row = Math.floor((buttonNum - 11) / 10);
+        const col = (buttonNum - 11) % 10;
+        if (launchpad.grid[row] && launchpad.grid[row][col]) {
+            launchpad.grid[row][col].runAction();
+        }
+    }
+    console.log('Sent from dashboard')
+}
+
+module.exports = { getGrid, updateGrid, handleMessage };
 
 

@@ -18,6 +18,7 @@ const Launchpad: React.FC = () => {
     <div className="view_launchpad">
       <button onClick={() => handleSendSet('lp_view', 'dashboard')}>Task View</button>
       <button onClick={() => handleSendSet('lp_view', 'colors')}>Color</button>
+      <button onClick={() => handleSendSet('lp_view', 'stopwatch')}>Stopwatch</button>
     </div>
   );
 };

@@ -21,9 +21,9 @@ class Button {
     this.action = action;
   }
 
-  runAction() {
+  runAction(value = null) {
     if (this.action) {
-      this.action();
+      this.action(value);
     }
   }
 }
