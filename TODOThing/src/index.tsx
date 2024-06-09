@@ -4,6 +4,7 @@ import './index.css';
 import ControlWebsocketHelper from './helpers/ControlWebsocketHelper';
 import Header from './components/Header/Header';
 import Footer from './components/Footer/Footer';
+import Volume from './components/Volume/Volume';
 import ViewManager from './views/views';
 
 
@@ -13,6 +14,7 @@ root.render(
     <div className="App">
       <header className="App-header">
         <Header />
+        <Volume />
         <ViewManager />
         <Footer />
       </header>

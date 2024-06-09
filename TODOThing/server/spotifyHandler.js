@@ -206,6 +206,28 @@ require('dotenv').config();
       return { success: false };
     }
   };
+  const setVolume = async ( newVol ) => {
+    const access_token = await getSpotifyAccessToken();
+    try {
+      // Ensure access_token is available and valid
+      if (!access_token) {
+        throw new Error('Access token is not available. Please authenticate first.');
+      }
+      const api_url = `https://api.spotify.com/v1/me/player/volume?volume_percent=${newVol}`;
+      
+      await axios.put(api_url, null, {
+        headers: {
+          'Authorization': `Bearer ${access_token}`
+          }
+          });
+        console.log("New volume set to", newVol);
+  
+      return { success: true };
+    } catch (error) {
+      // Handle token expiration and refresh
+      return { success: false };
+    }
+  };
 
   module.exports = {
     getCurrentPlayback,
@@ -215,5 +237,6 @@ require('dotenv').config();
     pause,
     skipToPrev,
     seek,
+    setVolume,
   };
 

@@ -4,7 +4,7 @@ const axios = require('axios');
 const fs = require('fs');
 const { Server } = require('ws');
 const robot = require('robotjs');
-const { getCurrentPlayback, getCurrentDevice, skipToNext, play, pause, skipToPrev, seek } = require('./spotifyHandler');
+const { getCurrentPlayback, getCurrentDevice, skipToNext, play, pause, skipToPrev, seek, setVolume } = require('./spotifyHandler');
 const { removeListFromPref, addListToPref, getTrelloPrefs, setTrelloPrefs, getTrelloBoards, getTrelloCardsFromBoard, getTrelloCardsFromList, getTrelloListsFromBoard, getTrelloBoardsFromOrganization, getTrelloOrganizations } = require('./trelloHandler');
 const { getCurrentWeather, getCityWeather, get12hrWeather } = require('./weatherHandler');
 const { switchView } = require('./launchpadHandler');
@@ -389,6 +389,18 @@ server.on('connection', async (socket) => {
             /**
              * Trello API
              */
+            case 'set_vol':
+              try {
+                if (parsedMessage.data) {
+                  setVolume(parsedMessage.data);
+                }
+                } catch (error) {
+                  console.error("Unable to set spotify volume!", error);
+                  socket.send(
+                    JSON.stringify({ type: 'error', data: error.message })
+                  );
+              }
+              break;
             case 'trello_prefs':
               try {
                 if (parsedMessage.data) {
