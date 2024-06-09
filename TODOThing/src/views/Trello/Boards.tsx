@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { defaultProps } from './Trello';
 
-interface BoardsProps {
-  handleSendGet: (command: string, id: string) => void;
-  data: any;
-}
-
-const Boards: React.FC<BoardsProps> = ({ handleSendGet, data }) => {
+const Boards: React.FC<defaultProps> = ({ handleSendGet, data }) => {
   const sortBoards = (boards: any[]) => {
     return boards.sort((a, b) => {
       if (a.starred && !b.starred) {
@@ -40,7 +36,7 @@ const Boards: React.FC<BoardsProps> = ({ handleSendGet, data }) => {
 
   const handleClick = (e: any) => {
     const boardId = e.target.id;
-    handleSendGet('lists_from_board', boardId);
+    handleSendGet('get', 'lists_from_board', { id: boardId });
   };
 
   return (
@@ -49,7 +45,7 @@ const Boards: React.FC<BoardsProps> = ({ handleSendGet, data }) => {
         <button
           key={board.id}
           className="board_item"
-          onClick={() => handleSendGet('lists_from_board', board.id)}
+          onClick={() => handleSendGet('get', 'lists_from_board', { id: board.id })}
         >
           <div className="trlo_img">
             <p className={board.closed ? 'img_alt closed' : 'img_alt'}>{board.name.slice(0, 1)}</p>

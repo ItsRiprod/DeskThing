@@ -1,113 +1,133 @@
+/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 /* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-var-requires */
 const midi = require('midi');
+const dashboard = require('./launchpadApps/dashboard');
+const colors = require('./launchpadApps/colors');
+const Button = require('./launchpadUtil/Button');
 
-class Button {
-    constructor(id, color, type, action) {
-        this.id = id;
-        this.color = color; // value from 1 to 127
-        this.type = type; // 144 = solid, 145 = blinking, 146 = fading
-        this.action = action; // Function to execute when button is pressed
-    }
+const launchpadI = new midi.Input();
+const launchpadO = new midi.Output();
+launchpadI.openPort(1);
+launchpadO.openPort(2);
 
-    setColor(color) {
-        this.color = color;
-    }
+/**
+ * Getters and setters
+ */
+function getInput() {
+  return launchpadI;
+}
+function getOutput() {
+  return launchpadO;
+}
+const views = {
+  dashboard,
+  colors,
+};
 
-    setType(type) {
-        this.type = type;
-    }
+let currentView = 'dashboard';
+let grid = views[currentView].getGrid();
+let updateInterval;
 
-    setAction(action) {
-        this.action = action;
-    }
-
-    runAction() {
-        if (this.action) {
-            this.action();
-        }
-    }
+function startUpdateInterval() {
+    stopUpdateInterval(); // Stop any existing interval
+    updateInterval = setInterval(() => {
+        updateCurrentView();
+    }, 1000); // Update every second, adjust as needed
 }
 
-
-// Set up a new input.
-const input = new midi.Input();
-const input2 = new midi.Input();
-const output2 = new midi.Output();
-output2.openPort(2);
-input.openPort(0);
-input2.openPort(1);
-let color = 0;
-let type = 0;
-const grid = [];
-for (let row = 0; row < 9; row++) {
-    const gridRow = [];
-    for (let col = 0; col < 9; col++) {
-        const buttonId = row * 10 + col + 11; // Assuming IDs start at 11 and go sequentially
-        gridRow.push(new Button(buttonId, { r: 0, g: 0, b: 0 }, 144, null));
-    }
-    grid.push(gridRow);
+function stopUpdateInterval() {
+    clearInterval(updateInterval);
 }
 
-// Configure a callback.
-input.on('message', (deltaTime, message) => {
-    // The message is an array of numbers corresponding to the MIDI bytes:
-    //   [status, data1, data2]
-    const [status, data1, data2] = message;
-  
-    // Check the status byte to determine the type of message
-    switch (status) {
-      case 0x90: // Note On
-        console.log(`${status} Note On: ${data1}, Velocity: ${data2}`);
-        // Send a Note On message to the output
-        color = data2;
-        output2.sendMessage([status, data1, data2]);
-        break;
-      case 0x80: // Note Off
-        console.log(`${status} Note Off: ${data1}, Velocity: ${data2}`);
-        // Send a Note Off message to the output
-        output2.sendMessage([status, data1, data2]);
-        break;
-      case 0xB0: // Control Change
-        if (data2 < 10) {
-            type = 128;
-        } else if (data2 < 64) {
-            type = 144;
-        } else if (data2 < 110) {
-            type = 145;
-        } else if (data2 < 128) {
-            type = 146;
-        }
-        console.log(`${status} Data: ${type}, Control Change: ${data1}, Value: ${data2}`);
-        // Send a Control Change message to the output
-        output2.sendMessage([status, data1, data2]);
+function updateCurrentView() {
+    const updatedGrid = views[currentView].updateGrid(grid); // Each view should implement an updateGrid function
+    updateGrid(updatedGrid);
+}
 
-
-
-
-        break;
-      case 0xE0: // Pitch Control
-        console.log(`${status} Pitch: ${data1}, Value: ${data2}`);
-        // Send a Control Change message to the output
-        output2.sendMessage([status, data1, data2]);
-        break;
-      // Add more cases for other MIDI message types as needed
-      default:
-        console.log(`${status} Unhandled MIDI message: ${message}`);
-    }
+/**
+ * Set the color of a specific button on the Launchpad
+ * @param {number} row - Row index of the button
+ * @param {number} col - Column index of the button
+ * @param {number} color - Color value from 1 to 127
+ */
+function setButtonColor(row, col, color) {
+  const button = grid[row][col];
+  button.setColor(color);
+  launchpadO.sendMessage([button.type, button.id, color]);
+}
+/**
+ * Set the type of a specific button on the Launchpad
+ * @param {number} row - Row index of the button
+ * @param {number} col - Column index of the button
+ * @param {number} type - Type value (144 = solid, 145 = blinking, 146 = fading)
+ */
+function setButtonType(row, col, type) {
+  const button = grid[row][col];
+  button.setType(type);
+  launchpadO.sendMessage([type, button.id, button.color]);
+}
+/**
+ * Reset all buttons on the Launchpad to the default state
+ */
+function resetGrid() {
+  grid.forEach(row => {
+      row.forEach(button => {
+          button.setColor(0);
+          button.setType(144);
+          launchpadO.sendMessage([144, button.id, 0]);
+      });
   });
-input2.on('message', (deltaTime, message) => {
-    
-  const [status, data1, data2] = message;
-  if (status === 0x90 /*|| status === 0x80*/) {
+}
+/**
+ * Update the Launchpad grid with a new 2D array of button configurations
+ * @param {Button[][]} buttonGrid - 2D array of Button objects
+ */
+function updateGrid(buttonGrid) {
+  buttonGrid.forEach((row, rowIndex) => {
+      row.forEach((button, colIndex) => {
+          const currentButton = grid[rowIndex][colIndex];
+          currentButton.setColor(button.color);
+          currentButton.setType(button.type);
+          currentButton.setAction(button.action);
+          launchpadO.sendMessage([button.type, button.id, button.color]);
+      });
+  });
+}
 
-    // Update the LED state in the ledStates object
+/**
+ * Function to push a 2D array of Button objects to the Launchpad
+ * @param {Button[][]} buttonGrid - 2D array of Button objects
+ */
+function pushGridToLaunchpad(buttonGrid) {
+  buttonGrid.forEach(row => {
+      row.forEach(button => {
+          const { id, color, type } = button;
+          launchpadO.sendMessage([type, id, color]);
+      });
+  });
+}
+/**
+ * Handle button press events
+ * @param {number} row - Row index of the pressed button
+ * @param {number} col - Column index of the pressed button
+ * @param {Function} action - Function to execute when the button is pressed
+ */
+function setButtonPressAction(row, col, action) {
+  const button = grid[row][col];
+  button.setAction(action);
+}
 
-    output2.sendMessage([type, data1, color]);
-    console.log(`${status} Type: ${type}, Number: ${data1} Color: ${color}`);
-
+launchpadI.on('message', (DeltaTime, message) => {
+  const [type, buttonNum, data2] = message;
+  if (type === 144 && data2 > 0) { // Note On message with velocity > 0
+    const row = Math.floor((buttonNum - 11) / 10);
+    const col = (buttonNum - 11) % 10;
+    if (grid[row] && grid[row][col]) {
+      grid[row][col].runAction();
+    }
   }
-
+  //console.log(`Type: ${type}, Data1: ${buttonNum}, Data2: ${data2}`);
 });
 
 // Open the first available input port.
@@ -119,7 +139,43 @@ input2.on('message', (deltaTime, message) => {
 // For example if you want to receive only MIDI Clock beats
 // you should use
 // input.ignoreTypes(true, false, true)
-input.ignoreTypes(false, false, false);
+launchpadI.ignoreTypes(false, false, false);
+
+/**
+ * Switch the active view on the Launchpad
+ * @param {string} viewName - Name of the view to switch to
+ */
+function switchView(viewName) {
+  console.log('Switching to ', viewName);
+  if (views[viewName]) {
+      currentView = viewName;
+      grid = views[currentView].getGrid();
+      pushGridToLaunchpad(grid);
+      startUpdateInterval(); // Start or restart the update interval
+  } else {
+      console.error(`View "${viewName}" does not exist.`);
+      throw new Error("Unable to switch to view ", viewName)
+  }
+}
+
+startUpdateInterval();
+
+pushGridToLaunchpad(grid);
+
+module.exports = {
+  getInput,
+  getOutput,
+  setButtonColor,
+  setButtonType,
+  resetGrid,
+  updateGrid,
+  pushGridToLaunchpad,
+  setButtonPressAction,
+  startUpdateInterval,
+  stopUpdateInterval,
+  updateCurrentView,
+  switchView,
+};
 
 
 

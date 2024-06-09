@@ -9,7 +9,7 @@ const { setForecastData,
 
 const weather_key = process.env.ACCUWEATHER_API_KEY; // trello app key
 const location_key = process.env.ACCUWEATHER_CITY;
-const DATA_EXPIRATION_HOURS = 3; // Define how many hours before the data is considered outdated
+const DATA_EXPIRATION_HOURS = 2; // Define how many hours before the data is considered outdated
 const CUR_EXPIRATION_HOURS = 1; // Define how many hours before the data is considered outdated
 
 const isDataOutOfDate = (timestamp, hours) => {

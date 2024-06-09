@@ -25,64 +25,91 @@ const writeData = (data) => {
   }
 };
 
-// Function to set the Trello access token
+/* ------------------------\
+* Trello Related File I/O
+*/
 const setTrelloAccessToken = (accessToken) => {
   const data = readData();
   data.trelloAccessToken = accessToken;
   writeData(data);
 };
 
-// Function to get the Trello access token
+
 const getTrelloAccessToken = () => {
   const data = readData();
   return data.trelloAccessToken;
 };
-const setSpotifyAccessToken = (accessToken) => {
-  const data = readData();
-  data.spotifyToken = accessToken;
-  writeData(data);
-};
 
-// Function to get the Trello access token
-const getSpotifyAccessToken = () => {
-  const data = readData();
-  return data.spotifyToken;
-};
-
-// Function to set the Trello token secret
 const setTrelloTokenSecret = (tokenSecret) => {
   const data = readData();
   data.trelloTokenSecret = tokenSecret;
   writeData(data);
 };
 
-// Function to get the Trello token secret
+
 const getTrelloTokenSecret = () => {
   const data = readData();
   return data.trelloTokenSecret;
 };
 
-// Functions for weather stuff
+const setTrelloPreferences = (pref) => {
+  const data = readData();
+  data.trelloPreferences = pref;
+  writeData(data);
+};
+
+const getTrelloPreferences = () => {
+  const data = readData();
+
+  // Check if trelloPreferences exists in the data
+  if (!data.trelloPreferences) {
+    // If it doesn't exist, initialize it as an empty object
+    data.trelloPreferences = {};
+  }
+
+  return data.trelloPreferences;
+};
+
+/* ------------------------\
+* Spotify Related File I/O
+*/
+
+const setSpotifyAccessToken = (accessToken) => {
+  const data = readData();
+  data.spotifyToken = accessToken;
+  writeData(data);
+};
+
+
+const getSpotifyAccessToken = () => {
+  const data = readData();
+  return data.spotifyToken;
+};
+
+/* ------------------------\
+* Weather Related File I/O
+*/
+
 const setForecastData = (forecastData) => {
   const data = readData();
   data.forecastData = forecastData;
   writeData(data);
 };
 
-// Function to get the Trello access token
+
 const getForecastData = () => {
   const data = readData();
   return data.forecastData;
 };
 
-// Function to set the Trello token secret
+
 const setWeatherData = (weatherData) => {
   const data = readData();
   data.weatherData = weatherData;
   writeData(data);
 };
 
-// Function to get the Trello token secret
+
 const getWeatherData = () => {
   const data = readData();
   return data.weatherData;
@@ -93,6 +120,8 @@ module.exports = {
   getTrelloAccessToken,
   setTrelloTokenSecret,
   getTrelloTokenSecret,
+  setTrelloPreferences,
+  getTrelloPreferences,
   setForecastData,
   getForecastData,
   setWeatherData,

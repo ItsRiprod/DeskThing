@@ -6,6 +6,13 @@ button {
     height: unset;
     transition: background-color 0.5s;
 }
+.back_button {
+    position: fixed;
+    left: 3px;
+    background-color: var(--bg-tinted-base);
+    border-radius: 5px;
+    padding: 15px;
+}
 .view_trello {
     width: 100vw;
     height: 75vh;
@@ -13,20 +20,49 @@ button {
     background-color: var(--bg-base);
     padding-top: 35px;
 }
+.view_trello::-webkit-scrollbar {
+ /* Remove scrollbar width */
+    width: 4px;
+    background: transparent; /* Optional: hide scrollbar gutter */
+  }
+.view_trello::-webkit-scrollbar-thumb {
+    background-color: var(--bg-tinted-base); /* Optional: hide scrollbar gutter */
+  }
 
 .trello_default {
     padding-top:25vh;
 }
 .trello_default button {
-    width: 200px;
+    width: 50%;
     height: 100px;
-    border: unset;
     background-color: var(--bg-elevated-highlight);
     border-radius: 15px;
     color: unset;
 }
 .trello_default button:hover {
     background-color: var(--bg-elevated-press);
+}
+.trello_default_shortcuts {
+    display: flex;
+    background-color: var(--bg-tinted-base);
+    padding: 5px;
+    margin-top: 5px;
+    flex-wrap: wrap;
+    justify-content:space-around;
+}
+.trello_default_shortcut_item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 15px;
+    width: 50px;
+    min-width: fit-content;
+    margin-right: 15px;
+    height: 100px;
+    border: 1px solid black;
+    border-radius: 5px;
+    background-color: var(--bg-elevated-highlight);
+    color: white;
 }
 .org_container {
     display: flex;
@@ -92,9 +128,7 @@ button {
     margin-left: 5px;
 }
 .board_starred {
-    margin-left: auto;
     text-align: right;
-    width: 40%;
 }
 
 

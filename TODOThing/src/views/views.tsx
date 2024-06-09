@@ -4,6 +4,7 @@ import Spotify from './Spotify/Spotify';
 import Default from './default/default';
 import Trello from './Trello/Trello';
 import Weather from './Weather/Weather';
+import Launchpad from './Launchpad/Launchpad';
 import './views.css';
 
 const ViewManager = () => {
@@ -24,6 +25,9 @@ const ViewManager = () => {
             setCurrentView('weather');
             break;
           case Button.BUTTON_4:
+            setCurrentView('launchpad');
+            break;
+          case Button.BUTTON_5:
             setCurrentView('default');
             break;
           default:
@@ -49,7 +53,8 @@ const ViewManager = () => {
         return <Trello />;
       case 'weather':
         return <Weather />;
-      case 'default':
+      case 'launchpad':
+        return <Launchpad />;
       default:
         return <Default />;
     }

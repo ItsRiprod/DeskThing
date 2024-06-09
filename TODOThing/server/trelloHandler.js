@@ -3,7 +3,7 @@
 
 const axios = require('axios');
 const serverModule = require('./server.js');
-const { setTrelloAccessToken, getTrelloAccessToken, setTrelloTokenSecret, getTrelloTokenSecret, } = require('./dataHandler.js');
+const { setTrelloPreferences, getTrelloAccessToken, getTrelloPreferences, getTrelloTokenSecret, } = require('./dataHandler.js');
 
 const getTrelloOauth = serverModule.getTrelloOauth;
 const trello_key = process.env.TRELLO_KEY; // trello app key
@@ -258,6 +258,53 @@ const getTrelloListsFromBoard = async (boardId) => {
   }
 }
 
+const getTrelloPrefs = async () => {
+  try {
+    const preferences = getTrelloPreferences();
+    return preferences;
+  } catch (error) {
+    console.error("There was an error getting trello preferences from file", error);
+    throw error;
+  }
+}
+const setTrelloPrefs = async (pref) => {
+  try {
+    setTrelloPreferences(pref);
+    return {success: true};
+  } catch (error) {
+    console.error("There was an error getting trello preferences from file", error);
+    throw error;
+  }
+}
+
+const addListToPref = (data) => {
+  const preferences = getTrelloPreferences();
+
+  // Check if preferences.lists exists
+  if (!preferences.lists) {
+    // If it doesn't exist, create an empty array
+    preferences.lists = [];
+  }
+
+  // Add the data to the lists array
+  preferences.lists.push(data);
+
+  // Update the preferences
+  setTrelloPreferences(preferences);
+};
+
+const removeListFromPref = (listId) => {
+  const preferences = getTrelloPreferences();
+  const listIndex = preferences.lists.findIndex(list => list.id === listId);
+
+  if (listIndex === -1) {
+    throw new Error(`List with ID ${listId} not found in preferences.`);
+  }
+
+  preferences.lists.splice(listIndex, 1);
+  setTrelloPreferences(preferences);
+}
+
 module.exports = {
   getTrelloBoards,
   refreshTrelloToken,
@@ -266,4 +313,8 @@ module.exports = {
   getTrelloListsFromBoard,
   getTrelloBoardsFromOrganization,
   getTrelloOrganizations,
+  getTrelloPrefs,
+  setTrelloPrefs,
+  addListToPref,
+  removeListFromPref,
 };

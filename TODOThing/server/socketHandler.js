@@ -5,9 +5,9 @@ const fs = require('fs');
 const { Server } = require('ws');
 const robot = require('robotjs');
 const { getCurrentPlayback, getCurrentDevice, skipToNext, play, pause, skipToPrev, seek } = require('./spotifyHandler');
-const { getTrelloBoards, getTrelloCardsFromBoard, getTrelloCardsFromList, getTrelloListsFromBoard, getTrelloBoardsFromOrganization, getTrelloOrganizations } = require('./trelloHandler');
+const { removeListFromPref, addListToPref, getTrelloPrefs, setTrelloPrefs, getTrelloBoards, getTrelloCardsFromBoard, getTrelloCardsFromList, getTrelloListsFromBoard, getTrelloBoardsFromOrganization, getTrelloOrganizations } = require('./trelloHandler');
 const { getCurrentWeather, getCityWeather, get12hrWeather } = require('./weatherHandler');
-
+const { switchView } = require('./launchpadHandler');
 
 // Create a WebSocket server that listens on port 8890
 const server = new Server({ port: 8891 });
@@ -95,7 +95,7 @@ server.on('connection', async (socket) => {
           console.log(`Message: ${parsedMessage.data}`);
           sendResponse(`Message ${parsedMessage.data} received`, false);
           break;
-
+        // Commands that relate to computer functions (Spotify / Macros)
         case 'command':
           switch (parsedMessage.command) {
             case 'next_track':
@@ -208,9 +208,13 @@ server.on('connection', async (socket) => {
           }
 
           break;
+
+        // Commands that relate to the retrieval of data in some capacity
         case 'get':
-          console.log(`GET: ${parsedMessage.get}`);
           switch (parsedMessage.get) {
+            /**
+             * Spotify API
+             */
             case 'song_info':
               returnSongData(null);
               break;
@@ -235,6 +239,9 @@ server.on('connection', async (socket) => {
                 );
               }
               break;
+              /**
+               * Trello API
+               */
             case 'boards_info':
               try {
                 const boards = await getTrelloBoards();
@@ -312,6 +319,36 @@ server.on('connection', async (socket) => {
                 );
               }
               break;
+            case 'trello_pref_info':
+              try {
+                // Returns preferences
+                const preferences = await getTrelloPrefs();
+                socket.send(
+                  JSON.stringify({ type: 'trello_pref_data', data: preferences })
+                );
+              } catch (error) {
+                console.error('error', error);
+                socket.send(
+                  JSON.stringify({ type: 'error', data: error.message })
+                );
+              }
+              break;
+            case 'trello_pref_list_info':
+              try {
+                // Returns array of preferred lists
+                const prefs = await getTrelloPrefs();
+                socket.send(
+                  JSON.stringify({ type: 'trello_pref_list_data', data: prefs })
+                );
+              } catch (error) {
+                socket.send(
+                  JSON.stringify({ type: 'error', data: error.message })
+                );
+              }
+              break;
+              /**
+               * Weather API
+               */
             case 'weather_info':
               try {
                 let weather_data = null;
@@ -347,7 +384,71 @@ server.on('connection', async (socket) => {
           }
 
           break;
-
+        case 'set':
+          switch (parsedMessage.get) {
+            /**
+             * Trello API
+             */
+            case 'trello_prefs':
+              try {
+                if (parsedMessage.data) {
+                  setTrelloPrefs(parsedMessage.data);
+                }
+                console.log("Successfully set Trello prefs");
+                } catch (error) {
+                  console.error("Unable to set trello prefs!", error);
+                  socket.send(
+                    JSON.stringify({ type: 'error', data: error.message })
+                  );
+              }
+              break;
+            case 'trello_add_list_pref':
+              try {
+                if (parsedMessage.data) {
+                  addListToPref(parsedMessage.data);
+                }
+                console.log("Successfully added list to Trello prefs");
+                } catch (error) {
+                  console.error("Unable to add trello prefs!", error);
+                  socket.send(
+                    JSON.stringify({ type: 'error', data: error.message })
+                  );
+              }
+              break;
+            case 'trello_remove_list_pref':
+              try {
+                removeListFromPref(parsedMessage.data.id);
+                console.log("Successfully removed list from Trello prefs");
+                } catch (error) {
+                  console.error("Unable to remove trello list from prefs!", error.message);
+                  socket.send(
+                    JSON.stringify({ type: 'error', data: error.message })
+                  );
+              }
+              returnSongData(null);
+              break;
+            case 'lp_view':
+              try {
+                  if (parsedMessage.data) {
+                    switchView(parsedMessage.data);
+                    console.log("Successfully switched views");
+                  } else {
+                    console.error('Unknown error (Did you forget to say what view you were switching to?)', parsedMessage)
+                  }
+                } catch (error) {
+                  console.error("Unable to switch views!", error.message);
+                  socket.send(
+                    JSON.stringify({ type: 'error', data: error.message })
+                  );
+              }
+              returnSongData(null);
+              break;
+            default:
+              console.error('Unknown command', parsedMessage.get);
+              socket.send(JSON.stringify({ type: 'error', data: 'Unknown set command' }));
+              break;
+            }
+          break;
         default:
           socket.send(JSON.stringify({ type: 'error', data: 'Unknown message type' }));
           break;
