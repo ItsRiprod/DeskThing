@@ -26,6 +26,15 @@ async function getImageData(url) {
   }
 }
 
+function sendMessageToClients(message) {
+  server.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      console.log('Sending data to ', client.DEVICE_ID);
+      client.send(message);
+    }
+  });
+}
+
 // Process that runs once a client connects to the socket
 server.on('connection', async (socket) => {
   console.log('Client connected');
@@ -492,3 +501,8 @@ server.on('connection', async (socket) => {
 });
 
 console.log('WebSocket server is running on ws://localhost:8891');
+
+module.exports = {
+  getImageData,
+  sendMessageToClients,
+}

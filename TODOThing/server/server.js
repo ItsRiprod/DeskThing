@@ -24,6 +24,10 @@ const trello_callback = process.env.TRELLO_REDIRECT_URI; // redirect uri (localh
 const trello_key = process.env.TRELLO_KEY; // trello app key
 const trello_secret = process.env.TRELLO_SECRET; // trello app secret
 
+const discordClientId = process.env.DISCORD_CLIENT_ID;
+const discordClientSecret = process.env.DISCORD_CLIENT_SECRET;
+const discordRedirectUri = process.env.DISCORD_REDIR_URI; 
+
 const requestURL = "https://trello.com/1/OAuthGetRequestToken";
 const accessURL = "https://trello.com/1/OAuthGetAccessToken";
 const authorizeURL = "https://trello.com/1/OAuthAuthorizeToken";
@@ -129,6 +133,32 @@ app.get('/trello/callback', async (req, res) => {
     callback(req, res);
 });
 
+app.get('/discord/callback', async (req, res) => {
+  const code = req.query.code;
+  if (!code) {
+      return res.status(400).send('Authorization code missing');
+  }
+  
+  try {
+      // Call Discord's token endpoint to exchange code for token
+      console.log('In discord callback')
+      const response = await axios.post('https://discord.com/api/oauth2/token', {
+          client_id: discordClientId,
+          client_secret: discordClientSecret,
+          grant_type: 'authorization_code',
+          code: code,
+          redirect_uri: discordRedirectUri,
+      });
+
+      // Handle successful authentication here if needed
+      console.log('Authentication successful:', response.data);
+      res.send('Authentication successful! You can close this tab now.');
+
+  } catch (error) {
+      console.error('Failed to authenticate:', error.message);
+      res.status(500).send('Failed to authenticate. Please try again later.');
+  }
+});
 
 const refreshAccessToken = async () => {
   if (!refresh_token) {
@@ -183,6 +213,7 @@ const refreshAccessToken = async () => {
 
 require('./socketHandler');
 require('./spotifyHandler');
+require('./discordHandler');
 if (ENABLE_MIDI_DEVICES)
   require('./launchpadHandler');
 const { refreshTrelloToken } = require('./trelloHandler');

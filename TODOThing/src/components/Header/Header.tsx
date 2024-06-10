@@ -34,6 +34,9 @@ const Header: React.FC = () => {
       if (msg.type === 'device_data') {
         handleDeviceData(msg.data);
       }
+      if (msg.type === 'message') {
+        console.log(msg);
+      }
     };
 
     socket.addSocketEventListener(listener);
