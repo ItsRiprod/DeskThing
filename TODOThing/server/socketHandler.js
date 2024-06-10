@@ -27,12 +27,18 @@ async function getImageData(url) {
 }
 
 function sendMessageToClients(message) {
-  server.clients.forEach(client => {
-    if (client.readyState === WebSocket.OPEN) {
-      console.log('Sending data to ', client.DEVICE_ID);
-      client.send(message);
-    }
-  });
+  try {
+    server.clients.forEach(client => {
+      if (client.readyState === 1) {
+        console.log('Sending data to client');
+        client.send(JSON.stringify(message));
+      } else {
+        console.log(client.readyState);
+      }
+    });
+  } catch (Error) {
+    console.error('Error sending message to clients ', Error.message);
+  }
 }
 
 // Process that runs once a client connects to the socket

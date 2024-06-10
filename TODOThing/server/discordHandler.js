@@ -7,6 +7,7 @@ const { sendMessageToClients } = require('./socketHandler');
 const clientId = process.env.DISCORD_CLIENT_ID;
 const clientSecret = process.env.DISCORD_CLIENT_SECRET;
 const userId = process.env.DISCORD_USER_ID; // your userId in case you want to do you-specific actions
+const subscriptions = {};
 
 RPC.register(clientId);
 
@@ -52,10 +53,17 @@ async function setVoiceActivity(userId, settings) {
     }
   }
 
-rpc.on('VOICE_CHANNEL_SELECT', (args) => {
+// Event Listeners
+rpc.on('VOICE_CHANNEL_SELECT', async (args) => {
     console.log(args);
   if (args.channel_id) {
-      rpc.subscribe('VOICE_STATE_UPDATE', { channel_id: args.channel_id });
+      const channel = await rpc.subscribe('VOICE_STATE_UPDATE', { channel_id: args.channel_id });
+      console.log(channel);
+      rpc.subscribe('VOICE_CONNECTION_STATUS');
+      subscriptions.channel = channel;
+      //subscriptions.args.channel_id = subscription;
+  } else {
+    subscriptions.channel.unsubscribe();
   }
 });
 rpc.on('VOICE_STATE_UPDATE', (args) => {
@@ -73,33 +81,40 @@ rpc.on('VOICE_STATE_UPDATE', (args) => {
     sendMessageToClients(message);
     //setVoiceActivity(userId, voiceSettings);
   });
-  
+rpc.on('VOICE_CONNECTION_STATUS', (args) => {
+    console.log(args);
+    if (args.state === 'DISCONNECTED') {
+        console.log("unsubscribing ", subscriptions.channel)
+        subscriptions.channel.unsubscribe();
+    }
+  });
+
 rpc.on('ready', async () => {
     console.log('RPC ready');
 
     // Set activity if needed
     setActivity();
     setSubscribe();
-    rpc.selectVoiceChannel('1042954150327107643');
+    //rpc.selectVoiceChannel('1042954150327107643');
 
     setInterval(() => {
         setActivity();
       }, 15e3);
 });
 
-//rpc.on('error', (error) => {
-//    console.error('RPC Error:', error.message);
-//});
-//
-//rpc.transport.on('close', () => {
-//    console.error('RPC transport closed. Reconnecting...');
-//    rpc.login({ clientId }).catch(console.error);
-//});
-//
-//rpc.on('disconnected', (closeEvent) => {
-//    console.warn(`Disconnected from Discord (code: ${closeEvent.code}, reason: ${closeEvent.reason})`);
-//    console.warn('Attempting to reconnect...');
-//    rpc.login({ clientId }).catch(console.error);
-//});
+rpc.on('error', (error) => {
+    console.error('RPC Error:', error.message);
+});
+
+rpc.transport.on('close', () => {
+    console.error('RPC transport closed. Reconnecting...');
+    rpc.login({ clientId }).catch(console.error);
+});
+
+rpc.on('disconnected', (closeEvent) => {
+    console.warn(`Disconnected from Discord (code: ${closeEvent.code}, reason: ${closeEvent.reason})`);
+    console.warn('Attempting to reconnect...');
+    rpc.login({ clientId }).catch(console.error);
+});
 
 rpc.login({ clientId, clientSecret, scopes, redirectUri }).catch(console.error);
