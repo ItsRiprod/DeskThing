@@ -5,7 +5,7 @@ const fs = require('fs');
 const { Server } = require('ws');
 const robot = require('robotjs');
 const { getCurrentPlayback, getCurrentDevice, skipToNext, play, pause, skipToPrev, seek, setVolume } = require('./spotifyHandler');
-const { removeListFromPref, addListToPref, getTrelloPrefs, setTrelloPrefs, getTrelloBoards, getTrelloCardsFromBoard, getTrelloCardsFromList, getTrelloListsFromBoard, getTrelloBoardsFromOrganization, getTrelloOrganizations } = require('./trelloHandler');
+const { removeListFromPref, addListToPref, getTrelloPrefs, setTrelloPrefs, getTrelloBoards, getTrelloLabelsFromBoard, getTrelloCardsFromBoard, getTrelloCardsFromList, getTrelloListsFromBoard, getTrelloBoardsFromOrganization, getTrelloOrganizations } = require('./trelloHandler');
 const { getCurrentWeather, getCityWeather, get12hrWeather } = require('./weatherHandler');
 const { switchView } = require('./launchpadHandler');
 
@@ -299,6 +299,20 @@ server.on('connection', async (socket) => {
                 const cards = await getTrelloListsFromBoard(boardId)
                 socket.send(
                   JSON.stringify({ type: 'trello_list_data', data: cards })
+                );
+              } catch (error) {
+                socket.send(
+                  JSON.stringify({ type: 'error', data: error.message })
+                );
+              }
+              break;
+            case 'labels_from_board':
+              try {
+                const boardId = parsedMessage.data.id;
+                const labels = await getTrelloLabelsFromBoard(boardId);
+                console.log(labels);
+                socket.send(
+                  JSON.stringify({ type: 'trello_label_data', data: labels })
                 );
               } catch (error) {
                 socket.send(

@@ -85,6 +85,17 @@ const Trello: React.FC = () => {
       console.error('Error parsing trello data:', error);
     }
   };
+  const handleTrelloLabel = (newData: any) => {
+    try {
+      const formattedData = JSON.parse(newData.data);
+      setData((prevData: any) => ({
+        ...prevData,
+        labels: formattedData,
+      }));
+    } catch (error) {
+      console.error('Error parsing trello data:', error);
+    }
+  };
 
   useEffect(() => {
     handleSendGet('get', 'trello_pref_info', '');
@@ -94,6 +105,9 @@ const Trello: React.FC = () => {
       }
       if (msg.type === 'trello_card_data') {
         handleTrelloData(msg);
+      }
+      if (msg.type === 'trello_label_data') {
+        handleTrelloLabel(msg);
       }
       if (msg.type === 'trello_list_data') {
         handleTrelloData(msg);
@@ -131,7 +145,7 @@ const Trello: React.FC = () => {
       case 'trello_board_data':
         return <Boards data={data.data} handleSendGet={handleSendGet} />;
       case 'trello_card_data':
-        return <Cards data={data.data} handleSendGet={handleSendGet} />;
+        return <Cards data={data} handleSendGet={handleSendGet} />;
       case 'trello_list_data':
         return <Lists data={data.data} prefLists={pref} handleSendGet={handleSendGet} />;
       case 'default':

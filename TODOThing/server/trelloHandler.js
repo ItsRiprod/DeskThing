@@ -254,6 +254,45 @@ const getTrelloListsFromBoard = async (boardId) => {
     throw error;
   }
 }
+const getTrelloLabelsFromBoard = async (boardId) => {
+  
+  try {
+    const oauth = getTrelloOauth();
+    const accessToken = getTrelloAccessToken();
+    const accessTokenSecret = getTrelloTokenSecret();
+    const id = boardId;
+    return new Promise((resolve, reject) => {
+      oauth.getProtectedResource(
+        `https://api.trello.com/1/boards/${id}/labels`,
+        "GET",
+        accessToken,
+        accessTokenSecret,
+        function (error, data, response) {
+          if (error) {
+            console.error("Error getting Trello labels:", error);
+            if (error.statusCode === 401) {
+              console.log("Access token expired. Refreshing...");
+              refreshTrelloToken();
+            }
+            reject(error);
+            return new Error(error);
+          }
+
+          // Assuming the response data is an array of board objects
+          if (data && data.length > 0) {
+            resolve(data);
+          } else {
+            console.log("No labels found.");
+            resolve([]);
+          }
+        }
+      );
+    });
+  } catch (error) {
+    console.error("There was an error getting trello labels", error);
+    throw error;
+  }
+}
 
 const getTrelloPrefs = async () => {
   try {
@@ -314,4 +353,5 @@ module.exports = {
   setTrelloPrefs,
   addListToPref,
   removeListFromPref,
+  getTrelloLabelsFromBoard,
 };

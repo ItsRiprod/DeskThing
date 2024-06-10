@@ -9,7 +9,6 @@ const Lists: React.FC<ListsProps> = ({ handleSendGet, data, prefLists }) => {
   const [prefListIds, setPrefListIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    console.log(prefLists);
     if (prefLists && prefLists.length > 0) {
       const prefListIdsSet = new Set<string>(prefLists.map((list: any) => list.id));
       setPrefListIds(prefListIdsSet);
@@ -19,7 +18,6 @@ const Lists: React.FC<ListsProps> = ({ handleSendGet, data, prefLists }) => {
   }, [prefLists]);
 
   const handleClick = (tarId: string, name: string) => {
-    console.log(tarId);
     const exists = prefListIds.has(tarId);
     if (exists) {
       setPrefListIds((prevPrefListIds) => {
