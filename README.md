@@ -120,6 +120,10 @@ TRELLO_KEY= // Trello bot key
 TRELLO_SECRET= // Trello bot secret
 ACCUWEATHER_API_KEY= // Key obtained from AccuWeather app
 ACCUWEATHER_CITY= // City key obtained from AccuWeather api
+DISCORD_CLIENT_ID= # Discord bot ID
+DISCORD_CLIENT_SECRET= # Discord bot Secret
+DISCORD_REDIR_URI=http://localhost:8888/discord/callback
+DISCORD_USER_ID= # Discord user id (yours)
 ```
 
 - If you are running from a .bat file, this is what it should look like:
@@ -138,6 +142,10 @@ set TRELLO_KEY= // Trello bot key
 set TRELLO_SECRET= // Trello bot secret
 set ACCUWEATHER_API_KEY= // Key obtained from AccuWeather app
 set ACCUWEATHER_CITY=
+set DISCORD_CLIENT_ID=
+set DISCORD_CLIENT_SECRET=
+set DISCORD_REDIR_URI=http://localhost:8888/discord/callback
+set DISCORD_USER_ID=
 
 adb reverse tcp:8891 tcp:8891
 adb shell "mountpoint /usr/share/qt-superbird-app/webapp/ > /dev/null && umount /usr/share/qt-superbird-app/webapp"
