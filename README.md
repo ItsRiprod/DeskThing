@@ -129,10 +129,7 @@ The TODOThing is a simple CarThing Chromium-based website that can communicate w
 - 🐤 [superbird-custom-webapp](https://github.com/pajowu/superbird-custom-webapp/tree/main) - The React web app framework that this project started with.
 - 🗨️ [Car Thing Hax Community Discord](https://discord.gg/aPSV6NykA6) - The discord where there is this project and so much more!
 
-### Bot Creation Tutorials to get keys
-
-- 🗨️ Trello: [Glitch PowerUp](https://glitch.com/~trello-power-up) and 
-
+## .env file reference
 - **.env file reference for `/TODOThing/server/.env`**
 ```env
 SPOTIFY_API_ID= /* The spotify API ID obtained from dashboard  */
