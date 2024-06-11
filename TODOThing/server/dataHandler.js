@@ -57,6 +57,16 @@ const setTrelloPreferences = (pref) => {
   data.trelloPreferences = pref;
   writeData(data);
 };
+const getDiscordAuthToken = () => {
+  const data = readData();
+  return data.discordAuth;
+};
+
+const setDiscordAuthToken = (token) => {
+  const data = readData();
+  data.discordAuth = token;
+  writeData(data);
+};
 
 const getTrelloPreferences = () => {
   const data = readData();
@@ -128,4 +138,6 @@ module.exports = {
   getWeatherData,
   setSpotifyAccessToken,
   getSpotifyAccessToken,
+  setDiscordAuthToken,
+  getDiscordAuthToken
 };

@@ -80,7 +80,6 @@ const Trello: React.FC = () => {
       const formattedData = data.data.lists;
 
       setPref(formattedData);
-      console.log('Pref Data:', formattedData);
     } catch (error) {
       console.error('Error parsing trello data:', error);
     }

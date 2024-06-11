@@ -25,15 +25,25 @@ async function getImageData(url) {
     throw error;
   }
 }
+async function getGifData(url) {
+  try {
+    const response = await axios.get(url, {
+      responseType: 'arraybuffer'
+    });
+    const imageData = Buffer.from(response.data).toString('base64');
+    return `data:image/gif;base64,${imageData}`;
+  } catch (error) {
+    console.error('Error fetching GIF: ', error);
+    throw error;
+  }
+}
 
 function sendMessageToClients(message) {
   try {
     server.clients.forEach(client => {
       if (client.readyState === 1) {
-        console.log('Sending data to client');
+        //console.log('Sending data to client', message);
         client.send(JSON.stringify(message));
-      } else {
-        console.log(client.readyState);
       }
     });
   } catch (Error) {
@@ -511,4 +521,5 @@ console.log('WebSocket server is running on ws://localhost:8891');
 module.exports = {
   getImageData,
   sendMessageToClients,
+  getGifData,
 }

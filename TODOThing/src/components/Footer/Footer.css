@@ -22,14 +22,14 @@
     font-size: calc(10px + 2vmin);
   }
   
-  .button {
+  .mediaButton {
     height: 75px;
     aspect-ratio: 2/1;
     border: none;
     border-radius: 5px;
     --button-size: 82px;
     background-color: transparent;
-    color: hsla(0, 0%, 100%, .7);
+    color: var(--text-brightAccent);
     display: flex;
     height: var(--button-size);
     min-width: var(--button-size);
@@ -43,6 +43,9 @@
     border: none;
     cursor: pointer;
     justify-content: center;
+  }
+  .icon {
+    fill: var(--text-subdued);
   }
   .getSongInfo {
     height: 170px;
@@ -60,9 +63,7 @@
     width: 85vw;
     border-radius: 5px;
   }
-  .icon {
-    fill: var(--bg-tinted-highlight);
-  }
+
   
   .audio_pullTab {
     position: absolute;

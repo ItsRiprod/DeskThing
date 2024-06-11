@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import ButtonHelper, { Button, EventFlavour } from '../../helpers/ButtonHelper';
 import socket, { device_data } from '../../helpers/WebSocketService';
 
-const Footer: React.FC = () => {
+const Volume: React.FC = () => {
   const [deviceData, setDeviceData] = useState<device_data>();
   const [volume, setVolume] = useState(0);
   const [visible, setVisible] = useState(false);
@@ -93,4 +93,4 @@ const Footer: React.FC = () => {
   );
 };
 
-export default Footer;
+export default Volume;

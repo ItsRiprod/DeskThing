@@ -9,6 +9,7 @@
     "react",
     "unused-imports"
   ],
+  "ignorePatterns": ["src/@spotify-internal/**/*"],
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",

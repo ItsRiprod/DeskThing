@@ -46,6 +46,7 @@ class WebSocketService {
   }
 
   post(body: Record<string, any>): void {
+    //console.log('Send', body);
     this.webSocket.send(JSON.stringify(body));
   }
 
@@ -53,6 +54,7 @@ class WebSocketService {
     this.webSocket.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data.toString());
+        //console.log('Receive', msg);
         this.listeners.forEach((listener: SocketEventListener) => listener(msg));
       } catch (e) {
         console.error(e);

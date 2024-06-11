@@ -135,13 +135,13 @@ app.get('/trello/callback', async (req, res) => {
 
 app.get('/discord/callback', async (req, res) => {
   const code = req.query.code;
+  console.log('In callback');
   if (!code) {
       return res.status(400).send('Authorization code missing');
   }
   
   try {
       // Call Discord's token endpoint to exchange code for token
-      console.log('In discord callback')
       const response = await axios.post('https://discord.com/api/oauth2/token', {
           client_id: discordClientId,
           client_secret: discordClientSecret,
@@ -201,6 +201,9 @@ const refreshAccessToken = async () => {
     //    console.error('Error opening browser:', err);
     //  }
   });
+
+
+  
 
   module.exports = {
     getSpotifyRefreshToken,
