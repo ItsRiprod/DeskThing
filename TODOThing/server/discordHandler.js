@@ -25,11 +25,11 @@ async function setActivity() {
   
     rpc.setActivity({
         details: 'Listening for mute/unmute',
-        state: 'TODOThing',
+        state: 'Something Probably',
         startTimestamp: startTimestamp,
-        largeImageKey: 'image_large',
+        largeImageKey: 'emoji_large',
         largeImageText: 'Hidden About Me Obtained',
-        smallImageKey: 'image_small',
+        smallImageKey: 'emoji_small',
         smallImageText: 'Cursed About Me Obtained',
         instance: false,
     }).catch((error) => {
