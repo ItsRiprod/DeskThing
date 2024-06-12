@@ -185,6 +185,7 @@ Process:
 - Go to accuweather location api and add your key there
 ![Accuweather Location Instructions](/readme_images/accuweather_location1.png)
 - Get your city id
+
 ![Accuweather Location Instructions](/readme_images/accuweather_location2.png)
 - Add your ACCUWEATHER_API_KEY and ACCUWEATHER_CITY (Location id) to your `.env` file using the template in [additional resources](#-additional-resources)
 
@@ -202,7 +203,7 @@ Process:
 - Click 'rich presence' and add two images that have the file name 'emoji_large' and 'emoji_small'
 ![Discord rich presence](/readme_images/discord_status.png)
 *bread for reference*
-> These names must match the names in `/TODOThing/server/discordHandler.js` under the function `setActivity` largeImageKey and smallImageKey. Update this activity to whatever you want using the Visualizer
+> These names must match the names in `/DeskThing/server/discordHandler.js` under the function `setActivity` largeImageKey and smallImageKey. Update this activity to whatever you want using the Visualizer
 
 ---
 ## 📗 Additional Resources
@@ -212,7 +213,7 @@ Process:
 - 🗨️ [Car Thing Hax Community Discord](https://discord.gg/aPSV6NykA6) - The discord where there is this project and so much more!
 
 ## .env file reference
-- **.env file reference for `/TODOThing/server/.env`**
+- **.env file reference for `/DeskThing/server/.env`**
 ```env
 SPOTIFY_API_ID= /* The spotify API ID obtained from dashboard  */
 SPOTIFY_CLIENT_SECRET= /* The spotify API secret obtained from dashboard */
