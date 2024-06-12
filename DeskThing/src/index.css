@@ -1,0 +1,111 @@
+:root {
+  /* Colors possibly taken from spotify (Attempt and use these)  used for styling everything*/
+
+    /**
+     * The default background color of the base set.
+     */
+     --bg-base: #121212;
+    /**
+     * A background color that indicates the hover state of a component, or adds some oomph to a focus state.
+     */
+     --bg-highlight: #1a1a1a;
+    /**
+     * A background color that indicates the press state of a component.
+     */
+    --bg-press: #000000;
+ 
+        /**
+         * The default background color for elevated elements in the base set.
+         */
+         --bg-elevated-base: #242424;
+         --bg-elevated-highlight: #2a2a2a;
+         --bg-elevated-press: #000000;
+ 
+        /**
+         * The default background color for tinted elements in the base set.
+         */
+         --bg-tinted-base: rgba(255, 255, 255, 0.07);
+         --bg-tinted-highlight: rgba(255, 255, 255, 0.1);
+         --bg-tinted-press: rgba(255, 255, 255, 0.04);
+  
+
+        /**
+         * Fallback color
+         */
+         --bg-unsafe-basebase: #121212;
+        /**
+         * Fallback color
+         */
+         --bg-unsafe-highlight: #121212;
+        /**
+         * Fallback color
+         */
+         --bg-unsafe-press: #121212;
+ 
+
+    /**
+     * The default text color of the base set.
+     */
+     --text-base: #ffffff;
+    /**
+     * A subdued variant of the base text color.
+     */
+     --text-subdued: #a7a7a7;
+    /**
+     * A bright text color that contrasts with the set’s background colors. Often used to give key interactive elements more prominence.
+     */
+     --text-brightAccent: #1ed760;
+    /**
+     * A text color associated with negativity. Often used for errors, destructive actions, or to highlight negative metrics or data.
+     */
+     --text-negative: #f15e6c;
+    /**
+     * A text color associated with caution. Often used to highlight potential problems or slightly negative metrics or data.
+     */
+     --text-warning: #ffa42b;
+    /**
+     * A text color associated with positivity. Often used for success states, or to highlight positive metrics or data.
+     */
+     --text-positive: #1ed760;
+    /**
+     * A text color associated with system announcements and notifications.
+     */
+     --text-announcement: #3d91f4;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
+    'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+.App {
+  text-align: center;
+
+  
+}
+
+h1 {
+  display: block;
+  font-size: 2em;
+  margin-block-start: 0.67em;
+  margin-block-end: 0.67em;
+  margin-inline-start: 0px;
+  margin-inline-end: 0px;
+  font-weight: bold;
+  unicode-bidi: isolate;
+}
+p, h1, h2, h3, h4, h5 {
+  padding: 0px;
+  margin: 0px;
+}
+
+.App-link {
+  color: #61dafb;
+}

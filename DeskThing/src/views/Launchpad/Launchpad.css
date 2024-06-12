@@ -1,0 +1,17 @@
+.view_launchpad {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.view_launchpad button {
+    background-color: var(--bg-tinted-highlight);
+    margin: 15px;
+    height: 100px;
+    width: 200px;
+    border-radius: 15px;
+    border: gray 2px solid;
+}
+.view_launchpad button:hover {
+    background-color: var(--bg-tinted-press);
+}

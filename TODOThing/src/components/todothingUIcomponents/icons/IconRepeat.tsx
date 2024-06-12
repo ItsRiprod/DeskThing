@@ -13,6 +13,7 @@ const CarThingIconRepeat = ({ className, iconSize }: Props) => (
     iconSize={iconSize as IconSize}
     width={iconSize}
     height={iconSize}
+    
   />
 );
 
