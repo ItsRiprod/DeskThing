@@ -6,7 +6,7 @@ import express from 'express';
 const app = express();
 import { OAuth } from 'oauth';
 import { parse } from 'url';
-import { getData, setData } from './dataHandler.js';
+import { getData, setData } from './util/dataHandler.js';
 const post = axios.post;
 /*
 * If you do not have a MIDI keyboard OR MIDI Launchpad Mk2, then I would recommend setting this to FALSE.
@@ -168,8 +168,10 @@ app.get('/discord/callback', async (req, res) => {
     getTrelloOauth,
   };
 
-import './socketHandler.js';
-import './spotifyHandler.js';
-import './discordHandler.js';
-import './launchpadHandler.js';
-import './trelloHandler.js';
+  // For now, comment out one of the following to disable the app
+import './util/socketHandler.js';
+import './apps/spotify/spotifyHandler.js';
+import './apps/discord/discordHandler.js';
+import './apps/launchpad/launchpadHandler.js';
+import './apps/trello/trelloHandler.js';
+import './apps/weather/weatherHandler.js';

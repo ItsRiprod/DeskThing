@@ -3,11 +3,12 @@ import React from 'react';
 import socket from '../../helpers/WebSocketService';
 
 const Launchpad: React.FC = () => {
-  const handleSendSet = (set: string, view: string) => {
+  const handleSendSet = (request: string, view: string) => {
     if (socket.is_ready()) {
       const data = {
+        app: 'launchpad',
         type: 'set',
-        get: set,
+        request: request,
         data: view,
       };
       socket.post(data);

@@ -3,8 +3,9 @@
 import 'dotenv/config';
 import RPC from 'discord-rpc';
 import axios from 'axios';
-import { sendMessageToClients, getImageData, getGifData } from './socketHandler.js';
-import { getData, setData } from './dataHandler.js'
+import { sendMessageToClients } from '../../util/socketHandler.js';
+import { getImageData, getGifData } from '../../util/imageUtil.js'
+import { getData, setData } from '../../util/dataHandler.js'
 
 const clientId = process.env.DISCORD_CLIENT_ID;
 const clientSecret = process.env.DISCORD_CLIENT_SECRET;

@@ -1,6 +1,8 @@
+
 import axios from "axios";
-import { getData, setData } from "./dataHandler.js";
+import { getData, setData } from "../../util/dataHandler.js";
 import open from "open";
+import { getImageData } from "../../util/imageUtil.js"
 
 const BASE_URL = "https://api.spotify.com/v1/me/player";
 const TOKEN_URL = "https://accounts.spotify.com/api/token";
@@ -192,6 +194,51 @@ const setVolume = async (newVol) => {
   return makeRequest("put", url);
 };
 
+const returnSongData = async (socket, oldUri = null) => {
+  try {
+    const startTime = Date.now();
+    const timeout = 10000;
+    let delay = 100;
+    let currentPlayback;
+    let newTrackUri;
+
+    do {
+      currentPlayback = await getCurrentPlayback();
+      newTrackUri = currentPlayback.item.uri;
+      if (delay !== 100) console.log('Song not updated... trying again', delay);
+      delay *= 1.3;
+      await new Promise(resolve => setTimeout(resolve, delay));
+    } while (newTrackUri === oldUri && Date.now() - startTime < timeout);
+
+    if (newTrackUri === oldUri) {
+      socket.send(JSON.stringify({ type: 'error', data: 'Timeout reached, same song is playing' }));
+      throw new Error('Timeout Reached!');
+    }
+
+    const songData = {
+      photo: null,
+      duration_ms: currentPlayback.item.duration_ms,
+      name: currentPlayback.item.name,
+      progress_ms: currentPlayback.progress_ms,
+      is_playing: currentPlayback.is_playing,
+      artistName: currentPlayback.item.artists[0].name,
+      uri: currentPlayback.item.uri,
+      playlistUri: currentPlayback.context.uri,
+    };
+
+    socket.send(JSON.stringify({ type: 'song_data', data: songData }));
+
+    const imageUrl = currentPlayback.item.album.images[0].url;
+    const imageData = await getImageData(imageUrl);
+    songData.photo = imageData;
+    
+    socket.send(JSON.stringify({ type: 'song_data', data: songData }));
+  } catch (error) {
+    socket.send(JSON.stringify({ type: 'error', data: error.message }));
+    console.error('Error getting song data:', error);
+  }
+};
+
 export {
   getCurrentPlayback,
   getCurrentDevice,
@@ -201,4 +248,5 @@ export {
   seek,
   pause,
   setVolume,
+  returnSongData,
 };

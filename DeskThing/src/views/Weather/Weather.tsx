@@ -67,13 +67,15 @@ const Weather: React.FC = () => {
 
   const handleGetWeatherData = (loc_key?: string) => {
     if (socket.is_ready()) {
-      const data = { type: 'get', get: 'weather_info', data: { key: loc_key || null } };
+      console.log('Sending Get Forecast Data');
+      const data = { app: 'weather', type: 'get', request: 'weather_info', data: { key: loc_key || null } };
       socket.post(data);
     }
   };
   const handleGetForecastData = (loc_key?: string) => {
     if (socket.is_ready()) {
-      const data = { type: 'get', get: 'forecast_info', data: { key: loc_key || null } };
+      console.log('Sending Get Forecast Data');
+      const data = { app: 'weather', type: 'get', request: 'forecast_info', data: { key: loc_key || null } };
       socket.post(data);
     }
   };

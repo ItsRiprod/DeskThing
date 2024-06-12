@@ -1,7 +1,5 @@
-/* eslint-disable prettier/prettier */
-/* eslint-disable @typescript-eslint/no-var-requires */
 import axios from 'axios';
-import { getData, setData } from './dataHandler.js';
+import { getData, setData } from '../../util/dataHandler.js';
 const get = axios.get;
 const weather_key = process.env.ACCUWEATHER_API_KEY; // trello app key
 const location_key = process.env.ACCUWEATHER_CITY;
@@ -49,7 +47,7 @@ const getCurrentWeather = async () => {
   };
 const getCityWeather = async (loc_key) => {
     try {
-      throw new Error("Not implemented");
+      throw new Error("Not implemented", loc_key);
       //const api_url = `http://dataservice.accuweather.com/currentconditions/v1/${loc_key}?apikey=${weather_key}&details=true`;
   //
       //const response = await axios.get(api_url);

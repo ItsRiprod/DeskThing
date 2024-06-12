@@ -1,11 +1,11 @@
-import launchpad from './launchpadUtil/launchpadIO.js';
+import launchpad from './launchpadIO.js';
 
 // Views
-import dashboard from './launchpadApps/dashboard.js';
-import colors from './launchpadApps/colors.js';
-import stopwatch from './launchpadApps/stopwatch.js';
+import dashboard from '../launchpadApps/dashboard.js';
+import colors from '../launchpadApps/colors.js';
+import stopwatch from '../launchpadApps/stopwatch.js';
 
-const views = {
+const views = { // Add to this for more launchpad views
   dashboard,
   colors,
   stopwatch,

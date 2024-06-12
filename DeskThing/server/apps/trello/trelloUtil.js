@@ -1,8 +1,8 @@
 /* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-var-requires */
 import 'dotenv/config';
-import { getTrelloOauth } from './server.js';
-import { getData, setData } from './dataHandler.js';
+import { getTrelloOauth } from '../../server.js';
+import { getData, setData } from '../../util/dataHandler.js';
 
 const refreshTrelloToken = async () => {
   try {
