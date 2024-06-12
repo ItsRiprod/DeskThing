@@ -1,17 +1,17 @@
-# The TODOThing ✔️
+# The DeskThing ✔️
 > *Just another CarThing app built off the back of superbird 🎵*
 
 *Let's begin, shall we?*
 
-This is the TODOThing project. Using Spotify's existing Car Thing, the TODOThing make's the perfect desk assistant. Integrating Trello API, Spotify API, AccuWeather API, and Macro capabilities, the TODOThing shoots to be *the* thing for controlling your desk environment. 
+This is the DeskThing project. Using Spotify's existing Car Thing, the DeskThing make's the perfect desk assistant. Integrating Trello API, Spotify API, AccuWeather API, and Macro capabilities, the DeskThing shoots to be *the* thing for controlling your desk environment. 
 
 > Setup is quite intense, so be prepared!
-
+> Not on windows? [Linux Modifications](#-linux-mods)
 ---
 
 ## ✨What It Does
 
-The TODOThing is a simple CarThing Chromium-based website that can communicate with a server run on the host via ADB (on port 8891) functioning as a socket. The CarThing can:
+The DeskThing is a simple CarThing Chromium-based website that can communicate with a server run on the host via ADB (on port 8891) functioning as a socket. The CarThing can:
 
 - Skip/Play/Pause/Seek tracks
 - Get album art
@@ -19,7 +19,8 @@ The TODOThing is a simple CarThing Chromium-based website that can communicate w
 - Get Trello workspace/boards/lists/cards
 - Get the current weather (including wind speed, UVindex, AQI, etc)
 - Get 12 hour forecast
-- Communicate with the Novation Launchpad (optional)
+- Communicate with the Novation Launchpad
+- Discord call status
 - And more!
 > *This is under constant development, so features will come as soon as i can make them. Suggestions welcome!*
 
@@ -32,13 +33,16 @@ The TODOThing is a simple CarThing Chromium-based website that can communicate w
 
 2. **Superbird Webapp flash:**
    - Flash your CarThing with the adb enabled dump [here](https://mega.nz/folder/NxNXQCaT#-n1zkoXsJuw-5rQ-ZYzRJw) using the [superbird-tool](https://github.com/bishopdynamics/superbird-tool).
+    - Follow install instructions for superbird-tool
 
-3. **Spotify, Accuweather, and Trello Integration:**
-   - Set up Spotify app
+3. **Spotify, Accuweather, Trello, and Discord apps:**
+   - Set up Spotify app [detailed steps here](#spotify-app)
     - Set up a spotify app and put the required keys into the env file 
-   - Set up your Trello power-up
+   - Set up your Trello power-up [detailed steps here](#trello-app)
     - Get app key and put it into the env file
-   - Set up Accuweather app
+   - Set up Accuweather app [detailed steps here](#accuweather-app)
+    - Get Accuweather api key and put it into the env file
+   - Set up Discord app [detailed steps here](#discord-app)
     - Get Accuweather api key and put it into the env file
 
 ### Detailed Setup Instructions
@@ -47,7 +51,7 @@ The TODOThing is a simple CarThing Chromium-based website that can communicate w
    - Follow the instructions in the [superbird-tool repository](https://github.com/bishopdynamics/superbird-tool) to flash your CarThing device with the necessary image.
 
 2. **Configure Spotify App:**
-   - Create a Spotify app and get the app ID and key. DDetailed steps are at the end of this page
+   - Create a Spotify app and get the app ID and key. [Detailed steps here](#spotify-app)
    - Add your Spotify app ID and key to a `.env` file:
      ```env
      SPOTIFY_APP_ID=your_spotify_app_id
@@ -55,16 +59,17 @@ The TODOThing is a simple CarThing Chromium-based website that can communicate w
      SPOTIFY_REDIRECT_URI=http://localhost:8888/callback
      DEVICE_ID=your_device_id
      ```
+> at `/DeskThing/server/.env-template` there is a template env file for you to fill out. Change the name to .env once you are done
 3. **Configure Trello App:**
-   - Create a Trello app and get the app ID and key. Detailed steps are at the end of this page
-   - Add your Trello app key and secret to a `.env` file:
+   - Create a Trello app and get the app ID and key. [Detailed steps here](#trello-app)
+   - Add your Trello app key and secret to a `.env` file: 
      ```env
      TRELLO_REDIRECT_URI=http://localhost:8888/trello/callback
      TRELLO_KEY= your_trello_key
      TRELLO_SECRET= your_trello_bot_secret
      ```
 4. **Configure Accuweather App:**
-   - Create a Accuweather app and get the app ID and key. Detailed steps are at the end of this page
+   - Create a Accuweather app and get the app ID and key. [Detailed steps here](#accuweather-app)
    - Add your Accuweather app key and key to a `.env` file:
      ```env
      ACCUWEATHER_API_KEY=your_accuweather_app_api_key
@@ -72,7 +77,7 @@ The TODOThing is a simple CarThing Chromium-based website that can communicate w
      ```
    
 5. **Configure Discord App:**
-   - Create a discord app and key the key and secret. Detailed steps down below
+   - Create a discord app and key the key and secret. [detailed steps here](#discord-app)
    - Add them to your `.env` file:
      ```env
       DISCORD_CLIENT_ID= discord_app_id
@@ -82,16 +87,15 @@ The TODOThing is a simple CarThing Chromium-based website that can communicate w
      ```
 
 6. **Configure Workspace:**
-   - Use `cd ./TODOThing` to get into the project directory and run:
+   - Use `cd ./DeskThing` to get into the project directory and run:
    ```sh
    npm install
    ```
-   - Add `.env` file to `/TODOThing/server/` (rename .env.template to .env optionally)
-   - Ensure `PORT=888` in the `.env` file
+   - Add `.env` file to `/DeskThing/server/` (optionally, just rename `.env-template` to `.env`. `.env-template` is already located where it needs to be)
+   - Ensure `PORT=8888` in the `.env` file
 > If anything here does not work. DM me on discord @riprod
 
 7. **Pushing the project to the car thing:**
-> !!Ensure that the CarThing is plugged in directly to your computer I/O!!
    - Build project:
      ```sh
      npm run build
@@ -103,10 +107,11 @@ The TODOThing is a simple CarThing Chromium-based website that can communicate w
      > adb should be an environment variable from step 1
    - Remount the build to the carthing:
      ```sh
-     adb shell "mountpoint /usr/share/qt-superbird-app/webapp/ > /dev/null && umount /usr/share/qt-superbird-app/webapp"
-     adb shell "rm -rf /tmp/webapp"
-     adb push "build/" /tmp/webapp
-     adb shell "mount --bind /tmp/webapp /usr/share/qt-superbird-app/webapp"
+      adb shell mount -o remount,rw /
+      adb shell mv /usr/share/qt-superbird-app/webapp /tmp/webapp-orig
+      adb shell mv /tmp/webapp-orig /usr/share/qt-superbird-app/ # it's ok if this fails
+      adb shell rm -r /tmp/webapp-orig
+      adb push dist/ /usr/share/qt-superbird-app/webapp
      ```
    - Restart chromium:
      ```sh
@@ -123,6 +128,83 @@ The TODOThing is a simple CarThing Chromium-based website that can communicate w
 
 ---
 
+Ensure that your environment is correctly set up and all dependencies are installed. Good Luck!
+> Questions? DM me on discord @riprod
+
+⚠️ *The possibility of this bricking your device is very real* ⚠️
+
+# APP CREATION TUTORIALS
+
+## Spotify App:
+
+Links: 
+- [Spotify App Dashboard](https://developer.spotify.com/dashboard)
+- [Spotify API to get device id](https://developer.spotify.com/documentation/web-api/reference/get-information-about-the-users-current-playback)
+
+Process:
+- Go to the app dashboard (linked above) and click "Create App" (You may need to enroll as a developer)
+![App Creation details](/readme_images/spotify_app_creation.png)
+- Get your Device ID by going to the Spotify API (linked above) and clicking "Try It"
+> Ensure that you are listening to music on your primary device when you do this!
+![Device ID Location](/readme_images/spotify_app_device_id.png)
+- Add DEVICE_ID, SPOTIFY_CLIENT_SECRET, and SPOTIFY_API_ID to `.env` file using the template in [additional resources](#-additional-resources) 
+> Any Questions, Contact me via discord @riprod
+
+## Trello App
+
+Links:
+- [Trello Admin](https://trello.com/power-ups/admin/)
+- [Glitch App](https://glitch.com/~trello-power-up)
+
+Process:
+- Go to the Trello Admin page and click the blue 'New' (keep this page open)
+- Go to Glitch App and click 'Remix your own' (you may have to make an account)
+- Once you see your project, click 'share' and then copy 'live site'
+![Trello Glitch Instructions](/readme_images/trello_glitch.png)
+- Go back to the Trello Admin Page and paste this link into 'iFrame connector URL'
+- Fill out the rest of the information and click 'create'
+- Go to the app dashboard and click 'API key' to the left (You may have to generate something here)
+- Add an Allowed Origin 'http://localhost:8888' (Ensure this matches your .env callback)
+![Trello API Instructions](/readme_images/trello_api.png)
+- Add TRELLO_KEY and TRELLO_SECRET into your `.env` file using the template in [additional resources](#-additional-resources)
+
+## Accuweather App
+
+Links:
+- [Accuweather Developer Dashboard](https://developer.accuweather.com/)
+- [Accuweather Location API](https://developer.accuweather.com/accuweather-locations-api/apis/get/locations/v1/cities/search)
+
+Process:
+- Go to Accuweather Developer Dashboard and login
+- Click 'my apps' and click '+ Add a new app'
+- Fill out the information
+![Accuweather Instructions](/readme_images/accuweather.png)
+> Specifics here do not matter. You just need the app
+- Get the API Key
+![Accuweather API Instructions](/readme_images/accuweather_api.png)
+- Go to accuweather location api and add your key there
+![Accuweather Location Instructions](/readme_images/accuweather_location1.png)
+- Get your city id
+![Accuweather Location Instructions](/readme_images/accuweather_location2.png)
+- Add your ACCUWEATHER_API_KEY and ACCUWEATHER_CITY (Location id) to your `.env` file using the template in [additional resources](#-additional-resources)
+
+## Discord app
+
+Links:
+- [Discord developer dashboard](https://discord.com/developers/applications)
+
+Process:
+- Go to the developer dashboard and click 'New Application' (Name it whatever you want)
+- Go to OAuth2 and generate a new secret. Match the image below:
+![Discord key, secret, and redirect url](/readme_images/discord_keys.png)
+> Ensure the redirect url matches the one in the `.env` file exactly
+- Add DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET to `.env` file using the template in [additional resources](#-additional-resources)
+- Click 'rich presence' and add two images that have the file name 'emoji_large' and 'emoji_small'
+![Discord rich presence](/readme_images/discord_status.png)
+*bread for reference*
+> These names must match the names in `/TODOThing/server/discordHandler.js` under the function `setActivity` largeImageKey and smallImageKey. Update this activity to whatever you want using the Visualizer
+
+---
 ## 📗 Additional Resources
 
 - 🔧 [superbird-tool](https://github.com/bishopdynamics/superbird-tool) - This is the CarThing image that is being used. Be sure to either include this link or steps on how to flash the CarThing.
@@ -152,7 +234,7 @@ DISCORD_USER_ID= # Discord user id (yours)
 ```sh
 @echo off
 
-cd /d "C:\*Path to car thing files*\carthing\TODOThing\"
+cd /d "C:\*Path to car thing files*\carthing\DeskThing\"
 
 set SPOTIFY_API_ID= // The API key from a spotify app obtained from the dashboard
 set SPOTIFY_CLIENT_SECRET= // The spotify client secret obtained from the dashboard  
@@ -164,96 +246,65 @@ set TRELLO_TOKEN= // Trello bot token
 set TRELLO_KEY= // Trello bot key
 set TRELLO_SECRET= // Trello bot secret
 set ACCUWEATHER_API_KEY= // Key obtained from AccuWeather app
-set ACCUWEATHER_CITY=
+set ACCUWEATHER_CITY= // City key obtained from AccuWeather app
 
-set DISCORD_CLIENT_ID=
-set DISCORD_CLIENT_SECRET=
+set DISCORD_CLIENT_ID= // Discord bot id
+set DISCORD_CLIENT_SECRET= // Discord bot secret
 set DISCORD_REDIR_URI=http://localhost:8888/discord/callback
-set DISCORD_USER_ID=
+set DISCORD_USER_ID= // Your user ID
 
 adb reverse tcp:8891 tcp:8891
-adb shell "mountpoint /usr/share/qt-superbird-app/webapp/ > /dev/null && umount /usr/share/qt-superbird-app/webapp"
-adb shell "rm -rf /tmp/webapp"
-adb push "build/" /tmp/webapp
-adb shell "mount --bind /tmp/webapp /usr/share/qt-superbird-app/webapp"
-adb shell supervisorctl restart chromium
+adb shell mount -o remount,rw /
+adb shell mv /usr/share/qt-superbird-app/webapp /tmp/webapp-orig
+adb shell mv /tmp/webapp-orig /usr/share/qt-superbird-app/ # it's ok if this fails
+adb shell rm -r /tmp/webapp-orig
+adb push dist/ /usr/share/qt-superbird-app/webapp
 
 start cmd.exe /k "node server/server.js"
 ```
 
----
+## 🤖 Linux Mods
 
-Ensure that your environment is correctly set up and all dependencies are installed. Good Luck!
-> Questions? DM me on discord @riprod
+Currently, DeskThing does not have great support for linux. This will be resolved once DeskThing becomes modular, but for now you can do the following steps:
+- Follow superbird-tool tutorial for flashing the car thing with the ADB_ENABLES flash
+- Ensure ADB is installed correctly
+- run `npm uninstall midi robotsjs`
+- in `/server/socketHandler.js` remove any mention of robotsjs
+- in `/server/server.js` remove the import statement for the launchpadHandler.js
+> I don't run linux - so if there are any more incompatibilites, DM me on discord @riprod so I can add them here
+- Run the following script (After obtaining env files):
+```sh
+#!/bin/bash
 
-⚠️ *The possibility of this bricking your device is very real - every step of this process is risky and i would do so with extreme caution.* ⚠️
+# Change directory to the car thing files location
+cd "/path/to/carthing/DeskThing/"
 
-# *DETAILED WALKTHROUGHS FOR APP CREATION*
+# Set environment variables
+export SPOTIFY_API_ID= # The API key from a Spotify app obtained from the dashboard
+export SPOTIFY_CLIENT_SECRET= # The Spotify client secret obtained from the dashboard  
+export SPOTIFY_REDIRECT_URI=http://localhost:8888/callback # This is for authenticating yourself
+export PORT=8888 # Port that is used for authentication
+export DEVICE_ID= # ID of your device found in the Spotify REST API - optional to know where you are playing music from
 
-## Spotify App:
+export TRELLO_TOKEN= # Trello bot token
+export TRELLO_KEY= # Trello bot key
+export TRELLO_SECRET= # Trello bot secret
+export ACCUWEATHER_API_KEY= # Key obtained from AccuWeather app
+export ACCUWEATHER_CITY= # City key obtained from AccuWeather app
 
-Links: 
-- [Spotify App Dashboard](https://developer.spotify.com/dashboard)
-- [Spotify API to get device id](https://developer.spotify.com/documentation/web-api/reference/get-information-about-the-users-current-playback)
+export DISCORD_CLIENT_ID= # Discord bot id
+export DISCORD_CLIENT_SECRET= # Discord bot secret
+export DISCORD_REDIR_URI=http://localhost:8888/discord/callback
+export DISCORD_USER_ID= # Your user ID
 
-Process:
-- Go to the app dashboard (linked above) and click "Create App" (You may need to enroll as a developer)
-![App Creation details](/readme_images/spotify_app_creation.png)
-- Get your Device ID by going to the Spotify API (linked above) and clicking "Try It"
-> Ensure that you are listening to music on your primary device when you do this!
-![Device ID Location](/readme_images/spotify_app_device_id.png)
-> Any Questions, Contact me via discord @riprod
+# Use adb to reverse ports and move files
+adb reverse tcp:8891 tcp:8891
+adb shell mount -o remount,rw /
+adb shell mv /usr/share/qt-superbird-app/webapp /tmp/webapp-orig
+adb shell mv /tmp/webapp-orig /usr/share/qt-superbird-app/ # it's ok if this fails
+adb shell rm -r /tmp/webapp-orig
+adb push dist/ /usr/share/qt-superbird-app/webapp
 
-## Trello App
-
-Links:
-- [Trello Admin](https://trello.com/power-ups/admin/)
-- [Glitch App](https://glitch.com/~trello-power-up)
-
-Process:
-- Go to the Trello Admin page and click the blue 'New' (keep this page open)
-- Go to Glitch App and click 'Remix your own' (you may have to make an account)
-- Once you see your project, click 'share' and then copy 'live site'
-![Trello Glitch Instructions](/readme_images/trello_glitch.png)
-- Go back to the Trello Admin Page and paste this link into 'iFrame connector URL'
-- Fill out the rest of the information and click 'create'
-- Go to the app dashboard and click 'API key' to the left (You may have to generate something here)
-- Add an Allowed Origin 'http://localhost:8888' (Ensure this matches your .env callback)
-![Trello API Instructions](/readme_images/trello_api.png)
-- Copy the secret and API key into your `.env` file
-
-## Accuweather App
-
-Links:
-- [Accuweather Developer Dashboard](https://developer.accuweather.com/)
-- [Accuweather Location API](https://developer.accuweather.com/accuweather-locations-api/apis/get/locations/v1/cities/search)
-
-Process:
-- Go to Accuweather Developer Dashboard and login
-- Click 'my apps' and click '+ Add a new app'
-- Fill out the information
-![Accuweather Instructions](/readme_images/accuweather.png)
-> Specifics here do not matter. You just need the app
-- Get the API Key
-![Accuweather API Instructions](/readme_images/accuweather_api.png)
-- Go to accuweather location api and add your key there
-![Accuweather Location Instructions](/readme_images/accuweather_location1.png)
-- Get your city id
-![Accuweather Location Instructions](/readme_images/accuweather_location2.png)
-- Add your app key and location id to your `.env` file
-
-## Discord app
-
-Links:
-- [Discord developer dashboard](https://discord.com/developers/applications)
-
-Process:
-- Go to the developer dashboard and click 'New Application' (Name it whatever you want)
-- Go to OAuth2 and generate a new secret. Match the image below:
-![Discord key, secret, and redirect url](/readme_images/discord_keys.png)
-> Ensure the redirect url matches the one in the `.env` file exactly
-- Add client id and secret to `.env` file
-- Click 'rich presence' and add two images that have the file name 'emoji_large' and 'emoji_small'
-![Discord rich presence](/readme_images/discord_status.png)
-*bread for reference*
-> These names must match the names in `/TODOThing/server/discordHandler.js` under the function `setActivity` largeImageKey and smallImageKey. Update this activity to whatever you want using the Visualizer
+# Start the server
+node server/server.js
+```
