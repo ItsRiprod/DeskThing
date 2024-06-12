@@ -4,8 +4,6 @@ import axios from 'axios'
 import { stringify } from 'qs';
 import express from 'express';
 const app = express();
-import http from 'http';
-import open from 'open';
 import { OAuth } from 'oauth';
 import { parse } from 'url';
 import { getData, setData } from './dataHandler.js';
@@ -38,16 +36,6 @@ const expiration = '30days';
 const oauth_secrets = {};
 const oauth = new OAuth(requestURL, accessURL, trello_key, trello_secret, "1.0A", trello_callback, "HMAC-SHA1")
 
-
-
-
-let trello_token, trello_tokenSecret;
-
-let refresh_token = null;
-
-const getSpotifyRefreshToken = () => {
-    return refresh_token;
-}
 const getTrelloOauth = () => {
     return oauth;
 }
@@ -84,11 +72,12 @@ app.get('/login', (req, res) => {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
       const access_token = response.data.access_token;
-      refresh_token = response.data.refresh_token;
+      const refresh_token = response.data.refresh_token;
 
       if (access_token && refresh_token) {
         res.send('Spotify Authorized!');
         setData('spotifyToken', access_token);
+        setData('refreshToken', refresh_token);
       } else {
         console.error('Error getting tokens:', response.data);
         res.send('Error getting tokens.');
@@ -158,33 +147,6 @@ app.get('/discord/callback', async (req, res) => {
   }
 });
 
-const refreshAccessToken = async () => {
-  if (!refresh_token) {
-    try {
-      await open(`http://localhost:${port}/login`);
-    } catch (err) {
-      console.error('Error opening browser:', err);
-    }
-  }
-  const token_url = 'https://accounts.spotify.com/api/token';
-    const data = new URLSearchParams({
-      grant_type: 'refresh_token',
-      refresh_token: refresh_token,
-      client_id: client_id,
-      client_secret: client_secret
-    });
-    try {
-      const response = await post(token_url, data, {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-      });
-      const access_token = response.data.access_token;
-      setData('spotifyToken', access_token);
-      return access_token;
-    } catch (error) {
-      console.error('Error refreshing access token:', error);
-      throw error;
-    }
-  };
 
   const port = process.env.PORT || 8881;
   app.listen(port, async () => {
@@ -203,8 +165,6 @@ const refreshAccessToken = async () => {
   
 
   export {
-    getSpotifyRefreshToken,
-    refreshAccessToken,
     getTrelloOauth,
   };
 

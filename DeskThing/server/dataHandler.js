@@ -23,7 +23,6 @@ const readData = () => {
   } catch (err) {
     console.error('Error reading data file:', err);
     if (err.code === 'ENOENT') {
-      const defaultData = { boards: [], weatherData:null, forecastData:null, spotifyToken: null, discordAuth: null, trelloAccessToken: null, trelloTokenSecret: null };
       fs.writeFileSync(dataFilePath, JSON.stringify(defaultData, null, 2));
       return defaultData;
     }

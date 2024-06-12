@@ -17,18 +17,21 @@ const server = new WebSocketServer({ port: 8891 });
 // Helper function for encoding images
 async function getImageData(url) {
   try {
+    console.log('GET IMAGE: Getting image data...')
     const response = await get(url, {
       responseType: 'arraybuffer'
     });
     const imageData = Buffer.from(response.data).toString('base64');
+
+    console.log('GET IMAGE: Sending!')
     return `data:image/jpeg;base64,${imageData}`;
   } catch (error) {
-    console.error('Error fetching image:', error);
-    throw error;
+    throw new Error('Error fetching image:', error);
   }
 }
 async function getGifData(url) {
   try {
+    console.log('Getting Gif data...')
     const response = await get(url, {
       responseType: 'arraybuffer'
     });
@@ -60,7 +63,7 @@ server.on('connection', async (socket) => {
 
   // Handle incoming messages from the client
   socket.on('message', async (message) => {
-    console.log(`Received: ${message}`);
+    console.log(`ADB Message: ${message}`);
 
     // Helper function to format and return the song data
     const returnSongData = async (oldUri = null) => {
@@ -75,6 +78,7 @@ server.on('connection', async (socket) => {
         do {
           currentPlayback = await getCurrentPlayback();
           newTrackUri = currentPlayback.item.uri;
+          if (delay != 100) {console.log('Song not updated... trying again', delay)}
           delay = delay * 1.3; // Delay increases by 30% each time
           await new Promise(resolve => setTimeout(resolve, delay));
         } while (newTrackUri === oldUri && Date.now() - startTime < timeout);
@@ -82,11 +86,22 @@ server.on('connection', async (socket) => {
         if (newTrackUri === oldUri) {
           // Timeout reached, same song is playing
           socket.send(JSON.stringify({ type: 'error', data: 'Timeout reached, same song is playing' }));
-          return;
+          throw new Error('Timeout Reached!');
         }
-        const imageUrl = currentPlayback.item.album.images[0].url;
-        const imageData = await getImageData(imageUrl);
         const returnData = {
+          photo: null,
+          duration_ms: currentPlayback.item.duration_ms,
+          name: currentPlayback.item.name,
+          progress_ms: currentPlayback.progress_ms,
+          is_playing: currentPlayback.is_playing,
+          artistName: currentPlayback.item.artists[0].name,
+          uri: currentPlayback.item.uri,
+          playlistUri: currentPlayback.context.uri,
+          };
+        const imageUrl = currentPlayback.item.album.images[0].url;
+        socket.send(JSON.stringify({ type: 'song_data', data: returnData }));
+        const imageData = await getImageData(imageUrl);
+        const returnImageData = {
           photo: imageData,
           duration_ms: currentPlayback.item.duration_ms,
           name: currentPlayback.item.name,
@@ -96,9 +111,10 @@ server.on('connection', async (socket) => {
           uri: currentPlayback.item.uri,
           playlistUri: currentPlayback.context.uri,
         };
-        socket.send(JSON.stringify({ type: 'song_data', data: returnData }));
+        socket.send(JSON.stringify({ type: 'song_data', data: returnImageData }));
       } catch (error) {
         socket.send(JSON.stringify({ type: 'error', data: error.message }));
+        throw new Error('There was an error getting song data: ', error);
       }
     };
 
@@ -128,11 +144,10 @@ server.on('connection', async (socket) => {
             case 'next_track':
               if (parsedMessage.spotify) {
                 try {
-                  const response = await skipToNext();
-                  if (response) {
-                    await returnSongData(parsedMessage.uri);
-                  }
+                  await skipToNext();
+                  await returnSongData(parsedMessage.uri);
                 } catch (error) {
+                  console.error('Error skipping track', error.message)
                   socket.send(
                     JSON.stringify({ type: 'error', data: error.message })
                   );
@@ -145,10 +160,8 @@ server.on('connection', async (socket) => {
             case 'previous_track':
               if (parsedMessage.spotify) {
                 try {
-                  const response = await skipToPrev();
-                  if (response) {
-                    await returnSongData(parsedMessage.uri);
-                  }
+                  await skipToPrev();
+                  await returnSongData(parsedMessage.uri);
                 } catch (error) {
                   socket.send(
                     JSON.stringify({ type: 'error', data: error.message })
@@ -162,10 +175,8 @@ server.on('connection', async (socket) => {
             case 'pause_track':
               if (parsedMessage.spotify) {
                 try {
-                  const response = await pause();
-                  if (response) {
-                    await returnSongData();
-                  }
+                  await pause();
+                  await returnSongData();
                 } catch (error) {
                   socket.send(
                     JSON.stringify({ type: 'error', data: error.message })
@@ -179,10 +190,8 @@ server.on('connection', async (socket) => {
             case 'stop_track':
               if (parsedMessage.spotify) {
                 try {
-                  const response = await pause();
-                  if (response) {
+                  await pause();
                     await returnSongData();
-                  }
                 } catch (error) {
                   socket.send(
                     JSON.stringify({ type: 'error', data: error.message })
@@ -196,11 +205,9 @@ server.on('connection', async (socket) => {
             case 'seek_track':
               if (parsedMessage.spotify) {
                 try {
-                  const response = await seek(parsedMessage.position_ms);
-                  if (response) {
+                  await seek(parsedMessage.position_ms);
                     await new Promise(resolve => setTimeout(resolve, 3000));
                     await returnSongData();
-                  }
                 } catch (error) {
                   socket.send(
                     JSON.stringify({ type: 'error', data: error.message })
@@ -214,11 +221,8 @@ server.on('connection', async (socket) => {
             case 'play_track':
               if (parsedMessage.spotify) {
                 try {
-                  const response = await play();
-                  if (response) {
-                    await returnSongData();
-
-                  }
+                  await play();
+                  await returnSongData();
                 } catch (error) {
                   socket.send(
                     JSON.stringify({ type: 'error', data: error.message })
@@ -243,7 +247,11 @@ server.on('connection', async (socket) => {
              * Spotify API
              */
             case 'song_info':
-              returnSongData(null);
+              try {
+                returnSongData(null);
+              } catch (error) {
+                console.error('GET: Error getting song data!', error)
+              }
               break;
             case 'device_info':
               try {
@@ -478,7 +486,6 @@ server.on('connection', async (socket) => {
                     JSON.stringify({ type: 'error', data: error.message })
                   );
               }
-              returnSongData(null);
               break;
             case 'lp_view':
               try {
@@ -494,7 +501,6 @@ server.on('connection', async (socket) => {
                     JSON.stringify({ type: 'error', data: error.message })
                   );
               }
-              returnSongData(null);
               break;
             default:
               console.error('Unknown command', parsedMessage.get);
