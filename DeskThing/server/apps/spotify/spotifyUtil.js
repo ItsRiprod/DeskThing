@@ -3,6 +3,7 @@ import axios from "axios";
 import { getData, setData } from "../../util/dataHandler.js";
 import open from "open";
 import { getImageData } from "../../util/imageUtil.js"
+import { sendMessageToClients } from '../../util/socketHandler.js'
 
 const BASE_URL = "https://api.spotify.com/v1/me/player";
 const TOKEN_URL = "https://accounts.spotify.com/api/token";
@@ -10,6 +11,7 @@ const PORT = process.env.PORT;
 const CLIENT_ID = process.env.SPOTIFY_API_ID;
 const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
 
+let isTabOpened = false;
 /**
  * Refreshes the Spotify access token.
  * @returns {Promise<string>} The new access token.
@@ -20,11 +22,17 @@ const refreshAccessToken = async () => {
   const refreshToken = getData("spotifyRefreshToken");
 
   if (!refreshToken) {
-    try {
-      await open(`http://localhost:${PORT}/login`);
-      throw new Error("Invalid Access Token! Refreshing...");
-    } catch (err) {
-      throw new Error("Error opening browser:", err);
+    if (!isTabOpened) {
+      try {
+        await open(`http://localhost:${PORT}/login`);
+        isTabOpened = true;
+        throw new Error("Invalid Access Token! Refreshing...");
+      } catch (err) {
+        throw new Error("Error opening browser:", err);
+      }
+
+    }  else {
+      throw new Error("Authorization tab already opened.");
     }
   }
 
@@ -42,6 +50,7 @@ const refreshAccessToken = async () => {
 
     const accessToken = response.data.access_token;
     setData("spotifyToken", accessToken);
+    isTabOpened = false; 
     return accessToken;
   } catch (error) {
     throw new Error("Error refreshing access token:", error);
@@ -64,7 +73,7 @@ const handleError = async (error) => {
           throw new Error("Error refreshing token:", refreshError);
         }
       } else if (error.response.status === 404) {
-        throw new Error('Error 404: Resource not found in handleError')
+        throw new Error('(Ignore if this is a result of skipping/pausing) Error 404: Resource not found in handleError')
       } else {
         throw new Error(`Request failed with status ${error.response.status}`);
       }
@@ -101,13 +110,16 @@ const makeRequest = async (method, url, data = null) => {
   };
 
   try {
-      console.log('MAKE REQUEST: ', method, url)
+      console.log('SPOTIFY REQUEST: ', method, url)
       const response = await axios({ method, url, data, headers });
       return response.data ? response.data : true;
   } catch (error) {
     await handleError(error);
+    if (error.response && error.response.status === 404) {
+      return;
+    }
     await new Promise(resolve => setTimeout(resolve, 5000)); // Wait five seconds
-    console.log('MAKE REQUEST: Retrying', method, url, data);
+    console.log('SPOTIFY REQUEST: Retrying', method, url, data);
     const retryResponse = makeRequest( method, url, data );
     return retryResponse.data ? retryResponse.data : true;
   }
@@ -205,13 +217,17 @@ const returnSongData = async (socket, oldUri = null) => {
     do {
       currentPlayback = await getCurrentPlayback();
       newTrackUri = currentPlayback.item.uri;
-      if (delay !== 100) console.log('Song not updated... trying again', delay);
+      if (delay !== 100)
+        console.log(`Song not updated... trying again | timeout: ${timeout} cur time: ${Date.now() - startTime} delay: ${delay}`);
+      else
+        console.log(`Getting Current Playback: old url ${oldUri} new url${newTrackUri}, date now: ${Date.now()}`);
+
       delay *= 1.3;
       await new Promise(resolve => setTimeout(resolve, delay));
     } while (newTrackUri === oldUri && Date.now() - startTime < timeout);
 
     if (newTrackUri === oldUri) {
-      socket.send(JSON.stringify({ type: 'error', data: 'Timeout reached, same song is playing' }));
+      //sendMessageToClients({ type: 'error', data: 'Timeout reached, same song is playing' });
       throw new Error('Timeout Reached!');
     }
 
@@ -226,13 +242,12 @@ const returnSongData = async (socket, oldUri = null) => {
       playlistUri: currentPlayback.context.uri,
     };
 
-    socket.send(JSON.stringify({ type: 'song_data', data: songData }));
+    sendMessageToClients({ type: 'song_data', data: songData });
 
     const imageUrl = currentPlayback.item.album.images[0].url;
     const imageData = await getImageData(imageUrl);
-    songData.photo = imageData;
     
-    socket.send(JSON.stringify({ type: 'song_data', data: songData }));
+    sendMessageToClients({ type: 'img_data', data: imageData });
   } catch (error) {
     socket.send(JSON.stringify({ type: 'error', data: error.message }));
     console.error('Error getting song data:', error);

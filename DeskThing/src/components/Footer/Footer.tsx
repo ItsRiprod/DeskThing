@@ -14,6 +14,7 @@ import {
 const Footer: React.FC = () => {
   const [local, setLocal] = useState(true);
   const [songData, setSongData] = useState<song_data>();
+  const [imageData, setImageData] = useState<string>();
   const [play, setPlay] = useState(false);
 
   const handleDeviceData = (data: device_data) => {
@@ -34,6 +35,9 @@ const Footer: React.FC = () => {
       if (msg.type === 'song_data') {
         handleSongData(msg.data);
       }
+      if (msg.type === 'img_data') {
+        setImageData(msg.data);
+      }
     };
 
     socket.addSocketEventListener(listener);
@@ -43,13 +47,13 @@ const Footer: React.FC = () => {
     };
   }, []);
 
-  const handleSendCommand = (command: string) => {
+  const handleSendCommand = (request: string) => {
     if (socket.is_ready()) {
       const data = {
-        type: 'command',
-        command: command,
-        spotify: !local,
-        uri: songData?.uri || null,
+        app: 'spotify',
+        type: 'set',
+        request: request,
+        data: songData?.uri || null,
       };
       socket.post(data);
     }
@@ -57,18 +61,18 @@ const Footer: React.FC = () => {
 
   const handleGetSongData = () => {
     if (socket.is_ready()) {
-      const data = { type: 'get', get: 'song_info' };
+      const data = { app:'spotify', type: 'get', request: 'song_info' };
       socket.post(data);
-      const data2 = { type: 'get', get: 'device_info' };
+      const data2 = { app:'spotify', type: 'get', request: 'device_info' };
       socket.post(data2);
     }
   };
   const setSpecificDuration = (ms: number) => {
     if (socket.is_ready()) {
       const data = {
-        type: 'command',
-        command: 'seek_track',
-        spotify: !local,
+        app: 'spotify',
+        type: 'set',
+        request: 'seek_track',
         position_ms: ms,
       };
       socket.post(data);
@@ -83,7 +87,7 @@ const Footer: React.FC = () => {
   return (
     <div className="audioPlayer">
       <button className="button getSongInfo" onClick={handleGetSongData}>
-        <img width="170px" src={songData?.photo || ''} alt="Switch to Spotify" />
+        <img width="170px" src={imageData || ''} alt="Switch to Spotify" />
       </button>
       <div className="audioPlayer_controls">
         {local ? (

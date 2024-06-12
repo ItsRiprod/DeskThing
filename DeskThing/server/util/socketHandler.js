@@ -23,6 +23,7 @@ const sendResponse = async (socket, message) => {
     console.error('Error sending message:', error);
   }
 };
+
 const sendError = async (socket, error) => {
   try {
     console.error('Socket Error ', error);

@@ -78,7 +78,8 @@ const Volume: React.FC = () => {
     if (socket.is_ready()) {
       const data = {
         type: 'set',
-        get: command,
+        request: command,
+        app: 'spotify',
         data: payload,
       };
       socket.post(data);

@@ -1,5 +1,5 @@
 import { returnSongData, getCurrentDevice, skipToNext, play, pause, skipToPrev, seek, setVolume } from './spotifyUtil.js';
-import { server, sendError } from '../../util/socketHandler.js'
+import { server, sendMessageToClients, sendError } from '../../util/socketHandler.js'
 
 server.on('connection', async (socket) => {
   socket.on('message', async (message) => {
@@ -33,7 +33,7 @@ const handleGetRequest = async (socket, parsedMessage) => {
       case 'device_info':
         // eslint-disable-next-line no-case-declarations
         const playbackState = await getCurrentDevice();
-        socket.send(JSON.stringify({
+        sendMessageToClients({
           type: 'device_data',
           data: {
             device: {
@@ -44,7 +44,7 @@ const handleGetRequest = async (socket, parsedMessage) => {
             },
             is_playing: playbackState.is_playing,
           },
-        }));
+        });
         break;
       default:
         await sendError(socket, 'Unknown Get Request', parsedMessage.request);
@@ -62,16 +62,16 @@ const handleSetRequest = async (socket, parsedMessage) => {
         break;
       case 'next_track':
         await skipToNext();
-        await returnSongData(parsedMessage.data);
+        await returnSongData(socket, parsedMessage.data);
         break;
       case 'previous_track':
         await skipToPrev();
-        await returnSongData(parsedMessage.data);
+        await returnSongData(socket, parsedMessage.data);
         break;
       case 'pause_track':
       case 'stop_track':
         await pause();
-        await returnSongData();
+        await returnSongData(socket);
         break;
       case 'seek_track':
         await seek(parsedMessage.position_ms);
@@ -80,7 +80,7 @@ const handleSetRequest = async (socket, parsedMessage) => {
         break;
       case 'play_track':
         await play();
-        await returnSongData();
+        await returnSongData(socket);
         break;
       default:
         await sendError(socket, 'Unknown Set Request', parsedMessage.request);

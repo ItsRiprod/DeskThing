@@ -9,6 +9,7 @@ const Spotify: React.FC = () => {
   const [play, setPlay] = useState(false);
   const [bgColor, setBgColor] = useState('#000000');
   const [txtColor, setTxtColor] = useState('#999999');
+  const [imgData, setImgData] = useState<string>();
   const handleDeviceData = (data: device_data) => {
     setPlay(data.is_playing);
   };
@@ -32,6 +33,10 @@ const Spotify: React.FC = () => {
       }
       if (msg.type === 'song_data') {
         handleSongData(msg.data);
+      }
+      if (msg.type === 'img_data') {
+        setImgData(msg.data);
+        loadColor(msg.data);
       }
     };
 
@@ -66,7 +71,7 @@ const Spotify: React.FC = () => {
   return (
     <div className="view_spotify">
       <div className="view_spotify_img_container">
-        <img src={songData?.photo || ''} alt="Image Loading..." />
+        <img src={imgData || ''} alt="Image Loading..." />
       </div>
       <div
         className="view_spotify_info"
