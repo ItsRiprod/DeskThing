@@ -1,0 +1,23 @@
+.volumeControl {
+    position: absolute;
+    width: 35px;
+    height: 50vh;
+    background-color: var(--bg-elevated-base);
+    top: 25vh;
+    display: flex;
+    align-items: flex-end;
+    transform: translateX(-35px);
+    transition: transform 0.2s;
+    border-radius: 15px;
+    overflow: hidden;
+}
+.volumeControl.visible {
+    transform: translateX(5px);
+}
+.volumeLevel {
+    transition: height 0.1s;
+    width: 100%;
+    background-color: var(--bg-tinted-base);
+    height: 100%;
+    bottom: 0px;
+}

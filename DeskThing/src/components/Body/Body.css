@@ -1,0 +1,19 @@
+.body {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+  }
+  .getBoards {
+    height: 75px;
+    aspect-ratio: 2/1;
+    border: none;
+    border-radius: 5px;
+    --button-size: 82px;
+    height: var(--button-size);
+    width: var(--button-size);
+    align-items: center;
+    cursor: pointer;
+    color: var(--text-base);
+    background-color: var(--bg-highlight); 
+  }
