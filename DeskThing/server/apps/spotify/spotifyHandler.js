@@ -14,12 +14,12 @@ server.on('connection', async (socket) => {
             await handleSetRequest(socket, parsedMessage);
           break;
           default:
-            console.log('Unknown type', parsedMessage.type);
+            console.error('Unknown type', parsedMessage.type);
             break;
         }
       }
     } catch (e) {
-      console.log('There was an error in SpotifyHandler');
+      console.error('There was an error in SpotifyHandler');
     }
   })
 })
@@ -33,7 +33,6 @@ const handleGetRequest = async (socket, parsedMessage) => {
       case 'device_info':
         // eslint-disable-next-line no-case-declarations
         const playbackState = await getCurrentDevice();
-        console.log(playbackState);
         sendMessageToClients({
           type: 'device_data',
           data: {

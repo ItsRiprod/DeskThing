@@ -148,7 +148,7 @@ app.get('/discord/callback', async (req, res) => {
 });
 
 
-  const port = process.env.PORT || 8881;
+  const port = process.env.PORT || 8888;
   app.listen(port, async () => {
     console.log(`Server is running on port ${port}.`);
   

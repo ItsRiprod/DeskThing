@@ -12,8 +12,8 @@ export async function setActivity(rpc) {
   }
 
   rpc.setActivity({
-      details: 'Listening for mute/unmute',
-      state: 'Something Probably',
+      details: 'Running DeskThing',
+      state: 'Winning at life',
       startTimestamp: startTimestamp,
       largeImageKey: 'emoji_large',
       largeImageText: 'Hidden About Me Obtained',
