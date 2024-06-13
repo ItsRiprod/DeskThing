@@ -22,7 +22,6 @@ const refreshAccessToken = async () => {
   const refreshToken = getData("spotifyRefreshToken");
 
   if (!refreshToken) {
-    if (!isTabOpened) {
       try {
         await open(`http://localhost:${PORT}/login`);
         
@@ -31,9 +30,6 @@ const refreshAccessToken = async () => {
         throw new Error("Error opening browser:", err);
       }
 
-    }  else {
-      throw new Error("Authorization tab already opened.");
-    }
   }
 
   const data = new URLSearchParams({
@@ -44,7 +40,7 @@ const refreshAccessToken = async () => {
   });
 
   try {
-    console.log('Refreshing Token' )
+    console.log('Refreshing Token', TOKEN_URL, data )
     const response = await axios.post(TOKEN_URL, data, {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
     });
