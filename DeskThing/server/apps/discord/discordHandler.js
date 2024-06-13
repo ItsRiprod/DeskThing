@@ -12,27 +12,27 @@ const clientId = process.env.DISCORD_CLIENT_ID;
 const clientSecret = process.env.DISCORD_CLIENT_SECRET;
 const userId = process.env.DISCORD_USER_ID; // your userId in case you want to do you-specific actions
 const subscriptions = {
-    voice: {}
-    };
-    RPC.register(clientId);
-    
+  voice: {}
+};
+RPC.register(clientId);
+
 const rpc = new RPC.Client({ transport: 'ipc' });
 const startTimestamp = new Date();
 const scopes = ['rpc', 'messages.read', 'rpc.video.write', 'rpc.voice.read', 'rpc.activities.write', 'rpc', 'rpc.voice.write', 'rpc.screenshare.read', 'rpc.notifications.read', 'rpc.video.read', 'rpc.screenshare.write'];
-const redirectUri = process.env.DISCORD_REDIR_URI; 
+const redirectUri = process.env.DISCORD_REDIR_URI;
 import { setActivity, setSubscribe, sendDataToClients } from './discordUtil.js'
 
 rpc.on('ready', async () => {
-    console.log('RPC ready');
+  console.log('RPC ready');
 
-    // Set activity if needed
-    setActivity(rpc);
-    setSubscribe(rpc);
-    //rpc.selectVoiceChannel('1042954150327107643');
+  // Set activity if needed
+  setActivity(rpc);
+  setSubscribe(rpc);
+  //rpc.selectVoiceChannel('1042954150327107643');
 
-    setInterval(() => {
-        setActivity();
-      }, 15e3);
+  setInterval(() => {
+    setActivity();
+  }, 15e3);
 });
 
 /*
@@ -41,21 +41,21 @@ rpc.on('ready', async () => {
 *
 */
 rpc.on('VOICE_CHANNEL_SELECT', async (args) => {
-    console.log(args);
-    const channel_id = args.channel_id;
+  console.log(args);
+  const channel_id = args.channel_id;
   if (channel_id != null) {
-      if (subscriptions?.voice[channel_id]) {
-        subscriptions.voice[channel_id].forEach((sub) => sub.unsubscribe());
-      }
-      subscriptions.voice[channel_id] = [
-        await rpc.subscribe('VOICE_STATE_UPDATE', { channel_id }),
-        await rpc.subscribe('VOICE_STATE_CREATE', { channel_id }),
-        await rpc.subscribe('VOICE_STATE_DELETE', { channel_id }),
-        await rpc.subscribe('SPEAKING_START', { channel_id }),
-        await rpc.subscribe('SPEAKING_STOP', { channel_id }),
-      ];
-      console.log('Subscribed to', subscriptions.voice, channel_id);
+    if (subscriptions?.voice[channel_id]) {
+      subscriptions.voice[channel_id].forEach((sub) => sub.unsubscribe());
     }
+    subscriptions.voice[channel_id] = [
+      await rpc.subscribe('VOICE_STATE_UPDATE', { channel_id }),
+      await rpc.subscribe('VOICE_STATE_CREATE', { channel_id }),
+      await rpc.subscribe('VOICE_STATE_DELETE', { channel_id }),
+      await rpc.subscribe('SPEAKING_START', { channel_id }),
+      await rpc.subscribe('SPEAKING_STOP', { channel_id }),
+    ];
+    console.log('Subscribed to', subscriptions.voice, channel_id);
+  }
 });
 
 rpc.on('SPEAKING_START', async (args) => {
@@ -93,54 +93,54 @@ rpc.on('VOICE_STATE_DELETE', async (args) => {
   console.log(args.nick, 'Disconnected')
 })
 rpc.on('VOICE_STATE_UPDATE', async (args) => {
-    sendDataToClients(args, 'update');
-    console.log(args.nick, 'Updated');
-  });
+  sendDataToClients(args, 'update');
+  console.log(args.nick, 'Updated');
+});
 rpc.on('VOICE_CONNECTION_STATUS', (args) => {
-    if (args.state === 'CONNECTING') {
-        sendMessageToClients({type: 'set_view', data: 'discord'});
-    }
-    if (args.state === 'DISCONNECTED') {
-        console.log("unsubscribing ", subscriptions.voice);
-        Object.keys(subscriptions.voice).forEach((channel_id) => {
-          subscriptions.voice[channel_id].forEach((sub) => sub.unsubscribe());
-        });
-        subscriptions.voice = {};
-        sendMessageToClients({type: 'discord_data',data: {connected: false}})
-    }
-  });
-
+  if (args.state === 'CONNECTING') {
+    sendMessageToClients({ type: 'set_view', data: 'discord' });
+  }
+  if (args.state === 'DISCONNECTED') {
+    console.log("unsubscribing ", subscriptions.voice);
+    Object.keys(subscriptions.voice).forEach((channel_id) => {
+      subscriptions.voice[channel_id].forEach((sub) => sub.unsubscribe());
+    });
+    subscriptions.voice = {};
+    sendMessageToClients({ type: 'discord_data', data: { connected: false } })
+  }
+});
 
 rpc.on('error', (error) => {
-    console.error('RPC Error:', error.message);
+  console.error('RPC Error:', error.message);
 });
 
 rpc.transport.on('close', () => {
-    console.error('RPC transport closed. Reconnecting...');
-    rpc.login({ clientId }).catch(console.error);
+  console.error('RPC transport closed. Reconnecting...');
+  login();
 });
 
 rpc.on('disconnected', (closeEvent) => {
-    console.warn(`Disconnected from Discord (code: ${closeEvent.code}, reason: ${closeEvent.reason})`);
-    console.warn('Attempting to reconnect...');
-    rpc.login({ clientId }).catch(console.error);
+  console.warn(`Disconnected from Discord (Error: ${closeEvent})`);
+  console.warn('Attempting to reconnect...');
+  login();
 });
 
-
-
 async function login() {
-  await rpc.connect(clientId);
-  let token = await getData('discordAuth');
+  try {
 
-  if (token === null) {
-    console.log(redirectUri);
-    token = await rpc.authorize({ scopes, clientSecret, redirectUri});
-    setData('discordAuth', token);
-    console.log(token);
+    await rpc.connect(clientId);
+    let token = await getData('discordAuth');
+
+    if (token === null) {
+      console.log(redirectUri);
+      token = await rpc.authorize({ scopes, clientSecret, redirectUri });
+      setData('discordAuth', token);
+      console.log(token);
+    }
+    rpc.authenticate(token);
+  } catch (e) {
+    console.log("Error", e)
   }
-
-  rpc.authenticate(token);
-
 }
 
 login();

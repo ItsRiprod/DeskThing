@@ -197,9 +197,9 @@ Links:
 
 Process:
 - Go to the developer dashboard and click 'New Application' (Name it whatever you want)
-- Go to OAuth2 and generate a new secret. Match the image below:
+- Go to OAuth2 and generate a new secret (You may have to click Reset Secret):
 ![Discord key, secret, and redirect url](/readme_images/discord_keys.png)
-> Ensure the redirect url matches the one in the `.env` file exactly
+> ⚠️Ensure the redirect url `http://localhost:8888/discord/callback` matches the one in the `.env` file exactly⚠️
 - Add DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET to `.env` file using the template in [additional resources](#-additional-resources)
 - Click 'rich presence' and add two images that have the file name 'emoji_large' and 'emoji_small'
 ![Discord rich presence](/readme_images/discord_status.png)
