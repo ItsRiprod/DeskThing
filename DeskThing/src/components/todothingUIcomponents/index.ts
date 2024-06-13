@@ -9,3 +9,4 @@ export { default as IconRepeatOne } from './icons/IconRepeatOne';
 export { default as IconShuffle } from './icons/IconShuffle';
 export { default as IconShuffleActive } from './icons/IconShuffleActive';
 export { default as IconRepeatActive } from './icons/IconRepeatActive';
+export { default as IconHome } from './icons/IconHome';

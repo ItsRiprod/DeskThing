@@ -15,7 +15,6 @@ import {
 const Footer: React.FC = () => {
   const [local, setLocal] = useState(true);
   const [songData, setSongData] = useState<song_data>();
-  const [deviceData, setDeviceData] = useState<device_data>();
   const [imageData, setImageData] = useState<string>();
   const [play, setPlay] = useState(false);
   const [shuffle, setShuffle] = useState(false);
@@ -28,7 +27,6 @@ const Footer: React.FC = () => {
     setShuffle(data.shuffle_state);
     setRepeat(data.repeat_state);
     console.log(data);
-    setDeviceData(data);
   };
 
   const handleSongData = (data: song_data) => {
