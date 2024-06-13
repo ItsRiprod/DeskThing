@@ -151,19 +151,21 @@ const setTrelloPrefs = async (pref) => {
   }
 };
 
-const addListToPref = (data) => {
-  const preferences = getTrelloPrefs();
+const addListToPref = async (data) => {
+  const preferences = await getTrelloPrefs();
 
   if (!preferences.lists) {
     preferences.lists = [];
   }
 
+  console.log("Old Pref", preferences)
   preferences.lists.push(data);
   setTrelloPrefs(preferences);
+  console.log("New Pref", preferences)
 };
 
-const removeListFromPref = (listId) => {
-  const preferences = getTrelloPrefs();
+const removeListFromPref = async (listId) => {
+  const preferences = await getTrelloPrefs();
   const listIndex = preferences.lists.findIndex((list) => list.id === listId);
 
   if (listIndex === -1) {

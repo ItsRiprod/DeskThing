@@ -71,6 +71,50 @@
      * A text color associated with system announcements and notifications.
      */
      --text-announcement: #3d91f4;
+
+     --trello-color-red: #eb5a46;
+     --trello-color-red_light: #ff8b85;  
+     --trello-color-red_dark: #b04632;   
+     
+     --trello-color-orange: #ff9f1a;
+     --trello-color-orange_light: #ffb983;
+     --trello-color-orange_dark: #d97d0d; 
+     
+     --trello-color-yellow: #f2d600;
+     --trello-color-yellow_light: #f6f792;
+     --trello-color-yellow_dark: #d9b200; 
+     
+     --trello-color-green: #61bd4f;
+     --trello-color-green_light: #86e891; 
+     --trello-color-green_dark: #3b8735;  
+     
+     --trello-color-lime: #7bc86c;
+     --trello-color-lime_light: #bef2c9;  
+     --trello-color-lime_dark: #4a9442;   
+     
+     --trello-color-blue: #0055cc;
+     --trello-color-blue_light: #73c3ed;  
+     --trello-color-blue_dark: #09326c;   
+     
+     --trello-color-sky: #00c2e0;
+     --trello-color-sky_light: #a2ecf5;   
+     --trello-color-sky_dark: #9dd9ee;    
+     
+     --trello-color-purple: #c377e0;
+     --trello-color-purple_light: #e0b3f7;
+     --trello-color-purple_dark: #9466b9; 
+     
+     --trello-color-pink: #ffabb0;
+     --trello-color-pink_light: #ffc4c8;  
+     --trello-color-pink_dark: #d47b84;   
+     
+     --trello-color-brown: #b38f00;
+     --trello-color-brown_light: #d1b367; 
+     --trello-color-brown_dark: #846200;  
+     
+     --trello-color-gray: #838c91;
+     --trello-color-gray_light: #cfd4d7;  
+     --trello-color-gray_dark: #5c5e60;  
 }
 
 body {

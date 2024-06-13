@@ -15,7 +15,7 @@ button {
 }
 .view_trello {
     width: 100vw;
-    height: 75vh;
+    height: 80vh;
     overflow: scroll;
     background-color: var(--bg-base);
     padding-top: 35px;
@@ -30,25 +30,46 @@ button {
   }
 
 .trello_default {
-    padding-top:25vh;
+    height: 100%;
+    display: flex;
+    width: 100%;
+    overflow: hidden;
+    align-items: center;
 }
 .trello_default button {
     width: 50%;
     height: 100px;
-    background-color: var(--bg-elevated-highlight);
+    background-color: var(--trello-color-blue);
     border-radius: 15px;
+    
     color: unset;
 }
 .trello_default button:hover {
-    background-color: var(--bg-elevated-press);
+    background-color: var(--trello-color-blue_dark);
 }
+.trello_default_get_boards {
+    padding: 5px;
+    width: 40vw;
+    margin-left: 5px;
+}
+.trello_default_get_boards h1 {
+    
+}
+.trello_default_shortcuts::-webkit-scrollbar {
+    width: 0; /* Remove scrollbar width */
+    height: 0;
+    background: transparent; /* Optional: hide scrollbar gutter */
+  }
 .trello_default_shortcuts {
     display: flex;
-    background-color: var(--bg-tinted-base);
-    padding: 5px;
-    margin-top: 5px;
+    background-color: var(--trello-color-blue_light);
+    padding: 50px 60px;
     flex-wrap: wrap;
-    justify-content:space-around;
+    width: 40vw;
+    height: 55vh;
+    align-self: baseline;
+    overflow-x: scroll;
+    border-radius: 0px 55px 0px 0px;
 }
 .trello_default_shortcut_item {
     display: flex;
@@ -60,8 +81,8 @@ button {
     margin-right: 15px;
     height: 100px;
     border: 1px solid black;
-    border-radius: 5px;
-    background-color: var(--bg-elevated-highlight);
+    border-radius: 15px;
+    background-color: var(--trello-color-blue);
     color: white;
 }
 .org_container {
@@ -137,8 +158,9 @@ button {
     flex-direction: row;
     align-items: center;
     color: white;
-    padding: 15px;
-    align-content: center;
+    padding: 15px 35px;
+    height: 70vh;
+    align-items: center;
 }
 .list_item {
     display: flex;
@@ -151,8 +173,8 @@ button {
     margin-right: 15px;
     height: 155px;
     border: 1px solid black;
-    border-radius: 5px;
-    background-color: var(--bg-elevated-highlight);
+    border-radius: 25px;
+    background-color: var(--trello-color-blue);
     color: white;
 }
 
@@ -202,47 +224,5 @@ button {
     color: #fff; /* Assuming labels have a dark background */
     font-size: 22px; /* Adjust font size as needed */
 
-    --trello-color-red: #eb5a46;
-    --trello-color-red_light: #ff8b85;  
-    --trello-color-red_dark: #b04632;   
-    
-    --trello-color-orange: #ff9f1a;
-    --trello-color-orange_light: #ffb983;
-    --trello-color-orange_dark: #d97d0d; 
-    
-    --trello-color-yellow: #f2d600;
-    --trello-color-yellow_light: #f6f792;
-    --trello-color-yellow_dark: #d9b200; 
-    
-    --trello-color-green: #61bd4f;
-    --trello-color-green_light: #86e891; 
-    --trello-color-green_dark: #3b8735;  
-    
-    --trello-color-lime: #7bc86c;
-    --trello-color-lime_light: #bef2c9;  
-    --trello-color-lime_dark: #4a9442;   
-    
-    --trello-color-blue: #0079bf;
-    --trello-color-blue_light: #73c3ed;  
-    --trello-color-blue_dark: #055a8c;   
-    
-    --trello-color-sky: #00c2e0;
-    --trello-color-sky_light: #a2ecf5;   
-    --trello-color-sky_dark: #0086a8;    
-    
-    --trello-color-purple: #c377e0;
-    --trello-color-purple_light: #e0b3f7;
-    --trello-color-purple_dark: #9466b9; 
-    
-    --trello-color-pink: #ffabb0;
-    --trello-color-pink_light: #ffc4c8;  
-    --trello-color-pink_dark: #d47b84;   
-    
-    --trello-color-brown: #b38f00;
-    --trello-color-brown_light: #d1b367; 
-    --trello-color-brown_dark: #846200;  
-    
-    --trello-color-gray: #838c91;
-    --trello-color-gray_light: #cfd4d7;  
-    --trello-color-gray_dark: #5c5e60;   
+  
 }

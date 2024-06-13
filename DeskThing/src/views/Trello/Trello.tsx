@@ -1,11 +1,11 @@
 import './Trello.css';
 import React, { useEffect, useState } from 'react';
 import socket from '../../helpers/WebSocketService';
-
 import Organizations from './Organizations';
 import Boards from './Boards';
 import Cards from './Cards';
 import Lists from './Lists';
+import { IconCollection, IconHome } from '../../components/todothingUIcomponents';
 
 export type defaultProps = {
   handleSendGet: (type: string, get: string, payload: any) => void;
@@ -20,10 +20,6 @@ function Default({ handleSendGet, data }: defaultProps) {
 
   return (
     <div className="trello_default">
-      <div>
-        <button onClick={() => handleSendGet('get', 'org_info', null)}>
-          <h1>All Trello Boards</h1>
-        </button>
         <div className="trello_default_shortcuts">
           {data &&
             data.map((list: any) => (
@@ -53,7 +49,13 @@ function Default({ handleSendGet, data }: defaultProps) {
               </div>
             ))}
         </div>
-      </div>
+        <div className="trello_default_get_boards">
+          <h1>Trello</h1>
+          <button onClick={() => handleSendGet('get', 'org_info', null)}>
+            <IconCollection />
+          </button>
+        </div>
+
     </div>
   );
 }
@@ -162,7 +164,7 @@ const Trello: React.FC = () => {
           handleSendGet('get', 'trello_pref_info', '');
         }}
       >
-        Go Back
+        <IconHome />
       </button>
       <div>{renderView()}</div>
     </div>
