@@ -33,7 +33,7 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
 
 2. **Superbird Webapp flash:**
    - Flash your CarThing with the adb enabled dump [here](https://mega.nz/folder/NxNXQCaT#-n1zkoXsJuw-5rQ-ZYzRJw) using the [superbird-tool](https://github.com/bishopdynamics/superbird-tool).
-    - Follow install instructions for superbird-tool
+   - [detailed instructions](#-flashing)
 
 3. **Spotify, Accuweather, Trello, and Discord apps:**
    - Set up Spotify app [detailed steps here](#spotify-app)
@@ -49,6 +49,7 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
 
 1. **Flash Your CarThing:**
    - Follow the instructions in the [superbird-tool repository](https://github.com/bishopdynamics/superbird-tool) to flash your CarThing device with the necessary image.
+> If you need help, refer to the [detailed instructions](#-flashing) at the end of this page
 
 2. **Configure Spotify App:**
    - Create a Spotify app and get the app ID and key. [Detailed steps here](#spotify-app)
@@ -204,6 +205,26 @@ Process:
 ![Discord rich presence](/readme_images/discord_status.png)
 *bread for reference*
 > These names must match the names in `/DeskThing/server/discordHandler.js` under the function `setActivity` largeImageKey and smallImageKey. Update this activity to whatever you want using the Visualizer
+
+## 📸Flashing
+
+Links:
+- [image dumps](https://mega.nz/folder/NxNXQCaT#-n1zkoXsJuw-5rQ-ZYzRJw/folder/5kECGT5C)
+- [superbird-tool](https://github.com/bishopdynamics/superbird-tool)
+
+Process:
+- Go to superbird-tool and install it based off your operating system. Come back once you can run `python superbird_tool.py --find_device` and see your Car Thing
+- Unplug the Car Thing
+- Hold buttons 1 and 4 (the four large top buttons are mapped from left to right) and plug it in.
+- Wait a few seconds. If the screen does not turn on, that means you are in boot mode. You can realease the buttons
+- Run `python superbird_tool.py --burn_mode` to enter burn mode
+- Download 8.2.5 adb enables from image dumps (linked above) and in that same folder, also download Readme.txt
+- Follow the Readme.txt to change the appropriate file names
+- (Windows only) Download [zadig](https://zadig.akeo.ie/) and install the WinUSB driver for GX-CHIP (select it and click "Install Driver")
+> Alternatively use libusbK if it does not work
+- Run `superbird_tool.py --restore_device /path/to/extracted/firmware/folder` (This may take awhile)
+- After the firmware is flashed, the Car Thing should be ready with ADB enabled. To check, run `adb shell ls -l /usr/share/qt-superbird-app/` and you should see webapp as one of the folders.
+- Continue setup from [here](#detailed-setup-instructions)
 
 ---
 ## 📗 Additional Resources
