@@ -1,9 +1,0 @@
-export { default as IconHeart } from './icons/IconHeart';
-export { default as IconHeartActive } from './icons/IconHeartActive';
-export { default as IconPause } from './icons/IconPause';
-export { default as IconPlay } from './icons/IconPlay';
-export { default as IconSkipBack } from './icons/IconSkipBack';
-export { default as IconSkipForward } from './icons/IconSkipForward';
-export { default as IconRepeat } from './icons/IconRepeat';
-export { default as IconRepeatOne } from './icons/IconRepeatOne';
-export { default as IconShuffle } from './icons/IconShuffle';
