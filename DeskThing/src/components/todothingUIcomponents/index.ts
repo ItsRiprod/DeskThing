@@ -1,3 +1,4 @@
+export { default as IconAlbum } from './icons/IconAlbum';
 export { default as IconHeart } from './icons/IconHeart';
 export { default as IconHeartActive } from './icons/IconHeartActive';
 export { default as IconPause } from './icons/IconPause';
@@ -11,3 +12,8 @@ export { default as IconShuffleActive } from './icons/IconShuffleActive';
 export { default as IconRepeatActive } from './icons/IconRepeatActive';
 export { default as IconHome } from './icons/IconHome';
 export { default as IconCollection } from './icons/IconCollection';
+export { default as IconMicDiscord } from './icons/IconMicDiscord';
+export { default as IconMicOffDiscord } from './icons/IconMicOffDiscord';
+export { default as IconDeafenedDiscord } from './icons/IconDeafenedDiscord';
+export { default as IconDeafenedOffDiscord } from './icons/IconDeafenedOffDiscord';
+export { default as IconCallDiscord } from './icons/IconCallDiscord';

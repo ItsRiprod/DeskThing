@@ -28,6 +28,9 @@ const Header: React.FC = () => {
       if (msg.type === 'message') {
         console.log(msg);
       }
+      if (msg.type === 'error') {
+        console.log(msg);
+      }
     };
 
     socket.addSocketEventListener(listener);

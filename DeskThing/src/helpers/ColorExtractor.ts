@@ -9,6 +9,7 @@ const fetchImage = (imageUrl: string): Promise<HTMLImageElement> => {
 };
 
 const getBackgroundColor = (base64ImageContent: string): Promise<[number, number, number]> => {
+  try {
   return fetchImage(`${base64ImageContent}`).then((domImage) => {
     const width = domImage.naturalWidth;
     const height = domImage.naturalHeight;
@@ -41,6 +42,10 @@ const getBackgroundColor = (base64ImageContent: string): Promise<[number, number
     const palette = cmap.palette();
     return palette[0];
   });
+} catch (e) {
+  console.error('Unable to get background image!', e)
+  return null;
+}
 };
 
 const quantize = (pixels: [number, number, number][], maxColors = 5, step = 8) => {

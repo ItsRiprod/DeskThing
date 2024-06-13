@@ -5,10 +5,8 @@
     display: flex;
     justify-content: space-around;
     align-items: center;
-
+    --discord-blue: rgb(88,101,242);
 }
-
-
 .profile_container {
     padding: 15px 35px;
     border-radius: 10px;
@@ -47,3 +45,44 @@
     border-radius: 5px;
     padding: 3px 5px;
 }
+
+/*
+
+Discord island
+
+*/
+.discord_island_wrapper {
+    position:absolute;
+    bottom: 20vh;
+    left: 5vh;
+
+    height: 75px;
+    width: 75px;
+    overflow: hidden;
+    transition: all 0.6s;
+    border-radius: 45px;
+    display:flex;
+    align-items: center;
+}
+.discord_island {
+    background-color: var(--bg-tinted-highlight);
+
+    width: 400px;
+    height: 85px;
+    border-radius: 45px;
+    display: flex;
+    justify-content: space-around;
+    align-items:center;
+}
+.discord_island_wrapper.visible {
+    width: 400px;
+    height: 85px;  
+}
+.icon {
+    color:var(--discord-blue);
+    stroke:var(--discord-blue);
+}
+.discord_active {
+    color: var(--text-negative);
+    stroke: var(--text-negative);
+    }

@@ -6,6 +6,7 @@ import { WebSocketServer } from 'ws';
 const server = new WebSocketServer({ port: 8891 });
 
 const sendMessageToClients = (message) => {
+  console.log('Sending message:', message);
   server.clients.forEach(client => {
     if (client.readyState === 1) {
       client.send(JSON.stringify(message));

@@ -11,7 +11,7 @@ const PORT = process.env.PORT;
 const CLIENT_ID = process.env.SPOTIFY_API_ID;
 const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
 
-let isTabOpened = false;
+
 /**
  * Refreshes the Spotify access token.
  * @returns {Promise<string>} The new access token.
@@ -25,7 +25,7 @@ const refreshAccessToken = async () => {
     if (!isTabOpened) {
       try {
         await open(`http://localhost:${PORT}/login`);
-        isTabOpened = true;
+        
         throw new Error("Invalid Access Token! Refreshing...");
       } catch (err) {
         throw new Error("Error opening browser:", err);
@@ -44,13 +44,14 @@ const refreshAccessToken = async () => {
   });
 
   try {
+    console.log('Refreshing Token' )
     const response = await axios.post(TOKEN_URL, data, {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
     });
 
     const accessToken = response.data.access_token;
     setData("spotifyToken", accessToken);
-    isTabOpened = false; 
+    console.log('Token Refreshed!')
     return accessToken;
   } catch (error) {
     throw new Error("Error refreshing access token:", error);
