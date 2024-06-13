@@ -6,18 +6,18 @@ import getBackgroundColor, { findContrastColor } from '../../helpers/ColorExtrac
 
 const Spotify: React.FC = () => {
   const [songData, setSongData] = useState<song_data>();
-  const [play, setPlay] = useState(false);
+  const [deviceData, setDeviceData] = useState<device_data>();
   const [bgColor, setBgColor] = useState('#000000');
   const [txtColor, setTxtColor] = useState('#999999');
   const [imgData, setImgData] = useState<string>();
+  const [offset, setOffset] = useState<number>();
+  const [opacity, setOpacity] = useState<number>(100);
+  const [transitioning, setTransitioning] = useState(true);
   const handleDeviceData = (data: device_data) => {
-    setPlay(data.is_playing);
+    setDeviceData(data);
   };
 
-  const handleSongData = (data: song_data) => {
-    setSongData(data);
-    loadColor(data.photo);
-  };
+  
   const loadColor = async (imageId: string) => {
     const rgbColor = await getBackgroundColor(imageId);
     const contrast = findContrastColor(rgbColor);
@@ -26,7 +26,31 @@ const Spotify: React.FC = () => {
   };
 
   useEffect(() => {
-    handleGetSongData();
+    const handleSongData = (data: song_data) => {
+      
+      if (songData && data.name === songData.name) {
+        loadColor(data.photo);
+        setSongData(data);
+  
+      } else {
+        setTransitioning(true);
+        setOffset(150);
+        setOpacity(0);
+        setTimeout(() => {
+          setTransitioning(false);
+          loadColor(data.photo);
+          setSongData(data);
+          setOffset(-80);
+          setTimeout(() => {
+            setOpacity(100);
+            setTransitioning(true);
+            setOffset(0);
+          }, 100)
+        }, 700);
+      }
+
+    };
+
     const listener = (msg:any) => {
       if (msg.type === 'device_data') {
         handleDeviceData(msg.data);
@@ -45,8 +69,11 @@ const Spotify: React.FC = () => {
     return () => {
       socket.removeSocketEventListener(listener);
     };
-  }, []);
+  }, [ songData ]);
 
+  useEffect(() => {
+    handleGetSongData();
+  }, [])
   //const handleSendCommand = (command: string) => {
   //  if (socket.is_ready()) {
   //    const data = {
@@ -70,19 +97,23 @@ const Spotify: React.FC = () => {
 
   return (
     <div className="view_spotify">
-      <div className="view_spotify_img_container">
-        <img src={imgData || ''} alt="Image Loading..." />
+      <div className="view_spotify_img_container" style={{backgroundColor: `${bgColor}`}}>
+        <img style={{/*transform: `translateY(${offset}px)`, transition: `${transitioning ? 'transform 2s' : ''}`*/}} src={imgData || ''} alt="Image Loading..." />
       </div>
       <div
         className="view_spotify_info"
         style={{
-          backgroundImage: `linear-gradient(to right, ${bgColor} 15%, var(--bg-base))`,
+          backgroundImage: `linear-gradient(to right, ${bgColor}, var(--bg-tinted-highlight))`,
           color: txtColor,
+          
         }}
       >
-        <h1 className="view_spotify_title">{songData?.name || 'Song Title'}</h1>
-        <p className="view_spotify_artist">{songData?.artistName || 'Artist'}</p>
-        <p className="">{play ? 'Playing' : 'Paused'}</p>
+        <p className="view_spotify_device">{`Listening On: ${deviceData?.device.name || 'Device name'}`}</p>
+        <div className={`info_container ${transitioning ? 'spotify_fade' : ''} `} style={{transform: `translateX(${offset}px)`, opacity: `${opacity}`}}>
+          <p className="view_spotify_album">{songData?.albumName || 'Album'}</p>
+          <h1 className="view_spotify_title">{songData?.name || 'Song Title'}</h1>
+          <h3 className="view_spotify_artist">{songData?.artistName || 'Artist'}</h3>
+        </div>
       </div>
     </div>
   );

@@ -29,7 +29,6 @@
     border-radius: 5px;
     --button-size: 82px;
     background-color: transparent;
-    color: var(--text-brightAccent);
     display: flex;
     height: var(--button-size);
     min-width: var(--button-size);
@@ -43,6 +42,7 @@
     border: none;
     cursor: pointer;
     justify-content: center;
+    color: var(--bg-tinted-highlight);
   }
   .icon {
     fill: var(--text-subdued);
@@ -78,6 +78,9 @@
   }
   .audio_pullTab:hover {
     background-color: var(--bg-tinted-press);
+  }
+  .active {
+    color: var(--text-brightAccent);
   }
   
   /*

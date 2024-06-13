@@ -81,6 +81,8 @@ export default socket;
 
 export type device_data = {
   is_playing: boolean;
+  shuffle_state: boolean,
+  repeat_state: string,
   device: {
     id: string;
     name: string;
@@ -97,6 +99,7 @@ export type song_data = {
   artistName: string;
   uri: string;
   playlistUri: string;
+  albumName: string;
 };
 
 export type board_data = [

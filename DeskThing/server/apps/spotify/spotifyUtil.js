@@ -63,7 +63,6 @@ const refreshAccessToken = async () => {
  * @returns {Promise<void>}
  */
 const handleError = async (error) => {
-  console.log("There was an error");
   try {
     if (error.response) {
       if (error.response.status === 401) {
@@ -110,7 +109,7 @@ const makeRequest = async (method, url, data = null) => {
   };
 
   try {
-      console.log('SPOTIFY REQUEST: ', method, url)
+      console.log('SPOTIFY REQUEST: ', method, url, data)
       const response = await axios({ method, url, data, headers });
       return response.data ? response.data : true;
   } catch (error) {
@@ -178,6 +177,26 @@ const play = async (uri, context, position) => {
 };
 
 /**
+ * Sets shuffle state.
+ * @param {boolean} state - The state to set the shuffle.
+ * @returns {Promise<void>}
+ */
+const setShuffle = async (state) => {
+  const url = `${BASE_URL}/shuffle?state=${state}`;
+  return makeRequest("put", url);
+};
+
+/**
+ * Sets repeat state.
+ * @param {string} state - The state to set the repeat (track, context, or off).
+ * @returns {Promise<void>}
+ */
+const setRepeat = async (state) => {
+  const url = `${BASE_URL}/repeat?state=${state}`;
+  return makeRequest("put", url);
+};
+
+/**
  * Seeks to a position in the current track.
  * @param {number} position - The position in milliseconds.
  * @returns {Promise<void>}
@@ -209,7 +228,7 @@ const setVolume = async (newVol) => {
 const returnSongData = async (socket, oldUri = null) => {
   try {
     const startTime = Date.now();
-    const timeout = 10000;
+    const timeout = 1000000;
     let delay = 100;
     let currentPlayback;
     let newTrackUri;
@@ -220,17 +239,16 @@ const returnSongData = async (socket, oldUri = null) => {
       if (delay !== 100)
         console.log(`Song not updated... trying again | timeout: ${timeout} cur time: ${Date.now() - startTime} delay: ${delay}`);
       else
-        console.log(`Getting Current Playback: old url ${oldUri} new url${newTrackUri}, date now: ${Date.now()}`);
+        console.log(`Getting Current Playback: old url ${oldUri} new url ${newTrackUri}, date now: ${Date.now()}`);
 
       delay *= 1.3;
       await new Promise(resolve => setTimeout(resolve, delay));
-    } while (newTrackUri === oldUri && Date.now() - startTime < timeout);
+    } while (newTrackUri === oldUri && Date.now() - startTime < timeout && delay < 500);
 
     if (newTrackUri === oldUri) {
       //sendMessageToClients({ type: 'error', data: 'Timeout reached, same song is playing' });
       throw new Error('Timeout Reached!');
     }
-
     const songData = {
       photo: null,
       duration_ms: currentPlayback.item.duration_ms,
@@ -240,8 +258,8 @@ const returnSongData = async (socket, oldUri = null) => {
       artistName: currentPlayback.item.artists[0].name,
       uri: currentPlayback.item.uri,
       playlistUri: currentPlayback.context.uri,
+      albumName: currentPlayback.item.album.name,
     };
-
     sendMessageToClients({ type: 'song_data', data: songData });
 
     const imageUrl = currentPlayback.item.album.images[0].url;
@@ -264,4 +282,6 @@ export {
   pause,
   setVolume,
   returnSongData,
+  setShuffle,
+  setRepeat,
 };

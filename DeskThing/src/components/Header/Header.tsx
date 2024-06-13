@@ -1,6 +1,6 @@
 import './Header.css';
 import React, { useEffect, useState } from 'react';
-import socket, { device_data } from '../../helpers/WebSocketService';
+import socket from '../../helpers/WebSocketService';
 import ButtonHelper, { Button, EventFlavour } from '../../helpers/ButtonHelper';
 
 const button_helper = new ButtonHelper();

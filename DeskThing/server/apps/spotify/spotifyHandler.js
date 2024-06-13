@@ -1,4 +1,4 @@
-import { returnSongData, getCurrentDevice, skipToNext, play, pause, skipToPrev, seek, setVolume } from './spotifyUtil.js';
+import { returnSongData, getCurrentDevice, skipToNext, play, pause, skipToPrev, seek, setVolume, setRepeat, setShuffle } from './spotifyUtil.js';
 import { server, sendMessageToClients, sendError } from '../../util/socketHandler.js'
 
 server.on('connection', async (socket) => {
@@ -33,6 +33,7 @@ const handleGetRequest = async (socket, parsedMessage) => {
       case 'device_info':
         // eslint-disable-next-line no-case-declarations
         const playbackState = await getCurrentDevice();
+        console.log(playbackState);
         sendMessageToClients({
           type: 'device_data',
           data: {
@@ -43,6 +44,8 @@ const handleGetRequest = async (socket, parsedMessage) => {
               volume_percent: playbackState.device.volume_percent,
             },
             is_playing: playbackState.is_playing,
+            shuffle_state: playbackState.shuffle_state,
+            repeat_state: playbackState.repeat_state,
           },
         });
         break;
@@ -59,6 +62,12 @@ const handleSetRequest = async (socket, parsedMessage) => {
     switch (parsedMessage.request) {
       case 'set_vol':
         await setVolume(parsedMessage.data);
+        break;
+      case 'set_shuffle':
+        await setShuffle(parsedMessage.data);
+        break;
+      case 'set_repeat':
+        await setRepeat(parsedMessage.data);
         break;
       case 'next_track':
         await skipToNext();

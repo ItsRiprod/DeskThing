@@ -9,18 +9,26 @@ import {
   IconSkipBack,
   IconShuffle,
   IconRepeat,
+  IconRepeatOne,
 } from '../todothingUIcomponents';
 
 const Footer: React.FC = () => {
   const [local, setLocal] = useState(true);
   const [songData, setSongData] = useState<song_data>();
+  const [deviceData, setDeviceData] = useState<device_data>();
   const [imageData, setImageData] = useState<string>();
   const [play, setPlay] = useState(false);
+  const [shuffle, setShuffle] = useState(false);
+  const [repeat, setRepeat] = useState('off');
 
   const handleDeviceData = (data: device_data) => {
     //setLocal(!data.device.is_active);
     setLocal(false);
     setPlay(data.is_playing);
+    setShuffle(data.shuffle_state);
+    setRepeat(data.repeat_state);
+    console.log(data);
+    setDeviceData(data);
   };
 
   const handleSongData = (data: song_data) => {
@@ -58,12 +66,51 @@ const Footer: React.FC = () => {
       socket.post(data);
     }
   };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleSendSet = (request: string, payload: any) => {
+    if (socket.is_ready()) {
+      const data = {
+        app: 'spotify',
+        type: 'set',
+        request: request,
+        data: payload,
+      };
+      socket.post(data);
+    }
+  };
+  const handleRepeat = () => {
+
+    let newRepeat;
+
+    switch (repeat) {
+      case 'off':
+        newRepeat = 'context';
+        break;
+      case 'context':
+        newRepeat = 'track';
+        break;
+      case 'track':
+        newRepeat = 'off';
+        break;
+      default:
+        newRepeat = 'context';
+        break;
+    }
+    setRepeat(newRepeat);
+
+    handleSendSet('set_repeat', newRepeat)
+
+  };
+  const handleShuffleToggle = () => {
+    setShuffle((old) => !old);
+    handleSendSet('set_shuffle', !shuffle)
+  };
 
   const handleGetSongData = () => {
     if (socket.is_ready()) {
-      const data = { app:'spotify', type: 'get', request: 'song_info' };
+      const data = { app: 'spotify', type: 'get', request: 'song_info' };
       socket.post(data);
-      const data2 = { app:'spotify', type: 'get', request: 'device_info' };
+      const data2 = { app: 'spotify', type: 'get', request: 'device_info' };
       socket.post(data2);
     }
   };
@@ -100,9 +147,7 @@ const Footer: React.FC = () => {
           </div>
         ) : (
           <div className="songInformation">
-            <div className="songTitle">
-              {songData?.name + ' - ' + songData?.artistName || 'Track Name'}
-            </div>
+
             <div>
               <CountUpTimer
                 onSongEnd={handleGetSongData}
@@ -111,31 +156,35 @@ const Footer: React.FC = () => {
                 play={play}
                 onTouchEnd={setSpecificDuration}
                 handleSendCommand={handleSendCommand}
-              />
+              >
+                <div className="songTitle">
+                  {songData?.name || 'Track Name'}
+                </div>
+              </CountUpTimer>
             </div>
           </div>
         )}
         <div className="buttonContainer">
-          <button
-            className="mediaButton previous"
-            onClick={() => handleSendCommand('previous_track')}
-          >
-            <IconRepeat iconSize={48} />
+          <button className="mediaButton" onClick={handleShuffleToggle}>
+            {shuffle ? <IconShuffle iconSize={48} className={'active'} /> : <IconShuffle iconSize={48} />}
           </button>
           <button
-            className="mediaButton previous"
+            className="mediaButton active"
             onClick={() => handleSendCommand('previous_track')}
           >
             <IconSkipBack />
           </button>
-          <button className="mediaButton play" onClick={handlePlayPause}>
+          <button className="mediaButton active" onClick={handlePlayPause}>
             {!play ? <IconPlay /> : <IconPause />}
           </button>
-          <button className="mediaButton next" onClick={() => handleSendCommand('next_track')}>
+          <button className="mediaButton active" onClick={() => handleSendCommand('next_track')}>
             <IconSkipForward />
           </button>
-          <button className="mediaButton next" onClick={() => handleSendCommand('next_track')}>
-            <IconShuffle iconSize={48} className={'active'} />
+          <button
+            className="mediaButton"
+            onClick={handleRepeat}
+          >
+            {repeat == 'off' ? <IconRepeat iconSize={48} /> : repeat == 'context' ? <IconRepeat className={'active'} iconSize={48} /> : <IconRepeatOne className={'active'} iconSize={48} />}
           </button>
         </div>
       </div>

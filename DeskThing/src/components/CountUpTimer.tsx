@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { msToTime } from '../helpers/TimeUtils';
 
 interface CountUpTimerProps {
+  children;
   start: number;
   end: number;
   onSongEnd: () => void;
@@ -17,6 +18,7 @@ const CountUpTimer: React.FC<CountUpTimerProps> = ({
   onTouchEnd,
   handleSendCommand,
   play,
+  children,
 }) => {
   const [ms, setMs] = useState(0);
   const [msEnd, setMsEnd] = useState(6000);
@@ -49,6 +51,7 @@ const CountUpTimer: React.FC<CountUpTimerProps> = ({
   const handleTouchStart = () => {
     const progressBar = progressBarRef.current;
     if (progressBar) {
+
       const rect = progressBar.getBoundingClientRect();
       let newMs = 0;
       setTouching(true);
@@ -60,11 +63,13 @@ const CountUpTimer: React.FC<CountUpTimerProps> = ({
       };
 
       const handleTouchEnd = () => {
-        if (newMs >= msEnd) {
-          handleSendCommand('next_track');
-          setMs(0);
-        } else {
-          onTouchEnd(newMs);
+        if (newMs > 0) {
+          if (newMs >= msEnd) {
+            handleSendCommand('next_track');
+            setMs(0);
+          } else {
+            onTouchEnd(newMs);
+          }
         }
         setTouching(false);
         document.removeEventListener('touchmove', handleTouchMove);
@@ -77,15 +82,18 @@ const CountUpTimer: React.FC<CountUpTimerProps> = ({
   };
 
   return (
-    <div className="progressBar_container" ref={progressBarRef} onTouchStart={handleTouchStart}>
+    <div className="songInformation" ref={progressBarRef} onTouchStart={handleTouchStart}>
+      {children}
+    <div className="progressBar_container">
       <div
         className="progressBar_progress"
         style={{
           width: `${(ms / msEnd) * 100 || 0}%`,
           transition: touching ? 'none' : 'width 1s ease-out',
-        }}
-      />
+          }}
+          />
       <p className="progressBar_timer">{msToTime(ms)}</p>
+    </div>
     </div>
   );
 };
