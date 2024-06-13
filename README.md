@@ -33,7 +33,7 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
 
 2. **Superbird Webapp flash:**
    - Flash your CarThing with the adb enabled dump [here](https://mega.nz/folder/NxNXQCaT#-n1zkoXsJuw-5rQ-ZYzRJw) using the [superbird-tool](https://github.com/bishopdynamics/superbird-tool).
-   - [detailed instructions](#-flashing)
+   - [detailed instructions](#flashing)
 
 3. **Spotify, Accuweather, Trello, and Discord apps:**
    - Set up Spotify app [detailed steps here](#spotify-app)
@@ -49,7 +49,7 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
 
 1. **Flash Your CarThing:**
    - Follow the instructions in the [superbird-tool repository](https://github.com/bishopdynamics/superbird-tool) to flash your CarThing device with the necessary image.
-> If you need help, refer to the [detailed instructions](#-flashing) at the end of this page
+> If you need help, refer to the [detailed instructions](#flashing) at the end of this page
 
 2. **Configure Spotify App:**
    - Create a Spotify app and get the app ID and key. [Detailed steps here](#spotify-app)
