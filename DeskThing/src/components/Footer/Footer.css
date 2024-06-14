@@ -48,12 +48,26 @@
     fill: var(--text-subdued);
   }
   .getSongInfo {
-    height: 170px;
-    width: 170px;
+    height: 160px;
+    max-width: 160px;
+    min-width: 160px;
+    transition: height 0.3s ease-out;
+    display: flex;
+  }
+  .getSongInfo.lg {
+    height: 160px;
+  }
+  .getSongInfo.sm {
+    height: 80px;
+    
+  }
+  .getSongInfo .albumArt {
+    height: 100%;
     overflow: hidden;
     border-radius: 0px 15px 15px 0px;
   }
-  .audioPlayer:hover {
+
+  .audioPlayer.visible {
     transform: translate(0px, 0px);
     background-color: var(--bg-press);
   }
@@ -65,20 +79,6 @@
   }
 
   
-  .audio_pullTab {
-    position: absolute;
-    background-color: var(--bg-tinted-highlight);
-    width: 100px;
-    height: 15px;
-    z-index: -5;
-    transform: translate(0px, -35px);
-    
-    border-radius: 5px;
-    transition: background-color 0.3s;
-  }
-  .audio_pullTab:hover {
-    background-color: var(--bg-tinted-press);
-  }
   .active {
     color: var(--text-brightAccent);
   }

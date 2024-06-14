@@ -82,9 +82,9 @@ const CountUpTimer: React.FC<CountUpTimerProps> = ({
   };
 
   return (
-    <div className="songInformation" ref={progressBarRef} onTouchStart={handleTouchStart}>
+    <div className="songInformation" onTouchStart={handleTouchStart}>
       {children}
-    <div className="progressBar_container">
+    <div className="progressBar_container" ref={progressBarRef}>
       <div
         className="progressBar_progress"
         style={{

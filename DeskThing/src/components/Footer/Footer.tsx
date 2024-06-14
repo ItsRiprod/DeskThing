@@ -1,5 +1,5 @@
 import './Footer.css';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import CountUpTimer from '../CountUpTimer'; // Ensure you have CountUpTimer defined in another file
 import socket, { device_data, song_data } from '../../helpers/WebSocketService';
 import {
@@ -19,6 +19,8 @@ const Footer: React.FC = () => {
   const [play, setPlay] = useState(false);
   const [shuffle, setShuffle] = useState(false);
   const [repeat, setRepeat] = useState('off');
+  const [visible, setVisible] = useState(false);
+  const playerIslandRef = useRef<HTMLDivElement>(null);
 
   const handleDeviceData = (data: device_data) => {
     //setLocal(!data.device.is_active);
@@ -124,15 +126,36 @@ const Footer: React.FC = () => {
     }
   };
 
+  const handleTouchOutside = (event: TouchEvent) => {
+    if (playerIslandRef.current && !playerIslandRef.current.contains(event.target as Node)) {
+      setVisible(false)
+    }
+  };
+
+  const handleTouchInside = () => {
+    if (playerIslandRef.current) {
+      setVisible(true)
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener('touchstart', handleTouchOutside);
+    return () => {
+      document.removeEventListener('touchstart', handleTouchOutside);
+    };
+  }, []);
+
   const handlePlayPause = () => {
     setPlay(!play);
     play ? handleSendCommand('pause_track') : handleSendCommand('play_track');
   };
 
   return (
-    <div className="audioPlayer">
-      <button className="button getSongInfo" onClick={handleGetSongData}>
-        <img width="170px" src={imageData || ''} alt="Switch to Spotify" />
+    <div className={`audioPlayer ${visible ? 'visible' : ''}`}
+    ref={playerIslandRef}
+    onTouchStart={handleTouchInside}>
+      <button className={visible ? 'getSongInfo lg' : 'getSongInfo sm'} onClick={handleGetSongData}>
+        <img className='albumArt' src={imageData || ''} alt="Switch to Spotify" />
       </button>
       <div className="audioPlayer_controls">
         {local ? (

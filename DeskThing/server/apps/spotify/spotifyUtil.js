@@ -114,6 +114,10 @@ const makeRequest = async (method, url, data = null) => {
     if (error.response && error.response.status === 404) {
       return;
     }
+    if (error.response && error.response.status === 403) {
+      console.log('Error 403 reached! Bad OAuth (Cancelling Request)');
+      return;
+    }
     await new Promise(resolve => setTimeout(resolve, 5000)); // Wait five seconds
     console.log('SPOTIFY REQUEST: Retrying', method, url, data);
     const retryResponse = makeRequest( method, url, data );
