@@ -10,7 +10,7 @@
   
   margin-top: 5px;
   left: auto;
-  height: 30px;
+  height: 25px;
   width: 15%;
   border-radius: 15px;
   overflow: hidden;
@@ -25,6 +25,12 @@
   height: 200px;
   width: 100%;
   border-radius: 0px 0px 25px 25px;
+}
+.debug.visible div {
+  opacity: 100;
+}
+.debug div {
+  opacity: 0;
 }
 
 .debug_content {

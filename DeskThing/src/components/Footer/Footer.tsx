@@ -11,6 +11,7 @@ import {
   IconRepeat,
   IconRepeatOne,
 } from '../todothingUIcomponents';
+import { IconAlbum } from '../todothingUIcomponents';
 
 const Footer: React.FC = () => {
   const [local, setLocal] = useState(true);
@@ -20,6 +21,7 @@ const Footer: React.FC = () => {
   const [shuffle, setShuffle] = useState(false);
   const [repeat, setRepeat] = useState('off');
   const [visible, setVisible] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const playerIslandRef = useRef<HTMLDivElement>(null);
 
   const handleDeviceData = (data: device_data) => {
@@ -155,7 +157,17 @@ const Footer: React.FC = () => {
     ref={playerIslandRef}
     onTouchStart={handleTouchInside}>
       <button className={visible ? 'getSongInfo lg' : 'getSongInfo'} onClick={handleGetSongData}>
-        <img className='albumArt' src={imageData || ''} alt="Switch to Spotify" />
+          {imageData && (
+            <img
+              src={imageData}
+              alt="Image"
+              className='albumArt'
+              onLoad={() => {setImageLoaded(true)}}
+              onError={() => {setImageLoaded(false)}}
+              style={{ display: imageLoaded ? 'block' : 'none' }}
+            />
+          )}
+          {!imageLoaded && <IconAlbum className='albumArt' iconSize={128} />}
       </button>
       <div className="audioPlayer_controls">
         {local ? (
