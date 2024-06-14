@@ -154,7 +154,7 @@ const Footer: React.FC = () => {
     <div className={`audioPlayer ${visible ? 'visible' : ''}`}
     ref={playerIslandRef}
     onTouchStart={handleTouchInside}>
-      <button className={visible ? 'getSongInfo lg' : 'getSongInfo sm'} onClick={handleGetSongData}>
+      <button className={visible ? 'getSongInfo lg' : 'getSongInfo'} onClick={handleGetSongData}>
         <img className='albumArt' src={imageData || ''} alt="Switch to Spotify" />
       </button>
       <div className="audioPlayer_controls">

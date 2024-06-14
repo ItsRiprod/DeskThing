@@ -15,9 +15,9 @@ export async function setActivity(rpc) {
       details: 'Running DeskThing',
       state: 'Winning at life',
       startTimestamp: startTimestamp,
-      largeImageKey: 'emoji_large',
+      largeImageKey: 'emoji_large', // This MUST match the file name in your bot app⚠️
       largeImageText: 'Hidden About Me Obtained',
-      smallImageKey: 'emoji_small',
+      smallImageKey: 'emoji_small', // This MUST match the file name in your bot app⚠️
       smallImageText: 'Cursed About Me Obtained',
       instance: false,
   }).catch((error) => {

@@ -1,14 +1,30 @@
-.debug {
-  background: var(--bg-elevated-base);
-  position: absolute;
-  top: 0;
-  height: 300px;
-  transform: translate(0px, -295px);
-  transition: transform 0.2s ease-out;
+.debug_container {
   width: 100%;
+  top: 0px;
+  position: absolute;
+  display: flex;
+  justify-content: center;
+}
+.debug {
+  background: var(--bg-elevated-highlight);
+  
+  margin-top: 5px;
+  left: auto;
+  height: 30px;
+  width: 15%;
+  border-radius: 15px;
+  overflow: hidden;
+  transition: all 0.3s ease-out;
   display: flex;
   justify-content: space-around;
   z-index: 5;
+}
+
+.debug.visible {
+  margin-top: 0px;
+  height: 200px;
+  width: 100%;
+  border-radius: 0px 0px 25px 25px;
 }
 
 .debug_content {
@@ -26,11 +42,7 @@
   top: 0px;
   display: flex;
   justify-content: space-around;
-  background-color: var(--bg-tinted-base);
-}
-
-.debug:hover {
-  transform: translate(0px, 0px);
+  background-color: var(--bg-tinted-highlight);
 }
 
 .debug_pullTab {
@@ -50,7 +62,9 @@
 
 .debug code {
   width: 100%;
-  background-color: var(--bg-tinted-base);
+  color: var(--text-base);
+  background-color: var(--bg-base);
+  height: 100%;
 }
 
 .getDeviceInfo {

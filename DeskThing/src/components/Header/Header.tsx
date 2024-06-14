@@ -1,5 +1,5 @@
 import './Header.css';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import socket from '../../helpers/WebSocketService';
 import ButtonHelper, { Button, EventFlavour } from '../../helpers/ButtonHelper';
 
@@ -9,7 +9,8 @@ const Header: React.FC = () => {
   const [input, setInput] = useState('');
   const [button, setButton] = useState('Null');
   const [message, setMessage] = useState('Null');
-
+  const [visible, setVisible] = useState(false);
+  const topIslandRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     button_helper.setCallback((btn: Button, flv: EventFlavour) => {
       setButton(Button[btn] + ` ` + EventFlavour[flv]);
@@ -26,10 +27,10 @@ const Header: React.FC = () => {
         handleResponseMessage(msg.data);
       }
       if (msg.type === 'message') {
-        console.log(msg);
+        handleResponseMessage(msg.data);
       }
       if (msg.type === 'error') {
-        console.log(msg);
+        handleResponseMessage(msg.data);
       }
     };
 
@@ -37,6 +38,23 @@ const Header: React.FC = () => {
 
     return () => {
       socket.removeSocketEventListener(listener);
+    };
+  }, []);
+
+  const handleTouchOutside = (event: TouchEvent) => {
+    if (topIslandRef.current && !topIslandRef.current.contains(event.target as Node)) {
+      setVisible(false)
+    }
+  };
+
+  const handleTouchInside = () => {
+      setVisible(true)
+  };
+
+  useEffect(() => {
+    document.addEventListener('touchstart', handleTouchOutside);
+    return () => {
+      document.removeEventListener('touchstart', handleTouchOutside);
     };
   }, []);
 
@@ -49,16 +67,18 @@ const Header: React.FC = () => {
   };
 
   return (
-    <div className="debug">
-      <div className="debug_pullTab"></div>
-      <div className="debug_content">
-        <div className="debug_header">
-          <p>Button: {button}</p>
-          <button className="button getDeviceInfo" onClick={handleSendMessage}>
-            Send Command
-          </button>
+    <div className="debug_container">
+      <div className={`debug ${visible ? 'visible' : ''}`} ref={topIslandRef} onTouchStart={handleTouchInside}>
+        <div className="debug_content">
+          <div className="debug_header">
+            <h3>DEBUGGING</h3>
+            <p>Button: {button}</p>
+            <button className="button getDeviceInfo" onClick={handleSendMessage}>
+              Send Command
+            </button>
+          </div>
+          <code>Response: {message}</code>
         </div>
-        <code>Response: {message}</code>
       </div>
     </div>
   );

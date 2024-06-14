@@ -48,18 +48,14 @@
     fill: var(--text-subdued);
   }
   .getSongInfo {
-    height: 160px;
+    height: 80px;
     max-width: 160px;
     min-width: 160px;
     transition: height 0.3s ease-out;
     display: flex;
   }
   .getSongInfo.lg {
-    height: 160px;
-  }
-  .getSongInfo.sm {
-    height: 80px;
-    
+    height: 150px;
   }
   .getSongInfo .albumArt {
     height: 100%;
