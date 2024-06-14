@@ -16,4 +16,5 @@ export { default as IconMicDiscord } from './icons/IconMicDiscord';
 export { default as IconMicOffDiscord } from './icons/IconMicOffDiscord';
 export { default as IconDeafenedDiscord } from './icons/IconDeafenedDiscord';
 export { default as IconDeafenedOffDiscord } from './icons/IconDeafenedOffDiscord';
+export { default as IconDevice } from './icons/IconDevice';
 export { default as IconCallDiscord } from './icons/IconCallDiscord';

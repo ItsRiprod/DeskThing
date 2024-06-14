@@ -13,6 +13,7 @@ export * from './es/components/Icon/icons/IconChevronRight';
 export * from './es/components/Icon/icons/IconCollection';
 export * from './es/components/Icon/icons/IconCollectionActive';
 export * from './es/components/Icon/icons/IconDeviceMobile';
+export * from './es/components/Icon/icons/IconDevice';
 export * from './es/components/Icon/icons/IconDeafenedDiscord';
 export * from './es/components/Icon/icons/IconDeafenedOffDiscord';
 export * from './es/components/Icon/icons/IconDownloaded';

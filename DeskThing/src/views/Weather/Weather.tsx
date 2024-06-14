@@ -162,7 +162,7 @@ const Weather: React.FC = () => {
                   </div>
                 ))}
             </div>
-            <p>Last Updated: {updateTime}</p>
+            <p>Last Weather Update: {updateTime}</p>
           </div>
         </div>
       ) : (

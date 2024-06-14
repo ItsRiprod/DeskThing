@@ -21,6 +21,7 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
 - Get 12 hour forecast
 - Communicate with the Novation Launchpad
 - Discord call status
+- Audible integration
 - And more!
 > *This is under constant development, so features will come as soon as i can make them. Suggestions welcome!*
 
@@ -206,6 +207,15 @@ Process:
 *bread for reference*
 > These names must match the names in `/DeskThing/server/discordHandler.js` under the function `setActivity` largeImageKey and smallImageKey. Update this activity to whatever you want using the Visualizer
 
+## Audible App
+
+Links:
+- 
+
+Process:
+- Ensure python is installed along with pip
+- run `pip install -r /server/apps/audible/requirements.txt`
+
 ## 📸Flashing
 
 Links:
@@ -282,6 +292,8 @@ adb shell mv /tmp/webapp-orig /usr/share/qt-superbird-app/ # it's ok if this fai
 adb shell rm -r /tmp/webapp-orig
 adb push dist/ /usr/share/qt-superbird-app/webapp
 
+adb shell supervisorctl restart chromium
+
 start cmd.exe /k "node server/server.js"
 ```
 
@@ -330,4 +342,15 @@ adb shell supervisorctl restart chromium
 
 # Start the server
 node server/server.js
+```
+
+### Discord Flatpak work around
+
+If you are encountering an error `reject(new Error('Could not connect'));` then try the following found [here](https://github.com/flathub/com.discordapp.Discord/wiki/Rich-Precense-(discord-rpc))
+
+Run the following:
+```sh
+mkdir -p ~/.config/user-tmpfiles.d
+echo 'L %t/discord-ipc-0 - - - - app/com.discordapp.Discord/discord-ipc-0' > ~/.config/user-tmpfiles.d/discord-rpc.conf
+systemctl --user enable --now systemd-tmpfiles-setup.service
 ```
