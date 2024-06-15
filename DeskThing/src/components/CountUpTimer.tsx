@@ -92,7 +92,7 @@ const CountUpTimer: React.FC<CountUpTimerProps> = ({
           transition: touching ? 'none' : 'width 1s ease-out',
           }}
           />
-      <p className="progressBar_timer">{msToTime(ms)}</p>
+      <p className="progressBar_timer">{msToTime(ms)}/{msToTime(msEnd)}</p>
     </div>
     </div>
   );

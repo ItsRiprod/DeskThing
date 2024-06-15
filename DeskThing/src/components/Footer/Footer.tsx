@@ -12,6 +12,8 @@ import {
   IconRepeatOne,
 } from '../todothingUIcomponents';
 import { IconAlbum } from '../todothingUIcomponents';
+import getBackgroundColor, { findContrastColor } from '../../helpers/ColorExtractor';
+
 
 const Footer: React.FC = () => {
   const [local, setLocal] = useState(true);
@@ -30,12 +32,18 @@ const Footer: React.FC = () => {
     setPlay(data.is_playing);
     setShuffle(data.shuffle_state);
     setRepeat(data.repeat_state);
-    console.log(data);
   };
 
   const handleSongData = (data: song_data) => {
     setSongData(data);
   };
+
+  const handleBackgroundColor = async (photo: string) => {
+    const bgColor = await getBackgroundColor(photo);
+    const contrast = findContrastColor(bgColor);
+    document.documentElement.style.setProperty('--color-albumText', `rgb(${contrast[0]}, ${contrast[1]}, ${contrast[2]})`);
+    document.documentElement.style.setProperty('--color-albumColor', `rgb(${bgColor[0]}, ${bgColor[1]}, ${bgColor[2]})`);
+  }
 
   useEffect(() => {
     const listener = (msg: any) => {
@@ -47,6 +55,7 @@ const Footer: React.FC = () => {
       }
       if (msg.type === 'img_data') {
         setImageData(msg.data);
+        handleBackgroundColor(msg.data)
       }
     };
 
@@ -153,72 +162,74 @@ const Footer: React.FC = () => {
   };
 
   return (
-    <div className={`audioPlayer ${visible ? 'visible' : ''}`}
+    <div className={`audioPlayer_container ${visible ? 'visible' : ''}`}
     ref={playerIslandRef}
     onTouchStart={handleTouchInside}>
-      <button className={visible ? 'getSongInfo lg' : 'getSongInfo'} onClick={handleGetSongData}>
-          {imageData && (
-            <img
+        <button className='getSongInfo' onClick={handleGetSongData}>
+            {imageData && (
+              <img
               src={imageData}
-              alt="Image"
-              className='albumArt'
-              onLoad={() => {setImageLoaded(true)}}
-              onError={() => {setImageLoaded(false)}}
-              style={{ display: imageLoaded ? 'block' : 'none' }}
-            />
-          )}
-          {!imageLoaded && <IconAlbum className='albumArt' iconSize={128} />}
-      </button>
-      <div className="audioPlayer_controls">
-        {local ? (
-          <div className="songInformation">
-            <div className="songTitle">{' ' + ' - ' + ' '}</div>
-            <div className="progressBar_container">
-              <div className="progressBar_progress" style={{ width: `0%` }} />
-              <p className="progressBar_timer">--:--</p>
+                alt="Image"
+                className='albumArt'
+                onLoad={() => {setImageLoaded(true)}}
+                onError={() => {setImageLoaded(false)}}
+                style={{ display: imageLoaded ? 'block' : 'none' }}
+              />
+            )}
+            {!imageLoaded && <IconAlbum className='albumArt' iconSize={128} />}
+        </button>
+      <div className="audioPlayer">
+        <div className="audioPlayer_controls">
+          {local ? (
+            <div className="songInformation">
+              <div className="songTitle">{' ' + ' - ' + ' '}</div>
+              <div className="progressBar_container">
+                <div className="progressBar_progress" style={{ width: `0%` }} />
+                <p className="progressBar_timer">--:--</p>
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="songInformation">
+          ) : (
+            <div className="songInformation">
 
-            <div>
-              <CountUpTimer
-                onSongEnd={handleGetSongData}
-                start={songData?.progress_ms || 0}
-                end={songData?.duration_ms || 0}
-                play={play}
-                onTouchEnd={setSpecificDuration}
-                handleSendCommand={handleSendCommand}
-              >
-                <div className="songTitle">
-                  {songData?.name || 'Track Name'}
-                </div>
-              </CountUpTimer>
+              <div>
+                <CountUpTimer
+                  onSongEnd={handleGetSongData}
+                  start={songData?.progress_ms || 0}
+                  end={songData?.duration_ms || 0}
+                  play={play}
+                  onTouchEnd={setSpecificDuration}
+                  handleSendCommand={handleSendCommand}
+                >
+                  <div className="songTitle">
+                    {songData?.name || 'Track Name'}
+                  </div>
+                </CountUpTimer>
+              </div>
             </div>
+          )}
+          <div className="buttonContainer">
+            <button className="mediaButton" onClick={handleShuffleToggle}>
+              {shuffle ? <IconShuffle iconSize={48} className={'active'} /> : <IconShuffle iconSize={48} />}
+            </button>
+            <button
+              className="mediaButton active"
+              onClick={() => handleSendCommand('previous_track')}
+            >
+              <IconSkipBack />
+            </button>
+            <button className="mediaButton active" onClick={handlePlayPause}>
+              {!play ? <IconPlay /> : <IconPause />}
+            </button>
+            <button className="mediaButton active" onClick={() => handleSendCommand('next_track')}>
+              <IconSkipForward />
+            </button>
+            <button
+              className="mediaButton"
+              onClick={handleRepeat}
+            >
+              {repeat == 'off' ? <IconRepeat iconSize={48} /> : repeat == 'context' ? <IconRepeat className={'active'} iconSize={48} /> : <IconRepeatOne className={'active'} iconSize={48} />}
+            </button>
           </div>
-        )}
-        <div className="buttonContainer">
-          <button className="mediaButton" onClick={handleShuffleToggle}>
-            {shuffle ? <IconShuffle iconSize={48} className={'active'} /> : <IconShuffle iconSize={48} />}
-          </button>
-          <button
-            className="mediaButton active"
-            onClick={() => handleSendCommand('previous_track')}
-          >
-            <IconSkipBack />
-          </button>
-          <button className="mediaButton active" onClick={handlePlayPause}>
-            {!play ? <IconPlay /> : <IconPause />}
-          </button>
-          <button className="mediaButton active" onClick={() => handleSendCommand('next_track')}>
-            <IconSkipForward />
-          </button>
-          <button
-            className="mediaButton"
-            onClick={handleRepeat}
-          >
-            {repeat == 'off' ? <IconRepeat iconSize={48} /> : repeat == 'context' ? <IconRepeat className={'active'} iconSize={48} /> : <IconRepeatOne className={'active'} iconSize={48} />}
-          </button>
         </div>
       </div>
     </div>

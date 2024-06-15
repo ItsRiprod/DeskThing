@@ -27,10 +27,10 @@
   border-radius: 0px 0px 25px 25px;
 }
 .debug.visible div {
-  opacity: 100;
+  display: flex;
 }
 .debug div {
-  opacity: 0;
+  display: none;
 }
 
 .debug_content {

@@ -2,14 +2,11 @@
 import './Spotify.css';
 import React, { useEffect, useState } from 'react';
 import socket, { device_data, song_data } from '../../helpers/WebSocketService';
-import getBackgroundColor, { findContrastColor } from '../../helpers/ColorExtractor';
 import { IconAlbum } from '../../components/todothingUIcomponents';
 
 const Spotify: React.FC = () => {
   const [songData, setSongData] = useState<song_data>();
   const [deviceData, setDeviceData] = useState<device_data>();
-  const [bgColor, setBgColor] = useState('#000000');
-  const [txtColor, setTxtColor] = useState('#999999');
   const [imgData, setImgData] = useState<string>();
   const [offset, setOffset] = useState<number>();
   const [opacity, setOpacity] = useState<number>(100);
@@ -19,17 +16,6 @@ const Spotify: React.FC = () => {
     setDeviceData(data);
   };
 
-  
-  const loadColor = async (imageId: string) => {
-    try {
-      const rgbColor = await getBackgroundColor(imageId);
-      const contrast = findContrastColor(rgbColor);
-      setTxtColor(`rgb(${contrast[0]}, ${contrast[1]}, ${contrast[2]})`);
-      setBgColor(`rgb(${rgbColor[0]}, ${rgbColor[1]}, ${rgbColor[2]})`);
-    } catch (error) {
-      console.error('Error loading color:', error);
-    }
-  };
 
   const handleSongData = async (data: song_data) => {
     
@@ -63,7 +49,6 @@ const Spotify: React.FC = () => {
       }
       if (msg.type === 'img_data') {
         setImgData(msg.data);
-        await loadColor(msg.data);
       }
     };
 
@@ -100,7 +85,7 @@ const Spotify: React.FC = () => {
 
   return (
     <div className="view_spotify">
-      <div className="view_spotify_img_container" style={{backgroundColor: `${bgColor}`}}>
+      <div className="view_spotify_img_container">
         {imgData && (
             <img
               src={imgData}
@@ -112,14 +97,7 @@ const Spotify: React.FC = () => {
           )}
           {!imageLoaded && <IconAlbum iconSize={300} />}
       </div>
-      <div
-        className="view_spotify_info"
-        style={{
-          backgroundImage: `linear-gradient(to right, ${bgColor}, var(--bg-tinted-highlight))`,
-          color: txtColor,
-          
-          }}
-      >
+      <div className="view_spotify_info">
         <p className="view_spotify_device">{`Listening On: ${deviceData?.device.name || 'Device name'}`}</p>
         <div className={`info_container ${transitioning ? 'spotify_fade' : ''} `} style={{transform: `translateX(${offset}px)`, opacity: `${opacity}`}}>
           <p className="view_spotify_album">{songData?.albumName || 'Album'}</p>

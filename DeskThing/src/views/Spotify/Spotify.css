@@ -10,7 +10,7 @@
     padding: 35px;
     display: flex;
     align-items: center;
-    background-color: var(--bg-press);
+    background-color: var(--color-albumColor);
 
 }
 .view_spotify img {
@@ -31,6 +31,8 @@
     text-align: start;
     padding-top: 13vh;
     overflow: hidden;
+    background: linear-gradient(to right, var(--color-albumColor), var(--bg-tinted-highlight));
+    color: var(--color-albumText);
 }
 .view_spotify_device {
     position: absolute;

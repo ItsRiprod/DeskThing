@@ -42,7 +42,9 @@
          */
          --bg-unsafe-press: #121212;
  
-
+    
+         --color-albumColor: #2e2e2e;
+         --color-albumText: #ffffff;
     /**
      * The default text color of the base set.
      */
@@ -55,7 +57,8 @@
      * A bright text color that contrasts with the set’s background colors. Often used to give key interactive elements more prominence.
      */
      --text-brightAccent: #1ed760;
-    /**
+     
+     /**
      * A text color associated with negativity. Often used for errors, destructive actions, or to highlight negative metrics or data.
      */
      --text-negative: #f15e6c;
@@ -67,6 +70,10 @@
      * A text color associated with positivity. Often used for success states, or to highlight positive metrics or data.
      */
      --text-positive: #1ed760;
+    /**
+     * A text color associated with positivity. Often used for success states, or to highlight positive metrics or data.
+     */
+     --text-tinted: #a1a1a18f;
     /**
      * A text color associated with system announcements and notifications.
      */
@@ -119,10 +126,12 @@
 
 body {
   margin: 0;
+
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
     'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  
 }
 
 code {
@@ -131,7 +140,6 @@ code {
 
 .App {
   text-align: center;
-
   
 }
 
