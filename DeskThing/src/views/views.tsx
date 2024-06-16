@@ -7,6 +7,7 @@ import Trello from './Trello/Trello';
 import Weather from './Weather/Weather';
 import Launchpad from './Launchpad/Launchpad';
 import Discord from './Discord/Discord';
+import Audible from './Audible/Audible';
 import './views.css';
 
 
@@ -28,7 +29,7 @@ const ViewManager = () => {
             setCurrentView('weather');
             break;
           case Button.BUTTON_4:
-            setCurrentView('launchpad');
+            setCurrentView('audible');
             break;
           case Button.BUTTON_5:
             setCurrentView('default');
@@ -75,6 +76,8 @@ const ViewManager = () => {
         return <Launchpad />;
       case 'discord':
         return <Discord />;
+      case 'audible':
+        return <Audible />;
       default:
         return <Default />;
     }

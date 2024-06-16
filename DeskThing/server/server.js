@@ -151,7 +151,7 @@ app.get('/discord/callback', async (req, res) => {
   const port = process.env.PORT || 8888;
   app.listen(port, async () => {
     console.log(`Server is running on port ${port}.`);
-  
+    
     // Automatically open the default web browser
     //try {
     //    const open = (await import('open')).default;
@@ -175,3 +175,17 @@ import './apps/discord/discordHandler.js';
 import './apps/launchpad/launchpadHandler.js';
 import './apps/trello/trelloHandler.js';
 import './apps/weather/weatherHandler.js';
+
+/*
+import './apps/audible/audibleHandler.js';
+ONLY UNCOMMENT IF YOU HAVE INSTALLED AUDIBLE CORRECTLY
+ 
+--- In the .env file
+# Audible login information (Just like your normal audible/amazon login)
+AUDIBLE_EMAIL=
+AUDIBLE_PASSWORD=
+AUDIBLE_COUNTRY_CODE=us
+AUDIBLE_PORT=8892
+run pip install -r server/apps/audible/requirements.txt
+
+*/

@@ -19,7 +19,7 @@ const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
 const refreshAccessToken = async () => {
   console.log("Refreshing token...");
 
-  const refreshToken = getData("spotifyRefreshToken");
+  const refreshToken = getData("refreshToken");
 
   if (!refreshToken) {
       try {

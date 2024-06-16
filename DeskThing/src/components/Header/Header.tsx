@@ -18,7 +18,8 @@ const Header: React.FC = () => {
   }, []);
 
   const handleResponseMessage = (data: string) => {
-    setMessage(data);
+    
+    setMessage(JSON.stringify(data));
   };
 
   useEffect(() => {
@@ -27,6 +28,7 @@ const Header: React.FC = () => {
         handleResponseMessage(msg.data);
       }
       if (msg.type === 'message') {
+        console.log('Message ', msg.data)
         handleResponseMessage(msg.data);
       }
       if (msg.type === 'error') {
