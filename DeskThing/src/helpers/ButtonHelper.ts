@@ -185,7 +185,8 @@ class ButtonHelper {
     document.removeEventListener('touchstart', this.touchStartHandler);
     document.removeEventListener('touchmove', this.touchMoveHandler);
     document.removeEventListener('touchend', this.touchEndHandler);
-
+    
+    this.listeners = new Map();
     // Clear any remaining long press timeouts
     this.longPressTimeouts.forEach(timeout => clearTimeout(timeout));
 
