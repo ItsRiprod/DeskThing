@@ -4,11 +4,11 @@
     /**
      * The default background color of the base set.
      */
-     --bg-base: #121212;
+     --bg-base: #000000;
     /**
      * A background color that indicates the hover state of a component, or adds some oomph to a focus state.
      */
-     --bg-highlight: #1a1a1a;
+     --bg-highlight: #000000;
     /**
      * A background color that indicates the press state of a component.
      */
@@ -17,8 +17,8 @@
         /**
          * The default background color for elevated elements in the base set.
          */
-         --bg-elevated-base: #242424;
-         --bg-elevated-highlight: #2a2a2a;
+         --bg-elevated-base: #000000;
+         --bg-elevated-highlight: #000000;
          --bg-elevated-press: #000000;
  
         /**
@@ -32,19 +32,19 @@
         /**
          * Fallback color
          */
-         --bg-unsafe-basebase: #121212;
+         --bg-unsafe-basebase: #000000;
         /**
          * Fallback color
          */
-         --bg-unsafe-highlight: #121212;
+         --bg-unsafe-highlight: #000000;
         /**
          * Fallback color
          */
-         --bg-unsafe-press: #121212;
+         --bg-unsafe-press: #000000;
  
     
-         --color-albumColor: #2e2e2e;
-         --color-albumText: #ffffff;
+         --color-albumColor: #000000;
+         --color-albumText: #000000;
     /**
      * The default text color of the base set.
      */

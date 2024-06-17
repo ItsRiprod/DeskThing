@@ -197,6 +197,7 @@ const Footer: React.FC = () => {
                   start={songData?.progress_ms || 0}
                   end={songData?.duration_ms || 0}
                   play={play}
+                  onTouchStart={handleTouchInside}
                   onTouchEnd={setSpecificDuration}
                   handleSendCommand={handleSendCommand}
                 >

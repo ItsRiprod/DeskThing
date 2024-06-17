@@ -6,47 +6,34 @@ import socket, { device_data } from '../../helpers/WebSocketService';
 const Volume: React.FC = () => {
   const [volume, setVolume] = useState(0);
   const [visible, setVisible] = useState(false);
-  const buttonHelper = new ButtonHelper();
+  const buttonHelper = ButtonHelper.getInstance();
 
   const handleDeviceData = (data: device_data) => {
 
     setVolume(data.device.volume_percent);
   };
   useEffect(() => {
-    const handleButtonPress = (btn: Button, flv: EventFlavour) => {
-      if (flv === EventFlavour.Short) {
-        switch (btn) {
-          case Button.SCROLL_RIGHT:
-            handleScroll(false);
-            break;
-          case Button.SCROLL_LEFT:
-            handleScroll(true);
-            break;
-          default:
-            break;
+    const handleScroll = (left: boolean) => {
+      if (volume < 100 && volume > 0) {
+        if (left) {
+          setVolume((oldVol) => oldVol - 5);
+        } else {
+          setVolume((oldVol) => oldVol + 5);
         }
+        handleSendCommand('set_vol', volume);
       }
     };
-
-    const noOpCallback = () => {};
-
-    buttonHelper.setCallback(handleButtonPress);
+    
+    buttonHelper.addListener(Button.SCROLL_LEFT, EventFlavour.Short, () => handleScroll(true));
+    buttonHelper.addListener(Button.SCROLL_RIGHT, EventFlavour.Short, () => handleScroll(false));
 
     return () => {
-      buttonHelper.setCallback(noOpCallback);
+      buttonHelper.removeListener(Button.SCROLL_RIGHT, EventFlavour.Short)
+      buttonHelper.removeListener(Button.SCROLL_LEFT, EventFlavour.Short)
     };
-  }, [buttonHelper]);
+  }, [buttonHelper, volume]);
 
-  const handleScroll = (left: boolean) => {
-    if (volume < 100 && volume > 0) {
-      if (left) {
-        setVolume((oldVol) => oldVol - 5);
-      } else {
-        setVolume((oldVol) => oldVol + 5);
-      }
-      handleSendCommand('set_vol', volume);
-    }
-  };
+  
 
   useEffect(() => {
     setVisible(true);
@@ -79,7 +66,7 @@ const Volume: React.FC = () => {
       const data = {
         type: 'set',
         request: command,
-        app: 'spotify',
+        app: 'Spotify',
         data: payload,
       };
       socket.post(data);

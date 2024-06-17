@@ -1,14 +1,14 @@
-import { useState, useEffect, useMemo, Suspense, lazy  } from 'react';
+import { useState, useEffect, Suspense, lazy  } from 'react';
 import ButtonHelper, { Button, EventFlavour } from '../helpers/ButtonHelper';
 import socket from '../helpers/WebSocketService';
-import Default from './default/default';
+import Default from './Default/Default';
 import './views.css';
 
 import Overlay from '../components/Overlay/Overlay';
 
 const ViewManager = () => {
   const [currentView, setCurrentView] = useState('Default');
-  const buttonHelper = useMemo(() => new ButtonHelper(), []);
+  const buttonHelper = ButtonHelper.getInstance();
   const [preferredApps, setPreferredApps] = useState<string[]>([]);
   const [apps, setApps] = useState<string[]>([]);
   const [DynamicComponent, setDynamicComponent] = useState<React.LazyExoticComponent<any> | null>(null);
@@ -87,12 +87,13 @@ const ViewManager = () => {
       }
     };
 
-    const noOpCallback = () => { };
+
 
     buttonHelper.setCallback(handleButtonPress);
 
     return () => {
-      buttonHelper.setCallback(noOpCallback);
+      buttonHelper.setCallback(null);
+      buttonHelper.destroy();
     };
   }, [buttonHelper, preferredApps, currentView]);
 
@@ -116,7 +117,7 @@ const ViewManager = () => {
 
   useEffect(() => {
     const loadDynamicComponent = async () => {
-      if (currentView && !['Default'].includes(currentView)) {
+      if (currentView) {
         try {
           const importedComponent = await import(`./${currentView}/${currentView}.tsx`);
           setDynamicComponent(lazy(() => Promise.resolve({ default: importedComponent.default })));

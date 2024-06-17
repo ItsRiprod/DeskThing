@@ -3,7 +3,7 @@
     position:fixed;
     bottom:0px;
     width: 100vw;
-    height: 80px;
+    height: 90px;
     display:flex;
     transition: height 0.3s, background-color 0.2s ease-out;
     background: conic-gradient(from 0turn at 10% -5%,var(--bg-tinted-highlight) 26%, var(--color-albumColor) 50%);
@@ -93,6 +93,7 @@
   
   */
   .songInformation {
+    padding-top: 5px;
   } 
   .songTitle {
     font-size: 35px;
@@ -104,9 +105,9 @@
   }
   .progressBar_container {
     margin:auto;
-    width: 90%;
+    width: 100%;
     height: 30px;
-    background-color: var(--bg-tinted-base);
+    background-color: var(--bg-tinted-highlight);
     overflow:hidden;
     border-radius: 15px;
   }

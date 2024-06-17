@@ -2,7 +2,7 @@
     position: absolute;
     width: 35px;
     height: 50vh;
-    background-color: var(--bg-elevated-base);
+    background-color: var(--text-tinted);
     top: 25vh;
     display: flex;
     align-items: flex-end;
@@ -17,7 +17,7 @@
 .volumeLevel {
     transition: height 0.1s;
     width: 100%;
-    background-color: var(--bg-tinted-base);
+    background-color: var(--text-brightAccent);
     height: 100%;
     bottom: 0px;
 }

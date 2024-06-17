@@ -93,7 +93,7 @@
     width: 95%;
     border: 1px solid black;
     border-radius: 5px;
-    background-color: var(--bg-elevated-highlight);
+    background-color: var(--bg-tinted-highlight);
     color: white;
 }
 .org_title {
@@ -134,7 +134,7 @@
     width: 95%;
     border: 1px solid black;
     border-radius: 5px;
-    background-color: var(--bg-elevated-highlight);
+    background-color: var(--bg-tinted-highlight);
     color: white;
 }
 .board_title {
@@ -189,7 +189,7 @@
     height: 155px;
     border: 1px solid black;
     border-radius: 12px;
-    background-color: var(--bg-elevated-highlight);
+    background-color: var(--bg-tinted-highlight);
     color: white;
 }
 .card_details {

@@ -6,8 +6,9 @@
   display: flex;
   flex-wrap: wrap;
   z-index: 10;
-  background: var(--bg-elevated-base);
-  transition: height 0.4s;
+  background: var(--bg-tinted-base);
+  transition: all 0.4s;
+  align-content: flex-start;
 }
 
 .appselector::-webkit-scrollbar {
@@ -17,14 +18,13 @@
 
 .appselector.visible {
   height: 100px;
-  transition: height 0.1s;
-  border-bottom: var(--text-brightAccent) 3px solid;
+  transition: all 0.2s;
 }
 
 .appselector.touched {
-  height: 75vh;
+  height: 100vh;
   overflow-y: scroll;
-  border-bottom: var(--text-brightAccent) 3px solid;
+  background: var(--bg-base);
 }
 
 .app-button {
@@ -35,18 +35,14 @@
   cursor: pointer;
   width: 20vw;
   height: 90px;
-  background-color: var(--bg-elevated-base);
+  background-color: var(--bg-base);
 }
 
 .app-button.preferred {
-  background-color: var(--bg-highlight); /* Highlight preferred apps */
+  background-color: var(--bg-base); /* Highlight preferred apps */
   border-top: 2px solid white;
 }
 
 .app-button.current {
   border-top: 2px solid var(--text-brightAccent); /* Highlight current view */
-}
-
-.app-button:hover {
-  background-color: var(--bg-elevated-highlight);
 }

@@ -9,6 +9,7 @@ interface CountUpTimerProps {
   onTouchEnd: (seconds: number) => void;
   handleSendCommand: (command: string) => void;
   play: boolean;
+  onTouchStart: () => void;
 }
 
 const CountUpTimer: React.FC<CountUpTimerProps> = ({
@@ -19,6 +20,7 @@ const CountUpTimer: React.FC<CountUpTimerProps> = ({
   handleSendCommand,
   play,
   children,
+  onTouchStart,
 }) => {
   const [ms, setMs] = useState(0);
   const [msEnd, setMsEnd] = useState(6000);
@@ -49,6 +51,7 @@ const CountUpTimer: React.FC<CountUpTimerProps> = ({
   }, [start, end]);
 
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    onTouchStart();
     e.stopPropagation();
 
     const progressBar = progressBarRef.current;
@@ -85,17 +88,17 @@ const CountUpTimer: React.FC<CountUpTimerProps> = ({
 
   return (
     <div className="songInformation" onTouchStart={handleTouchStart}>
-      {children}
-    <div className="progressBar_container" ref={progressBarRef}>
-      <div
-        className="progressBar_progress"
-        style={{
-          width: `${(ms / msEnd) * 100 || 0}%`,
-          transition: touching ? 'none' : 'width 1s ease-out',
+        {children}
+      <div className="progressBar_container" ref={progressBarRef}>
+        <div
+          className="progressBar_progress"
+          style={{
+            width: `${(ms / msEnd) * 100 || 0}%`,
+            transition: touching ? 'none' : 'width 1s ease-out',
           }}
           />
-      <p className="progressBar_timer">{msToTime(ms)}/{msToTime(msEnd)}</p>
-    </div>
+        <p className={`progressBar_timer ${touching ? '' : 'hidden'}`}>{msToTime(ms)}/{msToTime(msEnd)}</p>
+      </div>
     </div>
   );
 };

@@ -6,7 +6,7 @@
   justify-content: center;
 }
 .debug {
-  background: var(--bg-elevated-highlight);
+  background: var(--bg-base);
   
   margin-top: 5px;
   left: auto;
@@ -53,7 +53,7 @@
 
 .debug_pullTab {
   position: absolute;
-  background-color: var(--bg-elevated-highlight);
+  background-color: var(--bg-base);
   width: 100px;
   height: 15px;
   z-index: 5;
@@ -63,7 +63,7 @@
 }
 
 .debug_pullTab:hover {
-  background-color: var(--bg-elevated-press);
+  background-color: var(--bg-base);
 }
 
 .debug code {

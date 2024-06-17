@@ -1,4 +1,4 @@
-import {FC, ReactNode, useEffect,  useState, useMemo} from 'react';
+import {FC, ReactNode, useEffect,  useState } from 'react';
 import ButtonHelper, { Button, EventFlavour } from '../../helpers/ButtonHelper.ts';
 
 import './Overlay.css';
@@ -17,7 +17,7 @@ interface OverlayProps {
 const Overlay: FC<OverlayProps> = ({ children, preferredApps, currentView, apps, setCurrentView }) => {
     const [visible, setVisible] = useState(false);
     const [active, setActive] = useState(false);
-    const buttonHelper = useMemo(() => new ButtonHelper(), []);
+    const buttonHelper = ButtonHelper.getInstance();
 
     useEffect(() => {
         let timer;
@@ -38,35 +38,41 @@ const Overlay: FC<OverlayProps> = ({ children, preferredApps, currentView, apps,
       }, [preferredApps, currentView]);
 
       useEffect(() => {
-        const handleButtonPress = (btn: Button, flv: EventFlavour) => {
-          if (btn === Button.SWIPE) {
+        const handleSwipe = (btn: Button, flv: EventFlavour) => {
+          if (btn != null) {
+
             switch (flv) {
               case EventFlavour.UpSwipe:
                 setActive(false);
                 setVisible(false);
                 break;
-              case EventFlavour.DownSwipe:
-                if (visible) {
+                case EventFlavour.DownSwipe:
+                  if (visible) {
                     setActive(true);
-                } else {
+                  } else {
                     setVisible(true);
+                  }
+                  break;
                 }
-                break;
-            }
-          } 
-        };
+              }
+        }
     
-        const noOpCallback = () => { };
-    
-        buttonHelper.setCallback(handleButtonPress);
+        buttonHelper.addListener(Button.SWIPE, EventFlavour.UpSwipe, handleSwipe);
+        buttonHelper.addListener(Button.SWIPE, EventFlavour.DownSwipe, handleSwipe);
     
         return () => {
-          buttonHelper.setCallback(noOpCallback);
+          buttonHelper.removeListener(Button.SWIPE, EventFlavour.UpSwipe);
+          buttonHelper.removeListener(Button.SWIPE, EventFlavour.DownSwipe);
         };
       }, [buttonHelper, visible]);
 
+      const handleAppSelect = (view: string) => {
+        setCurrentView(view);
+        setActive(false);
+        setVisible(false);
+      }
   return <div className="overlay">
-    {<AppSelector className={`${active ? 'touched' : ''} ${visible ? 'visible' : ''}`} onAppSelect={setCurrentView} apps={apps} currentView={currentView} preferredApps={preferredApps}/>}
+    {<AppSelector className={`${active ? 'touched' : ''} ${visible ? 'visible' : ''}`} onAppSelect={handleAppSelect} apps={apps} currentView={currentView} preferredApps={preferredApps}/>}
     <Header />
     <Volume />
         {children}

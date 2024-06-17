@@ -53,22 +53,38 @@ function listenerKey(btn: Button, flv: EventFlavour): string {
 }
 
 class ButtonHelper {
+  private static instance: ButtonHelper = new ButtonHelper();
+
+
   listeners: Map<string, ((btn: Button, flv: EventFlavour) => void)[]>;
   buttonStates: { [key: string]: EventFlavour };
   callback: ((btn: Button, flv: EventFlavour) => void) | null = null;
 
   longPressTimeouts: Map<Button, number>;
 
+  private touchStartX = 0;
+  private touchStartY = 0;
+  private touchEndX = 0;
+  private touchEndY = 0;
+
   constructor() {
     this.listeners = new Map();
     this.buttonStates = {};
     this.longPressTimeouts = new Map();
+
     document.addEventListener('wheel', this.wheelEventHandler);
     document.addEventListener('keydown', this.keyDownEventHandler);
     document.addEventListener('keyup', this.keyUpEventHandler);
     document.addEventListener('touchstart', this.touchStartHandler);
     document.addEventListener('touchmove', this.touchMoveHandler);
     document.addEventListener('touchend', this.touchEndHandler);
+  }
+
+  static getInstance(): ButtonHelper {
+    if (!ButtonHelper.instance) {
+      ButtonHelper.instance = new ButtonHelper();
+    }
+    return ButtonHelper.instance;
   }
 
   getButtonStates(): { [key: string]: EventFlavour } {
@@ -129,14 +145,13 @@ class ButtonHelper {
       this.longPressTimeouts.delete(button);
     }
   };
-  private touchStartX = 0;
-  private touchStartY = 0;
-  private touchEndX = 0;
-  private touchEndY = 0;
+
 
   private touchStartHandler = (event: TouchEvent) => {
     this.touchStartX = event.touches[0].clientX;
     this.touchStartY = event.touches[0].clientY;
+    this.touchEndX = event.touches[0].clientX;
+    this.touchEndY = event.touches[0].clientY;
   };
 
   private touchMoveHandler = (event: TouchEvent) => {
@@ -162,6 +177,20 @@ class ButtonHelper {
       }
     }
   };
+  destroy() {
+    // Clean up event listeners
+    document.removeEventListener('wheel', this.wheelEventHandler);
+    document.removeEventListener('keydown', this.keyDownEventHandler);
+    document.removeEventListener('keyup', this.keyUpEventHandler);
+    document.removeEventListener('touchstart', this.touchStartHandler);
+    document.removeEventListener('touchmove', this.touchMoveHandler);
+    document.removeEventListener('touchend', this.touchEndHandler);
+
+    // Clear any remaining long press timeouts
+    this.longPressTimeouts.forEach(timeout => clearTimeout(timeout));
+
+    ButtonHelper.instance = null;
+  }
 }
 
 export default ButtonHelper;
