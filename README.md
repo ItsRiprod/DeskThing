@@ -18,26 +18,26 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
    - Show currently listening (Album, Artist, Song name, album art)
    - Control Spotify (Skip, pause, play, rewind, shuffle, repeat)
    - Supports Podcasts too!
-   - Spotify app [installation instructions here](https://github.com/ItsRiprod/carthing/tree/main/DeskThing/server/apps/spotify#spotify-app-install)
+   - Spotify app [installation instructions here](/DeskThing/server/apps/spotify#spotify-app-install)
 - Discord Integration
    - Show current call status (Participants, who's talking, their mute status)
    - Control Discord (~~Mute/Unmute  Deafen//Undeafen Disconnect~~)
    - ~~Control Individual User Volume~~
    - ~~See message preview~~
-   - Discord app [installation instructions here](https://github.com/ItsRiprod/carthing/tree/main/DeskThing/server/apps/discord#discord-app-install)
+   - Discord app [installation instructions here](/DeskThing/server/apps/discord#discord-app-install)
 - Weather Integration
    - Show local weather
    - Temperature
    - AQI, UV Index, Wind Speed + Direction, Visibility
    - 12 Hour forecast
-   - Weather app [installation instructions here](https://github.com/ItsRiprod/carthing/tree/main/DeskThing/server/apps/weather#weather-app-install)
+   - Weather app [installation instructions here](/DeskThing/server/apps/weather#weather-app-install)
 - Audible Integration
    - ~~Currently Listening To~~ 
    - ~~Audio Controls (Skip, Rewind, Fast Forward)~~ 
    - ~~Audio Status (%through)~~
    - Audiobook library
    - Audiobook stats (Progress, Length of book, time left, ASIN)
-   - Audible app [installation instructions here](/server/apps/audible#audible-app-install)
+   - Audible app [installation instructions here](/DeskThing/server/apps/audible#audible-app-install)
 - Launchpad Integration
    - Control different views on your launchpad!
    - Show your system resource usage on your novation launchpad
@@ -45,7 +45,7 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
    - ~~Show weather from launchpad~~
    - ~~Show time on launchpad~~
    - ~~Trigger macros from launchpad~~
-   - Launchpad app [installation instructions here](/server/apps/launchpad#launchpad-app-install)
+   - Launchpad app [installation instructions here](/DeskThing/server/apps/launchpad#launchpad-app-install)
 - Trello Integration
    - See all organizations 
    - See all boards 
@@ -53,7 +53,7 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
    - See all cards 
    - See all tags 
    - Set different lists as your favorites 
-   - Trello app [installation instructions here](/server/apps/trello#trello-app-install)
+   - Trello app [installation instructions here](/DeskThing/server/apps/trello#trello-app-install)
      
 > *This is under constant development, so features will come as soon as I can make them. Suggestions welcome!*
 
@@ -75,12 +75,12 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
 > If you need help, refer to the [detailed instructions](#flashing) at the end of this page
 
 2. **Configure Apps You Want To Include:**
-   - Spotify app [installation instructions here](/server/apps/spotify#spotify-app-install)
-   - Trello app [installation instructions here](/server/apps/trello#trello-app-install)
-   - Weather app [installation instructions here](/server/apps/weather#weather-app-install)
-   - Launchpad app [installation instructions here](/server/apps/launchpad#launchpad-app-install)
-   - Discord app [installation instructions here](/server/apps/discord#discord-app-install)
-   - Audible app [installation instructions here](/server/apps/audible#audible-app-install)
+   - Spotify app [installation instructions here](/DeskThing/server/apps/spotify#spotify-app-install)
+   - Trello app [installation instructions here](/DeskThing/server/apps/trello#trello-app-install)
+   - Weather app [installation instructions here](/DeskThing/server/apps/weather#weather-app-install)
+   - Launchpad app [installation instructions here](/DeskThing/server/apps/launchpad#launchpad-app-install)
+   - Discord app [installation instructions here](/DeskThing/server/apps/discord#discord-app-install)
+   - Audible app [installation instructions here](/DeskThing/server/apps/audible#audible-app-install)
 
 3. **Configure Workspace:**
    - Use `cd ./DeskThing` to get into the project directory and run:
