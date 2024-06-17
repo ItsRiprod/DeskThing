@@ -1,11 +1,8 @@
 import { switchView } from './launchpadUtil/launchpadUtil.js';
-import { server, sendError } from '../../util/socketHandler.js'
+import { appEventEmitter, sendError } from '../../util/socketHandler.js'
 
-server.on('connection', async (socket) => {
-  socket.on('message', async (message) => {
+  appEventEmitter.on('Launchpad', async (socket, parsedMessage) => {
     try {
-      const parsedMessage = JSON.parse(message);
-      if (parsedMessage.app == 'launchpad') {
         switch (parsedMessage.type) {
             case 'set':
             await handleSetRequest(socket, parsedMessage);
@@ -14,12 +11,11 @@ server.on('connection', async (socket) => {
             console.log('Unknown type', parsedMessage.type);
             break;
         }
-      }
+      
     } catch (e) {
       console.log('There was an error in LaunchpadHandler');
     }
   })
-})
 
 
 const handleSetRequest = async (socket, parsedMessage) => {

@@ -4,6 +4,10 @@ import axios from 'axios';
 const PORT = process.env.AUDIBLE_PORT || 5000;
 const BASE_URL = `http://localhost:${PORT}`;
 
+const AUDIBLE_EMAIL = process.env.AUDIBLE_EMAIL;
+const AUDIBLE_PASSWORD = process.env.AUDIBLE_PASSWORD;
+const COUNTRY_CODE = process.env.AUDIBLE_COUNTRY_CODE;
+
 // Spawn the Python process
 const pythonProcess = child_process.spawn('python', ['./apps/audible/audibleUtils.py']);
 
@@ -99,7 +103,7 @@ export async function authenticate(email, password, countryCode) {
     }
   }
 
-export async function get(url, params) {
+export async function get(url, params, repeat = false) {
   try {
     console.log("Attempting to get data");
     const response = await axios.get(`${BASE_URL}/get`, {
@@ -118,15 +122,26 @@ export async function get(url, params) {
       throw new Error(`Get Data Response: `, response.data);
     }
   } catch (error) {
-    console.error(`Get Data Failed: `, error);
-    throw new Error(`Get Data Failed: `, error);
+    if (!repeat) {
+      console.log('Failed to get data! Trying again after authenticating...');
+      try {
+        const response = await authenticate(AUDIBLE_EMAIL, AUDIBLE_PASSWORD, COUNTRY_CODE);
+        console.log("Logged in as " + response);
+        return await get(url, params, true);
+      } catch (authError) {
+        console.error('Authentication failed:', authError);
+      }
+    } else {
+      console.error(`Get Data Failed: `, error);
+      throw new Error(`Get Data Failed: `, error);
+    }
   }
 }
-export async function post(url, params) {
+export async function post(url, params, repeat = false) {
   try {
     console.log("Attempting to post data");
     //const response = await axios.post(`${BASE_URL}/post`, { url, params });
-    const response = await axios.get(`${BASE_URL}/post`, {
+    const response = await axios.post(`${BASE_URL}/post`, {
       params: {
         url: url,
         params: JSON.stringify(params) 
@@ -141,14 +156,25 @@ export async function post(url, params) {
       throw new Error(`Post Data Response: `, response.data);
     }
   } catch (error) {
-    console.error(`Post Data Failed: `, error.response);
-    throw new Error(`Post Data Failed: `, error.response);
+    if (!repeat) {
+      console.log('Failed to post data! Trying again after authenticating...');
+      try {
+        const response = await authenticate(AUDIBLE_EMAIL, AUDIBLE_PASSWORD, COUNTRY_CODE);
+        console.log("Logged in as " + response);
+        return await post(url, params, true);
+      } catch (authError) {
+        console.error('Authentication failed:', authError);
+      }
+    } else {
+      console.error(`Post Data Failed: `, error.response);
+      throw new Error(`Post Data Failed: `, error.response);
+    }
   }
 }
-export async function put(url, params) {
+export async function put(url, params, repeat=false) {
   try {
     console.log("Attempting to put data");
-    const response = await axios.get(`${BASE_URL}/put`, {
+    const response = await axios.put(`${BASE_URL}/put`, {
       params: {
         url: url,
         params: JSON.stringify(params) 
@@ -163,8 +189,19 @@ export async function put(url, params) {
       throw new Error(`Put Data Response: `, response.data);
     }
   } catch (error) {
-    console.error(`Put Data Failed: `, error);
-    throw new Error(`Put Data Failed: `, error.response);
+    if (!repeat) {
+      console.log('Failed to put data! Trying again after authenticating...');
+      try {
+        const response = await authenticate(AUDIBLE_EMAIL, AUDIBLE_PASSWORD, COUNTRY_CODE);
+        console.log("Logged in as " + response);
+        return await put(url, params, true);
+      } catch (authError) {
+        console.error('Authentication failed:', authError);
+      }
+    } else {
+      console.error(`Put Data Failed: `, error);
+      throw new Error(`Put Data Failed: `, error.response);
+    }
   }
 }
 

@@ -76,15 +76,15 @@ const Spotify: React.FC = () => {
 
   const handleGetSongData = () => {
     if (socket.is_ready()) {
-      const data = { app: 'spotify', type: 'get', request: 'song_info' };
+      const data = { app: 'Spotify', type: 'get', request: 'song_info' };
       socket.post(data);
-      const data2 = { app: 'spotify', type: 'get', request: 'device_info' };
+      const data2 = { app: 'Spotify', type: 'get', request: 'device_info' };
       socket.post(data2);
     }
   };
 
   return (
-    <div className="view_spotify">
+    <div className={'view_spotify'}>
       <div className="view_spotify_img_container">
         {imgData && (
             <img

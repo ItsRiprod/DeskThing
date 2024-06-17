@@ -124,6 +124,15 @@
      --trello-color-gray_dark: #5c5e60;  
 }
 
+button {
+  background-color: unset;
+  border: unset;
+  color: unset;
+  width: unset;
+  height: unset;
+  transition: background-color 0.5s;
+}
+
 body {
   margin: 0;
 
@@ -136,11 +145,6 @@ body {
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
-}
-
-.App {
-  text-align: center;
-  
 }
 
 h1 {
@@ -156,8 +160,4 @@ h1 {
 p, h1, h2, h3, h4, h5 {
   padding: 0px;
   margin: 0px;
-}
-
-.App-link {
-  color: #61dafb;
 }

@@ -131,7 +131,7 @@ const Trello: React.FC = () => {
   const handleSendGet = (type: string, request: string, payload: any) => {
     if (socket.is_ready()) {
       const data = {
-        app: 'trello',
+        app: 'Trello',
         type: type,
         request: request,
         data: payload,

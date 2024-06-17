@@ -27,7 +27,7 @@ const Audible: React.FC = () => {
     
     if (socket.is_ready()) {
       const data = {
-        app: 'audible',
+        app: 'Audible',
         type: type,
         request: request,
         url: url,

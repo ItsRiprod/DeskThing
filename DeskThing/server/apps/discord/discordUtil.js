@@ -4,6 +4,7 @@ import axios from 'axios';
 import { sendMessageToClients } from '../../util/socketHandler.js';
 import { getImageData, getGifData } from '../../util/imageUtil.js'
 import { getData, setData } from '../../util/dataHandler.js'
+
 const startTimestamp = new Date();
 
 export async function setActivity(rpc) {
@@ -11,15 +12,31 @@ export async function setActivity(rpc) {
     return;
   }
 
+  const currentTime = new Date();
+  const uptimeMs = Math.floor((currentTime - startTimestamp)); // Calculate uptime in minutes
+  const msToTime = (duration) => {
+    let seconds = parseInt(String((duration / 1000) % 60), 10);
+    let minutes = parseInt(String((duration / (1000 * 60)) % 60), 10);
+    const hours = parseInt(String((duration / (1000 * 60 * 60)) % 24), 10);
+  
+    const renderedHours = hours === 0 ? '' : `${hours}:`;
+    minutes = hours > 0 && minutes < 10 ? `0${minutes}` : minutes;
+    seconds = seconds < 10 ? `0${seconds}` : seconds;
+  
+    return `${renderedHours}${minutes}:${seconds}`;
+  };
+
   rpc.setActivity({
-      details: 'Running DeskThing',
-      state: 'Winning at life',
-      startTimestamp: startTimestamp,
+      details: 'The Revived CarThing',
+      state: `Running for ${msToTime(uptimeMs)}`,
       largeImageKey: 'emoji_large', // This MUST match the file name in your bot app⚠️
-      largeImageText: 'Hidden About Me Obtained',
+      largeImageText: 'Developing',
       smallImageKey: 'emoji_small', // This MUST match the file name in your bot app⚠️
-      smallImageText: 'Cursed About Me Obtained',
-      instance: false,
+      smallImageText: '37683 errors',
+      instance: true,
+      buttons: [
+        {label: "Check Out Desk Thing", url: "https://github.com/ItsRiprod/carthing/" },
+      ],
   }).catch((error) => {
       console.error('Failed to set activity:', error.message);
   });

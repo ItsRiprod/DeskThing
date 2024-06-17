@@ -4,7 +4,7 @@
 import 'dotenv/config';
 import RPC from 'discord-rpc';
 import axios from 'axios';
-import { sendMessageToClients } from '../../util/socketHandler.js';
+import { sendMessageToClients, sendData } from '../../util/socketHandler.js';
 import { getImageData, getGifData } from '../../util/imageUtil.js'
 import { getData, setData } from '../../util/dataHandler.js'
 
@@ -17,7 +17,6 @@ const subscriptions = {
 RPC.register(clientId);
 
 const rpc = new RPC.Client({ transport: 'ipc' });
-const startTimestamp = new Date();
 const scopes = ['rpc', 'messages.read', 'rpc.video.write', 'rpc.voice.read', 'rpc.activities.write', 'rpc', 'rpc.voice.write', 'rpc.screenshare.read', 'rpc.notifications.read', 'rpc.video.read', 'rpc.screenshare.write'];
 const redirectUri = process.env.DISCORD_REDIR_URI;
 import { setActivity, setSubscribe, sendDataToClients } from './discordUtil.js'
@@ -31,8 +30,8 @@ rpc.on('ready', async () => {
   //rpc.selectVoiceChannel('1042954150327107643');
 
   setInterval(() => {
-    setActivity();
-  }, 15e3);
+    setActivity(rpc);
+  }, 1000);
 });
 
 /*

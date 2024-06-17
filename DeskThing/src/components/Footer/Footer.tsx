@@ -69,7 +69,7 @@ const Footer: React.FC = () => {
   const handleSendCommand = (request: string) => {
     if (socket.is_ready()) {
       const data = {
-        app: 'spotify',
+        app: 'Spotify',
         type: 'set',
         request: request,
         data: songData?.uri || null,
@@ -81,7 +81,7 @@ const Footer: React.FC = () => {
   const handleSendSet = (request: string, payload: any) => {
     if (socket.is_ready()) {
       const data = {
-        app: 'spotify',
+        app: 'Spotify',
         type: 'set',
         request: request,
         data: payload,
@@ -119,16 +119,16 @@ const Footer: React.FC = () => {
 
   const handleGetSongData = () => {
     if (socket.is_ready()) {
-      const data = { app: 'spotify', type: 'get', request: 'song_info' };
+      const data = { app: 'Spotify', type: 'get', request: 'song_info' };
       socket.post(data);
-      const data2 = { app: 'spotify', type: 'get', request: 'device_info' };
+      const data2 = { app: 'Spotify', type: 'get', request: 'device_info' };
       socket.post(data2);
     }
   };
   const setSpecificDuration = (ms: number) => {
     if (socket.is_ready()) {
       const data = {
-        app: 'spotify',
+        app: 'Spotify',
         type: 'set',
         request: 'seek_track',
         position_ms: ms,

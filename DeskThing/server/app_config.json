@@ -1,0 +1,11 @@
+{
+    "modules": [
+        "Spotify",
+        "Discord",
+        "Launchpad",
+        "Trello",
+        "Weather",
+        "Audible",
+        "Utility"
+    ]
+}

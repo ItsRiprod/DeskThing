@@ -1,11 +1,9 @@
 import { returnSongData, getCurrentDevice, skipToNext, play, pause, skipToPrev, seek, setVolume, setRepeat, setShuffle } from './spotifyUtil.js';
-import { server, sendMessageToClients, sendError } from '../../util/socketHandler.js'
+import { sendMessageToClients, sendError, appEventEmitter } from '../../util/socketHandler.js'
 
-server.on('connection', async (socket) => {
-  socket.on('message', async (message) => {
+
+  appEventEmitter.on('Spotify', async (socket, parsedMessage) => {
     try {
-      const parsedMessage = JSON.parse(message);
-      if (parsedMessage.app == 'spotify') {
         switch (parsedMessage.type) {
           case 'get':
             await handleGetRequest(socket, parsedMessage);
@@ -17,12 +15,11 @@ server.on('connection', async (socket) => {
             console.error('Unknown type', parsedMessage.type);
             break;
         }
-      }
     } catch (e) {
       console.error('There was an error in SpotifyHandler');
     }
   })
-})
+
 
 const handleGetRequest = async (socket, parsedMessage) => {
   try {

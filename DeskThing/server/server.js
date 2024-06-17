@@ -1,19 +1,57 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
+// Environment Variables
 import 'dotenv/config';
+
+// Authentication Server
 import axios from 'axios'
+const post = axios.post;
 import { stringify } from 'qs';
 import express from 'express';
 const app = express();
 import { OAuth } from 'oauth';
 import { parse } from 'url';
+
+// Importing utility functions
+await import('./util/socketHandler.js');
+
+// Server IO reads
 import { getData, setData } from './util/dataHandler.js';
-const post = axios.post;
-/*
-* If you do not have a MIDI keyboard OR MIDI Launchpad Mk2, then I would recommend setting this to FALSE.
-* I do have both of those, and this server will interact with them through ./launchpadHandler
-* disabling this will prevent that portion of code from running
-*/
-const ENABLE_MIDI_DEVICES = true; // Not implemented yet
+
+// For loading modules
+import fs from 'fs';
+import path from 'path';
+
+
+// Function to load modules dynamically based on config
+const loadModules = async () => {
+  const configPath = './app_config.json';
+  
+  if (!fs.existsSync(configPath)) {
+      console.error('Config file not found');
+      process.exit(1);
+  }
+  
+  const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+  
+  if (!config.modules || !Array.isArray(config.modules)) {
+      console.error('Invalid config format');
+      process.exit(1);
+  }
+  
+  for (const moduleName of config.modules) {
+      const modulePath = `./apps/${moduleName}/${moduleName}Handler.js`;
+      if (fs.existsSync(modulePath)) {
+          try {
+              await import(modulePath);
+              console.log(`${moduleName} module loaded`);
+          } catch (err) {
+              console.error(`Failed to load ${moduleName} module:`, err);
+          }
+      } else {
+          console.warn(`Module ${moduleName} does not exist!`);
+      }
+  }
+};
 
 const client_id = process.env.SPOTIFY_API_ID; // bot id
 const client_secret = process.env.SPOTIFY_CLIENT_SECRET; // bot secret
@@ -148,18 +186,16 @@ app.get('/discord/callback', async (req, res) => {
 });
 
 
+const startServer = async () => {
+  await loadModules();
+
   const port = process.env.PORT || 8888;
-  app.listen(port, async () => {
-    console.log(`Server is running on port ${port}.`);
-    
-    // Automatically open the default web browser
-    //try {
-    //    const open = (await import('open')).default;
-    //    await open(`http://localhost:${port}/login`);
-    //  } catch (err) {
-    //    console.error('Error opening browser:', err);
-    //  }
+  app.listen(port, () => {
+      console.log(`Server is running on port ${port}.`);
   });
+};
+
+startServer();
 
 
   
@@ -167,25 +203,3 @@ app.get('/discord/callback', async (req, res) => {
   export {
     getTrelloOauth,
   };
-
-  // For now, comment out one of the following to disable the app
-import './util/socketHandler.js';
-import './apps/spotify/spotifyHandler.js';
-import './apps/discord/discordHandler.js';
-import './apps/launchpad/launchpadHandler.js';
-import './apps/trello/trelloHandler.js';
-import './apps/weather/weatherHandler.js';
-
-/*
-import './apps/audible/audibleHandler.js';
-ONLY UNCOMMENT IF YOU HAVE INSTALLED AUDIBLE CORRECTLY
- 
---- In the .env file
-# Audible login information (Just like your normal audible/amazon login)
-AUDIBLE_EMAIL=
-AUDIBLE_PASSWORD=
-AUDIBLE_COUNTRY_CODE=us
-AUDIBLE_PORT=8892
-run pip install -r server/apps/audible/requirements.txt
-
-*/

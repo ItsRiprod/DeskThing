@@ -1,0 +1,52 @@
+.appselector {
+  position: absolute;
+  width: fit-content;
+  height: 0px;
+  overflow: hidden;
+  display: flex;
+  flex-wrap: wrap;
+  z-index: 10;
+  background: var(--bg-elevated-base);
+  transition: height 0.4s;
+}
+
+.appselector::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}
+
+.appselector.visible {
+  height: 100px;
+  transition: height 0.1s;
+  border-bottom: var(--text-brightAccent) 3px solid;
+}
+
+.appselector.touched {
+  height: 75vh;
+  overflow-y: scroll;
+  border-bottom: var(--text-brightAccent) 3px solid;
+}
+
+.app-button {
+  margin: 5px 2.5vw;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  cursor: pointer;
+  width: 20vw;
+  height: 90px;
+  background-color: var(--bg-elevated-base);
+}
+
+.app-button.preferred {
+  background-color: var(--bg-highlight); /* Highlight preferred apps */
+  border-top: 2px solid white;
+}
+
+.app-button.current {
+  border-top: 2px solid var(--text-brightAccent); /* Highlight current view */
+}
+
+.app-button:hover {
+  background-color: var(--bg-elevated-highlight);
+}

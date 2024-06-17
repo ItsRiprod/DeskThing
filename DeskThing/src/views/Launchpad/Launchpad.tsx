@@ -6,7 +6,7 @@ const Launchpad: React.FC = () => {
   const handleSendSet = (request: string, view: string) => {
     if (socket.is_ready()) {
       const data = {
-        app: 'launchpad',
+        app: 'Launchpad',
         type: 'set',
         request: request,
         data: view,

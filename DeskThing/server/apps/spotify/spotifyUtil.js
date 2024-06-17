@@ -3,7 +3,7 @@ import axios from "axios";
 import { getData, setData } from "../../util/dataHandler.js";
 import open from "open";
 import { getImageData } from "../../util/imageUtil.js"
-import { sendMessageToClients } from '../../util/socketHandler.js'
+import { sendMessageToClients, sendError } from '../../util/socketHandler.js'
 
 const BASE_URL = "https://api.spotify.com/v1/me/player";
 const TOKEN_URL = "https://accounts.spotify.com/api/token";
@@ -121,7 +121,7 @@ const makeRequest = async (method, url, data = null) => {
     await new Promise(resolve => setTimeout(resolve, 5000)); // Wait five seconds
     console.log('SPOTIFY REQUEST: Retrying', method, url, data);
     const retryResponse = makeRequest( method, url, data );
-    return retryResponse.data ? retryResponse.data : true;
+    return retryResponse.data != null ? retryResponse.data : true;
   }
 };
 
@@ -268,7 +268,7 @@ const returnSongData = async (socket, oldUri = null) => {
     
     sendMessageToClients({ type: 'img_data', data: imageData });
   } catch (error) {
-    socket.send(JSON.stringify({ type: 'error', data: error.message }));
+    sendError(socket, error.message);
     console.error('Error getting song data:', error);
   }
 };

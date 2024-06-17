@@ -1,28 +1,25 @@
 
 import { removeListFromPref, addListToPref, getTrelloPrefs, setTrelloPrefs, getTrelloBoards, getTrelloLabelsFromBoard, getTrelloCardsFromBoard, getTrelloCardsFromList, getTrelloListsFromBoard, getTrelloBoardsFromOrganization, getTrelloOrganizations } from './trelloUtil.js';
-import { server, sendError } from '../../util/socketHandler.js'
+import { sendError, appEventEmitter, sendData } from '../../util/socketHandler.js'
 
-server.on('connection', async (socket) => {
-  socket.on('message', async (message) => {
-    try {
-      const parsedMessage = JSON.parse(message);
-      if (parsedMessage.app == 'trello') {
-        switch (parsedMessage.type) {
-          case 'get':
-            await handleGetRequest(socket, parsedMessage);
-            break;
-          case 'set':
-            await handleSetRequest(socket, parsedMessage);
-            break;
-          default:
-            console.log('Unknown type', parsedMessage.type);
-            break;
-        }
-      }
-    } catch (e) {
-      console.log('There was an error in SpotifyHandler');
+
+appEventEmitter.on('Trello', async (socket, parsedMessage) => {
+  try {
+    switch (parsedMessage.type) {
+      case 'get':
+        await handleGetRequest(socket, parsedMessage);
+        break;
+      case 'set':
+        await handleSetRequest(socket, parsedMessage);
+        break;
+      default:
+        console.log('Unknown type', parsedMessage.type);
+        break;
     }
-  })
+
+  } catch (e) {
+    console.error('There was an error in TrelloHandler');
+  }
 })
 
 const handleGetRequest = async (socket, parsedMessage) => {
@@ -31,9 +28,7 @@ const handleGetRequest = async (socket, parsedMessage) => {
       case 'boards_info':
         if (parsedMessage.request) {
           const boards = await getTrelloBoards();
-          socket.send(
-            JSON.stringify({ type: 'trello_board_data', data: boards })
-          );
+          sendData(socket, 'trello_board_data', boards );
         } else {
           await sendError(socket, 'boards_info request is missing data')
         }
@@ -42,10 +37,7 @@ const handleGetRequest = async (socket, parsedMessage) => {
         if (parsedMessage.request) {
 
           const orgs = await getTrelloOrganizations();
-
-          socket.send(
-            JSON.stringify({ type: 'trello_org_data', data: orgs })
-          );
+          sendData(socket, 'trello_org_data',  orgs)
         } else {
           await sendError(socket, 'org_info request is missing data')
         }
@@ -54,9 +46,7 @@ const handleGetRequest = async (socket, parsedMessage) => {
 
         if (parsedMessage.data.id) {
           const boards = await getTrelloBoardsFromOrganization(parsedMessage.data.id);
-          socket.send(
-            JSON.stringify({ type: 'trello_board_data', data: boards })
-          );
+          sendData(socket, 'trello_board_data', boards );
         } else {
           await sendError(socket, 'boards_from_org request is missing data')
         }
@@ -68,9 +58,7 @@ const handleGetRequest = async (socket, parsedMessage) => {
 
           const boardId = parsedMessage.data.id;
           const cards = await getTrelloCardsFromBoard(boardId)
-          socket.send(
-            JSON.stringify({ type: 'trello_card_data', data: cards })
-          );
+          sendData(socket, 'trello_card_data', cards)
         } else {
           await sendError(socket, 'cards_from_board request is missing data')
         }
@@ -81,9 +69,7 @@ const handleGetRequest = async (socket, parsedMessage) => {
 
           const boardId = parsedMessage.data.id;
           const lists = await getTrelloListsFromBoard(boardId)
-          socket.send(
-            JSON.stringify({ type: 'trello_list_data', data: lists })
-          );
+          sendData(socket, 'trello_list_data', lists);
         } else {
           await sendError(socket, 'lists_from_board request is missing data')
         }
@@ -95,9 +81,7 @@ const handleGetRequest = async (socket, parsedMessage) => {
           const boardId = parsedMessage.data.id;
           const labels = await getTrelloLabelsFromBoard(boardId);
           console.log(labels);
-          socket.send(
-            JSON.stringify({ type: 'trello_label_data', data: labels })
-          );
+          sendData(socket, 'trello_label_data', labels);
         } else {
           await sendError(socket, 'labels_from_board request is missing data')
         }
@@ -108,19 +92,17 @@ const handleGetRequest = async (socket, parsedMessage) => {
 
           const listId = parsedMessage.data.id;
           const cards = await getTrelloCardsFromList(listId)
-          socket.send(
-            JSON.stringify({ type: 'trello_card_data', data: cards })
-          );
+          sendData(socket, 'trello_card_data', cards);
+
         } else {
           await sendError(socket, 'cards_from_list request is missing data')
         }
         break;
       case 'trello_pref_info':
         if (parsedMessage) {
+          console.log('Getting prefs')
           const preferences = await getTrelloPrefs();
-          socket.send(
-            JSON.stringify({ type: 'trello_pref_data', data: preferences })
-          );
+          sendData(socket, 'trello_pref_data', preferences)
         } else {
           await sendError(socket, 'trello_pref_info request is missing data')
         }
@@ -129,9 +111,8 @@ const handleGetRequest = async (socket, parsedMessage) => {
         if (parsedMessage) {
 
           const prefs = await getTrelloPrefs();
-          socket.send(
-            JSON.stringify({ type: 'trello_pref_list_data', data: prefs })
-          );
+          sendData(socket, 'trello_pref_list_data', prefs)
+
         } else {
           await sendError(socket, 'trello_pref request is missing data')
         }

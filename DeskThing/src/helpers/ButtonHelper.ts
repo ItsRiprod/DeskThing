@@ -10,6 +10,7 @@ export enum Button {
   SCROLL_RIGHT,
   SCROLL_PRESS,
   FRONT_BUTTON,
+  SWIPE,
   OTHER,
 }
 
@@ -18,6 +19,11 @@ export enum EventFlavour {
   Up,
   Long,
   Short,
+  LongPress,
+  LeftSwipe,
+  RightSwipe,
+  UpSwipe,
+  DownSwipe,
 }
 
 function mapButton(event: string): Button {
@@ -51,12 +57,18 @@ class ButtonHelper {
   buttonStates: { [key: string]: EventFlavour };
   callback: ((btn: Button, flv: EventFlavour) => void) | null = null;
 
+  longPressTimeouts: Map<Button, number>;
+
   constructor() {
     this.listeners = new Map();
     this.buttonStates = {};
+    this.longPressTimeouts = new Map();
     document.addEventListener('wheel', this.wheelEventHandler);
     document.addEventListener('keydown', this.keyDownEventHandler);
     document.addEventListener('keyup', this.keyUpEventHandler);
+    document.addEventListener('touchstart', this.touchStartHandler);
+    document.addEventListener('touchmove', this.touchMoveHandler);
+    document.addEventListener('touchend', this.touchEndHandler);
   }
 
   getButtonStates(): { [key: string]: EventFlavour } {
@@ -97,12 +109,58 @@ class ButtonHelper {
     const button = mapButton(event.code);
     this.buttonStates[button] = EventFlavour.Down;
     this.notify(button, EventFlavour.Down);
+
+    if (!this.longPressTimeouts.has(button)) {
+      const timeout = setTimeout(() => {
+        this.buttonStates[button] = EventFlavour.LongPress;
+        this.notify(button, EventFlavour.LongPress);
+      }, 1000); // Adjust the timeout duration as needed
+      this.longPressTimeouts.set(button, timeout);
+    }
   };
 
   private keyUpEventHandler = (event: KeyboardEvent) => {
     const button = mapButton(event.code);
     this.buttonStates[button] = EventFlavour.Up;
     this.notify(button, EventFlavour.Up);
+
+    if (this.longPressTimeouts.has(button)) {
+      clearTimeout(this.longPressTimeouts.get(button)!);
+      this.longPressTimeouts.delete(button);
+    }
+  };
+  private touchStartX = 0;
+  private touchStartY = 0;
+  private touchEndX = 0;
+  private touchEndY = 0;
+
+  private touchStartHandler = (event: TouchEvent) => {
+    this.touchStartX = event.touches[0].clientX;
+    this.touchStartY = event.touches[0].clientY;
+  };
+
+  private touchMoveHandler = (event: TouchEvent) => {
+    this.touchEndX = event.touches[0].clientX;
+    this.touchEndY = event.touches[0].clientY;
+  };
+
+  private touchEndHandler = () => {
+    const deltaX = this.touchEndX - this.touchStartX;
+    const deltaY = this.touchEndY - this.touchStartY;
+
+    if (Math.abs(deltaX) > 400 && Math.abs(deltaX) > Math.abs(deltaY)) {
+      if (deltaX > 0) {
+        this.notify(Button.SWIPE, EventFlavour.LeftSwipe);
+      } else {
+        this.notify(Button.SWIPE, EventFlavour.RightSwipe);
+      }
+    } else if (Math.abs(deltaY) > 200) {
+      if (deltaY > 0) {
+        this.notify(Button.SWIPE, EventFlavour.DownSwipe);
+      } else {
+        this.notify(Button.SWIPE, EventFlavour.UpSwipe);
+      }
+    }
   };
 }
 

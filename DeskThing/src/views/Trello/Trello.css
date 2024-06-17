@@ -1,11 +1,4 @@
-button {
-    background-color: unset;
-    border: unset;
-    color: unset;
-    width: unset;
-    height: unset;
-    transition: background-color 0.5s;
-}
+
 .back_button {
     position: fixed;
     left: 3px;

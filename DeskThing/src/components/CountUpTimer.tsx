@@ -48,7 +48,9 @@ const CountUpTimer: React.FC<CountUpTimerProps> = ({
     }
   }, [start, end]);
 
-  const handleTouchStart = () => {
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+
     const progressBar = progressBarRef.current;
     if (progressBar) {
 
