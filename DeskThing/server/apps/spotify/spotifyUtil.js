@@ -133,6 +133,14 @@ const getCurrentPlayback = async () => {
   const url = `${BASE_URL}/currently-playing`;
   return makeRequest("get", url);
 };
+/**
+ * Gets the current playback information.
+ * @returns {Promise<Object>} The current playback information.
+ */
+const getCurrentEpisode = async () => {
+  const url = `${BASE_URL}/currently-playing?additional_types=episode`;
+  return makeRequest("get", url);
+};
 
 /**
  * Gets the current device information.
@@ -236,37 +244,69 @@ const returnSongData = async (socket, oldUri = null) => {
 
     do {
       currentPlayback = await getCurrentPlayback();
-      newTrackUri = currentPlayback.item.uri;
-      if (delay !== 100)
-        console.log(`Song not updated... trying again | timeout: ${timeout} cur time: ${Date.now() - startTime} delay: ${delay}`);
-      else
-        console.log(`Getting Current Playback: old url ${oldUri} new url ${newTrackUri}, date now: ${Date.now()}`);
+      if (currentPlayback.currently_playing_type === "track") {
 
+        newTrackUri = currentPlayback.item.uri;
+        if (delay !== 100)
+          console.log(`Song not updated... trying again | timeout: ${timeout} cur time: ${Date.now() - startTime} delay: ${delay}`);
+        else
+        console.log(`Getting Current Playback: old url ${oldUri} new url ${newTrackUri}, date now: ${Date.now()}`);
+      
       delay *= 1.3;
       await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        currentPlayback = await getCurrentEpisode();
+        console.log("Playing a podcast!");
+      }
     } while (newTrackUri === oldUri && Date.now() - startTime < timeout && delay < 500);
 
     if (newTrackUri === oldUri) {
       //sendMessageToClients({ type: 'error', data: 'Timeout reached, same song is playing' });
       throw new Error('Timeout Reached!');
     }
-    const songData = {
-      photo: null,
-      duration_ms: currentPlayback.item.duration_ms,
-      name: currentPlayback.item.name,
-      progress_ms: currentPlayback.progress_ms,
-      is_playing: currentPlayback.is_playing,
-      artistName: currentPlayback.item.artists[0].name,
-      uri: currentPlayback.item.uri,
-      playlistUri: currentPlayback.context.uri,
-      albumName: currentPlayback.item.album.name,
-    };
-    sendMessageToClients({ type: 'song_data', data: songData });
-
-    const imageUrl = currentPlayback.item.album.images[0].url;
-    const imageData = await getImageData(imageUrl);
+    let songData;
     
-    sendMessageToClients({ type: 'img_data', data: imageData });
+    if (currentPlayback.currently_playing_type === "track") {
+      songData = {
+        photo: null,
+        duration_ms: currentPlayback.item.duration_ms,
+        name: currentPlayback.item.name,
+        progress_ms: currentPlayback.progress_ms,
+        is_playing: currentPlayback.is_playing,
+        artistName: currentPlayback.item.artists[0].name,
+        uri: currentPlayback.item.uri,
+        playlistUri: currentPlayback.context.uri,
+        albumName: currentPlayback.item.album.name,
+      };
+      sendMessageToClients({ type: 'song_data', data: songData });
+      const imageUrl = currentPlayback.item.album.images[0].url;
+      const imageData = await getImageData(imageUrl);
+      
+      sendMessageToClients({ type: 'img_data', data: imageData });
+    } else {
+      songData = {
+        photo: null,
+        duration_ms: currentPlayback.item.duration_ms,
+        name: currentPlayback.item.name,
+        progress_ms: currentPlayback.progress_ms,
+        is_playing: currentPlayback.is_playing,
+        artistName: currentPlayback.item.show.publisher,
+        uri: currentPlayback.item.uri,
+        playlistUri: currentPlayback.context.uri,
+        albumName: currentPlayback.item.show.name,
+        
+      };
+      sendMessageToClients({ type: 'song_data', data: songData });
+
+      sendMessageToClients({ type: 'song_data', data: songData });
+      const imageUrl = currentPlayback.item.images[0].url;
+      const imageData = await getImageData(imageUrl);
+
+      sendMessageToClients({ type: 'img_data', data: imageData });
+    }
+    
+
+   
   } catch (error) {
     sendError(socket, error.message);
     console.error('Error getting song data:', error);
@@ -276,6 +316,7 @@ const returnSongData = async (socket, oldUri = null) => {
 export {
   getCurrentPlayback,
   getCurrentDevice,
+  getCurrentEpisode,
   skipToNext,
   skipToPrev,
   play,
