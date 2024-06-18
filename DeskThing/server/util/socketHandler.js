@@ -1,8 +1,13 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 import { WebSocketServer } from 'ws';
 import { EventEmitter } from 'events';
+import { fileURLToPath } from 'url';
 import fs from 'fs';
 import path from 'path';
+const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
+const __dirname = path.dirname(__filename);
+
+
 import { getPreferenceData, setModules } from './preferencesHandler.js';
 
 class AppEventEmitter extends EventEmitter {}
@@ -11,7 +16,7 @@ const appEventEmitter = new AppEventEmitter();
 // Create a WebSocket server that listens on port 8891
 const server = new WebSocketServer({ port: 8891 });
 // Check if the requested app is enabled in app_config.json
-const configPath = './app_config.json';
+const configPath = path.join(__dirname, '../app_config.json');
 let loadedModules = [];
 
 if (fs.existsSync(configPath)) {

@@ -1,5 +1,11 @@
 import child_process from 'child_process';
 import axios from 'axios';
+import path from 'path';
+import { fileURLToPath, pathToFileURL } from 'url';
+
+// Define __filename and __dirname for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const PORT = process.env.AUDIBLE_PORT || 5000;
 const BASE_URL = `http://localhost:${PORT}`;
@@ -9,7 +15,8 @@ const AUDIBLE_PASSWORD = process.env.AUDIBLE_PASSWORD;
 const COUNTRY_CODE = process.env.AUDIBLE_COUNTRY_CODE;
 
 // Spawn the Python process
-const pythonProcess = child_process.spawn('python', ['./apps/audible/audibleUtils.py']);
+const pythonScriptPath = path.join(__dirname, './audibleUtils.py');
+const pythonProcess = child_process.spawn('python', [pythonScriptPath]);
 
 pythonProcess.stdout.on('data', async (data) => {
     console.log(data.toString());

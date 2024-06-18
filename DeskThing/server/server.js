@@ -9,7 +9,7 @@ import { stringify } from 'qs';
 import express from 'express';
 const app = express();
 import { OAuth } from 'oauth';
-import { parse } from 'url';
+import { parse, fileURLToPath, pathToFileURL } from 'url';
 
 // Importing utility functions
 await import('./util/socketHandler.js');
@@ -20,14 +20,15 @@ import { getData, setData } from './util/dataHandler.js';
 // For loading modules
 import fs from 'fs';
 import path from 'path';
-
+const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
+const __dirname = path.dirname(__filename);
 
 // Function to load modules dynamically based on config
 const loadModules = async () => {
-  const configPath = './app_config.json';
+  const configPath = path.join(__dirname, 'app_config.json');
   
   if (!fs.existsSync(configPath)) {
-      console.error('Config file not found');
+      console.error('Config file not found at directory ', configPath);
       process.exit(1);
   }
   
@@ -39,10 +40,11 @@ const loadModules = async () => {
   }
   
   for (const moduleName of config.modules) {
-      const modulePath = `./apps/${moduleName}/${moduleName}Handler.js`;
+      const modulePath =  path.join(__dirname, `apps/${moduleName}/${moduleName}Handler.js`);
       if (fs.existsSync(modulePath)) {
           try {
-              await import(modulePath);
+              const moduleURL = pathToFileURL(modulePath).href;
+              await import(moduleURL);
               console.log(`${moduleName} module loaded`);
           } catch (err) {
               console.error(`Failed to load ${moduleName} module:`, err);

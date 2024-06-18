@@ -97,7 +97,7 @@ rpc.on('VOICE_STATE_UPDATE', async (args) => {
 });
 rpc.on('VOICE_CONNECTION_STATUS', (args) => {
   if (args.state === 'CONNECTING') {
-    sendMessageToClients({ type: 'set_view', data: 'discord' });
+    sendMessageToClients({ type: 'set_view', data: 'Discord' });
   }
   if (args.state === 'DISCONNECTED') {
     console.log("unsubscribing ", subscriptions.voice);
