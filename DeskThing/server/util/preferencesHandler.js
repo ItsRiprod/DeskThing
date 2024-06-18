@@ -3,7 +3,22 @@ import { setData, getData } from './dataHandler.js';
 const getPreferenceData = async () => {
     try {
       const preferences = getData('DeskThingPreferences');
-      return preferences || {};
+      console.log(preferences)
+      return preferences || {"preferredApps": [
+                              "Spotify",
+                              "Trello",
+                              "Weather",
+                              "Launchpad"
+                            ],
+                            "modules": [
+                              "Spotify",
+                              "Discord",
+                              "Launchpad",
+                              "Trello",
+                              "Weather",
+                              "Audible",
+                              "Utility"
+                            ]};
     } catch (error) {
       console.error('Error getting DeskThing preferences from file:', error);
       throw error;

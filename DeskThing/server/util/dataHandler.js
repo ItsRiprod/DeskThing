@@ -2,8 +2,13 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath, pathToFileURL } from 'url';
 
-const dataFilePath = './data.json';
+// Define __filename and __dirname for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const dataFilePath = path.join(__dirname, './data.json');
 
 const defaultData = {
   boards: [],
@@ -18,6 +23,7 @@ const defaultData = {
 // Helper function to read the data from the file
 const readData = () => {
   try {
+    console.log("reading data from ", dataFilePath)
     const data = fs.readFileSync(dataFilePath, 'utf8');
     return JSON.parse(data);
   } catch (err) {
