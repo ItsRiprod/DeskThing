@@ -5,3 +5,8 @@
     justify-content: center;
     flex-direction: column;
 }
+
+.elText {
+    size: 100px;
+    color: red;
+}

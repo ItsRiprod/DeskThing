@@ -105,7 +105,7 @@
   }
   .progressBar_container {
     margin:auto;
-    width: 100%;
+    width: 90%;
     height: 30px;
     background-color: var(--bg-tinted-highlight);
     overflow:hidden;
