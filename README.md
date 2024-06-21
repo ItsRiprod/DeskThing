@@ -115,7 +115,7 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
      ```
    - Start your server:
      ```sh
-     start cmd.exe /k "node server/server.js"
+     node server/server.js
      ```
 
 ---
@@ -207,7 +207,7 @@ adb push dist/ /usr/share/qt-superbird-app/webapp
 
 adb shell supervisorctl restart chromium
 
-start cmd.exe /k "node server/server.js"
+node server/server.js
 ```
 
 ## 🤖 Linux Mods
