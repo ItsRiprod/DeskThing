@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { defaultProps } from './Trello';
+import { defaultProps } from '.';
 
 const Organizations: React.FC<defaultProps> = ({ handleSendGet, data }) => {
   const [orgs, setOrgs] = useState<any>(data);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { defaultProps } from './Trello';
+import { defaultProps } from '.';
 
 interface ListsProps extends defaultProps {
   prefLists: any;

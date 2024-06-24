@@ -127,10 +127,11 @@ class ButtonHelper {
     this.notify(button, EventFlavour.Down);
 
     if (!this.longPressTimeouts.has(button)) {
-      const timeout = setTimeout(() => {
+      const timeout = window.setTimeout(() => {
         this.buttonStates[button] = EventFlavour.LongPress;
         this.notify(button, EventFlavour.LongPress);
       }, 1000); // Adjust the timeout duration as needed
+      
       this.longPressTimeouts.set(button, timeout);
     }
   };

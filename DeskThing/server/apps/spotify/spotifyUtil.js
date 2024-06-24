@@ -24,7 +24,7 @@ const refreshAccessToken = async () => {
   if (!refreshToken) {
       try {
         await open(`http://localhost:${PORT}/login`);
-        
+        console.error("SPOTIFY: Refreshing token with website")
         throw new Error("Invalid Access Token! Refreshing...");
       } catch (err) {
         throw new Error("Error opening browser:", err);

@@ -21,6 +21,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "@spotify-internal", "."],
+  "include": ["src", "@spotify-internal", ".", "../LocalServer"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

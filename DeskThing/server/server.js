@@ -33,7 +33,7 @@ const loadModules = async () => {
   }
   
   const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-  
+   
   if (!config.modules || !Array.isArray(config.modules)) {
       console.error('Invalid config format');
       process.exit(1);
@@ -43,10 +43,11 @@ const loadModules = async () => {
       const modulePath =  path.join(__dirname, `apps/${moduleName}/${moduleName}Handler.js`);
       if (fs.existsSync(modulePath)) {
           try {
-              const moduleURL = pathToFileURL(modulePath).href;
+            const moduleURL = pathToFileURL(modulePath).href;
+              console.log(`Loading ${moduleURL} module...`);
               await import(moduleURL);
               console.log(`${moduleName} module loaded`);
-          } catch (err) {
+            } catch (err) {
               console.error(`Failed to load ${moduleName} module:`, err);
           }
       } else {
@@ -87,6 +88,7 @@ Spotify Authentication
 */
 app.get('/login', (req, res) => {
     const scope = 'user-read-currently-playing user-read-playback-state user-modify-playback-state';
+    console.log("Redirect Uri: ", redirect_uri)
     const auth_url = 'https://accounts.spotify.com/authorize?' +
       stringify({
         response_type: 'code',

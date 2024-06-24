@@ -1,7 +1,7 @@
 import { useState, useEffect, Suspense, lazy  } from 'react';
 import ButtonHelper, { Button, EventFlavour } from '../helpers/ButtonHelper';
 import socket from '../helpers/WebSocketService';
-import Default from './Default/Default';
+import Default from './default';
 import './views.css';
 
 import Overlay from '../components/Overlay/Overlay';
@@ -119,7 +119,7 @@ const ViewManager = () => {
     const loadDynamicComponent = async () => {
       if (currentView) {
         try {
-          const importedComponent = await import(`./${currentView}/${currentView}.tsx`);
+          const importedComponent = await import(`./${currentView.toLowerCase()}/index.tsx`);
           setDynamicComponent(lazy(() => Promise.resolve({ default: importedComponent.default })));
         } catch (error) {
           console.error(`Error loading component for view: ${currentView}`, error);

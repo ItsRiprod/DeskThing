@@ -33,8 +33,7 @@ const readData = () => {
       return defaultData;
     }
 
-    console.error('Error reading data file:', err);
-    return { boards: [], discordAuth: null, spotifyToken: null,  trelloAccessToken: null, trelloTokenSecret: null };
+    return defaultData;
   }
 };
 

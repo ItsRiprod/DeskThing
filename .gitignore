@@ -6,6 +6,7 @@
 .env
 .pnp.js
 data.json
+
 # testing
 /coverage
 
@@ -25,5 +26,5 @@ yarn-error.log*
 
 .eslintcache
 tsconfig.tsbuildinfo
-TODOThing/server/.env
 DeskThing/server/auth_data.json
+AppExamples/spotify/node_modules/

@@ -114,8 +114,7 @@ rpc.on('error', (error) => {
 });
 
 rpc.transport.on('close', () => {
-  console.error('RPC transport closed. Reconnecting...');
-  login();
+  console.error('RPC transport closed.');
 });
 
 rpc.on('disconnected', (closeEvent) => {
@@ -126,7 +125,7 @@ rpc.on('disconnected', (closeEvent) => {
 
 async function login() {
   try {
-
+    console.log('clientId')
     await rpc.connect(clientId);
     let token = await getData('discordAuth');
 

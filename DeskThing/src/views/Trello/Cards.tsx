@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { defaultProps } from './Trello';
+import { defaultProps } from '.';
 
 const Cards: React.FC<defaultProps> = ({ handleSendGet, data }) => {
   const [labels, setLabels] = useState<Map<string, any>>();

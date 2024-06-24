@@ -3,6 +3,7 @@ import { sendMessageToClients, sendError, appEventEmitter } from '../../util/soc
 
 
   appEventEmitter.on('Spotify', async (socket, parsedMessage) => {
+    console.log('SpotifyHandler', parsedMessage)
     try {
         switch (parsedMessage.type) {
           case 'get':

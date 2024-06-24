@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { defaultProps } from './Trello';
+import { defaultProps } from '.';
 
 const Boards: React.FC<defaultProps> = ({ handleSendGet, data }) => {
   const sortBoards = (boards: any[]) => {
