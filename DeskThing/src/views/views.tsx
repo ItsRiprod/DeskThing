@@ -7,7 +7,7 @@ import './views.css';
 import Overlay from '../components/Overlay/Overlay';
 
 const ViewManager = () => {
-  const [currentView, setCurrentView] = useState('Default');
+  const [currentView, setCurrentView] = useState('default');
   const buttonHelper = ButtonHelper.getInstance();
   const [preferredApps, setPreferredApps] = useState<string[]>([]);
   const [apps, setApps] = useState<string[]>([]);
@@ -42,7 +42,7 @@ const ViewManager = () => {
             setCurrentView(preferredApps[3]);
             break;
           case Button.BUTTON_5:
-            setCurrentView('Default'); // Will be settings eventually
+            setCurrentView('default'); // Will be settings eventually
             break;
           default:
             break;
@@ -134,7 +134,7 @@ const ViewManager = () => {
 
   const renderView = () => {
     switch (currentView) {
-      case 'Default':
+      case 'default':
         return <Default />;
       default:
         if (DynamicComponent) {

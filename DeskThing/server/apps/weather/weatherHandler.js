@@ -1,7 +1,7 @@
 import { getCurrentWeather, getCityWeather, get12hrWeather, } from './weatherUtil.js';
 import { appEventEmitter, sendError, sendData } from '../../util/socketHandler.js'
 
-appEventEmitter.on('Weather', async (socket, parsedMessage) => {
+appEventEmitter.on('weather', async (socket, parsedMessage) => {
   try {
 
     switch (parsedMessage.type) {

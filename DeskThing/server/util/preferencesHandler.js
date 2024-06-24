@@ -6,19 +6,19 @@ const getPreferenceData = async () => {
     console.log(preferences)
     return preferences || { // In case the file does not exist...
       "preferredApps": [
-        "Spotify",
-        "Trello",
-        "Weather",
-        "Launchpad"
+        "spotify",
+        "trello",
+        "weather",
+        "launchpad"
       ],
       "modules": [
-        "Spotify",
-        "Discord",
-        "Launchpad",
-        "Trello",
-        "Weather",
-        "Audible",
-        "Utility"
+        "spotify",
+        "discord",
+        "launchpad",
+        "trello",
+        "weather",
+        "audible",
+        "utility"
       ]
     };
   } catch (error) {

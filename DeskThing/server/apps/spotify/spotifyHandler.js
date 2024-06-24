@@ -2,7 +2,7 @@ import { returnSongData, getCurrentDevice, skipToNext, play, pause, skipToPrev, 
 import { sendMessageToClients, sendError, appEventEmitter } from '../../util/socketHandler.js'
 
 
-  appEventEmitter.on('Spotify', async (socket, parsedMessage) => {
+  appEventEmitter.on('spotify', async (socket, parsedMessage) => {
     console.log('SpotifyHandler', parsedMessage)
     try {
         switch (parsedMessage.type) {

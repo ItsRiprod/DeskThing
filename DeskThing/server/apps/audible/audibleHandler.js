@@ -12,7 +12,7 @@ async function sendImagesWithAsins(socket, library) {
     sendData(socket, 'audible_library_images', imageDataResults);
 }
 
-appEventEmitter.on('Audible', async (socket, parsedMessage) => {
+appEventEmitter.on('audible', async (socket, parsedMessage) => {
     try {
         console.log('AUDIBLE: Received message', parsedMessage);
         switch (parsedMessage.type) {

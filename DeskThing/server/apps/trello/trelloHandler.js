@@ -3,7 +3,7 @@ import { removeListFromPref, addListToPref, getTrelloPrefs, setTrelloPrefs, getT
 import { sendError, appEventEmitter, sendData } from '../../util/socketHandler.js'
 
 
-appEventEmitter.on('Trello', async (socket, parsedMessage) => {
+appEventEmitter.on('trello', async (socket, parsedMessage) => {
   try {
     switch (parsedMessage.type) {
       case 'get':

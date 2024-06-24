@@ -1,7 +1,7 @@
 import { switchView } from './launchpadUtil/launchpadUtil.js';
 import { appEventEmitter, sendError } from '../../util/socketHandler.js'
 
-  appEventEmitter.on('Launchpad', async (socket, parsedMessage) => {
+  appEventEmitter.on('launchpad', async (socket, parsedMessage) => {
     try {
         switch (parsedMessage.type) {
             case 'set':
