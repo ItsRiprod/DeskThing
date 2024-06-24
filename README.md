@@ -4,10 +4,13 @@
 *Let's begin, shall we?*
 
 This is the DeskThing project. Using Spotify's existing Car Thing, the DeskThing make's the perfect desk assistant. Integrating Trello API, Spotify API, AccuWeather API, and Macro capabilities, the DeskThing shoots to be *the* thing for controlling your desk environment. 
-> ⚠️⚠️⚠️ POTENTIALLY OUTDATED ⚠️⚠️⚠️ There were recent changes made to make it more modular! Now, modify `app_config.json` under /server/ to add/remove which apps you want to include! Only set up the apps that you need and the rest will be handled by the program
-
 > Setup is quite intense, so be prepared!
+
 > Not on windows? [Linux Modifications](#-linux-mods)
+
+## ⚠️DO NOT PULL MAIN BRANCH ⚠️
+Instead, go to "Releases" and download the .zip file for v0.2.0-alpha (which this readme follows) and use that
+
 ---
 
 ## ✨What It Does
