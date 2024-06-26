@@ -1,4 +1,4 @@
-import { getConfigData } from './configHandler' // Assuming you have a config handler for active apps
+import { getAppData } from './configHandler' // Assuming you have a config handler for active apps
 import { sendMessageToApp } from './appHandler' // Assuming you have an app handler for sending messages
 import http from 'http'
 import url from 'url'
@@ -15,7 +15,7 @@ function handleCallback(req: http.IncomingMessage, res: http.ServerResponse): vo
   }
 
   const appName = urlParts[1] // The app name should be the third part after '/callback/'
-  const config = getConfigData() // Assuming getConfig() returns an object with active apps
+  const config = getAppData() // Assuming getConfig() returns an object with active apps
   console.log('AUTH DATA: ', config)
   if (!config.apps || !config.apps.some((app) => app.name === appName && app.enabled)) {
     res.writeHead(404, { 'Content-Type': 'text/plain' })

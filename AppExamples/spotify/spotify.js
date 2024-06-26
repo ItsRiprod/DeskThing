@@ -15,6 +15,26 @@ class SpotifyHandler {
     this.access_token = undefined
     this.refresh_token = undefined
     this.redirect_uri = 'http://localhost:8888/callback/spotify'
+    this.settings = {
+      "refresh_interval": {
+        "value": 30000,
+        "label": "Refresh interval",
+        "options": [
+          {
+            "value": 0,
+            "label": "Disabled"
+          },
+          {
+            "value": 5000,
+            "label": "5 seconds"
+          },
+          {
+            "value": 30000,
+            "label": "30 seconds"
+          },
+        ]
+      }
+    }
   }
 
   /**
@@ -23,9 +43,9 @@ class SpotifyHandler {
    */
   async refreshAccessToken() {
 
-    if (!this.refresh_token) {
+    if (this.refresh_token == undefined) {
+      console.log("SPOTIFY: REFRESH TOKEN IS UNDEFINED!! LOGGING IN")
       await this.login()
-      console.log('SPOTIFY: No refresh token found, logging in...')
       return
     }
 
@@ -190,14 +210,16 @@ class SpotifyHandler {
     return this.makeRequest('get', url)
   }
 
-  async skipToNext() {
+  async skipToNext(songUrl) {
     const url = `${this.BASE_URL}/next`
-    this.makeRequest('post', url)
+    await this.makeRequest('post', url)
+    return await this.returnSongData(songUrl) 
   }
 
-  async skipToPrev() {
+  async skipToPrev(songUrl) {
     const url = `${this.BASE_URL}/previous`
-    return await this.makeRequest('post', url)
+    await this.makeRequest('post', url)
+    return await this.returnSongData(songUrl) 
   }
 
   async play(uri, context, position) {

@@ -5,7 +5,6 @@ function App(): JSX.Element {
   const [formFields, setFormFields] = useState<string[]>([])
   const [formData, setFormData] = useState<{ [key: string]: string }>({})
   const [requestId, setRequestId] = useState<string | null>(null)
-  const [message, setMessage] = useState<string>('')
 
   const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
 
@@ -55,13 +54,6 @@ function App(): JSX.Element {
       setFormData({})
     }
   }
-  const handleSendMessage = (): void => {
-    if (message) {
-      const messageArray = message.split(' ')
-
-      window.electron.ipcRenderer.send('user-data-response', ...messageArray)
-    }
-  }
 
   useEffect(() => {
     const handleDisplayUserForm = (_event: any, requestId: string, fields: string[]): void => {
@@ -105,22 +97,27 @@ function App(): JSX.Element {
 
   return (
     <>
-      <div>
-        <label>Communicate With APPS: </label>
-        <input type="text" value={message} onChange={(e) => setMessage(e.target.value)} />
-        <button onClick={handleSendMessage}>Submit</button>
-      </div>
+      <h1>DeskThing</h1>
       <div className="actions">
         <div className="action">
           <a target="_blank" rel="noreferrer" onClick={ipcHandle}>
-            Send IPC
+            Send Ping
           </a>
-          <button onClick={() => handleAddAndRunApp('spotify.zip')}>Run Spotify</button>
         </div>
       </div>
       {/* Drop zone for drag-n-drop */}
-      <div className="drop-zone" onDrop={handleDrop} onDragOver={(e) => e.preventDefault()}>
-        Drop your files here
+      <div
+        style={{
+          backgroundColor: 'rgba(164,164,164,0.6)',
+          padding: '20px',
+          borderRadius: '10px',
+          margin: '20px'
+        }}
+        className="drop-zone"
+        onDrop={handleDrop}
+        onDragOver={(e) => e.preventDefault()}
+      >
+        Drop your .zip App file here
       </div>
       {/* Display the list of apps */}
       <div className="apps-list">{renderAppsList()}</div>

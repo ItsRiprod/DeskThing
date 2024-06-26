@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { join, basename } from 'path'
 import * as fs from 'fs'
 import * as unzipper from 'unzipper'
-import { getConfig } from './configHandler'
+import { getAppData, setAppData, getAppByName } from './configHandler'
 import { getData, setData, addData } from './dataHandler'
 import { sendIpcMessage, openAuthWindow } from '../index'
 import { sendMessageToClients } from './websocketServer'
@@ -170,11 +170,11 @@ function handleZip(zipFilePath: string, appPath: string): void {
   }
 }
 
-async function loadAndRunEnabledApps(appsConfigPath: string): Promise<void> {
+async function loadAndRunEnabledApps(): Promise<void> {
   try {
-    const appsConfigData = fs.readFileSync(appsConfigPath, 'utf8')
-    const appsConfig = JSON.parse(appsConfigData)
+    const appsConfig = getAppData()
     console.log('Loaded apps config. Running apps...')
+    console.log(appsConfig)
     for (const appConfig of appsConfig.apps) {
       if (appConfig.enabled == true) {
         console.log(`Automatically running app ${appConfig.name}`)
@@ -190,29 +190,17 @@ async function addApp(event, appName: string): Promise<void> {
   console.log(event)
   try {
     // Load existing apps config
-    const appsConfigPath = getConfig()
-    if (appsConfigPath == null) {
-      return
-    }
-    const appsConfigData = fs.readFileSync(appsConfigPath, 'utf8')
-    const appsConfig = JSON.parse(appsConfigData)
-
-    // Check if app already exists in config
-    let appConfig = appsConfig.apps.find((app: any) => app.name === appName)
+    const appConfig = getAppByName(appName)
 
     if (!appConfig) {
       // App not found in config, add it
-      const newAppConfig = { name: appName, enabled: true } // You might need to adjust this based on your app structure
-      appsConfig.apps.push(newAppConfig)
-      appConfig = newAppConfig
-
-      // Save updated config file
-      fs.writeFileSync(appsConfigPath, JSON.stringify(appsConfig, null, 2))
+      const newAppConfig = { name: appName, enabled: true, prefIndex: 5 } // You might need to adjust this based on your app structure
+      setAppData(newAppConfig)
     } else if (!appConfig.enabled) {
       // App found but not enabled, enable it
       appConfig.enabled = true
       // Save updated config file (if enabled changed)
-      fs.writeFileSync(appsConfigPath, JSON.stringify(appsConfig, null, 2))
+      setAppData(appConfig)
       console.log(`Attempting to run app ${appName}`)
     } else {
       console.log(`App '${appName}' already exists and is enabled.`)

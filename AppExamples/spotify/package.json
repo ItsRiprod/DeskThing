@@ -1,9 +1,10 @@
 {
   "name": "spotify",
-  "version": "1.0.0",
-  "description": "> Version 1.5 Beta",
+  "version": "1.5.0",
+  "description": "The spotify app for the DeskThing desktop application",
   "main": "index.js",
   "scripts": {
+    "build": "esbuild index.js --bundle --platform=node --outfile=builds/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

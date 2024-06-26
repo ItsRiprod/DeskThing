@@ -2,12 +2,13 @@ import { app, shell, BrowserWindow, ipcMain, Tray, Menu } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.ico?asset'
-import { setupConfig } from './utility/configHandler'
 import { addApp, sendMessageToApp, handleZip, loadAndRunEnabledApps } from './utility/appHandler'
 import './utility/authHandler'
 import './utility/websocketServer'
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
+
+loadAndRunEnabledApps()
 
 function createWindow(): void {
   // Create the browser window.
@@ -101,9 +102,6 @@ app.whenReady().then(async () => {
   tray.setToolTip('DeskThing Server')
   tray.setContextMenu(contextMenu)
 
-  const appsConfigPath = setupConfig()
-
-  loadAndRunEnabledApps(appsConfigPath)
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.

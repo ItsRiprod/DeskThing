@@ -2,17 +2,17 @@ import { app } from 'electron'
 import { join } from 'path'
 import fs from 'fs'
 
-interface AppData {
+interface Data {
   [appName: string]: {
     [key: string]: string
   }
 }
 
 // Default data structure
-const defaultData: AppData = {}
+const defaultData: Data = {}
 
 // Helper function to read data
-const readData = (): AppData => {
+const readData = (): Data => {
   const dataFilePath = join(app.getPath('userData'), 'data.json')
   try {
     if (!fs.existsSync(dataFilePath)) {
@@ -30,7 +30,7 @@ const readData = (): AppData => {
 }
 
 // Helper function to write data
-const writeData = (data): void => {
+const writeData = (data: Data): void => {
   try {
     const dataFilePath = join(app.getPath('userData'), 'data.json')
     fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2))
@@ -62,4 +62,4 @@ const getData = (key): { [key: string]: string } => {
   return data[key]
 }
 
-export { setData, getData, addData }
+export { setData, getData, addData, readData }

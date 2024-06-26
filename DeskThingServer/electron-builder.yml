@@ -1,5 +1,5 @@
-appId: com.electron.app
-productName: deskthing
+appId: com.deskthing.app
+productName: DeskThing
 directories:
   buildResources: build
 files:
@@ -33,13 +33,13 @@ linux:
     - AppImage
     - snap
     - deb
-  maintainer: electronjs.org
+  maintainer: Riprod
   category: Utility
 appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
 publish:
   provider: generic
-  url: https://example.com/auto-updates
+  url: https://github.com/ItsRiprod/DeskThing
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/

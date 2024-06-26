@@ -46,7 +46,7 @@ async function onMessageFromMain(event, ...args) {
             Spotify_Client_Secret: args[0].Spotify_Client_Secret,
             Device_Id: args[0].Device_Id,
             Spotify_Refresh_Token: spotify.refresh_token || undefined,
-            Spotify_Access_Token: spotify.access_token || undefined
+            Spotify_Access_Token: spotify.access_token || undefined,
           }
 
           // Also tell the database to set the data
@@ -57,6 +57,13 @@ async function onMessageFromMain(event, ...args) {
 
           console.log('SPOTIFY: No refresh token found, logging in...')
           await spotify.login()
+        }
+
+        if (args[0].settings) {
+          spotify.settings = args[0].settings
+        } else {
+          const settings = { settings: spotify.settings }
+          spotify.sendDataToMainFn('add', settings)
         }
         break
       case 'auth-data':

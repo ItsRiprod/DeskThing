@@ -1,5 +1,5 @@
 import { IconDevice } from '../../components/todothingUIcomponents';
-import './Default.css';
+import './Dashboard.css';
 import React from 'react';
 
 const Default: React.FC = (): JSX.Element => {

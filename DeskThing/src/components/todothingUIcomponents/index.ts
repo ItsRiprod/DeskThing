@@ -1,6 +1,7 @@
 export { default as IconAlbum } from './icons/IconAlbum';
 export { default as IconHeart } from './icons/IconHeart';
 export { default as IconHeartActive } from './icons/IconHeartActive';
+export { default as IconGear } from './icons/IconGear';
 export { default as IconPause } from './icons/IconPause';
 export { default as IconPlay } from './icons/IconPlay';
 export { default as IconSkipBack } from './icons/IconSkipBack';

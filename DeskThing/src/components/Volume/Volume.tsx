@@ -14,7 +14,7 @@ const Volume: React.FC = () => {
   };
   useEffect(() => {
     const handleScroll = (left: boolean) => {
-      if (volume < 100 && volume > 0) {
+      if (volume <= 100 && volume >= 0) {
         if (left) {
           setVolume((oldVol) => oldVol - 5);
         } else {

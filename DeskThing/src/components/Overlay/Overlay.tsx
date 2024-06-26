@@ -72,11 +72,11 @@ const Overlay: FC<OverlayProps> = ({ children, preferredApps, currentView, apps,
         setVisible(false);
       }
   return <div className="overlay">
-    {<AppSelector className={`${active ? 'touched' : ''} ${visible ? 'visible' : ''}`} onAppSelect={handleAppSelect} apps={apps} currentView={currentView} preferredApps={preferredApps}/>}
-    <Header />
-    <Volume />
-        {children}
-    <Footer />
+      {<AppSelector className={`${active ? 'touched' : ''} ${visible ? 'visible' : ''}`} onAppSelect={handleAppSelect} apps={apps} currentView={currentView} preferredApps={preferredApps}/>}
+      <Header />
+      <Volume />
+          {children}
+      <Footer />
     </div>;
 };
 

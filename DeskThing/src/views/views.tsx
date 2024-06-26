@@ -1,13 +1,13 @@
 import { useState, useEffect, Suspense, lazy  } from 'react';
 import ButtonHelper, { Button, EventFlavour } from '../helpers/ButtonHelper';
 import socket from '../helpers/WebSocketService';
-import Default from './default';
+import Dashboard from './dashboard';
 import './views.css';
 
 import Overlay from '../components/Overlay/Overlay';
 
 const ViewManager = () => {
-  const [currentView, setCurrentView] = useState('default');
+  const [currentView, setCurrentView] = useState('dashboard');
   const buttonHelper = ButtonHelper.getInstance();
   const [preferredApps, setPreferredApps] = useState<string[]>([]);
   const [apps, setApps] = useState<string[]>([]);
@@ -16,7 +16,7 @@ const ViewManager = () => {
   const handleLongPress = (index: number, view: string) => {
     if (socket.is_ready()) {
       const data = {
-        app: 'util', // this should match what you have set on eventEmitter
+        app: 'utility', // this should match what you have set on eventEmitter
         type: 'set', // This is just for you to specify type (get, set, put, post, etc)
         request: 'add_app',
         data: {app: view, index: index},
@@ -33,16 +33,18 @@ const ViewManager = () => {
             setCurrentView(preferredApps[0]);
             break;
           case Button.BUTTON_2:
-            setCurrentView(preferredApps[1]);
+            setCurrentView(preferredApps[1] || apps[1]);
             break;
           case Button.BUTTON_3:
-            setCurrentView(preferredApps[2]);
+            setCurrentView(preferredApps[2] || apps[2]);
             break;
           case Button.BUTTON_4:
-            setCurrentView(preferredApps[3]);
+            setCurrentView(preferredApps[3] || apps[3]);
             break;
           case Button.BUTTON_5:
-            setCurrentView('default'); // Will be settings eventually
+            if (currentView != 'utility') {
+              setCurrentView('dashboard');
+            }
             break;
           default:
             break;
@@ -61,6 +63,9 @@ const ViewManager = () => {
             break;
           case Button.BUTTON_4:
             handleLongPress(3, currentView);
+            break;
+          case Button.BUTTON_5:
+            setCurrentView('utility');
             break;
           default:
             break;
@@ -95,14 +100,14 @@ const ViewManager = () => {
       buttonHelper.setCallback(null);
       buttonHelper.destroy();
     };
-  }, [buttonHelper, preferredApps, currentView]);
+  }, [buttonHelper, preferredApps, currentView, apps]);
 
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const listener = (msg: any) => {
       if (msg.type === 'set_view') {
         setCurrentView(msg.data);
-      } else if (msg.type === 'utility_pref_data') {
+      } else if (msg.type === 'utility_data') {
         setPreferredApps(msg.data.preferredApps);
         setApps(msg.data.modules);
       }
@@ -134,8 +139,8 @@ const ViewManager = () => {
 
   const renderView = () => {
     switch (currentView) {
-      case 'default':
-        return <Default />;
+      case 'dashboard':
+        return <Dashboard />;
       default:
         if (DynamicComponent) {
           return (
