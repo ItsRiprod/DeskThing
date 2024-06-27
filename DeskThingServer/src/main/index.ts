@@ -2,7 +2,15 @@ import { app, shell, BrowserWindow, ipcMain, Tray, Menu } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.ico?asset'
-import { addApp, sendMessageToApp, handleZip, loadAndRunEnabledApps } from './utility/appHandler'
+import { getAppData } from './utility/configHandler'
+import {
+  addApp,
+  sendMessageToApp,
+  handleZip,
+  loadAndRunEnabledApps,
+  disableApp,
+  stopApp
+} from './utility/appHandler'
 import './utility/authHandler'
 import './utility/websocketServer'
 let mainWindow: BrowserWindow | null = null
@@ -61,6 +69,16 @@ app.whenReady().then(async () => {
 
   ipcMain.on('add-app', async (event, appName: string) => {
     addApp(event, appName)
+  })
+  ipcMain.on('get-apps', async (event) => {
+    const data = getAppData()
+    event.sender.send('app-data', data)
+  })
+  ipcMain.on('stop-app', async (event, appName: string) => {
+    stopApp(appName)
+  })
+  ipcMain.on('disable-app', async (event, appName: string) => {
+    disableApp(appName)
   })
 
   ipcMain.on('handle-zip', async (event, zipFilePath: string) => {
@@ -145,5 +163,9 @@ async function sendIpcMessage(
   console.log('Sending Ipc message to main process:', appName, requestId, scope)
   mainWindow?.webContents.send('display-user-form', requestId, scope)
 }
+async function sendIpcData(dataType: string, data: any): Promise<void> {
+  console.log('Sending Ipc message to main process:', dataType, data)
+  mainWindow?.webContents.send(dataType, data)
+}
 
-export { sendIpcMessage, openAuthWindow }
+export { sendIpcMessage, openAuthWindow, sendIpcData }

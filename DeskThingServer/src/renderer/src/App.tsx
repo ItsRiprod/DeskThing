@@ -1,127 +1,40 @@
-import React, { useState, useEffect } from 'react'
+import { useEffect } from 'react'
+import FileHandler from './components/FileHandler'
+import Overlays from './components/Overlays'
+import AppsList from './components/AppsList'
+import { useAppStore, AppData } from './store/appStore'
 
 function App(): JSX.Element {
-  const [appsList, setAppsList] = useState<string[]>([]) // State to hold list of apps
-  const [formFields, setFormFields] = useState<string[]>([])
-  const [formData, setFormData] = useState<{ [key: string]: string }>({})
-  const [requestId, setRequestId] = useState<string | null>(null)
-
-  const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
-
-  // Function to handle dropped files
-  const handleDrop = async (event: React.DragEvent<HTMLDivElement>): Promise<void> => {
-    event.preventDefault()
-    const files = Array.from(event.dataTransfer.files)
-    for (const file of files) {
-      if (file.name.endsWith('.zip')) {
-        await handleZipFile(file.path)
-        setAppsList([...appsList, file.name])
-      }
-    }
-  }
-
-  async function handleZipFile(zipFilePath: string): Promise<void> {
-    try {
-      // Notify the main process to handle the zip file
-      setAppsList([...appsList, zipFilePath]) // Add the file path to the list
-      window.electron.ipcRenderer.send('handle-zip', zipFilePath)
-    } catch (error) {
-      console.error('Error handling zip file:', error)
-    }
-  }
-
-  const handleAddAndRunApp = (appName: string): void => {
-    if (appName.endsWith('.zip')) {
-      const newAppName = appName.replace('.zip', '')
-      window.electron.ipcRenderer.send('add-app', newAppName) // Send appName to the main process
-    } else {
-      console.log('App name is not a zip file!')
-    }
-  }
-
-  const handleInputChange = (field: string, value: string): void => {
-    setFormData({
-      ...formData,
-      [field]: value
-    })
-  }
-
-  const handleSubmit = (): void => {
-    if (requestId) {
-      window.electron.ipcRenderer.send(`user-data-response-${requestId}`, formData)
-      setRequestId(null)
-      setFormFields([])
-      setFormData({})
-    }
-  }
-
+  const { setAppList, appsList } = useAppStore()
   useEffect(() => {
-    const handleDisplayUserForm = (_event: any, requestId: string, fields: string[]): void => {
-      setRequestId(requestId)
-      setFormFields(fields)
-      setFormData(fields.reduce((acc, field) => ({ ...acc, [field]: '' }), {}))
+    const handleAppData = (_event: any, data: AppData): void => {
+      // Call your function to handle data.json here
+      handleAppDataJson(data)
     }
 
-    window.electron.ipcRenderer.on('display-user-form', handleDisplayUserForm)
+    // Set up listener for 'app-data' event
+    const removeListener = window.electron.ipcRenderer.on('app-data', handleAppData)
 
-    return (): void => {
-      window.electron.ipcRenderer.removeAllListeners('display-user-form')
+    return () => {
+      removeListener()
     }
   }, [])
-
-  const renderForm = (): JSX.Element => (
-    <div>
-      {formFields.map((field) => (
-        <div key={field}>
-          <label>{field}</label>
-          <input
-            type="text"
-            value={formData[field] || ''}
-            onChange={(e) => handleInputChange(field, e.target.value)}
-          />
-        </div>
-      ))}
-      <button onClick={handleSubmit}>Submit</button>
-    </div>
-  )
-
-  // Render the list of apps
-  const renderAppsList = (): JSX.Element[] => {
-    return appsList.map((fileName, index) => (
-      <div key={index} className="app-item">
-        {fileName} {/* Display the file path */}
-        <button onClick={() => handleAddAndRunApp(fileName)}>Add & Run</button>
-      </div>
-    ))
+  const handleAppDataJson = (data: AppData): void => {
+    setAppList(data)
   }
 
   return (
     <>
-      <h1>DeskThing</h1>
-      <div className="actions">
-        <div className="action">
-          <a target="_blank" rel="noreferrer" onClick={ipcHandle}>
-            Send Ping
-          </a>
+      <div className="bg-zinc-950 h-screen w-screen justify-center flex items-center text-white p-5">
+        <Overlays />
+        <div className="container flex flex-col items-center border-2 border-zinc-800 h-full">
+          <h1 className="text-5xl py-5">DeskThing</h1>
+          <FileHandler />
+        </div>
+        <div className="container flex flex-col items-center border-2 border-zinc-800 h-full">
+          <AppsList />
         </div>
       </div>
-      {/* Drop zone for drag-n-drop */}
-      <div
-        style={{
-          backgroundColor: 'rgba(164,164,164,0.6)',
-          padding: '20px',
-          borderRadius: '10px',
-          margin: '20px'
-        }}
-        className="drop-zone"
-        onDrop={handleDrop}
-        onDragOver={(e) => e.preventDefault()}
-      >
-        Drop your .zip App file here
-      </div>
-      {/* Display the list of apps */}
-      <div className="apps-list">{renderAppsList()}</div>
-      {formFields.length > 0 && renderForm()}
     </>
   )
 }

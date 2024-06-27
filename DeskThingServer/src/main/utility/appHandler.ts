@@ -125,8 +125,34 @@ function stopApp(appName: string): void {
       appInstance.stop()
     }
     runningApps.delete(appName)
+    console.log('stopped ', appName)
   } catch (error) {
     console.error(`Error stopping app ${appName}`, error)
+  }
+}
+
+function disableApp(appName: string): void {
+  stopApp(appName)
+  try {
+    // Load existing apps config
+    const appConfig = getAppByName(appName)
+
+    if (!appConfig) {
+      console.log('App not found in config, add it')
+      // App not found in config, add it
+      const newAppConfig = { name: appName, enabled: false, prefIndex: 5 } // You might need to adjust this based on your app structure
+      setAppData(newAppConfig)
+    } else if (appConfig.enabled) {
+      // App found but not enabled, enable it
+      appConfig.enabled = false
+      // Save updated config file (if enabled changed)
+      setAppData(appConfig)
+      console.log('Disabled ', appName)
+    }
+
+    // Run the app if enabled
+  } catch (error) {
+    console.error('Error adding app:', error)
   }
 }
 
@@ -186,8 +212,7 @@ async function loadAndRunEnabledApps(): Promise<void> {
   }
 }
 
-async function addApp(event, appName: string): Promise<void> {
-  console.log(event)
+async function addApp(_event, appName: string): Promise<void> {
   try {
     // Load existing apps config
     const appConfig = getAppByName(appName)
@@ -218,4 +243,4 @@ async function addApp(event, appName: string): Promise<void> {
   }
 }
 
-export { runApp, sendMessageToApp, stopApp, stopAllApps, handleZip, loadAndRunEnabledApps, addApp }
+export { runApp, sendMessageToApp, stopApp, stopAllApps, handleZip, loadAndRunEnabledApps, addApp, disableApp }

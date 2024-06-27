@@ -47,7 +47,6 @@ const Utility: FC = (): JSX.Element => {
               <p>Label: {preferences.settings[appName][settingKey].label}</p>
               <p>Value: {preferences.settings[appName][settingKey].value}</p>
               <p>Options:</p>
- 
             </div>
           </div>
         ))}

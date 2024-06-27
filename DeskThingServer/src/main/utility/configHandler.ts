@@ -1,6 +1,7 @@
 import { app } from 'electron'
 import { join } from 'path'
 import * as fs from 'fs'
+import { sendIpcData } from '..'
 
 interface App {
   name: string
@@ -44,6 +45,7 @@ const writeData = (data: AppData): void => {
   try {
     const dataFilePath = join(app.getPath('userData'), 'apps.json')
     fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2))
+    sendIpcData('app-data', data)
   } catch (err) {
     console.error('Error writing data:', err)
   }
