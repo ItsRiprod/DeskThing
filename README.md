@@ -3,64 +3,82 @@
 
 *Let's begin, shall we?*
 
-This is the DeskThing project. Using Spotify's existing Car Thing, the DeskThing make's the perfect desk assistant. Integrating Trello API, Spotify API, AccuWeather API, and Macro capabilities, the DeskThing shoots to be *the* thing for controlling your desk environment. 
-> Setup is quite intense, so be prepared!
+This is the DeskThing project. Using Spotify's existing Car Thing, the DeskThing makes the perfect desk assistant. Integrating Trello API, Spotify API, AccuWeather API, and Macro capabilities, the DeskThing shoots to be *the* thing for controlling your desk environment. 
 
-> Not on windows? [Linux Modifications](#-linux-mods)
+**⚠️DO NOT PULL MAIN BRANCH ⚠️**
 
-## ⚠️DO NOT PULL MAIN BRANCH ⚠️
-Instead, go to "Releases" and download the .zip file for v0.2.0-alpha (which this readme follows) and use that
+Instead, go to [Releases](https://github.com/ItsRiprod/DeskThing/releases) and download the .zip file for v0.2.0-alpha (which this readme follows) and use that
 
 ---
 
-## ✨What It Does
+<details>
+   <summary><h2>✨ Features</h2></summary>
 
 The DeskThing is a simple CarThing Chromium-based website that can communicate with a server run on the host via ADB (on port 8891) functioning as a socket. The CarThing can:
 
-- Spotify Integration
-   - Show currently listening (Album, Artist, Song name, album art)
-   - Control Spotify (Skip, pause, play, rewind, shuffle, repeat)
-   - Supports Podcasts too!
+- ### Spotify Integration 🎧
+   - [X] Show currently listening (Album, Artist, Song name, album art)
+   - [X] Control Spotify (Skip, pause, play, rewind, shuffle, repeat)
+   - [X] Supports Podcasts too!
    - Spotify app [installation instructions here](/DeskThing/server/apps/spotify#spotify-app-install)
-- Discord Integration
-   - Show current call status (Participants, who's talking, their mute status)
-   - Control Discord (~~Mute/Unmute  Deafen//Undeafen Disconnect~~)
-   - ~~Control Individual User Volume~~
-   - ~~See message preview~~
+- ### Discord Integration 💬
+   - [X] Show current call status (Participants, who's talking, their mute status)
+   - [ ] ~~Control Discord (Mute/Unmute  Deafen//Undeafen Disconnect)~~
+   - [ ] ~~Control Individual User Volume~~
+   - [ ] ~~See message preview~~
    - Discord app [installation instructions here](/DeskThing/server/apps/discord#discord-app-install)
-- Weather Integration
-   - Show local weather
-   - Temperature
-   - AQI, UV Index, Wind Speed + Direction, Visibility
-   - 12 Hour forecast
+- ### Weather Integration 🌧️
+   - [X] Show local weather
+   - [X] Temperature
+   - [X] AQI, UV Index, Wind Speed + Direction, Visibility
+   - [X] 12 Hour forecast
    - Weather app [installation instructions here](/DeskThing/server/apps/weather#weather-app-install)
-- Audible Integration
-   - ~~Currently Listening To~~ 
-   - ~~Audio Controls (Skip, Rewind, Fast Forward)~~ 
-   - ~~Audio Status (%through)~~
-   - Audiobook library
-   - Audiobook stats (Progress, Length of book, time left, ASIN)
+- ### Audible Integration📗
+   - [ ] ~~Currently Listening To~~ 
+   - [ ] ~~Audio Controls (Skip, Rewind, Fast Forward)~~ 
+   - [ ] ~~Audio Status (%through)~~
+   - [X] Audiobook library
+   - [X] Audiobook stats (Progress, Length of book, time left, ASIN)
    - Audible app [installation instructions here](/DeskThing/server/apps/audible#audible-app-install)
-- Launchpad Integration
-   - Control different views on your launchpad!
-   - Show your system resource usage on your novation launchpad
-   - Add timers from your launchpad
-   - ~~Show weather from launchpad~~
-   - ~~Show time on launchpad~~
-   - ~~Trigger macros from launchpad~~
-   - Launchpad app [installation instructions here](/DeskThing/server/apps/launchpad#launchpad-app-install)
-- Trello Integration
-   - See all organizations 
-   - See all boards 
-   - See all lists 
-   - See all cards 
-   - See all tags 
-   - Set different lists as your favorites 
+- ### Launchpad Integration 🎵
+   - [X] Control different views on your launchpad!
+   - [X] Show your system resource usage on your novation launchpad
+   - [X] Add timers from your launchpad
+   - [ ] ~~Show weather from launchpad~~
+   - [ ] ~~Show time on launchpad~~
+   - [ ] ~~Trigger macros from launchpad~~
+   - [ ] Launchpad app [installation instructions here](/DeskThing/server/apps/launchpad#launchpad-app-install)
+- ### Trello Integration 📃
+   - [X] See all organizations 
+   - [X] See all boards 
+   - [X] See all lists 
+   - [X] See all cards 
+   - [X] See all tags 
+   - [X] Set different lists as your favorites 
    - Trello app [installation instructions here](/DeskThing/server/apps/trello#trello-app-install)
-     
-> *This is under constant development, so features will come as soon as I can make them. Suggestions welcome!*
+<details>
+   <summary>
+      <h3>Planned Apps</h3>
+   </summary>
 
-## ▶️How It Does It
+- Macropad / Streamdeck
+- GUI Companion
+- Dashboard/Settings for config changes
+- General audio control
+- Advanced Spotify Stats
+- Home Assistant
+- And more!
+</details>
+
+> *This is under constant development, so features will come as soon as I can make them. Suggestions welcome!*
+</details> 
+
+---
+
+<details>
+   <summary>
+      <h2>▶️ Setting Up</h2>
+   </summary>
 
 ### Prerequisites
 
@@ -120,19 +138,14 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
      ```sh
      node server/server.js
      ```
+</details>
 
 ---
 
-> It's 4:04 in the morning right now. I *will* update this later.
-
----
-
-Ensure that your environment is correctly set up and all dependencies are installed. Good Luck!
-> Questions? DM me on discord @riprod
-
-⚠️ *The possibility of this bricking your device is very real* ⚠️
-
-## 📸Flashing
+<details>
+   <summary>
+      <h2>📸Flashing</h2>
+   </summary>
 
 Links:
 - [image dumps](https://mega.nz/folder/NxNXQCaT#-n1zkoXsJuw-5rQ-ZYzRJw/folder/5kECGT5C)
@@ -152,14 +165,24 @@ Process:
 - After the firmware is flashed, the Car Thing should be ready with ADB enabled. To check, run `adb shell ls -l /usr/share/qt-superbird-app/` and you should see webapp as one of the folders.
 - Continue setup from [here](#detailed-setup-instructions)
 
+</details>
+
 ---
+
 ## 📗 Additional Resources
 
 - 🔧 [superbird-tool](https://github.com/bishopdynamics/superbird-tool) - This is the CarThing image that is being used. Be sure to either include this link or steps on how to flash the CarThing.
 - 🐤 [superbird-custom-webapp](https://github.com/pajowu/superbird-custom-webapp/tree/main) - The React web app framework that this project started with.
 - 🗨️ [Car Thing Hax Community Discord](https://discord.gg/aPSV6NykA6) - The discord where there is this project and so much more!
 
-## .env file reference
+---
+
+<details>
+<summary>
+   <h2>.env file reference</h2>
+</summary>
+
+
 - **.env file reference for `/DeskThing/server/.env`**
 ```env
 SPOTIFY_API_ID= /* The spotify API ID obtained from dashboard  */
@@ -213,7 +236,15 @@ adb shell supervisorctl restart chromium
 node server/server.js
 ```
 
-## 🤖 Linux Mods
+</details>
+
+---
+
+<details>
+   <summary>
+      <h2>🤖 Linux Mods</h2>
+   </summary>
+
 
 Currently, DeskThing does not have great support for linux. This will be resolved once DeskThing becomes modular, but for now you can do the following steps:
 - Follow superbird-tool tutorial for flashing the car thing with the ADB_ENABLES flash
@@ -260,7 +291,7 @@ adb shell supervisorctl restart chromium
 node server/server.js
 ```
 
-### Discord Flatpak work around
+### Discord Flatpak workaround
 
 If you are encountering an error `reject(new Error('Could not connect'));` then try the following found [here](https://github.com/flathub/com.discordapp.Discord/wiki/Rich-Precense-(discord-rpc))
 
@@ -270,3 +301,10 @@ mkdir -p ~/.config/user-tmpfiles.d
 echo 'L %t/discord-ipc-0 - - - - app/com.discordapp.Discord/discord-ipc-0' > ~/.config/user-tmpfiles.d/discord-rpc.conf
 systemctl --user enable --now systemd-tmpfiles-setup.service
 ```
+</details>
+
+---
+
+> Questions? DM me on discord @riprod
+
+⚠️ *The possibility of this bricking your device is very real* ⚠️
