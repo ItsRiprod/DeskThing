@@ -13921,6 +13921,7 @@ async function start({ sendDataToMain }) {
 }
 async function stop() {
   console.log("Spotify App stopping...");
+  spotify = null;
 }
 async function onMessageFromMain(event, ...args) {
   console.log(`SPOTIFY: Received event ${event} with args `, ...args);
@@ -14042,6 +14043,18 @@ var handleSet = async (...args) => {
       break;
     case "play_track":
       response = await spotify.play();
+      break;
+    case "update_setting":
+      if (args[1] != null) {
+        const { setting, value } = args[1];
+        spotify.settings[setting].value = value;
+        console.log("SPOTIFY New Setting", spotify.settings);
+        response = { settings: spotify.settings };
+        spotify.sendDataToMainFn("add", response);
+      } else {
+        console.log("SPOTIFY: No args provided", args[1]);
+        response = "No args provided";
+      }
       break;
   }
   spotify.sendDataToMainFn("data", response);

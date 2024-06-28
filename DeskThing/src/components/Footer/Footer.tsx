@@ -131,7 +131,7 @@ const Footer: React.FC = () => {
         app: 'Spotify',
         type: 'set',
         request: 'seek_track',
-        position_ms: ms,
+        data: ms,
       };
       socket.post(data);
     }

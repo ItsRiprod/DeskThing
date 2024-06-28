@@ -5,7 +5,7 @@ import AppsList from './components/AppsList'
 import { useAppStore, AppData } from './store/appStore'
 
 function App(): JSX.Element {
-  const { setAppList, appsList } = useAppStore()
+  const { setAppList } = useAppStore()
   useEffect(() => {
     const handleAppData = (_event: any, data: AppData): void => {
       // Call your function to handle data.json here
@@ -24,8 +24,8 @@ function App(): JSX.Element {
   }
 
   return (
-    <>
-      <div className="bg-zinc-950 h-screen w-screen justify-center flex items-center text-white p-5">
+    <div className="bg-zinc-950 overflow-hidden">
+      <div className="h-screen w-screen justify-center flex items-center text-white p-5">
         <Overlays />
         <div className="container flex flex-col items-center border-2 border-zinc-800 h-full">
           <h1 className="text-5xl py-5">DeskThing</h1>
@@ -35,7 +35,7 @@ function App(): JSX.Element {
           <AppsList />
         </div>
       </div>
-    </>
+    </div>
   )
 }
 

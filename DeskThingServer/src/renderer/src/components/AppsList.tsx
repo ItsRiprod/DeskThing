@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useAppStore } from '../store/appStore'
+import { useAppStore, App } from '../store/appStore'
 
 const AppsList = (): JSX.Element => {
   const { appsList } = useAppStore()
@@ -27,31 +27,31 @@ const AppsList = (): JSX.Element => {
       {Object.keys(appsList).length > 0 ? (
         Object.entries(appsList).map(([appName, apps], index) => (
           <div key={index} className="pt-5 w-[100%] flex flex-wrap justify-center">
-            {apps.map((app, appIndex) => (
+            {(apps as App[]).map((app, appIndex) => (
               <div
                 key={appIndex}
-                className="bg-zinc-600 p-5 w-[90%] h-fit flex justify-between rounded-3xl shadow-lg px-5 items-baseline"
+                className="border-2 border-zinc-200 p-5 w-[90%] h-fit flex justify-between rounded-3xl shadow-lg px-5 items-baseline"
               >
-                <p className="">{app.name}</p>
+                <p className={appName}>{app.name}</p>
                 {app.enabled ? (
                   <div className="flex items-baseline">
-                    <p className="text-green-500">Running on pref {app.prefIndex}</p>
-                      <button
-                        className="bg-amber-600 m-1 p-2 rounded-lg"
-                        onClick={() => handleDisableApp(app.name)}
-                      >
-                        Disable
-                      </button>
-                      <button
-                        className="bg-red-600 p-2 rounded-lg"
-                        onClick={() => handleStopApp(app.name)}
-                      >
-                        X
-                      </button>
+                    <p className="text-green-500">Preference {app.prefIndex}</p>
+                    <button
+                      className="border-2 border-amber-600 hover:bg-amber-500 bg-amber-600 m-1 p-2 rounded-lg"
+                      onClick={() => handleDisableApp(app.name)}
+                    >
+                      Disable
+                    </button>
+                    <button
+                      className="border-2 border-red-600 hover:bg-red-500 bg-red-600 p-2 rounded-lg"
+                      onClick={() => handleStopApp(app.name)}
+                    >
+                      X
+                    </button>
                   </div>
                 ) : (
                   <button
-                    className="bg-cyan-600 p-2 rounded-lg"
+                    className="border-2 border-cyan-600 hover:bg-cyan-500 bg-cyan-600 p-2 rounded-lg"
                     onClick={() => handleAddAndRunApp(app.name)}
                   >
                     Run
@@ -62,8 +62,11 @@ const AppsList = (): JSX.Element => {
           </div>
         ))
       ) : (
-        <div className="bg-zinc-600 p-5 w-[90%] h-fit flex justify-center rounded-3xl shadow-lg px-5 align-baseline">
-          <button className="bg-cyan-600 p-2 rounded-lg" onClick={() => requestAppsList()}>
+        <div className="border-2 border-zinc-200 p-5 w-[90%] h-fit flex justify-center rounded-3xl shadow-lg px-5 align-baseline">
+          <button
+            className="border-2 border-cyan-600 hover:bg-cyan-500 bg-cyan-600  p-2 rounded-lg"
+            onClick={() => requestAppsList()}
+          >
             Request Apps
           </button>
         </div>

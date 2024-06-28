@@ -1,4 +1,3 @@
-import React from 'react'
 import AppRequest from './AppRequest'
 
 const Overlays = (): JSX.Element => {

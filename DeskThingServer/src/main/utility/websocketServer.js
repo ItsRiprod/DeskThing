@@ -77,24 +77,39 @@ const sendPrefData = async (socket) => {
     sendError(socket, 'Error getting config data')
   }
 }
-
+const sendTime = (socket) => {
+  const now = new Date()
+  const hours = now.getHours()
+  const minutes = now.getMinutes()
+  const ampm = hours >= 12 ? 'PM' : 'AM'
+  const formattedHours = hours % 12 || 12
+  const formattedMinutes = minutes < 10 ? '0' + minutes : minutes
+  const time = `${formattedHours}:${formattedMinutes} ${ampm}`
+  sendData(socket, 'time', time)
+  console.log(time)
+}
+const getDelayToNextMinute = () => {
+  const now = new Date()
+  const seconds = now.getSeconds()
+  const milliseconds = now.getMilliseconds()
+  return (60 - seconds) * 1000 - milliseconds
+}
 // Handle incoming messages from the client
 server.on('connection', async (socket) => {
   console.log('WSOCKET: Client connected!\nWSOCKET: Sending preferences...')
   sendPrefData(socket)
-
   socket.on('message', async (message) => {
     try {
       const parsedMessage = JSON.parse(message)
       console.log('WSOCKET: Getting data', parsedMessage)
-      if (parsedMessage.app && parsedMessage.app !== 'utility') {
+      if (parsedMessage.app && parsedMessage.app !== 'server') {
         sendMessageToApp(
           parsedMessage.app.toLowerCase(),
           parsedMessage.type,
           parsedMessage.request,
           parsedMessage.data
         )
-      } else if (parsedMessage.app === 'utility') {
+      } else if (parsedMessage.app === 'server') {
         try {
           switch (parsedMessage.type) {
             case 'preferences':
@@ -124,6 +139,7 @@ server.on('connection', async (socket) => {
               break
             case 'get':
               sendPrefData(socket)
+              sendTime(socket)
               break
             default:
               break
@@ -138,9 +154,23 @@ server.on('connection', async (socket) => {
     }
   })
 
-  socket.on('close', () => {
-    console.log('WSOCKET: Client disconnected')
-  })
+  sendTime(socket)
+
+  // Set an initial timeout to the next full minute
+  setTimeout(() => {
+    // Send time immediately at the full minute
+    sendTime(socket)
+
+    // Set an interval to send time every minute
+    const intervalId = setInterval(() => sendTime(socket), 60000)
+
+    // Clear the interval when the socket is closed
+    socket.on('close', () => {
+      clearInterval(intervalId)
+      console.log('WSOCKET: Client disconnected')
+    })
+  }, getDelayToNextMinute());
+
 })
 
 export { sendMessageToClients, sendResponse, sendError, sendData }

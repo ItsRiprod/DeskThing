@@ -5,6 +5,7 @@ import socket from '../../helpers/WebSocketService';
 
 const Utility: FC = (): JSX.Element => {
   const [preferences, setCurrentPreferences] = useState<any>();
+  const [setting, currentSetting] = useState('');
   useEffect(() => {
     requestPreferences()
   }, [])
@@ -12,8 +13,22 @@ const Utility: FC = (): JSX.Element => {
   const requestPreferences = () => {
     if (socket.is_ready()) {
       const data = {
-        app: 'utility',
+        app: 'server',
         type: 'get',
+      };
+      socket.post(data);
+    }
+  }
+  const sendSettingsUpdate = (app: string, setting: string, value: string) => {
+    if (socket.is_ready()) {
+      const data = {
+        app: app,
+        type: 'set',
+        request: 'update_setting',
+        data: {
+          setting: setting,
+          value: value,
+        }
       };
       socket.post(data);
     }
@@ -35,25 +50,51 @@ const Utility: FC = (): JSX.Element => {
     };
   }, []);
 
+  const handleSelectChange = (appName: string, settingKey: string, value) => {
+    console.log(`Setting ${appName}'s ${settingKey} to ${value}`);
+    sendSettingsUpdate(appName, settingKey, value)
+    setTimeout(() => {
+      requestPreferences()
+    }, 100)
+  };
+
   return (
-    <div className="view_default">
-      {preferences?.settings && Object.keys(preferences.settings).map((appName) => (
-      <div key={appName}>
-        <h3>{appName}</h3>
-        {Object.keys(preferences.settings[appName]).map((settingKey) => (
-          <div key={settingKey}>
-            <h4>{settingKey}</h4>
-            <div>
-              <p>Label: {preferences.settings[appName][settingKey].label}</p>
-              <p>Value: {preferences.settings[appName][settingKey].value}</p>
-              <p>Options:</p>
-            </div>
+    <div className="flex h-screen pt-10 pb-28">
+      <div className="container border-2 rounded-lg border-slate-500 h-full m-1 flex-col justify-center max-w-fit p-5">
+        {preferences?.settings && Object.keys(preferences.settings).map((appName) => (
+          <div key={appName} className={(setting == appName ? 'bg-slate-500' : '') + ' border-b-2 border-slate-500 p-3'} onClick={() => currentSetting(appName)}>
+            <h3 className="text-3xl">{appName}</h3>
           </div>
         ))}
       </div>
-    ))}
+      <div className="container border-2 rounded-lg border-slate-500 h-full m-1 p-5">
 
-      <IconDevice iconSize={100} text={'Settings'} fontSize={150}/>
+        {preferences?.settings[setting] ? Object.keys(preferences.settings[setting]).map((settingKey) => (
+
+              <div key={settingKey} className="hover:h-fit overflow-hidden h-20">
+                <div className="flex justify-between p-3">
+                  <h2 className="text-5xl">{preferences.settings[setting][settingKey].label}</h2>
+                  <div className="bg-slate-700 px-5 mr-10 rounded-lg flex items-center">
+                    <p className="text-3xl right-0">{preferences.settings[setting][settingKey].value}</p>
+                  </div>
+                </div>
+                <div className="bg-slate-500 flex justify-between p-5">
+                  {preferences.settings[setting][settingKey].options.map((item, index) => (
+                    <div key={index} onClick={()=> handleSelectChange(setting, settingKey, item.value)}
+                        className="bg-slate-700 p-3 mr-10 rounded-lg flex items-center">
+                      <p className="text-2xl right-0">
+                        {item.label}
+                        </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+        )) : (
+          <div className="flex justify-center items-center h-full">
+            <IconDevice iconSize={256} text={'Settings'} fontSize={150} />
+          </div>
+        )}
+      </div>
     </div>
   );
 };

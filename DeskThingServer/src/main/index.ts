@@ -74,10 +74,10 @@ app.whenReady().then(async () => {
     const data = getAppData()
     event.sender.send('app-data', data)
   })
-  ipcMain.on('stop-app', async (event, appName: string) => {
+  ipcMain.on('stop-app', async (_event, appName: string) => {
     stopApp(appName)
   })
-  ipcMain.on('disable-app', async (event, appName: string) => {
+  ipcMain.on('disable-app', async (_event, appName: string) => {
     disableApp(appName)
   })
 

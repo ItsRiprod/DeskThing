@@ -13,13 +13,7 @@ interface AppData {
 }
 
 const defaultData: AppData = {
-  apps: [
-    {
-      name: 'utility',
-      enabled: true,
-      prefIndex: 1
-    }
-  ]
+  apps: []
 }
 
 // Helper function to read data

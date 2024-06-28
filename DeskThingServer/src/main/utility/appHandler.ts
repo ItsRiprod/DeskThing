@@ -68,8 +68,7 @@ async function requestAuthData(appName: string, scope: Array<string>): Promise<v
   // Send IPC message to renderer to display the form
   sendIpcMessage('request-user-data', requestId, scope)
 
-  ipcMain.once(`user-data-response-${requestId}`, async (event, formData) => {
-    console.log(event)
+  ipcMain.once(`user-data-response-${requestId}`, async (_event, formData) => {
     sendMessageToApp(appName, 'data', formData)
   })
 }
@@ -243,4 +242,13 @@ async function addApp(_event, appName: string): Promise<void> {
   }
 }
 
-export { runApp, sendMessageToApp, stopApp, stopAllApps, handleZip, loadAndRunEnabledApps, addApp, disableApp }
+export {
+  runApp,
+  sendMessageToApp,
+  stopApp,
+  stopAllApps,
+  handleZip,
+  loadAndRunEnabledApps,
+  addApp,
+  disableApp
+}

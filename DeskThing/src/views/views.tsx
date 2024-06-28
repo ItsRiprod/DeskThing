@@ -16,7 +16,7 @@ const ViewManager = () => {
   const handleLongPress = (index: number, view: string) => {
     if (socket.is_ready()) {
       const data = {
-        app: 'utility', // this should match what you have set on eventEmitter
+        app: 'server', // this should match what you have set on eventEmitter
         type: 'set', // This is just for you to specify type (get, set, put, post, etc)
         request: 'add_app',
         data: {app: view, index: index},
