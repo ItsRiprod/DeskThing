@@ -10,17 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "axios": "^1.7.2",
-    "discord-rpc": "^4.0.1",
-    "dotenv": "^16.4.5",
-    "events": "^3.3.0",
-    "express": "^4.19.2",
-    "fs": "^0.0.1-security",
-    "midi": "^2.0.0",
-    "oauth": "^0.10.0",
-    "open": "^10.1.0",
-    "path": "^0.12.7",
-    "qs": "^6.12.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "styled-components": "^6.1.11",
