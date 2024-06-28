@@ -2,7 +2,7 @@ import './Weather.css';
 import React, { useEffect, useState } from 'react';
 import socket from '../../helpers/WebSocketService';
 import { stringToTime, formatDate } from '../../helpers/TimeUtils';
-import { iconToColorMap, iconToEmojiMap } from './WeatherMaps';
+import { iconToColorMap, iconToEmojiMap } from './WeatherMaps.ts';
 import { getContrastingTextColor } from '../../helpers/ColorExtractor';
 const Weather: React.FC = () => {
   const [weatherData, setWeatherData] = useState<any>(null);

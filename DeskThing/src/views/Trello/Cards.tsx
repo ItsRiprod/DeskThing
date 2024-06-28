@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { defaultProps } from '.';
+import { defaultProps } from './index.tsx';
 
 const Cards: React.FC<defaultProps> = ({ handleSendGet, data }) => {
   const [labels, setLabels] = useState<Map<string, any>>();

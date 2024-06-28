@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { defaultProps } from '.';
+import { defaultProps } from './index.tsx';
 
 const Boards: React.FC<defaultProps> = ({ handleSendGet, data }) => {
   const sortBoards = (boards: any[]) => {
