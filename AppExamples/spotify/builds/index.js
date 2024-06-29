@@ -13597,6 +13597,11 @@ var require_spotify = __commonJS({
     var { getImageData } = require_utility();
     var SpotifyHandler2 = class {
       constructor(sendDataToMainFn2) {
+        this.BASE_URL = "https://api.spotify.com/v1/me/player";
+        this.TOKEN_URL = "https://accounts.spotify.com/api/token";
+        this.PORT = "8888";
+        this.CLIENT_ID = process.env.SPOTIFY_API_ID;
+        this.CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
         this.sendDataToMainFn = sendDataToMainFn2;
         this.client_secret = void 0;
         this.device_id = void 0;
