@@ -35,10 +35,10 @@ function App(): JSX.Element {
             <IconLoading className="animate-spin" />
           </div>
           <Status />
-          <FileHandler />
         </div>
         <div className="container rounded-lg flex flex-col items-center border-2 border-zinc-800 h-full">
           <AppsList />
+          <FileHandler />
         </div>
       </div>
     </div>
