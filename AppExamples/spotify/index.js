@@ -29,15 +29,13 @@ async function onMessageFromMain(event, ...args) {
           // If there is no environment data, request the environment data
           spotify.sendDataToMainFn('get', 'auth', [
             'Spotify_API_Id',
-            'Spotify_Client_Secret',
-            'Device_Id'
+            'Spotify_Client_Secret'
           ])
         } else if (args[0].Spotify_Refresh_Token) {
           console.log('SPOTIFY: Refreshing token...')
           spotify.refresh_token = args[0].Spotify_Refresh_Token
           spotify.client_id = args[0].Spotify_API_Id
           spotify.client_secret = args[0].Spotify_Client_Secret
-          spotify.device_id = args[0].Device_Id
           spotify.access_token = args[0].Spotify_Access_Token || undefined
 
           await spotify.refreshAccessToken()
@@ -45,7 +43,6 @@ async function onMessageFromMain(event, ...args) {
           const data = {
             Spotify_API_Id: args[0].Spotify_API_Id,
             Spotify_Client_Secret: args[0].Spotify_Client_Secret,
-            Device_Id: args[0].Device_Id,
             Spotify_Refresh_Token: spotify.refresh_token || undefined,
             Spotify_Access_Token: spotify.access_token || undefined,
           }
@@ -54,7 +51,6 @@ async function onMessageFromMain(event, ...args) {
           spotify.sendDataToMainFn('set', data)
           spotify.client_id = data.Spotify_API_Id
           spotify.client_secret = data.Spotify_Client_Secret
-          spotify.device_id = data.Device_Id
 
           console.log('SPOTIFY: No refresh token found, logging in...')
           await spotify.login()

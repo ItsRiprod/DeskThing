@@ -7,8 +7,8 @@ var __commonJS = (cb, mod) => function __require() {
 var require_utility = __commonJS({
   "utility.js"(exports2, module2) {
     var UtilityHandler2 = class {
-      constructor(sendDataToMainFn) {
-        this.sendDataToMainFn = sendDataToMainFn;
+      constructor(sendDataToMainFn2) {
+        this.sendDataToMainFn = sendDataToMainFn2;
         this.settings = {
           "playback_location": {
             "value": "local",
@@ -17,17 +17,20 @@ var require_utility = __commonJS({
               {
                 "value": "local",
                 "label": "Local"
-              },
-              {
-                "value": "spotify",
-                "label": "Spotify"
-              },
-              {
-                "value": "other",
-                "label": "Other"
               }
             ]
           }
+        };
+        this.manifest = {
+          isAudioSource: false,
+          requires: [],
+          label: "Utility App",
+          version: "v0.5.0",
+          description: "This app is a utility app that controls the settings of the DeskThing",
+          author: "Riprod",
+          platforms: ["windows", "macos", "linux"],
+          homepage: "https://github.com/ItsRiprod/DeskThing",
+          repository: "https://github.com/ItsRiprod/DeskThing"
         };
       }
     };
@@ -85,6 +88,9 @@ var handleGet = async (...args) => {
   }
   let response;
   switch (args[0].toString()) {
+    case "manifest":
+      response = utility.manifest;
+      sendDataToMainFn("manifest", response);
     default:
       response = `${args[0].toString()} Not implemented yet!`;
       break;

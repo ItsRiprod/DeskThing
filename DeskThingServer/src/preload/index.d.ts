@@ -2,12 +2,9 @@ import { ElectronAPI } from '@electron-toolkit/preload'
 
 declare global {
   interface Window {
-    electron: ElectronAPI
-    api: unknown
+    electron: ElectronAPI & {
+      selectZipFile: () => Promise<{ name: string; path: string } | null>
+    }
+    api: unknown // Or define `api` more specifically if you have a shape for it
   }
-}
-
-interface Window {
-  api: Api
-  electron: typeof import('@electron-toolkit/preload').electronAPI
 }

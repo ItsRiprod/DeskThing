@@ -1,4 +1,5 @@
 import { DragEvent, useState } from 'react'
+import { IconUpload } from './icons'
 
 const FileHandler = (): JSX.Element => {
   const [fileName, setFileName] = useState('')
@@ -27,6 +28,19 @@ const FileHandler = (): JSX.Element => {
     setFileName('')
   }
 
+  const handleClick = async (): Promise<void> => {
+    const file = await window.electron.selectZipFile()
+    if (file) {
+      await handleZipFile(file.path)
+      console.log(file.name)
+      if (file.name.endsWith('.zip')) {
+        setFileName(file.name.replace('.zip', ''))
+      } else {
+        setFileName(file.name)
+      }
+    }
+  }
+
   return (
     <>
       {fileName ? (
@@ -41,11 +55,13 @@ const FileHandler = (): JSX.Element => {
         </div>
       ) : (
         <div
-          className=" p-10 rounded-3xl hover:bg-zinc-800 border-2 border-zinc-200 transition-colors"
+          className="p-10 rounded-3xl flex flex-col items-center hover:bg-zinc-800 border-2 sm:w-30 md:w-96 md:text-2xl 2xl:w-auto 2xl:text-3xl border-zinc-200 transition-colors"
           onDrop={handleDrop}
           onDragOver={(e) => e.preventDefault()}
+          onClick={handleClick}
         >
-          Drop your .zip App file here
+          <IconUpload iconSize={100} />
+          <p>Drop your .zip App file here</p>
         </div>
       )}
     </>

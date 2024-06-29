@@ -13596,14 +13596,8 @@ var require_spotify = __commonJS({
     var axios = require_axios();
     var { getImageData } = require_utility();
     var SpotifyHandler2 = class {
-      constructor(sendDataToMainFn) {
-        this.BASE_URL = "https://api.spotify.com/v1/me/player";
-        this.TOKEN_URL = "https://accounts.spotify.com/api/token";
-        this.PORT = "8888";
-        this.CLIENT_ID = process.env.SPOTIFY_API_ID;
-        this.CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
-        this.sendDataToMainFn = sendDataToMainFn;
-        this.client_id = void 0;
+      constructor(sendDataToMainFn2) {
+        this.sendDataToMainFn = sendDataToMainFn2;
         this.client_secret = void 0;
         this.device_id = void 0;
         this.access_token = void 0;
@@ -13628,6 +13622,16 @@ var require_spotify = __commonJS({
               }
             ]
           }
+        }, this.manifest = {
+          isAudioSource: true,
+          requires: ["utility"],
+          label: "Spotify App",
+          version: "v0.5.0",
+          description: "The DeskThing Spotify app is a Spotify app that allows you to control your Spotify playback from the DeskThing",
+          author: "Riprod",
+          platforms: ["windows", "macos", "linux"],
+          homepage: "https://github.com/ItsRiprod/DeskThing",
+          repository: "https://github.com/ItsRiprod/DeskThing"
         };
       }
       /**
@@ -13933,29 +13937,25 @@ async function onMessageFromMain(event, ...args) {
         if (args[0] == null || !args[0].Spotify_API_Id) {
           spotify.sendDataToMainFn("get", "auth", [
             "Spotify_API_Id",
-            "Spotify_Client_Secret",
-            "Device_Id"
+            "Spotify_Client_Secret"
           ]);
         } else if (args[0].Spotify_Refresh_Token) {
           console.log("SPOTIFY: Refreshing token...");
           spotify.refresh_token = args[0].Spotify_Refresh_Token;
           spotify.client_id = args[0].Spotify_API_Id;
           spotify.client_secret = args[0].Spotify_Client_Secret;
-          spotify.device_id = args[0].Device_Id;
           spotify.access_token = args[0].Spotify_Access_Token || void 0;
           await spotify.refreshAccessToken();
         } else {
           const data = {
             Spotify_API_Id: args[0].Spotify_API_Id,
             Spotify_Client_Secret: args[0].Spotify_Client_Secret,
-            Device_Id: args[0].Device_Id,
             Spotify_Refresh_Token: spotify.refresh_token || void 0,
             Spotify_Access_Token: spotify.access_token || void 0
           };
           spotify.sendDataToMainFn("set", data);
           spotify.client_id = data.Spotify_API_Id;
           spotify.client_secret = data.Spotify_Client_Secret;
-          spotify.device_id = data.Device_Id;
           console.log("SPOTIFY: No refresh token found, logging in...");
           await spotify.login();
         }
@@ -14005,6 +14005,9 @@ var handleGet = async (...args) => {
     case "device_info":
       response = await spotify.returnDeviceData();
       break;
+    case "manifest":
+      response = spotify.manifest;
+      sendDataToMainFn("manifest", response);
     default:
       response = `${args[0].toString()} Not implemented yet!`;
       break;

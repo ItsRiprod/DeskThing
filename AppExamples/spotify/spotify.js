@@ -3,13 +3,7 @@ const { getImageData } = require('./utility.js')
 
 class SpotifyHandler {
   constructor(sendDataToMainFn) {
-    this.BASE_URL = 'https://api.spotify.com/v1/me/player'
-    this.TOKEN_URL = 'https://accounts.spotify.com/api/token'
-    this.PORT = '8888'
-    this.CLIENT_ID = process.env.SPOTIFY_API_ID
-    this.CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET
     this.sendDataToMainFn = sendDataToMainFn
-    this.client_id = undefined
     this.client_secret = undefined
     this.device_id = undefined
     this.access_token = undefined

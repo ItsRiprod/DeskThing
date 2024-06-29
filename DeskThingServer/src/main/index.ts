@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain, Tray, Menu } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, Tray, Menu, dialog } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.ico?asset'
@@ -13,6 +13,8 @@ import {
 } from './utility/appHandler'
 import './utility/authHandler'
 import './utility/websocketServer'
+import path from 'path'
+
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 
@@ -167,5 +169,22 @@ async function sendIpcData(dataType: string, data: any): Promise<void> {
   console.log('Sending Ipc message to main process:', dataType, data)
   mainWindow?.webContents.send(dataType, data)
 }
+
+ipcMain.handle('select-zip-file', async () => {
+  if (mainWindow === null) {
+    return null
+  }
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile'],
+    filters: [{ name: 'ZIP Files', extensions: ['zip'] }]
+  })
+  if (result.canceled) {
+    return null
+  } else {
+    const filePath = result.filePaths[0]
+    const fileName = path.basename(filePath)
+    return { path: filePath, name: fileName }
+  }
+})
 
 export { sendIpcMessage, openAuthWindow, sendIpcData }
