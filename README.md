@@ -1,3 +1,5 @@
+![App Creation details](/readme_images/deskthing-banner.png)
+
 # The DeskThing ✔️
 > *Just another CarThing app built off the back of superbird 🎵*
 
