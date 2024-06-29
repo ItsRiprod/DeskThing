@@ -114,6 +114,9 @@ const handleGet = async (...args) => {
     case 'device_info':
       response = await spotify.returnDeviceData()
       break
+    case 'manifest':
+      response = spotify.manifest
+      sendDataToMainFn('manifest', response)
     default:
       response = `${args[0].toString()} Not implemented yet!`
       break

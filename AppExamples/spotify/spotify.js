@@ -34,6 +34,17 @@ class SpotifyHandler {
           },
         ]
       }
+    },
+    this.manifest = {
+      isAudioSource: true,
+      requires: ['utility'],
+      label: "Spotify App",
+      version: "v0.5.0",
+      description: "The DeskThing Spotify app is a Spotify app that allows you to control your Spotify playback from the DeskThing",
+      author: "Riprod",
+      platforms: ["windows", "macos", "linux"],
+      homepage: 'https://github.com/ItsRiprod/DeskThing',
+      repository: 'https://github.com/ItsRiprod/DeskThing',
     }
   }
 

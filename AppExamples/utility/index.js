@@ -59,6 +59,9 @@ const handleGet = async (...args) => {
 
   let response
   switch (args[0].toString()) {
+    case 'manifest':
+      response = utility.manifest
+      sendDataToMainFn('manifest', response)
     default:
       response = `${args[0].toString()} Not implemented yet!`
       break

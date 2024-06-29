@@ -1,0 +1,15 @@
+{
+  "name": "Example App",
+  "version": "0.5.0",
+  "description": "The example application to base other apps on",
+  "main": "index.js",
+  "scripts": {
+    "build": "esbuild index.js --bundle --platform=node --outfile=builds/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+  }
+}

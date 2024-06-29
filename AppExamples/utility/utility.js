@@ -10,16 +10,19 @@ class UtilityHandler {
             "value": 'local',
             "label": "Local"
           },
-          {
-            "value": 'spotify',
-            "label": "Spotify"
-          },
-          {
-            "value": 'other',
-            "label": "Other"
-          },
         ]
       }
+    }
+    this.manifest = {
+      isAudioSource: false,
+      requires: [],
+      label: "Utility App",
+      version: "v0.5.0",
+      description: "This app is a utility app that controls the settings of the DeskThing",
+      author: "Riprod",
+      platforms: ["windows", "macos", "linux"],
+      homepage: 'https://github.com/ItsRiprod/DeskThing',
+      repository: 'https://github.com/ItsRiprod/DeskThing',
     }
 
     /* !! Add more if there are any Utility-Related app functions required !! */
