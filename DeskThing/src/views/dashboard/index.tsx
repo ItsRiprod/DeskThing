@@ -7,7 +7,7 @@ const Default: React.FC = (): JSX.Element => {
   const requestPreferences = () => {
     if (socket.is_ready()) {
       const data = {
-        app: 'utility',
+        app: 'server',
         type: 'get',
       };
       socket.post(data);

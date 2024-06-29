@@ -27,16 +27,16 @@ function App(): JSX.Element {
 
   return (
     <div className="bg-zinc-950 overflow-hidden">
-      <div className="h-screen w-screen justify-center gap-5 flex items-center text-white p-5">
+      <div className="h-screen w-screen justify-center gap-5 flex flex-wrap sm:flex-nowrap overflow-y-scroll sm:overflow-hidden items-center text-white p-5">
         <Overlays />
-        <div className="container rounded-lg flex flex-col items-center border-2 border-zinc-800 h-full">
+        <div className="container rounded-lg flex flex-col overflow-y-scroll items-center border-2 border-zinc-800 h-full p-2">
           <div className="flex items-center">
             <h1 className="text-5xl py-5">DeskThing</h1>
             <IconLoading className="animate-spin" />
           </div>
           <Status />
         </div>
-        <div className="container rounded-lg flex flex-col items-center border-2 border-zinc-800 h-full">
+        <div className="container rounded-lg flex flex-col overflow-y-scroll items-center border-2 border-zinc-800 h-full p-2">
           <AppsList />
           <FileHandler />
         </div>

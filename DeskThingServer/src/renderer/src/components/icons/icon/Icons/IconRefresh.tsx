@@ -1,7 +1,7 @@
 import { Icon } from '..'
 
 function IconRefresh(props): JSX.Element {
-  const strokeWidth = 2
+  const strokeWidth = props.strokeWidth || 2
 
   const svgContent = `
    <svg fill="none" stroke="currentColor" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
