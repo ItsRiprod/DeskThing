@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { join, basename } from 'path'
 import * as fs from 'fs'
 import * as unzipper from 'unzipper'
-import { getAppData, setAppData, getAppByName } from './configHandler'
+import { getAppData, setAppData, getAppByName, addAppManifest, getConfig } from './configHandler'
 import { getData, setData, addData } from './dataHandler'
 import { sendIpcMessage, openAuthWindow } from '../index'
 import { sendMessageToClients } from './websocketServer'
@@ -32,6 +32,15 @@ function handleDataFromApp(app: string, type: string, ...args: any[]): void {
           const value = getData(app)
           sendMessageToApp(app, 'data', value)
           break
+        case 'config':
+          if (args[1]) {
+            const value = getConfig(args[1])
+            sendMessageToApp(app, 'config', value)
+          } else {
+            sendMessageToApp(app, 'error', 'The type of config to retrieve was undefined!')
+            console.error(`SERVER: The type of config from ${app} was undefined`)
+          }
+          break
         case 'auth':
           requestAuthData(app, args[1])
           break
@@ -55,6 +64,11 @@ function handleDataFromApp(app: string, type: string, ...args: any[]): void {
     case 'data':
       if (app && args[0]) {
         sendMessageToClients({ app: app, type: args[0].type, data: args[0].data })
+      }
+      break
+    case 'manifest':
+      if (app && args[0]) {
+        addAppManifest(args[0], app)
       }
       break
     default:
@@ -97,6 +111,7 @@ async function runApp(appName: string): Promise<void> {
             }
           }
         })
+        await sendMessageToApp(appName, 'get', 'manifest')
       } else {
         console.error(`App entry point ${appEntryPoint} does not export a start function.`)
       }
@@ -109,11 +124,19 @@ async function runApp(appName: string): Promise<void> {
 }
 
 function sendMessageToApp(appName: string, type: string, ...args: any[]): void {
-  const app = runningApps.get(appName)
-  if (app && typeof app.onMessageFromMain === 'function') {
-    ;(app.onMessageFromMain as OnMessageFromMainType)(type, ...args)
-  } else {
-    console.error(`App ${appName} not found or does not have onMessageFromMain function.`)
+  try {
+    const app = runningApps.get(appName)
+    if (app && typeof app.onMessageFromMain === 'function') {
+      ;(app.onMessageFromMain as OnMessageFromMainType)(type, ...args)
+    } else {
+      console.error(`App ${appName} not found or does not have onMessageFromMain function.`)
+    }
+  } catch (e) {
+    console.error(
+      `Error attempting to send message to app ${appName} with ${type} and data: `,
+      args,
+      e
+    )
   }
 }
 
@@ -204,6 +227,7 @@ async function loadAndRunEnabledApps(): Promise<void> {
       if (appConfig.enabled == true) {
         console.log(`Automatically running app ${appConfig.name}`)
         await runApp(appConfig.name)
+        await sendMessageToApp(appConfig.name, 'get', 'manifest')
       }
     }
   } catch (error) {

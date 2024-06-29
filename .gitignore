@@ -29,3 +29,4 @@ tsconfig.tsbuildinfo
 DeskThing/server/auth_data.json
 AppExamples/spotify/node_modules/
 releases/Linux/deskthing-1.0.0.AppImage
+/AppExamples/utility/node_modules

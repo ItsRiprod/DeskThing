@@ -12,5 +12,8 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^1.7.2"
+  },
+  "devDependencies": {
+    "esbuild": "0.21.5"
   }
 }

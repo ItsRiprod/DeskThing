@@ -30,9 +30,33 @@ async function onMessageFromMain(event, ...args) {
           utility.sendDataToMainFn('set', data)
         } else {
           utility.settings = args[0].settings
+          utility.sendDataToMainFn('get', 'config', 'audiosources')
         }
         break
+      case 'config':
+        if (args[0] == undefined) {
+          console.log('UTILITY: Unknown config data received')
+        } else {
+          if (args[0].audiosources) {
+            const sources = []
+            
+            args[0].audiosources.map(value => {
+              sources.push({
+                label: value,
+                value: value
+              })
+            })
+            
+            utility.settings.playback_location.options = sources
 
+            const data = {
+              settings: utility.settings
+            }
+            utility.sendDataToMainFn('set', data)
+
+          }
+        }
+        break
       /** GET / POST / PUT */
       case 'get':
         handleGet(...args)
@@ -61,7 +85,7 @@ const handleGet = async (...args) => {
   switch (args[0].toString()) {
     case 'manifest':
       response = utility.manifest
-      sendDataToMainFn('manifest', response)
+      utility.sendDataToMainFn('manifest', response)
     default:
       response = `${args[0].toString()} Not implemented yet!`
       break

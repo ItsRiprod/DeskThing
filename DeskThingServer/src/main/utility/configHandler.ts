@@ -3,17 +3,39 @@ import { join } from 'path'
 import * as fs from 'fs'
 import { sendIpcData } from '..'
 
-interface App {
+export interface Manifest {
+  isAudioSource: boolean
+  requires: Array<string>
+  label: string
+  version: string
+  description?: string
+  author?: string
+  platforms: Array<string>
+  homepage?: string
+  repository?: string
+}
+
+export interface App {
   name: string
   enabled: boolean
   prefIndex: number
+  manifest?: Manifest
 }
-interface AppData {
-  [appName: string]: App[]
+
+export interface Config {
+  [appName: string]: string | Array<string>
+}
+export interface AppData {
+  apps: App[]
+  config: Config
 }
 
 const defaultData: AppData = {
-  apps: []
+  apps: [],
+  config: {
+    audiosources: ['local'],
+    testData: 'thisisastring'
+  }
 }
 
 // Helper function to read data
@@ -62,6 +84,61 @@ const setAppData = (newApp: App): void => {
   writeData(data)
 }
 
+const addAppManifest = (manifest: Manifest, appName: string): void => {
+  const data = readData()
+
+  // Find existing app by name
+  const existingAppIndex = data.apps.findIndex((app: App) => app.name === appName)
+
+  if (manifest.isAudioSource) {
+    addConfig('audiosources', appName, data)
+  }
+
+  if (existingAppIndex !== -1) {
+    // Update existing app
+    data.apps[existingAppIndex].manifest = manifest
+  } else {
+    // Add new app
+    console.error(`${appName} does not exist!`)
+  }
+  writeData(data)
+}
+
+const addConfig = (configName: string, config: string | Array<string>, data = readData()): void => {
+  if (!data.config) {
+    const val = {
+      audiosources: ['local']
+    }
+    val[configName] = config
+    data.config = val
+  } else if (Array.isArray(data.config[configName])) {
+    const existingArray = data.config[configName]
+    if (Array.isArray(config)) {
+      data.config[configName] = [...existingArray, ...config]
+    } else {
+      existingArray.push(config)
+    }
+  } else {
+    data.config[configName] = config
+  }
+
+  console.log(data)
+  writeData(data)
+}
+const getConfig = (configName: string): { [app: string]: string | Array<string> | undefined } => {
+  const data = readData()
+
+  if (!data.config) {
+    const val = {
+      audiosources: ['local']
+    }
+    data.config = val
+    writeData(data)
+  }
+
+  return { [configName]: data.config[configName] || undefined }
+}
+
 // Get data function
 const getAppData = (): AppData => {
   const data = readData()
@@ -85,4 +162,4 @@ const getAppByIndex = (index: number): App | undefined => {
   return foundApp
 }
 
-export { setAppData, getAppData, getAppByName, getAppByIndex }
+export { setAppData, getAppData, getAppByName, getAppByIndex, addAppManifest, addConfig, getConfig }

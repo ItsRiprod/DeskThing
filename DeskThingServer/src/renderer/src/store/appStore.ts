@@ -1,13 +1,31 @@
 import { useState, useEffect } from 'react'
 import { EventEmitter } from '../utility/eventEmitter'
 
+export interface Manifest {
+  isAudioSource: boolean
+  requires: Array<string>
+  label: string
+  version: string
+  description?: string
+  author?: string 
+  platforms: Array<string>
+  homepage?: string
+  repository?: string
+}
+
 export interface App {
   name: string
   enabled: boolean
   prefIndex: number
+  manifest?: Manifest
 }
 export interface AppData {
-  [appName: string]: App[]
+  apps: App[]
+  config?: Config
+}
+
+export interface Config {
+  [appName: string]: string | Array<string>
 }
 
 class AppStore extends EventEmitter {
@@ -15,7 +33,9 @@ class AppStore extends EventEmitter {
 
   constructor() {
     super()
-    this.appsList = {}
+    this.appsList = {
+      apps: []
+    }
   }
 
   public getAppsList(): AppData {
@@ -54,7 +74,7 @@ class AppStore extends EventEmitter {
 
   public disableApp(appName: string): void {
     if (this.appsList['apps'] == null) {
-      this.appsList = {}
+      this.appsList = { apps: [] }
       this.emit('update', this.appsList)
       console.log('Clearing data because apps is null')
     }

@@ -112,7 +112,7 @@ const handleGet = async (...args) => {
       break
     case 'manifest':
       response = spotify.manifest
-      sendDataToMainFn('manifest', response)
+      spotify.sendDataToMainFn('manifest', response)
     default:
       response = `${args[0].toString()} Not implemented yet!`
       break
