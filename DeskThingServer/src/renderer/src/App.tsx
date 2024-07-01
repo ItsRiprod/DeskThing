@@ -9,7 +9,7 @@ import { IconLoading } from './components/icons'
 function App(): JSX.Element {
   const { setAppList } = useAppStore()
   useEffect(() => {
-    const handleAppData = (_event: any, data: AppData): void => {
+    const handleAppData = (_event: Electron.IpcRendererEvent, data: AppData): void => {
       // Call your function to handle data.json here
       handleAppDataJson(data)
     }

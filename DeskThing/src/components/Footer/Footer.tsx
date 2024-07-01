@@ -1,7 +1,7 @@
 import './Footer.css';
 import React, { useEffect, useState, useRef } from 'react';
 import CountUpTimer from '../CountUpTimer'; // Ensure you have CountUpTimer defined in another file
-import socket, { device_data, song_data } from '../../helpers/WebSocketService';
+import socket, { device_data, socketData, song_data } from '../../helpers/WebSocketService';
 import {
   IconPlay,
   IconPause,
@@ -46,16 +46,16 @@ const Footer: React.FC = () => {
   }
 
   useEffect(() => {
-    const listener = (msg: any) => {
+    const listener = (msg: socketData) => {
       if (msg.type === 'device_data') {
-        handleDeviceData(msg.data);
+        handleDeviceData(msg.data as device_data);
       }
       if (msg.type === 'song_data') {
-        handleSongData(msg.data);
+        handleSongData(msg.data as song_data);
       }
       if (msg.type === 'img_data') {
-        setImageData(msg.data);
-        handleBackgroundColor(msg.data)
+        setImageData(msg.data as string);
+        handleBackgroundColor(msg.data as string)
       }
     };
 
@@ -69,7 +69,7 @@ const Footer: React.FC = () => {
   const handleSendCommand = (request: string) => {
     if (socket.is_ready()) {
       const data = {
-        app: 'Spotify',
+        app: 'utility',
         type: 'set',
         request: request,
         data: songData?.uri || null,
@@ -81,7 +81,7 @@ const Footer: React.FC = () => {
   const handleSendSet = (request: string, payload: any) => {
     if (socket.is_ready()) {
       const data = {
-        app: 'Spotify',
+        app: 'utility',
         type: 'set',
         request: request,
         data: payload,
@@ -119,16 +119,16 @@ const Footer: React.FC = () => {
 
   const handleGetSongData = () => {
     if (socket.is_ready()) {
-      const data = { app: 'Spotify', type: 'get', request: 'song_info' };
+      const data = { app: 'utility', type: 'get', request: 'song_info' };
       socket.post(data);
-      const data2 = { app: 'Spotify', type: 'get', request: 'device_info' };
+      const data2 = { app: 'utility', type: 'get', request: 'device_info' };
       socket.post(data2);
     }
   };
   const setSpecificDuration = (ms: number) => {
     if (socket.is_ready()) {
       const data = {
-        app: 'Spotify',
+        app: 'utility',
         type: 'set',
         request: 'seek_track',
         data: ms,

@@ -1,6 +1,6 @@
 import './Header.css';
 import React, { useEffect, useState, useRef } from 'react';
-import socket from '../../helpers/WebSocketService';
+import socket, { socketData } from '../../helpers/WebSocketService';
 
 
 const Header: React.FC = () => {
@@ -15,16 +15,15 @@ const Header: React.FC = () => {
   };
 
   useEffect(() => {
-    const listener = (msg: any) => {
+    const listener = (msg: socketData) => {
       if (msg.type === 'response') {
-        handleResponseMessage(msg.data);
+        handleResponseMessage(msg.data as string);
       }
       if (msg.type === 'message') {
-        console.log('Message ', msg.data)
-        handleResponseMessage(msg.data);
+        handleResponseMessage(msg.data as string);
       }
       if (msg.type === 'error') {
-        handleResponseMessage(msg.data);
+        handleResponseMessage(msg.data as string);
       }
     };
 
@@ -54,7 +53,7 @@ const Header: React.FC = () => {
 
   const handleSendMessage = () => {
     if (socket.is_ready()) {
-      const data = { type: 'message', data: input + ''};
+      const data = { app: 'server', type: 'message', data: input + ''};
       socket.post(data);
       setInput('');
     }

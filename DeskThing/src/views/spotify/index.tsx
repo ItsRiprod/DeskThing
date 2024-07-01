@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import './spotify.css';
 import React, { useEffect, useState } from 'react';
-import socket, { device_data, song_data } from '../../helpers/WebSocketService';
+import socket, { device_data, socketData, song_data } from '../../helpers/WebSocketService';
 import { IconAlbum } from '../../components/todothingUIcomponents';
 
 const Spotify: React.FC = () => {
@@ -40,15 +40,15 @@ const Spotify: React.FC = () => {
   };
   useEffect(() => {
 
-    const listener = async (msg:any) => {
+    const listener = async (msg: socketData) => {
       if (msg.type === 'device_data') {
-        handleDeviceData(msg.data);
+        handleDeviceData(msg.data as device_data);
       }
       if (msg.type === 'song_data') {
-        await handleSongData(msg.data);
+        await handleSongData(msg.data as song_data);
       }
       if (msg.type === 'img_data') {
-        setImgData(msg.data);
+        setImgData(typeof msg.data === 'string' && msg.data);
       }
     };
 

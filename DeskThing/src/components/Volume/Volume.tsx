@@ -1,7 +1,7 @@
 import './Volume.css';
 import React, { useEffect, useState } from 'react';
 import ButtonHelper, { Button, EventFlavour } from '../../helpers/ButtonHelper';
-import socket, { device_data } from '../../helpers/WebSocketService';
+import socket, { device_data, socketData } from '../../helpers/WebSocketService';
 
 const Volume: React.FC = () => {
   const [volume, setVolume] = useState(0);
@@ -48,9 +48,9 @@ const Volume: React.FC = () => {
   }, [volume]);
 
   useEffect(() => {
-    const listener = (msg: any) => {
+    const listener = (msg: socketData) => {
       if (msg.type === 'device_data') {
-        handleDeviceData(msg.data);
+        handleDeviceData(msg.data as device_data);
       }
     };
 
@@ -61,13 +61,13 @@ const Volume: React.FC = () => {
     };
   }, []);
 
-  const handleSendCommand = (command: string, payload: any) => {
+  const handleSendCommand = (command: string, payload: number) => {
     if (socket.is_ready()) {
       const data = {
         type: 'set',
         request: command,
-        app: 'Spotify',
-        data: payload,
+        app: 'utility',
+        data: payload
       };
       socket.post(data);
     }

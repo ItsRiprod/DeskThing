@@ -1,6 +1,11 @@
+const fs = require('fs');
+const path = require('path');
+
 // This will be a function passed from the start method that will send data to the server
 let sendDataToMainFn
 
+// Your manifest data
+let manifest
 // Your settings
 let settings = {
   "setting_example_message": { // The name of the setting
@@ -19,23 +24,14 @@ let settings = {
   }
 }
 
-// Your manifest
-const manifest = {
-  isAudioSource: false, // Whether or not this app can handle audio-specific requests (default = false) 
-  requires: [], // an array of required apps (e.g. 'utility') (required)
-  label: "Example App", // The lable of the app (required)
-  version: "v0.5.0", // The version of the app (required)
-  description: "An example app to show how to use the DeskThing API", // The description of the app
-  author: "Your Name Here",
-  platforms: ["windows", "macos", "linux"], // supported operating systems 
-  homepage: 'https://github.com/ItsRiprod/DeskThing', // Landing page for app (can be blank)
-  repository: 'https://github.com/ItsRiprod/DeskThing', // Repo for app (can be blank but not recommended)
-}
-
 async function start({ sendDataToMain }) {
   /* CALLED ON THE APP CREATION */
   console.log('TEMPLATE: App started!')
   sendDataToMainFn = sendDataToMain;
+
+  // Get the manifest data
+  const manifestPath = path.join(__dirname, 'manifest.json');
+  manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
 
   // Get the saved data from main
   sendDataToMain('get', 'data')

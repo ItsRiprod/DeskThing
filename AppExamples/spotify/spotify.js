@@ -1,5 +1,7 @@
 const axios = require('axios')
 const { getImageData } = require('./utility.js')
+const fs = require('fs');
+const path = require('path');
 
 class SpotifyHandler {
   constructor(sendDataToMainFn) {
@@ -33,18 +35,12 @@ class SpotifyHandler {
           },
         ]
       }
-    },
-    this.manifest = {
-      isAudioSource: true,
-      requires: ['utility'],
-      label: "Spotify App",
-      version: "v0.5.0",
-      description: "The DeskThing Spotify app is a Spotify app that allows you to control your Spotify playback from the DeskThing",
-      author: "Riprod",
-      platforms: ["windows", "macos", "linux"],
-      homepage: 'https://github.com/ItsRiprod/DeskThing',
-      repository: 'https://github.com/ItsRiprod/DeskThing',
-    }
+    };
+
+    const manifestPath = path.join(__dirname, 'manifest.json');
+    this.manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+
+    console.log('SPOTIFY: Manifest loaded:', this.manifest);
   }
 
   /**

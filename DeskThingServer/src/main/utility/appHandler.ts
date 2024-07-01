@@ -1,7 +1,6 @@
 /* eslint-disable no-case-declarations */
 import { app, ipcMain } from 'electron'
-import { v4 as uuidv4 } from 'uuid'
-import { join, basename } from 'path'
+import { join } from 'path'
 import * as fs from 'fs'
 import * as unzipper from 'unzipper'
 import { getAppData, setAppData, getAppByName, addAppManifest, getConfig } from './configHandler'
@@ -71,25 +70,30 @@ function handleDataFromApp(app: string, type: string, ...args: any[]): void {
         addAppManifest(args[0], app)
       }
       break
+    case 'toApp':
+      if (args[1] && args[0]) {
+        console.log(`SERVER: Sending data to app ${args[0]}`, ...args.slice(1))
+        sendMessageToApp(args[0], args[1], ...args.slice(2))
+      }
+      break
     default:
       console.log(`Unknown data type from ${app}: ${type}`)
       break
   }
 }
 async function requestAuthData(appName: string, scope: Array<string>): Promise<void> {
-  const requestId = uuidv4()
 
   // Send IPC message to renderer to display the form
-  sendIpcMessage('request-user-data', requestId, scope)
+  sendIpcMessage('request-user-data', appName, scope)
 
-  ipcMain.once(`user-data-response-${requestId}`, async (_event, formData) => {
+  ipcMain.once(`user-data-response-${appName}`, async (_event, formData) => {
     sendMessageToApp(appName, 'data', formData)
   })
 }
 
 async function runApp(appName: string): Promise<void> {
   try {
-    const appEntryPoint = join(app.getPath('userData'), 'extracted_apps', appName, `index.js`)
+    const appEntryPoint = join(app.getPath('userData'), 'apps', appName, `index.js`)
     console.log(appEntryPoint)
     if (fs.existsSync(appEntryPoint)) {
       const { start, onMessageFromMain, stop } = await import('file://' + appEntryPoint)
@@ -188,33 +192,103 @@ function stopAllApps(): void {
   }
 }
 
-function handleZip(zipFilePath: string, appPath: string): void {
+/**
+ * Inputs a .zip file path of an app and extracts it to the /apps/appId/ folder.
+ * Returns metadata about the extracted app.
+ *
+ * @param {string} zipFilePath - The file path of the .zip file to extract.
+ * @returns {Promise<returnData>} An object containing metadata about the extracted app:
+ * - {string} appId - The ID of the app extracted.
+ * - {string} appName - The name of the app extracted.
+ * - {string} appVersion - The version of the app extracted.
+ * - {string} author - The author of the app extracted.
+ * - {string[]} platforms - The platforms supported by the app extracted.
+ * - {string[]} requirements - The requirements needed to run the app extracted.
+ * @throws {Error} If there is an error during the extraction process or if the manifest.json file is missing required fields.
+ */
+interface returnData {
+  appId: string
+  appName: string
+  appVersion: string
+  author: string
+  platforms: string[]
+  requirements: string[]
+}
+async function handleZip(zipFilePath: string): Promise<returnData> {
   try {
-    const extractDir = join(appPath, 'extracted_apps') // Extract to user data folder
-
+    const extractDir = join(app.getPath('userData'), 'apps') // Extract to user data folder
+    console.log('Extracting to: ', extractDir)
     // Create the extraction directory if it doesn't exist
     if (!fs.existsSync(extractDir)) {
       fs.mkdirSync(extractDir, { recursive: true })
     }
 
-    const appName = basename(zipFilePath).replace('.zip', '')
-    const appDirectory = join(extractDir, appName)
-    if (!fs.existsSync(appDirectory)) {
-      fs.mkdirSync(appDirectory, { recursive: true })
+    // Create the 'temp' file directory for temporary extraction
+    const tempDir = join(extractDir, 'temp')
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true })
+    }
+    console.log('Temp directory: ', tempDir)
+
+    // Extract the .zip file to a temporary location to get the manifest.json
+    await new Promise<void>((resolve, reject) => {
+      const extractStream = fs
+        .createReadStream(zipFilePath)
+        .pipe(unzipper.Extract({ path: tempDir }))
+
+      extractStream.on('error', reject)
+      extractStream.on('close', () => {
+        console.log('Extraction finished')
+        resolve()
+      })
+    })
+
+    console.log(`Files under ${tempDir}:`)
+    fs.readdirSync(tempDir).forEach((file) => {
+      console.log(file)
+    })
+
+    const manifestPath = join(tempDir, 'manifest.json')
+    console.log('Manifest path: ', manifestPath)
+
+    if (!fs.existsSync(manifestPath)) {
+      throw new Error('manifest.json not found after extraction')
     }
 
-    // Extract the .zip file
-    fs.createReadStream(zipFilePath)
-      .pipe(unzipper.Extract({ path: appDirectory }))
-      .promise()
-      .then(() => {
-        console.log(`Successfully extracted ${zipFilePath} to ${appDirectory}`)
-      })
-      .catch((error) => {
-        console.error('Error handling zip file:', error)
-      })
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'))
+    const id = manifest.id
+    const requires = manifest.requires
+    const label = manifest.label
+    const version = manifest.version
+    const author = manifest.author
+    const platforms = manifest.platforms
+
+    if (!id || !label || !version || !author) {
+      throw new Error(
+        'manifest.json is missing required fields! Expecting "id", "label", "version", and "author"'
+      )
+    }
+    const returnData = {
+      appId: id,
+      appName: label,
+      appVersion: version,
+      author: author,
+      platforms: platforms,
+      requirements: requires
+    }
+
+    // Create the folder where the app will be stored in
+    const appDirectory = join(extractDir, id)
+    if (fs.existsSync(appDirectory)) {
+      fs.rmSync(appDirectory, { recursive: true })
+    }
+    fs.renameSync(tempDir, appDirectory)
+
+    console.log(`Successfully extracted ${zipFilePath} to ${appDirectory}`)
+    return returnData
   } catch (error) {
     console.error('Error handling zip file:', error)
+    throw new Error('Error handling zip file')
   }
 }
 

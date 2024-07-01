@@ -1,7 +1,7 @@
 import { IconDevice } from '../../components/todothingUIcomponents';
 import './Dashboard.css';
 import React, { useState, useEffect } from 'react';
-import socket from '../../helpers/WebSocketService';
+import socket, { socketData } from '../../helpers/WebSocketService';
 const Default: React.FC = (): JSX.Element => {
   const [time, setTime] = useState('00:00');
   const requestPreferences = () => {
@@ -15,9 +15,9 @@ const Default: React.FC = (): JSX.Element => {
   }
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const listener = (msg: any) => {
+    const listener = (msg: socketData) => {
       if (msg.type === 'time') {
-        setTime(msg.data);
+        setTime(msg.data as string);
         console.log(msg)
       }
     };

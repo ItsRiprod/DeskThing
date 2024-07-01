@@ -1,34 +1,71 @@
 import './Weather.css';
 import React, { useEffect, useState } from 'react';
-import socket from '../../helpers/WebSocketService';
+import socket, { socketData } from '../../helpers/WebSocketService';
 import { stringToTime, formatDate } from '../../helpers/TimeUtils';
 import { iconToColorMap, iconToEmojiMap } from './WeatherMaps.ts';
 import { getContrastingTextColor } from '../../helpers/ColorExtractor';
+
+interface WeatherData {
+  [key: string]: string | number | object | undefined;
+  WeatherIcon?: number;
+  LocalObservationDateTime?: string;
+  PrecipitationType?: string;
+  Precip1hr?: { Imperial: { Value: number; Unit: string } };
+  RelativeHumidity?: number;
+  WeatherText?: string;
+  Wind?: { Direction: { English: string }; Speed: { Imperial: { Value: number } } };
+  WindGust?: { Speed: { Imperial: { Value: number } } };
+  Visibility?: { Imperial: { Value: number; Unit: string } };
+  DewPoint?: { Imperial: { Value: number; Unit: string } };
+  UVIndex?: number;
+  UVIndexText?: string;
+  Temperature?: { Imperial: { Value: number; Unit: string } };
+  RealFeelTemperature?: { Imperial: { Value: number; Unit: string } };
+  RealFeelTemperatureShade?: { Imperial: { Value: number; Unit: string } };
+  WindChillTemperature?: { Imperial: { Value: number; Unit: string } };
+}
+
+interface ForecastData {
+  DateTime: string;
+  WeatherIcon: number;
+  IconPhrase: string;
+  Temperature: { Value: number; Unit: string };
+  PrecipitationProbability: number;
+}
+
 const Weather: React.FC = () => {
-  const [weatherData, setWeatherData] = useState<any>(null);
-  const [forecastData, setForecastData] = useState<any[]>([]);
+  const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+  const [forecastData, setForecastData] = useState<ForecastData[]>([]);
   const [mainColor, setMainColor] = useState('#000000');
   const [fontColor, setFontColor] = useState('#000000');
   const [updateTime, setUpdateTime] = useState<string>();
 
-  const handleWeatherData = (data: any) => {
-    setWeatherData(data[0]);
+  const handleWeatherData = (data: object) => {
+    if (Array.isArray(data) && data.length > 0) {
+      setWeatherData(data[0]);
+    } else {
+      console.error('Invalid weather data format:', data);
+    }
     //console.log('Weather', data);
   };
-  const handleForecastData = (data: any) => {
-    setForecastData(data);
+  const handleForecastData = (data: object) => {
+    if (Array.isArray(data)) {
+      setForecastData(data);
+    } else {
+      console.error('Invalid forecast data format:', data);
+    }
     //console.log('Forecast', data);
   };
 
   useEffect(() => {
     handleGetWeatherData();
     handleGetForecastData();
-    const listener = (msg: any) => {
-      if (msg.type === 'weather_data') {
-        handleWeatherData(msg.data);
+    const listener = (msg: socketData) => {
+      if (msg.type === 'weather_data' && typeof msg.data === 'object') {
+        handleWeatherData(msg.data as WeatherData[]);
       }
-      if (msg.type === 'forecast_data') {
-        handleForecastData(msg.data);
+      if (msg.type === 'forecast_data' && Array.isArray(msg.data)) {
+        handleForecastData(msg.data as ForecastData[]);
       }
     };
 
@@ -47,13 +84,16 @@ const Weather: React.FC = () => {
   useEffect(() => {
     if (weatherData && forecastData) {
       const iconNumber = weatherData.WeatherIcon;
-      const colorVarName = getColor(iconNumber);
-      setMainColor(colorVarName);
+      let colorVarName
+      if (typeof iconNumber === 'number') {
+        colorVarName = getColor(iconNumber);
+        setMainColor(colorVarName);
+      }
 
       const contrastingColor = getContrastingTextColor(colorVarName);
       setFontColor(contrastingColor);
-
-      const date = stringToTime(weatherData.LocalObservationDateTime);
+      const timeString = weatherData.LocalObservationDateTime
+      const date = stringToTime(typeof timeString === 'string' && timeString);
       const time = formatDate(date);
       setUpdateTime(time);
     }
@@ -146,7 +186,7 @@ const Weather: React.FC = () => {
             </div>
             <div className="forecast_container">
               {Array.isArray(forecastData) &&
-                forecastData.map((data: any, index: number) => (
+                forecastData.map((data: ForecastData, index: number) => (
                   <div
                     key={index}
                     className="forecast_card"

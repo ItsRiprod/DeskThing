@@ -1,0 +1,14 @@
+{
+    "id": "ex_app",
+    "isAudioSource": false,
+    "isWebApp": false,
+    "isLocalApp": false,
+    "requires": [],
+    "label": "Example App",
+    "version": "v0.5.0",
+    "description": "An example app to show how to use the DeskThing API",
+    "author": "Your Name Here",
+    "platforms": ["windows", "macos", "linux"],
+    "homepage": "https://github.com/ItsRiprod/DeskThing",
+    "repository": "https://github.com/ItsRiprod/DeskThing"
+  }

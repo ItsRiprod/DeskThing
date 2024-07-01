@@ -28,7 +28,7 @@ export interface Config {
   [appName: string]: string | Array<string>
 }
 
-class AppStore extends EventEmitter {
+class AppStore extends EventEmitter<AppData> {
   private appsList: AppData
 
   constructor() {
@@ -96,7 +96,15 @@ class AppStore extends EventEmitter {
 
 export const appStoreInstance = new AppStore()
 
-export const useAppStore = (): any => {
+interface AppStoreHook {
+  appsList: AppData
+  addAppToList: (appName: string) => void
+  removeAppFromList: (appName: string) => void
+  setAppList: (apps: AppData) => void
+  disableApp: (appName: string) => void
+}
+
+export const useAppStore = (): AppStoreHook => {
   const [appsList, setAppsList] = useState<AppData>(appStoreInstance.getAppsList())
 
   const addAppToList = (appName: string): void => {

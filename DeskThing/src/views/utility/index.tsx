@@ -3,8 +3,27 @@ import './Utility.css';
 import { FC, useEffect, useState } from 'react';
 import socket from '../../helpers/WebSocketService';
 
+interface SettingOption {
+  label: string;
+  value: string;
+}
+
+interface AppSettings {
+  label: string;
+  value: string;
+  options: SettingOption[];
+}
+
+interface Preferences {
+  settings: {
+    [appName: string]: {
+      [settingKey: string]: AppSettings;
+    };
+  };
+}
+
 const Utility: FC = (): JSX.Element => {
-  const [preferences, setCurrentPreferences] = useState<any>();
+  const [preferences, setCurrentPreferences] = useState<Preferences | null>(null);
   const [setting, currentSetting] = useState('');
   useEffect(() => {
     requestPreferences()
@@ -37,9 +56,8 @@ const Utility: FC = (): JSX.Element => {
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const listener = (msg: any) => {
-      if (msg.type === 'utility_data') {
-        setCurrentPreferences(msg.data);
-        console.log(msg)
+      if (msg.type === 'utility_data' && typeof msg.data === 'object') {
+        setCurrentPreferences(msg.data as Preferences);
       }
     };
 

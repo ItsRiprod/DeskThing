@@ -13595,6 +13595,8 @@ var require_spotify = __commonJS({
   "spotify.js"(exports2, module2) {
     var axios = require_axios();
     var { getImageData } = require_utility();
+    var fs = require("fs");
+    var path = require("path");
     var SpotifyHandler2 = class {
       constructor(sendDataToMainFn) {
         this.BASE_URL = "https://api.spotify.com/v1/me/player";
@@ -13627,17 +13629,10 @@ var require_spotify = __commonJS({
               }
             ]
           }
-        }, this.manifest = {
-          isAudioSource: true,
-          requires: ["utility"],
-          label: "Spotify App",
-          version: "v0.5.0",
-          description: "The DeskThing Spotify app is a Spotify app that allows you to control your Spotify playback from the DeskThing",
-          author: "Riprod",
-          platforms: ["windows", "macos", "linux"],
-          homepage: "https://github.com/ItsRiprod/DeskThing",
-          repository: "https://github.com/ItsRiprod/DeskThing"
         };
+        const manifestPath = path.join(__dirname, "manifest.json");
+        this.manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
+        console.log("SPOTIFY: Manifest loaded:", this.manifest);
       }
       /**
        * Refreshes the Spotify access token.

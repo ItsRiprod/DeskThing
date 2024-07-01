@@ -112,11 +112,17 @@ const addConfig = (configName: string, config: string | Array<string>, data = re
     val[configName] = config
     data.config = val
   } else if (Array.isArray(data.config[configName])) {
-    const existingArray = data.config[configName]
+    const existingArray = data.config[configName] as string[]
     if (Array.isArray(config)) {
-      data.config[configName] = [...existingArray, ...config]
+      config.forEach((item) => {
+        if (!existingArray.includes(item)) {
+          existingArray.push(item)
+        }
+      })
     } else {
-      existingArray.push(config)
+      if (!existingArray.includes(config)) {
+        existingArray.push(config)
+      }
     }
   } else {
     data.config[configName] = config

@@ -1,10 +1,11 @@
 {
-  "name": "Example App",
+  "name": "example_app",
   "version": "0.5.0",
   "description": "The example application to base other apps on",
   "main": "index.js",
   "scripts": {
-    "build": "esbuild index.js --bundle --platform=node --outfile=builds/index.js",
+    "build": "esbuild index.js --bundle --platform=node --outfile=builds/index.js && npm run copy-manifest",
+    "copy-manifest": "node -e \"const fs = require('fs'); fs.copyFileSync('manifest.json', 'builds/manifest.json');\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

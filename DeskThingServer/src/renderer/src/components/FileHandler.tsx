@@ -1,15 +1,23 @@
 import { DragEvent, useState } from 'react'
 import { IconUpload } from './icons'
 
+interface returnData {
+  appId: string
+  appName: string
+  appVersion: string
+  author: string
+  platforms: string[]
+  requirements: string[]
+}
+
 const FileHandler = (): JSX.Element => {
-  const [fileName, setFileName] = useState('')
+  const [appData, setAppData] = useState<returnData | null>(null)
   const handleDrop = async (event: DragEvent<HTMLDivElement>): Promise<void> => {
     event.preventDefault()
     const files = Array.from(event.dataTransfer.files)
     for (const file of files) {
       if (file.name.endsWith('.zip')) {
         await handleZipFile(file.path)
-        setFileName(file.name.replace('.zip', ''))
       }
     }
   }
@@ -17,15 +25,19 @@ const FileHandler = (): JSX.Element => {
     try {
       // Notify the main process to handle the zip file
       window.electron.ipcRenderer.send('handle-zip', zipFilePath)
+      window.electron.ipcRenderer.once('zip-name', (_event, data: returnData) => {
+        console.log('Received appId:', data)
+        setAppData(data)
+      })
     } catch (error) {
       console.error('Error handling zip file:', error)
     }
   }
 
   const handleAddAndRunApp = async (): Promise<void> => {
-    window.electron.ipcRenderer.send('add-app', fileName)
+    window.electron.ipcRenderer.send('add-app', appData?.appId)
     window.electron.ipcRenderer.send('get-apps')
-    setFileName('')
+    setAppData(null)
   }
 
   const handleClick = async (): Promise<void> => {
@@ -33,24 +45,27 @@ const FileHandler = (): JSX.Element => {
     if (file) {
       await handleZipFile(file.path)
       console.log(file.name)
-      if (file.name.endsWith('.zip')) {
-        setFileName(file.name.replace('.zip', ''))
-      } else {
-        setFileName(file.name)
-      }
     }
   }
 
   return (
     <>
-      {fileName ? (
-        <div className="p-10 rounded-3xl border-2 border-zinc-200 transition-colors">
-          <p className="text-xl pb-4">App Ready!</p>
+      {appData?.appId ? (
+        <div className="border-2 border-zinc-200 p-5 w-52 md:w-11/12 2xl:w-96 h-fit flex-col justify-between rounded-3xl shadow-lg px-5 items-center">
+          <p className="text-xl pb-4">{appData.appName} is Ready!</p>
+          <div className="flex gap-5">
+            <p className="text-sm pb-4">{appData.appVersion}</p>
+            <p className="text-sm pb-4">Author: {appData.author || 'not provided'}</p>
+          </div>
+          <p className="text-sm pb-4">Compatible With: {appData.platforms.join(', ')}</p>
+          {appData.requirements.length > 0 && (
+            <p className="text-sm pb-4">Required Apps: {appData.requirements.join(', ')}</p>
+          )}
           <button
             onClick={handleAddAndRunApp}
             className="border-2 border-cyan-600 hover:bg-cyan-500 bg-cyan-600  p-2 rounded-lg"
           >
-            Run {fileName}
+            Run {appData.appId}
           </button>
         </div>
       ) : (

@@ -6,6 +6,8 @@ var __commonJS = (cb, mod) => function __require() {
 // utility.js
 var require_utility = __commonJS({
   "utility.js"(exports2, module2) {
+    var fs = require("fs");
+    var path = require("path");
     var UtilityHandler2 = class {
       constructor(sendDataToMainFn) {
         this.sendDataToMainFn = sendDataToMainFn;
@@ -21,17 +23,38 @@ var require_utility = __commonJS({
             ]
           }
         };
-        this.manifest = {
-          isAudioSource: false,
-          requires: [],
-          label: "Utility App",
-          version: "v0.5.0",
-          description: "This app is a utility app that controls the settings of the DeskThing",
-          author: "Riprod",
-          platforms: ["windows", "macos", "linux"],
-          homepage: "https://github.com/ItsRiprod/DeskThing",
-          repository: "https://github.com/ItsRiprod/DeskThing"
-        };
+        const manifestPath = path.join(__dirname, "manifest.json");
+        this.manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
+        console.log("UTILITY: Manifest loaded:", this.manifest);
+      }
+      // Handles the audio control requests and routes them to the specific handler
+      handleCommand(type, command, payload) {
+        switch (command) {
+          case "set_repeat":
+            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, "set_repeat", payload);
+            break;
+          case "set_shuffle":
+            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, "set_shuffle", payload);
+            break;
+          case "seek_track":
+            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, "seek_track", payload);
+            break;
+          case "play_track":
+            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, "play_track", payload);
+            break;
+          case "pause_track":
+            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, "pause_track", payload);
+            break;
+          case "next_track":
+            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, "next_track", payload);
+            break;
+          case "previous_track":
+            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, "previous_track", payload);
+            break;
+          default:
+            console.warn("Unsupported command:", command);
+            break;
+        }
       }
     };
     module2.exports = UtilityHandler2;
@@ -113,7 +136,7 @@ var handleGet = async (...args) => {
       response = utility.manifest;
       utility.sendDataToMainFn("manifest", response);
     default:
-      response = `${args[0].toString()} Not implemented yet!`;
+      response = utility.handleCommand("get", ...args);
       break;
   }
   utility.sendDataToMainFn("data", response);
@@ -139,8 +162,7 @@ var handleSet = async (...args) => {
       }
       break;
     default:
-      console.log("UTILITY: Unknown request", args[0].toString());
-      response = `${args[0].toString()} Not implemented yet!`;
+      response = utility.handleCommand("set", ...args);
       break;
   }
   console.log("UTILITY: Response", response);

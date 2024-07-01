@@ -23,7 +23,7 @@ loadAndRunEnabledApps()
 function createWindow(): void {
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    width: 900,
+    width: 950,
     height: 670,
     icon: icon,
     show: false,
@@ -84,8 +84,10 @@ app.whenReady().then(async () => {
   })
 
   ipcMain.on('handle-zip', async (event, zipFilePath: string) => {
-    console.log(event)
-    await handleZip(zipFilePath, app.getPath('userData')) // Extract to user data folder
+    console.log('SERVER: handling zip file event', event)
+    const returnData = await handleZip(zipFilePath) // Extract to user data folder
+    console.log('SERVER: Return Data after Extraction:', returnData)
+    event.sender.send('zip-name', returnData)
   })
 
   ipcMain.on('user-data-response', (event, requestId: string, type: string, ...args: any[]) => {
@@ -139,7 +141,7 @@ app.on('window-all-closed', (e) => {
 
 function openAuthWindow(url: string): void {
   const authWindow = new BrowserWindow({
-    width: 800,
+    width: 850,
     height: 600,
     show: true,
     webPreferences: {

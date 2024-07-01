@@ -1,6 +1,6 @@
 import { useState, useEffect, Suspense, lazy  } from 'react';
 import ButtonHelper, { Button, EventFlavour } from '../helpers/ButtonHelper';
-import socket from '../helpers/WebSocketService';
+import socket, { socketData } from '../helpers/WebSocketService';
 import Dashboard from './dashboard';
 import './views.css';
 
@@ -103,13 +103,13 @@ const ViewManager = () => {
   }, [buttonHelper, preferredApps, currentView, apps]);
 
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const listener = (msg: any) => {
-      if (msg.type === 'set_view') {
+    const listener = (msg: socketData) => {
+      if (msg.type === 'set_view' && typeof msg.data === 'string') {
         setCurrentView(msg.data);
-      } else if (msg.type === 'utility_data') {
-        setPreferredApps(msg.data.preferredApps);
-        setApps(msg.data.modules);
+      } else if (msg.type === 'utility_data' && typeof msg.data === 'object' && msg.data !== null) {
+        const data = msg.data as { preferredApps?: Array<string>; modules?: Array<string> };
+        setPreferredApps(data.preferredApps);
+        setApps(data.modules);
       }
     };
 

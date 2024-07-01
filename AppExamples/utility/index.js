@@ -87,7 +87,7 @@ const handleGet = async (...args) => {
       response = utility.manifest
       utility.sendDataToMainFn('manifest', response)
     default:
-      response = `${args[0].toString()} Not implemented yet!`
+      response = utility.handleCommand('get', ...args)
       break
   }
   utility.sendDataToMainFn('data', response)
@@ -115,8 +115,7 @@ const handleSet = async (...args) => {
       }
       break
     default:
-      console.log('UTILITY: Unknown request', args[0].toString())
-      response = `${args[0].toString()} Not implemented yet!`
+      response = utility.handleCommand('set', ...args)
       break
   }
   console.log('UTILITY: Response', response)

@@ -1,0 +1,221 @@
+
+.back_button {
+    position: fixed;
+    left: 3px;
+    background-color: var(--bg-tinted-base);
+    border-radius: 5px;
+    padding: 15px;
+}
+.view_trello {
+    width: 100vw;
+    height: 80vh;
+    overflow: scroll;
+    background-color: var(--bg-base);
+    padding-top: 35px;
+}
+.view_trello::-webkit-scrollbar {
+ /* Remove scrollbar width */
+    width: 4px;
+    background: transparent; /* Optional: hide scrollbar gutter */
+  }
+.view_trello::-webkit-scrollbar-thumb {
+    background-color: var(--bg-tinted-base); /* Optional: hide scrollbar gutter */
+  }
+
+.trello_default {
+    height: 100%;
+    display: flex;
+    width: 100%;
+    overflow: hidden;
+    align-items: center;
+}
+.trello_default button {
+    width: 50%;
+    height: 100px;
+    background-color: var(--trello-color-blue);
+    border-radius: 15px;
+    
+    color: unset;
+}
+.trello_default button:hover {
+    background-color: var(--trello-color-blue_dark);
+}
+.trello_default_get_boards {
+    padding: 5px;
+    width: 40vw;
+    margin-left: 5px;
+}
+.trello_default_get_boards h1 {
+    
+}
+.trello_default_shortcuts::-webkit-scrollbar {
+    width: 0; /* Remove scrollbar width */
+    height: 0;
+    background: transparent; /* Optional: hide scrollbar gutter */
+  }
+.trello_default_shortcuts {
+    display: flex;
+    background-color: var(--trello-color-blue_light);
+    padding: 50px 60px;
+    flex-wrap: wrap;
+    width: 40vw;
+    height: 55vh;
+    align-self: baseline;
+    overflow-x: scroll;
+    border-radius: 0px 55px 0px 0px;
+}
+.trello_default_shortcut_item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 15px;
+    width: 50px;
+    min-width: fit-content;
+    margin-right: 15px;
+    height: 100px;
+    border: 1px solid black;
+    border-radius: 15px;
+    background-color: var(--trello-color-blue);
+    color: white;
+}
+.org_container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: white;
+}
+.org_item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 10px;
+    margin-bottom: 15px;
+    width: 95%;
+    border: 1px solid black;
+    border-radius: 5px;
+    background-color: var(--bg-tinted-highlight);
+    color: white;
+}
+.org_title {
+    text-align: left;
+    margin-left: 5px;
+}
+.org_desc {
+    margin-left: auto;
+    text-align: left;
+    width: 40%;
+}
+.img_alt {
+    min-width: 65px;
+    min-height: 65px;
+    background-color: var(--text-announcement);
+    border-radius: 25px;
+    align-content: center;
+    text-align: center;
+    color: white;
+    font-size: xx-large;
+}
+.closed {
+    background-color: var(--text-warning);
+}
+
+.boards_container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: white;
+}
+.board_item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 10px;
+    margin-bottom: 15px;
+    width: 95%;
+    border: 1px solid black;
+    border-radius: 5px;
+    background-color: var(--bg-tinted-highlight);
+    color: white;
+}
+.board_title {
+    text-align: left;
+    margin-left: 5px;
+}
+.board_starred {
+    text-align: right;
+}
+
+
+.list_container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    color: white;
+    padding: 15px 35px;
+    height: 70vh;
+    align-items: center;
+}
+.list_item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 20px;
+    margin-bottom: 15px;
+    width: 300px;
+    min-width: fit-content;
+    margin-right: 15px;
+    height: 155px;
+    border: 1px solid black;
+    border-radius: 25px;
+    background-color: var(--trello-color-blue);
+    color: white;
+}
+
+.cards_container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    align-content: center;
+    color: white;
+}
+
+.card_item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    margin-bottom: 15px;
+    width: 90vw;
+    height: 155px;
+    border: 1px solid black;
+    border-radius: 12px;
+    background-color: var(--bg-tinted-highlight);
+    color: white;
+}
+.card_details {
+    display: flex;
+    flex-direction: column;
+}
+.card_labels {
+    display: flex;
+    height: 120px;
+    overflow:scroll;
+    flex-direction:column;
+}
+.card_labels::-webkit-scrollbar {
+    width: 0; /* Remove scrollbar width */
+    height: 0;
+    background: transparent; /* Optional: hide scrollbar gutter */
+  }
+
+.card_label {
+    padding: 4px 8px; /* Adjust padding as needed */
+    height: fit-content;
+    width: 150px;
+    margin-bottom: 5px;
+    border-radius: 4px; /* Optional: for rounded corners */
+    color: #fff; /* Assuming labels have a dark background */
+    font-size: 22px; /* Adjust font size as needed */
+
+  
+}
