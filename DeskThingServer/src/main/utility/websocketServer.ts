@@ -26,7 +26,11 @@ const sendResponse = async (socket, message): Promise<void> => {
 }
 const sendData = async (socket, type, data): Promise<void> => {
   try {
-    socket.send(JSON.stringify({ type: type, data: data }))
+    if (socket != null) {
+      socket.send(JSON.stringify({ type: type, data: data }))
+    } else {
+      sendMessageToClients({ type: type, data: data })
+    }
   } catch (error) {
     console.error('WSOCKET: Error sending message:', error)
   }
@@ -40,7 +44,7 @@ const sendError = async (socket, error): Promise<void> => {
   }
 }
 
-const sendPrefData = async (socket): Promise<void> => {
+const sendPrefData = async (socket = null): Promise<void> => {
   try {
     const config = await getAppData()
     if (!config || !config.apps) {
@@ -177,4 +181,4 @@ server.on('connection', async (socket) => {
   )
 })
 
-export { sendMessageToClients, sendResponse, sendError, sendData }
+export { sendMessageToClients, sendResponse, sendError, sendData, sendPrefData }

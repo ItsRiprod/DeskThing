@@ -104,6 +104,7 @@ const handleGet = async (...args) => {
     case 'manifest':
       response = manifest // Return the manifest when called
       sendDataToMainFn('manifest', response) // send data 'manifest' to server so it knows what to do with it
+      break
     default:
       response = `${args[0].toString()} Not implemented yet!`
       break

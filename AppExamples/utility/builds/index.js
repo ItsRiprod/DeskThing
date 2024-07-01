@@ -141,6 +141,7 @@ var handleGet = async (...args) => {
     case "manifest":
       response = utility.manifest;
       utility.sendDataToMainFn("manifest", response);
+      break;
     default:
       response = utility.handleCommand("get", ...args);
       break;

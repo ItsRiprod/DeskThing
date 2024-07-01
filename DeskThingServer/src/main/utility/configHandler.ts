@@ -92,6 +92,7 @@ const addAppManifest = (manifest: Manifest, appName: string): void => {
 
   if (manifest.isAudioSource) {
     addConfig('audiosources', appName, data)
+    console.log(appName, 'added to audiosources')
   }
 
   if (existingAppIndex !== -1) {

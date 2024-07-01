@@ -13,7 +13,7 @@ import {
 } from './configHandler'
 import { getData, setData, addData, purgeData } from './dataHandler'
 import { sendIpcMessage, openAuthWindow } from '../index'
-import { sendMessageToClients } from './websocketServer'
+import { sendMessageToClients, sendPrefData } from './websocketServer'
 interface AppInstance {
   start: () => void
   onMessageFromMain: () => void
@@ -122,6 +122,7 @@ async function runApp(appName: string): Promise<void> {
           }
         })
         await sendMessageToApp(appName, 'get', 'manifest')
+        sendPrefData()
       } else {
         console.error(`App entry point ${appEntryPoint} does not export a start function.`)
       }
@@ -158,6 +159,7 @@ function stopApp(appName: string): void {
     }
     runningApps.delete(appName)
     console.log('stopped ', appName)
+    sendPrefData()
   } catch (error) {
     console.error(`Error stopping app ${appName}`, error)
   }
@@ -182,7 +184,7 @@ function disableApp(appName: string): void {
       console.log('Disabled ', appName)
     }
 
-    // Run the app if enabled
+    sendPrefData()
   } catch (error) {
     console.error('Error adding app:', error)
   }

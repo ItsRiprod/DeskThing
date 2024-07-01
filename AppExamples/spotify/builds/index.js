@@ -14008,6 +14008,7 @@ var handleGet = async (...args) => {
     case "manifest":
       response = spotify.manifest;
       spotify.sendDataToMainFn("manifest", response);
+      break;
     default:
       response = `${args[0].toString()} Not implemented yet!`;
       break;
