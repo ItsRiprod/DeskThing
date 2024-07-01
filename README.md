@@ -9,7 +9,7 @@ This is the DeskThing project. Using Spotify's existing Car Thing, the DeskThing
 
 **⚠️DO NOT PULL MAIN BRANCH ⚠️**
 
-Instead, go to [Releases](https://github.com/ItsRiprod/DeskThing/releases) and download the .zip file for v0.2.0-alpha (which this readme follows) and use that
+Instead, go to [Releases](https://github.com/ItsRiprod/DeskThing/releases) and download the .zip file for v0.5.0-alpha (which this readme follows) and use that
 
 ---
 
@@ -23,26 +23,26 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
    - [X] Control Spotify (Skip, pause, play, rewind, shuffle, repeat)
    - [X] Supports Podcasts too!
    - Spotify app [installation instructions here](/DeskThing/server/apps/spotify#spotify-app-install)
-- ### Discord Integration 💬
+- ### ~~Discord Integration 💬~~ *to be migrated*
    - [X] Show current call status (Participants, who's talking, their mute status)
    - [ ] ~~Control Discord (Mute/Unmute  Deafen//Undeafen Disconnect)~~
    - [ ] ~~Control Individual User Volume~~
    - [ ] ~~See message preview~~
    - Discord app [installation instructions here](/DeskThing/server/apps/discord#discord-app-install)
-- ### Weather Integration 🌧️
+- ### ~~Weather Integration 🌧️~~ *to be migrated*
    - [X] Show local weather
    - [X] Temperature
    - [X] AQI, UV Index, Wind Speed + Direction, Visibility
    - [X] 12 Hour forecast
    - Weather app [installation instructions here](/DeskThing/server/apps/weather#weather-app-install)
-- ### Audible Integration📗
+- ### ~~Audible Integration📗~~ *to be migrated*
    - [ ] ~~Currently Listening To~~ 
    - [ ] ~~Audio Controls (Skip, Rewind, Fast Forward)~~ 
    - [ ] ~~Audio Status (%through)~~
    - [X] Audiobook library
    - [X] Audiobook stats (Progress, Length of book, time left, ASIN)
    - Audible app [installation instructions here](/DeskThing/server/apps/audible#audible-app-install)
-- ### Launchpad Integration 🎵
+- ### ~~Launchpad Integration 🎵~~ *to be migrated*
    - [X] Control different views on your launchpad!
    - [X] Show your system resource usage on your novation launchpad
    - [X] Add timers from your launchpad
@@ -50,7 +50,7 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
    - [ ] ~~Show time on launchpad~~
    - [ ] ~~Trigger macros from launchpad~~
    - [ ] Launchpad app [installation instructions here](/DeskThing/server/apps/launchpad#launchpad-app-install)
-- ### Trello Integration 📃
+- ### ~~Trello Integration 📃~~ *to be migrated*
    - [X] See all organizations 
    - [X] See all boards 
    - [X] See all lists 
@@ -98,6 +98,8 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
 > If you need help, refer to the [detailed instructions](#flashing) at the end of this page
 
 2. **Configure Apps You Want To Include:**
+
+*You do not need the .env file on versions at or later than v0.5.0 due to the apps requesting the keys. Still reference the tutorials for obtaining the needed information when loading an app*
    - Spotify app [installation instructions here](/DeskThing/server/apps/spotify#spotify-app-install)
    - Trello app [installation instructions here](/DeskThing/server/apps/trello#trello-app-install)
    - Weather app [installation instructions here](/DeskThing/server/apps/weather#weather-app-install)
@@ -110,8 +112,8 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
    ```sh
    npm install
    ```
-   - Add `.env` file to `/DeskThing/server/` (optionally, just rename `.env-template` to `.env`. `.env-template` is already located where it needs to be)
-   - Ensure `PORT=8888` in the `.env` file
+   - ~~Add `.env` file to `/DeskThing/server/` (optionally, just rename `.env-template` to `.env`. `.env-template` is already located where it needs to be)~~
+   - ~~Ensure `PORT=8888` in the `.env` file~~ *Not required on versions later than v0.5.0*
 > If anything here does not work. DM me on discord @riprod
 
 4. **Pushing the project to the car thing:**
@@ -135,10 +137,6 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
    - Restart chromium:
      ```sh
      adb shell supervisorctl restart chromium
-     ```
-   - Start your server:
-     ```sh
-     node server/server.js
      ```
 </details>
 
@@ -181,51 +179,16 @@ Process:
 
 <details>
 <summary>
-   <h2>.env file reference</h2>
+   <h2>Running the WebApp</h2>
 </summary>
 
-
-- **.env file reference for `/DeskThing/server/.env`**
-```env
-SPOTIFY_API_ID= /* The spotify API ID obtained from dashboard  */
-SPOTIFY_CLIENT_SECRET= /* The spotify API secret obtained from dashboard */
-SPOTIFY_REDIRECT_URI=http://localhost:8888/callback // The callback to go on the spotify app for auth
-PORT=8888 /* The Auth0 server port for authentication */
-DEVICE_ID= /* The device ID obtained from the spotify rest api */
-TRELLO_REDIRECT_URI=http://localhost:8888/trello/callback
-TRELLO_KEY= // Trello bot key
-TRELLO_SECRET= // Trello bot secret
-ACCUWEATHER_API_KEY= // Key obtained from AccuWeather app
-ACCUWEATHER_CITY= // City key obtained from AccuWeather api
-DISCORD_CLIENT_ID= # Discord bot ID
-DISCORD_CLIENT_SECRET= # Discord bot Secret
-DISCORD_REDIR_URI=http://localhost:8888/discord/callback
-DISCORD_USER_ID= # Discord user id (yours)
-```
-
 - If you are running from a .bat file, this is what it should look like:
+
 ```sh
 @echo off
 
 cd /d "C:\*Path to car thing files*\carthing\DeskThing\"
 
-set SPOTIFY_API_ID= // The API key from a spotify app obtained from the dashboard
-set SPOTIFY_CLIENT_SECRET= // The spotify client secret obtained from the dashboard  
-set SPOTIFY_REDIRECT_URI=http://localhost:8888/callback // this is for authenticating yourself
-set PORT=8888 // Port that is used for authentication
-set DEVICE_ID= // ID of your device found in the spotify REST API - optional to know where you are playing music from
-
-set TRELLO_TOKEN= // Trello bot token
-set TRELLO_KEY= // Trello bot key
-set TRELLO_SECRET= // Trello bot secret
-set ACCUWEATHER_API_KEY= // Key obtained from AccuWeather app
-set ACCUWEATHER_CITY= // City key obtained from AccuWeather app
-
-set DISCORD_CLIENT_ID= // Discord bot id
-set DISCORD_CLIENT_SECRET= // Discord bot secret
-set DISCORD_REDIR_URI=http://localhost:8888/discord/callback
-set DISCORD_USER_ID= // Your user ID
-
 adb reverse tcp:8891 tcp:8891
 adb shell mount -o remount,rw /
 adb shell mv /usr/share/qt-superbird-app/webapp /tmp/webapp-orig
@@ -234,78 +197,12 @@ adb shell rm -r /tmp/webapp-orig
 adb push dist/ /usr/share/qt-superbird-app/webapp
 
 adb shell supervisorctl restart chromium
-
-node server/server.js
 ```
 
 </details>
 
 ---
 
-<details>
-   <summary>
-      <h2>🤖 Linux Mods</h2>
-   </summary>
-
-
-Currently, DeskThing does not have great support for linux. This will be resolved once DeskThing becomes modular, but for now you can do the following steps:
-- Follow superbird-tool tutorial for flashing the car thing with the ADB_ENABLES flash
-- Ensure ADB is installed correctly
-- run `npm uninstall midi robotsjs`
-- in `/server/socketHandler.js` remove any mention of robotsjs
-- in `/server/server.js` remove the import statement for the launchpadHandler.js
-> I don't run linux - so if there are any more incompatibilites, DM me on discord @riprod so I can add them here
-- Run the following script (After obtaining env files):
-```sh
-#!/bin/bash
-
-# Change directory to the car thing files location
-cd "/path/to/carthing/DeskThing/"
-
-# Set environment variables
-export SPOTIFY_API_ID= # The API key from a Spotify app obtained from the dashboard
-export SPOTIFY_CLIENT_SECRET= # The Spotify client secret obtained from the dashboard  
-export SPOTIFY_REDIRECT_URI=http://localhost:8888/callback # This is for authenticating yourself
-export PORT=8888 # Port that is used for authentication
-export DEVICE_ID= # ID of your device found in the Spotify REST API - optional to know where you are playing music from
-
-export TRELLO_TOKEN= # Trello bot token
-export TRELLO_KEY= # Trello bot key
-export TRELLO_SECRET= # Trello bot secret
-export ACCUWEATHER_API_KEY= # Key obtained from AccuWeather app
-export ACCUWEATHER_CITY= # City key obtained from AccuWeather app
-
-export DISCORD_CLIENT_ID= # Discord bot id
-export DISCORD_CLIENT_SECRET= # Discord bot secret
-export DISCORD_REDIR_URI=http://localhost:8888/discord/callback
-export DISCORD_USER_ID= # Your user ID
-
-# Use adb to reverse ports and move files
-adb reverse tcp:8891 tcp:8891
-adb shell mount -o remount,rw /
-adb shell mv /usr/share/qt-superbird-app/webapp /tmp/webapp-orig
-adb shell mv /tmp/webapp-orig /usr/share/qt-superbird-app/ # it's ok if this fails
-adb shell rm -r /tmp/webapp-orig
-adb push dist/ /usr/share/qt-superbird-app/webapp
-adb shell supervisorctl restart chromium
-
-# Start the server
-node server/server.js
-```
-
-### Discord Flatpak workaround
-
-If you are encountering an error `reject(new Error('Could not connect'));` then try the following found [here](https://github.com/flathub/com.discordapp.Discord/wiki/Rich-Precense-(discord-rpc))
-
-Run the following:
-```sh
-mkdir -p ~/.config/user-tmpfiles.d
-echo 'L %t/discord-ipc-0 - - - - app/com.discordapp.Discord/discord-ipc-0' > ~/.config/user-tmpfiles.d/discord-rpc.conf
-systemctl --user enable --now systemd-tmpfiles-setup.service
-```
-</details>
-
----
 
 > Questions? DM me on discord @riprod
 
