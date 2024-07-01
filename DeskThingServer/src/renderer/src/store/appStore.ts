@@ -7,7 +7,7 @@ export interface Manifest {
   label: string
   version: string
   description?: string
-  author?: string 
+  author?: string
   platforms: Array<string>
   homepage?: string
   repository?: string

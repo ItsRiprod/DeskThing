@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useAppStore, App, AppData } from '../store/appStore'
+import { useAppStore, App } from '../store/appStore'
 import { IconRefresh, IconX, IconPause, IconPlay, IconDetails } from '../components/icons'
 import DisplayAppData from './Overlays/DisplayAppData'
 
