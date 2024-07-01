@@ -25,6 +25,7 @@ Links:
 - [Spotify API to get device id](https://developer.spotify.com/documentation/web-api/reference/get-information-about-the-users-current-playback)
 
 Process:
+> In versions v0.5.0 or later, you need to set callback to `http://localhost:8888/callback/spotify` for it to work
 - Go to the app dashboard (linked above) and click "Create App" (You may need to enroll as a developer)
 ![App Creation details](/readme_images/spotify_app_creation.png)
 - Get your Device ID by going to the Spotify API (linked above) and clicking "Try It"
