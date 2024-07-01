@@ -9,7 +9,8 @@ import {
   handleZip,
   loadAndRunEnabledApps,
   disableApp,
-  stopApp
+  stopApp,
+  purgeAppData
 } from './utility/appHandler'
 import './utility/authHandler'
 import './utility/websocketServer'
@@ -81,6 +82,10 @@ app.whenReady().then(async () => {
   })
   ipcMain.on('disable-app', async (_event, appName: string) => {
     disableApp(appName)
+  })
+  ipcMain.on('purge-app', async (_event, appName: string) => {
+    console.log(`====== PURGING APP ${appName} ========`)
+    purgeAppData(_event, appName)
   })
 
   ipcMain.on('handle-zip', async (event, zipFilePath: string) => {

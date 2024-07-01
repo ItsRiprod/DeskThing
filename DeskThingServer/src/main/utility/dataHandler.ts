@@ -20,7 +20,6 @@ const readData = (): Data => {
       fs.writeFileSync(dataFilePath, JSON.stringify(defaultData, null, 2))
       return defaultData
     }
-
     const rawData = fs.readFileSync(dataFilePath)
     return JSON.parse(rawData.toString())
   } catch (err) {
@@ -62,4 +61,11 @@ const getData = (key): { [key: string]: string } => {
   return data[key]
 }
 
-export { setData, getData, addData, readData }
+const purgeData = (appName: string): void => {
+  console.log('SERVER: Deleting app data...')
+  const data = readData()
+  delete data[appName]
+  writeData(data)
+}
+
+export { setData, getData, addData, readData, purgeData }

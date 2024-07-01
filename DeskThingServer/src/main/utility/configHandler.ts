@@ -168,4 +168,29 @@ const getAppByIndex = (index: number): App | undefined => {
   return foundApp
 }
 
-export { setAppData, getAppData, getAppByName, getAppByIndex, addAppManifest, addConfig, getConfig }
+const purgeAppConfig = (appName: string): void => {
+  console.log('SERVER: Deleting App From Config...', appName)
+  const data = readData()
+
+  // Filter out the app to be purged
+  const filteredApps = data.apps.filter((app: App) => app.name !== appName)
+  data.apps = filteredApps
+
+  if (Array.isArray(data.config.audiosources)) {
+    const updatedAudiosources = data.config.audiosources.filter((source) => source !== appName)
+    data.config.audiosources = updatedAudiosources
+  }
+
+  writeData(data)
+}
+
+export {
+  setAppData,
+  getAppData,
+  getAppByName,
+  getAppByIndex,
+  addAppManifest,
+  addConfig,
+  getConfig,
+  purgeAppConfig
+}

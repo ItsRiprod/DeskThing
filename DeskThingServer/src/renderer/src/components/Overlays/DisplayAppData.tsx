@@ -16,6 +16,11 @@ const DisplayAppData = ({ appIndex, setEnabled, data }: DisplayAppDataProps): JS
   const handleExit = (): void => {
     setEnabled(false)
   }
+  const handlePurge = (appName: string): void => {
+    window.electron.ipcRenderer.send('purge-app', appName)
+    window.electron.ipcRenderer.send('get-apps')
+    setEnabled(false)
+  }
   return (
     <>
       {appData != null ? (
@@ -61,14 +66,20 @@ const DisplayAppData = ({ appIndex, setEnabled, data }: DisplayAppDataProps): JS
                 </div>
               </div>
             )}
-            <div className="bg-slate-700 p-5 m-1 rounded-lg drop-shadow-lg"></div>
-
-            <button
-              className="bg-slate-700 hover:bg-red-500 transition-colors p-5 self-end rounded-lg drop-shadow-lg"
-              onClick={handleExit}
-            >
-              Exit
-            </button>
+            <div className="bg-slate-700 p-5 m-1 flex justify-between rounded-lg drop-shadow-lg">
+              <button
+                className="bg-red-700 hover:bg-red-500 transition-colors p-5 self-end rounded-lg drop-shadow-lg"
+                onClick={() => handlePurge(appData.name)}
+              >
+                Purge App (Cannot be undone)
+              </button>
+              <button
+                className="bg-slate-700 hover:bg-red-500 transition-colors p-5 self-end rounded-lg drop-shadow-lg"
+                onClick={handleExit}
+              >
+                Exit
+              </button>
+            </div>
           </div>
         </div>
       ) : (

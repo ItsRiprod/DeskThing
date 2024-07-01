@@ -3,8 +3,15 @@ import { app, ipcMain } from 'electron'
 import { join } from 'path'
 import * as fs from 'fs'
 import * as unzipper from 'unzipper'
-import { getAppData, setAppData, getAppByName, addAppManifest, getConfig } from './configHandler'
-import { getData, setData, addData } from './dataHandler'
+import {
+  getAppData,
+  setAppData,
+  getAppByName,
+  addAppManifest,
+  getConfig,
+  purgeAppConfig
+} from './configHandler'
+import { getData, setData, addData, purgeData } from './dataHandler'
 import { sendIpcMessage, openAuthWindow } from '../index'
 import { sendMessageToClients } from './websocketServer'
 interface AppInstance {
@@ -82,7 +89,6 @@ function handleDataFromApp(app: string, type: string, ...args: any[]): void {
   }
 }
 async function requestAuthData(appName: string, scope: Array<string>): Promise<void> {
-
   // Send IPC message to renderer to display the form
   sendIpcMessage('request-user-data', appName, scope)
 
@@ -339,6 +345,21 @@ async function addApp(_event, appName: string): Promise<void> {
     console.error('Error adding app:', error)
   }
 }
+async function purgeAppData(_event, appName: string): Promise<void> {
+  console.log('SERVER: Purging Data...')
+  purgeData(appName)
+  console.log('SERVER: Purging Config...')
+  purgeAppConfig(appName)
+
+  console.log('SERVER: Purging File...')
+  const appDirectory = join(app.getPath('userData'), 'apps', appName)
+  if (fs.existsSync(appDirectory)) {
+    fs.rmSync(appDirectory, { recursive: true })
+    console.log(`Deleted app directory: ${appDirectory}`)
+  } else {
+    console.log(`App directory not found: ${appDirectory}`)
+  }
+}
 
 export {
   runApp,
@@ -348,5 +369,6 @@ export {
   handleZip,
   loadAndRunEnabledApps,
   addApp,
-  disableApp
+  disableApp,
+  purgeAppData
 }

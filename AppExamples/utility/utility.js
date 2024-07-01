@@ -47,6 +47,12 @@ class UtilityHandler {
       case 'previous_track':
         this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, 'previous_track', payload);
         break;
+      case 'device_info':
+        this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, 'device_info', payload);
+        break;
+      case 'song_info':
+        this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, 'song_info', payload);
+        break;
       default:
         console.warn('Unsupported command:', command);
         break;
