@@ -30,3 +30,4 @@ DeskThing/server/auth_data.json
 AppExamples/spotify/node_modules/
 releases/Linux/deskthing-0.3.0.AppImage
 /AppExamples/utility/node_modules
+/AppExamples/weather/node_modules

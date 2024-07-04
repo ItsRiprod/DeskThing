@@ -43,6 +43,13 @@ class SpotifyHandler {
     console.log('SPOTIFY: Manifest loaded:', this.manifest);
   }
 
+  async sendLog(message) {
+    this.sendDataToMainFn('log', message)
+  }
+  async sendError(message) {
+    this.sendDataToMainFn('error', message)
+  }
+
   /**
    * Refreshes the Spotify access token.
    * @returns {Promise<string>} The new access token.
@@ -81,6 +88,7 @@ class SpotifyHandler {
       return returnData
     } catch (error) {
       console.error('Error getting access token:', error)
+      this.sendError('Error getting access token!')
       throw error
     }
   }
@@ -118,6 +126,7 @@ class SpotifyHandler {
 
   async login() {
     console.log('Logging in...')
+    this.sendLog('Logging in...')
     const scope = 'user-read-currently-playing user-read-playback-state user-modify-playback-state'
     const state = 'thisisarandomstringthatshouldbechangedlater'
     const auth_url =
@@ -156,6 +165,7 @@ class SpotifyHandler {
         throw new Error('Unknown error in handleError', error)
       }
     } catch (error) {
+      this.sendError(`There was an error in spotify's ErrorHandler ${error}`)
       console.error('There was an error in spotifyHandler!', error)
     }
   }
@@ -168,6 +178,7 @@ class SpotifyHandler {
    * @returns {Promise<Object|boolean>} The response data.
    */
   async makeRequest(method, url, data = null) {
+    this.sendLog(`Handling request to url ${url}`)
     try {
       if (!this.access_token || this.access_token == null) {
         console.log('Refreshing access token')

@@ -36,6 +36,9 @@ var require_utility = __commonJS({
           case "set_shuffle":
             this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, "set_shuffle", payload);
             break;
+          case "set_vol":
+            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, "set_vol", payload);
+            break;
           case "seek_track":
             this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, "seek_track", payload);
             break;
@@ -58,6 +61,7 @@ var require_utility = __commonJS({
             this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, "song_info", payload);
             break;
           default:
+            this.sendDataToMainFn("error", `Unsupported command ${command}!`);
             console.warn("Unsupported command:", command);
             break;
         }
@@ -70,17 +74,34 @@ var require_utility = __commonJS({
 // index.js
 var UtilityHandler = require_utility();
 var utility;
-async function start({ sendDataToMain }) {
+var listeners = [];
+async function start({ sendDataToMain, sysEvents }) {
   console.log("UTILITY: App started!");
   utility = new UtilityHandler(sendDataToMain);
+  sysEvents = sysEvents;
+  const removeConfigListener = sysEvents("config", handleConfigEvent);
+  listeners.push(removeConfigListener);
   sendDataToMain("get", "data");
+  sendLog("App started successfully!");
 }
 async function stop() {
-  console.log("UTILITY: App stopping...");
+  sendLog("App stopping...");
+  listeners.forEach((removeListener) => removeListener());
+  listeners.length = 0;
   utility = null;
 }
+var handleConfigEvent = async () => {
+  sendLog("Handling Config Event");
+  utility.sendDataToMainFn("get", "config", "audiosources");
+};
+var sendLog = (message) => {
+  utility.sendDataToMainFn("log", message);
+};
+var sendError = (message) => {
+  utility.sendDataToMainFn("error", message);
+};
 async function onMessageFromMain(event, ...args) {
-  console.log(`UTILITY: Received event ${event} with args `, ...args);
+  sendLog(`Received event ${event} with args `, ...args);
   try {
     switch (event) {
       case "message":
@@ -128,6 +149,7 @@ async function onMessageFromMain(event, ...args) {
     }
   } catch (error) {
     console.error("UTILITY: Error in onMessageFromMain:", error);
+    sendError("Error in onMessageFromMain:", error);
   }
 }
 var handleGet = async (...args) => {

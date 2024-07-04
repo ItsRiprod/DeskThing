@@ -5,12 +5,15 @@ let spotify
 async function start({ sendDataToMain }) {
   console.log('Spotify App started!')
   spotify = new SpotifyHandler(sendDataToMain)
-
   // Get the data from main
   sendDataToMain('get', 'data')
+  spotify.sendLog('Successfully Started!')
 }
 async function stop() {
   console.log('Spotify App stopping...')
+  
+  spotify.sendLog('Successfully Stopped!')
+  
   spotify = null
 }
 
@@ -88,6 +91,7 @@ async function onMessageFromMain(event, ...args) {
         break
       default:
         console.log('SPOTIFY: Unknown message:', event, ...args)
+        spotify.sendError(`Unknown Message received ${event} ${args[0]}`)
         break
     }
   } catch (error) {

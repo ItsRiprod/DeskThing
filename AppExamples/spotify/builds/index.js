@@ -13634,6 +13634,12 @@ var require_spotify = __commonJS({
         this.manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
         console.log("SPOTIFY: Manifest loaded:", this.manifest);
       }
+      async sendLog(message) {
+        this.sendDataToMainFn("log", message);
+      }
+      async sendError(message) {
+        this.sendDataToMainFn("error", message);
+      }
       /**
        * Refreshes the Spotify access token.
        * @returns {Promise<string>} The new access token.
@@ -13668,6 +13674,7 @@ var require_spotify = __commonJS({
           return returnData;
         } catch (error) {
           console.error("Error getting access token:", error);
+          this.sendError("Error getting access token!");
           throw error;
         }
       }
@@ -13701,6 +13708,7 @@ var require_spotify = __commonJS({
       }
       async login() {
         console.log("Logging in...");
+        this.sendLog("Logging in...");
         const scope = "user-read-currently-playing user-read-playback-state user-modify-playback-state";
         const state = "thisisarandomstringthatshouldbechangedlater";
         const auth_url = `https://accounts.spotify.com/authorize?response_type=code&client_id=${this.client_id}&scope=${scope}&redirect_uri=${this.redirect_uri}&state=${state}`;
@@ -13731,6 +13739,7 @@ var require_spotify = __commonJS({
             throw new Error("Unknown error in handleError", error);
           }
         } catch (error2) {
+          this.sendError(`There was an error in spotify's ErrorHandler ${error2}`);
           console.error("There was an error in spotifyHandler!", error2);
         }
       }
@@ -13742,6 +13751,7 @@ var require_spotify = __commonJS({
        * @returns {Promise<Object|boolean>} The response data.
        */
       async makeRequest(method, url, data = null) {
+        this.sendLog(`Handling request to url ${url}`);
         try {
           if (!this.access_token || this.access_token == null) {
             console.log("Refreshing access token");
@@ -13922,10 +13932,12 @@ async function start({ sendDataToMain }) {
   console.log("Spotify App started!");
   spotify = new SpotifyHandler(sendDataToMain);
   sendDataToMain("get", "data");
+  spotify.sendLog("Successfully Started!");
 }
 async function stop() {
   console.log("Spotify App stopping...");
   spotify = null;
+  spotify.sendLog("Successfully Stopped!");
 }
 async function onMessageFromMain(event, ...args) {
   console.log(`SPOTIFY: Received event ${event} with args `, ...args);
@@ -13985,6 +13997,7 @@ async function onMessageFromMain(event, ...args) {
         break;
       default:
         console.log("SPOTIFY: Unknown message:", event, ...args);
+        spotify.sendError(`Unknown Message received ${event} ${args[0]}`);
         break;
     }
   } catch (error) {

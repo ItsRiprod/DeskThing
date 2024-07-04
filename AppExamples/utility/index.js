@@ -1,21 +1,44 @@
 const UtilityHandler = require('./utility.js')
 
 let utility
+const listeners = []
 
-async function start({ sendDataToMain }) {
+async function start({ sendDataToMain, sysEvents }) {
   console.log('UTILITY: App started!')
   utility = new UtilityHandler(sendDataToMain)
 
+  sysEvents = sysEvents
+  const removeConfigListener = sysEvents('config', handleConfigEvent)
+  listeners.push(removeConfigListener)
+  
   // Get the data from main
   sendDataToMain('get', 'data')
+  sendLog('App started successfully!')
 }
 async function stop() {
-  console.log('UTILITY: App stopping...')
+  sendLog('App stopping...')
+
+  listeners.forEach(removeListener => removeListener())
+  listeners.length = 0
   utility = null
 }
 
+const handleConfigEvent = async () => {
+  sendLog('Handling Config Event')
+  
+  // When the config changes, request the audiosources config item to update the audio sources
+  utility.sendDataToMainFn('get', 'config', 'audiosources')
+}
+
+const sendLog = (message) => {
+  utility.sendDataToMainFn('log', message)
+}
+const sendError = (message) => {
+  utility.sendDataToMainFn('error', message)
+}
+
 async function onMessageFromMain(event, ...args) {
-  console.log(`UTILITY: Received event ${event} with args `, ...args)
+  sendLog(`Received event ${event} with args `, ...args)
   try {
     switch (event) {
       case 'message':
@@ -69,7 +92,9 @@ async function onMessageFromMain(event, ...args) {
         break
     }
   } catch (error) {
+    
     console.error('UTILITY: Error in onMessageFromMain:', error)
+    sendError('Error in onMessageFromMain:', error)
   }
 }
 

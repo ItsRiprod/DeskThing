@@ -15,15 +15,26 @@ import {
 import './utility/authHandler'
 import './utility/websocketServer'
 import path from 'path'
+import dataListener, { MESSAGE_TYPES } from './utility/events'
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 
+const IPC_CHANNELS = {
+  PING: 'ping',
+  ADD_APP: 'add-app',
+  GET_APPS: 'get-apps',
+  STOP_APP: 'stop-app',
+  DISABLE_APP: 'disable-app',
+  PURGE_APP: 'purge-app',
+  HANDLE_ZIP: 'handle-zip',
+  USER_DATA_RESPONSE: 'user-data-response',
+  SELECT_ZIP_FILE: 'select-zip-file'
+}
 loadAndRunEnabledApps()
 
-function createWindow(): void {
-  // Create the browser window.
-  mainWindow = new BrowserWindow({
+function createMainWindow(): BrowserWindow {
+  const window = new BrowserWindow({
     width: 950,
     height: 670,
     icon: icon,
@@ -36,86 +47,35 @@ function createWindow(): void {
     }
   })
 
-  mainWindow.on('ready-to-show', () => {
-    mainWindow?.show()
+  window.on('ready-to-show', () => {
+    window.show()
   })
 
-  mainWindow.webContents.setWindowOpenHandler((details) => {
+  window.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }
   })
 
-  // HMR for renderer base on electron-vite cli.
-  // Load the remote URL for development or the local html file for production.
+  // Load the remote URL for development or the local HTML file for production.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
+    window.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    window.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  return window
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.whenReady().then(async () => {
-  // Set app user model id for windows
-  electronApp.setAppUserModelId('com.electron')
-  // Default open or close DevTools by F12 in development
-  // and ignore CommandOrControl + R in production.
-  // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
-  app.on('browser-window-created', (_, window) => {
-    optimizer.watchWindowShortcuts(window)
-  })
-
-  // IPC test
-  ipcMain.on('ping', () => console.log('pong'))
-
-  ipcMain.on('add-app', async (event, appName: string) => {
-    addApp(event, appName)
-  })
-  ipcMain.on('get-apps', async (event) => {
-    const data = getAppData()
-    event.sender.send('app-data', data)
-  })
-  ipcMain.on('stop-app', async (_event, appName: string) => {
-    stopApp(appName)
-  })
-  ipcMain.on('disable-app', async (_event, appName: string) => {
-    disableApp(appName)
-  })
-  ipcMain.on('purge-app', async (_event, appName: string) => {
-    console.log(`====== PURGING APP ${appName} ========`)
-    purgeAppData(_event, appName)
-  })
-
-  ipcMain.on('handle-zip', async (event, zipFilePath: string) => {
-    console.log('SERVER: handling zip file event', event)
-    const returnData = await handleZip(zipFilePath) // Extract to user data folder
-    console.log('SERVER: Return Data after Extraction:', returnData)
-    event.sender.send('zip-name', returnData)
-  })
-
-  ipcMain.on('user-data-response', (event, requestId: string, type: string, ...args: any[]) => {
-    console.log(event)
-    sendMessageToApp(requestId, type, args)
-  })
-
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.focus()
-  } else {
-    createWindow()
-  }
-
+function initializeTray(): void {
   tray = new Tray(icon)
   const contextMenu = Menu.buildFromTemplate([
     {
       label: 'Open Window',
-      click: async (): Promise<void> => {
-        // Check if mainWindow exists and is not destroyed
+      click: (): void => {
         if (mainWindow && !mainWindow.isDestroyed()) {
           mainWindow.focus()
         } else {
-          createWindow()
+          mainWindow = createMainWindow()
         }
       }
     },
@@ -128,23 +88,95 @@ app.whenReady().then(async () => {
   ])
   tray.setToolTip('DeskThing Server')
   tray.setContextMenu(contextMenu)
+}
+
+function setupIpcHandlers(): void {
+  ipcMain.on(IPC_CHANNELS.PING, () => console.log('pong'))
+
+  ipcMain.on(IPC_CHANNELS.ADD_APP, async (event, appName: string) => {
+    await addApp(event, appName)
+  })
+  ipcMain.on(IPC_CHANNELS.GET_APPS, (event) => {
+    const data = getAppData()
+    event.sender.send('app-data', data)
+  })
+  ipcMain.on(IPC_CHANNELS.STOP_APP, async (_event, appName: string) => {
+    await stopApp(appName)
+  })
+  ipcMain.on(IPC_CHANNELS.DISABLE_APP, async (_event, appName: string) => {
+    await disableApp(appName)
+  })
+  ipcMain.on(IPC_CHANNELS.PURGE_APP, async (_event, appName: string) => {
+    console.log(`====== PURGING APP ${appName} ========`)
+    await purgeAppData(appName)
+  })
+  ipcMain.on(IPC_CHANNELS.HANDLE_ZIP, async (event, zipFilePath: string) => {
+    console.log('SERVER: handling zip file event', event)
+    const returnData = await handleZip(zipFilePath) // Extract to user data folder
+    console.log('SERVER: Return Data after Extraction:', returnData)
+    event.sender.send('zip-name', returnData)
+  })
+  ipcMain.on(
+    IPC_CHANNELS.USER_DATA_RESPONSE,
+    (event, requestId: string, type: string, ...args: any[]) => {
+      console.log(event)
+      sendMessageToApp(requestId, type, args)
+    }
+  )
+
+  ipcMain.handle(IPC_CHANNELS.SELECT_ZIP_FILE, async () => {
+    if (!mainWindow) return null
+
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openFile'],
+      filters: [{ name: 'ZIP Files', extensions: ['zip'] }]
+    })
+    if (result.canceled) return null
+
+    const filePath = result.filePaths[0]
+    return { path: filePath, name: path.basename(filePath) }
+  })
+
+  dataListener.on(MESSAGE_TYPES.ERROR, (errorData) => {
+    sendIpcData('error', errorData)
+  })
+  dataListener.on(MESSAGE_TYPES.LOGGING, (errorData) => {
+    sendIpcData('log', errorData)
+  })
+  dataListener.on(MESSAGE_TYPES.MESSAGE, (errorData) => {
+    sendIpcData('message', errorData)
+  })
+}
+// This method will be called when Electron has finished
+// initialization and is ready to create browser windows.
+// Some APIs can only be used after this event occurs.
+app.whenReady().then(async () => {
+  // Set app user model id for windows
+  electronApp.setAppUserModelId('com.electron')
+
+  app.on('browser-window-created', (_, window) => {
+    optimizer.watchWindowShortcuts(window)
+  })
+
+  mainWindow = createMainWindow()
+  initializeTray()
+  setupIpcHandlers()
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    if (BrowserWindow.getAllWindows().length === 0) {
+      mainWindow = createMainWindow()
+    }
   })
 })
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
 app.on('window-all-closed', (e) => {
   // Prevent the app from quitting
   e.preventDefault()
 })
 
-function openAuthWindow(url: string): void {
+async function openAuthWindow(url: string): Promise<void> {
   const authWindow = new BrowserWindow({
     width: 850,
     height: 600,
@@ -157,7 +189,6 @@ function openAuthWindow(url: string): void {
   })
 
   authWindow.loadURL(url)
-
   authWindow.on('closed', () => {
     // Dereference the window object
     authWindow.destroy()
@@ -176,22 +207,5 @@ async function sendIpcData(dataType: string, data: any): Promise<void> {
   console.log('Sending Ipc message to main process:', dataType, data)
   mainWindow?.webContents.send(dataType, data)
 }
-
-ipcMain.handle('select-zip-file', async () => {
-  if (mainWindow === null) {
-    return null
-  }
-  const result = await dialog.showOpenDialog(mainWindow, {
-    properties: ['openFile'],
-    filters: [{ name: 'ZIP Files', extensions: ['zip'] }]
-  })
-  if (result.canceled) {
-    return null
-  } else {
-    const filePath = result.filePaths[0]
-    const fileName = path.basename(filePath)
-    return { path: filePath, name: fileName }
-  }
-})
 
 export { sendIpcMessage, openAuthWindow, sendIpcData }

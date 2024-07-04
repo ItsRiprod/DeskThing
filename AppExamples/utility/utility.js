@@ -32,6 +32,9 @@ class UtilityHandler {
       case 'set_shuffle':
         this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, 'set_shuffle', payload);
         break;
+      case 'set_vol':
+        this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, 'set_vol', payload);
+        break;
       case 'seek_track':
         this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, 'seek_track', payload);
         break;
@@ -54,6 +57,7 @@ class UtilityHandler {
         this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, 'song_info', payload);
         break;
       default:
+        this.sendDataToMainFn('error', `Unsupported command ${command}!`)
         console.warn('Unsupported command:', command);
         break;
     }

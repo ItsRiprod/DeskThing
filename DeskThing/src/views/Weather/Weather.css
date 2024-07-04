@@ -46,7 +46,7 @@
     display: flex;
     flex-direction: row;
     background-color: var(--bg-tinted-base);
-    margin: 5%;
+    margin: 3% 5%;
     border-radius: 15px;
 }
 
@@ -65,7 +65,7 @@
     align-items: center;
 }
 .temp_info h1 {
-    font-size: 7em;
+    font-size: 5em;
 }
 .temp_details {
     padding: 5px;

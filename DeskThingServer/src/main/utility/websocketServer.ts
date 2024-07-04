@@ -4,10 +4,12 @@ import { sendMessageToApp } from './appHandler'
 
 import { getAppData, setAppData, getAppByName, getAppByIndex } from './configHandler'
 import { readData, addData } from './dataHandler'
+import dataListener, { MESSAGE_TYPES } from './events'
 
 // Create a WebSocket server that listens on port 8891
 const server = new WebSocketServer({ port: 8891 })
 // Check if the requested app is enabled in app_config.json
+let numConnections = 0
 
 const sendMessageToClients = async (message): Promise<void> => {
   server.clients.forEach((client) => {
@@ -100,12 +102,20 @@ const getDelayToNextMinute = async (): Promise<number> => {
 }
 // Handle incoming messages from the client
 server.on('connection', async (socket) => {
+  numConnections++
+  dataListener.emit(
+    MESSAGE_TYPES.LOGGING,
+    `WEBSOCKET: Client has connected! ${numConnections} in total`
+  )
+
   console.log('WSOCKET: Client connected!\nWSOCKET: Sending preferences...')
+  dataListener.emit(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Sending client preferences...`)
   sendPrefData(socket)
   socket.on('message', async (message) => {
     try {
       const parsedMessage = JSON.parse(message)
       console.log('WSOCKET: Getting data', parsedMessage)
+      dataListener.emit(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Client has sent a message ${message}`)
       if (parsedMessage.app && parsedMessage.app !== 'server') {
         sendMessageToApp(
           parsedMessage.app.toLowerCase(),
@@ -173,6 +183,11 @@ server.on('connection', async (socket) => {
 
       // Clear the interval when the socket is closed
       socket.on('close', () => {
+        numConnections--
+        dataListener.emit(
+          MESSAGE_TYPES.LOGGING,
+          `WEBSOCKET: Client has disconnected! ${numConnections} in total`
+        )
         clearInterval(intervalId)
         console.log('WSOCKET: Client disconnected')
       })

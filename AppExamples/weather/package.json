@@ -1,0 +1,17 @@
+{
+  "name": "weather",
+  "version": "0.5.1",
+  "description": "Displays the current weather",
+  "main": "index.js",
+  "scripts": {
+    "build": "esbuild index.js --bundle --platform=node --outfile=builds/index.js && npm run copy-manifest",
+    "copy-manifest": "node -e \"const fs = require('fs'); fs.copyFileSync('manifest.json', 'builds/manifest.json');\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.7.2"
+  }
+}
