@@ -36,6 +36,8 @@ const Footer: React.FC = () => {
 
   const handleSongData = (data: song_data) => {
     setSongData(data);
+    setImageData(data.photo)
+
   };
 
   const handleBackgroundColor = async (photo: string) => {
@@ -51,6 +53,7 @@ const Footer: React.FC = () => {
         handleDeviceData(msg.data as device_data);
       }
       if (msg.type === 'song_data') {
+        console.log(msg.data)
         handleSongData(msg.data as song_data);
       }
       if (msg.type === 'img_data') {

@@ -1,0 +1,14 @@
+{
+    "id": "local",
+    "isAudioSource": true,
+    "isWebApp": false,
+    "isLocalApp": false,
+    "requires": ["utility"],
+    "label": "Windows Media App",
+    "version": "v0.5.1",
+    "description": "The DeskThing Media Windows App is a local audio control control source for the DeskThing",
+    "author": "Riprod",
+    "platforms": ["windows"],
+    "homepage": "https://github.com/ItsRiprod/DeskThing",
+    "repository": "https://github.com/ItsRiprod/DeskThing"
+  }
