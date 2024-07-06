@@ -1,7 +1,6 @@
 ![App Creation details](/readme_images/deskthing-banner.png)
 
 # The DeskThing ✔️
-> *Just another CarThing app built off the back of superbird 🎵*
 
 *Let's begin, shall we?*
 
@@ -23,13 +22,17 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
    - [X] Control Spotify (Skip, pause, play, rewind, shuffle, repeat)
    - [X] Supports Podcasts too!
    - Spotify app [installation instructions here](/DeskThing/server/apps/spotify#spotify-app-install)
+- ### Dasktop Now Playing (Only Windows) 🎧
+   - [X] Show currently listening (Album, Artist, Song name, album art)
+   - [X] Control the current media (Skip, pause, play, rewind, shuffle, repeat)
+   - *no setup instructions yet. Drag-n-drop the .zip from /releases/apps/ into the GUI*
 - ### ~~Discord Integration 💬~~ *to be migrated*
    - [X] Show current call status (Participants, who's talking, their mute status)
    - [ ] ~~Control Discord (Mute/Unmute  Deafen//Undeafen Disconnect)~~
    - [ ] ~~Control Individual User Volume~~
    - [ ] ~~See message preview~~
    - Discord app [installation instructions here](/DeskThing/server/apps/discord#discord-app-install)
-- ### ~~Weather Integration 🌧️~~ *to be migrated*
+- ### Weather Integration 🌧️ *to be migrated*
    - [X] Show local weather
    - [X] Temperature
    - [X] AQI, UV Index, Wind Speed + Direction, Visibility
