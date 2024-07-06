@@ -2,7 +2,7 @@ import { app } from 'electron'
 import { join } from 'path'
 import * as fs from 'fs'
 import { sendIpcData } from '..'
-import dataListener from './events'
+import dataListener, { MESSAGE_TYPES } from './events'
 export interface Manifest {
   isAudioSource: boolean
   requires: Array<string>
@@ -18,6 +18,7 @@ export interface Manifest {
 export interface App {
   name: string
   enabled: boolean
+  running: boolean
   prefIndex: number
   manifest?: Manifest
 }
@@ -62,14 +63,13 @@ const writeData = (data: AppData): void => {
     const dataFilePath = join(app.getPath('userData'), 'apps.json')
     fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2))
     sendIpcData('app-data', data) // Send data to the web UI
-    dataListener.emit('config') // Emit that the config has been updated
   } catch (err) {
     console.error('Error writing data:', err)
   }
 }
 
 // Set data function
-const setAppData = (newApp: App): void => {
+const setAppData = async (newApp: App): Promise<void> => {
   const data = readData()
 
   // Find existing app by name
@@ -130,7 +130,8 @@ const addConfig = (configName: string, config: string | Array<string>, data = re
     data.config[configName] = config
   }
 
-  console.log(data)
+  dataListener.emit(MESSAGE_TYPES.CONFIG)
+
   writeData(data)
 }
 const getConfig = (configName: string): { [app: string]: string | Array<string> | undefined } => {

@@ -54,30 +54,50 @@ const AppsList = (): JSX.Element => {
                     <IconDetails />
                   </button>
                   <p>{app.manifest ? app.manifest.label : app.name}</p>
+                  <p className="text-zinc-400 text-xs">{app.manifest?.version}</p>
                 </div>
                 {app.enabled ? (
                   <div className="flex items-center md:flex-row flex-col">
-                    <p className="text-green-500">P{app.prefIndex}</p>
-                    <button
-                      className="border-2 border-amber-600 hover:bg-amber-500 m-1 p-2 rounded-lg"
-                      onClick={() => handleDisableApp(app.name)}
-                    >
-                      <IconPause />
-                    </button>
+                    <div className="flex-col flex items-end">
+                      {app.running ? (
+                        <p className="text-green-500">Running</p>
+                      ) : (
+                        <p className="text-red-600">Stopped</p>
+                      )}
+                    </div>
+
+                    {app.running ? (
+                      <button
+                        className="border-2 border-amber-600 hover:bg-amber-500 m-1 p-2 rounded-lg"
+                        onClick={() => handleStopApp(app.name)}
+                      >
+                        <IconPause />
+                      </button>
+                    ) : (
+                      <button
+                        className="border-2 border-cyan-600 hover:bg-cyan-500 m-1 p-2 rounded-lg"
+                        onClick={() => handleAddAndRunApp(app.name)}
+                      >
+                        <IconPlay />
+                      </button>
+                    )}
                     <button
                       className="border-2 border-red-600 hover:bg-red-500 p-2 rounded-lg"
-                      onClick={() => handleStopApp(app.name)}
+                      onClick={() => handleDisableApp(app.name)}
                     >
                       <IconX />
                     </button>
                   </div>
                 ) : (
-                  <button
-                    className="border-2 border-cyan-600 hover:bg-cyan-500 p-2 rounded-lg"
-                    onClick={() => handleAddAndRunApp(app.name)}
-                  >
-                    <IconPlay />
-                  </button>
+                  <div className="flex items-center md:flex-row flex-col">
+                    <p className="text-zinc-600">Disabled</p>
+                    <button
+                      className="border-2 border-cyan-600 hover:bg-cyan-500 m-1 p-2 rounded-lg"
+                      onClick={() => handleAddAndRunApp(app.name)}
+                    >
+                      <IconPlay />
+                    </button>
+                  </div>
                 )}
               </div>
             ))}

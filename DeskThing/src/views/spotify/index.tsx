@@ -1,25 +1,26 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import './spotify.css';
 import React, { useEffect, useState } from 'react';
-import socket, { device_data, socketData, song_data } from '../../helpers/WebSocketService';
+import socket, { socketData, song_data } from '../../helpers/WebSocketService';
 import { IconAlbum } from '../../components/todothingUIcomponents';
 
 const Spotify: React.FC = () => {
   const [songData, setSongData] = useState<song_data>();
-  const [deviceData, setDeviceData] = useState<device_data>();
   const [imgData, setImgData] = useState<string>();
   const [offset, setOffset] = useState<number>();
   const [opacity, setOpacity] = useState<number>(100);
   const [transitioning, setTransitioning] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const handleDeviceData = (data: device_data) => {
-    setDeviceData(data);
-  };
 
 
   const handleSongData = async (data: song_data) => {
-    
-    if (songData && data.name === songData.name) {
+    if (data.thumbnail) {
+      setImgData(data.thumbnail)
+      setImageLoaded(true)
+    } else {
+      setImageLoaded(false)
+    }
+    if (songData && data.track_name === songData.track_name) {
       setSongData(data);
     } else {
       setTransitioning(true);
@@ -41,14 +42,8 @@ const Spotify: React.FC = () => {
   useEffect(() => {
 
     const listener = async (msg: socketData) => {
-      if (msg.type === 'device_data') {
-        handleDeviceData(msg.data as device_data);
-      }
-      if (msg.type === 'song_data') {
+      if (msg.type === 'song') {
         await handleSongData(msg.data as song_data);
-      }
-      if (msg.type === 'img_data') {
-        setImgData(typeof msg.data === 'string' && msg.data);
       }
     };
 
@@ -62,34 +57,22 @@ const Spotify: React.FC = () => {
   useEffect(() => {
     handleGetSongData();
   }, [])
-  //const handleSendCommand = (command: string) => {
-  //  if (socket.is_ready()) {
-  //    const data = {
-  //      type: 'command',
-  //      command: command,
-  //      spotify: !local,
-  //      uri: songData?.uri || null,
-  //    };
-  //    socket.post(data);
-  //  }
-  //};
 
   const handleGetSongData = () => {
     if (socket.is_ready()) {
-      const data = { app: 'spotify', type: 'get', request: 'song_info' };
+      const data = { app: 'spotify', type: 'get', request: 'song' };
       socket.post(data);
-      const data2 = { app: 'spotify', type: 'get', request: 'device_info' };
-      socket.post(data2);
     }
   };
 
   return (
-    <div className={'view_spotify'}>
-      <div className="view_spotify_img_container">
+    <div className={'flex h-screen overflow-hidden'}>
+      <div className="items-center w-96 flex p-7 img_color">
         {imgData && (
             <img
               src={imgData}
               alt="Image"
+              className="h-80 min-w-80 rounded-xl rounded-tl-[50px] shadow-2xl rounded-br-[50px] overflow-hidden"
               onLoad={() => {setImageLoaded(true)}}
               onError={() => {setImageLoaded(false)}}
               style={{ display: imageLoaded ? 'block' : 'none' }}
@@ -97,12 +80,12 @@ const Spotify: React.FC = () => {
           )}
           {!imageLoaded && <IconAlbum iconSize={300} />}
       </div>
-      <div className="view_spotify_info">
-        <p className="view_spotify_device">{`Listening On: ${deviceData?.device.name || 'Device name'}`}</p>
-        <div className={`info_container ${transitioning ? 'spotify_fade' : ''} `} style={{transform: `translateX(${offset}px)`, opacity: `${opacity}`}}>
-          <p className="view_spotify_album">{songData?.albumName || 'Album'}</p>
-          <h1 className="view_spotify_title">{songData?.name || 'Song Title'}</h1>
-          <h3 className="view_spotify_artist">{songData?.artistName || 'Artist'}</h3>
+      <div className="flex-col overflow-hidden text_color w-full text-left pt-20">
+        <p className="absolute bottom-24 font-semibold max-w-96 overflow-hidden">{`Listening On: ${songData?.device || 'Device name'}`}</p>
+        <div className={`info_container ${transitioning ? 'transition-all ease-in-out duration-700' : ''} `} style={{transform: `translateX(${offset}px)`, opacity: `${opacity}`}}>
+          <p className="m-3">{songData?.album || 'Album'}</p>
+          <h1 className="m-3">{songData?.track_name || 'Song Title'}</h1>
+          <h3 className="m-3">{songData?.artist || 'Artist'}</h3>
         </div>
 
       </div>

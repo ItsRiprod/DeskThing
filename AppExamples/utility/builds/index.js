@@ -25,40 +25,45 @@ var require_utility = __commonJS({
         };
         const manifestPath = path.join(__dirname, "manifest.json");
         this.manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
-        console.log("UTILITY: Manifest loaded:", this.manifest);
       }
       // Handles the audio control requests and routes them to the specific handler
       handleCommand(type, command, payload) {
         switch (command) {
-          case "set_repeat":
-            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, "set_repeat", payload);
+          case "next":
+            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, command, payload);
             break;
-          case "set_shuffle":
-            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, "set_shuffle", payload);
+          case "previous":
+            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, command, payload);
             break;
-          case "set_vol":
-            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, "set_vol", payload);
+          case "rewind":
+            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, command, payload);
             break;
-          case "seek_track":
-            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, "seek_track", payload);
+          case "fast_forward":
+            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, command, payload);
             break;
-          case "play_track":
-            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, "play_track", payload);
+          case "play":
+            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, command, payload);
             break;
-          case "pause_track":
-            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, "pause_track", payload);
+          case "pause":
+            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, command, payload);
             break;
-          case "next_track":
-            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, "next_track", payload);
+          case "seek":
+            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, command, payload);
             break;
-          case "previous_track":
-            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, "previous_track", payload);
+          case "like":
+            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, command, payload);
             break;
-          case "device_info":
-            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, "device_info", payload);
+          case "song":
+            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, command, payload);
             break;
-          case "song_info":
-            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, "song_info", payload);
+          case "volume":
+            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, command, payload);
+            break;
+          case "repeat":
+            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, command, payload);
+            break;
+          case "shuffle":
+            this.sendDataToMainFn("toApp", this.settings.playback_location.value, type, command, payload);
             break;
           default:
             this.sendDataToMainFn("error", `Unsupported command ${command}!`);
@@ -76,7 +81,6 @@ var UtilityHandler = require_utility();
 var utility;
 var listeners = [];
 async function start({ sendDataToMain, sysEvents }) {
-  console.log("UTILITY: App started!");
   utility = new UtilityHandler(sendDataToMain);
   sysEvents = sysEvents;
   const removeConfigListener = sysEvents("config", handleConfigEvent);
@@ -119,7 +123,7 @@ async function onMessageFromMain(event, ...args) {
         break;
       case "config":
         if (args[0] == void 0) {
-          console.log("UTILITY: Unknown config data received");
+          sendLog(" Unknown config data received");
         } else {
           if (args[0].audiosources) {
             const sources = [];
@@ -144,18 +148,16 @@ async function onMessageFromMain(event, ...args) {
         handleSet(...args);
         break;
       default:
-        console.log("UTILITY: Unknown message:", event, ...args);
+        sendError("Unknown message:", event, ...args);
         break;
     }
   } catch (error) {
-    console.error("UTILITY: Error in onMessageFromMain:", error);
     sendError("Error in onMessageFromMain:", error);
   }
 }
 var handleGet = async (...args) => {
-  console.log("UTILITY: Handling GET request", ...args);
   if (args[0] == null) {
-    console.log("UTILITY: No args provided");
+    sendError("No args provided");
     return;
   }
   let response;
@@ -171,9 +173,8 @@ var handleGet = async (...args) => {
   utility.sendDataToMainFn("data", response);
 };
 var handleSet = async (...args) => {
-  console.log("UTILITY: Handling SET request", ...args);
   if (args[0] == null) {
-    console.log("UTILITY: No args provided");
+    sendError("UTILITY: No args provided");
     return;
   }
   let response;
@@ -182,11 +183,11 @@ var handleSet = async (...args) => {
       if (args[1] != null) {
         const { setting, value } = args[1];
         utility.settings[setting].value = value;
-        console.log("UTILITY New Setting", utility.settings);
-        response = { settings: utility.settings };
-        utility.sendDataToMainFn("add", response);
+        sendLog("New Setting", utility.settings);
+        const settings = { settings: utility.settings };
+        utility.sendDataToMainFn("add", settings);
       } else {
-        console.log("UTILITY: No args provided", args[1]);
+        sendError("No args provided");
         response = "No args provided";
       }
       break;
@@ -194,7 +195,8 @@ var handleSet = async (...args) => {
       response = utility.handleCommand("set", ...args);
       break;
   }
-  console.log("UTILITY: Response", response);
-  utility.sendDataToMainFn("data", response);
+  if (response != null) {
+    utility.sendDataToMainFn("data", response);
+  }
 };
 module.exports = { start, onMessageFromMain, stop };

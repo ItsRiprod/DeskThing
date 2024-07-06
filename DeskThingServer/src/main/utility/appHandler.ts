@@ -50,7 +50,7 @@ const runningApps = new Map<string, AppInstance>()
  * @param {...any[]} args - Additional arguments related to the data or action.
  */
 async function handleDataFromApp(app: string, type: string, ...args: any[]): Promise<void> {
-  console.log(`SERVER: Received data from main process on channel ${type}:`, args)
+  console.log(`SERVER: Received data from main process on channel ${app}`, args)
   switch (type) {
     case 'message':
       const [message] = args
@@ -224,6 +224,22 @@ async function sendMessageToApp(appName: string, type: string, ...args: any[]): 
 
 async function stopApp(appName: string): Promise<void> {
   try {
+    const appConfig = await getAppByName(appName)
+    if (!appConfig) {
+      console.log(`App ${appName} not found in config, adding it`)
+      // App not found in config, add it
+      const newAppConfig = { name: appName, enabled: false, running: false, prefIndex: 5 } // 5 is the default index
+      await setAppData(newAppConfig)
+    } else if (appConfig.running) {
+      // App found but not enabled, enable it
+      appConfig.running = false
+      // Save updated config file (if enabled changed)
+      await setAppData(appConfig)
+      console.log('Stopped ', appName)
+    } else {
+      console.log(`App ${appName} is already stopped!`)
+    }
+
     const appInstance = runningApps.get(appName)
     if (appInstance && typeof appInstance.stop === 'function') {
       appInstance.stop()
@@ -242,15 +258,15 @@ async function stopApp(appName: string): Promise<void> {
  * @param {string} appName - The name of the app to disable.
  */
 async function disableApp(appName: string): Promise<void> {
-  await stopApp(appName)
   try {
+    await stopApp(appName)
     // Load existing apps config
     const appConfig = await getAppByName(appName)
 
     if (!appConfig) {
       console.log('App not found in config, add it')
       // App not found in config, add it
-      const newAppConfig = { name: appName, enabled: false, prefIndex: 5 } // 5 is the default index
+      const newAppConfig = { name: appName, enabled: false, running: false, prefIndex: 5 } // 5 is the default index
       await setAppData(newAppConfig)
     } else if (appConfig.enabled) {
       // App found but not enabled, enable it
@@ -258,6 +274,22 @@ async function disableApp(appName: string): Promise<void> {
       // Save updated config file (if enabled changed)
       await setAppData(appConfig)
       console.log('Disabled ', appName)
+    } else {
+      console.log(`App ${appName} is already disabled`)
+    }
+
+    const appDirectory = join(app.getPath('userData'), 'apps', appName)
+
+    // Remove the app from memory cache
+    const appEntryPoint = join(appDirectory, `index.js`)
+    if (appEntryPoint) {
+      const resolvedPath = require.resolve(appEntryPoint)
+      if (require.cache[resolvedPath]) {
+        delete require.cache[resolvedPath]
+        console.log(`Removed ${appEntryPoint} from cache`)
+      } else {
+        console.log(`${appEntryPoint} not in cache`)
+      }
     }
 
     sendPrefData()
@@ -410,19 +442,21 @@ async function addApp(_event, appName: string): Promise<void> {
 
     if (!appConfig) {
       // App not found in config, add it
-      const newAppConfig = { name: appName, enabled: true, prefIndex: 5 } // You might need to adjust this based on your app structure
+      const newAppConfig = { name: appName, running: true, enabled: true, prefIndex: 5 } // You might need to adjust this based on your app structure
       setAppData(newAppConfig)
-    } else if (!appConfig.enabled) {
+    } else if (!appConfig.enabled || !appConfig.running) {
       // App found but not enabled, enable it
       appConfig.enabled = true
+      appConfig.running = true
       // Save updated config file (if enabled changed)
       setAppData(appConfig)
       console.log(`Attempting to run app ${appName}`)
     } else {
       console.log(`App '${appName}' already exists and is enabled.`)
     }
+
+    console.log('Running app...')
     if (runningApps.has(appName)) {
-      console.log('Running app...')
       await stopApp(appName)
     }
 
@@ -452,12 +486,10 @@ async function purgeAppData(appName: string): Promise<void> {
     // Purge App Config
     purgeAppConfig(appName)
 
-    // Remove the file from filesystem
+    // Get path to file
     const appDirectory = join(app.getPath('userData'), 'apps', appName)
-    if (fs.existsSync(appDirectory)) {
-      fs.rmSync(appDirectory, { recursive: true })
-    }
 
+    // Remove the app from memory cache
     const appEntryPoint = join(appDirectory, `index.js`)
     if (appEntryPoint) {
       const resolvedPath = require.resolve(appEntryPoint)
@@ -465,6 +497,11 @@ async function purgeAppData(appName: string): Promise<void> {
         delete require.cache[resolvedPath]
         console.log(`Removed ${appEntryPoint} from cache`)
       }
+    }
+
+    // Remove the file from filesystem
+    if (fs.existsSync(appDirectory)) {
+      fs.rmSync(appDirectory, { recursive: true })
     }
 
     console.log(`Purged all data for app ${appName}`)

@@ -5,7 +5,7 @@
     "isLocalApp": false,
     "requires": ["utility"],
     "label": "Windows Media App",
-    "version": "v0.5.1",
+    "version": "v0.5.2",
     "description": "The DeskThing Media Windows App is a local audio control control source for the DeskThing",
     "author": "Riprod",
     "platforms": ["windows"],

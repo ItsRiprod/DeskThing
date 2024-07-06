@@ -107,6 +107,7 @@ server.on('connection', async (socket) => {
     MESSAGE_TYPES.LOGGING,
     `WEBSOCKET: Client has connected! ${numConnections} in total`
   )
+  dataListener.emit(MESSAGE_TYPES.CONNECTION, numConnections)
 
   console.log('WSOCKET: Client connected!\nWSOCKET: Sending preferences...')
   dataListener.emit(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Sending client preferences...`)
@@ -188,6 +189,7 @@ server.on('connection', async (socket) => {
           MESSAGE_TYPES.LOGGING,
           `WEBSOCKET: Client has disconnected! ${numConnections} in total`
         )
+        dataListener.emit(MESSAGE_TYPES.CONNECTION, numConnections)
         clearInterval(intervalId)
         console.log('WSOCKET: Client disconnected')
       })

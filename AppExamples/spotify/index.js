@@ -3,14 +3,12 @@ const SpotifyHandler = require('./spotify.js')
 let spotify
 
 async function start({ sendDataToMain }) {
-  console.log('Spotify App started!')
   spotify = new SpotifyHandler(sendDataToMain)
   // Get the data from main
   sendDataToMain('get', 'data')
   spotify.sendLog('Successfully Started!')
 }
 async function stop() {
-  console.log('Spotify App stopping...')
   
   spotify.sendLog('Successfully Stopped!')
   
@@ -18,7 +16,7 @@ async function stop() {
 }
 
 async function onMessageFromMain(event, ...args) {
-  console.log(`SPOTIFY: Received event ${event} with args `, ...args)
+  spotify.sendLog(`SPOTIFY: Received event ${event}`)
   try {
     switch (event) {
       case 'message':
@@ -35,11 +33,13 @@ async function onMessageFromMain(event, ...args) {
             'Spotify_Client_Secret'
           ])
         } else if (args[0].Spotify_Refresh_Token) {
-          console.log('SPOTIFY: Refreshing token...')
+          spotify.sendLog('Refreshing token...')
           spotify.refresh_token = args[0].Spotify_Refresh_Token
           spotify.client_id = args[0].Spotify_API_Id
           spotify.client_secret = args[0].Spotify_Client_Secret
-          spotify.access_token = args[0].Spotify_Access_Token || undefined
+          if (args[0].Spotify_Access_Token) {
+            spotify.access_token = args[0].Spotify_Access_Token || undefined
+          }
 
           await spotify.refreshAccessToken()
         } else {
@@ -55,7 +55,7 @@ async function onMessageFromMain(event, ...args) {
           spotify.client_id = data.Spotify_API_Id
           spotify.client_secret = data.Spotify_Client_Secret
 
-          console.log('SPOTIFY: No refresh token found, logging in...')
+          spotify.sendError('No refresh token found, logging in...')
           await spotify.login()
         }
 
@@ -67,7 +67,7 @@ async function onMessageFromMain(event, ...args) {
         }
         break
       case 'auth-data':
-        console.log('Something went wrong! You shouldnt be here!')
+        spotify.sendError('Something went wrong! You shouldnt be here!')
         //spotify.sendDataToMainFn('add', { Spotify_Refresh_Token: args[0].code })
         //console.log('New Refresh Token: ', args[0].code)
         //spotify.refresh_token = args[0].code
@@ -90,29 +90,24 @@ async function onMessageFromMain(event, ...args) {
         handleSet(...args)
         break
       default:
-        console.log('SPOTIFY: Unknown message:', event, ...args)
         spotify.sendError(`Unknown Message received ${event} ${args[0]}`)
         break
     }
   } catch (error) {
-    console.error('SPOTIFY: Error in onMessageFromMain:', error)
+    spotify.sendError('Error in onMessageFromMain:' + error)
   }
 }
 
 const handleGet = async (...args) => {
-  console.log('SPOTIFY: Handling GET request', ...args)
 
   if (args[0] == null) {
-    console.log('SPOTIFY: No args provided')
+    spotify.sendError('No args provided!')
     return
   }
   let response
   switch (args[0].toString()) {
-    case 'song_info':
+    case 'song':
       response = await spotify.returnSongData()
-      break
-    case 'device_info':
-      response = await spotify.returnDeviceData()
       break
     case 'manifest':
       response = spotify.manifest
@@ -125,49 +120,57 @@ const handleGet = async (...args) => {
   spotify.sendDataToMainFn('data', response)
 }
 const handleSet = async (...args) => {
-  console.log('SPOTIFY: Handling SET request', ...args)
 
   if (args[0] == null) {
-    console.log('SPOTIFY: No args provided')
+    spotify.sendError('No args provided')
     return
   }
   let response
   switch (args[0].toString()) {
-    case 'set_vol':
-      response = await spotify.setVolume(args[1])
+    case 'next':
+      response = await spotify.next(args[1])
       break
-    case 'set_shuffle':
-      response = await spotify.setShuffle(args[1])
+    case 'previous':
+      response = await spotify.previous()
       break
-    case 'set_repeat':
-      response = await spotify.setRepeat(args[1])
+    case 'fast_forward':
+      response = await spotify.fastForward(args[1])
       break
-    case 'next_track':
-      response = await spotify.skipToNext(args[1])
+    case 'rewind':
+      response = await spotify.rewind(args[1])
       break
-    case 'previous_track':
-      response = await spotify.skipToPrev(args[1])
+    case 'play':
+      response = await spotify.play(args[1])
       break
-    case 'pause_track':
-    case 'stop_track':
+    case 'pause':
+    case 'stop':
       response = await spotify.pause()
       break
-    case 'seek_track':
+    case 'seek':
       response = await spotify.seek(args[1])
       break
-    case 'play_track':
-      response = await spotify.play()
+    case 'like':
+      response = await spotify.like(args[1])
+      break
+    case 'volume':
+      response = await spotify.volume(args[1])
+      break
+    case 'repeat':
+      response = await spotify.repeat(args[1])
+      break
+    case 'shuffle':
+      response = await spotify.shuffle(args[1])
       break
       case 'update_setting':
         if (args[1] != null) {
           const {setting, value} = args[1];
           spotify.settings[setting].value = value
   
-          console.log('SPOTIFY New Setting', spotify.settings)
+          spotify.sendLog('New Settings:' + spotify.settings)
           response = { settings: spotify.settings }
           spotify.sendDataToMainFn('add', response)
         } else {
-          console.log('SPOTIFY: No args provided', args[1])
+          spotify.sendLog('No args provided', args[1])
           response = 'No args provided'
         }
         break

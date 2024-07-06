@@ -16,6 +16,7 @@ export interface Manifest {
 export interface App {
   name: string
   enabled: boolean
+  running: boolean
   prefIndex: number
   manifest?: Manifest
 }
@@ -61,6 +62,7 @@ class AppStore extends EventEmitter<AppData> {
     const appData: App = {
       name: newAppName,
       enabled: false,
+      running: false,
       prefIndex: 0
     }
 

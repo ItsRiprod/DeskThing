@@ -3,19 +3,7 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.ico?asset'
 import { getAppData } from './utility/configHandler'
-import {
-  addApp,
-  sendMessageToApp,
-  handleZip,
-  loadAndRunEnabledApps,
-  disableApp,
-  stopApp,
-  purgeAppData
-} from './utility/appHandler'
-import './utility/authHandler'
-import './utility/websocketServer'
 import path from 'path'
-import dataListener, { MESSAGE_TYPES } from './utility/events'
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
@@ -31,7 +19,6 @@ const IPC_CHANNELS = {
   USER_DATA_RESPONSE: 'user-data-response',
   SELECT_ZIP_FILE: 'select-zip-file'
 }
-loadAndRunEnabledApps()
 
 function createMainWindow(): BrowserWindow {
   const window = new BrowserWindow({
@@ -51,6 +38,10 @@ function createMainWindow(): BrowserWindow {
     window.show()
   })
 
+  window.on('closed', () => {
+    mainWindow = null
+  })
+
   window.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }
@@ -68,6 +59,16 @@ function createMainWindow(): BrowserWindow {
 
 function initializeTray(): void {
   tray = new Tray(icon)
+
+  tray.on('click', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.focus()
+    } else {
+      mainWindow = createMainWindow()
+    }
+  })
+
   const contextMenu = Menu.buildFromTemplate([
     {
       label: 'Open Window',
@@ -90,7 +91,13 @@ function initializeTray(): void {
   tray.setContextMenu(contextMenu)
 }
 
-function setupIpcHandlers(): void {
+async function setupIpcHandlers(): Promise<void> {
+  const { addApp, sendMessageToApp, handleZip, disableApp, stopApp, purgeAppData } = await import(
+    './utility/appHandler'
+  )
+  const dataListener = (await import('./utility/events')).default
+  const { MESSAGE_TYPES } = await import('./utility/events')
+
   ipcMain.on(IPC_CHANNELS.PING, () => console.log('pong'))
 
   ipcMain.on(IPC_CHANNELS.ADD_APP, async (event, appName: string) => {
@@ -146,36 +153,55 @@ function setupIpcHandlers(): void {
   dataListener.on(MESSAGE_TYPES.MESSAGE, (errorData) => {
     sendIpcData('message', errorData)
   })
+  dataListener.on(MESSAGE_TYPES.CONNECTION, (numConnections) => {
+    sendIpcData('connection', numConnections)
+  })
 }
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.whenReady().then(async () => {
-  // Set app user model id for windows
-  electronApp.setAppUserModelId('com.electron')
-
-  app.on('browser-window-created', (_, window) => {
-    optimizer.watchWindowShortcuts(window)
-  })
-
-  mainWindow = createMainWindow()
-  initializeTray()
-  setupIpcHandlers()
-
-  app.on('activate', function () {
-    // On macOS it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) {
+if (!app.requestSingleInstanceLock()) {
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.focus()
+    } else {
       mainWindow = createMainWindow()
     }
   })
-})
 
-app.on('window-all-closed', (e) => {
-  // Prevent the app from quitting
-  e.preventDefault()
-})
+  app.whenReady().then(async () => {
+    // Set app user model id for windows
+    electronApp.setAppUserModelId('com.electron')
 
+    app.on('browser-window-created', (_, window) => {
+      optimizer.watchWindowShortcuts(window)
+    })
+
+    mainWindow = createMainWindow()
+    initializeTray()
+
+    mainWindow.once('ready-to-show', () => {
+      setupIpcHandlers()
+      loadModules()
+    })
+
+    app.on('activate', function () {
+      // On macOS it's common to re-create a window in the app when the
+      // dock icon is clicked and there are no other windows open.
+      if (BrowserWindow.getAllWindows().length === 0) {
+        mainWindow = createMainWindow()
+      }
+    })
+  })
+
+  app.on('window-all-closed', (e) => {
+    // Prevent the app from quitting
+    e.preventDefault()
+  })
+}
 async function openAuthWindow(url: string): Promise<void> {
   const authWindow = new BrowserWindow({
     width: 850,
@@ -193,6 +219,16 @@ async function openAuthWindow(url: string): Promise<void> {
     // Dereference the window object
     authWindow.destroy()
   })
+}
+async function loadModules(): Promise<void> {
+  try {
+    await import('./utility/authHandler')
+    await import('./utility/websocketServer')
+    const { loadAndRunEnabledApps } = await import('./utility/appHandler')
+    loadAndRunEnabledApps()
+  } catch (error) {
+    console.error('Error loading modules:', error)
+  }
 }
 
 async function sendIpcMessage(

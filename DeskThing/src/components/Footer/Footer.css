@@ -1,64 +1,9 @@
-.audioPlayer_container {
-    padding-top: 3px;
-    position:fixed;
-    bottom:0px;
-    width: 100vw;
-    height: 90px;
-    display:flex;
-    transition: height 0.3s, background-color 0.2s ease-out;
+.ap_color {
+    /*transition: height 0.3s, background-color 0.2s ease-out;*/
     background: conic-gradient(from 0turn at 10% -5%,var(--bg-tinted-highlight) 26%, var(--color-albumColor) 50%);
     background-color: var(--bg-highlight);
-    
-    color: white;
-  }
-.audioPlayer {
-    bottom:0px;
-    width: 100vw;
-    height: 160px;
-    display:flex;
   }
 
-  .audioPlayer_container.visible {
-    height: 160px;
-    background-color: var(--bg-press);
-  }
-  .audioPlayer_controls {
-    width: 100%;
-  }
-  .buttonContainer {
-    overflow:hidden;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-around;
-    font-size: calc(10px + 2vmin);
-  }
-  
-  .mediaButton {
-    height: 75px;
-    aspect-ratio: 2/1;
-    border: none;
-    border-radius: 5px;
-    --button-size: 82px;
-    background-color: transparent;
-    display: flex;
-    height: var(--button-size);
-    min-width: var(--button-size);
-    position: relative;
-    width: var(--button-size);
-    -webkit-box-align: center;
-    -ms-flex-align: center;
-    align-items: center;
-    -webkit-box-pack: center;
-    -ms-flex-pack: center;
-    border: none;
-    cursor: pointer;
-    justify-content: center;
-    color: var(--bg-tinted-highlight);
-  }
-  .icon {
-    fill: var(--text-subdued);
-  }
   .getSongInfo {
     height: 100%;
     max-width: 163px;
@@ -75,18 +20,6 @@
     border-radius: 0px 15px 15px 0px;
   }
 
-  
-  .Log {
-    background-color: rgba(1, 1, 1, 1);
-    width: 85vw;
-    border-radius: 5px;
-  }
-
-  
-  .active {
-    color: var(--text-brightAccent);
-  }
-  
   /*
   
   ----------------------- Song Information

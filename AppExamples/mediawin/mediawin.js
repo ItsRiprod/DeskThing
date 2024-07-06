@@ -31,7 +31,7 @@ class MediaWin {
     const manifestPath = path.join(__dirname, 'manifest.json');
     this.manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
 
-    console.log('MediaWin: Manifest loaded:', this.manifest);
+    this.sendLog('Manifest loaded:', this.manifest);
   }
 
   async sendLog(message) {
@@ -42,177 +42,113 @@ class MediaWin {
   }
 
   async returnSongData() {
-    return new Promise((resolve, reject) => {
-      exec(this.cliPath, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`exec error: ${error}`);
-          reject(error);
-          return;
-        }
-        
-        try {
-          // Parse the JSON output into musicData object
-          const musicData = JSON.parse(stdout);
-
-          musicData.photo = "data:image/png;base64," + musicData.photo
-          
-          this.sendLog('Returning song data');
-          resolve(musicData);
-        } catch (parseError) {
-          console.error('Error parsing JSON:', parseError);
-          reject(parseError);
-        }
-      });
-    });
+    const result = await this.executeCommand('')
+    if (result === false) {
+      this.sendError('Music Data returned false! There was an error');
+      return false;
+    } else {
+      const musicData = result;
+      musicData.thumbnail = "data:image/png;base64," + musicData.thumbnail;
+      musicData.volume = await this.getVolumeInfo();
+      musicData.can_change_volume = true;
+      this.sendLog('Returning song data');
+  
+      return musicData
+    }
   }
 
-
-  async skipToNext() {
+  async executeCommand(command, args = '') {
     return new Promise((resolve, reject) => {
-      exec(`${this.cliPath} next`, (error, stdout, stderr) => {
+      exec(`${this.cliPath} ${command} ${args}`, (error, stdout, stderr) => {
         if (error) {
-          console.error(`exec error: ${error}`);
+          this.sendError(`exec error: ${error}`);
           reject(false);
           return;
         }
-        
+
         try {
           const result = JSON.parse(stdout);
-          this.sendLog('Skipped with response', stdout)
-          resolve(result.success);
+          this.sendLog(`${command} with response` + stdout);
+          resolve(result);
         } catch (parseError) {
-          console.error('Error parsing JSON:', parseError);
+          this.sendError('Error parsing JSON:' + parseError);
           reject(false);
         }
       });
     });
   }
 
-  async skipToPrev() {
+  async exeVol(...args) {
+    const executablePath = path.join(__dirname, 'adjust_get_current_system_volume_vista_plus.exe')
+
     return new Promise((resolve, reject) => {
-      exec(`${this.cliPath} previous`, (error, stdout, stderr) => {
+      exec(`${executablePath} ${args}`, (error, stdout, stderr) => {
         if (error) {
-          console.error(`exec error: ${error}`);
+          this.sendError(`exec error: ${error}`);
           reject(false);
           return;
         }
-        
+
         try {
-          const result = JSON.parse(stdout);
-          this.sendLog('Skipped with response', stdout)
-          resolve(result.success);
+          resolve(stdout);
         } catch (parseError) {
-          console.error('Error parsing JSON:', parseError);
+          this.sendError('Error parsing JSON:' + parseError);
           reject(false);
         }
       });
     });
+  }
+
+  async getVolumeInfo () {
+    const data = await this.exeVol()
+    const args = data.split(' ')
+  
+    return parseInt(args[0], 10)
+  }
+
+  async next() {
+    return this.executeCommand('next');
+  }
+
+  async previous() {
+    return this.executeCommand('previous');
+  }
+
+  async fastForward(seconds) {
+    return this.executeCommand('fastforward', seconds);
+  }
+
+  async rewind(seconds) {
+    return this.executeCommand('rewind', seconds);
   }
 
   async play() {
-    return new Promise((resolve, reject) => {
-      exec(`${this.cliPath} play`, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`exec error: ${error}`);
-          reject(false);
-          return;
-        }
-        
-        try {
-          const result = JSON.parse(stdout);
-          this.sendLog('Played with response', stdout)
-          resolve(result.success);
-        } catch (parseError) {
-          console.error('Error parsing JSON:', parseError);
-          reject(false);
-        }
-      });
-    });
+    return this.executeCommand('play');
   }
 
   async pause() {
-    return new Promise((resolve, reject) => {
-      exec(`${this.cliPath} pause`, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`exec error: ${error}`);
-          reject(false);
-          return;
-        }
-        
-        try {
-          this.sendLog('Paused with response', stdout)
-          const result = JSON.parse(stdout);
-          resolve(result.success);
-        } catch (parseError) {
-          console.error('Error parsing JSON:', parseError);
-          reject(false);
-        }
-      });
-    });
+    return this.executeCommand('pause');
   }
 
-  async setShuffle(state) {
-    return new Promise((resolve, reject) => {
-      exec(`${this.cliPath} setshuffle ${state}`, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`exec error: ${error}`);
-          reject(false);
-          return;
-        }
-        
-        try {
-          this.sendLog('Set Shuffle with response', stdout)
-          const result = JSON.parse(stdout);
-          resolve(result.success);
-        } catch (parseError) {
-          console.error('Error parsing JSON:', parseError);
-          reject(false);
-        }
-      });
-    });
+  async stop() {
+    return this.executeCommand('stop');
   }
 
-  async setRepeat(state) {
-    return new Promise((resolve, reject) => {
-      exec(`${this.cliPath} setrepeat ${state}`, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`exec error: ${error}`);
-          reject(false);
-          return;
-        }
-        
-        try {
-          this.sendLog('Set Repeat with response', stdout)
-          const result = JSON.parse(stdout);
-          resolve(result.success);
-        } catch (parseError) {
-          console.error('Error parsing JSON:', parseError);
-          reject(false);
-        }
-      });
-    });
+  async seek(positionMs) {
+    return this.executeCommand('seek', positionMs);
   }
 
-  async seek(position_ms) {
-    return new Promise((resolve, reject) => {
-      exec(`${this.cliPath} seek ${position_ms}`, (error, stdout, stderr) => {
-        if (error) {
-          console.error(`exec error: ${error}`);
-          sendError(`exec error: ${error}`);
-          reject(false);
-          return;
-        }
-        
-        try {
-          this.sendLog('Seeked with response', stdout)
-          const result = JSON.parse(stdout);
-          resolve(result.success);
-        } catch (parseError) {
-          console.error('Error parsing JSON:', parseError);
-          reject(false);
-        }
-      });
-    });
+  async volume(volumePercentage) {
+    this.exeVol(String(volumePercentage));
+    return true
+  }
+
+  async repeat(state) {
+    return this.executeCommand('setrepeat', state);
+  }
+
+  async shuffle(state) {
+    return this.executeCommand('setshuffle', state);
   }
 }
 

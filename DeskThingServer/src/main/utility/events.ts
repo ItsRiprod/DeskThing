@@ -4,7 +4,8 @@ export const MESSAGE_TYPES = {
   ERROR: 'error',
   LOGGING: 'log',
   MESSAGE: 'message',
-  CONFIG: 'config'
+  CONFIG: 'config',
+  CONNECTION: 'connection'
 }
 
 /* Handles server-wide announcements for certain events */

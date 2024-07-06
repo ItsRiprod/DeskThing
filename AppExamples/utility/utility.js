@@ -19,42 +19,47 @@ class UtilityHandler {
     const manifestPath = path.join(__dirname, 'manifest.json');
     this.manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
 
-    console.log('UTILITY: Manifest loaded:', this.manifest);
 
   }
 
   // Handles the audio control requests and routes them to the specific handler
   handleCommand(type, command, payload) {
     switch (command) {
-      case 'set_repeat':
-        this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, 'set_repeat', payload);
+      case 'next':
+        this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, command, payload);
         break;
-      case 'set_shuffle':
-        this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, 'set_shuffle', payload);
+      case 'previous':
+        this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, command, payload);
         break;
-      case 'set_vol':
-        this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, 'set_vol', payload);
+      case 'rewind':
+        this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, command, payload);
         break;
-      case 'seek_track':
-        this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, 'seek_track', payload);
+      case 'fast_forward':
+        this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, command, payload);
         break;
-      case 'play_track':
-        this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, 'play_track', payload);
+      case 'play':
+        this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, command, payload);
         break;
-      case 'pause_track':
-        this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, 'pause_track', payload);
+      case 'pause':
+        this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, command, payload);
         break;
-      case 'next_track':
-        this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, 'next_track', payload);
+      case 'seek':
+        this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, command, payload);
         break;
-      case 'previous_track':
-        this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, 'previous_track', payload);
+      case 'like':
+        this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, command, payload);
         break;
-      case 'device_info':
-        this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, 'device_info', payload);
+      case 'song':
+        this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, command, payload);
         break;
-      case 'song_info':
-        this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, 'song_info', payload);
+      case 'volume':
+        this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, command, payload);
+        break;
+      case 'repeat':
+        this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, command, payload);
+        break;
+      case 'shuffle':
+        this.sendDataToMainFn('toApp', this.settings.playback_location.value, type, command, payload);
         break;
       default:
         this.sendDataToMainFn('error', `Unsupported command ${command}!`)

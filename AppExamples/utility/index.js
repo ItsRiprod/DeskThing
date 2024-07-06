@@ -4,9 +4,8 @@ let utility
 const listeners = []
 
 async function start({ sendDataToMain, sysEvents }) {
-  console.log('UTILITY: App started!')
   utility = new UtilityHandler(sendDataToMain)
-
+  
   sysEvents = sysEvents
   const removeConfigListener = sysEvents('config', handleConfigEvent)
   listeners.push(removeConfigListener)
@@ -58,7 +57,7 @@ async function onMessageFromMain(event, ...args) {
         break
       case 'config':
         if (args[0] == undefined) {
-          console.log('UTILITY: Unknown config data received')
+          sendLog(' Unknown config data received')
         } else {
           if (args[0].audiosources) {
             const sources = []
@@ -88,21 +87,19 @@ async function onMessageFromMain(event, ...args) {
         handleSet(...args)
         break
       default:
-        console.log('UTILITY: Unknown message:', event, ...args)
+        sendError('Unknown message:', event, ...args)
         break
     }
   } catch (error) {
     
-    console.error('UTILITY: Error in onMessageFromMain:', error)
     sendError('Error in onMessageFromMain:', error)
   }
 }
 
 const handleGet = async (...args) => {
-  console.log('UTILITY: Handling GET request', ...args)
 
   if (args[0] == null) {
-    console.log('UTILITY: No args provided')
+    sendError('No args provided')
     return
   }
 
@@ -119,10 +116,9 @@ const handleGet = async (...args) => {
   utility.sendDataToMainFn('data', response)
 }
 const handleSet = async (...args) => {
-  console.log('UTILITY: Handling SET request', ...args)
 
   if (args[0] == null) {
-    console.log('UTILITY: No args provided')
+    sendError('UTILITY: No args provided')
     return
   }
   let response
@@ -132,11 +128,11 @@ const handleSet = async (...args) => {
         const {setting, value} = args[1];
         utility.settings[setting].value = value
 
-        console.log('UTILITY New Setting', utility.settings)
-        response = { settings: utility.settings }
-        utility.sendDataToMainFn('add', response)
+        sendLog('New Setting', utility.settings)
+        const settings = { settings: utility.settings }
+        utility.sendDataToMainFn('add', settings)
       } else {
-        console.log('UTILITY: No args provided', args[1])
+        sendError('No args provided')
         response = 'No args provided'
       }
       break
@@ -144,7 +140,9 @@ const handleSet = async (...args) => {
       response = utility.handleCommand('set', ...args)
       break
   }
-  console.log('UTILITY: Response', response)
-  utility.sendDataToMainFn('data', response)
+
+  if (response != null) {
+    utility.sendDataToMainFn('data', response)
+  }
 }
 module.exports = { start, onMessageFromMain, stop }

@@ -1,7 +1,7 @@
 import './Footer.css';
 import React, { useEffect, useState, useRef } from 'react';
 import CountUpTimer from '../CountUpTimer'; // Ensure you have CountUpTimer defined in another file
-import socket, { device_data, socketData, song_data } from '../../helpers/WebSocketService';
+import socket, { AUDIO_REQUESTS, socketData, song_data } from '../../helpers/WebSocketService';
 import {
   IconPlay,
   IconPause,
@@ -26,39 +26,41 @@ const Footer: React.FC = () => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const playerIslandRef = useRef<HTMLDivElement>(null);
 
-  const handleDeviceData = (data: device_data) => {
-    //setLocal(!data.device.is_active);
-    setLocal(false);
-    setPlay(data.is_playing);
-    setShuffle(data.shuffle_state);
-    setRepeat(data.repeat_state);
-  };
-
-  const handleSongData = (data: song_data) => {
-    setSongData(data);
-    setImageData(data.photo)
-
-  };
-
   const handleBackgroundColor = async (photo: string) => {
-    const bgColor = await getBackgroundColor(photo);
-    const contrast = findContrastColor(bgColor);
-    document.documentElement.style.setProperty('--color-albumText', `rgb(${contrast[0]}, ${contrast[1]}, ${contrast[2]})`);
-    document.documentElement.style.setProperty('--color-albumColor', `rgb(${bgColor[0]}, ${bgColor[1]}, ${bgColor[2]})`);
+    try {
+      const bgColor = await getBackgroundColor(photo);
+      const contrast = findContrastColor(bgColor);
+      document.documentElement.style.setProperty('--color-albumText', `rgb(${contrast[0]}, ${contrast[1]}, ${contrast[2]})`);
+      document.documentElement.style.setProperty('--color-albumColor', `rgb(${bgColor[0]}, ${bgColor[1]}, ${bgColor[2]})`);
+    } catch (Exception) {
+      console.log(Exception)
+    }
   }
 
   useEffect(() => {
+
+    const handleSongData = (data: song_data) => {
+      setSongData(data);
+      
+      setLocal(false);
+      setPlay(data.is_playing);
+      setShuffle(data.shuffle_state);
+      setRepeat(data.repeat_state);
+  
+      if (data.thumbnail) {
+        setImageData(data.thumbnail)
+        try {
+          handleBackgroundColor(data.thumbnail)
+        } catch {
+          console.log('Unable to set background color')
+        }
+      }
+  
+    };
+
     const listener = (msg: socketData) => {
-      if (msg.type === 'device_data') {
-        handleDeviceData(msg.data as device_data);
-      }
-      if (msg.type === 'song_data') {
-        console.log(msg.data)
+      if (msg.type === 'song') {
         handleSongData(msg.data as song_data);
-      }
-      if (msg.type === 'img_data') {
-        setImageData(msg.data as string);
-        handleBackgroundColor(msg.data as string)
       }
     };
 
@@ -69,19 +71,9 @@ const Footer: React.FC = () => {
     };
   }, []);
 
-  const handleSendCommand = (request: string) => {
-    if (socket.is_ready()) {
-      const data = {
-        app: 'utility',
-        type: 'set',
-        request: request,
-        data: songData?.uri || null,
-      };
-      socket.post(data);
-    }
-  };
+  
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleSendSet = (request: string, payload: any) => {
+  const handleSendSet = (request: string, payload = songData.id as any) => {
     if (socket.is_ready()) {
       const data = {
         app: 'utility',
@@ -92,52 +84,43 @@ const Footer: React.FC = () => {
       socket.post(data);
     }
   };
+
   const handleRepeat = () => {
 
     let newRepeat;
 
     switch (repeat) {
       case 'off':
-        newRepeat = 'context';
+        newRepeat = 'all';
         break;
-      case 'context':
+      case 'all':
         newRepeat = 'track';
         break;
       case 'track':
         newRepeat = 'off';
         break;
       default:
-        newRepeat = 'context';
+        newRepeat = 'all';
         break;
     }
     setRepeat(newRepeat);
 
-    handleSendSet('set_repeat', newRepeat)
+    handleSendSet(AUDIO_REQUESTS.REPEAT, newRepeat)
 
   };
   const handleShuffleToggle = () => {
     setShuffle((old) => !old);
-    handleSendSet('set_shuffle', !shuffle)
+    handleSendSet(AUDIO_REQUESTS.SHUFFLE, !shuffle)
   };
 
   const handleGetSongData = () => {
     if (socket.is_ready()) {
-      const data = { app: 'utility', type: 'get', request: 'song_info' };
+      const data = { app: 'utility', type: 'get', request: AUDIO_REQUESTS.SONG };
       socket.post(data);
-      const data2 = { app: 'utility', type: 'get', request: 'device_info' };
-      socket.post(data2);
     }
   };
   const setSpecificDuration = (ms: number) => {
-    if (socket.is_ready()) {
-      const data = {
-        app: 'utility',
-        type: 'set',
-        request: 'seek_track',
-        data: ms,
-      };
-      socket.post(data);
-    }
+    handleSendSet(AUDIO_REQUESTS.SEEK, ms)
   };
 
   const handleTouchOutside = (event: TouchEvent) => {
@@ -161,77 +144,77 @@ const Footer: React.FC = () => {
 
   const handlePlayPause = () => {
     setPlay(!play);
-    play ? handleSendCommand('pause_track') : handleSendCommand('play_track');
+    play ? handleSendSet(AUDIO_REQUESTS.PAUSE, songData.id) : handleSendSet(AUDIO_REQUESTS.PLAY, songData.id);
   };
 
   return (
-    <div className={`audioPlayer_container ${visible ? 'visible' : ''}`}
+    <div className={`fixed flex max-w-full bottom-0 transition-all ease-out duration-200 ap_color ${visible ? 'h-36' : 'h-16'}`}
     ref={playerIslandRef}
     onTouchStart={handleTouchInside}>
-        <button className='getSongInfo' onClick={handleGetSongData}>
+        <button className='max-w-40' onClick={handleGetSongData}>
             {imageData && (
               <img
               src={imageData}
                 alt="Image"
-                className='albumArt'
+                className=''
                 onLoad={() => {setImageLoaded(true)}}
                 onError={() => {setImageLoaded(false)}}
                 style={{ display: imageLoaded ? 'block' : 'none' }}
               />
             )}
-            {!imageLoaded && <IconAlbum className='albumArt' iconSize={128} />}
+            {!imageLoaded && <IconAlbum className='' iconSize={128} />}
         </button>
-      <div className="audioPlayer">
-        <div className="audioPlayer_controls">
+      <div className="w-screen flex">
+        <div className="w-full">
           {local ? (
-            <div className="songInformation">
+            <div className="">
               <div className="songTitle">{' ' + ' - ' + ' '}</div>
-              <div className="progressBar_container">
-                <div className="progressBar_progress" style={{ width: `0%` }} />
-                <p className="progressBar_timer">--:--</p>
+              <div className="rounded-sm m-auto w-11/12 transition-all overflow-hidden bg-zinc-800 h-2">
+                <div className="bg-green-500 static rounded-r-full h-full" style={{ width: `0%` }} />
+                <p className="m-0 p-0 -translate-y-8 font-bold">--:--</p>
               </div>
             </div>
           ) : (
-            <div className="songInformation">
+            <div className="">
 
               <div>
                 <CountUpTimer
                   onSongEnd={handleGetSongData}
-                  start={songData?.progress_ms || 0}
-                  end={songData?.duration_ms || 0}
+                  start={songData?.track_progress || 0}
+                  end={songData?.track_duration || 0}
                   play={play}
                   onTouchStart={handleTouchInside}
                   onTouchEnd={setSpecificDuration}
-                  handleSendCommand={handleSendCommand}
+                  handleSendSet={handleSendSet}
                 >
                   <div className="songTitle">
-                    {songData?.name || 'Track Name'}
+                    {songData?.track_name || 'Track Name'}
                   </div>
                 </CountUpTimer>
               </div>
             </div>
           )}
-          <div className="buttonContainer">
-            <button className="mediaButton" onClick={handleShuffleToggle}>
-              {shuffle ? <IconShuffle iconSize={48} className={'active'} /> : <IconShuffle iconSize={48} />}
+          <div className="overflow-hidden flex align-center justify-around pt-2 text-zinc-500">
+            <button className="" onClick={handleShuffleToggle}>
+              {shuffle ? <IconShuffle iconSize={48} className={'text-green-500'} /> : <IconShuffle iconSize={48} />}
             </button>
             <button
-              className="mediaButton active"
-              onClick={() => handleSendCommand('previous_track')}
+              className="text-green-500"
+              onClick={() => handleSendSet(AUDIO_REQUESTS.PREVIOUS, songData.id)}
             >
               <IconSkipBack />
             </button>
-            <button className="mediaButton active" onClick={handlePlayPause}>
+            <button className="text-green-500" onClick={handlePlayPause}>
               {!play ? <IconPlay /> : <IconPause />}
             </button>
-            <button className="mediaButton active" onClick={() => handleSendCommand('next_track')}>
-              <IconSkipForward />
+            <button className="text-green-500" onClick={() => handleSendSet(AUDIO_REQUESTS.NEXT, songData.id)}>
+              {songData?.can_skip ? <IconSkipForward /> : <IconSkipForward />}
             </button>
             <button
-              className="mediaButton"
+              className=""
               onClick={handleRepeat}
             >
-              {repeat == 'off' ? <IconRepeat iconSize={48} /> : repeat == 'context' ? <IconRepeat className={'active'} iconSize={48} /> : <IconRepeatOne className={'active'} iconSize={48} />}
+              {repeat == 'off' ? <IconRepeat iconSize={48} /> : repeat == 'all' ? <IconRepeat className={'text-green-500'} iconSize={48} /> : <IconRepeatOne className={'text-green-500'} iconSize={48} />}
             </button>
           </div>
         </div>

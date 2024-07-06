@@ -13632,7 +13632,7 @@ var require_spotify = __commonJS({
         };
         const manifestPath = path.join(__dirname, "manifest.json");
         this.manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"));
-        console.log("SPOTIFY: Manifest loaded:", this.manifest);
+        this.sendLog("Manifest loaded:" + this.manifest);
       }
       async sendLog(message) {
         this.sendDataToMainFn("log", message);
@@ -13646,7 +13646,7 @@ var require_spotify = __commonJS({
        */
       async refreshAccessToken() {
         if (this.refresh_token == void 0) {
-          console.log("SPOTIFY: REFRESH TOKEN IS UNDEFINED!! LOGGING IN");
+          this.sendError("REFRESH TOKEN IS UNDEFINED!! LOGGING IN");
           await this.login();
           return;
         }
@@ -13673,7 +13673,6 @@ var require_spotify = __commonJS({
           };
           return returnData;
         } catch (error) {
-          console.error("Error getting access token:", error);
           this.sendError("Error getting access token!");
           throw error;
         }
@@ -13702,12 +13701,11 @@ var require_spotify = __commonJS({
           };
           return returnData;
         } catch (error) {
-          console.error("Error getting access token:", error);
+          this.sendError("Error getting access token:" + error);
           throw error;
         }
       }
       async login() {
-        console.log("Logging in...");
         this.sendLog("Logging in...");
         const scope = "user-read-currently-playing user-read-playback-state user-modify-playback-state";
         const state = "thisisarandomstringthatshouldbechangedlater";
@@ -13740,7 +13738,6 @@ var require_spotify = __commonJS({
           }
         } catch (error2) {
           this.sendError(`There was an error in spotify's ErrorHandler ${error2}`);
-          console.error("There was an error in spotifyHandler!", error2);
         }
       }
       /**
@@ -13754,7 +13751,7 @@ var require_spotify = __commonJS({
         this.sendLog(`Handling request to url ${url}`);
         try {
           if (!this.access_token || this.access_token == null) {
-            console.log("Refreshing access token");
+            this.sendLog("Refreshing access token");
             await this.refreshAccessToken();
           }
         } catch (error) {
@@ -13772,151 +13769,176 @@ var require_spotify = __commonJS({
             return;
           }
           if (error.response && error.response.status === 403) {
-            console.log("Error 403 reached! Bad OAuth (Cancelling Request)");
-            console.error(error.response);
+            this.sendError("Error 403 reached! Bad OAuth (Cancelling Request)");
             return;
           }
           await new Promise((resolve) => setTimeout(resolve, 5e3));
-          console.log("SPOTIFY REQUEST: Retrying", method, url, data);
+          this.sendLog("Retrying", method, url, data);
           const retryResponse = await this.makeRequest(method, url, data);
           return retryResponse.data != null ? retryResponse.data : true;
         }
       }
       async getCurrentPlayback() {
-        const url = `${this.BASE_URL}/currently-playing`;
+        const url = `${this.BASE_URL}`;
         return this.makeRequest("get", url);
       }
       async getCurrentEpisode() {
-        const url = `${this.BASE_URL}/currently-playing?additional_types=episode`;
+        const url = `${this.BASE_URL}?additional_types=episode`;
         return this.makeRequest("get", url);
       }
-      async getCurrentDevice() {
-        const url = this.BASE_URL;
-        return this.makeRequest("get", url);
-      }
-      async skipToNext(songUrl) {
+      async next(id) {
         const url = `${this.BASE_URL}/next`;
         await this.makeRequest("post", url);
-        return await this.returnSongData(songUrl);
+        return await this.returnSongData(id);
       }
-      async skipToPrev(songUrl) {
+      async previous() {
         const url = `${this.BASE_URL}/previous`;
         await this.makeRequest("post", url);
-        return await this.returnSongData(songUrl);
+        return await this.returnSongData();
       }
-      async play(uri, context, position) {
+      async fastForward(seconds = 15) {
+        try {
+          const playback = await this.getCurrentPlayback();
+          const currentPosition = playback.progress_ms;
+          const newPosition = currentPosition + seconds * 1e3;
+          await this.seek(newPosition);
+        } catch (error) {
+          this.sendError("Error fast forwarding!" + error);
+        }
+      }
+      async rewind(seconds = 15) {
+        try {
+          const playback = await this.getCurrentPlayback();
+          const currentPosition = playback.progress_ms;
+          const newPosition = currentPosition - seconds * 1e3;
+          await this.seek(newPosition);
+        } catch (error) {
+          this.sendError("Error fast forwarding!" + error);
+        }
+      }
+      async play(context) {
         const url = `${this.BASE_URL}/play`;
-        const body = position && uri ? { context_uri: context, offset: { uri }, position_ms: position } : null;
+        const body = context.playlist && context.id && context.position ? { context_uri: context.playlist, offset: { "uri": `spotify:track:${context.id}` }, position_ms: context.position } : null;
         return this.makeRequest("put", url, body);
       }
-      async setShuffle(state) {
-        const url = `${this.BASE_URL}/shuffle?state=${state}`;
-        return this.makeRequest("put", url);
-      }
-      async setRepeat(state) {
-        const url = `${this.BASE_URL}/repeat?state=${state}`;
+      async pause() {
+        const url = `${this.BASE_URL}/pause`;
         return this.makeRequest("put", url);
       }
       async seek(position) {
         const url = `${this.BASE_URL}/seek?position_ms=${position}`;
         return this.makeRequest("put", url);
       }
-      async pause() {
-        const url = `${this.BASE_URL}/pause`;
-        return this.makeRequest("put", url);
+      async like(state) {
+        const trackInfo = await getCurrentPlayback();
+        if (trackInfo && trackInfo.item.id) {
+          const id = trackInfo.item.id;
+          const url = `${this.BASE_URL}/me/tracks?ids=${id}`;
+          if (state) {
+            return this.makeRequest("put", url);
+          } else {
+            return this.makeRequest("delete", url);
+          }
+        }
       }
-      async setVolume(newVol) {
+      async volume(newVol) {
         const url = `${this.BASE_URL}/volume?volume_percent=${newVol}`;
         return this.makeRequest("put", url);
       }
-      async returnSongData(oldUri = null) {
+      async repeat(state) {
+        if (state == "all") {
+          const url2 = `${this.BASE_URL}/repeat?state=context`;
+          return this.makeRequest("put", url2);
+        }
+        const url = `${this.BASE_URL}/repeat?state=${state}`;
+        return this.makeRequest("put", url);
+      }
+      async shuffle(state) {
+        const url = `${this.BASE_URL}/shuffle?state=${state}`;
+        return this.makeRequest("put", url);
+      }
+      async returnSongData(id = null) {
         try {
           const startTime = Date.now();
           const timeout = 1e6;
           let delay = 100;
           let currentPlayback;
-          let newTrackUri;
+          let new_id;
           do {
             currentPlayback = await this.getCurrentPlayback();
             if (currentPlayback.currently_playing_type === "track") {
-              newTrackUri = currentPlayback.item.uri;
-              if (delay !== 100)
-                console.log(
-                  `Song not updated... trying again | timeout: ${timeout} cur time: ${Date.now() - startTime} delay: ${delay}`
-                );
-              else
-                console.log(
-                  `Getting Current Playback: old url ${oldUri} new url ${newTrackUri}, date now: ${Date.now()}`
-                );
+              new_id = currentPlayback.item.id;
+              if (delay !== 100) {
+                this.sendLog(`Song has not changed. Trying again...`);
+              }
               delay *= 1.3;
               await new Promise((resolve) => setTimeout(resolve, delay));
             } else {
               currentPlayback = await this.getCurrentEpisode();
-              console.log("Playing a podcast!");
+              this.sendLog("Playing a podcast!");
             }
-          } while (newTrackUri === oldUri && Date.now() - startTime < timeout && delay < 500);
-          if (newTrackUri === oldUri) {
+          } while (new_id === id && Date.now() - startTime < timeout && delay < 1e3);
+          if (new_id === id) {
             throw new Error("Timeout Reached!");
           }
           let songData;
           if (currentPlayback.currently_playing_type === "track") {
             songData = {
-              photo: null,
-              duration_ms: currentPlayback.item.duration_ms,
-              name: currentPlayback.item.name,
-              progress_ms: currentPlayback.progress_ms,
-              is_playing: currentPlayback.is_playing,
-              artistName: currentPlayback.item.artists[0].name,
-              uri: currentPlayback.item.uri,
-              playlistUri: currentPlayback.context.uri,
-              albumName: currentPlayback.item.album.name
+              album: currentPlayback?.item.album.name,
+              artist: currentPlayback?.item.album.artists[0].name,
+              playlist: currentPlayback?.context.type,
+              playlist_id: currentPlayback?.context.uri,
+              track_name: currentPlayback?.item.name,
+              shuffle_state: currentPlayback?.shuffle_state,
+              repeat_state: currentPlayback?.repeat_state == "context" ? "all" : currentPlayback.repeat_state,
+              is_playing: currentPlayback?.is_playing,
+              can_fast_forward: !currentPlayback?.disallows?.seeking || true,
+              can_skip: !currentPlayback?.disallows?.skipping_next || true,
+              can_like: true,
+              can_change_volume: currentPlayback?.device.supports_volume || true,
+              can_set_output: !currentPlayback?.disallows?.transferring_playback || true,
+              track_duration: currentPlayback?.item.duration_ms,
+              track_progress: currentPlayback?.progress_ms,
+              volume: currentPlayback?.device.volume_percent,
+              device: currentPlayback?.device.name,
+              device_id: currentPlayback?.device.id,
+              id: currentPlayback?.item.id,
+              thumbnail: null
             };
-            this.sendDataToMainFn("data", { type: "song_data", data: songData });
+            this.sendDataToMainFn("data", { type: "song", data: songData });
             const imageUrl = currentPlayback.item.album.images[0].url;
-            const imageData = await getImageData(imageUrl);
-            this.sendDataToMainFn("data", { type: "img_data", data: imageData });
+            songData.thumbnail = await getImageData(imageUrl);
+            this.sendDataToMainFn("data", { type: "song", data: songData });
           } else {
             songData = {
-              photo: null,
-              duration_ms: currentPlayback.item.duration_ms,
-              name: currentPlayback.item.name,
-              progress_ms: currentPlayback.progress_ms,
+              album: currentPlayback.item.show.name,
+              artist: currentPlayback.item.show.publisher,
+              playlist: currentPlayback.context.type,
+              playlist_id: currentPlayback.context.uri,
+              track_name: currentPlayback.item.name,
+              shuffle_state: currentPlayback.shuffle_state,
+              repeat_state: currentPlayback.repeat_state == "context" ? "all" : currentPlayback.repeat_state,
               is_playing: currentPlayback.is_playing,
-              artistName: currentPlayback.item.show.publisher,
-              uri: currentPlayback.item.uri,
-              playlistUri: currentPlayback.context.uri,
-              albumName: currentPlayback.item.show.name
+              can_fast_forward: false,
+              can_skip: !currentPlayback.disallows.skipping_next,
+              can_like: true,
+              can_change_volume: currentPlayback.device.supports_volume,
+              can_set_output: !currentPlayback.disallows.transferring_playback,
+              track_duration: currentPlayback.item.duration_ms,
+              track_progress: currentPlayback.progress_ms,
+              volume: device.volume_percent,
+              device: currentPlayback.device.name,
+              device_id: currentPlayback.device.id,
+              id: currentPlayback.item.id,
+              thumbnail: null
             };
-            this.sendDataToMainFn("data", { type: "song_data", data: songData });
-            this.sendDataToMainFn("data", { type: "song_data", data: songData });
+            this.sendDataToMainFn("data", { type: "song", data: songData });
             const imageUrl = currentPlayback.item.images[0].url;
-            const imageData = await getImageData(imageUrl);
-            this.sendDataToMainFn("data", { type: "img_data", data: imageData });
+            songData.thumbnail = await getImageData(imageUrl);
+            this.sendDataToMainFn("data", { type: "song", data: songData });
           }
         } catch (error) {
-          console.error("Error getting song data:", error);
-          return error.message;
-        }
-      }
-      async returnDeviceData() {
-        try {
-          const playbackState = await this.getCurrentDevice();
-          this.sendDataToMainFn("data", {
-            type: "device_data",
-            data: {
-              device: {
-                id: playbackState.device.id,
-                name: playbackState.device.name,
-                is_active: playbackState.device.id === process.env.DEVICE_ID,
-                volume_percent: playbackState.device.volume_percent
-              },
-              is_playing: playbackState.is_playing,
-              shuffle_state: playbackState.shuffle_state,
-              repeat_state: playbackState.repeat_state
-            }
-          });
-        } catch (error) {
-          console.error("Error getting device data:", error);
+          this.sendError("Error getting song data:" + error);
           return error.message;
         }
       }
@@ -13929,18 +13951,16 @@ var require_spotify = __commonJS({
 var SpotifyHandler = require_spotify();
 var spotify;
 async function start({ sendDataToMain }) {
-  console.log("Spotify App started!");
   spotify = new SpotifyHandler(sendDataToMain);
   sendDataToMain("get", "data");
   spotify.sendLog("Successfully Started!");
 }
 async function stop() {
-  console.log("Spotify App stopping...");
-  spotify = null;
   spotify.sendLog("Successfully Stopped!");
+  spotify = null;
 }
 async function onMessageFromMain(event, ...args) {
-  console.log(`SPOTIFY: Received event ${event} with args `, ...args);
+  spotify.sendLog(`SPOTIFY: Received event ${event}`);
   try {
     switch (event) {
       case "message":
@@ -13952,11 +13972,13 @@ async function onMessageFromMain(event, ...args) {
             "Spotify_Client_Secret"
           ]);
         } else if (args[0].Spotify_Refresh_Token) {
-          console.log("SPOTIFY: Refreshing token...");
+          spotify.sendLog("Refreshing token...");
           spotify.refresh_token = args[0].Spotify_Refresh_Token;
           spotify.client_id = args[0].Spotify_API_Id;
           spotify.client_secret = args[0].Spotify_Client_Secret;
-          spotify.access_token = args[0].Spotify_Access_Token || void 0;
+          if (args[0].Spotify_Access_Token) {
+            spotify.access_token = args[0].Spotify_Access_Token || void 0;
+          }
           await spotify.refreshAccessToken();
         } else {
           const data = {
@@ -13968,7 +13990,7 @@ async function onMessageFromMain(event, ...args) {
           spotify.sendDataToMainFn("set", data);
           spotify.client_id = data.Spotify_API_Id;
           spotify.client_secret = data.Spotify_Client_Secret;
-          console.log("SPOTIFY: No refresh token found, logging in...");
+          spotify.sendError("No refresh token found, logging in...");
           await spotify.login();
         }
         if (args[0].settings) {
@@ -13979,7 +14001,7 @@ async function onMessageFromMain(event, ...args) {
         }
         break;
       case "auth-data":
-        console.log("Something went wrong! You shouldnt be here!");
+        spotify.sendError("Something went wrong! You shouldnt be here!");
         break;
       case "callback-data":
         if (args[0] == null) {
@@ -13996,27 +14018,22 @@ async function onMessageFromMain(event, ...args) {
         handleSet(...args);
         break;
       default:
-        console.log("SPOTIFY: Unknown message:", event, ...args);
         spotify.sendError(`Unknown Message received ${event} ${args[0]}`);
         break;
     }
   } catch (error) {
-    console.error("SPOTIFY: Error in onMessageFromMain:", error);
+    spotify.sendError("Error in onMessageFromMain:" + error);
   }
 }
 var handleGet = async (...args) => {
-  console.log("SPOTIFY: Handling GET request", ...args);
   if (args[0] == null) {
-    console.log("SPOTIFY: No args provided");
+    spotify.sendError("No args provided!");
     return;
   }
   let response;
   switch (args[0].toString()) {
-    case "song_info":
+    case "song":
       response = await spotify.returnSongData();
-      break;
-    case "device_info":
-      response = await spotify.returnDeviceData();
       break;
     case "manifest":
       response = spotify.manifest;
@@ -14029,47 +14046,55 @@ var handleGet = async (...args) => {
   spotify.sendDataToMainFn("data", response);
 };
 var handleSet = async (...args) => {
-  console.log("SPOTIFY: Handling SET request", ...args);
   if (args[0] == null) {
-    console.log("SPOTIFY: No args provided");
+    spotify.sendError("No args provided");
     return;
   }
   let response;
   switch (args[0].toString()) {
-    case "set_vol":
-      response = await spotify.setVolume(args[1]);
+    case "next":
+      response = await spotify.next(args[1]);
       break;
-    case "set_shuffle":
-      response = await spotify.setShuffle(args[1]);
+    case "previous":
+      response = await spotify.previous();
       break;
-    case "set_repeat":
-      response = await spotify.setRepeat(args[1]);
+    case "fast_forward":
+      response = await spotify.fastForward(args[1]);
       break;
-    case "next_track":
-      response = await spotify.skipToNext(args[1]);
+    case "rewind":
+      response = await spotify.rewind(args[1]);
       break;
-    case "previous_track":
-      response = await spotify.skipToPrev(args[1]);
+    case "play":
+      response = await spotify.play(args[1]);
       break;
-    case "pause_track":
-    case "stop_track":
+    case "pause":
+    case "stop":
       response = await spotify.pause();
       break;
-    case "seek_track":
+    case "seek":
       response = await spotify.seek(args[1]);
       break;
-    case "play_track":
-      response = await spotify.play();
+    case "like":
+      response = await spotify.like(args[1]);
+      break;
+    case "volume":
+      response = await spotify.volume(args[1]);
+      break;
+    case "repeat":
+      response = await spotify.repeat(args[1]);
+      break;
+    case "shuffle":
+      response = await spotify.shuffle(args[1]);
       break;
     case "update_setting":
       if (args[1] != null) {
         const { setting, value } = args[1];
         spotify.settings[setting].value = value;
-        console.log("SPOTIFY New Setting", spotify.settings);
+        spotify.sendLog("New Settings:" + spotify.settings);
         response = { settings: spotify.settings };
         spotify.sendDataToMainFn("add", response);
       } else {
-        console.log("SPOTIFY: No args provided", args[1]);
+        spotify.sendLog("No args provided", args[1]);
         response = "No args provided";
       }
       break;

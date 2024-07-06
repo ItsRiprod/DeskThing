@@ -89,11 +89,11 @@ const Utility: FC = (): JSX.Element => {
 
         {preferences?.settings[setting] ? Object.keys(preferences.settings[setting]).map((settingKey) => (
 
-              <div key={settingKey} className="hover:h-fit overflow-hidden h-20">
+              <div key={settingKey} className=" overflow-hidden h-20">
                 <div className="flex justify-between p-3">
                   <h2 className="text-5xl">{preferences.settings[setting][settingKey].label}</h2>
                   <div className="bg-slate-700 px-5 mr-10 rounded-lg flex items-center">
-                    <p className="text-3xl right-0">{preferences.settings[setting][settingKey].value}</p>
+                    <p className="text-1xl right-0">{preferences.settings[setting][settingKey].value}</p>
                   </div>
                 </div>
                 <div className="bg-slate-500 flex justify-between p-5">

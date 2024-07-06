@@ -9,7 +9,7 @@ interface AppSelectorProps {
 }
 
 const AppSelector: React.FC<AppSelectorProps> = ({ preferredApps, currentView, apps, onAppSelect, className }) => {
-  const allApps = [...new Set([...preferredApps, ...apps])]; // Combine and remove duplicates
+  const allApps = [...new Set([...preferredApps, ...apps])];
 
   return (
     <div className={`appselector ${className}`}>

@@ -40,7 +40,7 @@ class SpotifyHandler {
     const manifestPath = path.join(__dirname, 'manifest.json');
     this.manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
 
-    console.log('SPOTIFY: Manifest loaded:', this.manifest);
+    this.sendLog('Manifest loaded:' + this.manifest);
   }
 
   async sendLog(message) {
@@ -57,7 +57,7 @@ class SpotifyHandler {
   async refreshAccessToken() {
 
     if (this.refresh_token == undefined) {
-      console.log("SPOTIFY: REFRESH TOKEN IS UNDEFINED!! LOGGING IN")
+      this.sendError("REFRESH TOKEN IS UNDEFINED!! LOGGING IN")
       await this.login()
       return
     }
@@ -87,7 +87,6 @@ class SpotifyHandler {
       }
       return returnData
     } catch (error) {
-      console.error('Error getting access token:', error)
       this.sendError('Error getting access token!')
       throw error
     }
@@ -119,13 +118,12 @@ class SpotifyHandler {
       }
       return returnData
     } catch (error) {
-      console.error('Error getting access token:', error)
+      this.sendError('Error getting access token:' + error)
       throw error
     }
   }
 
   async login() {
-    console.log('Logging in...')
     this.sendLog('Logging in...')
     const scope = 'user-read-currently-playing user-read-playback-state user-modify-playback-state'
     const state = 'thisisarandomstringthatshouldbechangedlater'
@@ -166,7 +164,6 @@ class SpotifyHandler {
       }
     } catch (error) {
       this.sendError(`There was an error in spotify's ErrorHandler ${error}`)
-      console.error('There was an error in spotifyHandler!', error)
     }
   }
 
@@ -181,7 +178,7 @@ class SpotifyHandler {
     this.sendLog(`Handling request to url ${url}`)
     try {
       if (!this.access_token || this.access_token == null) {
-        console.log('Refreshing access token')
+        this.sendLog('Refreshing access token')
         await this.refreshAccessToken()
       }
     } catch (error) {
@@ -201,58 +198,69 @@ class SpotifyHandler {
         return
       }
       if (error.response && error.response.status === 403) {
-        console.log('Error 403 reached! Bad OAuth (Cancelling Request)')
-        console.error(error.response)
+        this.sendError('Error 403 reached! Bad OAuth (Cancelling Request)')
         return
       }
       await new Promise((resolve) => setTimeout(resolve, 5000)) // Wait five seconds
-      console.log('SPOTIFY REQUEST: Retrying', method, url, data)
+      this.sendLog('Retrying', method, url, data)
       const retryResponse = await this.makeRequest(method, url, data)
       return retryResponse.data != null ? retryResponse.data : true
     }
   }
 
   async getCurrentPlayback() {
-    const url = `${this.BASE_URL}/currently-playing`
+    const url = `${this.BASE_URL}`
     return this.makeRequest('get', url)
   }
 
   async getCurrentEpisode() {
-    const url = `${this.BASE_URL}/currently-playing?additional_types=episode`
+    const url = `${this.BASE_URL}?additional_types=episode`
     return this.makeRequest('get', url)
   }
 
-  async getCurrentDevice() {
-    const url = this.BASE_URL
-    return this.makeRequest('get', url)
-  }
-
-  async skipToNext(songUrl) {
+  async next(id) {
     const url = `${this.BASE_URL}/next`
     await this.makeRequest('post', url)
-    return await this.returnSongData(songUrl) 
+    return await this.returnSongData(id) 
   }
 
-  async skipToPrev(songUrl) {
+  async previous() {
     const url = `${this.BASE_URL}/previous`
     await this.makeRequest('post', url)
-    return await this.returnSongData(songUrl) 
+    return await this.returnSongData() 
   }
 
-  async play(uri, context, position) {
+  async fastForward(seconds = 15) {
+    try {
+      const playback = await this.getCurrentPlayback();
+      const currentPosition = playback.progress_ms;
+      const newPosition = currentPosition + seconds * 1000;
+      await this.seek(newPosition);
+    } catch (error) {
+      this.sendError('Error fast forwarding!' + error);
+    }
+  }
+
+  async rewind(seconds = 15) {
+    try {
+      const playback = await this.getCurrentPlayback();
+      const currentPosition = playback.progress_ms;
+      const newPosition = currentPosition - seconds * 1000;
+      await this.seek(newPosition);
+    } catch (error) {
+      this.sendError('Error fast forwarding!' + error);
+    }
+  }
+
+  async play(context) {
     const url = `${this.BASE_URL}/play`
     const body =
-      position && uri ? { context_uri: context, offset: { uri }, position_ms: position } : null
+      context.playlist && context.id && context.position ? { context_uri: context.playlist, offset: {"uri":`spotify:track:${context.id}` }, position_ms: context.position } : null
     return this.makeRequest('put', url, body)
   }
 
-  async setShuffle(state) {
-    const url = `${this.BASE_URL}/shuffle?state=${state}`
-    return this.makeRequest('put', url)
-  }
-
-  async setRepeat(state) {
-    const url = `${this.BASE_URL}/repeat?state=${state}`
+  async pause() {
+    const url = `${this.BASE_URL}/pause`
     return this.makeRequest('put', url)
   }
 
@@ -261,112 +269,131 @@ class SpotifyHandler {
     return this.makeRequest('put', url)
   }
 
-  async pause() {
-    const url = `${this.BASE_URL}/pause`
-    return this.makeRequest('put', url)
+  async like(state) {
+    const trackInfo = await getCurrentPlayback()
+    if (trackInfo && trackInfo.item.id) {
+      const id = trackInfo.item.id
+      const url = `${this.BASE_URL}/me/tracks?ids=${id}`
+      
+      if (state) {
+        return this.makeRequest('put', url)
+      } else {
+        return this.makeRequest('delete', url)
+      }
+    }
   }
 
-  async setVolume(newVol) {
+  async volume(newVol) {
     const url = `${this.BASE_URL}/volume?volume_percent=${newVol}`
     return this.makeRequest('put', url)
   }
 
-  async returnSongData(oldUri = null) {
+  async repeat(state) {
+    if (state == 'all') {
+      const url = `${this.BASE_URL}/repeat?state=context`
+      return this.makeRequest('put', url)
+    }
+    const url = `${this.BASE_URL}/repeat?state=${state}`
+    return this.makeRequest('put', url)
+  }
+
+  async shuffle(state) {
+    const url = `${this.BASE_URL}/shuffle?state=${state}`
+    return this.makeRequest('put', url)
+  }
+
+  async returnSongData(id = null) {
     try {
       const startTime = Date.now()
       const timeout = 1000000
       let delay = 100
       let currentPlayback
-      let newTrackUri
+      let new_id
 
       do {
         currentPlayback = await this.getCurrentPlayback()
         if (currentPlayback.currently_playing_type === 'track') {
-          newTrackUri = currentPlayback.item.uri
-          if (delay !== 100)
-            console.log(
-              `Song not updated... trying again | timeout: ${timeout} cur time: ${Date.now() - startTime} delay: ${delay}`
-            )
-          else
-            console.log(
-              `Getting Current Playback: old url ${oldUri} new url ${newTrackUri}, date now: ${Date.now()}`
-            )
+          new_id = currentPlayback.item.id
+          if (delay !== 100) {
 
-          delay *= 1.3
+            this.sendLog(`Song has not changed. Trying again...`)
+          }
+            
+          delay *= 1.3 // how long to increase the delay between attempts
           await new Promise((resolve) => setTimeout(resolve, delay))
         } else {
           currentPlayback = await this.getCurrentEpisode()
-          console.log('Playing a podcast!')
+          this.sendLog('Playing a podcast!')
         }
-      } while (newTrackUri === oldUri && Date.now() - startTime < timeout && delay < 500)
+      } while (new_id === id && Date.now() - startTime < timeout && delay < 1000)
 
-      if (newTrackUri === oldUri) {
+      if (new_id === id) {
         throw new Error('Timeout Reached!')
       }
       let songData
 
       if (currentPlayback.currently_playing_type === 'track') {
         songData = {
-          photo: null,
-          duration_ms: currentPlayback.item.duration_ms,
-          name: currentPlayback.item.name,
-          progress_ms: currentPlayback.progress_ms,
-          is_playing: currentPlayback.is_playing,
-          artistName: currentPlayback.item.artists[0].name,
-          uri: currentPlayback.item.uri,
-          playlistUri: currentPlayback.context.uri,
-          albumName: currentPlayback.item.album.name
+          album: currentPlayback?.item.album.name,
+          artist: currentPlayback?.item.album.artists[0].name,
+          playlist: currentPlayback?.context.type,
+          playlist_id: currentPlayback?.context.uri,
+          track_name: currentPlayback?.item.name,
+          shuffle_state: currentPlayback?.shuffle_state,
+          repeat_state: currentPlayback?.repeat_state == 'context' ? 'all' : currentPlayback.repeat_state,
+          is_playing: currentPlayback?.is_playing,
+          can_fast_forward: !currentPlayback?.disallows?.seeking || true,
+          can_skip: !currentPlayback?.disallows?.skipping_next || true,
+          can_like: true,
+          can_change_volume: currentPlayback?.device.supports_volume || true,
+          can_set_output: !currentPlayback?.disallows?.transferring_playback || true,
+          track_duration: currentPlayback?.item.duration_ms,
+          track_progress: currentPlayback?.progress_ms,
+          volume: currentPlayback?.device.volume_percent,
+          device: currentPlayback?.device.name,
+          device_id: currentPlayback?.device.id,
+          id: currentPlayback?.item.id,
+          thumbnail: null,
         }
-        this.sendDataToMainFn('data', { type: 'song_data', data: songData })
+        this.sendDataToMainFn('data', { type: 'song', data: songData })
         const imageUrl = currentPlayback.item.album.images[0].url
-        const imageData = await getImageData(imageUrl)
+        songData.thumbnail = await getImageData(imageUrl)
 
-        this.sendDataToMainFn('data', { type: 'img_data', data: imageData })
+        this.sendDataToMainFn('data', { type: 'song', data: songData })
       } else {
         songData = {
-          photo: null,
-          duration_ms: currentPlayback.item.duration_ms,
-          name: currentPlayback.item.name,
-          progress_ms: currentPlayback.progress_ms,
+          album: currentPlayback.item.show.name,
+          artist: currentPlayback.item.show.publisher,
+          playlist: currentPlayback.context.type,
+          playlist_id: currentPlayback.context.uri,
+          track_name: currentPlayback.item.name,
+          shuffle_state: currentPlayback.shuffle_state,
+          repeat_state: currentPlayback.repeat_state == 'context' ? 'all' : currentPlayback.repeat_state,
           is_playing: currentPlayback.is_playing,
-          artistName: currentPlayback.item.show.publisher,
-          uri: currentPlayback.item.uri,
-          playlistUri: currentPlayback.context.uri,
-          albumName: currentPlayback.item.show.name
+          can_fast_forward: false,
+          can_skip: !currentPlayback.disallows.skipping_next,
+          can_like: true,
+          can_change_volume: currentPlayback.device.supports_volume,
+          can_set_output: !currentPlayback.disallows.transferring_playback,
+          track_duration: currentPlayback.item.duration_ms,
+          track_progress: currentPlayback.progress_ms,
+          volume: device.volume_percent,
+          device: currentPlayback.device.name,
+          device_id: currentPlayback.device.id,
+          id: currentPlayback.item.id,
+          thumbnail: null,
         }
-        this.sendDataToMainFn('data', { type: 'song_data', data: songData })
+        // Send the data immediately
+        this.sendDataToMainFn('data', { type: 'song', data: songData })
 
-        this.sendDataToMainFn('data', { type: 'song_data', data: songData })
+        // Get the image and send that later
         const imageUrl = currentPlayback.item.images[0].url
-        const imageData = await getImageData(imageUrl)
+        songData.thumbnail = await getImageData(imageUrl)
 
-        this.sendDataToMainFn('data', { type: 'img_data', data: imageData })
+        this.sendDataToMainFn('data', { type: 'song', data: songData })
       }
     } catch (error) {
-      console.error('Error getting song data:', error)
-      return error.message
-    }
-  }
-
-  async returnDeviceData() {
-    try {
-      const playbackState = await this.getCurrentDevice();
-      this.sendDataToMainFn('data', {
-        type: 'device_data',
-        data: {
-          device: {
-            id: playbackState.device.id,
-            name: playbackState.device.name,
-            is_active: playbackState.device.id === process.env.DEVICE_ID,
-            volume_percent: playbackState.device.volume_percent,
-          },
-          is_playing: playbackState.is_playing,
-          shuffle_state: playbackState.shuffle_state,
-          repeat_state: playbackState.repeat_state,
-        },
-      });
-    } catch (error) {
-      console.error('Error getting device data:', error)
+      this.sendError('Error getting song data:' + error)
       return error.message
     }
   }

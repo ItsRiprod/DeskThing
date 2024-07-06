@@ -52,7 +52,7 @@ let storedData = {
 }
 
 async function start({ sendDataToMain }) {
-  console.log('WEATHER: App started successfully!')
+
   sendDataToMainFn = sendDataToMain;
 
   // Get the manifest data
@@ -66,7 +66,7 @@ async function start({ sendDataToMain }) {
 }
 async function stop() {
   /* HANDLE STOPPING THE APP AND ANY RUNNING PROCESSES */
-  console.log('TEMPLATE: App stopping...')
+
   sendLog('Stopping...')
   manifest = null
   sendDataToMainFn = null
@@ -92,7 +92,6 @@ const setData = (data) => {
 
 async function onMessageFromMain(event, ...args) {
 
-  console.log(`WEATHER: Received event ${event} with args `, ...args)
   sendLog(`Received event ${event} with args ${args[0]} ${args[1]}`)
   try {
     switch (event) {
@@ -132,18 +131,17 @@ async function onMessageFromMain(event, ...args) {
         handleSet(...args)
         break
       default:
-        console.log('WEATHER: Unknown message:', event, ...args)
+        sendLog('Unknown message:', event, ...args)
         break
     }
   } catch (error) {
-    console.error('WEATHER: Error in onMessageFromMain:', error)
+   sendError('Error in onMessageFromMain:', error)
   }
 }
 
 const handleGet = async (...args) => {
-  console.log('WEATHER: Handling GET request', ...args)
   if (args[0] == null) {
-    console.log('WEATHER: No args provided')
+    sendError('WEATHER: No args provided')
     return
   }
 
@@ -152,17 +150,17 @@ const handleGet = async (...args) => {
     case 'weather_info':
         if (args[1].key) {
           const weather_data = await getCityWeather()
-          sendDataToMainFn('data', {type: 'weather_data', data: weather_data});
+          response = {type: 'weather_data', data: weather_data};
         } else {
           const weather_data = await getCurrentWeather();
-          sendDataToMainFn('data', {type: 'weather_data', data: weather_data});
+          response = {type: 'weather_data', data: weather_data};
         }
         break;
       case 'forecast_info':
         // eslint-disable-next-line no-case-declarations
         const forecast_data = await get12hrWeather();
 
-        sendDataToMainFn('data', {type: 'forecast_data', data: forecast_data});
+        response = {type: 'forecast_data', data: forecast_data};
         break;
     case 'manifest':
       response = manifest 
@@ -221,8 +219,8 @@ const getCurrentWeather = async () => {
       const localData = storedData.weather_data;
       if (localData) {
         const time = isDataOutOfDate(localData.timestamp)
-        if (time < settings.refresh_interval.value) {
-          console.log("Returing logged weather data. Time since last request (hours):", time);
+        if (time < parseFloat(settings.refresh_interval.value)) {
+          sendLog("Returing logged weather data. Time since last request (hours):", time);
           return localData.data;
         }
       }
@@ -241,13 +239,11 @@ const getCurrentWeather = async () => {
 
     } catch (error) {
       if (error.response.data.Code === 'ServiceUnavailable') {
-        console.log('Exceeded Quota - Using cached data');
         sendError('Exceeded Quota - Using cached data');
         const localData = storedData.weather_data;
         return localData.data;
       }
       // Handle token expiration and refresh
-        console.error('Error getting current weather:', error.response);
         sendError('Error getting current weather:' + error.response);
         throw error;
     }
@@ -273,16 +269,17 @@ const get12hrWeather = async () => {
     const localData = storedData.forecast_data;
     if (localData) {
       const time = isDataOutOfDate(localData.timestamp)
-      if (time < settings.refresh_interval.value) {
-        console.log("Returing logged forecast data. Time since last request (hours):", time);
+      if (time < parseFloat(settings.refresh_interval.value)) {
+        sendLog("Returing logged forecast data. Time since last request (hours):" + time);
         return localData.data;
+      } else {
+        sendLog("Time since last request (hours):" + time);
       }
     }
 
     sendMessage("GETTING NEW FORECASTING DATA FROM SERVER");
       const api_url = `http://dataservice.accuweather.com/forecasts/v1/hourly/12hour/${storedData.location_key}?apikey=${storedData.weather_key}`;
       const response = await get(api_url);
-      console.log("Returing new forecast data + saving to file");
       sendLog("Returing new forecast data + saving to file");
       const newData = {
         timestamp: new Date().toISOString(),
@@ -294,12 +291,10 @@ const get12hrWeather = async () => {
 
     } catch (error) {
         if (error.response && error.response.data.Code === 'ServiceUnavailable') {
-          console.log('Exceeded Quota - Using cached data');
           sendError('Exceeded Quota - Using cached data');
           const localData = storedData.forecast_data;
           return localData.data;
         }
-        console.error('Error getting 12 hour weather:', error);
         sendError('Error getting 12 hour weather: ' + error);
         throw error;
     }

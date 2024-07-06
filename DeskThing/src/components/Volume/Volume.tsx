@@ -1,16 +1,16 @@
 import './Volume.css';
 import React, { useEffect, useState } from 'react';
 import ButtonHelper, { Button, EventFlavour } from '../../helpers/ButtonHelper';
-import socket, { device_data, socketData } from '../../helpers/WebSocketService';
+import socket, { song_data, socketData } from '../../helpers/WebSocketService';
 
 const Volume: React.FC = () => {
   const [volume, setVolume] = useState(0);
   const [visible, setVisible] = useState(false);
   const buttonHelper = ButtonHelper.getInstance();
 
-  const handleDeviceData = (data: device_data) => {
+  const handleDeviceData = (data: song_data) => {
 
-    setVolume(data.device.volume_percent);
+    setVolume(data.volume);
   };
   useEffect(() => {
     const handleScroll = (left: boolean) => {
@@ -20,10 +20,9 @@ const Volume: React.FC = () => {
         } else {
           setVolume((oldVol) => oldVol + 5);
         }
-        handleSendCommand('set_vol', volume);
+        handleSendCommand('volume', volume);
       }
     };
-    
     buttonHelper.addListener(Button.SCROLL_LEFT, EventFlavour.Short, () => handleScroll(true));
     buttonHelper.addListener(Button.SCROLL_RIGHT, EventFlavour.Short, () => handleScroll(false));
 
@@ -49,8 +48,8 @@ const Volume: React.FC = () => {
 
   useEffect(() => {
     const listener = (msg: socketData) => {
-      if (msg.type === 'device_data') {
-        handleDeviceData(msg.data as device_data);
+      if (msg.type === 'song') {
+        handleDeviceData(msg.data as song_data);
       }
     };
 
@@ -72,7 +71,6 @@ const Volume: React.FC = () => {
       socket.post(data);
     }
   };
-
   return (
     <div className={visible ? 'volumeControl visible' : 'volumeControl'}>
       <div className="volumeLevel" style={{ height: `${volume}%` }}></div>
