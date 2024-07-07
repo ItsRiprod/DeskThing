@@ -38,24 +38,51 @@ jobs:
           cd ./DeskThingServer
           npm run build
 
-      - name: Build application for ${{ matrix.os }}
+
+      - name: Build application for Windows
+        if: runner.os == 'Windows'
         run: |
           cd ./DeskThingServer
-          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            npm run build:win
-          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-            npm run build:mac
-          else
-            npm run build:linux
-          fi
+          npm run build:win
 
-      - name: Upload artifact
+      - name: Build application for macOS
+        if: runner.os == 'macOS'
+        run: |
+          cd ./DeskThingServer
+          npm run build:mac
+
+      - name: Build application for Linux
+        if: runner.os == 'Linux'
+        run: |
+          cd ./DeskThingServer
+          npm run build:linux
+
+      - name: Upload artifact for Windows
+        if: runner.os == 'Windows'
         uses: actions/upload-artifact@v3
         with:
-          name: DeskThing-${{ matrix.os }} # Artifact name based on OS
+          name: DeskThing-windows-latest # Artifact name for Windows
           path: |
             ./DeskThingServer/dist/*
-            !./DeskThingServer/dist/**/*.map # Uploads build outputs
+            !./DeskThingServer/dist/**/*.map
+
+      - name: Upload artifact for macOS
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v3
+        with:
+          name: DeskThing-macos-latest # Artifact name for macOS
+          path: |
+            ./DeskThingServer/dist/*
+            !./DeskThingServer/dist/**/*.map
+
+      - name: Upload artifact for Linux
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v3
+        with:
+          name: DeskThing-ubuntu-latest # Artifact name for Linux
+          path: |
+            ./DeskThingServer/dist/*
+            !./DeskThingServer/dist/**/*.map
 
   release:
     needs: build # Runs after build job
