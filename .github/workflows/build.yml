@@ -5,6 +5,7 @@ on:
     tags:
       - 'v*.*.*' # Triggers on version tags
       - 'v*.*.*-*' # Trigger for pre-release tags
+  workflow_dispatch: # Allows manual triggering
 
 jobs:
   build:
