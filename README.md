@@ -8,7 +8,7 @@ This is the DeskThing project. Using Spotify's existing Car Thing, the DeskThing
 
 **⚠️DO NOT PULL MAIN BRANCH ⚠️**
 
-Instead, go to [Releases](https://github.com/ItsRiprod/DeskThing/releases) and download the .zip file for v0.5.1-alpha (which this readme follows) and use that
+Instead, go to [Releases](https://github.com/ItsRiprod/DeskThing/releases) and download the .zip file for v0.5.*-alpha (which this readme follows) and use that
 
 ---
 
