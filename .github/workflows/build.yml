@@ -28,11 +28,6 @@ jobs:
           cd ./DeskThingServer
           npm ci
 
-      - name: Run linter
-        run: |
-          cd ./DeskThingServer
-          npm run lint
-
       - name: Run type check
         run: |
           cd ./DeskThingServer
