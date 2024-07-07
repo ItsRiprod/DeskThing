@@ -1,0 +1,92 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*' # Triggers on version tags
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest] # Matrix for multiple OS builds
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: |
+          cd /DeskThingServer
+          npm ci
+
+      - name: Run linter
+        run: |
+          cd /DeskThingServer
+          npm run lint
+
+      - name: Run type check
+        run: |
+          cd /DeskThingServer
+          npm run typecheck
+
+      - name: Build the project
+        run: |
+          cd /DeskThingServer
+          npm run build
+
+      - name: Build application for ${{ matrix.os }}
+        run: |
+          cd /DeskThingServer
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            npm run build:win
+          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            npm run build:mac
+          else
+            npm run build:linux
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: DeskThing-${{ matrix.os }} # Artifact name based on OS
+          path: |
+            /DeskThingServer/dist/*
+            !/DeskThingServer/dist/**/*.map # Uploads build outputs
+
+  release:
+    needs: build # Runs after build job
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: DeskThing-ubuntu-latest
+          path: ./dist/ubuntu
+      - uses: actions/download-artifact@v3
+        with:
+          name: DeskThing-macos-latest
+          path: ./dist/macos
+      - uses: actions/download-artifact@v3
+        with:
+          name: DeskThing-windows-latest
+          path: ./dist/windows
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ./dist/ubuntu/*
+            ./dist/macos/*
+            ./dist/windows/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
