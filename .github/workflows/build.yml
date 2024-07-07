@@ -20,31 +20,31 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '20'
 
       - name: Install dependencies
         run: |
-          cd /DeskThingServer
+          cd ./DeskThingServer
           npm ci
 
       - name: Run linter
         run: |
-          cd /DeskThingServer
+          cd ./DeskThingServer
           npm run lint
 
       - name: Run type check
         run: |
-          cd /DeskThingServer
+          cd ./DeskThingServer
           npm run typecheck
 
       - name: Build the project
         run: |
-          cd /DeskThingServer
+          cd ./DeskThingServer
           npm run build
 
       - name: Build application for ${{ matrix.os }}
         run: |
-          cd /DeskThingServer
+          cd ./DeskThingServer
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             npm run build:win
           elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
@@ -58,8 +58,8 @@ jobs:
         with:
           name: DeskThing-${{ matrix.os }} # Artifact name based on OS
           path: |
-            /DeskThingServer/dist/*
-            !/DeskThingServer/dist/**/*.map # Uploads build outputs
+            ./DeskThingServer/dist/*
+            !./DeskThingServer/dist/**/*.map # Uploads build outputs
 
   release:
     needs: build # Runs after build job
