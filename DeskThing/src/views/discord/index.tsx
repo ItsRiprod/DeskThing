@@ -1,4 +1,4 @@
-import './Discord.css';
+import './styles.css';
 import React, { useEffect, useState, useRef } from 'react';
 import socket from '../../helpers/WebSocketService';
 import { IconMicDiscord, IconDeafenedDiscord, IconDeafenedOffDiscord, IconCallDiscord, IconMicOffDiscord } from '../../components/todothingUIcomponents';

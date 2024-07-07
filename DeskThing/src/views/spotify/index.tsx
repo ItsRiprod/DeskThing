@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import './spotify.css';
+import './styles.css';
 import React, { useEffect, useState } from 'react';
 import socket, { socketData, song_data } from '../../helpers/WebSocketService';
 import { IconAlbum } from '../../components/todothingUIcomponents';

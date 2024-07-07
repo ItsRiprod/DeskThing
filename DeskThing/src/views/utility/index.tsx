@@ -1,5 +1,5 @@
 import { IconDevice } from '../../components/todothingUIcomponents';
-import './Utility.css';
+import './styles.css';
 import { FC, useEffect, useState } from 'react';
 import socket from '../../helpers/WebSocketService';
 

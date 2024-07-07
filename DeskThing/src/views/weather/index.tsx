@@ -1,4 +1,4 @@
-import './Weather.css';
+import './styles.css';
 import React, { useEffect, useState } from 'react';
 import socket, { socketData } from '../../helpers/WebSocketService';
 import { stringToTime, formatDate } from '../../helpers/TimeUtils';

@@ -1,5 +1,5 @@
 import { IconDevice } from '../../components/todothingUIcomponents';
-import './Dashboard.css';
+import './styles.css';
 import React, { useState, useEffect } from 'react';
 import socket, { socketData } from '../../helpers/WebSocketService';
 const Default: React.FC = (): JSX.Element => {

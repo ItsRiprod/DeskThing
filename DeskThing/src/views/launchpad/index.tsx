@@ -1,4 +1,4 @@
-import './Launchpad.css';
+import './styles.css';
 import React from 'react';
 import socket from '../../helpers/WebSocketService';
 

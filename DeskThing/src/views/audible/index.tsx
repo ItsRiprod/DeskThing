@@ -1,4 +1,4 @@
-import './Audible.css';
+import './styles.css';
 import React, { useState, useEffect } from 'react';
 import socket from '../../helpers/WebSocketService';
 
