@@ -1,22 +1,22 @@
 type Listener<T> = (data: T) => void
 
-export class EventEmitter<T> {
-  private events: { [key: string]: Listener<T>[] } = {}
+export class EventEmitter<Events extends Record<string, any>> {
+  private events: { [K in keyof Events]?: Listener<Events[K]>[] } = {}
 
-  public on(event: string, listener: Listener<T>): void {
+  public on<K extends keyof Events>(event: K, listener: Listener<Events[K]>): void {
     if (!this.events[event]) {
       this.events[event] = []
     }
-    this.events[event].push(listener)
+    this.events[event]!.push(listener)
   }
 
-  public off(event: string, listener: Listener<T>): void {
+  public off<K extends keyof Events>(event: K, listener: Listener<Events[K]>): void {
     if (!this.events[event]) return
-    this.events[event] = this.events[event].filter((l) => l !== listener)
+    this.events[event] = this.events[event]!.filter((l) => l !== listener)
   }
 
-  public emit(event: string, data?: T): void {
+  public emit<K extends keyof Events>(event: K, data: Events[K]): void {
     if (!this.events[event]) return
-    this.events[event].forEach((listener) => data && listener(data))
+    this.events[event]!.forEach((listener) => listener(data))
   }
 }

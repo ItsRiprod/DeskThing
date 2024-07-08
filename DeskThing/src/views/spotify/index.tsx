@@ -47,10 +47,10 @@ const Spotify: React.FC = () => {
       }
     };
 
-    socket.addSocketEventListener(listener);
+    const removeListener = socket.on('client', listener);
 
     return () => {
-      socket.removeSocketEventListener(listener);
+      removeListener();
     };
   },);
 

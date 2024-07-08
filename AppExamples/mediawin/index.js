@@ -59,7 +59,7 @@ const handleGet = async (...args) => {
   switch (args[0].toString()) {
     case 'song':
       response = await mediawin.returnSongData()
-      response = { type: 'song', data: response }
+      response = { app: 'client', type: 'song', data: response }
       break
     case 'manifest':
       response = mediawin.manifest

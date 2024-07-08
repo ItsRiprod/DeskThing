@@ -17,16 +17,18 @@ const LogDisplay = (): JSX.Element => {
       console.log('New Data', newLogs)
     }
 
-    if (logEndRef.current) {
-      logEndRef.current.scrollIntoView({ behavior: 'smooth' })
-    }
-
     // Initialize logs
     const initialLogs = logStore.getLogs().map((log) => ({
       ...log,
       date: new Date(log.date)
     }))
     setLogs(initialLogs)
+
+    setTimeout(() => {
+      if (logEndRef.current) {
+        logEndRef.current.scrollIntoView({ behavior: 'smooth' })
+      }
+    }, 200)
 
     logStore.on('update', updateLogs)
     return () => {
@@ -44,7 +46,7 @@ const LogDisplay = (): JSX.Element => {
   const handleScroll = (): void => {
     if (logContainerRef.current) {
       const { scrollHeight, clientHeight, scrollTop } = logContainerRef.current
-      const isNearBottom = scrollHeight - clientHeight <= Math.abs(scrollTop) + 500 // Adjust 100 for buffer
+      const isNearBottom = scrollHeight - clientHeight <= Math.abs(scrollTop) + 2000 // Adjust 100 for buffer
 
       // Auto scroll to bottom only if user is near the bottom
       console.log(scrollHeight - clientHeight - Math.abs(scrollTop))

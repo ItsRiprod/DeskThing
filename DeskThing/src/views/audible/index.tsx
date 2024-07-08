@@ -16,10 +16,10 @@ const Audible: React.FC = () => {
       }
     };
 
-    socket.addSocketEventListener(listener);
+    const removeListener = socket.on('audible', listener);
 
     return () => {
-      socket.removeSocketEventListener(listener);
+      removeListener();
     };
   }, []);
 
@@ -30,8 +30,7 @@ const Audible: React.FC = () => {
         app: 'audible',
         type: type,
         request: request,
-        url: url,
-        params: params,
+        data: {url: url, params: params}
       };
       socket.post(data);
     }

@@ -1,12 +1,22 @@
 import { useEffect, useState } from 'react'
 import { useAppStore, App } from '../store/appStore'
-import { IconRefresh, IconX, IconPause, IconPlay, IconDetails } from '../components/icons'
+import {
+  IconRefresh,
+  IconX,
+  IconPause,
+  IconPlay,
+  IconDetails,
+  IconPulsing
+} from '../components/icons'
 import DisplayAppData from './Overlays/DisplayAppData'
 import FileHandler from './FileHandler'
+import { RequestStoreInstance, Request } from '../store'
+
 const AppsList = (): JSX.Element => {
   const { appsList } = useAppStore()
   const [enabled, setEnabled] = useState(false)
   const [appIndex, setAppIndex] = useState(-1)
+  const [appsWithActiveRequests, setAppsWithActiveRequests] = useState<string[]>([])
 
   const handleAddAndRunApp = (appName: string): void => {
     window.electron.ipcRenderer.send('add-app', appName)
@@ -28,7 +38,23 @@ const AppsList = (): JSX.Element => {
 
   useEffect(() => {
     console.log('apps list in AppsList: ', appsList)
+
+    // Subscribe to changes in request status
+    const onRequestUpdate = (requests: Request[]): void => {
+      const appsWithActiveRequests: string[] = requests.map((request) => request.appName)
+      setAppsWithActiveRequests(appsWithActiveRequests)
+    }
+
+    RequestStoreInstance.on('request', onRequestUpdate)
+
+    return () => {
+      // Clean up the subscription on unmount
+      RequestStoreInstance.off('request', onRequestUpdate)
+    }
   }, [appsList])
+  const handleRequestTrigger = (appName: string): void => {
+    RequestStoreInstance.triggerRequestDisplay(appName)
+  }
 
   return (
     <div className="h-svh w-[100%] flex flex-col justify-between items-center">
@@ -56,7 +82,17 @@ const AppsList = (): JSX.Element => {
                   <p>{app.manifest ? app.manifest.label : app.name}</p>
                   <p className="text-zinc-400 text-xs">{app.manifest?.version}</p>
                 </div>
-                {app.enabled ? (
+                {appsWithActiveRequests.includes(app.name) ? (
+                  <div className="flex items-center md:flex-row flex-col">
+                    <p className="text-blue-300">Data Request</p>
+                    <button
+                      className="border-2 border-blue-600 hover:bg-blue-500 m-1 p-2 rounded-lg"
+                      onClick={() => handleRequestTrigger(app.name)}
+                    >
+                      <IconPulsing />
+                    </button>
+                  </div>
+                ) : app.enabled ? (
                   <div className="flex items-center md:flex-row flex-col">
                     <div className="flex-col flex items-end">
                       {app.running ? (

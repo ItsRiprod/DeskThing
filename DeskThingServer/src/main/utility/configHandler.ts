@@ -10,6 +10,9 @@ export interface Manifest {
   version: string
   description?: string
   author?: string
+  id: string
+  isWebApp: boolean
+  isLocalApp: boolean
   platforms: Array<string>
   homepage?: string
   repository?: string
@@ -171,7 +174,7 @@ const getAppByIndex = (index: number): App | undefined => {
   return foundApp
 }
 
-const purgeAppConfig = (appName: string): void => {
+const purgeAppConfig = async (appName: string): Promise<void> => {
   console.log('SERVER: Deleting App From Config...', appName)
   const data = readData()
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { RequestStoreInstance, Request } from '../../store/'
 
 const appRequest = (): JSX.Element => {
   const [formFields, setFormFields] = useState<string[]>([])
@@ -12,26 +13,33 @@ const appRequest = (): JSX.Element => {
   }
   const handleSubmit = (): void => {
     if (requestId) {
-      window.electron.ipcRenderer.send(`user-data-response-${requestId}`, formData)
+      RequestStoreInstance.resolveRequest(requestId, formData)
       setRequestId(null)
       setFormFields([])
       setFormData({})
     }
   }
+
+  const handleCancel = (): void => {
+    setRequestId(null)
+    setFormFields([])
+    setFormData({})
+  }
+
   useEffect(() => {
-    const handleDisplayUserForm = (_event: any, requestId: string, fields: string[]): void => {
-      setRequestId(requestId)
-      setFormFields(fields)
-      setFormData(fields.reduce((acc, field) => ({ ...acc, [field]: '' }), {}))
-      console.log(_event)
+    const handleTriggerRequestDisplay = (request: Request): void => {
+      setRequestId(request.appName)
+      setFormFields(request.scopes)
+      setFormData(request.scopes.reduce((acc, field) => ({ ...acc, [field]: '' }), {}))
     }
 
-    window.electron.ipcRenderer.on('display-user-form', handleDisplayUserForm)
+    RequestStoreInstance.on('trigger-request-display', handleTriggerRequestDisplay)
 
     return (): void => {
-      window.electron.ipcRenderer.removeAllListeners('display-user-form')
+      RequestStoreInstance.off('trigger-request-display', handleTriggerRequestDisplay)
     }
   }, [])
+
   return (
     <div className="pointer-events-auto">
       {formFields.length > 0 && (
@@ -50,12 +58,20 @@ const appRequest = (): JSX.Element => {
               />
             </div>
           ))}
-          <button
-            className="bg-slate-700 hover:bg-slate-500 transition-colors p-5 self-end rounded-lg drop-shadow-lg"
-            onClick={handleSubmit}
-          >
-            Submit
-          </button>
+          <div className="flex justify-between mt-3">
+            <button
+              className="bg-red-700 hover:bg-red-500 transition-colors px-5 py-3 self-end rounded-lg drop-shadow-lg"
+              onClick={handleCancel}
+            >
+              Cancel
+            </button>
+            <button
+              className="bg-slate-700 hover:bg-slate-500 transition-colors px-5 py-3 self-end rounded-lg drop-shadow-lg"
+              onClick={handleSubmit}
+            >
+              Submit
+            </button>
+          </div>
         </div>
       )}
     </div>

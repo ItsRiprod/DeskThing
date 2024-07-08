@@ -1,16 +1,14 @@
 import { useState, useEffect, Suspense, lazy  } from 'react';
 import ButtonHelper, { Button, EventFlavour } from '../helpers/ButtonHelper';
-import socket, { socketData } from '../helpers/WebSocketService';
+import socket, { App, socketData } from '../helpers/WebSocketService';
 import Dashboard from './dashboard';
 import './views.css';
 
 import Overlay from '../components/Overlay/Overlay';
 
 const ViewManager = () => {
-  const [currentView, setCurrentView] = useState('dashboard');
-  const buttonHelper = ButtonHelper.getInstance();
-  const [preferredApps, setPreferredApps] = useState<string[]>([]);
-  const [apps, setApps] = useState<string[]>([]);
+  const [currentView, setCurrentView] = useState('landing');
+  const [apps, setApps] = useState<App[]>([]);
   const [DynamicComponent, setDynamicComponent] = useState<React.LazyExoticComponent<any> | null>(null);
 
   const handleLongPress = (index: number, view: string) => {
@@ -26,25 +24,25 @@ const ViewManager = () => {
   }
 
   useEffect(() => {
+    const buttonHelper = ButtonHelper.getInstance();
+
     const handleButtonPress = (btn: Button, flv: EventFlavour) => {
       if (flv === EventFlavour.Up) {
         switch (btn) {
           case Button.BUTTON_1:
-            setCurrentView(preferredApps[0]);
+            setCurrentView(getAppByButtonIndex(1));
             break;
           case Button.BUTTON_2:
-            setCurrentView(preferredApps[1] || apps[1]);
+            setCurrentView(getAppByButtonIndex(2));
             break;
           case Button.BUTTON_3:
-            setCurrentView(preferredApps[2] || apps[2]);
+            setCurrentView(getAppByButtonIndex(3));
             break;
           case Button.BUTTON_4:
-            setCurrentView(preferredApps[3] || apps[3]);
+            setCurrentView(getAppByButtonIndex(4));
             break;
           case Button.BUTTON_5:
-            if (currentView != 'utility') {
-              setCurrentView('dashboard');
-            }
+            setCurrentView('dashboard');
             break;
           default:
             break;
@@ -53,16 +51,16 @@ const ViewManager = () => {
         switch (btn) {
           // Handle long press actions
           case Button.BUTTON_1:
-            handleLongPress(0, currentView);
-            break;
-          case Button.BUTTON_2:
             handleLongPress(1, currentView);
             break;
-          case Button.BUTTON_3:
+          case Button.BUTTON_2:
             handleLongPress(2, currentView);
             break;
-          case Button.BUTTON_4:
+          case Button.BUTTON_3:
             handleLongPress(3, currentView);
+            break;
+          case Button.BUTTON_4:
+            handleLongPress(4, currentView);
             break;
           case Button.BUTTON_5:
             setCurrentView('utility');
@@ -73,26 +71,45 @@ const ViewManager = () => {
       } else if (btn === Button.SWIPE) {
         switch (flv) {
           case EventFlavour.LeftSwipe:
-            if (preferredApps.indexOf(currentView) != -1) {
-              const currentIndexLeft = preferredApps.indexOf(currentView);
-              if (currentIndexLeft > 0) {
-                setCurrentView(preferredApps[currentIndexLeft - 1]);
-              }
-            } 
+            handleSwipe(-1);
             break;
-            case EventFlavour.RightSwipe:
-              if (preferredApps.indexOf(currentView) != -1) {
-                const currentIndexRight = preferredApps.indexOf(currentView);
-                if (currentIndexRight < preferredApps.length - 1) {
-                  setCurrentView(preferredApps[currentIndexRight + 1]);
-                }
-              }
+          case EventFlavour.RightSwipe:
+            handleSwipe(1);
+            break;
+          default:
             break;
         }
       }
     };
 
+    const getAppByButtonIndex = (index: number): string => {
+      if (index <= 4 && index <= apps.length) {
+        const app = apps.find((app) => app.prefIndex === index);
+        if (app) {
+          return app.name;
+        } else {
+          if (index <= apps.length) {
+            return apps[index - 1].name;
+          }
+        }
+      } else {
+        // Default to the app at the given index if no prefIndex matches
+        if (index <= apps.length) {
+          return apps[index - 1].name;
+        }
+      }
+      return 'dashboard'; // Default to dashboard if no valid app found
+    };
 
+    const handleSwipe = (direction: number) => {
+      const currentIndex = apps.findIndex((app) => app.name === currentView);
+      if (currentIndex !== -1) {
+        const newIndex = currentIndex + direction;
+        if (newIndex >= 0 && newIndex < apps.length) {
+          setCurrentView(apps[newIndex].name);
+        }
+      }
+    };
 
     buttonHelper.setCallback(handleButtonPress);
 
@@ -100,34 +117,43 @@ const ViewManager = () => {
       buttonHelper.setCallback(null);
       buttonHelper.destroy();
     };
-  }, [buttonHelper, preferredApps, currentView, apps]);
+  }, [currentView, apps]);
+
+
+  
 
   useEffect(() => {
     const listener = (msg: socketData) => {
       if (msg.type === 'set_view' && typeof msg.data === 'string') {
         setCurrentView(msg.data);
-      } else if (msg.type === 'utility_data' && typeof msg.data === 'object' && msg.data !== null) {
-        const data = msg.data as { preferredApps?: Array<string>; modules?: Array<string> };
-        setPreferredApps(data.preferredApps);
-        setApps(data.modules);
+      } else if (msg.type === 'config') {
+        const data = msg.data as App[];
+        // Sort apps based on prefIndex
+        data.sort((a, b) => a.prefIndex - b.prefIndex);
+        setApps(data);
       }
     };
-
-    socket.addSocketEventListener(listener);
-
+  
+    const removeListener = socket.on('client', listener);
+  
     return () => {
-      socket.removeSocketEventListener(listener);
+      removeListener();
     };
   }, []);
 
   useEffect(() => {
     const loadDynamicComponent = async () => {
-      if (currentView) {
-        try {
-          const importedComponent = await import(`./${currentView.toLowerCase()}/index.tsx`);
-          setDynamicComponent(lazy(() => Promise.resolve({ default: importedComponent.default })));
-        } catch (error) {
-          console.error(`Error loading component for view: ${currentView}`, error);
+      const app = apps.find((app) => app.name === currentView)
+      if (currentView && app?.enabled) {
+        if (app.manifest.isLocalApp) {
+          try {
+            const importedComponent = await import(`./${currentView.toLowerCase()}/index.tsx`);
+            setDynamicComponent(lazy(() => Promise.resolve({ default: importedComponent.default })));
+          } catch (error) {
+            console.error(`Error loading component for view: ${currentView}`, error);
+          }
+        } else if (app.manifest.isWebApp) {
+          // Go to web
         }
       } else {
         setDynamicComponent(null);
@@ -135,7 +161,7 @@ const ViewManager = () => {
     };
 
     loadDynamicComponent();
-  }, [currentView]);
+  }, [apps, currentView]);
 
   const renderView = () => {
     switch (currentView) {
@@ -149,14 +175,18 @@ const ViewManager = () => {
             </Suspense>
           );
         }
-        return <div>Component not found</div>;
+        return <div className="h-full w-full pt-44">View not found</div>;
       }
   };
+
+  useEffect(() => {
+    setCurrentView('dashboard')
+  }, [])
 
   return (
 
       <div className="view_container">
-        <Overlay currentView={currentView} preferredApps={preferredApps} apps={apps} setCurrentView={setCurrentView}>
+        <Overlay currentView={currentView} apps={apps} setCurrentView={setCurrentView}>
           {renderView()}
         </Overlay>
       </div>

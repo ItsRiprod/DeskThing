@@ -101,6 +101,7 @@ async function onMessageFromMain(event, ...args) {
       case 'data': 
         if (args[0] == null) {
           sendDataToMainFn('set', storedData)
+          sendDataToMainFn('get', 'auth', ['weather_key', 'location_key'])
         } else if (args[0].weather_key != null) {
 
           storedData.weather_key = args[0].weather_key,

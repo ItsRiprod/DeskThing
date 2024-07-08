@@ -210,8 +210,7 @@ var require_combined_stream = __commonJS({
       if (!this.pauseStreams) {
         return;
       }
-      if (this.pauseStreams && this._currentStream && typeof this._currentStream.pause == "function")
-        this._currentStream.pause();
+      if (this.pauseStreams && this._currentStream && typeof this._currentStream.pause == "function") this._currentStream.pause();
       this.emit("pause");
     };
     CombinedStream.prototype.resume = function() {
@@ -220,8 +219,7 @@ var require_combined_stream = __commonJS({
         this.writable = true;
         this._getNext();
       }
-      if (this.pauseStreams && this._currentStream && typeof this._currentStream.resume == "function")
-        this._currentStream.resume();
+      if (this.pauseStreams && this._currentStream && typeof this._currentStream.resume == "function") this._currentStream.resume();
       this.emit("resume");
     };
     CombinedStream.prototype.end = function() {
@@ -8837,8 +8835,7 @@ var require_mime_types = __commonJS({
       }
       if (mime.indexOf("charset") === -1) {
         var charset2 = exports2.charset(mime);
-        if (charset2)
-          mime += "; charset=" + charset2.toLowerCase();
+        if (charset2) mime += "; charset=" + charset2.toLowerCase();
       }
       return mime;
     }
@@ -9223,8 +9220,7 @@ var require_form_data = __commonJS({
       }
       var header;
       for (var prop in headers) {
-        if (!headers.hasOwnProperty(prop))
-          continue;
+        if (!headers.hasOwnProperty(prop)) continue;
         header = headers[prop];
         if (header == null) {
           continue;
@@ -9619,8 +9615,7 @@ var require_debug = __commonJS({
     }
     function createDebug(namespace) {
       function debug() {
-        if (!debug.enabled)
-          return;
+        if (!debug.enabled) return;
         var self2 = debug;
         var curr = +/* @__PURE__ */ new Date();
         var ms = curr - (prevTime || curr);
@@ -9638,8 +9633,7 @@ var require_debug = __commonJS({
         }
         var index = 0;
         args[0] = args[0].replace(/%([a-zA-Z%])/g, function(match, format) {
-          if (match === "%%")
-            return match;
+          if (match === "%%") return match;
           index++;
           var formatter = exports2.formatters[format];
           if ("function" === typeof formatter) {
@@ -9670,8 +9664,7 @@ var require_debug = __commonJS({
       var split = (typeof namespaces === "string" ? namespaces : "").split(/[\s,]+/);
       var len = split.length;
       for (var i = 0; i < len; i++) {
-        if (!split[i])
-          continue;
+        if (!split[i]) continue;
         namespaces = split[i].replace(/\*/g, ".*?");
         if (namespaces[0] === "-") {
           exports2.skips.push(new RegExp("^" + namespaces.substr(1) + "$"));
@@ -9698,8 +9691,7 @@ var require_debug = __commonJS({
       return false;
     }
     function coerce(val) {
-      if (val instanceof Error)
-        return val.stack || val.message;
+      if (val instanceof Error) return val.stack || val.message;
       return val;
     }
   }
@@ -9743,15 +9735,13 @@ var require_browser = __commonJS({
     function formatArgs(args) {
       var useColors2 = this.useColors;
       args[0] = (useColors2 ? "%c" : "") + this.namespace + (useColors2 ? " %c" : " ") + args[0] + (useColors2 ? "%c " : " ") + "+" + exports2.humanize(this.diff);
-      if (!useColors2)
-        return;
+      if (!useColors2) return;
       var c = "color: " + this.color;
       args.splice(1, 0, c, "color: inherit");
       var index = 0;
       var lastC = 0;
       args[0].replace(/%[a-zA-Z%]/g, function(match) {
-        if ("%%" === match)
-          return;
+        if ("%%" === match) return;
         index++;
         if ("%c" === match) {
           lastC = index;
@@ -9813,14 +9803,10 @@ var require_node = __commonJS({
         return k.toUpperCase();
       });
       var val = process.env[key];
-      if (/^(yes|on|true|enabled)$/i.test(val))
-        val = true;
-      else if (/^(no|off|false|disabled)$/i.test(val))
-        val = false;
-      else if (val === "null")
-        val = null;
-      else
-        val = Number(val);
+      if (/^(yes|on|true|enabled)$/i.test(val)) val = true;
+      else if (/^(no|off|false|disabled)$/i.test(val)) val = false;
+      else if (val === "null") val = null;
+      else val = Number(val);
       obj[prop] = val;
       return obj;
     }, {});
@@ -10552,8 +10538,7 @@ var require_axios = __commonJS({
       return null;
     }
     var _global = (() => {
-      if (typeof globalThis !== "undefined")
-        return globalThis;
+      if (typeof globalThis !== "undefined") return globalThis;
       return typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : global;
     })();
     var isContextDefined = (context) => !isUndefined(context) && context !== _global;
@@ -10607,8 +10592,7 @@ var require_axios = __commonJS({
       let prop;
       const merged = {};
       destObj = destObj || {};
-      if (sourceObj == null)
-        return destObj;
+      if (sourceObj == null) return destObj;
       do {
         props = Object.getOwnPropertyNames(sourceObj);
         i = props.length;
@@ -10633,13 +10617,10 @@ var require_axios = __commonJS({
       return lastIndex !== -1 && lastIndex === position;
     };
     var toArray = (thing) => {
-      if (!thing)
-        return null;
-      if (isArray(thing))
-        return thing;
+      if (!thing) return null;
+      if (isArray(thing)) return thing;
       let i = thing.length;
-      if (!isNumber(i))
-        return null;
+      if (!isNumber(i)) return null;
       const arr = new Array(i);
       while (i-- > 0) {
         arr[i] = thing[i];
@@ -10696,8 +10677,7 @@ var require_axios = __commonJS({
           return false;
         }
         const value = obj[name];
-        if (!isFunction(value))
-          return;
+        if (!isFunction(value)) return;
         descriptor.enumerable = false;
         if ("writable" in descriptor) {
           descriptor.writable = false;
@@ -10901,8 +10881,7 @@ var require_axios = __commonJS({
       return utils$1.endsWith(key, "[]") ? key.slice(0, -2) : key;
     }
     function renderKey(path, key, dots) {
-      if (!path)
-        return key;
+      if (!path) return key;
       return path.concat(key).map(function each(token, i) {
         token = removeBrackets(token);
         return !dots && i ? "[" + token + "]" : token;
@@ -10936,8 +10915,7 @@ var require_axios = __commonJS({
         throw new TypeError("visitor must be a function");
       }
       function convertValue(value) {
-        if (value === null)
-          return "";
+        if (value === null) return "";
         if (utils$1.isDate(value)) {
           return value.toISOString();
         }
@@ -10980,8 +10958,7 @@ var require_axios = __commonJS({
         isVisitable
       });
       function build(value, path) {
-        if (utils$1.isUndefined(value))
-          return;
+        if (utils$1.isUndefined(value)) return;
         if (stack.indexOf(value) !== -1) {
           throw Error("Circular reference detected in " + path.join("."));
         }
@@ -11188,8 +11165,7 @@ var require_axios = __commonJS({
     function formDataToJSON(formData) {
       function buildPath(path, value, target, index) {
         let name = path[index++];
-        if (name === "__proto__")
-          return true;
+        if (name === "__proto__") return true;
         const isNumericKey = Number.isFinite(+name);
         const isLast = index >= path.length;
         name = !name && utils$1.isArray(target) ? target.length : name;
@@ -11396,8 +11372,7 @@ var require_axios = __commonJS({
       if (isHeaderNameFilter) {
         value = header;
       }
-      if (!utils$1.isString(value))
-        return;
+      if (!utils$1.isString(value)) return;
       if (utils$1.isString(filter)) {
         return value.indexOf(filter) !== -1;
       }
@@ -11769,8 +11744,7 @@ var require_axios = __commonJS({
           const totalBytes = internals.length;
           const bytesTransferred = internals.bytesSeen;
           const progressBytes = bytesTransferred - bytesNotified;
-          if (!progressBytes || self2.destroyed)
-            return;
+          if (!progressBytes || self2.destroyed) return;
           const rate = _speedometer(progressBytes);
           bytesNotified = bytesTransferred;
           process.nextTick(() => {
@@ -12057,8 +12031,7 @@ var require_axios = __commonJS({
         let onDone;
         let isDone;
         const done = (value, isRejected) => {
-          if (isDone)
-            return;
+          if (isDone) return;
           isDone = true;
           onDone && onDone(value, isRejected);
         };
@@ -12202,8 +12175,7 @@ var require_axios = __commonJS({
           headers.setContentLength(data.size || 0);
           data = stream__default["default"].Readable.from(readBlob$1(data));
         } else if (data && !utils$1.isStream(data)) {
-          if (Buffer.isBuffer(data))
-            ;
+          if (Buffer.isBuffer(data)) ;
           else if (utils$1.isArrayBuffer(data)) {
             data = Buffer.from(new Uint8Array(data));
           } else if (utils$1.isString(data)) {
@@ -12320,8 +12292,7 @@ var require_axios = __commonJS({
           options.insecureHTTPParser = config.insecureHTTPParser;
         }
         req = transport.request(options, function handleResponse(res) {
-          if (req.destroyed)
-            return;
+          if (req.destroyed) return;
           const streams = [res];
           const responseLength = +res.headers["content-length"];
           if (onDownloadProgress) {
@@ -12408,8 +12379,7 @@ var require_axios = __commonJS({
               reject(err);
             });
             responseStream.on("error", function handleStreamError(err) {
-              if (req.destroyed)
-                return;
+              if (req.destroyed) return;
               reject(AxiosError.from(err, null, config, lastRequest));
             });
             responseStream.on("end", function handleStreamEnd() {
@@ -12457,8 +12427,7 @@ var require_axios = __commonJS({
             return;
           }
           req.setTimeout(timeout, function handleRequestTimeout() {
-            if (isDone)
-              return;
+            if (isDone) return;
             let timeoutErrorMessage = config.timeout ? "timeout of " + config.timeout + "ms exceeded" : "timeout exceeded";
             const transitional = config.transitional || transitionalDefaults;
             if (config.timeoutErrorMessage) {
@@ -13380,8 +13349,7 @@ var require_axios = __commonJS({
         });
         const token = this;
         this.promise.then((cancel) => {
-          if (!token._listeners)
-            return;
+          if (!token._listeners) return;
           let i = token._listeners.length;
           while (i-- > 0) {
             token._listeners[i](cancel);
@@ -13905,10 +13873,10 @@ var require_spotify = __commonJS({
               id: currentPlayback?.item.id,
               thumbnail: null
             };
-            this.sendDataToMainFn("data", { type: "song", data: songData });
+            this.sendDataToMainFn("data", { app: "client", type: "song", data: songData });
             const imageUrl = currentPlayback.item.album.images[0].url;
             songData.thumbnail = await getImageData(imageUrl);
-            this.sendDataToMainFn("data", { type: "song", data: songData });
+            this.sendDataToMainFn("data", { app: "client", type: "song", data: songData });
           } else {
             songData = {
               album: currentPlayback.item.show.name,
@@ -13932,10 +13900,10 @@ var require_spotify = __commonJS({
               id: currentPlayback.item.id,
               thumbnail: null
             };
-            this.sendDataToMainFn("data", { type: "song", data: songData });
+            this.sendDataToMainFn("data", { app: "client", type: "song", data: songData });
             const imageUrl = currentPlayback.item.images[0].url;
             songData.thumbnail = await getImageData(imageUrl);
-            this.sendDataToMainFn("data", { type: "song", data: songData });
+            this.sendDataToMainFn("data", { app: "client", type: "song", data: songData });
           }
         } catch (error) {
           this.sendError("Error getting song data:" + error);

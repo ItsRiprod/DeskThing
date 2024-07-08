@@ -6,12 +6,18 @@ export interface log {
   date: Date
 }
 
-class LogStore extends EventEmitter<log[]> {
-  private logList: log[]
+interface LogEvents {
+  update: log[]
+}
 
-  constructor() {
+class LogStore extends EventEmitter<LogEvents> {
+  private logList: log[]
+  private maxLogLength: number
+
+  constructor(maxLogLength: number = 1000) {
     super()
     this.logList = []
+    this.maxLogLength = maxLogLength
   }
 
   public getLogs(): log[] {
@@ -19,9 +25,12 @@ class LogStore extends EventEmitter<log[]> {
   }
 
   public addLog(type: string, log: string): void {
+    const truncatedLog =
+      log.length > this.maxLogLength ? `${log.substring(0, this.maxLogLength)}...` : log
+
     const newLog = {
       type: type,
-      log: log,
+      log: truncatedLog,
       date: new Date()
     }
 

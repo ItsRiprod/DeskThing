@@ -8,7 +8,7 @@ export function create_socket(): WebSocket {
 
 class WebSocketService {
   socket_connector: () => WebSocket;
-  listeners: SocketEventListener[] = [];
+  listeners: { [app: string]: SocketEventListener[] } = {};
   webSocket: WebSocket;
 
   constructor(socket_connector: () => WebSocket = create_socket) {
@@ -46,30 +46,50 @@ class WebSocketService {
   }
 
   post(body: socketData): void {
-    //console.log('Send', body);
-    this.webSocket.send(JSON.stringify(body));
+    if (this.is_ready()) {
+      this.webSocket.send(JSON.stringify(body));
+    } else {
+      console.error('WebSocket is not ready.');
+    }
   }
 
   registerEventHandler = (): void => {
     this.webSocket.onmessage = (event) => {
       try {
-        //console.log('Receive', event.data);
         const msg = JSON.parse(event.data.toString());
-        this.listeners.forEach((listener: SocketEventListener) => listener(msg));
+        const { app } = msg
+        //console.log('Receive', msg);
+        this.listeners[app].forEach((listener: SocketEventListener) => listener(msg as socketData));
       } catch (e) {
         console.error(e);
       }
     };
   };
 
-  addSocketEventListener(listener: SocketEventListener) {
-    this.listeners.push(listener);
+  // This is what should be used. Returns a function that can be used to remove the socket
+  on(app: string, listener: SocketEventListener): () => void {
+    if (!this.listeners[app]) {
+      this.listeners[app] = [];
+    }
+    this.listeners[app].push(listener);
+
+    // Return a function that removes this listener
+    return () => {
+      this.removeSocketEventListener(app, listener);
+    };
   }
 
-  removeSocketEventListener(listener: SocketEventListener) {
-    const index = this.listeners.indexOf(listener);
-    if (index !== -1) {
-      this.listeners.splice(index, 1);
+  addSocketEventListener(app: string, listener: SocketEventListener) {
+    if (!this.listeners[app]) {
+      this.listeners[app] = [];
+    }
+    this.listeners[app].push(listener);
+  }
+
+  removeSocketEventListener(app: string, listener: SocketEventListener) {
+    const index = this.listeners[app]?.indexOf(listener);
+    if (index !== undefined && index !== -1) {
+      this.listeners[app].splice(index, 1);
     }
   }
 }
@@ -77,11 +97,35 @@ class WebSocketService {
 const socket = new WebSocketService();
 export default socket;
 
+export interface Manifest {
+  isAudioSource: boolean
+  requires: Array<string>
+  label: string
+  version: string
+  description?: string
+  author?: string
+  id: string
+  isWebApp: boolean
+  isLocalApp: boolean
+  platforms: Array<string>
+  homepage?: string
+  repository?: string
+}
+
+export interface App {
+  name: string
+  enabled: boolean
+  running: boolean
+  prefIndex: number
+  manifest?: Manifest
+}
+
+
 export interface socketData {
   app: string;
   type: string;
   request?: string;
-  data?: Array<string> | string | object | number | { [key:string]: string | Array<string> | song_data };
+  data?: Array<string> | string | object | number | { [key:string]: string | Array<string> | song_data | App };
 }
 
 export type song_data = {

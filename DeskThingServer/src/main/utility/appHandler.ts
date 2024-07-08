@@ -56,7 +56,7 @@ async function handleDataFromApp(app: string, type: string, ...args: any[]): Pro
       const [message] = args
       console.log(`SERVER: Message from ${app}: ${message}`)
       sendMessageToApp(app, 'message', 'Hello from server!')
-      dataListener.emit(MESSAGE_TYPES.MESSAGE, message)
+      dataListener.asyncEmit(MESSAGE_TYPES.MESSAGE, message)
       break
     case 'get':
       switch (args[0]) {
@@ -95,7 +95,7 @@ async function handleDataFromApp(app: string, type: string, ...args: any[]): Pro
       break
     case 'data':
       if (app && args[0]) {
-        sendMessageToClients({ app: app, type: args[0].type, data: args[0].data })
+        sendMessageToClients({ app: args[0].app || app, type: args[0].type, data: args[0].data })
       }
       break
     case 'manifest':
@@ -110,10 +110,10 @@ async function handleDataFromApp(app: string, type: string, ...args: any[]): Pro
       }
       break
     case 'error':
-      dataListener.emit(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: ${args[0]}`)
+      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: ${args[0]}`)
       break
     case 'log':
-      dataListener.emit(MESSAGE_TYPES.LOGGING, `${app.toUpperCase()}: ${args[0]}`)
+      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `${app.toUpperCase()}: ${args[0]}`)
       break
     default:
       console.log(`Unknown data type from ${app}: ${type}`)
@@ -201,7 +201,7 @@ async function sendMessageToApp(appName: string, type: string, ...args: any[]): 
     if (app && typeof app.onMessageFromMain === 'function') {
       ;(app.onMessageFromMain as OnMessageFromMainType)(type, ...args)
     } else {
-      dataListener.emit(
+      dataListener.asyncEmit(
         MESSAGE_TYPES.ERROR,
         `SERVER: App ${appName} not found or does not have onMessageFromMain function.`
       )
@@ -246,6 +246,7 @@ async function stopApp(appName: string): Promise<void> {
     }
     runningApps.delete(appName)
     console.log('stopped ', appName)
+    dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `SERVER: Stopped ${appName}.`)
     sendPrefData()
   } catch (error) {
     console.error(`Error stopping app ${appName}`, error)
@@ -287,14 +288,20 @@ async function disableApp(appName: string): Promise<void> {
       if (require.cache[resolvedPath]) {
         delete require.cache[resolvedPath]
         console.log(`Removed ${appEntryPoint} from cache`)
+        dataListener.asyncEmit(
+          MESSAGE_TYPES.LOGGING,
+          `SERVER: Removed ${appEntryPoint} from cache.`
+        )
       } else {
         console.log(`${appEntryPoint} not in cache`)
+        dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `SERVER: ${appEntryPoint} not in cache!`)
       }
     }
 
     sendPrefData()
   } catch (error) {
-    console.error('Error adding app:', error)
+    console.error('Error disabling app:', error)
+    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `SERVER: Error disabling app ${error}.`)
   }
 }
 
@@ -377,9 +384,9 @@ async function handleZip(zipFilePath: string): Promise<returnData> {
     const author = manifest.author
     const platforms = manifest.platforms
 
-    stopApp(id)
+    await stopApp(id)
 
-    purgeAppData(id)
+    await purgeAppData(id)
 
     const returnData = {
       appId: id,
@@ -396,7 +403,10 @@ async function handleZip(zipFilePath: string): Promise<returnData> {
       fs.rmSync(appDirectory, { recursive: true })
     }
     fs.renameSync(tempDir, appDirectory)
-
+    dataListener.asyncEmit(
+      MESSAGE_TYPES.LOGGING,
+      `SERVER: Successfully extracted ${zipFilePath} to ${appDirectory}`
+    )
     console.log(`Successfully extracted ${zipFilePath} to ${appDirectory}`)
     return returnData
   } catch (error) {
@@ -415,15 +425,24 @@ async function loadAndRunEnabledApps(): Promise<void> {
   try {
     const appsConfig = getAppData()
     console.log('Loaded apps config. Running apps...')
+    dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'SERVER: Loaded apps config. Running apps...')
     console.log(appsConfig)
     for (const appConfig of appsConfig.apps) {
       if (appConfig.enabled == true) {
         console.log(`Automatically running app ${appConfig.name}`)
+        dataListener.asyncEmit(
+          MESSAGE_TYPES.LOGGING,
+          `SERVER: Automatically running app ${appConfig.name}`
+        )
         await runApp(appConfig.name)
         await sendMessageToApp(appConfig.name, 'get', 'manifest')
       }
     }
   } catch (error) {
+    dataListener.asyncEmit(
+      MESSAGE_TYPES.ERROR,
+      `SERVER: Error loading and running enabled apps: ${error}`
+    )
     console.error('Error loading and running enabled apps:', error)
   }
 }
@@ -475,16 +494,17 @@ async function addApp(_event, appName: string): Promise<void> {
  */
 async function purgeAppData(appName: string): Promise<void> {
   try {
+    dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `SERVER: Purging App ${appName}`)
     // Ensure that the app is not running
     if (runningApps.has(appName)) {
       await stopApp(appName) // Ensure the app has stopped
     }
 
     // Purge App Data
-    purgeData(appName)
+    await purgeData(appName)
 
     // Purge App Config
-    purgeAppConfig(appName)
+    await purgeAppConfig(appName)
 
     // Get path to file
     const appDirectory = join(app.getPath('userData'), 'apps', appName)
@@ -496,6 +516,7 @@ async function purgeAppData(appName: string): Promise<void> {
       if (require.cache[resolvedPath]) {
         delete require.cache[resolvedPath]
         console.log(`Removed ${appEntryPoint} from cache`)
+        dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `SERVER: Removed ${appEntryPoint} from cache`)
       }
     }
 

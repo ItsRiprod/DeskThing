@@ -69,10 +69,10 @@ const Weather: React.FC = () => {
       }
     };
 
-    socket.addSocketEventListener(listener);
+    const removeListener = socket.on('weather',listener);
 
     return () => {
-      socket.removeSocketEventListener(listener);
+      removeListener();
     };
   }, []);
 

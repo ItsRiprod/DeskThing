@@ -11,7 +11,14 @@ const server = new WebSocketServer({ port: 8891 })
 // Check if the requested app is enabled in app_config.json
 let numConnections = 0
 
-const sendMessageToClients = async (message): Promise<void> => {
+export interface socketData {
+  app: string
+  type: string
+  request?: string
+  data?: Array<string> | string | object | number | { [key: string]: string | Array<string> }
+}
+
+const sendMessageToClients = async (message: socketData): Promise<void> => {
   server.clients.forEach((client) => {
     if (client.readyState === 1) {
       client.send(JSON.stringify(message))
@@ -21,17 +28,19 @@ const sendMessageToClients = async (message): Promise<void> => {
 
 const sendResponse = async (socket, message): Promise<void> => {
   try {
-    socket.send(JSON.stringify({ type: 'response', data: message }))
+    sendData(socket, { app: 'client', type: 'response', data: message })
   } catch (error) {
     console.error('WSOCKET: Error sending message:', error)
   }
 }
-const sendData = async (socket, type, data): Promise<void> => {
+const sendData = async (socket, socketData: socketData): Promise<void> => {
   try {
     if (socket != null) {
-      socket.send(JSON.stringify({ type: type, data: data }))
+      socket.send(
+        JSON.stringify({ app: socketData.app, type: socketData.type, data: socketData.data })
+      )
     } else {
-      sendMessageToClients({ type: type, data: data })
+      sendMessageToClients({ app: socketData.app, type: socketData.type, data: socketData.data })
     }
   } catch (error) {
     console.error('WSOCKET: Error sending message:', error)
@@ -40,7 +49,7 @@ const sendData = async (socket, type, data): Promise<void> => {
 
 const sendError = async (socket, error): Promise<void> => {
   try {
-    socket.send(JSON.stringify({ type: 'error', data: error }))
+    sendData(socket, { app: 'client', type: 'error', data: error })
   } catch (error) {
     console.error('WSOCKET: Error sending message:', error)
   }
@@ -48,35 +57,29 @@ const sendError = async (socket, error): Promise<void> => {
 
 const sendPrefData = async (socket = null): Promise<void> => {
   try {
-    const config = await getAppData()
-    if (!config || !config.apps) {
+    const appData = await getAppData()
+    const config = await readData()
+    if (!appData || !appData.apps) {
       throw new Error('Invalid configuration format')
     }
-    const appData = await readData()
+
     const settings = {}
 
-    for (const appName in appData) {
-      const appConfig = appData[appName]
-      if (appConfig?.settings) {
-        settings[appName] = appConfig.settings
-      }
+    if (appData && appData.apps) {
+      appData.apps.map((app) => {
+        if (app && app.manifest) {
+          const appConfig = config[app.manifest.id]
+          if (appConfig?.settings) {
+            settings[app.manifest.id] = appConfig.settings
+          }
+        }
+      })
+    } else {
+      console.error('appData or appData.apps is undefined or null', appData)
     }
 
-    const enabledApps = config.apps.filter((app) => app.enabled)
-    enabledApps.sort((a, b) => {
-      const prefIndexA = a.prefIndex
-      const prefIndexB = b.prefIndex
-      return prefIndexA - prefIndexB
-    })
-    const preferredApps = enabledApps.slice(0, 4).map((app) => app.name)
-
-    const prefs = {
-      preferredApps: preferredApps,
-      modules: enabledApps.map((app) => app.name),
-      settings: settings
-    }
-
-    sendData(socket, 'utility_data', prefs)
+    sendData(socket, { app: 'client', type: 'config', data: appData.apps })
+    sendData(socket, { app: 'client', type: 'settings', data: settings })
     console.log('WSOCKET: Preferences sent!')
   } catch (error) {
     console.error('WSOCKET: Error getting config data:', error)
@@ -91,7 +94,7 @@ const sendTime = async (socket): Promise<void> => {
   const formattedHours = hours % 12 || 12
   const formattedMinutes = minutes < 10 ? '0' + minutes : minutes
   const time = `${formattedHours}:${formattedMinutes} ${ampm}`
-  sendData(socket, 'time', time)
+  sendData(socket, { app: 'client', type: 'time', data: time })
   console.log(time)
 }
 const getDelayToNextMinute = async (): Promise<number> => {
@@ -134,8 +137,12 @@ server.on('connection', async (socket) => {
               switch (parsedMessage.request) {
                 case 'add_app':
                   if (parsedMessage.data) {
-                    const oldApp = await getAppByIndex(parsedMessage.data.index + 1)
+                    const oldApp = await getAppByIndex(parsedMessage.data.index)
                     if (oldApp) {
+                      dataListener.emit(
+                        MESSAGE_TYPES.LOGGING,
+                        `WSOCKET: Setting ${oldApp.name} index ${oldApp.prefIndex} to 5`
+                      )
                       oldApp.prefIndex = 5
                       await setAppData(oldApp)
                     }
@@ -144,7 +151,11 @@ server.on('connection', async (socket) => {
                       console.log(
                         `WSOCKET: Setting ${parsedMessage.data.app} index ${appData.prefIndex} to ${parsedMessage.data.index}`
                       )
-                      appData.prefIndex = parsedMessage.data.index + 1
+                      dataListener.emit(
+                        MESSAGE_TYPES.LOGGING,
+                        `WSOCKET: Setting ${parsedMessage.data.app} index ${appData.prefIndex} to ${parsedMessage.data.index}`
+                      )
+                      appData.prefIndex = parsedMessage.data.index
                       await setAppData(appData)
                       await sendPrefData(socket)
                     }

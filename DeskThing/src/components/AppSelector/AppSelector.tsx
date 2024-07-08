@@ -1,27 +1,29 @@
 import React from 'react';
 import './AppSelector.css';
+import { App } from 'src/helpers/WebSocketService';
 interface AppSelectorProps {
-  preferredApps: Array<string>;
   currentView: string;
-  apps: string[];
+  apps: App[];
   onAppSelect: (app: string) => void;
   className?: string;
 }
 
-const AppSelector: React.FC<AppSelectorProps> = ({ preferredApps, currentView, apps, onAppSelect, className }) => {
-  const allApps = [...new Set([...preferredApps, ...apps])];
+const AppSelector: React.FC<AppSelectorProps> = ({ currentView, apps, onAppSelect, className }) => {
 
   return (
     <div className={`appselector ${className}`}>
-      {allApps.map((app) => (
-        <button
-          key={app}
-          className={`app-button ${preferredApps.includes(app) ? 'preferred' : ''} ${currentView === app ? 'current' : ''}`}
-          onClick={() => onAppSelect(app)}
+      {apps.map((app, index) => 
+        app.manifest.isLocalApp || app.manifest.isWebApp ?
+        (<button
+          key={app.manifest.id}
+          className={`app-button ${app.prefIndex < 5 ? 'preferred' : ''} ${currentView === app.manifest.id ? 'current' : ''}`}
+          onClick={() => onAppSelect(app.manifest.id)}
         >
-          {app}
-        </button>
-      ))}
+          {app.name}
+        </button>)
+        :
+        (<div key={index}></div>)
+      )}
     </div>
   );
 };

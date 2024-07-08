@@ -22,11 +22,12 @@ const Default: React.FC = (): JSX.Element => {
       }
     };
 
-    socket.addSocketEventListener(listener);
-
     requestPreferences()
+
+    const removeListener = socket.on('client', listener);
+
     return () => {
-      socket.removeSocketEventListener(listener);
+      removeListener();
     };
   }, []);
 

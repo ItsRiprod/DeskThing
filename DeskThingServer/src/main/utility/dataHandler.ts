@@ -61,7 +61,7 @@ const getData = (key): { [key: string]: string } => {
   return data[key]
 }
 
-const purgeData = (appName: string): void => {
+const purgeData = async (appName: string): Promise<void> => {
   console.log('SERVER: Deleting app data...')
   const data = readData()
   delete data[appName]

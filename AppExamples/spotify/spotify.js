@@ -355,11 +355,11 @@ class SpotifyHandler {
           id: currentPlayback?.item.id,
           thumbnail: null,
         }
-        this.sendDataToMainFn('data', { type: 'song', data: songData })
+        this.sendDataToMainFn('data', { app: 'client', type: 'song', data: songData })
         const imageUrl = currentPlayback.item.album.images[0].url
         songData.thumbnail = await getImageData(imageUrl)
 
-        this.sendDataToMainFn('data', { type: 'song', data: songData })
+        this.sendDataToMainFn('data', { app: 'client', type: 'song', data: songData })
       } else {
         songData = {
           album: currentPlayback.item.show.name,
@@ -384,13 +384,13 @@ class SpotifyHandler {
           thumbnail: null,
         }
         // Send the data immediately
-        this.sendDataToMainFn('data', { type: 'song', data: songData })
+        this.sendDataToMainFn('data', { app: 'client',type: 'song', data: songData })
 
         // Get the image and send that later
         const imageUrl = currentPlayback.item.images[0].url
         songData.thumbnail = await getImageData(imageUrl)
 
-        this.sendDataToMainFn('data', { type: 'song', data: songData })
+        this.sendDataToMainFn('data', { app: 'client',type: 'song', data: songData })
       }
     } catch (error) {
       this.sendError('Error getting song data:' + error)

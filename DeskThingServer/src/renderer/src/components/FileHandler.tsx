@@ -1,5 +1,5 @@
 import { DragEvent, useState } from 'react'
-import { IconUpload } from './icons'
+import { IconLoading, IconUpload } from './icons'
 
 interface returnData {
   appId: string
@@ -12,8 +12,15 @@ interface returnData {
 
 const FileHandler = (): JSX.Element => {
   const [appData, setAppData] = useState<returnData | null>(null)
+  const [dragActive, setDragActive] = useState(false)
+  const [loading, setLoading] = useState(false)
+
   const handleDrop = async (event: DragEvent<HTMLDivElement>): Promise<void> => {
     event.preventDefault()
+    setDragActive(false)
+    setLoading(true)
+    console.log('App Dropped')
+
     const files = Array.from(event.dataTransfer.files)
     for (const file of files) {
       if (file.name.endsWith('.zip')) {
@@ -28,6 +35,7 @@ const FileHandler = (): JSX.Element => {
       window.electron.ipcRenderer.once('zip-name', (_event, data: returnData) => {
         console.log('Received appId:', data)
         setAppData(data)
+        setLoading(false)
       })
     } catch (error) {
       console.error('Error handling zip file:', error)
@@ -43,6 +51,7 @@ const FileHandler = (): JSX.Element => {
   const handleClick = async (): Promise<void> => {
     const file = await window.electron.selectZipFile()
     if (file) {
+      setLoading(true)
       await handleZipFile(file.path)
       console.log(file.name)
     }
@@ -70,13 +79,23 @@ const FileHandler = (): JSX.Element => {
         </div>
       ) : (
         <div
-          className="p-10 rounded-3xl flex flex-col items-center hover:bg-zinc-800 border-2 sm:w-30 md:w-96 md:text-2xl 2xl:w-auto 2xl:text-3xl border-zinc-200 transition-colors"
+          className={`p-10 rounded-3xl flex flex-col items-center hover:bg-zinc-800 border-2 sm:w-30 md:w-96 md:text-2xl 2xl:w-auto 2xl:text-3xl border-zinc-200 transition-colors ${dragActive ? 'drag-active' : ''}`}
           onDrop={handleDrop}
           onDragOver={(e) => e.preventDefault()}
+          onDragEnter={() => setDragActive(true)}
+          onDragLeave={() => setDragActive(false)}
           onClick={handleClick}
         >
-          <IconUpload iconSize={100} />
-          <p>Drop your .zip App file here</p>
+          {loading ? (
+            <div className="flex flex-col items-center">
+              <IconLoading iconSize={100} />
+            </div>
+          ) : (
+            <>
+              <IconUpload iconSize={100} />
+              <p>Drop your .zip App file here</p>
+            </>
+          )}
         </div>
       )}
     </>

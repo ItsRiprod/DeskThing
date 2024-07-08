@@ -29,7 +29,11 @@ export interface Config {
   [appName: string]: string | Array<string>
 }
 
-class AppStore extends EventEmitter<AppData> {
+interface appStoreEvents {
+  update: AppData
+}
+
+class AppStore extends EventEmitter<appStoreEvents> {
   private appsList: AppData
 
   constructor() {

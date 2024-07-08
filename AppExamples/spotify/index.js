@@ -16,7 +16,7 @@ async function stop() {
 }
 
 async function onMessageFromMain(event, ...args) {
-  spotify.sendLog(`SPOTIFY: Received event ${event}`)
+  spotify.sendLog(`Received event ${event}`)
   try {
     switch (event) {
       case 'message':

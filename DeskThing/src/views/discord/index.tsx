@@ -1,6 +1,6 @@
 import './styles.css';
 import React, { useEffect, useState, useRef } from 'react';
-import socket from '../../helpers/WebSocketService';
+import socket, { socketData } from '../../helpers/WebSocketService';
 import { IconMicDiscord, IconDeafenedDiscord, IconDeafenedOffDiscord, IconCallDiscord, IconMicOffDiscord } from '../../components/todothingUIcomponents';
 
 const Discord: React.FC = () => {
@@ -47,16 +47,16 @@ const Discord: React.FC = () => {
   };
 
   useEffect(() => {
-    const listener = (msg: any) => {
+    const listener = (msg: socketData) => {
       if (msg.type === 'discord_data') {
         handleDiscordData(msg.data);
       }
     };
 
-    socket.addSocketEventListener(listener);
+    const removeListener = socket.on('discord', listener);
 
     return () => {
-      socket.removeSocketEventListener(listener);
+      removeListener();
     };
   }, []);
 

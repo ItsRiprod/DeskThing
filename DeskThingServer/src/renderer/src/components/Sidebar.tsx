@@ -1,5 +1,5 @@
 import React from 'react'
-import { IconLoading } from './icons'
+import { IconConnecting } from './icons'
 
 type View = 'appsList' | 'status' | 'logDisplay' // Define possible views
 
@@ -13,12 +13,14 @@ const Sidebar: React.FC<SidebarProps> = ({ setCurrentView, currentView }) => {
     setCurrentView(view)
   }
 
+  const version = process.env.PACKAGE_VERSION
+
   return (
     <div className="container w-full top-0 sm:pt-5 sm:px-3 sm:max-w-52 gap-5 sm:relative rounded-lg flex sm:flex-col overflow-y-scroll items-center border-2 border-zinc-800 sm:h-full p-2">
       <div className="flex">
-        <IconLoading className="text-white" iconSize={27} />
+        <IconConnecting className="text-white" iconSize={27} />
         <h1 className="text-xl pl-1">DeskThing</h1>
-        <p className="text-sm">v0.5.2</p>
+        <p className="text-sm">v{version}</p>
       </div>
       <ul className="flex gap-5 sm:flex-col w-full">
         <li>
