@@ -1,34 +1,39 @@
-
-
 # dependencies
 /node_modules
 /.pnp
-.env
 .pnp.js
+
+# environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# data files
 data.json
+DeskThing/server/auth_data.json
 
 # testing
 /coverage
 
 # production
 /build
-/.vscode
+/releases
+releases/Linux/deskthing-0.3.0.AppImage
+
 # misc
 .DS_Store
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
+/.vscode
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
 .eslintcache
 tsconfig.tsbuildinfo
-DeskThing/server/auth_data.json
-AppExamples/spotify/node_modules/
-releases/Linux/deskthing-0.3.0.AppImage
+
+# AppExamples
+/AppExamples/spotify/node_modules
+/AppExamples/spotify/builds
 /AppExamples/utility/node_modules
 /AppExamples/weather/node_modules
 /AppExamples/mediawincs
