@@ -72,6 +72,8 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
 - General audio control
 - Advanced Spotify Stats
 - Home Assistant
+- Pomodoro Timer
+- Google Calendar
 - And more!
 </details>
 
@@ -100,30 +102,13 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
    - Follow the instructions in the [superbird-tool repository](https://github.com/bishopdynamics/superbird-tool) to flash your CarThing device with the necessary image.
 > If you need help, refer to the [detailed instructions](#flashing) at the end of this page
 
-2. **Configure Apps You Want To Include:**
+2. **Get the built webapp under installation files:**
+*should be under Releases*
 
-*You do not need the .env file on versions at or later than v0.5.0 due to the apps requesting the keys. Still reference the tutorials for obtaining the needed information when loading an app*
-   - Spotify app [installation instructions here](/DeskThing/server/apps/spotify#spotify-app-install)
-   - Trello app [installation instructions here](/DeskThing/server/apps/trello#trello-app-install)
-   - Weather app [installation instructions here](/DeskThing/server/apps/weather#weather-app-install)
-   - Launchpad app [installation instructions here](/DeskThing/server/apps/launchpad#launchpad-app-install)
-   - Discord app [installation instructions here](/DeskThing/server/apps/discord#discord-app-install)
-   - Audible app [installation instructions here](/DeskThing/server/apps/audible#audible-app-install)
+   - Unzip the file 'deskthing-client-build-v0.-.-.zip' onto your computer
+   - open a command prompt in that directory for step 3
 
-3. **Configure Workspace:**
-   - Use `cd ./DeskThing` to get into the project directory and run:
-   ```sh
-   npm install
-   ```
-   - ~~Add `.env` file to `/DeskThing/server/` (optionally, just rename `.env-template` to `.env`. `.env-template` is already located where it needs to be)~~
-   - ~~Ensure `PORT=8888` in the `.env` file~~ *Not required on versions later than v0.5.0*
-> If anything here does not work. DM me on discord @riprod
-
-4. **Pushing the project to the car thing:**
-   - Build project:
-     ```sh
-     npm run build
-     ```
+3. **Pushing the project to the car thing:**
    - Open port 8891:
      ```sh
      adb reverse tcp:8891 tcp:8891
@@ -135,12 +120,24 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
       adb shell mv /usr/share/qt-superbird-app/webapp /tmp/webapp-orig
       adb shell mv /tmp/webapp-orig /usr/share/qt-superbird-app/ # it's ok if this fails
       adb shell rm -r /tmp/webapp-orig
-      adb push dist/ /usr/share/qt-superbird-app/webapp
+      adb push dist/ /usr/share/qt-superbird-app/webapp # Ensure dist/ is in the directory you are running this from
      ```
    - Restart chromium:
      ```sh
      adb shell supervisorctl restart chromium
      ```
+
+4. **Setting up the server:**
+
+   - Download the correct installer under the files for your operating system
+   - Download any .zip apps that you want that match the version of the installer
+   - Run the installer
+   - Drag-n-drop the apps you want one at a time (keeping in mind some have dependencies on other apps)
+   - Ensure that the top left wifi icon is green (connected to car thing)
+   - Ensure you get the 
+
+> Any Issues? Contact me [through the CarThingHax discord server](https://discord.carth.ing/) or via DMs to @riprod
+
 </details>
 
 ---
@@ -178,31 +175,6 @@ Process:
 - 🐤 [superbird-custom-webapp](https://github.com/pajowu/superbird-custom-webapp/tree/main) - The React web app framework that this project started with.
 - 🗨️ [Car Thing Hax Community Discord](https://discord.gg/aPSV6NykA6) - The discord where there is this project and so much more!
 
----
-
-<details>
-<summary>
-   <h2>Running the WebApp</h2>
-</summary>
-
-- If you are running from a .bat file, this is what it should look like:
-
-```sh
-@echo off
-
-cd /d "C:\*Path to car thing files*\carthing\DeskThing\"
-
-adb reverse tcp:8891 tcp:8891
-adb shell mount -o remount,rw /
-adb shell mv /usr/share/qt-superbird-app/webapp /tmp/webapp-orig
-adb shell mv /tmp/webapp-orig /usr/share/qt-superbird-app/ # it's ok if this fails
-adb shell rm -r /tmp/webapp-orig
-adb push dist/ /usr/share/qt-superbird-app/webapp
-
-adb shell supervisorctl restart chromium
-```
-
-</details>
 
 ---
 

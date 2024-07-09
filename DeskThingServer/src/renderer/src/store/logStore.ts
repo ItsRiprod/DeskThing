@@ -8,6 +8,7 @@ export interface log {
 
 interface LogEvents {
   update: log[]
+  new: log
 }
 
 class LogStore extends EventEmitter<LogEvents> {
@@ -37,6 +38,9 @@ class LogStore extends EventEmitter<LogEvents> {
     this.logList.push(newLog)
 
     this.emit('update', this.logList)
+    if (type === 'error' || type === 'message') {
+      this.emit('new', newLog)
+    }
   }
 }
 

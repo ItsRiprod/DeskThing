@@ -4,6 +4,7 @@ import socket, { App, socketData } from '../helpers/WebSocketService';
 import Dashboard from './dashboard';
 import './views.css';
 
+
 import Overlay from '../components/Overlay/Overlay';
 
 const ViewManager = () => {
@@ -42,7 +43,9 @@ const ViewManager = () => {
             setCurrentView(getAppByButtonIndex(4));
             break;
           case Button.BUTTON_5:
-            setCurrentView('dashboard');
+            if (currentView != 'utility') {
+              setCurrentView('dashboard');
+            }
             break;
           default:
             break;
@@ -83,21 +86,10 @@ const ViewManager = () => {
     };
 
     const getAppByButtonIndex = (index: number): string => {
-      if (index <= 4 && index <= apps.length) {
-        const app = apps.find((app) => app.prefIndex === index);
-        if (app) {
-          return app.name;
-        } else {
-          if (index <= apps.length) {
-            return apps[index - 1].name;
-          }
-        }
-      } else {
-        // Default to the app at the given index if no prefIndex matches
         if (index <= apps.length) {
-          return apps[index - 1].name;
+          console.log(apps)
+          return apps[index -1].name;
         }
-      }
       return 'dashboard'; // Default to dashboard if no valid app found
     };
 

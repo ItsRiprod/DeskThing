@@ -2,7 +2,7 @@
 import './styles.css';
 import React, { useEffect, useState } from 'react';
 import socket, { socketData, song_data } from '../../helpers/WebSocketService';
-import { IconAlbum } from '../../components/todothingUIcomponents';
+import { IconAlbum } from '../../components/icons';
 
 const Spotify: React.FC = () => {
   const [songData, setSongData] = useState<song_data>();

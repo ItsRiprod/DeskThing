@@ -1,4 +1,4 @@
-import { IconDevice } from '../../components/todothingUIcomponents';
+import { IconDevice } from '../../components/icons';
 import './styles.css';
 import React, { useState, useEffect } from 'react';
 import socket, { socketData } from '../../helpers/WebSocketService';

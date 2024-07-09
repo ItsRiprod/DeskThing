@@ -13928,17 +13928,32 @@ async function stop() {
   spotify = null;
 }
 async function onMessageFromMain(event, ...args) {
-  spotify.sendLog(`SPOTIFY: Received event ${event}`);
+  spotify.sendLog(`Received event ${event}`);
   try {
     switch (event) {
       case "message":
         break;
       case "data":
         if (args[0] == null || !args[0].Spotify_API_Id) {
-          spotify.sendDataToMainFn("get", "auth", [
-            "Spotify_API_Id",
-            "Spotify_Client_Secret"
-          ]);
+          spotify.sendDataToMainFn(
+            "get",
+            "auth",
+            {
+              "Spotify_API_Id": {
+                "value": "",
+                "label": "Spotify Client ID",
+                "instructions": 'You can get your Spotify Client ID from the <a href="https://developer.spotify.com/dashboard" target="_blank" style="color: lightblue;">Spotify Developer Dashboard</a>. You must create a new application and then under "Client ID" Copy and paste that into this field.'
+              },
+              "Spotify_Client_Secret": {
+                "value": "",
+                "label": "Spotify Client Secret",
+                "instructions": 'You can get your Spotify Client Secret from the <a href="https://developer.spotify.com/dashboard" target="_blank" style="color: lightblue;">Spotify Developer Dashboard</a>. You must create a new application and then under "View Client Secret", Copy and paste that into this field.'
+              },
+              "Spotify_Redirect_URI": {
+                "instructions": 'Set the Spotify Redirect URI to http://localhost:8888/callback/spotify and then click "Save".\n This ensures you can authenticate your account to this application'
+              }
+            }
+          );
         } else if (args[0].Spotify_Refresh_Token) {
           spotify.sendLog("Refreshing token...");
           spotify.refresh_token = args[0].Spotify_Refresh_Token;

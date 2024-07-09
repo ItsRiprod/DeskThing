@@ -1,7 +1,7 @@
 import './styles.css';
 import React, { useEffect, useState, useRef } from 'react';
 import socket, { socketData } from '../../helpers/WebSocketService';
-import { IconMicDiscord, IconDeafenedDiscord, IconDeafenedOffDiscord, IconCallDiscord, IconMicOffDiscord } from '../../components/todothingUIcomponents';
+import { IconMicDiscord, IconDeafenedDiscord, IconDeafenedOffDiscord, IconCallDiscord, IconMicOffDiscord } from '../../components/icons';
 
 const Discord: React.FC = () => {
   const [discordData, setDiscordData] = useState<{ [key: string]: any }>({});

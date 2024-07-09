@@ -10,8 +10,10 @@ import {
   IconShuffle,
   IconRepeat,
   IconRepeatOne,
-} from '../todothingUIcomponents';
-import { IconAlbum } from '../todothingUIcomponents';
+  IconAlbum,
+  IconSkipForward15,
+  IconSkipBack15,
+} from '../icons';
 import getBackgroundColor, { findContrastColor } from '../../helpers/ColorExtractor';
 
 
@@ -202,13 +204,13 @@ const Footer: React.FC = () => {
               className="text-green-500"
               onClick={() => handleSendSet(AUDIO_REQUESTS.PREVIOUS, songData.id)}
             >
-              <IconSkipBack />
+              {songData?.can_skip ? <IconSkipBack iconSize={48} /> : <IconSkipBack15 iconSize={48} />}
             </button>
             <button className="text-green-500" onClick={handlePlayPause}>
-              {!play ? <IconPlay /> : <IconPause />}
+              {!play ? <IconPlay iconSize={48} /> : <IconPause iconSize={48} />}
             </button>
             <button className="text-green-500" onClick={() => handleSendSet(AUDIO_REQUESTS.NEXT, songData.id)}>
-              {songData?.can_skip ? <IconSkipForward /> : <IconSkipForward />}
+              {songData?.can_skip ? <IconSkipForward iconSize={48} /> : <IconSkipForward15 iconSize={48} />}
             </button>
             <button
               className=""

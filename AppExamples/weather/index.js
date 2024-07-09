@@ -102,6 +102,19 @@ async function onMessageFromMain(event, ...args) {
         if (args[0] == null) {
           sendDataToMainFn('set', storedData)
           sendDataToMainFn('get', 'auth', ['weather_key', 'location_key'])
+          spotify.sendDataToMainFn('get', 'auth', {
+            'weather_key': {
+              'value': '',
+              'label': 'API KEY',
+              'instructions': 'You can get your Weather Key from the <a href="https://developer.accuweather.com/user/me/apps" target="_blank" style="color: lightblue;">Accuweather Developer Dashboard</a>. You must create a new application and then under "API Key" Copy and paste that into this field.',
+            },
+            'location_key': {
+              'value': '',
+              'label': 'LOCATION KEY',
+              'instructions': 'Go to <a href="https://developer.accuweather.com/accuweather-locations-api/apis/get/locations/v1/search" target="_blank" style="color: lightblue;">Accuweather API locations search</a>. Input the API Key into \"apikey\" and the location you want to get the weather for into \"q\". Then click \"Send this request\". Copy the \"Key\" from the response and paste it into this field.',
+            }
+          }
+          )
         } else if (args[0].weather_key != null) {
 
           storedData.weather_key = args[0].weather_key,
@@ -115,7 +128,7 @@ async function onMessageFromMain(event, ...args) {
           sendDataToMainFn('get', 'auth', ['weather_key', 'location_key'])
         }
 
-        if (args[0].settings) {
+        if (args[0]?.settings) {
           storedData = args[0]
 
         } else {

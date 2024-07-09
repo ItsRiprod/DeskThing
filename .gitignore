@@ -39,3 +39,4 @@ tsconfig.tsbuildinfo
 /AppExamples/mediawincs
 /AppExamples/mediawin/node_modules
 /AppExamples/mediawin/builds
+/AppExamples/spotify/builds

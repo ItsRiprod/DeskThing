@@ -3,31 +3,6 @@
     background: conic-gradient(from 0turn at 10% -5%,var(--bg-tinted-highlight) 26%, var(--color-albumColor) 50%);
     background-color: var(--bg-highlight);
   }
-
-  .getSongInfo {
-    height: 100%;
-    max-width: 163px;
-    min-width: 163px;
-    display: flex;
-    padding: 0px;
-    margin: 0px;
-    margin-top: -3px;
-  }
-  
-  .getSongInfo .albumArt {
-    height: 100%;
-    overflow: hidden;
-    border-radius: 0px 15px 15px 0px;
-  }
-
-  /*
-  
-  ----------------------- Song Information
-  
-  */
-  .songInformation {
-    padding-top: 5px;
-  } 
   .songTitle {
     font-size: 35px;
     overflow: hidden;
@@ -35,25 +10,4 @@
     max-width:640px;
     text-wrap: nowrap;
     margin: auto;
-  }
-  .progressBar_container {
-    margin:auto;
-    width: 90%;
-    height: 30px;
-    background-color: var(--bg-tinted-highlight);
-    overflow:hidden;
-    border-radius: 15px;
-  }
-  .progressBar_progress {
-    position:static;
-    bottom: 0;
-    height: 30px;
-    background-color: var(--text-brightAccent);
-  }
-  .progressBar_timer {
-    padding: 0;
-    margin: 0;
-    color: var(--text-base);
-    transform: translate(0px, -30px);
-    font-weight:bolder;
   }

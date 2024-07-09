@@ -1,15 +1,14 @@
 import { app, shell, BrowserWindow, ipcMain, Tray, Menu, dialog } from 'electron'
 import { join } from 'path'
-import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import icon from '../../resources/icon.ico?asset'
-import { getAppData } from './utility/configHandler'
 import path from 'path'
+import icon from '../../resources/icon.ico?asset'
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 
 const IPC_CHANNELS = {
   PING: 'ping',
+  GET_CONNECTIONS: 'get-connections',
   ADD_APP: 'add-app',
   GET_APPS: 'get-apps',
   STOP_APP: 'stop-app',
@@ -27,7 +26,7 @@ function createMainWindow(): BrowserWindow {
     icon: icon,
     show: false,
     autoHideMenuBar: true,
-    ...(process.platform === 'linux' ? { icon } : {}),
+    ...(process.platform === 'linux' ? { icon: icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
@@ -48,8 +47,8 @@ function createMainWindow(): BrowserWindow {
   })
 
   // Load the remote URL for development or the local HTML file for production.
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    window.loadURL(process.env['ELECTRON_RENDERER_URL'])
+  if (process.env.ELECTRON_RENDERER_URL) {
+    window.loadURL(process.env.ELECTRON_RENDERER_URL)
   } else {
     window.loadFile(join(__dirname, '../renderer/index.html'))
   }
@@ -92,13 +91,19 @@ function initializeTray(): void {
 }
 
 async function setupIpcHandlers(): Promise<void> {
+  const { getAppData } = await import('./handlers/configHandler')
   const { addApp, sendMessageToApp, handleZip, disableApp, stopApp, purgeAppData } = await import(
-    './utility/appHandler'
+    './handlers/appHandler'
   )
-  const dataListener = (await import('./utility/events')).default
-  const { MESSAGE_TYPES } = await import('./utility/events')
-
+  const dataListener = (await import('./utils/events')).default
+  const { MESSAGE_TYPES } = await import('./utils/events')
+  let connections = 0
   ipcMain.on(IPC_CHANNELS.PING, () => console.log('pong'))
+
+  ipcMain.on(IPC_CHANNELS.GET_CONNECTIONS, async (event) => {
+    event.sender.send('connections', connections)
+    console.log('SERVER: connections', connections)
+  })
 
   ipcMain.on(IPC_CHANNELS.ADD_APP, async (event, appName: string) => {
     await addApp(event, appName)
@@ -155,6 +160,7 @@ async function setupIpcHandlers(): Promise<void> {
   })
   dataListener.on(MESSAGE_TYPES.CONNECTION, (numConnections) => {
     sendIpcData('connection', numConnections)
+    connections = numConnections
   })
 }
 // This method will be called when Electron has finished
@@ -174,9 +180,10 @@ if (!app.requestSingleInstanceLock()) {
 
   app.whenReady().then(async () => {
     // Set app user model id for windows
-    electronApp.setAppUserModelId('com.electron')
+    app.setAppUserModelId('com.electron')
 
     app.on('browser-window-created', (_, window) => {
+      const { optimizer } = require('@electron-toolkit/utils')
       optimizer.watchWindowShortcuts(window)
     })
 
@@ -222,26 +229,20 @@ async function openAuthWindow(url: string): Promise<void> {
 }
 async function loadModules(): Promise<void> {
   try {
-    await import('./utility/authHandler')
-    await import('./utility/websocketServer')
-    const { loadAndRunEnabledApps } = await import('./utility/appHandler')
+    await import('./handlers/authHandler')
+    await import('./handlers/websocketServer')
+    const { loadAndRunEnabledApps } = await import('./handlers/appHandler')
     loadAndRunEnabledApps()
   } catch (error) {
     console.error('Error loading modules:', error)
   }
 }
 
-async function sendIpcMessage(
-  appName: string,
-  requestId: string,
-  scope: Array<string>
-): Promise<void> {
-  console.log('Sending Ipc message to main process:', appName, requestId, scope)
+async function sendIpcAuthMessage(_appName: string, requestId: string, scope: any): Promise<void> {
   mainWindow?.webContents.send('display-user-form', requestId, scope)
 }
 async function sendIpcData(dataType: string, data: any): Promise<void> {
-  console.log('Sending Ipc message to main process:', dataType, data)
   mainWindow?.webContents.send(dataType, data)
 }
 
-export { sendIpcMessage, openAuthWindow, sendIpcData }
+export { sendIpcAuthMessage, openAuthWindow, sendIpcData }

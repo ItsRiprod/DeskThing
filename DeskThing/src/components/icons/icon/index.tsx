@@ -1,4 +1,17 @@
-export const Icon = ({
+import React from "react";
+
+interface IconProps {
+  iconSize?: number;
+  color?: string;
+  title?: string;
+  titleId?: string;
+  desc?: string;
+  descId?: string;
+  className?: string;
+  dangerouslySetInnerHTML?: { __html: string };
+}
+
+export const Icon: React.FC<IconProps> = ({
   iconSize = 24,
   color = "currentColor",
   title,
@@ -30,3 +43,13 @@ export const Icon = ({
     </svg>
   )
 }
+
+export const findClosestGlyphAvailable = (glyphList, val) => {
+  return glyphList.reduce((prev, current) => {
+    if (Math.abs(current.size - val) < Math.abs(prev.size - val)) {
+      return current;
+    } else {
+      return prev;
+    }
+  });
+};

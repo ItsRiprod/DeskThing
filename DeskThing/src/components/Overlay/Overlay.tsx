@@ -2,7 +2,6 @@ import {FC, ReactNode, useEffect,  useState } from 'react';
 import ButtonHelper, { Button, EventFlavour } from '../../helpers/ButtonHelper.ts';
 
 import './Overlay.css';
-import Header from '../Header/Header'
 import Footer from '../Footer/Footer'
 import Volume from '../Volume/Volume'
 import AppSelector from '../AppSelector/AppSelector'
@@ -73,7 +72,6 @@ const Overlay: FC<OverlayProps> = ({ children, currentView, apps, setCurrentView
       }
   return <div className="overlay">
       {<AppSelector className={`${active ? 'touched' : ''} ${visible ? 'visible' : ''}`} onAppSelect={handleAppSelect} apps={apps} currentView={currentView}/>}
-      <Header />
       <Volume />
           {children}
       <Footer />

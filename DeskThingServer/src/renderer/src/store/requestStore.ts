@@ -1,8 +1,16 @@
 import { EventEmitter } from '../utility/eventEmitter'
 
+export interface AuthScopes {
+  [key: string]: {
+    instructions: string
+    label: string
+    value?: string
+  }
+}
+
 export interface Request {
   appName: string
-  scopes: string[]
+  scopes: AuthScopes
 }
 
 interface RequestStoreEvents {
@@ -12,12 +20,10 @@ interface RequestStoreEvents {
 
 class RequestStore extends EventEmitter<RequestStoreEvents> {
   private requestQueue: Request[]
-  private activeRequestId: string | null
 
   constructor() {
     super()
     this.requestQueue = []
-    this.activeRequestId = null
 
     window.electron.ipcRenderer.on('display-user-form', this.handleDisplayUserForm.bind(this))
   }
@@ -26,7 +32,7 @@ class RequestStore extends EventEmitter<RequestStoreEvents> {
     return this.requestQueue.find((request) => request.appName === appName) != null
   }
 
-  private handleDisplayUserForm(_event: any, requestId: string, fields: string[]): void {
+  private handleDisplayUserForm(_event: any, requestId: string, fields: AuthScopes): void {
     this.addRequest(requestId, fields)
   }
 
@@ -44,7 +50,7 @@ class RequestStore extends EventEmitter<RequestStoreEvents> {
     window.electron.ipcRenderer.send(`user-data-response-${requestId}`, formData)
   }
 
-  public addRequest(appName: string, scopes: string[]): void {
+  public addRequest(appName: string, scopes: AuthScopes): void {
     this.requestQueue.push({ appName, scopes })
     this.emit('request', this.requestQueue)
   }
