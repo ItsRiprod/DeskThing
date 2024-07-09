@@ -33,11 +33,15 @@ jobs:
           cd ./DeskThingServer
           npm run typecheck
 
+      - name: Install snapcraft on Linux
+        if: runner.os == 'Linux'
+        run: |
+          sudo snap install snapcraft --classic
+
       - name: Build the project
         run: |
           cd ./DeskThingServer
           npm run build
-
 
       - name: Build application for Windows
         if: runner.os == 'Windows'
