@@ -22,7 +22,7 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
    - [X] Control Spotify (Skip, pause, play, rewind, shuffle, repeat)
    - [X] Supports Podcasts too!
    - Spotify app [installation instructions here](/DeskThing/server/apps/spotify#spotify-app-install)
-- ### Dasktop Now Playing (Only Windows) 🎧
+- ### Desktop Now Playing (Only Windows) 🎧
    - [X] Show currently listening (Album, Artist, Song name, album art)
    - [X] Control the current media (Skip, pause, play, rewind, shuffle, repeat)
    - *no setup instructions yet. Drag-n-drop the .zip from /releases/apps/ into the GUI*
@@ -42,7 +42,7 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
    - [ ] ~~Currently Listening To~~ 
    - [ ] ~~Audio Controls (Skip, Rewind, Fast Forward)~~ 
    - [ ] ~~Audio Status (%through)~~
-   - [X] Audiobook library
+   - [X] Audiobook Library
    - [X] Audiobook stats (Progress, Length of book, time left, ASIN)
    - Audible app [installation instructions here](/DeskThing/server/apps/audible#audible-app-install)
 - ### ~~Launchpad Integration 🎵~~ *to be migrated*
