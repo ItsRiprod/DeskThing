@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { IconConnected, IconConnecting } from './icons'
+import { IconConnected, IconConnecting, IconLogo } from './icons'
 
 type View = 'appsList' | 'status' | 'logDisplay' // Define possible views
 
@@ -23,19 +23,23 @@ const Sidebar: React.FC<SidebarProps> = ({ setCurrentView, currentView }) => {
     }
 
     console.log('got connections', connections)
-    const removeListener = window.electron.ipcRenderer.on('connection', handleConnection)
+    const removeListener = window.electron.ipcRenderer.on('connections', handleConnection)
 
-    getConnections()
+    const timeoutId = setTimeout(() => {
+      getConnections()
+    }, 1500)
+
     return () => {
       removeListener()
+      clearTimeout(timeoutId)
     }
   }, [])
 
   const version = process.env.PACKAGE_VERSION
 
   return (
-    <div className="container w-full top-0 sm:pt-5 sm:px-3 sm:max-w-52 gap-5 sm:relative rounded-lg flex sm:flex-col overflow-y-scroll items-center border-2 border-zinc-800 sm:h-full p-2">
-      <div className="flex">
+    <div className="container w-full top-0 sm:pt-5 sm:px-3 sm:max-w-52 gap-5 sm:relative rounded-lg flex sm:flex-col sm:overflow-y-hidden overflow-y-scroll items-center border-2 border-zinc-800 sm:h-full p-2">
+      <div className="flex items-center">
         {connections == 0 ? (
           <IconConnecting className="text-white pt-1" iconSize={24} />
         ) : (
@@ -44,13 +48,13 @@ const Sidebar: React.FC<SidebarProps> = ({ setCurrentView, currentView }) => {
             <IconConnected className=" pt-1" iconSize={24} />
           </div>
         )}
-        <h1 className="text-xl pl-1">DeskThing</h1>
+        <IconLogo width={110} height={30} iconSize={50} />
         <p className="text-sm">v{version}</p>
       </div>
       <ul className="flex gap-5 sm:flex-col w-full">
         <li>
           <button
-            className={`${currentView === 'appsList' ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'} border rounded-md w-full p-3`}
+            className={`${currentView === 'appsList' ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'} border min-w-24 rounded-md w-full p-3`}
             onClick={() => handleClick('appsList')}
           >
             Apps List

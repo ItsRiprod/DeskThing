@@ -13,7 +13,7 @@ const AppSelector: React.FC<AppSelectorProps> = ({ currentView, apps, onAppSelec
   return (
     <div className={`appselector ${className}`}>
       {apps.map((app, index) => 
-        app.manifest.isLocalApp || app.manifest.isWebApp ?
+        app.manifest?.isLocalApp || app.manifest?.isWebApp ?
         (<button
           key={app.manifest.id}
           className={`app-button ${app.prefIndex < 5 ? 'preferred' : ''} ${currentView === app.manifest.id ? 'current' : ''}`}

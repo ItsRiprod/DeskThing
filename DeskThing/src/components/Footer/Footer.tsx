@@ -153,7 +153,7 @@ const Footer: React.FC = () => {
     <div className={`fixed flex max-w-full bottom-0 transition-all ease-out duration-200 ap_color ${visible ? 'h-36' : 'h-16'}`}
     ref={playerIslandRef}
     onTouchStart={handleTouchInside}>
-        <button className='max-w-40' onClick={handleGetSongData}>
+        <button className='max-w-40' onTouchStart={handleGetSongData} onClick={handleGetSongData}>
             {imageData && (
               <img
               src={imageData}

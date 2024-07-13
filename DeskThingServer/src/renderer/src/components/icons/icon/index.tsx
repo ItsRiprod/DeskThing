@@ -6,6 +6,8 @@ export const Icon = ({
   desc,
   descId,
   className,
+  width = iconSize,
+  height = iconSize,
   dangerouslySetInnerHTML,
   ...restProps
 }): JSX.Element => {
@@ -13,9 +15,9 @@ export const Icon = ({
     <svg
       color={color}
       role="img"
-      height={iconSize}
-      width={iconSize}
-      viewBox={`0 0 ${iconSize} ${iconSize}`}
+      height={height}
+      width={width}
+      viewBox={`0 0 ${width} ${height}`}
       className={className}
       {...restProps}
     >

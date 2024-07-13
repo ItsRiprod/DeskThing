@@ -1,6 +1,6 @@
 {
   "name": "utility",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "description": "The utility app for the DeskThing desktop application",
   "main": "index.js",
   "scripts": {

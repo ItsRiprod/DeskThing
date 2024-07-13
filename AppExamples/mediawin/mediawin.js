@@ -41,19 +41,38 @@ class MediaWin {
     this.sendDataToMainFn('error', message)
   }
 
-  async returnSongData() {
-    const result = await this.executeCommand('')
-    if (result === false) {
-      this.sendError('Music Data returned false! There was an error');
+  async returnSongData(id = null, retryCount = 0) {
+    try {
+      const result = await this.executeCommand('')
+      if (result === false) {
+        this.sendError('Music Data returned false! There was an error');
+        return false;
+      } else {
+
+        // Check if result.id is different from the passed id
+        if (result.id !== id) {
+          const musicData = result;
+          musicData.thumbnail = "data:image/png;base64," + musicData.thumbnail;
+          musicData.volume = await this.getVolumeInfo();
+          musicData.can_change_volume = true;
+          this.sendLog('Returning song data');
+      
+          return musicData
+        } else {
+          // Retry logic up to 5 attempts
+          if (retryCount < 5) {
+            this.sendLog(`Retry attempt ${retryCount + 1} for next command.`);
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for 1 second before retrying
+          return this.returnSongData(id, retryCount + 1); // Recursive call with incremented retryCount
+        } else {
+          this.sendError(`Reached maximum retry attempts for next command.`);
+          return false;
+        }
+      }
+      }
+    } catch (error) {
+      this.sendError(`Error executing next command: ${error}`);
       return false;
-    } else {
-      const musicData = result;
-      musicData.thumbnail = "data:image/png;base64," + musicData.thumbnail;
-      musicData.volume = await this.getVolumeInfo();
-      musicData.can_change_volume = true;
-      this.sendLog('Returning song data');
-  
-      return musicData
     }
   }
 
@@ -106,8 +125,12 @@ class MediaWin {
     return parseInt(args[0], 10)
   }
 
-  async next() {
-    return this.executeCommand('next');
+  async next(id) {
+    const result = await this.executeCommand('next');
+    if (result.success) {
+      return await this.returnSongData(id)
+    }
+    return false
   }
 
   async previous() {

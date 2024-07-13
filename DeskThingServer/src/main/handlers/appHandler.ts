@@ -64,7 +64,6 @@ async function handleDataFromApp(app: string, type: string, ...args: any[]): Pro
     case 'message':
       const [message] = args
       console.log(`SERVER: Message from ${app}: ${message}`)
-      sendMessageToApp(app, 'message', 'Hello from server!')
       dataListener.asyncEmit(MESSAGE_TYPES.MESSAGE, message)
       break
     case 'get':
@@ -322,24 +321,22 @@ async function disableApp(appName: string): Promise<void> {
       console.log(`App ${appName} is already disabled`)
     }
 
+    // Remove the app from memory cache
     const appDirectory = join(app.getPath('userData'), 'apps', appName)
 
-    // Remove the app from memory cache
-    const appEntryPoint = join(appDirectory, `index.js`)
-    if (appEntryPoint) {
-      const resolvedPath = require.resolve(appEntryPoint)
+    const files = fs.readdirSync(appDirectory)
+    files.forEach((file) => {
+      const resolvedPath = require.resolve(join(appDirectory, file))
       if (require.cache[resolvedPath]) {
         delete require.cache[resolvedPath]
-        console.log(`Removed ${appEntryPoint} from cache`)
-        dataListener.asyncEmit(
-          MESSAGE_TYPES.LOGGING,
-          `SERVER: Removed ${appEntryPoint} from cache.`
-        )
+        console.log(`Removed ${resolvedPath} from cache`)
+        dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `SERVER: Removed ${resolvedPath} from cache`)
       } else {
-        console.log(`${appEntryPoint} not in cache`)
-        dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `SERVER: ${appEntryPoint} not in cache!`)
+        console.log(`${resolvedPath} not in cache`)
+        dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `SERVER: ${resolvedPath} not in cache!`)
       }
-    }
+    })
+
 
     sendPrefData()
   } catch (error) {
@@ -427,7 +424,7 @@ async function handleZip(zipFilePath: string): Promise<returnData> {
     const author = manifest.author
     const platforms = manifest.platforms
 
-    await stopApp(id)
+    await disableApp(id)
 
     await purgeAppData(id)
 
@@ -540,7 +537,7 @@ async function purgeAppData(appName: string): Promise<void> {
     dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `SERVER: Purging App ${appName}`)
     // Ensure that the app is not running
     if (runningApps.has(appName)) {
-      await stopApp(appName) // Ensure the app has stopped
+      await disableApp(appName) // Ensure the app has stopped
     }
 
     // Purge App Data
@@ -553,19 +550,21 @@ async function purgeAppData(appName: string): Promise<void> {
     const appDirectory = join(app.getPath('userData'), 'apps', appName)
 
     // Remove the app from memory cache
-    const appEntryPoint = join(appDirectory, `index.js`)
-    if (appEntryPoint) {
-      const resolvedPath = require.resolve(appEntryPoint)
+    const files = fs.readdirSync(appDirectory)
+    files.forEach((file) => {
+      const resolvedPath = require.resolve(join(appDirectory, file))
       if (require.cache[resolvedPath]) {
         delete require.cache[resolvedPath]
-        console.log(`Removed ${appEntryPoint} from cache`)
-        dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `SERVER: Removed ${appEntryPoint} from cache`)
+        console.log(`Removed ${resolvedPath} from cache`)
+        dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `SERVER: Removed ${resolvedPath} from cache`)
       }
-    }
+    })
 
     // Remove the file from filesystem
     if (fs.existsSync(appDirectory)) {
-      fs.rmSync(appDirectory, { recursive: true })
+      const fsExtra = require('fs-extra')
+      await fsExtra.remove(appDirectory)
+      console.log(`Purged all data for app ${appName}`)
     }
 
     console.log(`Purged all data for app ${appName}`)

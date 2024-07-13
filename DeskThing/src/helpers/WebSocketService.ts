@@ -58,7 +58,11 @@ class WebSocketService {
       try {
         const msg = JSON.parse(event.data.toString());
         const { app } = msg
-        //console.log('Receive', msg);
+        
+        if (!this.listeners[app]) {
+          this.listeners[app] = [];
+        }
+        //console.log('WEBSOCKET', msg)
         this.listeners[app].forEach((listener: SocketEventListener) => listener(msg as socketData));
       } catch (e) {
         console.error(e);

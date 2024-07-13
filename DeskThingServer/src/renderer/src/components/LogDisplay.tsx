@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import logStore, { log } from '../store/logStore'
+import { IconLogo, IconLogoGearLoading, IconLogoLoading } from './icons'
 
 const LogDisplay = (): JSX.Element => {
   const [logs, setLogs] = useState<log[]>([])
@@ -62,14 +63,20 @@ const LogDisplay = (): JSX.Element => {
     <div className="pt-5 w-full h-svh flex-col flex max-h-full items-center">
       <h1 className="text-2xl mb-5 border-b-2 w-11/12 text-center pb-5">Console Logs</h1>
       <div ref={logContainerRef} className="w-full p-2 flex flex-col overflow-y-scroll">
-        {logs &&
+        {logs.length > 0 ? (
           logs.map((log, index) => (
             <div key={index} className="">
               <p className={`p-2 ${getBackgroundColor(log.type)} border-t border-zinc-900`}>
                 [ {log.date.toLocaleTimeString()} ]{' ' + log.log}
               </p>
             </div>
-          ))}
+          ))
+        ) : (
+          <div className="w-full flex flex-col items-center justify-center">
+            <IconLogoLoading iconSize={256} />
+            <p className="logo">Loading Logs...</p>
+          </div>
+        )}
         <div ref={logEndRef} />
       </div>
     </div>

@@ -55,6 +55,14 @@ class SpotifyHandler {
    * @returns {Promise<string>} The new access token.
    */
   async refreshAccessToken() {
+    if (!this.client_id || !this.client_secret) {
+      this.sendError('No client_id or client_secret! Cancelling refresh access token request!')
+      const returnData = {
+        Spotify_Access_Token: this.access_token,
+        Spotify_Refresh_Token: this.refresh_token
+      }
+      return returnData
+    }
 
     if (this.refresh_token == undefined) {
       this.sendError("REFRESH TOKEN IS UNDEFINED!! LOGGING IN")
@@ -93,6 +101,14 @@ class SpotifyHandler {
   }
 
   async getAccessToken(code) {
+    if (!this.client_id || !this.client_secret) {
+      this.sendError('No client_id or client_secret! Cancelling access token request!')
+      const returnData = {
+        Spotify_Access_Token: this.access_token,
+        Spotify_Refresh_Token: this.refresh_token
+      }
+      return returnData
+    }
     const authOptions = {
       url: 'https://accounts.spotify.com/api/token',
       method: 'post',
@@ -177,34 +193,40 @@ class SpotifyHandler {
   async makeRequest(method, url, data = null) {
     this.sendLog(`Handling request to url ${url}`)
     try {
+      if (!this.client_id || !this.client_secret) {
+        this.sendError('No client_id or client_secret! Cancelling refresh access token request!')
+        throw new Error('No client_id or client_secret')
+      }
       if (!this.access_token || this.access_token == null) {
-        this.sendLog('Refreshing access token')
-        await this.refreshAccessToken()
+        this.sendLog('Refreshing access token');
+        await this.refreshAccessToken();
+        // After refreshing the token, ensure to proceed with the request
+      }
+  
+      const headers = {
+        Authorization: `Bearer ${this.access_token}`
+      };
+  
+      try {
+        const response = await axios({ method, url, data, headers });
+        return response.data !== undefined ? response.data : true;
+      } catch (error) {
+        await this.handleError(error);
+        if (error.response && error.response.status === 404) {
+          return;
+        }
+        if (error.response && error.response.status === 403) {
+          this.sendError('Error 403 reached! Bad OAuth (Cancelling Request)');
+          return;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait five seconds
+        this.sendLog('Retrying', method, url, data);
+        const retryResponse = await this.makeRequest(method, url, data);
+        return retryResponse !== undefined ? retryResponse : true;
       }
     } catch (error) {
-      await this.handleError(error)
-    }
-
-    const headers = {
-      Authorization: `Bearer ${this.access_token}`
-    }
-
-    try {
-      const response = await axios({ method, url, data, headers })
-      return response.data ? response.data : true
-    } catch (error) {
-      await this.handleError(error)
-      if (error.response && error.response.status === 404) {
-        return
-      }
-      if (error.response && error.response.status === 403) {
-        this.sendError('Error 403 reached! Bad OAuth (Cancelling Request)')
-        return
-      }
-      await new Promise((resolve) => setTimeout(resolve, 5000)) // Wait five seconds
-      this.sendLog('Retrying', method, url, data)
-      const retryResponse = await this.makeRequest(method, url, data)
-      return retryResponse.data != null ? retryResponse.data : true
+      this.sendError(`Failed to refresh access token in makeRequest() ${error}`);
+      await this.handleError(error);
     }
   }
 
@@ -362,25 +384,25 @@ class SpotifyHandler {
         this.sendDataToMainFn('data', { app: 'client', type: 'song', data: songData })
       } else {
         songData = {
-          album: currentPlayback.item.show.name,
-          artist: currentPlayback.item.show.publisher,
-          playlist: currentPlayback.context.type,
-          playlist_id: currentPlayback.context.uri,
-          track_name: currentPlayback.item.name,
-          shuffle_state: currentPlayback.shuffle_state,
-          repeat_state: currentPlayback.repeat_state == 'context' ? 'all' : currentPlayback.repeat_state,
-          is_playing: currentPlayback.is_playing,
-          can_fast_forward: false,
-          can_skip: !currentPlayback.disallows.skipping_next,
+          album: currentPlayback?.item.show.name,
+          artist: currentPlayback?.item.show.publisher,
+          playlist: currentPlayback?.context.type,
+          playlist_id: currentPlayback?.context.uri,
+          track_name: currentPlayback?.item.name,
+          shuffle_state: currentPlayback?.shuffle_state,
+          repeat_state: currentPlayback?.repeat_state == 'context' ? 'all' : currentPlayback.repeat_state,
+          is_playing: currentPlayback?.is_playing,
+          can_fast_forward: !currentPlayback?.disallows?.seeking || true,
+          can_skip: !currentPlayback?.disallows?.skipping_next || true,
           can_like: true,
-          can_change_volume: currentPlayback.device.supports_volume,
-          can_set_output: !currentPlayback.disallows.transferring_playback,
-          track_duration: currentPlayback.item.duration_ms,
-          track_progress: currentPlayback.progress_ms,
-          volume: device.volume_percent,
-          device: currentPlayback.device.name,
-          device_id: currentPlayback.device.id,
-          id: currentPlayback.item.id,
+          can_change_volume: currentPlayback?.device?.supports_volume  || true,
+          can_set_output: !currentPlayback?.disallows?.transferring_playback  || true,
+          track_duration: currentPlayback?.item.duration_ms,
+          track_progress: currentPlayback?.progress_ms,
+          volume: currentPlayback?.device.volume_percent,
+          device: currentPlayback?.device.name,
+          device_id: currentPlayback?.device.id,
+          id: currentPlayback?.item.id,
           thumbnail: null,
         }
         // Send the data immediately

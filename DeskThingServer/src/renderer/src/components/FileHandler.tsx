@@ -1,5 +1,5 @@
 import { DragEvent, useState } from 'react'
-import { IconLoading, IconUpload } from './icons'
+import { IconLoading, IconLogoGearLoading, IconUpload } from './icons'
 
 interface returnData {
   appId: string
@@ -88,7 +88,7 @@ const FileHandler = (): JSX.Element => {
         >
           {loading ? (
             <div className="flex flex-col items-center">
-              <IconLoading iconSize={100} />
+              <IconLogoGearLoading iconSize={100} />
             </div>
           ) : (
             <>

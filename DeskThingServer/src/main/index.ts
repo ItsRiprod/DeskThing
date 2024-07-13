@@ -159,8 +159,9 @@ async function setupIpcHandlers(): Promise<void> {
     sendIpcData('message', errorData)
   })
   dataListener.on(MESSAGE_TYPES.CONNECTION, (numConnections) => {
-    sendIpcData('connection', numConnections)
+    sendIpcData('connections', numConnections)
     connections = numConnections
+    console.log('Number of clients', numConnections)
   })
 }
 // This method will be called when Electron has finished

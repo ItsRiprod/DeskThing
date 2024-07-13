@@ -52,6 +52,11 @@ const AppsList = (): JSX.Element => {
       RequestStoreInstance.off('request', onRequestUpdate)
     }
   }, [appsList])
+
+  useEffect(() => {
+    requestAppsList()
+  }, [])
+
   const handleRequestTrigger = (appName: string): void => {
     RequestStoreInstance.triggerRequestDisplay(appName)
   }

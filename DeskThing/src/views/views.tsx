@@ -1,4 +1,4 @@
-import { useState, useEffect, Suspense, lazy  } from 'react';
+import { useState, useEffect, Suspense, lazy, useRef  } from 'react';
 import ButtonHelper, { Button, EventFlavour } from '../helpers/ButtonHelper';
 import socket, { App, socketData } from '../helpers/WebSocketService';
 import Dashboard from './dashboard';
@@ -11,6 +11,9 @@ const ViewManager = () => {
   const [currentView, setCurrentView] = useState('landing');
   const [apps, setApps] = useState<App[]>([]);
   const [DynamicComponent, setDynamicComponent] = useState<React.LazyExoticComponent<any> | null>(null);
+
+
+  const viewContainerRef = useRef<HTMLDivElement>(null);
 
   const handleLongPress = (index: number, view: string) => {
     if (socket.is_ready()) {
@@ -159,6 +162,8 @@ const ViewManager = () => {
     switch (currentView) {
       case 'dashboard':
         return <Dashboard />;
+      case 'landing':
+        return <Dashboard />;
       default:
         if (DynamicComponent) {
           return (
@@ -171,13 +176,9 @@ const ViewManager = () => {
       }
   };
 
-  useEffect(() => {
-    setCurrentView('dashboard')
-  }, [])
-
   return (
 
-      <div className="view_container">
+      <div ref={viewContainerRef} className="view_container touch-none">
         <Overlay currentView={currentView} apps={apps} setCurrentView={setCurrentView}>
           {renderView()}
         </Overlay>

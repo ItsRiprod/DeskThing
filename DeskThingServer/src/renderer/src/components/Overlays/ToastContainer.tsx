@@ -5,7 +5,7 @@ import Toast from './Toast'
 import logStore, { log } from '../../store/logStore'
 
 interface ToastData extends log {
-  id: number
+  id: string
 }
 
 const ToastContainer: React.FC = () => {
@@ -18,7 +18,7 @@ const ToastContainer: React.FC = () => {
         {
           ...log,
           date: new Date(log.date),
-          id: Date.now()
+          id: generateUniqueId()
         }
       ])
     }
@@ -32,6 +32,10 @@ const ToastContainer: React.FC = () => {
 
   const removeToast = (id: number): void => {
     setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id))
+  }
+
+  const generateUniqueId = (): string => {
+    return `${Date.now()}-${Math.random().toString(36)}`
   }
 
   return (

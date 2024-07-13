@@ -80,6 +80,9 @@ const handleSet = async (...args) => {
   switch (args[0].toString()) {
     case 'next':
       response = await mediawin.next(args[1])
+      if (!response == false) {
+        response = { app: 'client', type: 'song', data: response }
+      }
       break
     case 'previous':
       response = await mediawin.previous()

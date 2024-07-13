@@ -5,6 +5,7 @@ import logInstance from './store/logStore'
 
 import Sidebar from './components/Sidebar'
 import ContentArea from './components/ContentArea'
+import ErrorBoundary from './components/ErrorBoundary'
 
 type View = 'appsList' | 'status' | 'logDisplay'
 
@@ -14,7 +15,6 @@ function App(): JSX.Element {
 
   useEffect(() => {
     const handleAppData = (_event: Electron.IpcRendererEvent, data: AppData): void => {
-      // Call your function to handle data.json here
       handleAppDataJson(data)
     }
     const handleLog = async (errorData, type): Promise<void> => {
@@ -47,10 +47,11 @@ function App(): JSX.Element {
   return (
     <div className="bg-black overflow-hidden">
       <div className="h-screen w-screen justify-center gap-5 flex flex-wrap sm:flex-nowrap overflow-y-scroll sm:overflow-hidden items-center text-white p-5">
-        <Overlays />
-        <Sidebar setCurrentView={setCurrentView} currentView={currentView} />
-
-        <ContentArea currentView={currentView} />
+        <ErrorBoundary>
+          <Overlays />
+          <Sidebar setCurrentView={setCurrentView} currentView={currentView} />
+          <ContentArea currentView={currentView} />
+        </ErrorBoundary>
       </div>
     </div>
   )

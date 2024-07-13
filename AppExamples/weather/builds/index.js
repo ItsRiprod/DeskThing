@@ -13649,8 +13649,7 @@ async function onMessageFromMain(event, ...args) {
       case "data":
         if (args[0] == null) {
           sendDataToMainFn("set", storedData);
-          sendDataToMainFn("get", "auth", ["weather_key", "location_key"]);
-          spotify.sendDataToMainFn(
+          sendDataToMainFn(
             "get",
             "auth",
             {
@@ -13672,10 +13671,25 @@ async function onMessageFromMain(event, ...args) {
           storedData.weather_data = args[0].weather_data || null;
           sendDataToMainFn("add", storedData);
         } else {
-          sendDataToMainFn("get", "auth", ["weather_key", "location_key"]);
+          sendDataToMainFn(
+            "get",
+            "auth",
+            {
+              "weather_key": {
+                "value": "",
+                "label": "API KEY",
+                "instructions": 'You can get your Weather Key from the <a href="https://developer.accuweather.com/user/me/apps" target="_blank" style="color: lightblue;">Accuweather Developer Dashboard</a>. You must create a new application and then under "API Key" Copy and paste that into this field.'
+              },
+              "location_key": {
+                "value": "",
+                "label": "LOCATION KEY",
+                "instructions": 'Go to <a href="https://developer.accuweather.com/accuweather-locations-api/apis/get/locations/v1/search" target="_blank" style="color: lightblue;">Accuweather API locations search</a>. Input the API Key into "apikey" and the location you want to get the weather for into "q". Then click "Send this request". Copy the "Key" from the response and paste it into this field.'
+              }
+            }
+          );
         }
         if (args[0]?.settings) {
-          storedData = args[0];
+          storedData.settings = args[0].settings;
         } else {
           const settings2 = { settings: storedData.settings };
           sendDataToMainFn("add", settings2);

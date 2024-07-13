@@ -24,7 +24,7 @@ const Utility: FC = (): JSX.Element => {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [expandedSetting, setExpandedSetting] = useState<string | null>(null);
 
-  const version = "0.5.3" // TODO: Make this an environment variable set by package.json
+  const version = "0.5.4" // TODO: Make this an environment variable set by package.json
 
   useEffect(() => {
     requestPreferences()

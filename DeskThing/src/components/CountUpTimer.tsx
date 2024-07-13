@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { msToTime } from '../helpers/TimeUtils';
+import { AUDIO_REQUESTS } from '../helpers/WebSocketService';
 
 interface CountUpTimerProps {
   children;
@@ -68,13 +69,13 @@ const CountUpTimer: React.FC<CountUpTimerProps> = ({
       };
 
       const handleTouchEnd = () => {
-        if (newMs > 0) {
-          if (newMs >= msEnd) {
-            handleSendSet('next', null);
-            setMs(0);
-          } else {
-            onTouchEnd(newMs);
-          }
+        if (newMs < 0) {
+          handleSendSet(AUDIO_REQUESTS.PREVIOUS, undefined);
+        } else if (newMs >= msEnd) {
+          handleSendSet(AUDIO_REQUESTS.NEXT, undefined);
+          setMs(0);
+        } else {
+          onTouchEnd(newMs);
         }
         setTouching(false);
         document.removeEventListener('touchmove', handleTouchMove);
