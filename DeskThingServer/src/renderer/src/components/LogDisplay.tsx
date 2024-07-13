@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import logStore, { log } from '../store/logStore'
-import { IconLogo, IconLogoGearLoading, IconLogoLoading } from './icons'
+import { IconLogoLoading } from './icons'
 
 const LogDisplay = (): JSX.Element => {
   const [logs, setLogs] = useState<log[]>([])

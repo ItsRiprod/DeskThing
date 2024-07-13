@@ -1,6 +1,6 @@
 // src/components/ErrorBoundary.tsx
 
-import React, { Component, ReactNode, ErrorInfo } from 'react'
+import { Component, ReactNode, ErrorInfo } from 'react'
 import Loading from './Loading'
 
 interface ErrorBoundaryProps {

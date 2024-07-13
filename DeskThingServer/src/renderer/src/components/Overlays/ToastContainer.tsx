@@ -30,7 +30,7 @@ const ToastContainer: React.FC = () => {
     }
   }, [])
 
-  const removeToast = (id: number): void => {
+  const removeToast = (id: string): void => {
     setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id))
   }
 

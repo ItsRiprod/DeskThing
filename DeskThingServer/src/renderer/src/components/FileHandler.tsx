@@ -1,5 +1,5 @@
 import { DragEvent, useState } from 'react'
-import { IconLoading, IconLogoGearLoading, IconUpload } from './icons'
+import { IconLogoGearLoading, IconUpload } from './icons'
 
 interface returnData {
   appId: string
