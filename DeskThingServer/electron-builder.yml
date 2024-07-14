@@ -13,6 +13,7 @@ asarUnpack:
   - resources/**
 win:
   executableName: DeskThing
+  artifactName: ${name}-${version}-windows-setup.${ext}
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
@@ -27,7 +28,7 @@ mac:
     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
   notarize: false
 dmg:
-  artifactName: ${name}-${version}.${ext}
+  artifactName: ${name}-${version}-mac-setup.${ext}
 linux:
   target:
     - AppImage
@@ -35,7 +36,7 @@ linux:
   maintainer: Riprod
   category: Utility
 appImage:
-  artifactName: ${name}-${version}.${ext}
+  artifactName: ${name}-${version}-linux.${ext}
 npmRebuild: false
 publish:
   provider: generic
