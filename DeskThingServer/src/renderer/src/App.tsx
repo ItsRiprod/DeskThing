@@ -46,7 +46,7 @@ function App(): JSX.Element {
 
   return (
     <div className="bg-black overflow-hidden">
-      <div className="h-screen w-screen justify-center gap-5 flex flex-wrap sm:flex-nowrap overflow-y-scroll sm:overflow-hidden items-center text-white p-5">
+      <div className="h-screen w-screen justify-center flex flex-wrap sm:flex-nowrap overflow-y-scroll sm:overflow-hidden items-center text-white p-5">
         <ErrorBoundary>
           <Overlays />
           <Sidebar setCurrentView={setCurrentView} currentView={currentView} />

@@ -95,6 +95,8 @@ async function setupIpcHandlers(): Promise<void> {
   const { addApp, sendMessageToApp, handleZip, disableApp, stopApp, purgeAppData } = await import(
     './handlers/appHandler'
   )
+  const { handleAdbCommands } = await import('./handlers/adbHandler')
+
   const dataListener = (await import('./utils/events')).default
   const { MESSAGE_TYPES } = await import('./utils/events')
   let connections = 0
@@ -147,6 +149,10 @@ async function setupIpcHandlers(): Promise<void> {
 
     const filePath = result.filePaths[0]
     return { path: filePath, name: path.basename(filePath) }
+  })
+
+  ipcMain.handle('run-adb-command', async (_event, command) => {
+    return await handleAdbCommands(command)
   })
 
   dataListener.on(MESSAGE_TYPES.ERROR, (errorData) => {

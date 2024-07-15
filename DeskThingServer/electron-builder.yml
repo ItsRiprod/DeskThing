@@ -11,9 +11,13 @@ files:
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
 asarUnpack:
   - resources/**
+  - bin/**
 win:
   executableName: DeskThing
   artifactName: ${name}-${version}-windows-setup.${ext}
+  extraFiles:
+    - from: "adb_source/win"
+      to: "resources/win"
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
@@ -27,6 +31,9 @@ mac:
     - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
   notarize: false
+  extraFiles:
+    - from: "adb_source/mac"
+      to: "resources/mac"
 dmg:
   artifactName: ${name}-${version}-mac-setup.${ext}
 linux:
@@ -35,6 +42,9 @@ linux:
     - deb
   maintainer: Riprod
   category: Utility
+  extraFiles:
+    - from: "adb_source/linux"
+      to: "resources/linux"
 appImage:
   artifactName: ${name}-${version}-linux.${ext}
 npmRebuild: false

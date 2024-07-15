@@ -1,6 +1,6 @@
 import React from 'react'
-import AppsList from './AppsList'
-import Status from './Status'
+import AppsList from './Apps'
+import Device from './Device'
 import LogDisplay from './LogDisplay'
 
 type View = 'appsList' | 'status' | 'logDisplay' // Define possible views
@@ -15,7 +15,7 @@ const ContentArea: React.FC<ContentAreaProps> = ({ currentView }) => {
       case 'appsList':
         return <AppsList />
       case 'status':
-        return <Status />
+        return <Device />
       case 'logDisplay':
         return <LogDisplay />
       default:
@@ -24,7 +24,7 @@ const ContentArea: React.FC<ContentAreaProps> = ({ currentView }) => {
   }
 
   return (
-    <div className="container grow rounded-lg flex flex-col overflow-y-scroll items-center border-2 border-zinc-800 h-full p-2">
+    <div className="container rounded-lg flex flex-col overflow-y-scroll items-center border-2 border-zinc-800 h-full">
       {renderView()}
     </div>
   )
