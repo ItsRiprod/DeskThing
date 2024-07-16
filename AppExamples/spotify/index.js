@@ -46,24 +46,24 @@ async function onMessageFromMain(event, ...args) {
           )
         } else if (args[0].Spotify_Refresh_Token) {
           spotify.sendLog('Refreshing token...')
-          spotify.refresh_token = args[0].Spotify_Refresh_Token
           spotify.client_id = args[0].Spotify_API_Id
           spotify.client_secret = args[0].Spotify_Client_Secret
           if (args[0].Spotify_Access_Token) {
             spotify.access_token = args[0].Spotify_Access_Token || undefined
+          }
+          if (args[0].Spotify_Refresh_Token != undefined) {
+            spotify.refresh_token = args[0].Spotify_Refresh_Token || undefined
           }
 
           await spotify.refreshAccessToken()
         } else {
           const data = {
             Spotify_API_Id: args[0].Spotify_API_Id,
-            Spotify_Client_Secret: args[0].Spotify_Client_Secret,
-            Spotify_Refresh_Token: spotify.refresh_token || undefined,
-            Spotify_Access_Token: spotify.access_token || undefined,
+            Spotify_Client_Secret: args[0].Spotify_Client_Secret
           }
 
           // Also tell the database to set the data
-          spotify.sendDataToMainFn('set', data)
+          spotify.sendDataToMainFn('add', data)
           spotify.client_id = data.Spotify_API_Id
           spotify.client_secret = data.Spotify_Client_Secret
 
@@ -71,12 +71,14 @@ async function onMessageFromMain(event, ...args) {
           await spotify.login()
         }
 
-        if (args[0].settings) {
-          spotify.settings = args[0].settings
-        } else {
-          const settings = { settings: spotify.settings }
-          spotify.sendDataToMainFn('add', settings)
-        }
+        ['refresh_interval', 'output_device'].forEach(key => {
+          if (args[0].settings?.[key]) {
+            spotify.settings[key] = args[0].settings[key];
+          } else {
+            const settings = { settings: spotify.settings };
+            spotify.sendDataToMainFn('add', settings);
+          }
+        });
         break
       case 'auth-data':
         spotify.sendError('Something went wrong! You shouldnt be here!')

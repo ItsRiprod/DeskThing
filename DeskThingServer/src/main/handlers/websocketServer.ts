@@ -5,6 +5,7 @@ import { sendMessageToApp } from './appHandler'
 import { getAppData, setAppData, getAppByName, getAppByIndex } from './configHandler'
 import { readData, addData } from './dataHandler'
 import dataListener, { MESSAGE_TYPES } from '../utils/events'
+import { HandleDeviceData } from './deviceHandler'
 
 // Create a WebSocket server that listens on port 8891
 const server = new WebSocketServer({ port: 8891 })
@@ -184,6 +185,12 @@ server.on('connection', async (socket) => {
             case 'get':
               sendPrefData(socket)
               sendTime(socket)
+              break
+            case 'message':
+              dataListener.asyncEmit(MESSAGE_TYPES.MESSAGE, `WSOCKET ${parsedMessage.data}`)
+              break
+            case 'device':
+              HandleDeviceData(parsedMessage.data)
               break
             default:
               break

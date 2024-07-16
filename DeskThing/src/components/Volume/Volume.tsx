@@ -1,7 +1,7 @@
 import './Volume.css';
 import React, { useEffect, useState } from 'react';
 import ButtonHelper, { Button, EventFlavour } from '../../helpers/ButtonHelper';
-import socket, { song_data, socketData } from '../../helpers/WebSocketService';
+import socket, { song_data, socketData, AUDIO_REQUESTS } from '../../helpers/WebSocketService';
 
 const Volume: React.FC = () => {
   const [volume, setVolume] = useState(0);
@@ -20,7 +20,7 @@ const Volume: React.FC = () => {
         } else {
           setVolume((oldVol) => oldVol + 5);
         }
-        handleSendCommand('volume', volume);
+        handleSendCommand(AUDIO_REQUESTS.VOLUME, volume);
       }
     };
     buttonHelper.addListener(Button.SCROLL_LEFT, EventFlavour.Short, () => handleScroll(true));

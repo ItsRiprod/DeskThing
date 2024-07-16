@@ -74,7 +74,7 @@ const CountUpTimer: React.FC<CountUpTimerProps> = ({
         } else if (newMs >= msEnd) {
           handleSendSet(AUDIO_REQUESTS.NEXT, undefined);
           setMs(0);
-        } else {
+        } else if (newMs > 0) {
           onTouchEnd(newMs);
         }
         setTouching(false);

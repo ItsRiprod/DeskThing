@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Apps from './Apps'
 import Local from './Local'
 import Tabs from './Tabs'

@@ -123,6 +123,9 @@ class ButtonHelper {
 
   private keyDownEventHandler = (event: KeyboardEvent) => {
     const button = mapButton(event.code);
+    if (button === Button.SCROLL_PRESS || button === Button.FRONT_BUTTON) {
+      event.preventDefault(); 
+    }
     this.buttonStates[button] = EventFlavour.Down;
     this.notify(button, EventFlavour.Down);
 

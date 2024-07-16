@@ -5,8 +5,10 @@ import { electronAPI } from '@electron-toolkit/preload'
 const api = {
   selectZipFile: (): Promise<{ name: string; path: string } | null> =>
     ipcRenderer.invoke('select-zip-file'),
-  runAdbCommand: (command: string): Promise<string[] | null> =>
-    ipcRenderer.invoke('run-adb-command', command)
+  runAdbCommand: (command: string): Promise<string | null> =>
+    ipcRenderer.invoke('run-adb-command', command),
+  runDeviceCommand: (type: string, command: string): Promise<string | null> =>
+    ipcRenderer.invoke('run-device-command', type, command)
 }
 // Use `contextBridge` APIs to expose Electron APIs to
 // renderer only if context isolation is enabled, otherwise

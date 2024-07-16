@@ -3,6 +3,7 @@ import ButtonHelper, { Button, EventFlavour } from '../../helpers/ButtonHelper.t
 
 import './Overlay.css';
 import Footer from '../Footer/Footer'
+import Bluetooth from '../Bluetooth'
 import Volume from '../Volume/Volume'
 import AppSelector from '../AppSelector/AppSelector'
 import { App } from 'src/helpers/WebSocketService.ts';
@@ -74,6 +75,7 @@ const Overlay: FC<OverlayProps> = ({ children, currentView, apps, setCurrentView
       {<AppSelector className={`${active ? 'touched' : ''} ${visible ? 'visible' : ''}`} onAppSelect={handleAppSelect} apps={apps} currentView={currentView}/>}
       <Volume />
           {children}
+      <Bluetooth />
       <Footer />
     </div>;
 };

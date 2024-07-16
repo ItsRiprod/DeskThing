@@ -34,7 +34,17 @@ class SpotifyHandler {
             "label": "30 seconds"
           },
         ]
-      }
+      },
+      "output_device": {
+        "value": "default",
+        "label": "Output Device",
+        "options": [
+          {
+            "value": "default",
+            "label": "Default"
+          }
+        ]
+      },
     };
 
     const manifestPath = path.join(__dirname, 'manifest.json');
@@ -87,6 +97,7 @@ class SpotifyHandler {
 
     try {
       const response = await axios(authOptions)
+      this.sendLog('Access token refreshed!', response.data.access_token, response.data.refresh_token)
       this.access_token = response.data.access_token
       this.refresh_token = response.data.refresh_token
       const returnData = {
@@ -126,6 +137,7 @@ class SpotifyHandler {
 
     try {
       const response = await axios(authOptions)
+      this.sendLog('Access token refreshed!', response.data.access_token, response.data.refresh_token)
       this.access_token = response.data.access_token
       this.refresh_token = response.data.refresh_token
       const returnData = {
@@ -182,6 +194,7 @@ class SpotifyHandler {
       this.sendError(`There was an error in spotify's ErrorHandler ${error}`)
     }
   }
+
 
   /**
    * Makes an authenticated request to the Spotify API.
@@ -275,10 +288,18 @@ class SpotifyHandler {
   }
 
   async play(context) {
-    const url = `${this.BASE_URL}/play`
-    const body =
-      context.playlist && context.id && context.position ? { context_uri: context.playlist, offset: {"uri":`spotify:track:${context.id}` }, position_ms: context.position } : null
-    return this.makeRequest('put', url, body)
+    const url = `${this.BASE_URL}/play`;
+    let body = null;
+  
+    if (context.playlist && context.id && context.position) {
+      body = {
+        context_uri: context.playlist,
+        offset: { uri: `spotify:track:${context.id}` },
+        position_ms: context.position,
+      };
+    }
+  
+    return this.makeRequest('put', url, body);
   }
 
   async pause() {
@@ -323,6 +344,13 @@ class SpotifyHandler {
     const url = `${this.BASE_URL}/shuffle?state=${state}`
     return this.makeRequest('put', url)
   }
+  
+  async transferPlayback(deviceId) {
+    this.sendLog(`Transferring playback to ${deviceId}`)
+    const url = `${this.BASE_URL}`;
+    const body = { device_ids: [deviceId], play: true };
+    await this.makeRequest('put', url, body);
+  }
 
   async returnSongData(id = null) {
     try {
@@ -352,6 +380,11 @@ class SpotifyHandler {
       if (new_id === id) {
         throw new Error('Timeout Reached!')
       }
+
+      if (currentPlayback?.device.id !== null && this.settings.output_device.value !== 'default' && this.settings.output_device.value !== currentPlayback?.device.id) {
+        this.transferPlayback(this.settings.output_device.value);
+      }
+
       let songData
 
       if (currentPlayback.currently_playing_type === 'track') {
@@ -377,6 +410,22 @@ class SpotifyHandler {
           id: currentPlayback?.item.id,
           thumbnail: null,
         }
+
+        const deviceExists = this.settings.output_device.options.some(
+          (option) => option.value === currentPlayback.device.id
+        );
+  
+        if (!deviceExists) {
+          // Update options with the new device
+          this.sendLog(`Adding new device ${currentPlayback.device.name} to device list...`)
+          this.settings.output_device.options.push({
+            value: currentPlayback.device.id,
+            label: currentPlayback.device.name,
+          });
+
+          this.sendDataToMainFn('add', { settings: this.settings})
+        }
+
         this.sendDataToMainFn('data', { app: 'client', type: 'song', data: songData })
         const imageUrl = currentPlayback.item.album.images[0].url
         songData.thumbnail = await getImageData(imageUrl)
@@ -405,6 +454,22 @@ class SpotifyHandler {
           id: currentPlayback?.item.id,
           thumbnail: null,
         }
+
+        const deviceExists = this.settings.output_device.options.some(
+          (option) => option.value === currentPlayback.device.id
+        );
+  
+        if (!deviceExists) {
+          // Update options with the new device
+          this.sendLog(`Adding new device ${currentPlayback.device.name} to device list...`)
+          this.settings.output_device.options.push({
+            value: currentPlayback.device.id,
+            label: currentPlayback.device.name,
+          });
+
+          this.sendDataToMainFn('add', { settings: this.settings})
+        }
+
         // Send the data immediately
         this.sendDataToMainFn('data', { app: 'client',type: 'song', data: songData })
 

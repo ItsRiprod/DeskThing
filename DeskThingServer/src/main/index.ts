@@ -33,6 +33,17 @@ function createMainWindow(): BrowserWindow {
     }
   })
 
+  window.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [
+          "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.github.com;"
+        ]
+      }
+    })
+  })
+
   window.on('ready-to-show', () => {
     window.show()
   })
@@ -96,6 +107,7 @@ async function setupIpcHandlers(): Promise<void> {
     './handlers/appHandler'
   )
   const { handleAdbCommands } = await import('./handlers/adbHandler')
+  const { sendData } = await import('./handlers/websocketServer')
 
   const dataListener = (await import('./utils/events')).default
   const { MESSAGE_TYPES } = await import('./utils/events')
@@ -154,6 +166,11 @@ async function setupIpcHandlers(): Promise<void> {
   ipcMain.handle('run-adb-command', async (_event, command) => {
     return await handleAdbCommands(command)
   })
+  ipcMain.handle('run-device-command', async (_event, type, command) => {
+    const data = { app: 'client', type: type, data: JSON.parse(command) }
+    console.log('Sending data', data)
+    return await sendData(null, data)
+  })
 
   dataListener.on(MESSAGE_TYPES.ERROR, (errorData) => {
     sendIpcData('error', errorData)
@@ -184,7 +201,7 @@ if (!app.requestSingleInstanceLock()) {
       mainWindow = createMainWindow()
     }
   })
-
+  app.on('ready', () => setupIpcHandlers())
   app.whenReady().then(async () => {
     // Set app user model id for windows
     app.setAppUserModelId('com.electron')
@@ -198,7 +215,6 @@ if (!app.requestSingleInstanceLock()) {
     initializeTray()
 
     mainWindow.once('ready-to-show', () => {
-      setupIpcHandlers()
       loadModules()
     })
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAppStore, App } from '../../store/appStore'
-import { IconRefresh, IconX, IconPause, IconPlay, IconDetails, IconPulsing } from '../icons'
+import { IconX, IconPause, IconPlay, IconDetails, IconPulsing } from '../icons'
 import DisplayAppData from '../Overlays/DisplayAppData'
 import { RequestStoreInstance, Request } from '../../store'
 
@@ -8,6 +8,7 @@ export type View = 'apps' | 'local' | 'web'
 
 const Apps = (): JSX.Element => {
   const { appsList } = useAppStore()
+  const [tooltips, setTooltips] = useState<string[]>([])
   const [enabled, setEnabled] = useState(false)
   const [appIndex, setAppIndex] = useState(-1)
   const [appsWithActiveRequests, setAppsWithActiveRequests] = useState<string[]>([])
@@ -39,6 +40,8 @@ const Apps = (): JSX.Element => {
       setAppsWithActiveRequests(appsWithActiveRequests)
     }
 
+    onRequestUpdate(RequestStoreInstance.getQueue()) // Get initial queue of requests
+
     RequestStoreInstance.on('request', onRequestUpdate)
 
     return () => {
@@ -61,14 +64,6 @@ const Apps = (): JSX.Element => {
         {enabled && <DisplayAppData appIndex={appIndex} setEnabled={setEnabled} data={appsList} />}
         {Object.keys(appsList.apps).length > 0 ? (
           <div className="pt-5 w-full flex 2xl:flex-row 2xl:flex-wrap flex-col items-center gap-2">
-            <div className="p-5 w-[90%] h-fit flex justify-end rounded-3xl shadow-lg px-5 align-baseline">
-              <button
-                className="border-2 top-10 border-cyan-600 hover:bg-cyan-500  p-2 rounded-lg"
-                onClick={() => requestAppsList()}
-              >
-                <IconRefresh iconSize={24} />
-              </button>
-            </div>
             {(appsList.apps as App[]).map((app, appIndex) => (
               <div
                 key={appIndex}
@@ -83,10 +78,26 @@ const Apps = (): JSX.Element => {
                 </div>
                 {appsWithActiveRequests.includes(app.name) ? (
                   <div className="flex items-center md:flex-row flex-col">
-                    <p className="text-blue-300">Data Request</p>
+                    {tooltips[appIndex] ? (
+                      <p>{tooltips[appIndex]}</p>
+                    ) : (
+                      <p className="text-blue-300">Data Request</p>
+                    )}
                     <button
                       className="border-2 border-blue-600 hover:bg-blue-500 m-1 p-2 rounded-lg"
                       onClick={() => handleRequestTrigger(app.name)}
+                      onMouseEnter={() =>
+                        setTooltips((prevTooltips) => ({
+                          ...prevTooltips,
+                          [appIndex]: 'Handle Request'
+                        }))
+                      }
+                      onMouseLeave={() =>
+                        setTooltips((prevTooltips) => ({
+                          ...prevTooltips,
+                          [appIndex]: ''
+                        }))
+                      }
                     >
                       <IconPulsing />
                     </button>
@@ -94,7 +105,9 @@ const Apps = (): JSX.Element => {
                 ) : app.enabled ? (
                   <div className="flex items-center md:flex-row flex-col">
                     <div className="flex-col flex items-end">
-                      {app.running ? (
+                      {tooltips[appIndex] ? (
+                        <p className="text-white">{tooltips[appIndex]}</p>
+                      ) : app.running ? (
                         <p className="text-green-500">Running</p>
                       ) : (
                         <p className="text-red-600">Stopped</p>
@@ -105,6 +118,18 @@ const Apps = (): JSX.Element => {
                       <button
                         className="border-2 border-amber-600 hover:bg-amber-500 m-1 p-2 rounded-lg"
                         onClick={() => handleStopApp(app.name)}
+                        onMouseEnter={() =>
+                          setTooltips((prevTooltips) => ({
+                            ...prevTooltips,
+                            [appIndex]: 'Pause App'
+                          }))
+                        }
+                        onMouseLeave={() =>
+                          setTooltips((prevTooltips) => ({
+                            ...prevTooltips,
+                            [appIndex]: ''
+                          }))
+                        }
                       >
                         <IconPause />
                       </button>
@@ -112,6 +137,18 @@ const Apps = (): JSX.Element => {
                       <button
                         className="border-2 border-cyan-600 hover:bg-cyan-500 m-1 p-2 rounded-lg"
                         onClick={() => handleAddAndRunApp(app.name)}
+                        onMouseEnter={() =>
+                          setTooltips((prevTooltips) => ({
+                            ...prevTooltips,
+                            [appIndex]: 'Run App'
+                          }))
+                        }
+                        onMouseLeave={() =>
+                          setTooltips((prevTooltips) => ({
+                            ...prevTooltips,
+                            [appIndex]: ''
+                          }))
+                        }
                       >
                         <IconPlay />
                       </button>
@@ -119,16 +156,44 @@ const Apps = (): JSX.Element => {
                     <button
                       className="border-2 border-red-600 hover:bg-red-500 p-2 rounded-lg"
                       onClick={() => handleDisableApp(app.name)}
+                      onMouseEnter={() =>
+                        setTooltips((prevTooltips) => ({
+                          ...prevTooltips,
+                          [appIndex]: 'Disable App'
+                        }))
+                      }
+                      onMouseLeave={() =>
+                        setTooltips((prevTooltips) => ({
+                          ...prevTooltips,
+                          [appIndex]: ''
+                        }))
+                      }
                     >
                       <IconX />
                     </button>
                   </div>
                 ) : (
                   <div className="flex items-center md:flex-row flex-col">
-                    <p className="text-zinc-600">Disabled</p>
+                    {tooltips[appIndex] ? (
+                      <p>{tooltips[appIndex]}</p>
+                    ) : (
+                      <p className="text-zinc-600">Disabled</p>
+                    )}
                     <button
                       className="border-2 border-cyan-600 hover:bg-cyan-500 m-1 p-2 rounded-lg"
                       onClick={() => handleAddAndRunApp(app.name)}
+                      onMouseEnter={() =>
+                        setTooltips((prevTooltips) => ({
+                          ...prevTooltips,
+                          [appIndex]: 'Enable App'
+                        }))
+                      }
+                      onMouseLeave={() =>
+                        setTooltips((prevTooltips) => ({
+                          ...prevTooltips,
+                          [appIndex]: ''
+                        }))
+                      }
                     >
                       <IconPlay />
                     </button>

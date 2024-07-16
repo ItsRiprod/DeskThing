@@ -13596,6 +13596,16 @@ var require_spotify = __commonJS({
                 "label": "30 seconds"
               }
             ]
+          },
+          "output_device": {
+            "value": "default",
+            "label": "Output Device",
+            "options": [
+              {
+                "value": "default",
+                "label": "Default"
+              }
+            ]
           }
         };
         const manifestPath = path.join(__dirname, "manifest.json");
@@ -13641,6 +13651,7 @@ var require_spotify = __commonJS({
         };
         try {
           const response = await axios(authOptions);
+          this.sendLog("Access token refreshed!", response.data.access_token, response.data.refresh_token);
           this.access_token = response.data.access_token;
           this.refresh_token = response.data.refresh_token;
           const returnData = {
@@ -13677,6 +13688,7 @@ var require_spotify = __commonJS({
         };
         try {
           const response = await axios(authOptions);
+          this.sendLog("Access token refreshed!", response.data.access_token, response.data.refresh_token);
           this.access_token = response.data.access_token;
           this.refresh_token = response.data.refresh_token;
           const returnData = {
@@ -13807,7 +13819,14 @@ var require_spotify = __commonJS({
       }
       async play(context) {
         const url = `${this.BASE_URL}/play`;
-        const body = context.playlist && context.id && context.position ? { context_uri: context.playlist, offset: { "uri": `spotify:track:${context.id}` }, position_ms: context.position } : null;
+        let body = null;
+        if (context.playlist && context.id && context.position) {
+          body = {
+            context_uri: context.playlist,
+            offset: { uri: `spotify:track:${context.id}` },
+            position_ms: context.position
+          };
+        }
         return this.makeRequest("put", url, body);
       }
       async pause() {
@@ -13846,6 +13865,12 @@ var require_spotify = __commonJS({
         const url = `${this.BASE_URL}/shuffle?state=${state}`;
         return this.makeRequest("put", url);
       }
+      async transferPlayback(deviceId) {
+        this.sendLog(`Transferring playback to ${deviceId}`);
+        const url = `${this.BASE_URL}`;
+        const body = { device_ids: [deviceId], play: true };
+        await this.makeRequest("put", url, body);
+      }
       async returnSongData(id = null) {
         try {
           const startTime = Date.now();
@@ -13869,6 +13894,9 @@ var require_spotify = __commonJS({
           } while (new_id === id && Date.now() - startTime < timeout && delay < 1e3);
           if (new_id === id) {
             throw new Error("Timeout Reached!");
+          }
+          if (currentPlayback?.device.id !== null && this.settings.output_device.value !== "default" && this.settings.output_device.value !== currentPlayback?.device.id) {
+            this.transferPlayback(this.settings.output_device.value);
           }
           let songData;
           if (currentPlayback.currently_playing_type === "track") {
@@ -13894,6 +13922,17 @@ var require_spotify = __commonJS({
               id: currentPlayback?.item.id,
               thumbnail: null
             };
+            const deviceExists = this.settings.output_device.options.some(
+              (option) => option.value === currentPlayback.device.id
+            );
+            if (!deviceExists) {
+              this.sendLog(`Adding new device ${currentPlayback.device.name} to device list...`);
+              this.settings.output_device.options.push({
+                value: currentPlayback.device.id,
+                label: currentPlayback.device.name
+              });
+              this.sendDataToMainFn("add", { settings: this.settings });
+            }
             this.sendDataToMainFn("data", { app: "client", type: "song", data: songData });
             const imageUrl = currentPlayback.item.album.images[0].url;
             songData.thumbnail = await getImageData(imageUrl);
@@ -13921,6 +13960,17 @@ var require_spotify = __commonJS({
               id: currentPlayback?.item.id,
               thumbnail: null
             };
+            const deviceExists = this.settings.output_device.options.some(
+              (option) => option.value === currentPlayback.device.id
+            );
+            if (!deviceExists) {
+              this.sendLog(`Adding new device ${currentPlayback.device.name} to device list...`);
+              this.settings.output_device.options.push({
+                value: currentPlayback.device.id,
+                label: currentPlayback.device.name
+              });
+              this.sendDataToMainFn("add", { settings: this.settings });
+            }
             this.sendDataToMainFn("data", { app: "client", type: "song", data: songData });
             const imageUrl = currentPlayback.item.images[0].url;
             songData.thumbnail = await getImageData(imageUrl);
@@ -13977,32 +14027,34 @@ async function onMessageFromMain(event, ...args) {
           );
         } else if (args[0].Spotify_Refresh_Token) {
           spotify.sendLog("Refreshing token...");
-          spotify.refresh_token = args[0].Spotify_Refresh_Token;
           spotify.client_id = args[0].Spotify_API_Id;
           spotify.client_secret = args[0].Spotify_Client_Secret;
           if (args[0].Spotify_Access_Token) {
             spotify.access_token = args[0].Spotify_Access_Token || void 0;
           }
+          if (args[0].Spotify_Refresh_Token != void 0) {
+            spotify.refresh_token = args[0].Spotify_Refresh_Token || void 0;
+          }
           await spotify.refreshAccessToken();
         } else {
           const data = {
             Spotify_API_Id: args[0].Spotify_API_Id,
-            Spotify_Client_Secret: args[0].Spotify_Client_Secret,
-            Spotify_Refresh_Token: spotify.refresh_token || void 0,
-            Spotify_Access_Token: spotify.access_token || void 0
+            Spotify_Client_Secret: args[0].Spotify_Client_Secret
           };
-          spotify.sendDataToMainFn("set", data);
+          spotify.sendDataToMainFn("add", data);
           spotify.client_id = data.Spotify_API_Id;
           spotify.client_secret = data.Spotify_Client_Secret;
           spotify.sendError("No refresh token found, logging in...");
           await spotify.login();
         }
-        if (args[0].settings) {
-          spotify.settings = args[0].settings;
-        } else {
-          const settings = { settings: spotify.settings };
-          spotify.sendDataToMainFn("add", settings);
-        }
+        ["refresh_interval", "output_device"].forEach((key) => {
+          if (args[0].settings?.[key]) {
+            spotify.settings[key] = args[0].settings[key];
+          } else {
+            const settings = { settings: spotify.settings };
+            spotify.sendDataToMainFn("add", settings);
+          }
+        });
         break;
       case "auth-data":
         spotify.sendError("Something went wrong! You shouldnt be here!");

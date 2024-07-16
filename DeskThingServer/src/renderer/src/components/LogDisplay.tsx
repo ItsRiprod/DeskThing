@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import logStore, { log } from '../store/logStore'
-import { IconLogoLoading } from './icons'
+import { IconLogoGearLoading } from './icons'
 
 const LogDisplay = (): JSX.Element => {
   const [logs, setLogs] = useState<log[]>([])
@@ -73,8 +73,8 @@ const LogDisplay = (): JSX.Element => {
           ))
         ) : (
           <div className="w-full flex flex-col items-center justify-center">
-            <IconLogoLoading iconSize={256} />
-            <p className="logo">Loading Logs...</p>
+            <IconLogoGearLoading iconSize={128} />
+            <p className="logo">Waiting for logs...</p>
           </div>
         )}
         <div ref={logEndRef} />

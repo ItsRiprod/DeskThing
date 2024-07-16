@@ -6,12 +6,12 @@ function IconLogoLoading(props): JSX.Element {
   const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:v="http://vecta.io" viewBox="0 0 24 48" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-rule="evenodd"><style xmlns="http://www.w3.org/2000/svg">
 .gear {
   transform-origin: 11.5px 34.2px;
-  animation: spinner_zKoa 3s linear infinite;
+  animation: spinner_zKoa 4s ease-out infinite;
 }
 
 .gear path {
   stroke-linecap: round;
-  animation: spinner_YpZS 3s ease-in-out infinite;
+  animation: spinner_YpZS 4s ease-in-out infinite;
 }
 
 @keyframes spinner_zKoa {
@@ -35,7 +35,7 @@ function IconLogoLoading(props): JSX.Element {
 }
 
 .screen {
-    animation: movement 3s ease-in-out infinite;
+    animation: movement 4s ease-in-out infinite;
 }
 
 @keyframes movement {

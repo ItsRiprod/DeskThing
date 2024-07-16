@@ -132,9 +132,7 @@ const addConfig = (configName: string, config: string | Array<string>, data = re
   } else {
     data.config[configName] = config
   }
-
   dataListener.asyncEmit(MESSAGE_TYPES.CONFIG)
-
   writeData(data)
 }
 const getConfig = (configName: string): { [app: string]: string | Array<string> | undefined } => {
@@ -188,6 +186,7 @@ const purgeAppConfig = async (appName: string): Promise<void> => {
   }
 
   writeData(data)
+  dataListener.asyncEmit(MESSAGE_TYPES.CONFIG)
 }
 
 export {

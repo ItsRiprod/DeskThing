@@ -15,6 +15,7 @@ import {
   IconSkipBack15,
 } from '../icons';
 import getBackgroundColor, { findContrastColor } from '../../helpers/ColorExtractor';
+import ButtonHelper, { Button, EventFlavour } from '../../helpers/ButtonHelper';
 
 
 const Footer: React.FC = () => {
@@ -27,6 +28,7 @@ const Footer: React.FC = () => {
   const [visible, setVisible] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const playerIslandRef = useRef<HTMLDivElement>(null);
+  const buttonHelper = ButtonHelper.getInstance();
 
   const handleBackgroundColor = async (photo: string) => {
     try {
@@ -67,12 +69,11 @@ const Footer: React.FC = () => {
     };
 
     const removeListener = socket.on('client', listener);
-
     return () => {
       removeListener()
+      
     };
   }, []);
-
   
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleSendSet = (request: string, payload = songData.id as any) => {
@@ -148,6 +149,13 @@ const Footer: React.FC = () => {
     setPlay(!play);
     play ? handleSendSet(AUDIO_REQUESTS.PAUSE, songData.id) : handleSendSet(AUDIO_REQUESTS.PLAY, songData.id);
   };
+  useEffect(() => {
+
+    buttonHelper.addListener(Button.SCROLL_PRESS, EventFlavour.Down, handlePlayPause)
+    return () => {
+      buttonHelper.removeListener(Button.SCROLL_PRESS, EventFlavour.Down)
+    }
+  });
 
   return (
     <div className={`fixed flex max-w-full bottom-0 transition-all ease-out duration-200 ap_color ${visible ? 'h-36' : 'h-16'}`}
