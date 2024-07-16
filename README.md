@@ -1,5 +1,7 @@
 ![App Creation details](/readme_images/deskthing-banner.png)
 
+*Logo design and artwork by @Dilango*
+
 # The DeskThing ✔️
 
 *Let's begin, shall we?*
@@ -8,10 +10,10 @@ This is the DeskThing project. Using Spotify's existing Car Thing, the DeskThing
 
 **⚠️DO NOT PULL MAIN BRANCH ⚠️**
 
-Instead, go to [Releases](https://github.com/ItsRiprod/DeskThing/releases) and download the .zip file for v0.5.*-alpha (which this readme follows) and use that
+Instead, go to [Releases](https://github.com/ItsRiprod/DeskThing/releases) and download the installer for your OS and all the apps
 
 ---
-
+> All instructions are up-to-date as late of v0.5.4-alpha. Later versions may differ in functionality and setup
 <details>
    <summary><h2>✨ Features</h2></summary>
 
@@ -21,6 +23,7 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
    - [X] Show currently listening (Album, Artist, Song name, album art)
    - [X] Control Spotify (Skip, pause, play, rewind, shuffle, repeat)
    - [X] Supports Podcasts too!
+   - [X] Set Audio Output Source
    - Spotify app [installation instructions here](/DeskThing/server/apps/spotify#spotify-app-install)
 - ### Desktop Now Playing (Only Windows) 🎧
    - [X] Show currently listening (Album, Artist, Song name, album art)
@@ -32,7 +35,7 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
    - [ ] ~~Control Individual User Volume~~
    - [ ] ~~See message preview~~
    - Discord app [installation instructions here](/DeskThing/server/apps/discord#discord-app-install)
-- ### Weather Integration 🌧️ *to be migrated*
+- ### Weather Integration 🌧️
    - [X] Show local weather
    - [X] Temperature
    - [X] AQI, UV Index, Wind Speed + Direction, Visibility
@@ -103,10 +106,11 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
 > If you need help, refer to the [detailed instructions](#flashing) at the end of this page
 
 2. **Get the built webapp under installation files:**
-*should be under Releases*
+*should be under [releases](https://github.com/ItsRiprod/DeskThing/releases)*
 
-   - Unzip the file 'deskthing-client-build-v0.-.-.zip' onto your computer
+   - Unzip the file 'deskthing-client-build-v0.*.*.zip' onto your computer
    - open a command prompt in that directory for step 3
+> Note: You can usually do this by right clicking and clicking "Open Terminal"
 
 3. **Pushing the project to the car thing:**
    - Open port 8891:
@@ -120,8 +124,9 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
       adb shell mv /usr/share/qt-superbird-app/webapp /tmp/webapp-orig
       adb shell mv /tmp/webapp-orig /usr/share/qt-superbird-app/ # it's ok if this fails
       adb shell rm -r /tmp/webapp-orig
-      adb push dist/ /usr/share/qt-superbird-app/webapp # Ensure dist/ is in the directory you are running this from
+      adb push yourclientfilename/ /usr/share/qt-superbird-app/webapp # Ensure dist/ is in the directory you are running this from
      ```
+   > Ensure `yourclientfilename/` is the file location as defined in the prior step (the client)
    - Restart chromium:
      ```sh
      adb shell supervisorctl restart chromium
@@ -149,20 +154,21 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
 
 Links:
 - [image dumps](https://mega.nz/folder/NxNXQCaT#-n1zkoXsJuw-5rQ-ZYzRJw/folder/5kECGT5C)
-- [superbird-tool](https://github.com/bishopdynamics/superbird-tool)
+- [superbird-tool](https://github.com/Car-Thing-Hax-Community/superbird-tool)
 
 Process:
 - Go to superbird-tool and install it based off your operating system. Come back once you can run `python superbird_tool.py --find_device` and see your Car Thing
 - Unplug the Car Thing
 - Hold buttons 1 and 4 (the four large top buttons are mapped from left to right) and plug it in.
-- Wait a few seconds. If the screen does not turn on, that means you are in boot mode. You can realease the buttons
+- Wait a few seconds. If the screen does not turn on, that means you are in boot mode. You can release the buttons
 - Run `python superbird_tool.py --burn_mode` to enter burn mode
-- Download 8.2.5 adb enables from image dumps (linked above) and in that same folder, also download Readme.txt
-- Follow the Readme.txt to change the appropriate file names
-- (Windows only) Download [zadig](https://zadig.akeo.ie/) and install the WinUSB driver for GX-CHIP (select it and click "Install Driver")
-> Alternatively use libusbK if it does not work
-- Run `superbird_tool.py --restore_device /path/to/extracted/firmware/folder` (This may take awhile)
+> Note: This step may say it fails to enter burn mode. This is okay, continue on as if it worked. There is information in the discord as to why this is.
+- Download 8.2.5_adb_enabled.tar.xz or 8.4.4_adb_enabled.tar.xz files from image dumps (linked above) and in that same folder (unzip them)
+- (Windows only) Download [zadig](https://zadig.akeo.ie/) and install the WinUSB driver for **GX-CHIP** (select it and click "Install Driver")
+> Alternatively use **libusbK** if it does not work
+- Run `superbird_tool.py --restore_device /path/to/extracted/firmware/folder` (This may take a while)
 - After the firmware is flashed, the Car Thing should be ready with ADB enabled. To check, run `adb shell ls -l /usr/share/qt-superbird-app/` and you should see webapp as one of the folders.
+- Ensure that `adb devices` works and registers `12345 device` as one of the options
 - Continue setup from [here](#detailed-setup-instructions)
 
 </details>
@@ -171,9 +177,9 @@ Process:
 
 ## 📗 Additional Resources
 
-- 🔧 [superbird-tool](https://github.com/bishopdynamics/superbird-tool) - This is the CarThing image that is being used. Be sure to either include this link or steps on how to flash the CarThing.
+- 🔧 [superbird-tool](https://github.com/Car-Thing-Hax-Community/superbird-tool) - This is the CarThing image that is being used. Be sure to either include this link or steps on how to flash the CarThing.
 - 🐤 [superbird-custom-webapp](https://github.com/pajowu/superbird-custom-webapp/tree/main) - The React web app framework that this project started with.
-- 🗨️ [Car Thing Hax Community Discord](https://discord.gg/aPSV6NykA6) - The discord where there is this project and so much more!
+- 🗨️ [Car Thing Hax Community Discord](https://discord.carth.ing/) - The discord where there is this project and so much more!
 
 
 ---
