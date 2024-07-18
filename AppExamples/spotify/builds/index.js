@@ -13865,6 +13865,15 @@ var require_spotify = __commonJS({
         const url = `${this.BASE_URL}/shuffle?state=${state}`;
         return this.makeRequest("put", url);
       }
+      async transfer() {
+        try {
+          if (this.settings.output_device.value !== "default" && this.settings.output_device.value) {
+            this.transferPlayback(this.settings.output_device.value);
+          }
+        } catch (error) {
+          this.sendError("Error changing playback!" + error);
+        }
+      }
       async transferPlayback(deviceId) {
         this.sendLog(`Transferring playback to ${deviceId}`);
         const url = `${this.BASE_URL}`;
@@ -13894,9 +13903,6 @@ var require_spotify = __commonJS({
           } while (new_id === id && Date.now() - startTime < timeout && delay < 1e3);
           if (new_id === id) {
             throw new Error("Timeout Reached!");
-          }
-          if (currentPlayback?.device.id !== null && this.settings.output_device.value !== "default" && this.settings.output_device.value !== currentPlayback?.device.id) {
-            this.transferPlayback(this.settings.output_device.value);
           }
           let songData;
           if (currentPlayback.currently_playing_type === "track") {
@@ -14090,6 +14096,7 @@ var handleGet = async (...args) => {
   switch (args[0].toString()) {
     case "song":
       response = await spotify.returnSongData();
+      spotify.transfer();
       break;
     case "manifest":
       response = spotify.manifest;

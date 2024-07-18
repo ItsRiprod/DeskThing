@@ -122,6 +122,7 @@ const handleGet = async (...args) => {
   switch (args[0].toString()) {
     case 'song':
       response = await spotify.returnSongData()
+      spotify.transfer()
       break
     case 'manifest':
       response = spotify.manifest

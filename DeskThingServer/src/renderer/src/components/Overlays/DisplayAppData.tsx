@@ -24,7 +24,7 @@ const DisplayAppData = ({ appIndex, setEnabled, data }: DisplayAppDataProps): JS
   return (
     <>
       {appData != null ? (
-        <div className="pointer-events-auto fixed w-screen flex justify-around left-0 z-10">
+        <div className="pointer-events-auto fixed top-0 items-center h-screen w-screen flex justify-around left-0 z-10">
           <div className="bg-slate-600 animate-fade p-5 w-11/12 rounded-lg max-h-[90vh] overflow-auto drop-shadow-lg flex flex-col">
             <h1 className="shadow-lg m-5 bg-slate-700 p-3 rounded-xl">
               Data From {appData.manifest ? appData.manifest.label : appData.name}

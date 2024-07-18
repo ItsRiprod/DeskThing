@@ -8,7 +8,8 @@ const api = {
   runAdbCommand: (command: string): Promise<string | null> =>
     ipcRenderer.invoke('run-adb-command', command),
   runDeviceCommand: (type: string, command: string): Promise<string | null> =>
-    ipcRenderer.invoke('run-device-command', type, command)
+    ipcRenderer.invoke('run-device-command', type, command),
+  fetchReleases: (url: string): Promise<[]> => ipcRenderer.invoke('fetch-github-releases', url)
 }
 // Use `contextBridge` APIs to expose Electron APIs to
 // renderer only if context isolation is enabled, otherwise

@@ -2,6 +2,7 @@ import { app, shell, BrowserWindow, ipcMain, Tray, Menu, dialog } from 'electron
 import { join } from 'path'
 import path from 'path'
 import icon from '../../resources/icon.ico?asset'
+import { GithubRelease } from './types/types'
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
@@ -108,9 +109,12 @@ async function setupIpcHandlers(): Promise<void> {
   )
   const { handleAdbCommands } = await import('./handlers/adbHandler')
   const { sendData } = await import('./handlers/websocketServer')
-
+  const { getReleases } = await import('./handlers/githubHandler')
+  const { HandleWebappZipFromUrl, HandlePushWebApp } = await import('./handlers/deviceHandler')
   const dataListener = (await import('./utils/events')).default
   const { MESSAGE_TYPES } = await import('./utils/events')
+
+
   let connections = 0
   ipcMain.on(IPC_CHANNELS.PING, () => console.log('pong'))
 
@@ -142,6 +146,23 @@ async function setupIpcHandlers(): Promise<void> {
     console.log('SERVER: Return Data after Extraction:', returnData)
     event.sender.send('zip-name', returnData)
   })
+  ipcMain.on('extract-webapp-zip', async (event, zipFileUrl) => {
+    try {
+      HandleWebappZipFromUrl(event.reply, zipFileUrl)
+    } catch (error) {
+      console.error('Error extracting zip file:', error)
+      event.reply('zip-extracted', { success: false, error: error })
+    }
+  })
+  ipcMain.on('push-staged', async (event) => {
+    try {
+      HandlePushWebApp(event.reply)
+    } catch (error) {
+      event.reply('pushed-staged', { success: false, error: error })
+      console.error('Error extracting zip file:', error)
+      dataListener.emit(MESSAGE_TYPES.ERROR, error)
+    }
+  })
   ipcMain.on(
     IPC_CHANNELS.USER_DATA_RESPONSE,
     (event, requestId: string, type: string, ...args: any[]) => {
@@ -165,6 +186,14 @@ async function setupIpcHandlers(): Promise<void> {
 
   ipcMain.handle('run-adb-command', async (_event, command) => {
     return await handleAdbCommands(command)
+  })
+  ipcMain.handle('fetch-github-releases', async (_event, url): Promise<GithubRelease[]> => {
+    try {
+      return await getReleases(url)
+    } catch (error) {
+      dataListener.emit(MESSAGE_TYPES.ERROR, error)
+      return []
+    }
   })
   ipcMain.handle('run-device-command', async (_event, type, command) => {
     const data = { app: 'client', type: type, data: JSON.parse(command) }

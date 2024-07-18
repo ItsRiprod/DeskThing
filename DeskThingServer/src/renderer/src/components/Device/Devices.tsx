@@ -14,6 +14,7 @@ const Device = (): JSX.Element => {
   const [enabled, setEnabled] = useState(false)
   const [tooltip, setTooltip] = useState('')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [currentDevice, setCurrentDevice] = useState('')
   useEffect(() => {
     handlePush()
@@ -64,6 +65,27 @@ const Device = (): JSX.Element => {
     }
   }
 
+  const handlePushStaged = (): void => {
+    try {
+      setLoading(true)
+      window.electron.ipcRenderer.send('push-staged')
+      window.electron.ipcRenderer.once('pushed-staged', (_event, reply) => {
+        console.log(reply)
+        setLoading(false)
+        if (!reply.success) {
+          setError(reply.error || 'Unknown error occurred')
+        } else {
+          // Optionally handle success, e.g., navigate to the extracted app
+        }
+      })
+    } catch (error) {
+      setLoading(false)
+      if (error) {
+        setError(JSON.stringify(error))
+      }
+    }
+  }
+
   const handleDeviceClick = (device: string): void => {
     quickLoading()
     setCurrentDevice(device)
@@ -99,7 +121,7 @@ const Device = (): JSX.Element => {
             <div className="gap-3 flex items-center">
               <p>{tooltip}</p>
               <button
-                onClick={() => handleAdbCommand(`devices`)}
+                onClick={handlePushStaged}
                 className="border-2 top-10 border-cyan-600 hover:bg-cyan-500  p-2 rounded-lg"
                 onMouseEnter={() => setTooltip('Push Staged Webapp')}
                 onMouseLeave={() => setTooltip('')}
@@ -107,11 +129,7 @@ const Device = (): JSX.Element => {
                 <IconUpload iconSize={24} />
               </button>
               <button
-                onClick={() =>
-                  handleAdbCommand(
-                    `-s ${device.replace('device', '')} shell supervisorctl restart chromium`
-                  )
-                }
+                onClick={() => handleAdbCommand(`devices`)}
                 className="border-2 top-10 border-cyan-600 hover:bg-cyan-500  p-2 rounded-lg"
                 onMouseEnter={() => setTooltip('Reload Chromium')}
                 onMouseLeave={() => setTooltip('')}
@@ -141,12 +159,19 @@ const Device = (): JSX.Element => {
         ))
       ) : (
         <div className="flex flex-col items-center justify-center w-full">
-          <button
-            className="border-cyan-500 flex gap-3 border p-5 rounded-2xl hover:bg-cyan-600"
-            onClick={handlePush}
-          >
-            Check For Devices <IconTransfer />
-          </button>
+          {loading ? (
+            <div className="">
+              <IconLogoGearLoading iconSize={65} />
+            </div>
+          ) : (
+            <button
+              className="border-cyan-500 flex gap-3 border p-5 rounded-2xl hover:bg-cyan-600"
+              onClick={quickLoading}
+            >
+              Check For Devices <IconTransfer />
+            </button>
+          )}
+
           <p className="mt-5">No devices connected...</p>
         </div>
       )}

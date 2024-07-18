@@ -40,8 +40,9 @@ const ToastContainer: React.FC = () => {
 
   return (
     <div className="fixed bottom-4 right-4 space-y-4 z-50 pointer-events-auto">
-      {toasts.map((toast) => (
+      {toasts.map((toast, index) => (
         <Toast
+          index={toasts.length - index}
           key={toast.id}
           message={toast.log}
           type={toast.type}

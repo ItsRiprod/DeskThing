@@ -82,7 +82,7 @@ const DisplayDeviceData = ({ setEnabled, device }: DisplayDeviceDataProps): JSX.
   return (
     <>
       {deviceData != null ? (
-        <div className="pointer-events-auto fixed w-screen flex justify-around left-0 z-10">
+        <div className="pointer-events-auto fixed items-center w-screen flex top-0 justify-around left-0 h-screen z-10">
           <div className="bg-zinc-900 animate-fade p-5 w-11/12 rounded-lg max-h-[90vh] overflow-auto drop-shadow-lg flex flex-col">
             <h1 className="shadow-lg flex m-5 bg-zinc-700 p-3 rounded-xl">{device}</h1>
             <div className="flex items-center flex-col p-5">

@@ -344,6 +344,17 @@ class SpotifyHandler {
     const url = `${this.BASE_URL}/shuffle?state=${state}`
     return this.makeRequest('put', url)
   }
+
+  async transfer() {
+    try {
+      if (this.settings.output_device.value !== 'default' && this.settings.output_device.value) {
+        this.transferPlayback(this.settings.output_device.value);
+        this.sendLog('Transferred successfully')
+      }
+    } catch (error) {
+      this.sendError('Error changing playback!' + error)
+    }
+  }
   
   async transferPlayback(deviceId) {
     this.sendLog(`Transferring playback to ${deviceId}`)
@@ -379,10 +390,6 @@ class SpotifyHandler {
 
       if (new_id === id) {
         throw new Error('Timeout Reached!')
-      }
-
-      if (currentPlayback?.device.id !== null && this.settings.output_device.value !== 'default' && this.settings.output_device.value !== currentPlayback?.device.id) {
-        this.transferPlayback(this.settings.output_device.value);
       }
 
       let songData
