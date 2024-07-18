@@ -96,13 +96,13 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
    - Install ADB on your computer (Android Development).
 
 2. **Superbird Webapp flash:**
-   - Flash your CarThing with the adb_enabled dump [here](https://mega.nz/folder/NxNXQCaT#-n1zkoXsJuw-5rQ-ZYzRJw) using the [superbird-tool](https://github.com/bishopdynamics/superbird-tool).
+   - Flash your CarThing with the adb_enabled dump [here](https://mega.nz/folder/NxNXQCaT#-n1zkoXsJuw-5rQ-ZYzRJw) using the [superbird-tool](https://github.com/Car-Thing-Hax-Community/superbird-tool).
    - [detailed instructions](#flashing)
 
 ### Detailed Setup Instructions
 
 1. **Flash Your CarThing:**
-   - Follow the instructions in the [superbird-tool repository](https://github.com/bishopdynamics/superbird-tool) to flash your CarThing device with the necessary image.
+   - Follow the instructions in the [superbird-tool repository](https://github.com/Car-Thing-Hax-Community/superbird-tool) to flash your CarThing device with the necessary image.
 > If you need help, refer to the [detailed instructions](#flashing) at the end of this page
 
 2. **Get the built webapp under installation files:**
