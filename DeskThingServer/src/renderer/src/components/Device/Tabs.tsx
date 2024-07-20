@@ -35,15 +35,15 @@ const Tabs: React.FC<TopbarProps> = ({ setCurrentView, currentView }) => {
 
   return (
     <div className="w-full top-0 p-0 gap-5 h-fit flex-shrink-0 sm:relative rounded-lg flex overflow-x-scroll items-center">
-      <div className="flex justify-evenly w-full">
+      <div className="flex justify-evenly w-full border-b-2 border-zinc-800">
         <button
-          className={`${currentView === 'devices' ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'} border flex-grow rounded-md p-3`}
+          className={`${currentView === 'devices' ? 'bg-zinc-900 hover:bg-zinc-700 border-b-2 border-green-500' : 'hover:bg-zinc-800'} flex-grow p-3`}
           onClick={() => handleClick('devices')}
         >
           Devices
         </button>
         <button
-          className={`${currentView === 'webapps' ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'} border flex-grow rounded-md p-3`}
+          className={`${currentView === 'webapps' ? 'bg-zinc-900 hover:bg-zinc-700 border-b-2 border-green-500' : 'hover:bg-zinc-800'} flex-grow p-3`}
           onClick={() => handleClick('webapps')}
         >
           Web Versions

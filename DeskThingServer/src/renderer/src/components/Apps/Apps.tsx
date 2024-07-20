@@ -67,7 +67,7 @@ const Apps = (): JSX.Element => {
             {(appsList.apps as App[]).map((app, appIndex) => (
               <div
                 key={appIndex}
-                className="border-2 border-zinc-200 p-5 w-11/12 md:w-11/12 2xl:w-96 h-fit flex justify-between rounded-3xl shadow-lg px-5 items-center"
+                className="border-2 border-zinc-400 p-5 w-11/12 md:w-11/12 2xl:w-96 h-fit flex justify-between rounded-3xl shadow-lg px-5 items-center"
               >
                 <div className="flex gap-2">
                   <button onClick={() => handleDetails(appIndex)} className="hover:text-slate-600">

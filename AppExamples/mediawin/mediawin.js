@@ -26,8 +26,6 @@ class MediaWin {
       }
     };
 
-    this.cliPath = path.join(__dirname, 'DeskThingMediaCLI.exe');
-
     const manifestPath = path.join(__dirname, 'manifest.json');
     this.manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
 
@@ -78,7 +76,7 @@ class MediaWin {
 
   async executeCommand(command, args = '') {
     return new Promise((resolve, reject) => {
-      exec(`${this.cliPath} ${command} ${args}`, (error, stdout, stderr) => {
+      exec(`cd ${__dirname} && DeskThingMediaCLI.exe ${command} ${args}`, (error, stdout, stderr) => {
         if (error) {
           this.sendError(`exec error: ${error}`);
           reject(false);
@@ -98,10 +96,8 @@ class MediaWin {
   }
 
   async exeVol(...args) {
-    const executablePath = path.join(__dirname, 'adjust_get_current_system_volume_vista_plus.exe')
-
     return new Promise((resolve, reject) => {
-      exec(`${executablePath} ${args}`, (error, stdout, stderr) => {
+      exec(`cd ${__dirname} && adjust_get_current_system_volume_vista_plus.exe ${args}`, (error, stdout, stderr) => {
         if (error) {
           this.sendError(`exec error: ${error}`);
           reject(false);

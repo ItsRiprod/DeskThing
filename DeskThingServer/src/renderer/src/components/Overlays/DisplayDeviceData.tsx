@@ -2,10 +2,13 @@ import { useState, useEffect } from 'react'
 import {
   IconCarThing,
   IconDisconnect,
+  IconLightbulbOff,
+  IconLightbulbOn,
   IconLogoGearLoading,
   IconPlay,
   IconPower,
   IconRefresh,
+  IconReload,
   IconX
 } from '../icons'
 
@@ -22,20 +25,86 @@ const DisplayDeviceData = ({ setEnabled, device }: DisplayDeviceDataProps): JSX.
   const [commands, setCommands] = useState<{ [key: string]: string }>({})
   const [types, setType] = useState<{ [key: string]: string }>({})
   const [deviceData, setDeviceData] = useState<DeviceData>({})
+  const [supervisorData, setSupervisorData] = useState<{ [key: string]: string }>({})
   const [tooltip, setTooltip] = useState('')
   const [weToolTip, setWStooltip] = useState('')
 
-  useEffect(() => {
-    const handleDeviceData = (_event: Electron.IpcRendererEvent, data: DeviceData): void => {
-      setDeviceData(data)
+  const getSupervisorData = async (): Promise<void> => {
+    const supervisorResponse = await window.electron.runAdbCommand(
+      'shell supervisorctl status backlight chromium'
+    )
+    console.log('Raw adb response (supervisorctl):', supervisorResponse)
+    if (supervisorResponse) {
+      const supervisorLines = supervisorResponse.trim().split('\n')
+      const parsedData: { [key: string]: string } = {}
+      supervisorLines.forEach((line) => {
+        const [name, status] = line.split(/\s+/)
+        if (name && status) {
+          parsedData[name] = status
+        }
+      })
+      setSupervisorData(parsedData)
     }
-    window.electron.runDeviceCommand('post', '{"type":"action","action":"version_request"}')
-    // Set up listener for 'app-data' event
-    const removeListener = window.electron.ipcRenderer.once('version-status', handleDeviceData)
+  }
 
-    return () => {
-      removeListener()
+  useEffect(() => {
+    const getDeviceData = async (): Promise<void> => {
+      try {
+        // Get version info
+        const versionResponse = await window.electron.runAdbCommand(
+          'shell cat /etc/superbird/version'
+        )
+        console.log('Raw adb response (version):', versionResponse)
+        if (versionResponse) {
+          const versionMatch = versionResponse.match(/SHORT_VERSION\s+(\S+)/)
+          if (versionMatch) {
+            const shortVersion = versionMatch[1].trim()
+            setDeviceData((prevData) => ({
+              ...prevData,
+              app_version: shortVersion
+            }))
+          } else {
+            console.error('SHORT_VERSION not found in adb response')
+          }
+        }
+
+        // Get USID info
+        const usidResponse = await window.electron.runAdbCommand('shell cat /sys/class/efuse/usid')
+        console.log('Raw adb response (usid):', usidResponse)
+        // Set USID data
+        if (usidResponse) {
+          setDeviceData((prevData) => ({
+            ...prevData,
+            usid: usidResponse.trim()
+          }))
+        }
+
+        // Get MAC BT info
+        const macBtResponse = await window.electron.runAdbCommand(
+          'shell cat /sys/class/efuse/mac_bt'
+        )
+        console.log('Raw adb response (mac_bt):', macBtResponse)
+
+        // Format MAC BT data
+        if (macBtResponse) {
+          const macBtFormatted = macBtResponse
+            .split('\n')
+            .map((line) => line.trim())
+            .join(' ')
+          setDeviceData((prevData) => ({
+            ...prevData,
+            mac_bt: macBtFormatted
+          }))
+        }
+
+        // Get supervisorctl info
+        getSupervisorData()
+      } catch (error) {
+        console.error('Error retrieving device data:', error)
+      }
     }
+
+    getDeviceData()
   }, [])
 
   const handleCommandChange = (device: string, command: string): void => {
@@ -55,21 +124,27 @@ const DisplayDeviceData = ({ setEnabled, device }: DisplayDeviceDataProps): JSX.
     const command = commands[device]
     const type = types[device]
     if (command) {
-      await window.electron.runDeviceCommand(type, command)
+      if (type == 'adb') {
+        const response = await window.electron.runAdbCommand(command)
+        console.log(response)
+      } else {
+        await window.electron.runDeviceCommand(type, command)
+      }
     }
   }
 
   const handleRestart = async (): Promise<void> => {
-    await window.electron.runDeviceCommand('post', '{"type":"device","action":"reboot"}')
+    await window.electron.runAdbCommand('shell reboot')
     handleExit()
   }
   const handlePowerOff = async (): Promise<void> => {
     await window.electron.runDeviceCommand('post', '{"type":"device","action":"reboot"}')
     handleExit()
   }
-  const handleDisconnect = async (): Promise<void | undefined> => {
+  const handleAdbCommand = async (command: string): Promise<void | undefined> => {
     try {
-      window.electron.runAdbCommand(`-s ${device.replace('device', '')} reconnect`)
+      window.electron.runAdbCommand(command)
+      getSupervisorData()
     } catch (Error) {
       console.log(Error)
       return undefined
@@ -90,7 +165,7 @@ const DisplayDeviceData = ({ setEnabled, device }: DisplayDeviceDataProps): JSX.
                 <IconCarThing
                   iconSize={250}
                   fontSize={100}
-                  text={`${device}`}
+                  text={`${device.replace('device', '')}`}
                   highlighted={[]}
                   highlightColor="yellow"
                 />
@@ -100,13 +175,10 @@ const DisplayDeviceData = ({ setEnabled, device }: DisplayDeviceDataProps): JSX.
                       Version: <i>{deviceData?.app_version}</i>
                     </p>
                     <p>
-                      Model Name: <i>{deviceData?.model_name}</i>
+                      USID: <i>{deviceData?.usid}</i>
                     </p>
                     <p>
-                      OS version: <i>{deviceData?.os_version}</i>
-                    </p>
-                    <p>
-                      Serial: <i>{deviceData?.serial}</i>
+                      MAC BT: <i>{deviceData?.mac_bt}</i>
                     </p>
                   </div>
                 ) : (
@@ -116,12 +188,24 @@ const DisplayDeviceData = ({ setEnabled, device }: DisplayDeviceDataProps): JSX.
               <p className="fixed">{tooltip}</p>
               <div className="flex gap-5">
                 <button
+                  onClick={() =>
+                    handleAdbCommand(
+                      `-s ${device.replace('device', '')} shell supervisorctl restart chromium`
+                    )
+                  }
+                  className="border-2 top-10 border-cyan-600 hover:bg-cyan-500  p-2 rounded-lg"
+                  onMouseEnter={() => setTooltip('Reload Chromium')}
+                  onMouseLeave={() => setTooltip('')}
+                >
+                  <IconRefresh iconSize={24} />
+                </button>
+                <button
                   className="border-2 top-10 border-red-600 hover:bg-red-500 p-2 rounded-lg"
                   onClick={() => handleRestart()}
                   onMouseEnter={() => setTooltip('Restart Device')}
                   onMouseLeave={() => setTooltip('')}
                 >
-                  <IconRefresh iconSize={24} />
+                  <IconReload iconSize={24} />
                 </button>
                 <button
                   className="border-2 top-10 border-red-600 hover:bg-red-500  p-2 rounded-lg"
@@ -133,12 +217,31 @@ const DisplayDeviceData = ({ setEnabled, device }: DisplayDeviceDataProps): JSX.
                 </button>
                 <button
                   className="border-2 top-10 border-red-600 hover:bg-red-500  p-2 rounded-lg"
-                  onClick={() => handleDisconnect()}
+                  onClick={() => handleAdbCommand(`reconnect`)}
                   onMouseEnter={() => setTooltip('Disconnect Device')}
                   onMouseLeave={() => setTooltip('')}
                 >
                   <IconDisconnect iconSize={24} />
                 </button>
+                {supervisorData.backlight === 'RUNNING' ? (
+                  <button
+                    className="border-2 top-10 border-red-600 hover:bg-red-500  p-2 rounded-lg"
+                    onClick={() => handleAdbCommand(`shell supervisorctl stop backlight`)}
+                    onMouseEnter={() => setTooltip('Disable Ambient Updates')}
+                    onMouseLeave={() => setTooltip('')}
+                  >
+                    <IconLightbulbOff iconSize={24} />
+                  </button>
+                ) : (
+                  <button
+                    className="border-2 top-10 border-green-600 hover:bg-green-500  p-2 rounded-lg"
+                    onClick={() => handleAdbCommand(`shell supervisorctl start backlight`)}
+                    onMouseEnter={() => setTooltip('Enable Ambient Updates')}
+                    onMouseLeave={() => setTooltip('')}
+                  >
+                    <IconLightbulbOn iconSize={24} />
+                  </button>
+                )}
               </div>
             </div>
             <div className="bg-zinc-700 p-5 m-1 flex justify-between items-center rounded-lg drop-shadow-lg">
@@ -177,7 +280,9 @@ const DisplayDeviceData = ({ setEnabled, device }: DisplayDeviceDataProps): JSX.
                   <button
                     onClick={() => handleSendCommand(device)}
                     className="border-2 border-cyan-600 hover:bg-cyan-500 p-2 rounded-lg"
-                    onMouseEnter={() => setWStooltip('Send WS Command')}
+                    onMouseEnter={() =>
+                      setWStooltip(types[device] == 'adb' ? 'Send ADB Command' : 'Send WS Command')
+                    }
                     onMouseLeave={() => setWStooltip('')}
                   >
                     <IconPlay iconSize={24} />

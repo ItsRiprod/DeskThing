@@ -8,8 +8,8 @@ import dataListener, { MESSAGE_TYPES } from '../utils/events'
 import { HandleDeviceData } from './deviceHandler'
 
 // Create a WebSocket server that listens on port 8891
-const server = new WebSocketServer({ port: 8891 })
-// Check if the requested app is enabled in app_config.json
+const server = new WebSocketServer({ port: 8891, host: '0.0.0.0' })
+
 let numConnections = 0
 
 export interface socketData {
