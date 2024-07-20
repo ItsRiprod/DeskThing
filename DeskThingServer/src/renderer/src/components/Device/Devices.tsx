@@ -20,7 +20,8 @@ const Device = (): JSX.Element => {
     handlePush()
   }, [enabled])
 
-  const quickLoading = async (): Promise<void> => {
+  const quickLoading = async (title = ''): Promise<void> => {
+    setError(title)
     setLoading(true)
     handlePush()
     setTimeout(async () => {
@@ -51,7 +52,7 @@ const Device = (): JSX.Element => {
   }
 
   const handleAdbCommand = async (command: string): Promise<string | undefined> => {
-    quickLoading()
+    quickLoading(command)
     try {
       const response = await window.electron.runAdbCommand(command)
       if (response) {
@@ -67,9 +68,11 @@ const Device = (): JSX.Element => {
 
   const handlePushStaged = (): void => {
     try {
+      setError('Pushing app...')
       setLoading(true)
       window.electron.ipcRenderer.send('push-staged')
       window.electron.ipcRenderer.once('pushed-staged', (_event, reply) => {
+        setError('App pushed')
         console.log(reply)
         setLoading(false)
         if (!reply.success) {
@@ -104,14 +107,15 @@ const Device = (): JSX.Element => {
           >
             <button onClick={() => handleDeviceClick(device)}>
               {loading ? (
-                <div className="py-8 pl-3">
+                <div className="py-8 pl-3 flex items-center">
                   <IconLogoGearLoading iconSize={85} />
+                  {error}
                 </div>
               ) : (
                 <IconCarThing
                   iconSize={150}
                   fontSize={100}
-                  text={`${device}`}
+                  text={`${device.replace('device', '')}`}
                   highlighted={[]}
                   highlightColor="yellow"
                   className="hover:text-green-500 transition-colors duration-150"
@@ -129,7 +133,11 @@ const Device = (): JSX.Element => {
                 <IconUpload iconSize={24} />
               </button>
               <button
-                onClick={() => handleAdbCommand(`devices`)}
+                onClick={() =>
+                  handleAdbCommand(
+                    `-s ${device.replace('device', '')} shell supervisorctl restart chromium`
+                  )
+                }
                 className="border-2 top-10 border-cyan-600 hover:bg-cyan-500  p-2 rounded-lg"
                 onMouseEnter={() => setTooltip('Reload Chromium')}
                 onMouseLeave={() => setTooltip('')}
@@ -141,7 +149,7 @@ const Device = (): JSX.Element => {
                   handleAdbCommand(`-s ${device.replace('device', '')} reverse tcp:8891 tcp:8891`)
                 }
                 className="border-2 top-10 border-cyan-600 hover:bg-cyan-500  p-2 rounded-lg"
-                onMouseEnter={() => setTooltip('Setup Socket Port')}
+                onMouseEnter={() => setTooltip('Setup ADB Socket Port')}
                 onMouseLeave={() => setTooltip('')}
               >
                 <IconTransfer />
@@ -166,7 +174,7 @@ const Device = (): JSX.Element => {
           ) : (
             <button
               className="border-cyan-500 flex gap-3 border p-5 rounded-2xl hover:bg-cyan-600"
-              onClick={quickLoading}
+              onClick={() => quickLoading('Checking Devices')}
             >
               Check For Devices <IconTransfer />
             </button>

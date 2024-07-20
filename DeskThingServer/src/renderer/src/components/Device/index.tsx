@@ -21,7 +21,7 @@ const Index = (): JSX.Element => {
   return (
     <>
       <Tabs currentView={currentView} setCurrentView={setCurrentView} />
-      <div className="w-full h-full pt-5 flex justify-center">{renderView()}</div>
+      <div className="w-full h-full">{renderView()}</div>
     </>
   )
 }

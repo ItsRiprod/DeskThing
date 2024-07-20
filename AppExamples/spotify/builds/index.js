@@ -13869,6 +13869,7 @@ var require_spotify = __commonJS({
         try {
           if (this.settings.output_device.value !== "default" && this.settings.output_device.value) {
             this.transferPlayback(this.settings.output_device.value);
+            this.sendLog("Transferred successfully");
           }
         } catch (error) {
           this.sendError("Error changing playback!" + error);

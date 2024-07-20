@@ -104,16 +104,21 @@ function initializeTray(): void {
 
 async function setupIpcHandlers(): Promise<void> {
   const { getAppData } = await import('./handlers/configHandler')
-  const { addApp, sendMessageToApp, handleZip, disableApp, stopApp, purgeAppData } = await import(
-    './handlers/appHandler'
-  )
+  const {
+    handleZipFromUrl,
+    addApp,
+    sendMessageToApp,
+    handleZip,
+    disableApp,
+    stopApp,
+    purgeAppData
+  } = await import('./handlers/appHandler')
   const { handleAdbCommands } = await import('./handlers/adbHandler')
   const { sendData } = await import('./handlers/websocketServer')
   const { getReleases } = await import('./handlers/githubHandler')
   const { HandleWebappZipFromUrl, HandlePushWebApp } = await import('./handlers/deviceHandler')
   const dataListener = (await import('./utils/events')).default
   const { MESSAGE_TYPES } = await import('./utils/events')
-
 
   let connections = 0
   ipcMain.on(IPC_CHANNELS.PING, () => console.log('pong'))
@@ -144,7 +149,7 @@ async function setupIpcHandlers(): Promise<void> {
     console.log('SERVER: handling zip file event', event)
     const returnData = await handleZip(zipFilePath) // Extract to user data folder
     console.log('SERVER: Return Data after Extraction:', returnData)
-    event.sender.send('zip-name', returnData)
+    event.reply('zip-name', returnData)
   })
   ipcMain.on('extract-webapp-zip', async (event, zipFileUrl) => {
     try {
@@ -153,6 +158,11 @@ async function setupIpcHandlers(): Promise<void> {
       console.error('Error extracting zip file:', error)
       event.reply('zip-extracted', { success: false, error: error })
     }
+  })
+  ipcMain.on('extract-app-zip-url', async (event, zipFileUrl) => {
+    console.log('SERVER: handling zip file event', event)
+    const returnData = await handleZipFromUrl(zipFileUrl, event.reply) // Extract to user data folder
+    console.log('SERVER: Return Data after Extraction:', returnData)
   })
   ipcMain.on('push-staged', async (event) => {
     try {
@@ -285,6 +295,9 @@ async function loadModules(): Promise<void> {
     await import('./handlers/websocketServer')
     const { loadAndRunEnabledApps } = await import('./handlers/appHandler')
     loadAndRunEnabledApps()
+
+    const { setupFirewall } = await import('./handlers/firewallHandler')
+    setupFirewall(8891).catch(console.error)
   } catch (error) {
     console.error('Error loading modules:', error)
   }

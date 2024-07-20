@@ -1,5 +1,3 @@
-// src/components/ToastContainer.tsx
-
 import React, { useState, useEffect } from 'react'
 import Toast from './Toast'
 import logStore, { log } from '../../store/logStore'

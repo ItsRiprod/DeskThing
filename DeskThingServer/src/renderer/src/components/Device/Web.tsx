@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { IconLogoGearLoading } from '../icons'
 import githubStore, { GithubRelease, GithubAsset } from '../../store/githubStore'
+import ReleaseList from '../ReleaseList'
 
 const Web = (): JSX.Element => {
   const [releases, setReleases] = useState<GithubRelease[]>([])
@@ -49,45 +50,29 @@ const Web = (): JSX.Element => {
 
   return (
     <div className="pt-5 flex flex-col justify-around items-center">
-      <ul className="w-full max-w-2xl">
+      <div className="w-full max-w-2xl">
         {loading ? (
-          <li className="mb-4">
+          <div className="mb-4">
             <div className="">
               <IconLogoGearLoading iconSize={256} />
             </div>
-          </li>
+          </div>
         ) : error ? (
-          <li className="mb-4">
+          <div className="mb-4">
             <div className="w-full px-4 py-2 text-left border rounded-xl hover:bg-zinc-900 focus:outline-none">
               {error}
             </div>
-          </li>
+          </div>
         ) : (
-          releases.map((release) => (
-            <li key={release.id} className="mb-4">
-              <button
-                className="w-full px-4 py-2 text-left border rounded-xl hover:bg-zinc-900 focus:outline-none"
-                onClick={() => toggleDropdown(release.id)}
-              >
-                {release.name}
-              </button>
-              {openReleaseId === release.id && (
-                <div className="mt-2 pl-4">
-                  {filterAssets(release.assets).map((asset) => (
-                    <button
-                      key={asset.id}
-                      className="block px-4 py-2 mb-2 text-sm text-blue-600 border rounded-xl hover:bg-zinc-900"
-                      onClick={() => handleAssetClick(asset)}
-                    >
-                      {asset.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </li>
-          ))
+          <ReleaseList
+            releases={releases}
+            openReleaseId={openReleaseId}
+            toggleDropdown={toggleDropdown}
+            filterAssets={filterAssets}
+            handleAssetClick={handleAssetClick}
+          />
         )}
-      </ul>
+      </div>
     </div>
   )
 }

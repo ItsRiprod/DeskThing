@@ -13,7 +13,7 @@
  * This may be changed. When this code was written, they were the same
  *
  */
-import { app, ipcMain } from 'electron'
+import { app, ipcMain, net } from 'electron'
 import { join } from 'path'
 import * as fs from 'fs'
 import * as unzipper from 'unzipper'
@@ -337,7 +337,6 @@ async function disableApp(appName: string): Promise<void> {
       }
     })
 
-
     sendPrefData()
   } catch (error) {
     console.error('Error disabling app:', error)
@@ -451,6 +450,68 @@ async function handleZip(zipFilePath: string): Promise<returnData> {
     return returnData
   } catch (error) {
     console.error('Error handling zip file:', error)
+    throw new Error('Error handling zip file')
+  }
+}
+
+async function handleZipFromUrl(
+  zipUrlPath: string,
+  reply: (data: string, payload: any) => void
+): Promise<void> {
+  const tempZipPath = join(app.getPath('appData'), 'apps', 'temp')
+  let returnData: returnData | undefined
+  try {
+    if (!fs.existsSync(join(app.getPath('appData'), 'apps', 'temp'))) {
+      fs.mkdirSync(join(app.getPath('appData'), 'apps', 'temp'), { recursive: true })
+    }
+
+    const writeStream = fs.createWriteStream(join(tempZipPath, 'temp.zip'))
+    writeStream.on('error', (error) => {
+      dataListener.emit(MESSAGE_TYPES.ERROR, `Error writing to temp file: ${error.message}`)
+      throw new Error(`Error writing to temp file: ${error.message}`)
+    })
+
+    const request = net.request(zipUrlPath)
+    request.on('response', (response) => {
+      if (response.statusCode !== 200) {
+        dataListener.emit(
+          MESSAGE_TYPES.ERROR,
+          `Failed to download zip file: ${response.statusCode}`
+        )
+        return
+      }
+
+      response.on('data', (chunk) => {
+        writeStream.write(chunk)
+      })
+
+      response.on('end', async () => {
+        writeStream.end()
+        try {
+          // Run file like a normal zip file
+          returnData = await handleZip(join(tempZipPath, 'temp.zip'))
+          console.log(`Successfully processed and deleted ${tempZipPath}`)
+          reply('zip-name', returnData)
+        } catch (error) {
+          dataListener.emit(MESSAGE_TYPES.ERROR, `Error processing zip file: ${error}`)
+        } finally {
+          // Clean up the temporary zip file
+          try {
+            fs.unlinkSync(tempZipPath)
+            console.log(`Successfully deleted ${tempZipPath}`)
+          } catch (cleanupError) {
+            console.error(`Error deleting temp file: ${cleanupError}`)
+          }
+        }
+      })
+    })
+
+    request.on('error', (error) =>
+      dataListener.emit(MESSAGE_TYPES.ERROR, `Error sending request: ${error}`)
+    )
+    request.end()
+  } catch (error) {
+    dataListener.emit(MESSAGE_TYPES.ERROR, `Error handling zip file: ${error}`)
     throw new Error('Error handling zip file')
   }
 }
@@ -578,6 +639,7 @@ export {
   sendMessageToApp,
   stopApp,
   stopAllApps,
+  handleZipFromUrl,
   handleZip,
   loadAndRunEnabledApps,
   addApp,
