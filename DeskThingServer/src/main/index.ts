@@ -271,23 +271,9 @@ if (!app.requestSingleInstanceLock()) {
     e.preventDefault()
   })
 }
-async function openAuthWindow(url: string): Promise<void> {
-  const authWindow = new BrowserWindow({
-    width: 850,
-    height: 600,
-    show: true,
-    webPreferences: {
-      nodeIntegration: false, // Ensure to set nodeIntegration to false for security reasons
-      contextIsolation: true,
-      sandbox: true // Enable sandbox to enhance security
-    }
-  })
 
-  authWindow.loadURL(url)
-  authWindow.on('closed', () => {
-    // Dereference the window object
-    authWindow.destroy()
-  })
+async function openAuthWindow(url: string): Promise<void> {
+  await shell.openExternal(url)
 }
 async function loadModules(): Promise<void> {
   try {

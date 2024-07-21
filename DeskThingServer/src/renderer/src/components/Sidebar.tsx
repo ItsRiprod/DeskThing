@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { IconCoffee, IconConnected, IconConnecting, IconLogo, IconLogoGear } from './icons'
+import { useReward } from 'react-rewards'
 
 type View = 'appsList' | 'status' | 'logDisplay' // Define possible views
 
@@ -9,7 +10,13 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ setCurrentView, currentView }) => {
-  const [connections, setConnections] = React.useState<number>(0)
+  const [connections, setConnections] = useState<number>(0)
+  const confettiConfig = {
+    startVelocity: 6,
+    elementCount: 7,
+    decay: 0.99
+  }
+  const { reward } = useReward('rewardId', 'confetti', confettiConfig)
   const handleClick = (view: View): void => {
     setCurrentView(view)
   }
@@ -87,8 +94,10 @@ const Sidebar: React.FC<SidebarProps> = ({ setCurrentView, currentView }) => {
           href="https://buymeacoffee.com/riprod"
           target="_blank"
           rel="noreferrer"
-          className="fill-fuchsia-600 text-fuchsia-600 border p-3 rounded-xl border-zinc-500"
+          className="fill-fuchsia-600 hover:bg-fuchsia-600 hover:text-black hover:border-fuchsia-600 text-fuchsia-600 border p-3 rounded-xl border-zinc-500"
+          onMouseEnter={reward}
         >
+          <span id="rewardId" />
           <IconCoffee iconSize={23} strokeWidth={2} />
         </a>
       </div>

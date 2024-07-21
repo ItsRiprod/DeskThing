@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { IconLogoGearLoading } from '../icons'
 import githubStore, { GithubRelease, GithubAsset } from '../../store/githubStore'
 import ReleaseList from '../ReleaseList'
-
+import RunPreppedApp from './RunPreppedApp'
 interface returnData {
   appId: string
   appName: string
@@ -87,23 +87,7 @@ const Web = (): JSX.Element => {
           )}
         </div>
       ) : (
-        <div className="border-2 border-zinc-200 p-5 w-52 md:w-11/12 2xl:w-96 h-fit flex-col justify-between rounded-3xl shadow-lg px-5 items-center">
-          <p className="text-xl pb-4">{appData.appName} is Ready!</p>
-          <div className="flex gap-5">
-            <p className="text-sm pb-4">{appData.appVersion}</p>
-            <p className="text-sm pb-4">Author: {appData.author || 'not provided'}</p>
-          </div>
-          <p className="text-sm pb-4">Compatible With: {appData.platforms.join(', ')}</p>
-          {appData.requirements.length > 0 && (
-            <p className="text-sm pb-4">Required Apps: {appData.requirements.join(', ')}</p>
-          )}
-          <button
-            onClick={handleAddAndRunApp}
-            className="border-2 border-cyan-600 hover:bg-cyan-500 bg-cyan-600  p-2 rounded-lg"
-          >
-            Run {appData.appId}
-          </button>
-        </div>
+        <RunPreppedApp appData={appData} handleAddAndRunApp={handleAddAndRunApp} />
       )}
     </div>
   )
