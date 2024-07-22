@@ -152,8 +152,10 @@ const Footer: React.FC = () => {
   useEffect(() => {
 
     buttonHelper.addListener(Button.SCROLL_PRESS, EventFlavour.Down, handlePlayPause)
+    buttonHelper.addListener(Button.SCROLL_PRESS, EventFlavour.LongPress, () => {handleSendSet(AUDIO_REQUESTS.NEXT, songData.id)})
     return () => {
       buttonHelper.removeListener(Button.SCROLL_PRESS, EventFlavour.Down)
+      buttonHelper.removeListener(Button.SCROLL_PRESS, EventFlavour.LongPress)
     }
   });
 

@@ -24,7 +24,7 @@ const Utility: FC = (): JSX.Element => {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [expandedSetting, setExpandedSetting] = useState<string | null>(null);
 
-  const version = "0.5.5" // TODO: Make this an environment variable set by package.json
+  const version = "0.5.6" // TODO: Make this an environment variable set by package.json
 
   useEffect(() => {
     requestPreferences()
@@ -126,7 +126,7 @@ const Utility: FC = (): JSX.Element => {
           </div>
         )) : (
           <div className="flex justify-center items-center h-full">
-            <IconDevice iconSize={256} text={`Settings v${version}`} fontSize={110} />
+            <IconDevice iconSize={256} text={`v${version}`} fontSize={110} />
           </div>
         )}
       </div>
