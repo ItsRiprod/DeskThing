@@ -32,3 +32,5 @@ export { default as IconRepeatActive } from './icon/Icons/IconRepeatActive';
 export { default as IconHome } from './icon/Icons/IconHome';
 export { default as IconMicDiscord } from './icon/Icons/IconMicDiscord';
 export { default as IconMicOffDiscord } from './icon/Icons/IconMicOffDiscord';
+export { default as IconVolumeUp } from './icon/Icons/IconVolumeUp';
+export { default as IconVolumeDown } from './icon/Icons/IconVolumeDown';

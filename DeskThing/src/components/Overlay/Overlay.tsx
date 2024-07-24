@@ -6,15 +6,12 @@ import Footer from '../Footer/Footer'
 import Bluetooth from '../Bluetooth'
 import Volume from '../Volume/Volume'
 import AppSelector from '../AppSelector/AppSelector'
-import { App } from 'src/helpers/WebSocketService.ts';
+import { AppStore } from '../../store';
 interface OverlayProps {
   children: ReactNode;
-  currentView: string;
-  setCurrentView: (app: string) => void;
-  apps: App[];
 }
 
-const Overlay: FC<OverlayProps> = ({ children, currentView, apps, setCurrentView }) => {
+const Overlay: FC<OverlayProps> = ({ children }) => {
     const [visible, setVisible] = useState(false);
     const [active, setActive] = useState(false);
     const buttonHelper = ButtonHelper.getInstance();
@@ -35,7 +32,7 @@ const Overlay: FC<OverlayProps> = ({ children, currentView, apps, setCurrentView
     
         
         return () => clearTimeout(timer);
-      }, [currentView]);
+      }, []);
 
       useEffect(() => {
         const handleSwipe = (btn: Button, flv: EventFlavour) => {
@@ -67,12 +64,12 @@ const Overlay: FC<OverlayProps> = ({ children, currentView, apps, setCurrentView
       }, [buttonHelper, visible]);
 
       const handleAppSelect = (view: string) => {
-        setCurrentView(view);
+        AppStore.setCurrentView(view);
         setActive(false);
         setVisible(false);
       }
   return <div className="overlay">
-      {<AppSelector className={`${active ? 'touched' : ''} ${visible ? 'visible' : ''}`} onAppSelect={handleAppSelect} apps={apps} currentView={currentView}/>}
+      {<AppSelector className={`${active ? 'touched' : ''} ${visible ? 'visible' : ''}`} onAppSelect={handleAppSelect} />}
       <Volume />
           {children}
       <Bluetooth />

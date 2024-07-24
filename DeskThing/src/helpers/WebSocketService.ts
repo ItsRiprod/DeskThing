@@ -1,4 +1,5 @@
 const BASE_URL = 'ws://192.168.7.1:8891';
+//const BASE_URL = 'ws://localhost:8891';
 
 type SocketEventListener = (msg: socketData) => void;
 

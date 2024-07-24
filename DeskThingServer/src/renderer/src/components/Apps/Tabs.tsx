@@ -40,19 +40,19 @@ const Tabs: React.FC<TopbarProps> = ({ setCurrentView, currentView }) => {
           className={`${currentView === 'apps' ? 'bg-zinc-800 hover:bg-zinc-700 border-b-2 border-green-500' : 'hover:bg-zinc-900'} flex-grow p-3`}
           onClick={() => handleClick('apps')}
         >
-          Apps
+          Loaded<span className="hidden sm:inline"> Apps</span>
         </button>
         <button
           className={`${currentView === 'web' ? 'bg-zinc-800 hover:bg-zinc-700 border-b-2 border-green-500' : 'hover:bg-zinc-900'} flex-grow p-3`}
           onClick={() => handleClick('web')}
         >
-          Web Apps
+          Web<span className="hidden sm:inline"> Apps</span>
         </button>
         <button
           className={`${currentView === 'local' ? 'bg-zinc-800 hover:bg-zinc-700 border-b-2 border-green-500' : 'hover:bg-zinc-900'} flex-grow p-3`}
           onClick={() => handleClick('local')}
         >
-          Local Apps
+          Local<span className="hidden sm:inline"> Apps</span>
         </button>
       </div>
     </div>

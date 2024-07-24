@@ -136,7 +136,7 @@ async function setupFirewall(port: number): Promise<void> {
       const script = `
         #!/bin/bash
         port=${port}
-        anchorName="myAppAnchor"
+        anchorName="DeskthingServerAnchor"
 
         if ! sudo pfctl -s all | grep -q "rdr pass on lo0 inet proto tcp from any to any port $port -> 127.0.0.1 port $port"; then
           echo "rdr pass on lo0 inet proto tcp from any to any port $port -> 127.0.0.1 port $port" | sudo pfctl -a $anchorName -f -

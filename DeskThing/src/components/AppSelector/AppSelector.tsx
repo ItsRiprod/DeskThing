@@ -1,14 +1,29 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import './AppSelector.css';
-import { App } from 'src/helpers/WebSocketService';
+import { App } from '../../helpers/WebSocketService';
+import { AppStore } from '../../store';
 interface AppSelectorProps {
-  currentView: string;
-  apps: App[];
   onAppSelect: (app: string) => void;
   className?: string;
 }
 
-const AppSelector: React.FC<AppSelectorProps> = ({ currentView, apps, onAppSelect, className }) => {
+const AppSelector: React.FC<AppSelectorProps> = ({ onAppSelect, className }) => {
+  const [apps, setApps] = useState<App[]>(AppStore.getApps())
+  const [currentView, setCurrentView] = useState<string>(AppStore.getCurrentView())
+
+  useEffect(() => {
+    const handleAppUpdate = (data: App[]) => {
+      setApps(data)
+      setCurrentView(AppStore.getCurrentView())
+      console.log(data)
+    };
+
+    const unsubscribe = AppStore.subscribeToAppUpdates(handleAppUpdate);
+
+    return () => {
+      unsubscribe()
+    };
+  })
 
   return (
     <div className={`appselector ${className}`}>

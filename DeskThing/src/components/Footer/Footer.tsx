@@ -1,30 +1,18 @@
 import './Footer.css';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import CountUpTimer from '../CountUpTimer'; // Ensure you have CountUpTimer defined in another file
 import socket, { AUDIO_REQUESTS, socketData, song_data } from '../../helpers/WebSocketService';
-import {
-  IconPlay,
-  IconPause,
-  IconSkipForward,
-  IconSkipBack,
-  IconShuffle,
-  IconRepeat,
-  IconRepeatOne,
-  IconAlbum,
-  IconSkipForward15,
-  IconSkipBack15,
-} from '../icons';
+import { IconAlbum } from '../icons';
 import getBackgroundColor, { findContrastColor } from '../../helpers/ColorExtractor';
 import ButtonHelper, { Button, EventFlavour } from '../../helpers/ButtonHelper';
-
+import controlHelper, { ControlKeys } from '../../helpers/controlHandler';
+import { runPlayPause } from '../../utils/audioControlActions';
 
 const Footer: React.FC = () => {
   const [local, setLocal] = useState(true);
   const [songData, setSongData] = useState<song_data>();
   const [imageData, setImageData] = useState<string>();
   const [play, setPlay] = useState(false);
-  const [shuffle, setShuffle] = useState(false);
-  const [repeat, setRepeat] = useState('off');
   const [visible, setVisible] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const playerIslandRef = useRef<HTMLDivElement>(null);
@@ -48,8 +36,6 @@ const Footer: React.FC = () => {
       
       setLocal(false);
       setPlay(data.is_playing);
-      setShuffle(data.shuffle_state);
-      setRepeat(data.repeat_state);
   
       if (data.thumbnail) {
         setImageData(data.thumbnail)
@@ -76,7 +62,7 @@ const Footer: React.FC = () => {
   }, []);
   
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleSendSet = (request: string, payload = songData.id as any) => {
+  const handleSendSet = useCallback((request: AUDIO_REQUESTS, payload: any = songData?.id) => {
     if (socket.is_ready()) {
       const data = {
         app: 'utility',
@@ -86,57 +72,29 @@ const Footer: React.FC = () => {
       };
       socket.post(data);
     }
-  };
+  }, [songData]);
 
-  const handleRepeat = () => {
-
-    let newRepeat;
-
-    switch (repeat) {
-      case 'off':
-        newRepeat = 'all';
-        break;
-      case 'all':
-        newRepeat = 'track';
-        break;
-      case 'track':
-        newRepeat = 'off';
-        break;
-      default:
-        newRepeat = 'all';
-        break;
-    }
-    setRepeat(newRepeat);
-
-    handleSendSet(AUDIO_REQUESTS.REPEAT, newRepeat)
-
-  };
-  const handleShuffleToggle = () => {
-    setShuffle((old) => !old);
-    handleSendSet(AUDIO_REQUESTS.SHUFFLE, !shuffle)
-  };
-
-  const handleGetSongData = () => {
+  const handleGetSongData = useCallback(() => {
     if (socket.is_ready()) {
       const data = { app: 'utility', type: 'get', request: AUDIO_REQUESTS.SONG };
       socket.post(data);
     }
-  };
-  const setSpecificDuration = (ms: number) => {
-    handleSendSet(AUDIO_REQUESTS.SEEK, ms)
-  };
+  }, []);
+  const setSpecificDuration = useCallback((ms: number) => {
+    handleSendSet(AUDIO_REQUESTS.SEEK, ms);
+  }, [handleSendSet]);
 
-  const handleTouchOutside = (event: TouchEvent) => {
+  const handleTouchOutside = useCallback((event: TouchEvent) => {
     if (playerIslandRef.current && !playerIslandRef.current.contains(event.target as Node)) {
-      setVisible(false)
+      setVisible(false);
     }
-  };
+  }, []);
 
-  const handleTouchInside = () => {
+  const handleTouchInside = useCallback(() => {
     if (playerIslandRef.current) {
-      setVisible(true)
+      setVisible(true);
     }
-  };
+  }, []);
 
   useEffect(() => {
     document.addEventListener('touchstart', handleTouchOutside);
@@ -145,19 +103,23 @@ const Footer: React.FC = () => {
     };
   }, []);
 
-  const handlePlayPause = () => {
-    setPlay(!play);
-    play ? handleSendSet(AUDIO_REQUESTS.PAUSE, songData.id) : handleSendSet(AUDIO_REQUESTS.PLAY, songData.id);
-  };
   useEffect(() => {
 
-    buttonHelper.addListener(Button.SCROLL_PRESS, EventFlavour.Down, handlePlayPause)
+    buttonHelper.addListener(Button.SCROLL_PRESS, EventFlavour.Down, runPlayPause)
     buttonHelper.addListener(Button.SCROLL_PRESS, EventFlavour.LongPress, () => {handleSendSet(AUDIO_REQUESTS.NEXT, songData.id)})
     return () => {
       buttonHelper.removeListener(Button.SCROLL_PRESS, EventFlavour.Down)
       buttonHelper.removeListener(Button.SCROLL_PRESS, EventFlavour.LongPress)
     }
   });
+
+  const renderControlButton = useCallback((key: ControlKeys) => {
+    const ControlComponent = controlHelper.getControlComponent(key);
+    if (ControlComponent) {
+      return <ControlComponent key={key} />;
+    }
+    return null;
+  }, []);
 
   return (
     <div className={`fixed flex max-w-full bottom-0 transition-all ease-out duration-200 ap_color ${visible ? 'h-36' : 'h-16'}`}
@@ -207,27 +169,11 @@ const Footer: React.FC = () => {
             </div>
           )}
           <div className="overflow-hidden flex align-center justify-around pt-2 text-zinc-500">
-            <button className="" onClick={handleShuffleToggle}>
-              {shuffle ? <IconShuffle iconSize={48} className={'text-green-500'} /> : <IconShuffle iconSize={48} />}
-            </button>
-            <button
-              className="text-green-500"
-              onClick={() => handleSendSet(AUDIO_REQUESTS.PREVIOUS, songData.id)}
-            >
-              {songData?.can_skip ? <IconSkipBack iconSize={48} /> : <IconSkipBack15 iconSize={48} />}
-            </button>
-            <button className="text-green-500" onClick={handlePlayPause}>
-              {!play ? <IconPlay iconSize={48} /> : <IconPause iconSize={48} />}
-            </button>
-            <button className="text-green-500" onClick={() => handleSendSet(AUDIO_REQUESTS.NEXT, songData.id)}>
-              {songData?.can_skip ? <IconSkipForward iconSize={48} /> : <IconSkipForward15 iconSize={48} />}
-            </button>
-            <button
-              className=""
-              onClick={handleRepeat}
-            >
-              {repeat == 'off' ? <IconRepeat iconSize={48} /> : repeat == 'all' ? <IconRepeat className={'text-green-500'} iconSize={48} /> : <IconRepeatOne className={'text-green-500'} iconSize={48} />}
-            </button>
+            {renderControlButton(ControlKeys.Tray1)}
+            {renderControlButton(ControlKeys.Tray2)}
+            {renderControlButton(ControlKeys.Tray3)}
+            {renderControlButton(ControlKeys.Tray4)}
+            {renderControlButton(ControlKeys.Tray5)}
           </div>
         </div>
       </div>

@@ -27,7 +27,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 
   render(): ReactNode {
     if (this.state.hasError) {
-      return <Loading />
+      return <Loading message={'Something went wrong! Please restart the app.'} />
     }
 
     return this.props.children
