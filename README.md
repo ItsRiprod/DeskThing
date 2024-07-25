@@ -96,7 +96,7 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
    - Install ADB on your computer (Android Development).
 
 2. **Superbird Webapp flash:**
-   - Flash your CarThing with the adb_enabled dump [here](https://mega.nz/folder/NxNXQCaT#-n1zkoXsJuw-5rQ-ZYzRJw) using the [superbird-tool](https://github.com/Car-Thing-Hax-Community/superbird-tool).
+   - Flash your CarThing with the adb_enabled dump [here](https://mega.nz/folder/NxNXQCaT#-n1zkoXsJuw-5rQ-ZYzRJw/folder/Ak9FVKxJ) using the [superbird-tool](https://github.com/Car-Thing-Hax-Community/superbird-tool).
    - [detailed instructions](#flashing)
 
 ### Detailed Setup Instructions
@@ -105,41 +105,18 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
    - Follow the instructions in the [superbird-tool repository](https://github.com/Car-Thing-Hax-Community/superbird-tool) to flash your CarThing device with the necessary image.
 > If you need help, refer to the [detailed instructions](#flashing) at the end of this page
 
-2. **Get the built webapp under installation files:**
+2. **Get the installer**
 *should be under [releases](https://github.com/ItsRiprod/DeskThing/releases)*
 
-   - Unzip the file 'deskthing-client-build-v0.*.*.zip' onto your computer
-   - open a command prompt in that directory for step 3
-> Note: You can usually do this by right clicking and clicking "Open Terminal"
+   - Run the 'deskthing-0.5.5-*-setup.*' installer on your computer
 
-3. **Pushing the project to the car thing:**
-   - Open port 8891:
-     ```sh
-     adb reverse tcp:8891 tcp:8891
-     ```
-     > adb should be an environment variable from step 1
-   - Remount the build to the carthing:
-     ```sh
-      adb shell mount -o remount,rw /
-      adb shell mv /usr/share/qt-superbird-app/webapp /tmp/webapp-orig
-      adb shell mv /tmp/webapp-orig /usr/share/qt-superbird-app/ # it's ok if this fails
-      adb shell rm -r /tmp/webapp-orig
-      adb push yourclientfilename/ /usr/share/qt-superbird-app/webapp # Ensure dist/ is in the directory you are running this from
-     ```
-   > Ensure `yourclientfilename/` is the file location as defined in the prior step (the client)
-   - Restart chromium:
-     ```sh
-     adb shell supervisorctl restart chromium
-     ```
-
-4. **Setting up the server:**
-
-   - Download the correct installer under the files for your operating system
-   - Download any .zip apps that you want that match the version of the installer
-   - Run the installer
-   - Drag-n-drop the apps you want one at a time (keeping in mind some have dependencies on other apps)
-   - Ensure that the top left wifi icon is green (connected to car thing)
-   - Ensure you get the 
+3. **Check for your device:**
+   - Under the 'Status' tab in v0.5.5 or earlier or 'ADB' tab in v0.5.6 or later, ensure your device shows up. If it does not, join the Discord server and report the issue, this can be buggy on some machines.
+> A few things to try if it isn't working is to 1: Use task manager to kill all instances of ADB 2: Run DeskThing as administrator 3: Unplug and plug in your Car thing 4: Install ADB and manually check with `adb devices`
+   - If the device shows up, go to the 'Webapps' tab and click the latest version (Only use the ADB version if RNDIS doesn't work)
+   - Go back to the 'Devices' tab and click 'Push Staged Webapp' It should take a second, and then your Car Thing should restart.
+4. **Load Apps**
+   - Congrats! You're basically done. Now go to 'Apps' and then 'Webapps' and download any apps you want. Ensure you check dependencies before doing so as this could cause errors. 
 
 > Any Issues? Contact me [through the CarThingHax discord server](https://discord.carth.ing/) or via DMs to @riprod
 
@@ -153,7 +130,8 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
    </summary>
 
 Links:
-- [image dumps](https://mega.nz/folder/NxNXQCaT#-n1zkoXsJuw-5rQ-ZYzRJw/folder/5kECGT5C)
+- [image dumps](https://mega.nz/folder/NxNXQCaT#-n1zkoXsJuw-5rQ-ZYzRJw/folder/Ak9FVKxJ)
+> Ensure you download one with ADB and RNDIS enabled (any one of the 'new' ones work) 8.4.4_adb_enabled-new.tar.xz is the current best
 - [superbird-tool](https://github.com/Car-Thing-Hax-Community/superbird-tool)
 
 Process:
