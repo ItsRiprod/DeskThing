@@ -141,7 +141,7 @@ Process:
 - Wait a few seconds. If the screen does not turn on, that means you are in boot mode. You can release the buttons
 - Run `python superbird_tool.py --burn_mode` to enter burn mode
 > Note: This step may say it fails to enter burn mode. This is okay, continue on as if it worked. There is information in the discord as to why this is.
-- Download 8.2.5_adb_enabled.tar.xz or 8.4.4_adb_enabled.tar.xz files from image dumps (linked above) and in that same folder (unzip them)
+- Download 8.4.4_adb_enabled-new.tar.xz files from image dumps (linked above) and in that same folder (unzip them)
 - (Windows only) Download [zadig](https://zadig.akeo.ie/) and install the WinUSB driver for **GX-CHIP** (select it and click "Install Driver")
 > Alternatively use **libusbK** if it does not work
 - Run `superbird_tool.py --restore_device /path/to/extracted/firmware/folder` (This may take a while)
