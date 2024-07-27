@@ -2,6 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
+
+@font-face {
+  font-family: 'Geist';
+  src: url(/fonts/GeistVF.ttf) format('truetype');
+  font-style: normal;
+  font-weight: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'GeistMono';
+  src: url(/fonts/GeistMonoVF.ttf) format('truetype');
+  font-style: normal;
+  font-weight: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'WingDing';
+  src: url(/fonts/wingding.ttf) format('truetype');
+  font-style: normal;
+  font-weight: normal;
+  font-display: swap;
+}
+
 ::-webkit-scrollbar {
   width: 10px;
 }
@@ -158,30 +181,6 @@ button {
   transition: background-color 0.5s;
 }
 
-body {
-  margin: 0;
-
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
-    'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  
-}
-
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
-}
-
-h1 {
-  display: block;
-  font-size: 2em;
-  margin-block-start: 0.67em;
-  margin-block-end: 0.67em;
-  margin-inline-start: 0px;
-  margin-inline-end: 0px;
-  font-weight: bold;
-  unicode-bidi: isolate;
-}
 p, h1, h2, h3, h4, h5 {
   padding: 0px;
   margin: 0px;

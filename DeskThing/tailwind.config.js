@@ -5,7 +5,13 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        geist: ['Geist', 'sans-serif'],
+        Wingding: ['Wingding', 'monospace'],
+        geistMono: ['GeistMono', 'monospace'],
+      },
+    },
   },
   plugins: [],
 }

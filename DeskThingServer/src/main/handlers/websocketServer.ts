@@ -1,14 +1,20 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 import { WebSocketServer } from 'ws'
-import { sendMessageToApp } from './appHandler'
+import { sendMessageToApp, getAppFilePath } from './appHandler'
 
 import { getAppData, setAppData, getAppByName, getAppByIndex } from './configHandler'
 import { readData, addData } from './dataHandler'
 import dataListener, { MESSAGE_TYPES } from '../utils/events'
 import { HandleDeviceData } from './deviceHandler'
 
+import * as fs from 'fs'
+// App Hosting
+import express from 'express'
+import { createServer } from 'http'
+
 // Create a WebSocket server that listens on port 8891
-const server = new WebSocketServer({ port: 8891 })
+// const server = new WebSocketServer({ port: 8891 })
+// const server = new WebSocketServer({ port: 8891 })
 
 let numConnections = 0
 
@@ -87,7 +93,7 @@ const sendPrefData = async (socket = null): Promise<void> => {
     sendError(socket, 'Error getting config data')
   }
 }
-const sendTime = async (socket): Promise<void> => {
+const sendTime = async (): Promise<void> => {
   const now = new Date()
   const hours = now.getHours()
   const minutes = now.getMinutes()
@@ -95,7 +101,7 @@ const sendTime = async (socket): Promise<void> => {
   const formattedHours = hours % 12 || 12
   const formattedMinutes = minutes < 10 ? '0' + minutes : minutes
   const time = `${formattedHours}:${formattedMinutes} ${ampm}`
-  sendData(socket, { app: 'client', type: 'time', data: time })
+  sendMessageToClients({ app: 'client', type: 'time', data: time })
   console.log(time)
 }
 const getDelayToNextMinute = async (): Promise<number> => {
@@ -104,6 +110,43 @@ const getDelayToNextMinute = async (): Promise<number> => {
   const milliseconds = now.getMilliseconds()
   return (60 - seconds) * 1000 - milliseconds
 }
+
+const initializeTimer = async (): Promise<void> => {
+  setTimeout(
+    () => {
+      // Send time immediately at the full minute
+      sendTime()
+
+      // Set an interval to send time every minute
+      setInterval(() => sendTime(), 60000)
+    },
+    await getDelayToNextMinute()
+  )
+}
+
+initializeTimer()
+
+const expressApp = express()
+const httpServer = createServer(expressApp)
+
+// Serve web apps dynamically based on the URL
+expressApp.use('/:appName', (req, res, next) => {
+  const appName = req.params.appName
+  const appPath = getAppFilePath(appName)
+
+  if (fs.existsSync(appPath)) {
+    express.static(appPath)(req, res, next)
+  } else {
+    res.status(404).send('App not found')
+  }
+})
+
+const server = new WebSocketServer({ server: httpServer })
+
+httpServer.listen(8891, () => {
+  console.log('Server listening on port 8891')
+})
+
 // Handle incoming messages from the client
 server.on('connection', async (socket) => {
   numConnections = server.clients.size
@@ -139,6 +182,9 @@ server.on('connection', async (socket) => {
               break
             case 'set':
               switch (parsedMessage.request) {
+                case 'button_maps':
+                  console.log(parsedMessage.data)
+                  break
                 case 'add_app':
                   if (parsedMessage.data) {
                     const appData = await getAppByName(parsedMessage.data.app)
@@ -184,7 +230,7 @@ server.on('connection', async (socket) => {
               break
             case 'get':
               sendPrefData(socket)
-              sendTime(socket)
+              sendTime()
               break
             case 'message':
               dataListener.asyncEmit(MESSAGE_TYPES.MESSAGE, `WSOCKET ${parsedMessage.data}`)
@@ -204,32 +250,6 @@ server.on('connection', async (socket) => {
       console.error('WSOCKET: Error in socketHandler', e)
     }
   })
-
-  sendTime(socket)
-
-  // Set an initial timeout to the next full minute
-  setTimeout(
-    () => {
-      // Send time immediately at the full minute
-      sendTime(socket)
-
-      // Set an interval to send time every minute
-      const intervalId = setInterval(() => sendTime(socket), 60000)
-
-      // Clear the interval when the socket is closed
-      socket.on('close', () => {
-        numConnections = server.clients.size
-        dataListener.emit(
-          MESSAGE_TYPES.LOGGING,
-          `WEBSOCKET: Client has disconnected! ${numConnections} in total`
-        )
-        dataListener.emit(MESSAGE_TYPES.CONNECTION, numConnections)
-        clearInterval(intervalId)
-        console.log('WSOCKET: Client disconnected')
-      })
-    },
-    await getDelayToNextMinute()
-  )
 
   socket.on('close', () => {
     numConnections = server.clients.size

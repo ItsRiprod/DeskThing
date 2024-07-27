@@ -3,6 +3,10 @@ module.exports = {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        geist: ['Geist', 'sans-serif'],
+        geistMono: ['GeistMono', 'monospace'],
+      },
       keyframes: {
         fade: {
           '0%': { opacity: 0.5, transform: 'translateY(-30px)' },

@@ -11,19 +11,23 @@ const IPC_CHANNELS = {
   PING: 'ping',
   GET_CONNECTIONS: 'get-connections',
   ADD_APP: 'add-app',
+  RUN_STOP_APP: 'stop-app',
   GET_APPS: 'get-apps',
   STOP_APP: 'stop-app',
   DISABLE_APP: 'disable-app',
   PURGE_APP: 'purge-app',
   HANDLE_ZIP: 'handle-zip',
   USER_DATA_RESPONSE: 'user-data-response',
-  SELECT_ZIP_FILE: 'select-zip-file'
+  SELECT_ZIP_FILE: 'select-zip-file',
+  DEV_ADD_APP: 'dev-add-app'
 }
 
 function createMainWindow(): BrowserWindow {
   const window = new BrowserWindow({
     width: 950,
     height: 670,
+    minWidth: 500,
+    minHeight: 400,
     icon: icon,
     show: false,
     autoHideMenuBar: true,
@@ -130,6 +134,9 @@ async function setupIpcHandlers(): Promise<void> {
 
   ipcMain.on(IPC_CHANNELS.ADD_APP, async (event, appName: string) => {
     await addApp(event, appName)
+  })
+  ipcMain.on(IPC_CHANNELS.DEV_ADD_APP, async (event, appPath: string) => {
+    await addApp(event, 'developer-app', appPath)
   })
   ipcMain.on(IPC_CHANNELS.GET_APPS, (event) => {
     const data = getAppData()

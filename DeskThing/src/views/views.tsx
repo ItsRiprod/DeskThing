@@ -2,6 +2,7 @@ import { useState, useEffect, Suspense, lazy, useRef  } from 'react';
 import ButtonHelper, { Button, EventFlavour } from '../helpers/ButtonHelper';
 import socket, { App, socketData } from '../helpers/WebSocketService';
 import Dashboard from './dashboard';
+import Web from './web';
 import './views.css';
 
 
@@ -11,6 +12,7 @@ import ControlHandler, { ControlKeys } from '../helpers/controlHandler';
 
 const ViewManager = () => {
   const [DynamicComponent, setDynamicComponent] = useState<React.LazyExoticComponent<any> | null>(null);
+  const [isWebApp, setIsWebApp] = useState<boolean>(false);
   const appStore = AppStore;
   const [apps, setApps] = useState<App[]>(appStore.getApps());
   const [currentView, setCurrentView] = useState<string>(appStore.getCurrentView());
@@ -130,14 +132,17 @@ const ViewManager = () => {
           try {
             const importedComponent = await import(`./${currentView.toLowerCase()}/index.tsx`);
             setDynamicComponent(lazy(() => Promise.resolve({ default: importedComponent.default })));
+            setIsWebApp(false);
           } catch (error) {
             console.error(`Error loading component for view: ${currentView}`, error);
           }
         } else if (app.manifest.isWebApp) {
-          // Go to web
+          setDynamicComponent(null);
+          setIsWebApp(true);
         }
       } else {
         setDynamicComponent(null);
+        setIsWebApp(false)
       }
     };
 
@@ -145,6 +150,11 @@ const ViewManager = () => {
   }, [appStore, apps, currentView]);
 
   const renderView = () => {
+    if (isWebApp) {
+      return (
+        <Web currentView={currentView} />
+      );
+    }
     switch (appStore.getCurrentView()) {
       case 'dashboard':
         return <Dashboard />;

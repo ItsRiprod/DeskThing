@@ -122,8 +122,8 @@ const Device = (): JSX.Element => {
                 />
               )}
             </button>
-            <div className="gap-3 flex items-center">
-              <p>{tooltip}</p>
+            <div className="gap-3 sm:flex-nowrap flex-wrap flex items-center">
+              <p className="hidden sm:inline">{tooltip}</p>
               <button
                 onClick={handlePushStaged}
                 className="border-2 top-10 border-cyan-600 hover:bg-cyan-500  p-2 rounded-lg"

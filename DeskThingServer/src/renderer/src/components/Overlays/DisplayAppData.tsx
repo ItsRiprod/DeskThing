@@ -1,16 +1,17 @@
-import { AppData } from '@renderer/store'
+import { AppData, App } from '@renderer/store'
 import { useState, useEffect } from 'react'
 
 interface DisplayAppDataProps {
   appIndex: number
   setEnabled: (boolean) => void
-  data: AppData
+  data?: AppData
+  app?: App
 }
 
-const DisplayAppData = ({ appIndex, setEnabled, data }: DisplayAppDataProps): JSX.Element => {
-  const [appData, setAppData] = useState(data.apps[appIndex])
+const DisplayAppData = ({ appIndex, setEnabled, data, app }: DisplayAppDataProps): JSX.Element => {
+  const [appData, setAppData] = useState(data ? data.apps[appIndex] : app)
   useEffect(() => {
-    setAppData(data.apps[appIndex])
+    setAppData(data ? data.apps[appIndex] : app)
   }, [data, appIndex])
 
   const handleExit = (): void => {
@@ -31,6 +32,9 @@ const DisplayAppData = ({ appIndex, setEnabled, data }: DisplayAppDataProps): JS
             </h1>
             {appData.manifest && (
               <div className="bg-slate-500 p-5 m-1 rounded-lg drop-shadow-lg">
+                <div className="shadow-lg m-5 bg-slate-600 p-3 rounded-xl">
+                  <p>Name:</p> {appData.name}
+                </div>
                 <div className="shadow-lg m-5 bg-slate-600 p-3 rounded-xl">
                   <p>Enabled:</p> {appData.enabled ? 'Yes' : 'No'}
                 </div>

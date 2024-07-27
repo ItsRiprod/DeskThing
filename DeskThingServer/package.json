@@ -26,6 +26,7 @@
     "axios": "^1.7.2",
     "cross-unzip": "^0.2.1",
     "electron-updater": "^6.1.7",
+    "express": "^4.19.2",
     "jszip": "^3.10.1",
     "react-rewards": "^2.0.4",
     "unzipper": "^0.12.1",

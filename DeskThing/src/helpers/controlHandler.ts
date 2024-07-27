@@ -97,7 +97,6 @@ export const handleSendSet = (request: AUDIO_REQUESTS, payload = null, app = 'ut
         [ControlKeys.FacePress]: 'Repeat',
         [ControlKeys.FaceLong]: 'Repeat',
       };
-    
         this.handleConfigUpdate(initialTrayConfig);
       }
   
@@ -153,6 +152,15 @@ export const handleSendSet = (request: AUDIO_REQUESTS, payload = null, app = 'ut
             console.warn(`No action found for name: `, componentName);
           }
         }
+        if (socket.is_ready()) {
+          console.log(this.buttonMapping)
+          socket.post({
+            app: 'server',
+            type:'set',
+            request: 'button_maps',
+            data: data,
+          });
+        }
     }
 
     // Notify all registered callbacks of the song data update
@@ -181,8 +189,9 @@ export const handleSendSet = (request: AUDIO_REQUESTS, payload = null, app = 'ut
             this.songData = data;
             this.notifySongDataUpdate()
         } else if (msg.type ==='settings') {
-            const data = msg.data as ButtonMapping
-            this.handleConfigUpdate(data);
+            if (msg.data[0] == 'server') {
+              this.handleConfigUpdate(msg.data[0].settings.button_mapping as ButtonMapping);
+            }
         }
       };
   

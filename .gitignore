@@ -40,3 +40,7 @@ tsconfig.tsbuildinfo
 /AppExamples/mediawin/node_modules
 /AppExamples/mediawin/builds
 /AppExamples/spotify/builds
+/AppExamples/discord/node_modules
+/AppExamples/discord copy/node_modules
+/AppExamples/discord copy/builds
+/AppExamples/discord/builds

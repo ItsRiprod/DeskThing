@@ -14,7 +14,7 @@
  *
  */
 import { app, ipcMain, net } from 'electron'
-import { join } from 'path'
+import { join, resolve } from 'path'
 import * as fs from 'fs'
 import * as unzipper from 'unzipper'
 import {
@@ -51,6 +51,7 @@ export interface AuthScopes {
 // A map of all running apps
 const runningApps = new Map<string, AppInstance>()
 
+let devAppPath: string
 /**
  * Handles data received from an app.
  *
@@ -145,6 +146,27 @@ async function requestAuthData(appName: string, scope: AuthScopes): Promise<void
 }
 
 /**
+ * Retrieves the file path of a specified app.
+ *
+ * @param {string} appName - The name of the app.
+ * @param {string} fileName - The name of the file to retrieve.
+ * @returns {string} - The full file path of the specified file within the app's directory.
+ */
+export function getAppFilePath(appName: string, fileName: string = '/'): string {
+  let path
+  if (appName == 'developer-app') {
+    if (devAppPath) {
+      path = join(devAppPath, fileName)
+    } else {
+      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'Developer app path not set!')
+    }
+  } else {
+    path = join(app.getPath('userData'), 'apps', appName, fileName)
+  }
+  return path
+}
+
+/**
  * Runs an app by its name.
  *
  * This portion of code will run the /appName/index.js of the provided app, save the app to the list of running apps, and setup any listeners/callback functions the apps will use.
@@ -153,12 +175,12 @@ async function requestAuthData(appName: string, scope: AuthScopes): Promise<void
  */
 async function runApp(appName: string): Promise<void> {
   try {
-    const appEntryPoint = join(app.getPath('userData'), 'apps', appName, `index.js`)
+    const appEntryPoint = getAppFilePath(appName, 'index.js')
     console.log(appEntryPoint)
     if (fs.existsSync(appEntryPoint)) {
-      const { start, onMessageFromMain, stop } = await import('file://' + appEntryPoint)
+      const { start, onMessageFromMain, stop } = await import(`file://${resolve(appEntryPoint)}`)
 
-      const manifestPath = join(app.getPath('userData'), 'apps', appName, 'manifest.json')
+      const manifestPath = getAppFilePath(appName, 'manifest.json')
       if (!fs.existsSync(manifestPath)) {
         console.error(`Manifest for app ${appName} not found at ${manifestPath}`)
         return
@@ -170,11 +192,11 @@ async function runApp(appName: string): Promise<void> {
       for (const requiredApp of requiredApps) {
         if (!runningApps.has(requiredApp)) {
           console.error(
-            `Required app ${requiredApp} for ${appName} is not running. Cannot start ${appName}.`
+            `Unable to run ${appName}! This app requires '${requiredApp}' to be enabled and running.`
           )
           dataListener.asyncEmit(
             MESSAGE_TYPES.ERROR,
-            `Required app ${requiredApp} for ${appName} is not running. Cannot start ${appName}.`
+            `Unable to run ${appName}! This app requires '${requiredApp}' to be enabled and running.`
           )
           const appConfig = getAppByName(appName)
           if (appConfig) {
@@ -322,25 +344,48 @@ async function disableApp(appName: string): Promise<void> {
     }
 
     // Remove the app from memory cache
-    const appDirectory = join(app.getPath('userData'), 'apps', appName)
-
-    const files = fs.readdirSync(appDirectory)
-    files.forEach((file) => {
-      const resolvedPath = require.resolve(join(appDirectory, file))
-      if (require.cache[resolvedPath]) {
-        delete require.cache[resolvedPath]
-        console.log(`Removed ${resolvedPath} from cache`)
-        dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `SERVER: Removed ${resolvedPath} from cache`)
-      } else {
-        console.log(`${resolvedPath} not in cache`)
-        dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `SERVER: ${resolvedPath} not in cache!`)
-      }
-    })
+    const appDirectory = getAppFilePath(appName)
+    clearCache(appDirectory)
 
     sendPrefData()
   } catch (error) {
     console.error('Error disabling app:', error)
     dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `SERVER: Error disabling app ${error}.`)
+  }
+}
+
+async function clearCache(dir: string): Promise<void> {
+  try {
+    const items = fs.readdirSync(dir)
+    items.forEach((item) => {
+      const itemPath = join(dir, item)
+      const stats = fs.statSync(itemPath)
+
+      if (stats.isDirectory()) {
+        // Recursively clear directories
+        clearCache(itemPath)
+      } else if (stats.isFile()) {
+        // Resolve and clear file from cache
+        const resolvedPath = require.resolve(itemPath)
+        if (require.cache[resolvedPath]) {
+          delete require.cache[resolvedPath]
+          console.log(`Removed ${resolvedPath} from cache`)
+          dataListener.asyncEmit(
+            MESSAGE_TYPES.LOGGING,
+            `SERVER: Removed ${resolvedPath} from cache`
+          )
+        } else {
+          console.log(`${resolvedPath} not in cache`)
+          dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `SERVER: ${resolvedPath} not in cache!`)
+        }
+      }
+    })
+  } catch (error) {
+    console.error(`Error clearing cache for directory ${dir}:`, error)
+    dataListener.asyncEmit(
+      MESSAGE_TYPES.LOGGING,
+      `SERVER: Error clearing cache for directory ${dir}: ${error.message}`
+    )
   }
 }
 
@@ -354,6 +399,31 @@ async function stopAllApps(): Promise<void> {
     }
   } catch (error) {
     console.error('Error stopping all apps:', error)
+  }
+}
+
+async function getManifest(fileLocation: string): Promise<returnData | undefined> {
+  try {
+    const manifestPath = join(fileLocation, 'manifest.json')
+    if (!fs.existsSync(manifestPath)) {
+      throw new Error('manifest.json not found after extraction')
+    }
+
+    const manifest = await fs.promises.readFile(manifestPath, 'utf8')
+    const parsedManifest = JSON.parse(manifest)
+
+    const returnData = {
+      appId: parsedManifest.id,
+      appName: parsedManifest.label,
+      appVersion: parsedManifest.version,
+      author: parsedManifest.author,
+      platforms: parsedManifest.platforms,
+      requirements: parsedManifest.requires
+    }
+    return returnData
+  } catch (error) {
+    console.error('Error getting manifest:', error)
+    return undefined
   }
 }
 
@@ -409,35 +479,29 @@ async function handleZip(zipFilePath: string): Promise<returnData> {
       console.log(file)
     })
 
-    const manifestPath = join(tempDir, 'manifest.json')
+    let returnData = await getManifest(tempDir)
 
-    if (!fs.existsSync(manifestPath)) {
-      throw new Error('manifest.json not found after extraction')
+    if (!returnData) {
+      dataListener.asyncEmit(
+        MESSAGE_TYPES.ERROR,
+        `SERVER: Error getting manifest from ${zipFilePath}`
+      )
+      returnData = {
+        appId: '',
+        appName: '',
+        appVersion: '',
+        author: '',
+        platforms: [],
+        requirements: []
+      }
     }
 
-    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'))
-    const id = manifest.id
-    const requires = manifest.requires
-    const label = manifest.label
-    const version = manifest.version
-    const author = manifest.author
-    const platforms = manifest.platforms
+    await disableApp(returnData.appId)
 
-    await disableApp(id)
-
-    await purgeAppData(id)
-
-    const returnData = {
-      appId: id,
-      appName: label,
-      appVersion: version,
-      author: author,
-      platforms: platforms,
-      requirements: requires
-    }
+    await purgeAppData(returnData.appId)
 
     // Create the folder where the app will be stored in
-    const appDirectory = join(extractDir, id)
+    const appDirectory = join(extractDir, returnData.appId)
     if (fs.existsSync(appDirectory)) {
       fs.rmSync(appDirectory, { recursive: true })
     }
@@ -458,11 +522,11 @@ async function handleZipFromUrl(
   zipUrlPath: string,
   reply: (data: string, payload: any) => void
 ): Promise<void> {
-  const tempZipPath = join(app.getPath('appData'), 'apps', 'temp')
+  const tempZipPath = getAppFilePath('apps', 'temp')
   let returnData: returnData | undefined
   try {
-    if (!fs.existsSync(join(app.getPath('appData'), 'apps', 'temp'))) {
-      fs.mkdirSync(join(app.getPath('appData'), 'apps', 'temp'), { recursive: true })
+    if (!fs.existsSync(getAppFilePath('apps', 'temp'))) {
+      fs.mkdirSync(getAppFilePath('apps', 'temp'), { recursive: true })
     }
 
     const writeStream = fs.createWriteStream(join(tempZipPath, 'temp.zip'))
@@ -555,9 +619,14 @@ async function loadAndRunEnabledApps(): Promise<void> {
  * @param _event
  * @param appName
  */
-async function addApp(_event, appName: string): Promise<void> {
+async function addApp(_event, appName: string, appPath?: string): Promise<void> {
   try {
     // Load existing apps config
+    if (appPath != undefined) {
+      console.log('Developer app detected: Purging old app...')
+      await purgeAppData(appName)
+      devAppPath = appPath
+    }
     const appConfig = getAppByName(appName)
 
     if (!appConfig) {
@@ -608,7 +677,7 @@ async function purgeAppData(appName: string): Promise<void> {
     await purgeAppConfig(appName)
 
     // Get path to file
-    const appDirectory = join(app.getPath('userData'), 'apps', appName)
+    const appDirectory = getAppFilePath(appName)
 
     // Remove the app from memory cache
     const files = fs.readdirSync(appDirectory)
@@ -621,6 +690,7 @@ async function purgeAppData(appName: string): Promise<void> {
       }
     })
 
+    if (appName == 'developer-app') return // Cancel here if it is a developer app
     // Remove the file from filesystem
     if (fs.existsSync(appDirectory)) {
       const fsExtra = require('fs-extra')

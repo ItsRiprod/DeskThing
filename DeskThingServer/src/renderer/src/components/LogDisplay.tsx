@@ -65,9 +65,9 @@ const LogDisplay = (): JSX.Element => {
       <div ref={logContainerRef} className="w-full p-2 flex flex-col overflow-y-scroll">
         {logs.length > 0 ? (
           logs.map((log, index) => (
-            <div key={index} className="">
+            <div key={index} className="font-geistMono">
               <p className={`p-2 ${getBackgroundColor(log.type)} border-t border-zinc-900`}>
-                [ {log.date.toLocaleTimeString()} ]{' ' + log.log}
+                [{log.date.toLocaleTimeString()}]{' ' + log.log}
               </p>
             </div>
           ))

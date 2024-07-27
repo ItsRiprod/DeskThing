@@ -8,11 +8,12 @@ import {
   IconLogo,
   IconLogoGear,
   IconLogs,
-  IconTransfer
+  IconTransfer,
+  IconWrench
 } from './icons'
 import { useReward } from 'react-rewards'
 
-type View = 'appsList' | 'adb' | 'logDisplay' | 'preferences' // Define possible views
+type View = 'appsList' | 'adb' | 'logDisplay' | 'preferences' | 'dev' // Define possible views
 
 interface SidebarProps {
   setCurrentView: Dispatch<SetStateAction<View>>
@@ -55,7 +56,7 @@ const Sidebar: React.FC<SidebarProps> = ({ setCurrentView, currentView }) => {
   const version = process.env.PACKAGE_VERSION
 
   return (
-    <div className="container w-full top-0 sm:pt-5 sm:justify-between sm:px-3 md:max-w-52 sm:max-w-24 gap-5 sm:relative rounded-lg flex sm:flex-col sm:overflow-y-hidden overflow-y-scroll items-center border-2 border-zinc-800 sm:h-full p-2">
+    <div className="container w-full top-0 sm:pt-5 sm:justify-between sm:px-3 md:max-w-52 sm:max-w-24 gap-5 sm:relative rounded-lg flex sm:flex-col sm:overflow-x-hidden overflow-x-scroll items-center border-2 border-zinc-800 sm:h-full p-2">
       <div className="container w-full top-0 gap-5 sm:relative flex sm:flex-col items-center">
         <div className="flex items-center">
           {connections == 0 ? (
@@ -104,6 +105,15 @@ const Sidebar: React.FC<SidebarProps> = ({ setCurrentView, currentView }) => {
             >
               <IconLogs />
               <span className="hidden md:inline">Logs</span>
+            </button>
+          </li>
+          <li>
+            <button
+              className={`${currentView === 'dev' ? 'bg-zinc-800 hover:bg-zinc-700 border-green-500' : 'hover:bg-zinc-900'} sm:border-l rounded-md flex gap-3 w-full p-3`}
+              onClick={() => handleClick('dev')}
+            >
+              <IconWrench />
+              <span className="hidden md:inline">Dev</span>
             </button>
           </li>
         </ul>

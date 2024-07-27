@@ -18,7 +18,6 @@ const Default: React.FC = (): JSX.Element => {
     const listener = (msg: socketData) => {
       if (msg.type === 'time') {
         setTime(msg.data as string);
-        console.log(msg)
       }
     };
 

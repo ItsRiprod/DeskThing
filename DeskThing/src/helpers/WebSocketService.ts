@@ -47,6 +47,7 @@ class WebSocketService {
   }
 
   post(body: socketData): void {
+    console.log(body)
     if (this.is_ready()) {
       this.webSocket.send(JSON.stringify(body));
     } else {

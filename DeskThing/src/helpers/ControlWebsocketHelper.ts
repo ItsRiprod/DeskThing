@@ -34,7 +34,7 @@ class ControlWebsocketHelper {
 
     webSocket.onclose = () => {
       this.webSocket.close();
-      setTimeout(this.reconnect.bind(this), 1000);
+      setTimeout(this.reconnect.bind(this), 10000);
       return;
     };
     webSocket.onerror = () => {

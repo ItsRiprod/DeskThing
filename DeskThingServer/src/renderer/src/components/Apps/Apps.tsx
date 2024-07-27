@@ -69,7 +69,7 @@ const Apps = (): JSX.Element => {
                 key={appIndex}
                 className="border-2 border-zinc-400 p-5 w-11/12 md:w-11/12 2xl:w-96 h-fit flex justify-between rounded-3xl shadow-lg px-5 items-center"
               >
-                <div className="flex gap-2">
+                <div className="flex flex-wrap sm:flex-nowrap gap-2">
                   <button onClick={() => handleDetails(appIndex)} className="hover:text-slate-600">
                     <IconDetails />
                   </button>

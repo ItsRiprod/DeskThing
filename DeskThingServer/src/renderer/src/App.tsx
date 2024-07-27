@@ -7,7 +7,7 @@ import Sidebar from './components/Sidebar'
 import ContentArea from './components/ContentArea'
 import ErrorBoundary from './components/ErrorBoundary'
 
-type View = 'appsList' | 'preferences' | 'logDisplay' | 'adb'
+type View = 'appsList' | 'preferences' | 'logDisplay' | 'adb' | 'dev'
 
 function App(): JSX.Element {
   const { setAppList } = useAppStore()
