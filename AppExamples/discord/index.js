@@ -1,4 +1,4 @@
-import DiscordHandler from './discord.js';
+const DiscordHandler = require('./discord.js');
 
 let discord
 
@@ -66,8 +66,7 @@ async function onMessageFromMain(event, ...args) {
           discord.client_id = data.client_id
           discord.client_secret = data.client_secret
           discord.sendDataToMainFn('add', data)
-
-          discord.login()
+          discord.registerRPC(data.client_id) // Also logs in the user and is the main entrypoint
         }
         break
         case 'callback-data':
@@ -158,4 +157,4 @@ const handleSet = async (...args) => {
     discord.sendDataToMainFn('data', response)
   }
 }
-export { start, onMessageFromMain, stop }
+module.exports = { start, onMessageFromMain, stop }

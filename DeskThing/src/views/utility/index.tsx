@@ -2,6 +2,7 @@ import { IconDevice } from '../../components/icons';
 import './styles.css';
 import { FC, useEffect, useState } from 'react';
 import socket, { App } from '../../helpers/WebSocketService';
+import { AppStore } from '../../store';
 
 export interface Settings {
   app: {
@@ -19,16 +20,12 @@ export interface Settings {
 }
 
 const Utility: FC = (): JSX.Element => {
-  const [apps, setApps] = useState<App[] | null>(null);
+  const [apps, setApps] = useState<App[] | null>(AppStore.getApps());
   const [currentId, setCurrentId] = useState('');
   const [settings, setSettings] = useState<Settings | null>(null);
   const [expandedSetting, setExpandedSetting] = useState<string | null>(null);
 
-  const version = "0.5.6" // TODO: Make this an environment variable set by package.json
-
-  useEffect(() => {
-    requestPreferences()
-  }, [])
+  const version = "0.6.0" // TODO: Make this an environment variable set by package.json
 
   const requestPreferences = () => {
     if (socket.is_ready()) {
@@ -55,19 +52,25 @@ const Utility: FC = (): JSX.Element => {
   }
 
   useEffect(() => {
+    requestPreferences()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const listener = (msg: any) => {
-      if (msg.type === 'config' && typeof msg.data === 'object') {
-        setApps(msg.data as App[]);
-      }
       if (msg.type === 'settings' && typeof msg.data === 'object') {
-        setSettings(msg.data as Settings);
+        if (msg.data) {
+          setSettings(msg.data as Settings);
+        }
       }
     };
+
+    const removeAppListener = AppStore.subscribeToAppUpdates((data: App[]) => {
+      setApps(data);
+      setCurrentId(AppStore.getCurrentView())
+    });
 
     const removeListener = socket.on('client', listener);
 
     return () => {
+      removeAppListener();
       removeListener();
     };
   }, []);
@@ -126,7 +129,7 @@ const Utility: FC = (): JSX.Element => {
           </div>
         )) : (
           <div className="flex justify-center items-center h-full">
-            <IconDevice iconSize={256} text={`v${version}`} fontSize={110} />
+            <IconDevice iconSize={256} text={`v${version}-RNDIS`} fontSize={110} />
           </div>
         )}
       </div>

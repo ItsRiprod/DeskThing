@@ -1,13 +1,13 @@
 import { FC } from 'react';
-import { runSkip } from '../../utils/audioControlActions';
+import { Skip } from '../../utils/audioControlActions';
 import { IconSkipForward } from '../icons';
 
-const Skip: FC = () => {  
+const SkipComponent: FC = () => {  
   return (
-        <button className="text-green-500" onClick={runSkip}>
+        <button className="text-green-500" onClick={Skip}>
             <IconSkipForward iconSize={48} />
         </button>
     )
 };
 
-export default Skip;
+export default SkipComponent;

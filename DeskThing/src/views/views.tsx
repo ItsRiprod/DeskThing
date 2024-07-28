@@ -8,7 +8,7 @@ import './views.css';
 
 import Overlay from '../components/Overlay/Overlay';
 import { AppStore } from '../store';
-import ControlHandler, { ControlKeys } from '../helpers/controlHandler';
+import ControlHandler, { ControlKeys } from '../store/controlStore';
 
 const ViewManager = () => {
   const [DynamicComponent, setDynamicComponent] = useState<React.LazyExoticComponent<any> | null>(null);
@@ -51,16 +51,16 @@ const ViewManager = () => {
         switch (btn) {
           // Handle long press actions
           case Button.BUTTON_1:
-            controlHandler.runControlAction(ControlKeys.Button1Long);
+            controlHandler.runControlAction(ControlKeys.Button1Long, 1);
             break;
           case Button.BUTTON_2:
-            controlHandler.runControlAction(ControlKeys.Button2Long);
+            controlHandler.runControlAction(ControlKeys.Button2Long, 2);
             break;
           case Button.BUTTON_3:
-            controlHandler.runControlAction(ControlKeys.Button3Long);
+            controlHandler.runControlAction(ControlKeys.Button3Long, 3);
             break;
           case Button.BUTTON_4:
-            controlHandler.runControlAction(ControlKeys.Button4Long);
+            controlHandler.runControlAction(ControlKeys.Button4Long, 4);
             break;
           case Button.BUTTON_5:
             appStore.setCurrentView('utility');
@@ -107,7 +107,7 @@ const ViewManager = () => {
   useEffect(() => {
     const listener = (msg: socketData) => {
       if (msg.type === 'set_view' && typeof msg.data === 'string') {
-        appStore.setCurrentView(msg.data);
+        //appStore.setCurrentView(msg.data);
       }
     };
     const handleAppUpdate = (data: App[]) => {
@@ -174,7 +174,7 @@ const ViewManager = () => {
 
   return (
 
-      <div ref={viewContainerRef} className="view_container touch-none">
+      <div ref={viewContainerRef} className="h-screen view_container touch-none">
         <Overlay>
           {renderView()}
         </Overlay>

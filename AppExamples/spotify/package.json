@@ -1,6 +1,6 @@
 {
   "name": "spotify",
-  "version": "0.5.6",
+  "version": "0.6.0",
   "description": "The spotify app for the DeskThing desktop application",
   "main": "index.js",
   "scripts": {

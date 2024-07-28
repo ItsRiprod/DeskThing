@@ -1,4 +1,8 @@
 {
+  "compilerOptions": {
+    "noImplicitAny": false, // Allow implicit any types
+    // Other compiler options...
+  },
   "files": [],
   "references": [
     {

@@ -5,8 +5,8 @@ import socket, { AUDIO_REQUESTS, socketData, song_data } from '../../helpers/Web
 import { IconAlbum } from '../icons';
 import getBackgroundColor, { findContrastColor } from '../../helpers/ColorExtractor';
 import ButtonHelper, { Button, EventFlavour } from '../../helpers/ButtonHelper';
-import controlHelper, { ControlKeys } from '../../helpers/controlHandler';
-import { runPlayPause } from '../../utils/audioControlActions';
+import controlHelper, { ControlKeys } from '../../store/controlStore';
+import { PlayPause } from '../../utils/audioControlActions';
 
 const Footer: React.FC = () => {
   const [local, setLocal] = useState(true);
@@ -105,7 +105,7 @@ const Footer: React.FC = () => {
 
   useEffect(() => {
 
-    buttonHelper.addListener(Button.SCROLL_PRESS, EventFlavour.Down, runPlayPause)
+    buttonHelper.addListener(Button.SCROLL_PRESS, EventFlavour.Down, PlayPause)
     buttonHelper.addListener(Button.SCROLL_PRESS, EventFlavour.LongPress, () => {handleSendSet(AUDIO_REQUESTS.NEXT, songData.id)})
     return () => {
       buttonHelper.removeListener(Button.SCROLL_PRESS, EventFlavour.Down)

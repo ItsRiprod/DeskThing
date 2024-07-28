@@ -1,14 +1,14 @@
 import { FC } from 'react';
-import { runRewind } from '../../utils/audioControlActions';
+import { Rewind } from '../../utils/audioControlActions';
 import { IconSkipBack } from '../icons';
 
-const Rewind: FC = () => {
+const RewindComponent: FC = () => {
  
   return (
-        <button className="text-green-500" onClick={runRewind}>
+        <button className="text-green-500" onClick={Rewind}>
             <IconSkipBack iconSize={48} />
         </button>
     )
 };
 
-export default Rewind;
+export default RewindComponent;

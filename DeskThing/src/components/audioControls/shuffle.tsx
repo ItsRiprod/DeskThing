@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import controlHandler from '../../helpers/controlHandler';
+import controlHandler from '../../store/controlStore';
 import { song_data } from 'src/helpers/WebSocketService';
-import { runShuffle } from '../../utils/audioControlActions';
+import { Shuffle } from '../../utils/audioControlActions';
 import { IconShuffle } from '../icons';
 
-const Shuffle: React.FC = () => {
+const ShuffleComponent: React.FC = () => {
   const [songData, setSongData] = useState<song_data>(controlHandler.getSongData());
   useEffect(() => {
     const handleSongDataUpdate = (data: song_data) => {
@@ -21,10 +21,10 @@ const Shuffle: React.FC = () => {
   }, []);
   
   return (
-    <button className="" onClick={runShuffle}>
+    <button className="" onClick={Shuffle}>
       {songData.shuffle_state ? <IconShuffle iconSize={48} className={'text-green-500'} /> : <IconShuffle iconSize={48} />}
     </button>
     )
 };
 
-export default Shuffle;
+export default ShuffleComponent;

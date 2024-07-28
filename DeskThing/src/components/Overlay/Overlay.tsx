@@ -68,7 +68,7 @@ const Overlay: FC<OverlayProps> = ({ children }) => {
         setActive(false);
         setVisible(false);
       }
-  return <div className="overlay">
+  return <div className="overlay flex-col flex overflow-hidden">
       {<AppSelector className={`${active ? 'touched' : ''} ${visible ? 'visible' : ''}`} onAppSelect={handleAppSelect} />}
       <Volume />
           {children}

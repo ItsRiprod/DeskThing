@@ -2,7 +2,15 @@
 import { WebSocketServer } from 'ws'
 import { sendMessageToApp, getAppFilePath } from './appHandler'
 
-import { getAppData, setAppData, getAppByName, getAppByIndex } from './configHandler'
+import {
+  getAppData,
+  setAppData,
+  getAppByName,
+  getAppByIndex,
+  saveMappings,
+  loadMappings,
+  ButtonMapping
+} from './configHandler'
 import { readData, addData } from './dataHandler'
 import dataListener, { MESSAGE_TYPES } from '../utils/events'
 import { HandleDeviceData } from './deviceHandler'
@@ -93,6 +101,18 @@ const sendPrefData = async (socket = null): Promise<void> => {
     sendError(socket, 'Error getting config data')
   }
 }
+
+const sendMappings = async (socket: WebSocket | null = null): Promise<void> => {
+  try {
+    const mappings = loadMappings()
+    sendData(socket, { app: 'client', type: 'button_mappings', data: mappings })
+    console.log('WSOCKET: Button mappings sent!')
+  } catch (error) {
+    console.error('WSOCKET: Error getting button mappings:', error)
+    if (socket) sendError(socket, 'Error getting button mappings')
+  }
+}
+
 const sendTime = async (): Promise<void> => {
   const now = new Date()
   const hours = now.getHours()
@@ -133,6 +153,7 @@ const httpServer = createServer(expressApp)
 expressApp.use('/:appName', (req, res, next) => {
   const appName = req.params.appName
   const appPath = getAppFilePath(appName)
+  dataListener.emit(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Serving ${appName} from ${appPath}`)
 
   if (fs.existsSync(appPath)) {
     express.static(appPath)(req, res, next)
@@ -159,6 +180,7 @@ server.on('connection', async (socket) => {
   console.log('WSOCKET: Client connected!\nWSOCKET: Sending preferences...')
   dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Sending client preferences...`)
   sendPrefData(socket)
+  sendMappings(socket)
   socket.on('message', async (message) => {
     try {
       const parsedMessage = JSON.parse(message)
@@ -183,7 +205,12 @@ server.on('connection', async (socket) => {
             case 'set':
               switch (parsedMessage.request) {
                 case 'button_maps':
-                  console.log(parsedMessage.data)
+                  if (parsedMessage.data) {
+                    const mappings: ButtonMapping = parsedMessage.data
+                    saveMappings(mappings)
+                    console.log('Server: Button mappings updated and saved.')
+                    sendMappings(socket)
+                  }
                   break
                 case 'add_app':
                   if (parsedMessage.data) {
@@ -230,6 +257,7 @@ server.on('connection', async (socket) => {
               break
             case 'get':
               sendPrefData(socket)
+              sendMappings(socket)
               sendTime()
               break
             case 'message':

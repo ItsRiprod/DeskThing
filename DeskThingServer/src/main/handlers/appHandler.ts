@@ -175,7 +175,20 @@ export function getAppFilePath(appName: string, fileName: string = '/'): string 
  */
 async function runApp(appName: string): Promise<void> {
   try {
-    const appEntryPoint = getAppFilePath(appName, 'index.js')
+    const appEntryPointJs = getAppFilePath(appName, 'index.js')
+    const appEntryPointMjs = getAppFilePath(appName, 'index.mjs')
+    const appEntryPointCjs = getAppFilePath(appName, 'index.cjs')
+    let appEntryPoint: string | undefined
+    if (fs.existsSync(appEntryPointJs)) {
+      appEntryPoint = appEntryPointJs
+    } else if (fs.existsSync(appEntryPointMjs)) {
+      appEntryPoint = appEntryPointMjs
+    } else if (fs.existsSync(appEntryPointCjs)) {
+      appEntryPoint = appEntryPointCjs
+    } else {
+      console.error(`Entry point for app ${appName} not found.`)
+      return
+    }
     console.log(appEntryPoint)
     if (fs.existsSync(appEntryPoint)) {
       const { start, onMessageFromMain, stop } = await import(`file://${resolve(appEntryPoint)}`)
@@ -363,7 +376,7 @@ async function clearCache(dir: string): Promise<void> {
 
       if (stats.isDirectory()) {
         // Recursively clear directories
-        clearCache(itemPath)
+        //clearCache(itemPath)
       } else if (stats.isFile()) {
         // Resolve and clear file from cache
         const resolvedPath = require.resolve(itemPath)
@@ -384,7 +397,7 @@ async function clearCache(dir: string): Promise<void> {
     console.error(`Error clearing cache for directory ${dir}:`, error)
     dataListener.asyncEmit(
       MESSAGE_TYPES.LOGGING,
-      `SERVER: Error clearing cache for directory ${dir}: ${error.message}`
+      `SERVER: Error clearing cache for directory ${dir}: ${error}`
     )
   }
 }
@@ -678,17 +691,7 @@ async function purgeAppData(appName: string): Promise<void> {
 
     // Get path to file
     const appDirectory = getAppFilePath(appName)
-
-    // Remove the app from memory cache
-    const files = fs.readdirSync(appDirectory)
-    files.forEach((file) => {
-      const resolvedPath = require.resolve(join(appDirectory, file))
-      if (require.cache[resolvedPath]) {
-        delete require.cache[resolvedPath]
-        console.log(`Removed ${resolvedPath} from cache`)
-        dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `SERVER: Removed ${resolvedPath} from cache`)
-      }
-    })
+    clearCache(appDirectory)
 
     if (appName == 'developer-app') return // Cancel here if it is a developer app
     // Remove the file from filesystem

@@ -64,7 +64,7 @@ class WebSocketService {
         if (!this.listeners[app]) {
           this.listeners[app] = [];
         }
-        //console.log('WEBSOCKET', msg)
+        ///// console.log('WEBSOCKET', msg)
         this.listeners[app].forEach((listener: SocketEventListener) => listener(msg as socketData));
       } catch (e) {
         console.error(e);

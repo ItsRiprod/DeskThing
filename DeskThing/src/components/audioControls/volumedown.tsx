@@ -1,13 +1,13 @@
 import React from 'react';
-import { runVolDown } from '../../utils/audioControlActions';
+import { VolDown } from '../../utils/audioControlActions';
 import { IconVolumeDown } from '../icons';
 
-const VolumeUp: React.FC = () => {  
+const VolumeDownComponent: React.FC = () => {  
   return (
-        <button onClick={runVolDown}>
+        <button onClick={VolDown}>
             <IconVolumeDown iconSize={75}  />
         </button>
     )
 };
 
-export default VolumeUp;
+export default VolumeDownComponent;

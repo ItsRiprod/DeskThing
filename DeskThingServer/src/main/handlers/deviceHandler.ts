@@ -28,12 +28,20 @@ export const HandlePushWebApp = async (
   try {
     const userDataPath = app.getPath('userData')
     const extractDir = join(userDataPath, 'webapp')
-    await handleAdbCommands('shell mount -o remount,rw /')
-    await handleAdbCommands('shell mv /usr/share/qt-superbird-app/webapp /tmp/webapp-orig')
-    await handleAdbCommands('shell mv /tmp/webapp-orig /usr/share/qt-superbird-app/')
-    await handleAdbCommands('shell rm -r /tmp/webapp-orig')
-    await handleAdbCommands(`push ${extractDir}/ /usr/share/qt-superbird-app/webapp`)
-    await handleAdbCommands('shell supervisorctl restart chromium')
+    let response
+    response = await handleAdbCommands('shell mount -o remount,rw /')
+    // Set when replies are handled
+    // reply('reply-interface', response)
+    response = await handleAdbCommands('shell mv /usr/share/qt-superbird-app/webapp /tmp/webapp-orig')
+    // reply('reply-interface', response)
+    response = await handleAdbCommands('shell mv /tmp/webapp-orig /usr/share/qt-superbird-app/')
+    // reply('reply-interface', response)
+    response = await handleAdbCommands('shell rm -r /tmp/webapp-orig')
+    // reply('reply-interface', response)
+    response = await handleAdbCommands(`push ${extractDir}/ /usr/share/qt-superbird-app/webapp`)
+    // reply('reply-interface', { type: update, status: {running: true, message: ${response}}})
+    response = await handleAdbCommands('shell supervisorctl restart chromium')
+    // reply('reply-interface', { type: update, status: {running: true, message: ${response}}})
     reply('pushed-staged', { success: true })
   } catch (Exception) {
     reply('pushed-staged', { success: false, error: Exception })

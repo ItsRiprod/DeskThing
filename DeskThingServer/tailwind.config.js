@@ -5,7 +5,7 @@ module.exports = {
     extend: {
       fontFamily: {
         geist: ['Geist', 'sans-serif'],
-        geistMono: ['GeistMono', 'monospace'],
+        geistMono: ['GeistMono', 'monospace']
       },
       keyframes: {
         fade: {

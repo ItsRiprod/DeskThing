@@ -27,18 +27,23 @@ export interface App {
 }
 
 export interface Config {
-  [appName: string]: string | Array<string>
+  [appName: string]: string | string[] | ButtonMapping
 }
 export interface AppData {
   apps: App[]
   config: Config
 }
 
+type ButtonMapping = {
+  [key: string]: string
+}
+
 const defaultData: AppData = {
   apps: [],
   config: {
     audiosources: ['local'],
-    testData: 'thisisastring'
+    testData: 'thisisastring',
+    buttonMappings: {}
   }
 }
 
@@ -135,7 +140,9 @@ const addConfig = (configName: string, config: string | Array<string>, data = re
   dataListener.asyncEmit(MESSAGE_TYPES.CONFIG)
   writeData(data)
 }
-const getConfig = (configName: string): { [app: string]: string | Array<string> | undefined } => {
+const getConfig = (
+  configName: string
+): { [app: string]: string | Array<string> | ButtonMapping | undefined } => {
   const data = readData()
 
   if (!data.config) {
@@ -146,13 +153,24 @@ const getConfig = (configName: string): { [app: string]: string | Array<string> 
     writeData(data)
   }
 
-  return { [configName]: data.config[configName] || undefined }
+  return { [configName]: data.config[configName] }
 }
 
 // Get data function
 const getAppData = (): AppData => {
   const data = readData()
   return data
+}
+
+const saveMappings = (mappings: ButtonMapping): void => {
+  const data = readData()
+  data.config.buttonMappings = mappings
+  writeData(data)
+}
+
+const loadMappings = (): ButtonMapping => {
+  const data = readData()
+  return (data.config.buttonMappings as ButtonMapping) || {}
 }
 
 const getAppByName = (appName: string): App | undefined => {
@@ -197,5 +215,7 @@ export {
   addAppManifest,
   addConfig,
   getConfig,
-  purgeAppConfig
+  purgeAppConfig,
+  saveMappings,
+  loadMappings
 }

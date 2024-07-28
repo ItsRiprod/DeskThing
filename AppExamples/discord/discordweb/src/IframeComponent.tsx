@@ -1,22 +1,41 @@
 // src/IframeComponent.tsx
 import React, { useEffect } from 'react';
+import discordStore, { ACTION_TYPES } from './stores/discordStore';
 
-const IframeComponent: React.FC = () => {
+interface IframeComponentProps {
+  children: React.ReactNode;
+}
+
+const IframeComponent: React.FC<IframeComponentProps> = ({ children }) => {
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      // Handle incoming messages from the parent
-      console.log('Received message from parent:', event);
-      // Add your logic to handle the received data here
+      // Return if the message is not from the deskthing
+      if (event.data.source != 'deskthing') return
 
-      // Example: Sending a response back to the parent
-      if (event.source && event.origin) {
-        (event.source as Window).postMessage(
-          { type: 'RESPONSE_ACTION', payload: 'Response data from iframe' }, 
-          event.origin
-        );
-      }
+      // Debugging
+      console.log('Received message from parent:', event);
+      
+      discordStore.handleDiscordData(event.data.data);
     };
 
+
+    const exampleUser ={
+      avatar: "a_1d1d2950fdfaa97bdbb6044ce6c306bd",
+      bot:false,
+      profile: 'https://cdn.discordapp.com/avatars/395965311687327761/0ee510731bf0b755aa6aa127fcff8f0a.webp?size=80',
+      discriminator:"0",
+      flags:4194592,
+      global_name:"Riprod",
+      id:"276531165878288385",
+      premium_type:2,
+      username:"riprod"
+    }
+
+    const exampleData = {
+        user: exampleUser,
+        action: ACTION_TYPES.UPDATE
+    }
+    discordStore.handleDiscordData(exampleData);
     window.addEventListener('message', handleMessage);
 
     return () => {
@@ -33,8 +52,8 @@ const IframeComponent: React.FC = () => {
 
   return (
     <div>
-      <h1>IFrame Content</h1>
-      <button onClick={sendMessageToParent}>Send Message to Parent</button>
+      {children}
+      <button className="absolute" onClick={sendMessageToParent}>Send Message to Parent</button>
     </div>
   );
 };

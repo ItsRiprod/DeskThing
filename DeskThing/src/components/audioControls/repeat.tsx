@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import controlHandler from '../../helpers/controlHandler';
+import controlHandler from '../../store/controlStore';
 import { song_data } from 'src/helpers/WebSocketService';
-import { runRepeat } from '../../utils/audioControlActions';
+import { Repeat } from '../../utils/audioControlActions';
 import { IconRepeat, IconRepeatOne } from '../icons';
 
-const Repeat: React.FC = () => {
+const RepeatComponent: React.FC = () => {
   const [songData, setSongData] = useState<song_data>(controlHandler.getSongData());
   useEffect(() => {
     const handleSongDataUpdate = (data: song_data) => {
@@ -21,10 +21,10 @@ const Repeat: React.FC = () => {
   }, []);
   
   return (
-        <button onClick={runRepeat}>
+        <button onClick={Repeat}>
             {songData.repeat_state == 'off' ? <IconRepeat iconSize={48} /> : songData.repeat_state == 'all' ? <IconRepeat className={'text-green-500'} iconSize={48} /> : <IconRepeatOne className={'text-green-500'} iconSize={48} />}
         </button>
     )
 };
 
-export default Repeat;
+export default RepeatComponent;

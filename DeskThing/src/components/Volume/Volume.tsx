@@ -2,7 +2,7 @@ import './Volume.css';
 import React, { useEffect, useState } from 'react';
 import ButtonHelper, { Button, EventFlavour } from '../../helpers/ButtonHelper';
 import socket, { song_data, socketData } from '../../helpers/WebSocketService';
-import controlHandler, { ControlKeys } from '../../helpers/controlHandler';
+import controlHandler, { ControlKeys } from '../../store/controlStore';
 
 const Volume: React.FC = () => {
   const [volume, setVolume] = useState(0);

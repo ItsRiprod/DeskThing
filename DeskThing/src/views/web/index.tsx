@@ -33,9 +33,11 @@ const WebView: React.FC<WebViewProps> = ({ currentView }) => {
   };
 
   useEffect(() => {
+    console.log(currentView)
     const routeData = (data: socketData) => {
         console.log(data)
-        sendMessageToIframe(data)
+        const augmentedData = { ...data, source: 'deskthing' }
+        sendMessageToIframe(augmentedData)
     }
 
     const removeListener = socket.on(currentView, (data) => routeData(data))
@@ -52,30 +54,27 @@ const WebView: React.FC<WebViewProps> = ({ currentView }) => {
   const handleTouchEnd = () => {
     setTimeout(() => {
       setSwipeVisible(false)
-    }, 2000)
+    }, 4000)
   }
 
   return (
-    <div className='max-h-screen overflow-hidden'>
+    <div className='max-h-screen h-screen pb-14 overflow-hidden'>
         <div className="touch-none w-full h-0 flex justify-center bg-red-200">
-        <div
-          ref={swipeRef}
-          className={`touch-auto fixed h-10 rounded-2xl top-2 bg-gray-900 ${
-            swipeVisible ? 'opacity-100 w-11/12 h-4/6 text-6xl content-center' : 'opacity-30 w-1/4'
-          } transition-all duration-300`}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-        >
-          {swipeVisible ? 'Swipe' : ''}
+            <div
+              ref={swipeRef}
+              className={`touch-auto fixed h-10 rounded-2xl top-2 bg-gray-900 ${
+                swipeVisible ? 'opacity-100 w-11/12 h-4/6 text-6xl content-center' : 'opacity-30 w-1/4'
+              } transition-all duration-300`}
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+            >
+              {swipeVisible ? 'Swipe' : ''}
+            </div>
         </div>
-        </div>
-        <button className="absolute" onClick={() => sendMessageToIframe({ type: 'EXAMPLE_ACTION', payload: 'Some data' })}>
-          Send Message to Iframe
-        </button>
         <iframe
           ref={iframeRef}
           src={`http://localhost:8891/${currentView}`}
-          style={{ width: '100%', height: '100vh', border: 'none' }}
+          style={{ width: '100%', height: '100%', border: 'none' }}
           title="Web View"
         />
         
