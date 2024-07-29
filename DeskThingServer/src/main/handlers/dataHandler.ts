@@ -1,6 +1,4 @@
-import { app } from 'electron'
-import { join } from 'path'
-import fs from 'fs'
+import { readFromFile, writeToFile } from '../utils/fileHandler'
 
 interface Data {
   [appName: string]: {
@@ -10,34 +8,55 @@ interface Data {
 
 // Default data structure
 const defaultData: Data = {}
-
-// Helper function to read data
+// Updated function to read Data using the new fileHandler
 const readData = (): Data => {
-  const dataFilePath = join(app.getPath('userData'), 'data.json')
+  const dataFilePath = 'data.json'
   try {
-    if (!fs.existsSync(dataFilePath)) {
+    const data = readFromFile(dataFilePath)
+    if (!data) {
       // File does not exist, create it with default data
-      fs.writeFileSync(dataFilePath, JSON.stringify(defaultData, null, 2))
+      writeToFile(defaultData, dataFilePath)
       return defaultData
     }
-    const rawData = fs.readFileSync(dataFilePath)
-    return JSON.parse(rawData.toString())
+
+    // If data is of type Data, return it
+    if (isData(data)) {
+      return data as Data
+    } else {
+      // Handle case where data is not of type Data
+      console.error('Data format is incorrect')
+      return defaultData
+    }
   } catch (err) {
     console.error('Error reading data:', err)
     return defaultData
   }
 }
 
-// Helper function to write data
+// Type guard to check if data is of type Data
+const isData = (data: any): data is Data => {
+  // Simple check to verify if data conforms to the Data interface
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    Object.values(data).every(
+      (value) =>
+        typeof value === 'object' &&
+        value !== null &&
+        Object.values(value).every((val) => typeof val === 'string')
+    )
+  )
+}
+
+// Updated function to write Data using the new fileHandler
 const writeData = (data: Data): void => {
   try {
-    const dataFilePath = join(app.getPath('userData'), 'data.json')
-    fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2))
+    const dataFilePath = 'data.json'
+    writeToFile(data, dataFilePath)
   } catch (err) {
     console.error('Error writing data:', err)
   }
 }
-
 // Set data function
 const setData = (key: string, value: { [key: string]: string }): void => {
   const data = readData()

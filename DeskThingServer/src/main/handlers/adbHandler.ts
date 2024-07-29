@@ -12,7 +12,7 @@ const adbPath = path.join(execPath, adbExecutableName)
 
 export const handleAdbCommands = (command: string): Promise<string> => {
   return new Promise((resolve, reject) => {
-    exec(`${adbPath} ${command}`, (error, stdout, stderr) => {
+    exec(`cd '${execPath}' && ${adbExecutableName} ${command}`, (error, stdout, stderr) => {
       if (error) {
         reject(`ADB Error: ${stderr}, ${command}, ${adbPath}`)
       } else {

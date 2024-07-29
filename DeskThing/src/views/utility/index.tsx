@@ -64,7 +64,6 @@ const Utility: FC = (): JSX.Element => {
 
     const removeAppListener = AppStore.subscribeToAppUpdates((data: App[]) => {
       setApps(data);
-      setCurrentId(AppStore.getCurrentView())
     });
 
     const removeListener = socket.on('client', listener);
@@ -129,7 +128,7 @@ const Utility: FC = (): JSX.Element => {
           </div>
         )) : (
           <div className="flex justify-center items-center h-full">
-            <IconDevice iconSize={256} text={`v${version}-RNDIS`} fontSize={110} />
+            <IconDevice iconSize={256} text={`v${version}-ADB`} fontSize={110} />
           </div>
         )}
       </div>

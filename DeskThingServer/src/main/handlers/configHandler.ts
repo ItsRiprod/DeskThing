@@ -1,8 +1,6 @@
-import { app } from 'electron'
-import { join } from 'path'
-import * as fs from 'fs'
 import { sendIpcData } from '..'
 import dataListener, { MESSAGE_TYPES } from '../utils/events'
+import { readFromFile, writeToFile } from '../utils/fileHandler'
 export interface Manifest {
   isAudioSource: boolean
   requires: Array<string>
@@ -27,51 +25,61 @@ export interface App {
 }
 
 export interface Config {
-  [appName: string]: string | string[] | ButtonMapping
+  [appName: string]: string | string[]
 }
 export interface AppData {
   apps: App[]
   config: Config
 }
 
-type ButtonMapping = {
-  [key: string]: string
-}
-
 const defaultData: AppData = {
   apps: [],
   config: {
     audiosources: ['local'],
-    testData: 'thisisastring',
-    buttonMappings: {}
+    testData: 'thisisastring'
   }
 }
 
 // Helper function to read data
 const readData = (): AppData => {
-  const dataFilePath = join(app.getPath('userData'), 'apps.json')
+  const dataFilePath = 'apps.json'
   try {
-    if (!fs.existsSync(dataFilePath)) {
+    const data = readFromFile(dataFilePath)
+    if (!data) {
       // File does not exist, create it with default data
-      fs.writeFileSync(dataFilePath, JSON.stringify(defaultData, null, 2))
+      writeToFile(defaultData, dataFilePath)
       return defaultData
     }
 
-    const rawData = fs.readFileSync(dataFilePath)
-    return JSON.parse(rawData.toString())
+    // If data is of type AppData, return it
+    if (isAppData(data)) {
+      return data as AppData
+    } else {
+      // Handle case where data is not of type AppData
+      console.error('Data format is incorrect')
+      return defaultData
+    }
   } catch (err) {
     console.error('Error reading data:', err)
     return defaultData
   }
 }
 
+// Type guard to check if data is of type AppData
+const isAppData = (data: any): data is AppData => {
+  return 'apps' in data && 'config' in data
+}
+
 // Helper function to write data
 const writeData = (data: AppData): void => {
   try {
-    const dataFilePath = join(app.getPath('userData'), 'apps.json')
-    fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2))
+    const result = writeToFile(data, 'apps.json')
+    if (!result) {
+      dataListener.emit(MESSAGE_TYPES.ERROR, 'Error writing data')
+    }
     sendIpcData('app-data', data) // Send data to the web UI
   } catch (err) {
+    dataListener.emit(MESSAGE_TYPES.ERROR, 'Error writing data' + err)
     console.error('Error writing data:', err)
   }
 }
@@ -160,17 +168,6 @@ const getConfig = (
 const getAppData = (): AppData => {
   const data = readData()
   return data
-}
-
-const saveMappings = (mappings: ButtonMapping): void => {
-  const data = readData()
-  data.config.buttonMappings = mappings
-  writeData(data)
-}
-
-const loadMappings = (): ButtonMapping => {
-  const data = readData()
-  return (data.config.buttonMappings as ButtonMapping) || {}
 }
 
 const getAppByName = (appName: string): App | undefined => {

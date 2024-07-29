@@ -34,9 +34,20 @@ type ActionFunction = (...args: any[]) => void;
 type ActionMapping = {
   [key: string]: ActionFunction;
 };
-type ButtonMapping = {
-  [key in ControlKeys]?: string;
-};
+export type Button = {
+  name: string
+  description: string
+  source: string
+}
+
+export type key = {
+  id: string
+  source: string
+}
+
+export type ButtonMapping = {
+  [key: string]: Button
+}
 
 type SongDataUpdateCallback = (data: song_data) => void;
 
@@ -75,25 +86,25 @@ class ControlStore {
 
   private initializeTrays(): void {
     const initialTrayConfig: ButtonMapping = {
-      [ControlKeys.Tray1]: 'Shuffle',
-      [ControlKeys.Tray2]: 'Rewind',
-      [ControlKeys.Tray3]: 'PlayPause',
-      [ControlKeys.Tray4]: 'Skip',
-      [ControlKeys.Tray5]: 'Repeat',
-      [ControlKeys.Button1]: 'Pref1',
-      [ControlKeys.Button2]: 'Pref2',
-      [ControlKeys.Button3]: 'Pref3',
-      [ControlKeys.Button4]: 'Pref4',
-      [ControlKeys.Button1Long]: 'Swap',
-      [ControlKeys.Button2Long]: 'Swap',
-      [ControlKeys.Button3Long]: 'Swap',
-      [ControlKeys.Button4Long]: 'Swap',
-      [ControlKeys.DialScrollLeft]: 'VolDown',
-      [ControlKeys.DialScrollRight]: 'VolUp',
-      [ControlKeys.DialPress]: 'PlayPause',
-      [ControlKeys.DialPressLong]: 'Skip',
-      [ControlKeys.FacePress]: 'Repeat',
-      [ControlKeys.FaceLong]: 'Repeat',
+      [ControlKeys.Tray1]: { name: 'Shuffle', description: 'Shuffle', source: 'server' },
+      [ControlKeys.Tray2]: { name: 'Rewind', description: 'Rewind', source: 'server' },
+      [ControlKeys.Tray3]: { name: 'PlayPause', description: 'PlayPause', source: 'server' },
+      [ControlKeys.Tray4]: { name: 'Skip', description: 'Skip', source: 'server' },
+      [ControlKeys.Tray5]: { name: 'Repeat', description: 'Repeat', source: 'server' },
+      [ControlKeys.Button1]: { name: 'Pref1', description: 'Pref1', source: 'server' },
+      [ControlKeys.Button2]: { name: 'Pref2', description: 'Pref2', source: 'server' },
+      [ControlKeys.Button3]: { name: 'Pref3', description: 'Pref3', source: 'server' },
+      [ControlKeys.Button4]: { name: 'Pref4', description: 'Pref4', source: 'server' },
+      [ControlKeys.Button1Long]: { name: 'Swap', description: 'Swap', source: 'server' },
+      [ControlKeys.Button2Long]: { name: 'Swap', description: 'Swap', source: 'server' },
+      [ControlKeys.Button3Long]: { name: 'Swap', description: 'Swap', source: 'server' },
+      [ControlKeys.Button4Long]: { name: 'Swap', description: 'Swap', source: 'server' },
+      [ControlKeys.DialScrollLeft]: { name: 'VolDown', description: 'VolDown', source: 'server' },
+      [ControlKeys.DialScrollRight]: { name: 'VolUp', description: 'VolUp', source: 'server' },
+      [ControlKeys.DialPress]: { name: 'PlayPause', description: 'PlayPause', source: 'server' },
+      [ControlKeys.DialPressLong]: { name: 'Skip', description: 'Skip', source: 'server' },
+      [ControlKeys.FacePress]: { name: 'Repeat', description: 'Repeat', source: 'server' },
+      [ControlKeys.FaceLong]: { name: 'Repeat', description: 'Repeat', source: 'server' }
     };
     this.handleConfigUpdate(initialTrayConfig);
   }
@@ -106,31 +117,28 @@ class ControlStore {
   }
 
   private handleConfigUpdate(data: ButtonMapping): void {
-    for (const [key, actionName] of Object.entries(data)) {
-      const Component = this.componentRegistry[actionName];
-      const Action = this.actionRegistry[actionName];
+    for (const [key, button] of Object.entries(data)) {
+      if (button.source !='server') {
+        // Handle non-server buttons
+        return
+      }
+
+      const Component = this.componentRegistry[button.name];
+      const Action = this.actionRegistry[button.name];
 
       if (Component) {
         this.buttonMapping[key] = Component;
       } else {
-        console.warn(`No component found for name: ${actionName}`);
+        console.warn(`No component found for name: ${button.name}`);
       }
 
       if (Action) {
         this.actionMapping[key] = Action;
       } else {
-        console.warn(`No action found for name: ${actionName}`);
+        console.warn(`No action found for name: ${button.name}`);
       }
     }
     console.log(data)
-    if (socket.is_ready()) {
-      socket.post({
-        app: 'server',
-        type: 'set',
-        request: 'button_maps',
-        data: data,
-      });
-    }
   }
 
   private handleClientData(msg: any): void {
@@ -143,7 +151,8 @@ class ControlStore {
         this.handleConfigUpdate(msg.data[0].settings.button_mapping as ButtonMapping);
       }
     } else if (msg.type === 'button_mappings') {
-      //this.handleConfigUpdate(msg.data as ButtonMapping);
+      console.log(msg.data)
+      this.handleConfigUpdate(msg.data as ButtonMapping);
     } else if (msg.type === 'component_update') {
       const { name, component } = msg.data;
       this.registerComponent(name, component);

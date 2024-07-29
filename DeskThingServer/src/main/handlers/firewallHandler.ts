@@ -91,26 +91,24 @@ async function setupFirewall(port: number): Promise<void> {
           Break
         }
 
-        if (-not (Get-NetFirewallRule -DisplayName $inboundRuleName -ErrorAction SilentlyContinue)) {
-          New-NetFirewallRule -DisplayName $inboundRuleName -Direction Inbound -Action Allow -Protocol TCP -LocalPort $port
-          }
-        if (-not (Get-NetFirewallRule -DisplayName $outboundRuleName -ErrorAction SilentlyContinue)) {
-          New-NetFirewallRule -DisplayName $outboundRuleName -Direction Outbound -Action Allow -Protocol TCP -LocalPort $port
-        }
+        New-NetFirewallRule -DisplayName $inboundRuleName -Direction Inbound -Action Allow -Protocol TCP -LocalPort $port
+        New-NetFirewallRule -DisplayName $outboundRuleName -Direction Outbound -Action Allow -Protocol TCP -LocalPort $port
+
       `
 
       const tempScriptPath = join(app.getPath('temp'), 'setup-firewall.ps1')
       fs.writeFileSync(tempScriptPath, script)
 
-      await runCommand(`powershell -ExecutionPolicy Bypass -File "${tempScriptPath}"`)
-
-      //fs.unlinkSync(tempScriptPath)
-
-      dataListener.emit(
-        MESSAGE_TYPES.LOGGING,
-        `FIREWALL: Firewall rules set up successfully on Windows`
-      )
-      console.log('Firewall rules set up successfully on Windows')
+      try {
+        await runCommand(`powershell -ExecutionPolicy Bypass -File "${tempScriptPath}"`)
+        dataListener.emit(
+          MESSAGE_TYPES.LOGGING,
+          `FIREWALL: Firewall rules set up successfully on Windows`
+        )
+        console.log('Firewall rules set up successfully on Windows')
+      } finally {
+        fs.unlinkSync(tempScriptPath)
+      }
     } else if (platform === 'linux') {
       // Bash script for iptables on Linux
       const script = `

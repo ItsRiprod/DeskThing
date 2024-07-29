@@ -13,6 +13,8 @@ const IPC_CHANNELS = {
   ADD_APP: 'add-app',
   RUN_STOP_APP: 'stop-app',
   GET_APPS: 'get-apps',
+  GET_MAPS: 'get-maps',
+  SET_MAP: 'set-maps',
   STOP_APP: 'stop-app',
   DISABLE_APP: 'disable-app',
   PURGE_APP: 'purge-app',
@@ -117,6 +119,7 @@ async function setupIpcHandlers(): Promise<void> {
     stopApp,
     purgeAppData
   } = await import('./handlers/appHandler')
+  import { getMappings } from './handlers/keyMapHandler'
   const { handleAdbCommands } = await import('./handlers/adbHandler')
   const { sendData } = await import('./handlers/websocketServer')
   const { getReleases } = await import('./handlers/githubHandler')

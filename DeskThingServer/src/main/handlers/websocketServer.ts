@@ -2,15 +2,8 @@
 import { WebSocketServer } from 'ws'
 import { sendMessageToApp, getAppFilePath } from './appHandler'
 
-import {
-  getAppData,
-  setAppData,
-  getAppByName,
-  getAppByIndex,
-  saveMappings,
-  loadMappings,
-  ButtonMapping
-} from './configHandler'
+import { getAppData, setAppData, getAppByName, getAppByIndex } from './configHandler'
+import { getDefaultMappings, ButtonMapping, setDefaultMappings } from './keyMapHandler'
 import { readData, addData } from './dataHandler'
 import dataListener, { MESSAGE_TYPES } from '../utils/events'
 import { HandleDeviceData } from './deviceHandler'
@@ -104,7 +97,7 @@ const sendPrefData = async (socket = null): Promise<void> => {
 
 const sendMappings = async (socket: WebSocket | null = null): Promise<void> => {
   try {
-    const mappings = loadMappings()
+    const mappings = getDefaultMappings()
     sendData(socket, { app: 'client', type: 'button_mappings', data: mappings })
     console.log('WSOCKET: Button mappings sent!')
   } catch (error) {
@@ -207,7 +200,7 @@ server.on('connection', async (socket) => {
                 case 'button_maps':
                   if (parsedMessage.data) {
                     const mappings: ButtonMapping = parsedMessage.data
-                    saveMappings(mappings)
+                    setDefaultMappings(mappings)
                     console.log('Server: Button mappings updated and saved.')
                     sendMappings(socket)
                   }
