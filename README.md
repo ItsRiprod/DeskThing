@@ -23,12 +23,21 @@ This is the DeskThing project. Using Spotify's existing Car Thing, the DeskThing
 Instead, go to [Releases](https://github.com/ItsRiprod/DeskThing/releases) and download the installer for your OS and all the apps
 
 ---
-> All instructions are up-to-date as late of v0.5.4-alpha. Later versions may differ in functionality and setup
+> All instructions are up-to-date as late of v0.6.0-beta. Later versions may differ in functionality and setup
 <details>
    <summary><h2>✨ Features</h2></summary>
 
-The DeskThing is a simple CarThing Chromium-based website that can communicate with a server run on the host via ADB (on port 8891) functioning as a socket. The CarThing can:
+The DeskThing is a simple CarThing Chromium-based website that can communicate with a Desktop APP on your computer. The CarThing can:
 
+- ### All In One Package 📦
+   - [X] Download apps directly from the Desktop App GUI
+   - [X] Manage and update the Car Thing's display
+   - [X] Probably more - just check it out already
+- ### Configurable Controls ⚙️
+   - [X] Make any button do any function!
+   - [X] Control audio with the top buttons, front buttons, back buttons, really whatever you want!
+   - [X] Modify them from the Desktop UI
+   - [X] Add more directly from apps! (Basically you can do anything)
 - ### Spotify Integration 🎧
    - [X] Show currently listening (Album, Artist, Song name, album art)
    - [X] Control Spotify (Skip, pause, play, rewind, shuffle, repeat)
@@ -87,7 +96,7 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
 - Home Assistant
 - Pomodoro Timer
 - Google Calendar
-- And more!
+- More details in the [Trello Board](https://trello.com/b/6v0paxqV/deskthing)
 </details>
 
 > *This is under constant development, so features will come as soon as I can make them. Suggestions welcome!*
@@ -100,15 +109,6 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
       <h2>▶️ Setting Up</h2>
    </summary>
 
-### Prerequisites
-
-1. **ADB Setup:**
-   - Install ADB on your computer (Android Development).
-
-2. **Superbird Webapp flash:**
-   - Flash your CarThing with the adb_enabled dump [here](https://mega.nz/folder/NxNXQCaT#-n1zkoXsJuw-5rQ-ZYzRJw/folder/Ak9FVKxJ) using the [superbird-tool](https://github.com/Car-Thing-Hax-Community/superbird-tool).
-   - [detailed instructions](#flashing)
-
 ### Detailed Setup Instructions
 
 1. **Flash Your CarThing:**
@@ -118,7 +118,7 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
 2. **Get the installer**
 *should be under [releases](https://github.com/ItsRiprod/DeskThing/releases)*
 
-   - Run the 'deskthing-0.5.5-*-setup.*' installer on your computer
+   - Run the 'deskthing-0.*.*-*-setup.*' installer on your computer
 
 3. **Check for your device:**
    - Under the 'Status' tab in v0.5.5 or earlier or 'ADB' tab in v0.5.6 or later, ensure your device shows up. If it does not, join the Discord server and report the issue, this can be buggy on some machines.
