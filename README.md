@@ -6,7 +6,9 @@
 
  > [Reddit Link](https://reddit.com/r/DeskThing)
 
- > [Discord Invite](https://discord.gg/uNS3dhj46D)
+ > [Deskthing Discord Invite](https://discord.gg/uNS3dhj46D)
+ 
+ > [Car Thing Hax Community Discord](https://discord.carth.ing/)
 
 # The DeskThing ✔️
 
