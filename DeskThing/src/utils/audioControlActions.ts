@@ -19,7 +19,7 @@ export const Skip = () => {
   handleSendCommand(AUDIO_REQUESTS.NEXT, songData.id);
 };
 export const Rewind = () => {
-  handleSendCommand(AUDIO_REQUESTS.NEXT);
+  handleSendCommand(AUDIO_REQUESTS.PREVIOUS);
 };
 
 export const Shuffle = () => {
