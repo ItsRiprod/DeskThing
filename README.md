@@ -140,6 +140,7 @@ Links:
 > Ensure you download one with ADB and RNDIS enabled (any one of the 'new' ones work) 8.4.4_adb_enabled-new.tar.xz is the current best
 - [superbird-tool](https://github.com/Car-Thing-Hax-Community/superbird-tool)
 
+Alternative image dump [here](https://mega.nz/file/RptVUAZT#K__JkdCRWDgC3sVSA64YDBsskOTiZXy1_XBhuVNOmFA) if the first one doesnt work
 Process:
 - Go to superbird-tool and install it based off your operating system. Come back once you can run `python superbird_tool.py --find_device` and see your Car Thing
 - Unplug the Car Thing
