@@ -1,16 +1,5 @@
 import { useState } from 'react'
-import {
-  IconCarThing,
-  IconDisconnect,
-  IconLightbulbOff,
-  IconLightbulbOn,
-  IconLogoGearLoading,
-  IconPlay,
-  IconPower,
-  IconRefresh,
-  IconReload,
-  IconX
-} from '../icons'
+import { IconLogoGearLoading, IconPlay, IconRefresh } from '../icons'
 
 const Adb = (): JSX.Element => {
   const [type, setType] = useState<string>('')

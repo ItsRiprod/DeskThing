@@ -1,4 +1,6 @@
+import dataListener, { MESSAGE_TYPES } from '../utils/events'
 import { readFromFile, writeToFile } from '../utils/fileHandler'
+import { sendMappings } from './websocketServer'
 
 export type Button = {
   name: string
@@ -6,7 +8,7 @@ export type Button = {
   source: string
 }
 
-export type key = {
+export type Key = {
   id: string
   source: string
 }
@@ -17,16 +19,16 @@ export type ButtonMapping = {
 
 export type FileStructure = {
   default: ButtonMapping
-  [key: string]: ButtonMapping | Button[] | key[] | string
+  [key: string]: ButtonMapping | Button[] | Key[] | string
   functions: Button[]
-  keys: key[]
+  keys: Key[]
   version: string
 }
 
 const defaultData: FileStructure = {
   version: '0.6.0',
   default: {
-    tray1: { name: 'Skip', description: 'Shuffle', source: 'server' },
+    tray1: { name: 'Shuffle', description: 'Shuffle', source: 'server' },
     tray2: { name: 'Rewind', description: 'Rewind', source: 'server' },
     tray3: { name: 'PlayPause', description: 'PlayPause', source: 'server' },
     tray4: { name: 'Skip', description: 'Skip', source: 'server' },
@@ -57,15 +59,10 @@ const defaultData: FileStructure = {
     { name: 'Pref3', description: 'Pref3', source: 'server' },
     { name: 'Pref4', description: 'Pref4', source: 'server' },
     { name: 'Swap', description: 'Swap', source: 'server' },
-    { name: 'Swap', description: 'Swap', source: 'server' },
-    { name: 'Swap', description: 'Swap', source: 'server' },
-    { name: 'Swap', description: 'Swap', source: 'server' },
     { name: 'VolDown', description: 'VolDown', source: 'server' },
     { name: 'VolUp', description: 'VolUp', source: 'server' },
     { name: 'PlayPause', description: 'PlayPause', source: 'server' },
-    { name: 'Skip', description: 'Skip', source: 'server' },
-    { name: 'Repeat', description: 'Repeat', source: 'server' },
-    { name: 'Repeat', description: 'Repeat', source: 'server' }
+    { name: 'Skip', description: 'Skip', source: 'server' }
   ],
   keys: [
     { id: 'tray1', source: 'server' },
@@ -106,12 +103,24 @@ const saveMappings = (mappings: FileStructure): void => {
   writeToFile(mappings, 'mappings.json')
 }
 
-const getMappings = (): FileStructure => {
-  return loadMappings()
+const getMappings = (mappingName: string = 'default'): ButtonMapping => {
+  const mappings = loadMappings()
+  if (!(mappingName in mappings)) {
+    dataListener.emit(
+      MESSAGE_TYPES.ERROR,
+      `MAPHANDLER: Mapping ${mappingName} does not exist, using default`
+    )
+    throw new Error(`Mapping ${mappingName} does not exist`)
+  }
+  return mappings[mappingName] as ButtonMapping
 }
 
-const setMappings = (newMappings: FileStructure): void => {
-  saveMappings(newMappings)
+const setMappings = (mappingName: string, newMappings: ButtonMapping): void => {
+  const mappings = loadMappings()
+  mappings[mappingName] = newMappings
+  saveMappings(mappings)
+  dataListener.emit(MESSAGE_TYPES.LOGGING, 'MAPHANDLER: Map saved successfully!')
+  sendMappings()
 }
 
 const getDefaultMappings = (): ButtonMapping => {
@@ -189,6 +198,7 @@ const removeKey = (keyId: string): void => {
 }
 
 export {
+  loadMappings,
   getMappings,
   setMappings,
   getDefaultMappings,

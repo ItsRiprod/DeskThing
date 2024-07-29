@@ -1,18 +1,8 @@
 import { app } from 'electron'
 import { join } from 'path'
 import fs from 'fs'
-import { AppData } from '../handlers/configHandler'
-import { fileStructure } from '../handlers/keyMapHandler'
 
-interface fileData {
-  [appName: string]:
-    | {
-        [key: string]: string | [string]
-      }
-    | string
-}
-
-export const readFromFile = (filename: string): fileStructure | fileData | false | AppData => {
+export const readFromFile = <T>(filename: string): T | false => {
   const dataFilePath = join(app.getPath('userData'), filename)
   try {
     if (!fs.existsSync(dataFilePath)) {
@@ -29,10 +19,7 @@ export const readFromFile = (filename: string): fileStructure | fileData | false
 }
 
 // Helper function to write data
-export const writeToFile = (
-  data: fileData | AppData | fileStructure,
-  filepath: string
-): boolean => {
+export const writeToFile = <T>(data: T, filepath: string): boolean => {
   try {
     const dataFilePath = join(app.getPath('userData'), filepath)
     fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2))

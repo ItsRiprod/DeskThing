@@ -1,6 +1,7 @@
 import { sendIpcData } from '..'
 import dataListener, { MESSAGE_TYPES } from '../utils/events'
 import { readFromFile, writeToFile } from '../utils/fileHandler'
+import { ButtonMapping } from './keyMapHandler'
 export interface Manifest {
   isAudioSource: boolean
   requires: Array<string>
@@ -44,7 +45,7 @@ const defaultData: AppData = {
 const readData = (): AppData => {
   const dataFilePath = 'apps.json'
   try {
-    const data = readFromFile(dataFilePath)
+    const data = readFromFile<AppData>(dataFilePath)
     if (!data) {
       // File does not exist, create it with default data
       writeToFile(defaultData, dataFilePath)
@@ -52,28 +53,17 @@ const readData = (): AppData => {
     }
 
     // If data is of type AppData, return it
-    if (isAppData(data)) {
-      return data as AppData
-    } else {
-      // Handle case where data is not of type AppData
-      console.error('Data format is incorrect')
-      return defaultData
-    }
+    return data as AppData
   } catch (err) {
     console.error('Error reading data:', err)
     return defaultData
   }
 }
 
-// Type guard to check if data is of type AppData
-const isAppData = (data: any): data is AppData => {
-  return 'apps' in data && 'config' in data
-}
-
 // Helper function to write data
 const writeData = (data: AppData): void => {
   try {
-    const result = writeToFile(data, 'apps.json')
+    const result = writeToFile<AppData>(data, 'apps.json')
     if (!result) {
       dataListener.emit(MESSAGE_TYPES.ERROR, 'Error writing data')
     }
@@ -212,7 +202,5 @@ export {
   addAppManifest,
   addConfig,
   getConfig,
-  purgeAppConfig,
-  saveMappings,
-  loadMappings
+  purgeAppConfig
 }

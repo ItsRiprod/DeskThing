@@ -461,7 +461,7 @@ interface returnData {
   platforms: string[]
   requirements: string[]
 }
-async function handleZip(zipFilePath: string): Promise<returnData> {
+async function handleZip(zipFilePath: string, event?): Promise<returnData> {
   try {
     const extractDir = join(app.getPath('userData'), 'apps') // Extract to user data folder
     // Create the extraction directory if it doesn't exist
@@ -475,13 +475,18 @@ async function handleZip(zipFilePath: string): Promise<returnData> {
       fs.mkdirSync(tempDir, { recursive: true })
     }
 
+    event && event.reply('logging', { status: true, data: 'Extracting App', final: false })
+
     // Extract the .zip file to a temporary location to get the manifest.json
     await new Promise<void>((resolve, reject) => {
       const extractStream = fs
         .createReadStream(zipFilePath)
         .pipe(unzipper.Extract({ path: tempDir }))
 
-      extractStream.on('error', reject)
+      extractStream.on('error', () => {
+        event && event.reply('logging', { status: false, data: 'Extraction failed!', final: true })
+        reject()
+      })
       extractStream.on('close', () => {
         console.log('Extraction finished')
         resolve()
@@ -492,6 +497,7 @@ async function handleZip(zipFilePath: string): Promise<returnData> {
       console.log(file)
     })
 
+    event && event.reply('logging', { status: true, data: 'Getting Manifest', final: false })
     let returnData = await getManifest(tempDir)
 
     if (!returnData) {
@@ -509,6 +515,8 @@ async function handleZip(zipFilePath: string): Promise<returnData> {
       }
     }
 
+    event &&
+      event.reply('logging', { status: true, data: 'Disabling and purging app', final: false })
     await disableApp(returnData.appId)
 
     await purgeAppData(returnData.appId)
@@ -531,23 +539,20 @@ async function handleZip(zipFilePath: string): Promise<returnData> {
   }
 }
 
-async function handleZipFromUrl(
-  zipUrlPath: string,
-  reply: (data: string, payload: any) => void
-): Promise<void> {
+async function handleZipFromUrl(zipUrlPath: string, event): Promise<void> {
   const tempZipPath = getAppFilePath('apps', 'temp')
   let returnData: returnData | undefined
   try {
     if (!fs.existsSync(getAppFilePath('apps', 'temp'))) {
       fs.mkdirSync(getAppFilePath('apps', 'temp'), { recursive: true })
     }
-
     const writeStream = fs.createWriteStream(join(tempZipPath, 'temp.zip'))
     writeStream.on('error', (error) => {
       dataListener.emit(MESSAGE_TYPES.ERROR, `Error writing to temp file: ${error.message}`)
       throw new Error(`Error writing to temp file: ${error.message}`)
     })
 
+    event.reply('logging', { status: true, data: 'Making Request...', final: false })
     const request = net.request(zipUrlPath)
     request.on('response', (response) => {
       if (response.statusCode !== 200) {
@@ -555,6 +560,12 @@ async function handleZipFromUrl(
           MESSAGE_TYPES.ERROR,
           `Failed to download zip file: ${response.statusCode}`
         )
+        event.reply('logging', {
+          status: false,
+          data: 'Encountered an error',
+          final: true,
+          error: `Failed to download zip file: ${response.statusCode}`
+        })
         return
       }
 
@@ -565,10 +576,11 @@ async function handleZipFromUrl(
       response.on('end', async () => {
         writeStream.end()
         try {
+          event.reply('logging', { status: true, data: 'Extracting zip file...', final: false })
           // Run file like a normal zip file
-          returnData = await handleZip(join(tempZipPath, 'temp.zip'))
+          returnData = await handleZip(join(tempZipPath, 'temp.zip'), event)
           console.log(`Successfully processed and deleted ${tempZipPath}`)
-          reply('zip-name', returnData)
+          event.reply('zip-name', { status: true, data: returnData, final: true })
         } catch (error) {
           dataListener.emit(MESSAGE_TYPES.ERROR, `Error processing zip file: ${error}`)
         } finally {
@@ -629,12 +641,13 @@ async function loadAndRunEnabledApps(): Promise<void> {
  * Adds an app to the program. This will check the config for if the app exists already or not, and update accordingly
  * This will also enable the app and then run the app
  *
- * @param _event
+ * @param event
  * @param appName
  */
-async function addApp(_event, appName: string, appPath?: string): Promise<void> {
+async function addApp(event, appName: string, appPath?: string): Promise<void> {
   try {
     // Load existing apps config
+    event.reply('logging', { status: true, data: 'Loading apps config', final: false })
     if (appPath != undefined) {
       console.log('Developer app detected: Purging old app...')
       await purgeAppData(appName)
@@ -656,15 +669,12 @@ async function addApp(_event, appName: string, appPath?: string): Promise<void> 
     } else {
       console.log(`App '${appName}' already exists and is enabled.`)
     }
-
+    event.reply('logging', { status: true, data: 'Running App', final: false })
     console.log('Running app...')
     if (runningApps.has(appName)) {
       await stopApp(appName)
     }
-
     await runApp(appName)
-
-    // Run the app if enabled
   } catch (error) {
     console.error('Error adding app:', error)
   }

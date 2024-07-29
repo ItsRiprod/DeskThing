@@ -98,8 +98,14 @@ const sendPrefData = async (socket = null): Promise<void> => {
 const sendMappings = async (socket: WebSocket | null = null): Promise<void> => {
   try {
     const mappings = getDefaultMappings()
-    sendData(socket, { app: 'client', type: 'button_mappings', data: mappings })
-    console.log('WSOCKET: Button mappings sent!')
+    if (socket) {
+      sendData(socket, { app: 'client', type: 'button_mappings', data: mappings })
+      console.log('WSOCKET: Button mappings sent!')
+      dataListener.asyncEmit(MESSAGE_TYPES.MESSAGE, `WEBSOCKET: Client has been sent button maps!` )
+    } else {
+      sendMessageToClients({ app: 'client', type: 'button_mappings', data: mappings })
+      dataListener.asyncEmit(MESSAGE_TYPES.MESSAGE, `WEBSOCKET: Client has been sent button maps!` )
+    }
   } catch (error) {
     console.error('WSOCKET: Error getting button mappings:', error)
     if (socket) sendError(socket, 'Error getting button mappings')
@@ -282,4 +288,4 @@ server.on('connection', async (socket) => {
   })
 })
 
-export { sendMessageToClients, sendResponse, sendError, sendData, sendPrefData }
+export { sendMessageToClients, sendMappings, sendResponse, sendError, sendData, sendPrefData }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { IconLogoGearLoading } from '../icons'
+import { IconLogoLoading } from '../icons'
 import githubStore, { GithubRelease, GithubAsset } from '../../store/githubStore'
 import ReleaseList from '../ReleaseList'
 
@@ -8,6 +8,7 @@ const Web = (): JSX.Element => {
   const [openReleaseId, setOpenReleaseId] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [status, setStatus] = useState('')
 
   useEffect(() => {
     const fetchData = async (): Promise<void> => {
@@ -26,20 +27,34 @@ const Web = (): JSX.Element => {
     return assets.filter((asset) => asset.name.includes('deskthing-client-build'))
   }
 
+  const handleLogging = async (): Promise<void> => {
+    setLoading(true)
+    const unsubscribe = window.electron.ipcRenderer.on('logging', (_event, reply) => {
+      console.log(reply)
+      if (reply.final) {
+        unsubscribe()
+        setLoading(false)
+      } else {
+        setLoading(true)
+      }
+      if (!reply.status) {
+        setStatus(reply.error || 'Unknown error occurred')
+        unsubscribe()
+        setLoading(false)
+      } else {
+        if (reply.data) {
+          setStatus(reply.data)
+        }
+      }
+    })
+  }
+
   const handleAssetClick = async (asset: GithubAsset): Promise<void> => {
     // Send the selected asset to Electron backend for extraction
     setLoading(true)
     try {
       window.electron.ipcRenderer.send('extract-webapp-zip', asset.browser_download_url)
-      window.electron.ipcRenderer.once('zip-extracted', (_event, reply) => {
-        console.log(reply)
-        setLoading(false)
-        if (!reply.success) {
-          setError(reply.error || 'Unknown error occurred')
-        } else {
-          // Optionally handle success, e.g., navigate to the extracted app
-        }
-      })
+      handleLogging()
     } catch (error) {
       setLoading(false)
       if (error) {
@@ -52,10 +67,9 @@ const Web = (): JSX.Element => {
     <div className="pt-5 flex flex-col justify-around items-center">
       <div className="w-full max-w-2xl">
         {loading ? (
-          <div className="mb-4">
-            <div className="">
-              <IconLogoGearLoading iconSize={256} />
-            </div>
+          <div className="mb-4 flex flex-col items-center justify-center">
+            <IconLogoLoading iconSize={256} />
+            {status && <p className="mt-2 logo">{status}</p>}
           </div>
         ) : error ? (
           <div className="mb-4">

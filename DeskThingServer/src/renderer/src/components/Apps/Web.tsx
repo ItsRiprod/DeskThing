@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react'
-import { IconLogoGearLoading } from '../icons'
+import { IconLogoLoading } from '../icons'
 import githubStore, { GithubRelease, GithubAsset } from '../../store/githubStore'
 import ReleaseList from '../ReleaseList'
 import RunPreppedApp from './RunPreppedApp'
+interface responseData {
+  status: boolean
+  data: returnData
+  final: boolean
+  error?: string
+}
 interface returnData {
   appId: string
   appName: string
@@ -18,6 +24,7 @@ const Web = (): JSX.Element => {
   const [loading, setLoading] = useState(false)
   const [appData, setAppData] = useState<returnData | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [status, setStatus] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchData = async (): Promise<void> => {
@@ -36,15 +43,40 @@ const Web = (): JSX.Element => {
     return assets.filter((asset) => asset.name.includes('-app'))
   }
 
+  const handleLogging = async (): Promise<void> => {
+    setLoading(true)
+    const unsubscribe = window.electron.ipcRenderer.on('logging', (_event, reply) => {
+      console.log(reply)
+      if (reply.final) {
+        unsubscribe()
+        setLoading(false)
+      } else {
+        setLoading(true)
+      }
+      if (!reply.status) {
+        setStatus(reply.error || 'Unknown error occurred')
+        unsubscribe()
+        setLoading(false)
+      } else {
+        if (reply.data) {
+          setStatus(reply.data)
+        }
+      }
+    })
+  }
+
   const handleAssetClick = async (asset: GithubAsset): Promise<void> => {
     // Send the selected asset to Electron backend for extraction
     setLoading(true)
     try {
       window.electron.ipcRenderer.send('extract-app-zip-url', asset.browser_download_url)
-      window.electron.ipcRenderer.on('zip-name', (_event, data: returnData) => {
+      handleLogging()
+      window.electron.ipcRenderer.on('zip-name', (_event, response: responseData) => {
         setLoading(false)
-        setAppData(data)
-        console.log(data)
+        if (response.status) {
+          setAppData(response.data)
+        }
+        console.log(response)
       })
     } catch (error) {
       setLoading(false)
@@ -65,10 +97,9 @@ const Web = (): JSX.Element => {
       {!appData?.appId ? (
         <div className="w-full max-w-2xl">
           {loading ? (
-            <div className="w-full px-4 py-2 flex justify-center">
-              <div className="">
-                <IconLogoGearLoading iconSize={256} />
-              </div>
+            <div className="w-full px-4 py-2 flex flex-col items-center justify-center">
+              <IconLogoLoading iconSize={256} />
+              {status && <p className="logo text-white">{status.trim()}</p>}
             </div>
           ) : error ? (
             <div className="mb-4">

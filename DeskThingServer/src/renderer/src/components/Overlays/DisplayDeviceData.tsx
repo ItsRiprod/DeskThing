@@ -28,6 +28,7 @@ const DisplayDeviceData = ({ setEnabled, device }: DisplayDeviceDataProps): JSX.
   const [supervisorData, setSupervisorData] = useState<{ [key: string]: string }>({})
   const [tooltip, setTooltip] = useState('')
   const [weToolTip, setWStooltip] = useState('')
+  const [loading, setIsLoading] = useState(false)
 
   const getSupervisorData = async (): Promise<void> => {
     const supervisorResponse = await window.electron.runAdbCommand(
@@ -43,7 +44,10 @@ const DisplayDeviceData = ({ setEnabled, device }: DisplayDeviceDataProps): JSX.
           parsedData[name] = status
         }
       })
+      setIsLoading(false)
       setSupervisorData(parsedData)
+    } else {
+      setIsLoading(false)
     }
   }
 
@@ -127,24 +131,50 @@ const DisplayDeviceData = ({ setEnabled, device }: DisplayDeviceDataProps): JSX.
       if (type == 'adb') {
         const response = await window.electron.runAdbCommand(command)
         console.log(response)
+        handleLogging()
       } else {
         await window.electron.runDeviceCommand(type, command)
+        handleLogging()
       }
     }
   }
 
+  const handleLogging = async (): Promise<void> => {
+    setIsLoading(true)
+    const unsubscribe = window.electron.ipcRenderer.on('logging', (_event, reply) => {
+      console.log(reply)
+      if (reply.final) {
+        unsubscribe()
+        getSupervisorData()
+      } else {
+        setIsLoading(true)
+      }
+      if (!reply.status) {
+        setTooltip(reply.error || 'Unknown error occurred')
+        unsubscribe()
+        setIsLoading(false)
+      } else {
+        if (reply.data) {
+          setTooltip(reply.data)
+        }
+      }
+    })
+  }
+
   const handleRestart = async (): Promise<void> => {
     await window.electron.runAdbCommand('shell reboot')
+    handleLogging()
     handleExit()
   }
   const handlePowerOff = async (): Promise<void> => {
     await window.electron.runDeviceCommand('post', '{"type":"device","action":"reboot"}')
+    handleLogging()
     handleExit()
   }
   const handleAdbCommand = async (command: string): Promise<void | undefined> => {
     try {
-      window.electron.runAdbCommand(command)
-      getSupervisorData()
+      window.electron.runAdbCommand((deviceData?.usid ? `-s ${deviceData?.usid} ` : '') + command)
+      handleLogging()
     } catch (Error) {
       console.log(Error)
       return undefined
@@ -188,24 +218,22 @@ const DisplayDeviceData = ({ setEnabled, device }: DisplayDeviceDataProps): JSX.
               <p className="fixed">{tooltip}</p>
               <div className="flex gap-5">
                 <button
-                  onClick={() =>
-                    handleAdbCommand(
-                      `-s ${device.replace('device', '')} shell supervisorctl restart chromium`
-                    )
-                  }
+                  onClick={() => handleAdbCommand(`shell supervisorctl restart chromium`)}
                   className="border-2 top-10 border-cyan-600 hover:bg-cyan-500  p-2 rounded-lg"
                   onMouseEnter={() => setTooltip('Reload Chromium')}
                   onMouseLeave={() => setTooltip('')}
+                  disabled={loading}
                 >
-                  <IconRefresh iconSize={24} />
+                  {loading ? <IconLogoGearLoading iconSize={24} /> : <IconRefresh iconSize={24} />}
                 </button>
                 <button
                   className="border-2 top-10 border-red-600 hover:bg-red-500 p-2 rounded-lg"
                   onClick={() => handleRestart()}
                   onMouseEnter={() => setTooltip('Restart Device')}
                   onMouseLeave={() => setTooltip('')}
+                  disabled={loading}
                 >
-                  <IconReload iconSize={24} />
+                  {loading ? <IconLogoGearLoading iconSize={24} /> : <IconReload iconSize={24} />}
                 </button>
                 <button
                   className="border-2 top-10 border-red-600 hover:bg-red-500  p-2 rounded-lg"
@@ -229,8 +257,13 @@ const DisplayDeviceData = ({ setEnabled, device }: DisplayDeviceDataProps): JSX.
                     onClick={() => handleAdbCommand(`shell supervisorctl stop backlight`)}
                     onMouseEnter={() => setTooltip('Disable Ambient Updates')}
                     onMouseLeave={() => setTooltip('')}
+                    disabled={loading}
                   >
-                    <IconLightbulbOff iconSize={24} />
+                    {loading ? (
+                      <IconLogoGearLoading iconSize={24} />
+                    ) : (
+                      <IconLightbulbOff iconSize={24} />
+                    )}
                   </button>
                 ) : (
                   <button
@@ -238,8 +271,13 @@ const DisplayDeviceData = ({ setEnabled, device }: DisplayDeviceDataProps): JSX.
                     onClick={() => handleAdbCommand(`shell supervisorctl start backlight`)}
                     onMouseEnter={() => setTooltip('Enable Ambient Updates')}
                     onMouseLeave={() => setTooltip('')}
+                    disabled={loading}
                   >
-                    <IconLightbulbOn iconSize={24} />
+                    {loading ? (
+                      <IconLogoGearLoading iconSize={24} />
+                    ) : (
+                      <IconLightbulbOn iconSize={24} />
+                    )}
                   </button>
                 )}
               </div>

@@ -14,7 +14,7 @@ function App(): JSX.Element {
   const [currentView, setCurrentView] = useState<View>('appsList')
 
   useEffect(() => {
-    const handleAppData = (_event: Electron.IpcRendererEvent, data: AppData): void => {
+    const handleAppData = (data: AppData): void => {
       handleAppDataJson(data)
     }
     const handleLog = async (errorData, type): Promise<void> => {
@@ -22,7 +22,9 @@ function App(): JSX.Element {
     }
 
     // Set up listener for 'app-data' event
-    const removeListener = window.electron.ipcRenderer.on('app-data', handleAppData)
+    const removeListener = window.electron.ipcRenderer.on('app-data', (_event, response) =>
+      handleAppData(response.data)
+    )
     const removeErrorListener = window.electron.ipcRenderer.on('error', (_event, errorData) =>
       handleLog(errorData, 'error')
     )

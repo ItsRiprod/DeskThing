@@ -84,7 +84,7 @@ const Local: React.FC = () => {
         <p className="absolute bottom-24 font-semibold max-w-96 overflow-hidden">{`Listening On: ${songData?.device || 'Device name'}`}</p>
         <div className={`info_container ${transitioning ? 'transition-all ease-in-out duration-700' : ''} `} style={{transform: `translateX(${offset}px)`, opacity: `${opacity}`}}>
           <p className="m-3">{songData?.album || 'Album'}</p>
-          <h1 className="m-3">{songData?.track_name || 'Song Title'}</h1>
+          <h1 className="m-3 font-bold text-4xl">{songData?.track_name || 'Song Title'}</h1>
           <h3 className="m-3">{songData?.artist || 'Artist'}</h3>
         </div>
 

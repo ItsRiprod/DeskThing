@@ -6,7 +6,8 @@ export const MESSAGE_TYPES = {
   LOGGING: 'log',
   MESSAGE: 'message',
   CONFIG: 'config',
-  CONNECTION: 'connection'
+  CONNECTION: 'connection',
+  MAPPINGS: 'mapping'
 }
 
 /* Handles server-wide announcements for certain events */

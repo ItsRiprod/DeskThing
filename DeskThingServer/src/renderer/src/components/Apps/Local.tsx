@@ -1,6 +1,12 @@
 import { DragEvent, useState } from 'react'
 import { IconLogoGearLoading, IconUpload } from '../icons'
 
+interface responseData {
+  status: boolean
+  data: returnData
+  final: boolean
+  error?: string
+}
 interface returnData {
   appId: string
   appName: string
@@ -14,6 +20,7 @@ const index = (): JSX.Element => {
   const [appData, setAppData] = useState<returnData | null>(null)
   const [dragActive, setDragActive] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [status, setStatus] = useState('')
 
   const handleDrop = async (event: DragEvent<HTMLDivElement>): Promise<void> => {
     event.preventDefault()
@@ -32,14 +39,39 @@ const index = (): JSX.Element => {
     try {
       // Notify the main process to handle the zip file
       window.electron.ipcRenderer.send('handle-zip', zipFilePath)
-      window.electron.ipcRenderer.once('zip-name', (_event, data: returnData) => {
-        console.log('Received appId:', data)
-        setAppData(data)
+      handleLogging()
+      window.electron.ipcRenderer.once('zip-name', (_event, response: responseData) => {
+        console.log('Received appId:', response)
+        if (response.status) {
+          setAppData(response.data)
+        }
         setLoading(false)
       })
     } catch (error) {
       console.error('Error handling zip file:', error)
     }
+  }
+
+  const handleLogging = async (): Promise<void> => {
+    setLoading(true)
+    const unsubscribe = window.electron.ipcRenderer.on('logging', (_event, reply) => {
+      console.log(reply)
+      if (reply.final) {
+        unsubscribe()
+        setLoading(false)
+      } else {
+        setLoading(true)
+      }
+      if (!reply.status) {
+        setStatus(reply.error || 'Unknown error occurred')
+        unsubscribe()
+        setLoading(false)
+      } else {
+        if (reply.data) {
+          setStatus(reply.data)
+        }
+      }
+    })
   }
 
   const handleAddAndRunApp = async (): Promise<void> => {
@@ -89,6 +121,7 @@ const index = (): JSX.Element => {
           {loading ? (
             <div className="flex flex-col items-center">
               <IconLogoGearLoading iconSize={100} />
+              {status && <p className="logo text-white">{status.trim()}</p>}
             </div>
           ) : (
             <>

@@ -128,7 +128,7 @@ const Utility: FC = (): JSX.Element => {
           </div>
         )) : (
           <div className="flex justify-center items-center h-full">
-            <IconDevice iconSize={256} text={`v${version}-ADB`} fontSize={110} />
+            <IconDevice iconSize={256} text={`v${version}-RNDIS`} fontSize={110} />
           </div>
         )}
       </div>

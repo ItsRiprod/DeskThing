@@ -5,6 +5,7 @@ import * as fs from 'fs'
 import * as unzipper from 'unzipper'
 import { app, net } from 'electron'
 import { handleAdbCommands } from './adbHandler'
+import { ReplyData } from '..'
 
 export const HandleDeviceData = async (data: any): Promise<void> => {
   try {
@@ -23,34 +24,45 @@ export const HandleDeviceData = async (data: any): Promise<void> => {
   }
 }
 export const HandlePushWebApp = async (
-  reply: (data: string, payload: any) => void
+  reply: (channel: string, data: ReplyData) => void
 ): Promise<void> => {
   try {
     const userDataPath = app.getPath('userData')
     const extractDir = join(userDataPath, 'webapp')
     let response
+    console.log('Remounting...')
+    reply('logging', { status: true, data: 'Remounting...', final: false })
     response = await handleAdbCommands('shell mount -o remount,rw /')
-    // Set when replies are handled
-    // reply('reply-interface', response)
-    response = await handleAdbCommands('shell mv /usr/share/qt-superbird-app/webapp /tmp/webapp-orig')
-    // reply('reply-interface', response)
+    reply('logging', { status: true, data: response || 'Moving...', final: false })
+    response = await handleAdbCommands(
+      'shell mv /usr/share/qt-superbird-app/webapp /tmp/webapp-orig'
+    )
+    reply('logging', { status: true, data: response || 'Moving...', final: false })
     response = await handleAdbCommands('shell mv /tmp/webapp-orig /usr/share/qt-superbird-app/')
-    // reply('reply-interface', response)
+
+    reply('logging', { status: true, data: response || 'Removing old app...', final: false })
     response = await handleAdbCommands('shell rm -r /tmp/webapp-orig')
-    // reply('reply-interface', response)
+
+    reply('logging', { status: true, data: response || 'Pushing new app...', final: false })
     response = await handleAdbCommands(`push ${extractDir}/ /usr/share/qt-superbird-app/webapp`)
-    // reply('reply-interface', { type: update, status: {running: true, message: ${response}}})
+
+    reply('logging', { status: true, data: response || 'Restarting Chromium', final: false })
     response = await handleAdbCommands('shell supervisorctl restart chromium')
-    // reply('reply-interface', { type: update, status: {running: true, message: ${response}}})
-    reply('pushed-staged', { success: true })
+
+    reply('logging', { status: true, data: response, final: true })
   } catch (Exception) {
-    reply('pushed-staged', { success: false, error: Exception })
+    reply('logging', {
+      status: false,
+      data: 'There has been an error',
+      final: true,
+      error: `${Exception}`
+    })
     dataListener.emit(MESSAGE_TYPES.ERROR, 'HandlePushWebApp encountered the error ' + Exception)
   }
 }
 
 export const HandleWebappZipFromUrl = (
-  reply: (data: string, payload: any) => void,
+  reply: (channel: string, data: ReplyData) => void,
   zipFileUrl: string
 ): void => {
   const userDataPath = app.getPath('userData')
@@ -92,13 +104,18 @@ export const HandleWebappZipFromUrl = (
           )
 
           // Notify success to the frontend
-          reply('zip-extracted', { success: true })
+          reply('logging', { status: true, data: 'Success!', final: true })
         } catch (error) {
           console.error('Error extracting zip file:', error)
           dataListener.emit(MESSAGE_TYPES.ERROR, `Error extracting zip file: ${error}`)
 
           // Notify failure to the frontend
-          reply('zip-extracted', { success: false, error: error })
+          reply('logging', {
+            status: false,
+            data: 'Failed to extract!',
+            final: true,
+            error: 'No error provided'
+          })
         }
       })
 
@@ -107,7 +124,12 @@ export const HandleWebappZipFromUrl = (
         dataListener.emit(MESSAGE_TYPES.ERROR, `Error downloading zip file: ${error}`)
 
         // Notify failure to the frontend
-        reply('zip-extracted', { success: false, error: error.message })
+        reply('logging', {
+          status: false,
+          data: 'ERR Downloading file!',
+          final: true,
+          error: error.message
+        })
       })
     } else {
       const errorMessage = `Failed to download zip file: ${response.statusCode}`
@@ -115,7 +137,12 @@ export const HandleWebappZipFromUrl = (
       dataListener.emit(MESSAGE_TYPES.ERROR, errorMessage)
 
       // Notify failure to the frontend
-      reply('zip-extracted', { success: false, error: errorMessage })
+      reply('logging', {
+        status: false,
+        data: 'Failed to download zip file!',
+        final: true,
+        error: errorMessage
+      })
     }
   })
 
@@ -124,7 +151,12 @@ export const HandleWebappZipFromUrl = (
     dataListener.emit(MESSAGE_TYPES.ERROR, `Error sending request: ${error}`)
 
     // Notify failure to the frontend
-    reply('zip-extracted', { success: false, error: error.message })
+    reply('logging', {
+      status: false,
+      data: 'Failed to download zip file!',
+      final: true,
+      error: error.message
+    })
   })
 
   request.end()

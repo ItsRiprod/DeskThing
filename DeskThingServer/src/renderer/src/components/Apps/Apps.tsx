@@ -62,7 +62,7 @@ const Apps = (): JSX.Element => {
     <div className="h-svh w-[100%] flex flex-col justify-between items-center">
       <div className="pt-5 w-full flex justify-center">
         {enabled && <DisplayAppData appIndex={appIndex} setEnabled={setEnabled} data={appsList} />}
-        {Object.keys(appsList.apps).length > 0 ? (
+        {appsList?.apps?.length > 0 && Object.keys(appsList.apps).length > 0 ? (
           <div className="pt-5 w-full flex 2xl:flex-row 2xl:flex-wrap flex-col items-center gap-2">
             {(appsList.apps as App[]).map((app, appIndex) => (
               <div

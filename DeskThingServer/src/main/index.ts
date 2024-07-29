@@ -7,12 +7,22 @@ import { GithubRelease } from './types/types'
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 
+export interface ReplyData {
+  status: boolean
+  data: any
+  final: boolean
+  error?: string
+}
+
 const IPC_CHANNELS = {
   PING: 'ping',
   GET_CONNECTIONS: 'get-connections',
   ADD_APP: 'add-app',
   RUN_STOP_APP: 'stop-app',
+  RUN_ADB: 'run-adb-command',
+  RUN_DEVICE_COMMAND: 'run-device-command',
   GET_APPS: 'get-apps',
+  GET_GITHUB: 'fetch-github-releases',
   GET_MAPS: 'get-maps',
   SET_MAP: 'set-maps',
   STOP_APP: 'stop-app',
@@ -21,6 +31,9 @@ const IPC_CHANNELS = {
   HANDLE_ZIP: 'handle-zip',
   USER_DATA_RESPONSE: 'user-data-response',
   SELECT_ZIP_FILE: 'select-zip-file',
+  EXTRACT_WEBAPP_ZIP: 'extract-webapp-zip',
+  EXTRACT_APP_ZIP_URL: 'extract-app-zip-url',
+  PUSH_STAGED_WEBAPP: 'push-staged',
   DEV_ADD_APP: 'dev-add-app'
 }
 
@@ -119,7 +132,7 @@ async function setupIpcHandlers(): Promise<void> {
     stopApp,
     purgeAppData
   } = await import('./handlers/appHandler')
-  import { getMappings } from './handlers/keyMapHandler'
+  const { loadMappings, setMappings } = await import('./handlers/keyMapHandler')
   const { handleAdbCommands } = await import('./handlers/adbHandler')
   const { sendData } = await import('./handlers/websocketServer')
   const { getReleases } = await import('./handlers/githubHandler')
@@ -129,56 +142,70 @@ async function setupIpcHandlers(): Promise<void> {
 
   let connections = 0
   ipcMain.on(IPC_CHANNELS.PING, () => console.log('pong'))
-
   ipcMain.on(IPC_CHANNELS.GET_CONNECTIONS, async (event) => {
-    event.sender.send('connections', connections)
+    event.reply('connections', { status: true, data: connections, final: true })
     console.log('SERVER: connections', connections)
   })
 
   ipcMain.on(IPC_CHANNELS.ADD_APP, async (event, appName: string) => {
     await addApp(event, appName)
+    event.reply('logging', { status: true, data: 'Finished', final: true })
   })
   ipcMain.on(IPC_CHANNELS.DEV_ADD_APP, async (event, appPath: string) => {
     await addApp(event, 'developer-app', appPath)
+    event.reply('logging', { status: true, data: 'Finished', final: true })
   })
   ipcMain.on(IPC_CHANNELS.GET_APPS, (event) => {
+    event.reply('logging', { status: true, data: 'Getting data', final: false })
     const data = getAppData()
-    event.sender.send('app-data', data)
+    event.reply('logging', { status: true, data: 'Finished', final: true })
+    event.reply('app-data', { status: true, data: data, final: true })
   })
-  ipcMain.on(IPC_CHANNELS.STOP_APP, async (_event, appName: string) => {
+  ipcMain.on(IPC_CHANNELS.STOP_APP, async (event, appName: string) => {
+    event.reply('logging', { status: true, data: 'Stopping App', final: false })
     await stopApp(appName)
+    event.reply('logging', { status: true, data: 'Finished', final: true })
   })
-  ipcMain.on(IPC_CHANNELS.DISABLE_APP, async (_event, appName: string) => {
+  ipcMain.on(IPC_CHANNELS.DISABLE_APP, async (event, appName: string) => {
+    event.reply('logging', { status: true, data: 'Disabling App', final: false })
     await disableApp(appName)
+    event.reply('logging', { status: true, data: 'Finished', final: true })
   })
-  ipcMain.on(IPC_CHANNELS.PURGE_APP, async (_event, appName: string) => {
+  ipcMain.on(IPC_CHANNELS.PURGE_APP, async (event, appName: string) => {
+    event.reply('logging', { status: true, data: 'Purging App', final: false })
     console.log(`====== PURGING APP ${appName} ========`)
     await purgeAppData(appName)
+    event.reply('logging', { status: true, data: 'Finished', final: true })
   })
   ipcMain.on(IPC_CHANNELS.HANDLE_ZIP, async (event, zipFilePath: string) => {
+    event.reply('logging', { status: true, data: 'Handling zipped app', final: false })
     console.log('SERVER: handling zip file event', event)
-    const returnData = await handleZip(zipFilePath) // Extract to user data folder
-    console.log('SERVER: Return Data after Extraction:', returnData)
-    event.reply('zip-name', returnData)
+
+    const returnData = await handleZip(zipFilePath, event) // Extract to user data folder
+
+    event.reply('logging', { status: true, data: 'Finished', final: true })
+    event.reply('zip-name', { status: true, data: returnData, final: true })
   })
-  ipcMain.on('extract-webapp-zip', async (event, zipFileUrl) => {
+  ipcMain.on(IPC_CHANNELS.EXTRACT_WEBAPP_ZIP, async (event, zipFileUrl) => {
     try {
+      event.reply('logging', { status: true, data: 'Handling web app from URL', final: false })
       HandleWebappZipFromUrl(event.reply, zipFileUrl)
     } catch (error) {
       console.error('Error extracting zip file:', error)
       event.reply('zip-extracted', { success: false, error: error })
     }
   })
-  ipcMain.on('extract-app-zip-url', async (event, zipFileUrl) => {
-    console.log('SERVER: handling zip file event', event)
-    const returnData = await handleZipFromUrl(zipFileUrl, event.reply) // Extract to user data folder
+  ipcMain.on(IPC_CHANNELS.EXTRACT_APP_ZIP_URL, async (event, zipFileUrl) => {
+    event.reply('logging', { status: true, data: 'Handling app from URL...', final: false })
+    const returnData = await handleZipFromUrl(zipFileUrl, event) // Extract to user data folder
     console.log('SERVER: Return Data after Extraction:', returnData)
   })
-  ipcMain.on('push-staged', async (event) => {
+  ipcMain.on(IPC_CHANNELS.PUSH_STAGED_WEBAPP, async (event) => {
     try {
+      console.log('Pushing stages webapp...')
       HandlePushWebApp(event.reply)
     } catch (error) {
-      event.reply('pushed-staged', { success: false, error: error })
+      event.reply(IPC_CHANNELS.PUSH_STAGED_WEBAPP, { success: false, error: error })
       console.error('Error extracting zip file:', error)
       dataListener.emit(MESSAGE_TYPES.ERROR, error)
     }
@@ -204,10 +231,18 @@ async function setupIpcHandlers(): Promise<void> {
     return { path: filePath, name: path.basename(filePath) }
   })
 
-  ipcMain.handle('run-adb-command', async (_event, command) => {
-    return await handleAdbCommands(command)
+  ipcMain.handle(IPC_CHANNELS.RUN_ADB, async (event, command) => {
+    return await handleAdbCommands(command, event)
   })
-  ipcMain.handle('fetch-github-releases', async (_event, url): Promise<GithubRelease[]> => {
+  ipcMain.handle(IPC_CHANNELS.GET_MAPS, async (event) => {
+    event.sender.send('logging', { status: true, data: 'Maps Retrieved!', final: true })
+    return await loadMappings()
+  })
+  ipcMain.handle(IPC_CHANNELS.SET_MAP, async (event, name, map) => {
+    event.sender.send('logging', { status: true, data: 'Maps Saved!', final: true })
+    await setMappings(name, map)
+  })
+  ipcMain.handle(IPC_CHANNELS.GET_GITHUB, async (_event, url): Promise<GithubRelease[]> => {
     try {
       return await getReleases(url)
     } catch (error) {
@@ -215,9 +250,10 @@ async function setupIpcHandlers(): Promise<void> {
       return []
     }
   })
-  ipcMain.handle('run-device-command', async (_event, type, command) => {
+  ipcMain.handle(IPC_CHANNELS.RUN_DEVICE_COMMAND, async (event, type, command) => {
     const data = { app: 'client', type: type, data: JSON.parse(command) }
     console.log('Sending data', data)
+    event.sender.send('logging', { status: true, data: 'Finished', final: true })
     return await sendData(null, data)
   })
 
@@ -236,6 +272,7 @@ async function setupIpcHandlers(): Promise<void> {
     console.log('Number of clients', numConnections)
   })
 }
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.

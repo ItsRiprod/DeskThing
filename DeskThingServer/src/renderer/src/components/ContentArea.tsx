@@ -1,9 +1,9 @@
 import React from 'react'
 import AppsList from './Apps'
 import Dev from './Dev'
-import Device from './ADB'
+import Adb from './ADB'
+import Device from './Device'
 import LogDisplay from './LogDisplay'
-import Loading from './Loading'
 
 type View = 'appsList' | 'adb' | 'logDisplay' | 'preferences' | 'dev' // Define possible views
 
@@ -17,11 +17,11 @@ const ContentArea: React.FC<ContentAreaProps> = ({ currentView }) => {
       case 'appsList':
         return <AppsList />
       case 'adb':
-        return <Device />
+        return <Adb />
       case 'logDisplay':
         return <LogDisplay />
       case 'preferences':
-        return <Loading message={'Device Preferences not implemented'} />
+        return <Device />
       case 'dev':
         return <Dev />
       default:

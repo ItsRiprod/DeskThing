@@ -41,7 +41,9 @@ const Sidebar: React.FC<SidebarProps> = ({ setCurrentView, currentView }) => {
     }
 
     console.log('got connections', connections)
-    const removeListener = window.electron.ipcRenderer.on('connections', handleConnection)
+    const removeListener = window.electron.ipcRenderer.on('connections', (event, data) =>
+      handleConnection(event, data.data)
+    )
 
     const timeoutId = setTimeout(() => {
       getConnections()
@@ -94,7 +96,7 @@ const Sidebar: React.FC<SidebarProps> = ({ setCurrentView, currentView }) => {
               className={`${currentView === 'preferences' ? 'bg-zinc-800 hover:bg-zinc-700 border-green-500' : 'hover:bg-zinc-900'} sm:border-l rounded-md flex gap-3 w-full p-3`}
               onClick={() => handleClick('preferences')}
             >
-              <IconCarThing strokeWidth={12} />
+              <IconCarThing strokeWidth={18} />
               <span className="hidden md:inline">Device</span>
             </button>
           </li>

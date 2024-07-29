@@ -71,14 +71,21 @@ const Device = (): JSX.Element => {
       setError('Pushing app...')
       setLoading(true)
       window.electron.ipcRenderer.send('push-staged')
-      window.electron.ipcRenderer.once('pushed-staged', (_event, reply) => {
-        setError('App pushed')
+      const unsubscribe = window.electron.ipcRenderer.on('logging', (_event, reply) => {
         console.log(reply)
-        setLoading(false)
-        if (!reply.success) {
-          setError(reply.error || 'Unknown error occurred')
+        if (reply.final) {
+          setLoading(false)
+          unsubscribe()
         } else {
-          // Optionally handle success, e.g., navigate to the extracted app
+          setLoading(true)
+        }
+        if (!reply.status) {
+          setError(reply.error || 'Unknown error occurred')
+          unsubscribe()
+        } else {
+          if (reply.data) {
+            setError(reply.data)
+          }
         }
       })
     } catch (error) {
@@ -123,42 +130,50 @@ const Device = (): JSX.Element => {
               )}
             </button>
             <div className="gap-3 sm:flex-nowrap flex-wrap flex items-center">
-              <p className="hidden sm:inline">{tooltip}</p>
+              <p className="hidden sm:inline">{loading ? '' : tooltip}</p>
               <button
                 onClick={handlePushStaged}
                 className="border-2 top-10 border-cyan-600 hover:bg-cyan-500  p-2 rounded-lg"
                 onMouseEnter={() => setTooltip('Push Staged Webapp')}
                 onMouseLeave={() => setTooltip('')}
+                disabled={loading}
               >
                 <IconUpload iconSize={24} />
               </button>
               <button
                 onClick={() =>
                   handleAdbCommand(
-                    `-s ${device.replace('device', '')} shell supervisorctl restart chromium`
+                    `-s ${device.replace('device', '').trim()} shell supervisorctl restart chromium`
                   )
                 }
                 className="border-2 top-10 border-cyan-600 hover:bg-cyan-500  p-2 rounded-lg"
                 onMouseEnter={() => setTooltip('Reload Chromium')}
                 onMouseLeave={() => setTooltip('')}
+                disabled={loading}
               >
                 <IconRefresh iconSize={24} />
               </button>
               <button
                 onClick={() =>
-                  handleAdbCommand(`-s ${device.replace('device', '')} reverse tcp:8891 tcp:8891`)
+                  handleAdbCommand(
+                    `-s ${device.replace('device', '').trim()} reverse tcp:8891 tcp:8891`
+                  )
                 }
                 className="border-2 top-10 border-cyan-600 hover:bg-cyan-500  p-2 rounded-lg"
                 onMouseEnter={() => setTooltip('Setup ADB Socket Port')}
                 onMouseLeave={() => setTooltip('')}
+                disabled={loading}
               >
                 <IconTransfer />
               </button>
               <button
-                onClick={() => handleAdbCommand(`-s ${device.replace('device', '')} reconnect`)}
+                onClick={() =>
+                  handleAdbCommand(`-s ${device.replace('device', '').trim()}} reconnect`)
+                }
                 className="border-2 top-10 border-red-600 hover:bg-red-500  p-2 rounded-lg"
                 onMouseEnter={() => setTooltip('Reconnect Device')}
                 onMouseLeave={() => setTooltip('')}
+                disabled={loading}
               >
                 <IconDisconnect />
               </button>

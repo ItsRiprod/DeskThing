@@ -12,7 +12,7 @@ const defaultData: Data = {}
 const readData = (): Data => {
   const dataFilePath = 'data.json'
   try {
-    const data = readFromFile(dataFilePath)
+    const data = readFromFile<Data>(dataFilePath)
     if (!data) {
       // File does not exist, create it with default data
       writeToFile(defaultData, dataFilePath)
@@ -20,39 +20,18 @@ const readData = (): Data => {
     }
 
     // If data is of type Data, return it
-    if (isData(data)) {
-      return data as Data
-    } else {
-      // Handle case where data is not of type Data
-      console.error('Data format is incorrect')
-      return defaultData
-    }
+    return data as Data
   } catch (err) {
     console.error('Error reading data:', err)
     return defaultData
   }
 }
 
-// Type guard to check if data is of type Data
-const isData = (data: any): data is Data => {
-  // Simple check to verify if data conforms to the Data interface
-  return (
-    typeof data === 'object' &&
-    data !== null &&
-    Object.values(data).every(
-      (value) =>
-        typeof value === 'object' &&
-        value !== null &&
-        Object.values(value).every((val) => typeof val === 'string')
-    )
-  )
-}
-
 // Updated function to write Data using the new fileHandler
 const writeData = (data: Data): void => {
   try {
     const dataFilePath = 'data.json'
-    writeToFile(data, dataFilePath)
+    writeToFile<Data>(data, dataFilePath)
   } catch (err) {
     console.error('Error writing data:', err)
   }

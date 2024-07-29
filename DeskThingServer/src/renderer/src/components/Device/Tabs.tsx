@@ -15,16 +15,16 @@ const Tabs: React.FC<TopbarProps> = ({ setCurrentView, currentView }) => {
     <div className="w-full top-0 p-0 gap-5 h-fit flex-shrink-0 sm:relative rounded-lg flex overflow-x-scroll items-center">
       <div className="flex justify-evenly w-full border-b-2 border-zinc-800">
         <button
-          className={`${currentView === 'devices' ? 'bg-zinc-900 hover:bg-zinc-700 border-b-2 border-green-500' : 'hover:bg-zinc-800'} flex-grow p-3`}
-          onClick={() => handleClick('devices')}
+          className={`${currentView === 'mappings' ? 'bg-zinc-900 hover:bg-zinc-700 border-b-2 border-green-500' : 'hover:bg-zinc-800'} flex-grow p-3`}
+          onClick={() => handleClick('mappings')}
         >
-          Devices
+          Key Mappings
         </button>
         <button
-          className={`${currentView === 'webapps' ? 'bg-zinc-900 hover:bg-zinc-700 border-b-2 border-green-500' : 'hover:bg-zinc-800'} flex-grow p-3`}
-          onClick={() => handleClick('webapps')}
+          className={`${currentView === 'status' ? 'bg-zinc-900 hover:bg-zinc-700 border-b-2 border-green-500' : 'hover:bg-zinc-800'} flex-grow p-3`}
+          onClick={() => handleClick('status')}
         >
-          Webapps
+          Status
         </button>
       </div>
     </div>
