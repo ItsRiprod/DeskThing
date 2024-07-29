@@ -2,6 +2,12 @@
 
 *Logo design and artwork by @Dilango*
 
+ > [Github Link](https://github.com/ItsRiprod/DeskThing)
+
+ > [Reddit Link](https://reddit.com/r/DeskThing)
+
+ > [Discord Invite](https://discord.gg/uNS3dhj46D)
+
 # The DeskThing ✔️
 
 *Let's begin, shall we?*
