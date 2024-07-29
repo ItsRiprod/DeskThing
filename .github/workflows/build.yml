@@ -83,24 +83,28 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Download artifacts
+      - name: Download artifacts for Windows
         uses: actions/download-artifact@v3
         with:
-          name: DeskThing-ubuntu-latest
-          path: ./dist/ubuntu
-      - uses: actions/download-artifact@v3
-        with:
-          name: DeskThing-macos-latest
-          path: ./dist/macos
-      - uses: actions/download-artifact@v3
-        with:
-          name: DeskThing-windows-latest
+          name: DeskThing-windows-${{ steps.get_version.outputs.VERSION }}
           path: ./dist/windows
+
+      - name: Download artifacts for macOS
+        uses: actions/download-artifact@v3
+        with:
+          name: DeskThing-macos-${{ steps.get_version.outputs.VERSION }}
+          path: ./dist/macos
+
+      - name: Download artifacts for Linux
+        uses: actions/download-artifact@v3
+        with:
+          name: DeskThing-linux-${{ steps.get_version.outputs.VERSION }}
+          path: ./dist/linux
 
       - name: Check for existing release
         id: release_check
         run: |
-          TAG_NAME=$(git describe --tags --exact-match ${{ github.sha }})
+          TAG_NAME=$(git describe --tags --exact-match ${{ github.sha }} || echo '')
           echo "::set-output name=tag_name::${TAG_NAME}"
 
       - name: Create or update release
@@ -110,9 +114,9 @@ jobs:
         with:
           tag_name: ${{ steps.release_check.outputs.tag_name }}
           files: |
-            ./dist/ubuntu/*
-            ./dist/macos/*
-            ./dist/windows/*
+            ./dist/windows/*.exe
+            ./dist/macos/*.dmg
+            ./dist/linux/*.AppImage
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -121,8 +125,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            ./dist/ubuntu/*
-            ./dist/macos/*
-            ./dist/windows/*
+            ./dist/windows/*.exe
+            ./dist/macos/*.dmg
+            ./dist/linux/*.AppImage
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
