@@ -8,7 +8,9 @@
 
  > [Trello Board](https://trello.com/b/6v0paxqV/deskthing)
 
- > [Deskthing Discord Invite](https://discord.gg/uNS3dhj46D)
+ > [Deskthing Discord](https://discord.gg/uNS3dhj46D)
+
+ > [Official Deskthing Website](https://deskthing.app)
  
  > [Car Thing Hax Community Discord](https://discord.carth.ing/)
 
