@@ -22,7 +22,7 @@ This is the DeskThing project. Using Spotify's existing Car Thing, the DeskThing
 
 **⚠️DO NOT PULL MAIN BRANCH ⚠️**
 
-Instead, go to [Releases](https://github.com/ItsRiprod/DeskThing/releases) and download the installer for your OS
+Instead, go to [The Official Website](https://deskthing.app/) and download the installer for your OS
 
 ---
 > All instructions are up-to-date as late of v0.6.0-beta. Later versions may differ in functionality and setup
