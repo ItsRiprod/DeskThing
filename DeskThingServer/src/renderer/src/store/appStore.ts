@@ -131,7 +131,9 @@ export const useAppStore = (): AppStoreHook => {
 
   useEffect(() => {
     const handleUpdate = (newAppsList: AppData): void => {
-      setAppsList(newAppsList)
+      if (newAppsList) {
+        setAppsList(newAppsList)
+      }
       console.log('Updating things', newAppsList)
     }
 

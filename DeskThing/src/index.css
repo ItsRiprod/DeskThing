@@ -10,6 +10,7 @@
   font-weight: normal;
   font-display: swap;
 }
+
 @font-face {
   font-family: 'GeistMono';
   src: url(/fonts/GeistMonoVF.ttf) format('truetype');
@@ -17,6 +18,7 @@
   font-weight: normal;
   font-display: swap;
 }
+
 @font-face {
   font-family: 'WingDing';
   src: url(/fonts/wingding.ttf) format('truetype');
