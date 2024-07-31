@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IFrame</title>
+    <script>
+        // This is how you send and receive messages from the server !!
+        window.addEventListener('message', (event) => {
+            // Handle incoming messages from the parent
+            console.log('Received message from parent:', event);
+            // Add your logic to handle the received data here
+
+            // Example: Sending a response back to the parent
+            event.source.postMessage({ type: 'RESPONSE_ACTION', payload: 'Response data from iframe' }, event.origin);
+        });
+
+        // Example function to send a message to the parent
+        function sendMessageToParent() {
+            window.parent.postMessage({ type: 'IFRAME_ACTION', payload: 'Some data from iframe' }, '*'); // Use a specific origin if possible for security
+        }
+    </script>
+</head>
+<body>
+  <h1>IFrame Content</h1>
+  <p id="timer-display">00:00</p>
+  <button id="start-btn">Start</button>
+  <button id="pause-resume-btn">Pause</button>
+  <button id="reset-btn">Reset</button>
+
+  <script src="timerapp.js"></script>
+</body>
+</html>
