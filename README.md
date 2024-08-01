@@ -1,4 +1,4 @@
-![App Creation details](/readme_images/deskthing-banner.png)
+ ![App Creation details](/readme_images/deskthing-banner.png)
 
 *Logo design and artwork by @Dilango*
 
@@ -157,7 +157,7 @@ Process:
 - Download 8.4.4_adb_enabled-new.tar.xz files from image dumps (linked above) and in that same folder (unzip them)
 - (Windows only) Download [zadig](https://zadig.akeo.ie/) and install the WinUSB driver for **GX-CHIP** (select it and click "Install Driver")
 > Alternatively use **libusbK** if it does not work
-- Run `superbird_tool.py --restore_device /path/to/extracted/firmware/folder` (This may take a while)
+- Run `python superbird_tool.py --restore_device /path/to/extracted/firmware/folder` (This may take a while)
 - After the firmware is flashed, the Car Thing should be ready with ADB enabled. To check, run `adb shell ls -l /usr/share/qt-superbird-app/` and you should see webapp as one of the folders.
 - Ensure that `adb devices` works and registers `12345 device` as one of the options
 - Continue setup from [here](#detailed-setup-instructions)
