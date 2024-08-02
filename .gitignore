@@ -46,4 +46,6 @@ tsconfig.tsbuildinfo
 /AppExamples/discord/builds
 /AppExamples/discord template/node_modules
 /AppExamples/discord template/builds
-/AppExamples/timer_app/node_modules
+/AppExamples/timer_app/
+
+*.zip

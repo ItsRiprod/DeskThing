@@ -15,61 +15,57 @@ const Overlay: FC<OverlayProps> = ({ children }) => {
     const [visible, setVisible] = useState(false);
     const [active, setActive] = useState(false);
     const buttonHelper = ButtonHelper.getInstance();
-
+    
     useEffect(() => {
-        let timer;
-        
-        const handleTimer = () => {
-          setVisible(true); 
-
-          timer = setTimeout(() => {
-            setVisible(false);
-          }, 1500);
-        };
-    
-        
-        handleTimer();
-    
-        
-        return () => clearTimeout(timer);
-      }, []);
-
-      useEffect(() => {
-        const handleSwipe = (btn: Button, flv: EventFlavour) => {
-          if (btn != null) {
-
-            switch (flv) {
-              case EventFlavour.UpSwipe:
-                setActive(false);
-                setVisible(false);
-                break;
-                case EventFlavour.DownSwipe:
-                  if (visible) {
-                    setActive(true);
-                  } else {
-                    setVisible(true);
-                  }
-                  break;
-                }
-              }
-        }
-    
-        buttonHelper.addListener(Button.SWIPE, EventFlavour.UpSwipe, handleSwipe);
-        buttonHelper.addListener(Button.SWIPE, EventFlavour.DownSwipe, handleSwipe);
-    
-        return () => {
-          buttonHelper.removeListener(Button.SWIPE, EventFlavour.UpSwipe);
-          buttonHelper.removeListener(Button.SWIPE, EventFlavour.DownSwipe);
-        };
-      }, [buttonHelper, visible]);
-
-      const handleAppSelect = (view: string) => {
-        AppStore.setCurrentView(view);
-        setActive(false);
-        setVisible(false);
+      let timer: NodeJS.Timeout | null = null;
+      // Handle visibility timer
+      if (active) {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => {
+          setActive(false);
+        }, 1500);
       }
+      return () => {
+        if (timer) clearTimeout(timer);
+      };
+    }, [active]);
+  
+    useEffect(() => {
+      // Handle swipe events
+      const handleSwipe = (btn: Button, flv: EventFlavour) => {
+        if (btn != null) {
+          switch (flv) {
+            case EventFlavour.UpSwipe:
+              setVisible(false);
+              setActive(false);
+              break;
+            case EventFlavour.DownSwipe:
+              if (active) {
+                setVisible(true);
+              } else {
+                setActive(true);
+              }
+              break;
+          }
+        }
+      };
+  
+      buttonHelper.addListener(Button.SWIPE, EventFlavour.UpSwipe, handleSwipe);
+      buttonHelper.addListener(Button.SWIPE, EventFlavour.DownSwipe, handleSwipe);
+  
+      return () => {
+        buttonHelper.removeListener(Button.SWIPE, EventFlavour.UpSwipe);
+        buttonHelper.removeListener(Button.SWIPE, EventFlavour.DownSwipe);
+      };
+    }, [buttonHelper, visible, active]);
+  
+    const handleAppSelect = (view: string) => {
+      AppStore.setCurrentView(view);
+      setActive(false);
+      setVisible(false);
+    };
   return <div className="overlay flex-col flex overflow-hidden">
-      {<AppSelector className={`${active ? 'touched' : ''} ${visible ? 'visible' : ''}`} onAppSelect={handleAppSelect} />}
+      {<AppSelector active={active} visible={visible} onAppSelect={handleAppSelect} />}
       <Volume />
           {children}
       <Bluetooth />

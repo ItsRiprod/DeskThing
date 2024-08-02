@@ -6,6 +6,7 @@ export const MESSAGE_TYPES = {
   LOGGING: 'log',
   MESSAGE: 'message',
   CONFIG: 'config',
+  SETTINGS: 'settings',
   CONNECTION: 'connection',
   MAPPINGS: 'mapping'
 }

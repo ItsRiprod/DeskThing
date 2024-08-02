@@ -32,7 +32,7 @@ const DisplayDeviceData = ({ setEnabled, device }: DisplayDeviceDataProps): JSX.
 
   const getSupervisorData = async (): Promise<void> => {
     const supervisorResponse = await window.electron.runAdbCommand(
-      'shell supervisorctl status backlight chromium'
+      `-s ${device.replace('device', '').trim()} shell supervisorctl status backlight chromium`
     )
     console.log('Raw adb response (supervisorctl):', supervisorResponse)
     if (supervisorResponse) {
@@ -56,7 +56,7 @@ const DisplayDeviceData = ({ setEnabled, device }: DisplayDeviceDataProps): JSX.
       try {
         // Get version info
         const versionResponse = await window.electron.runAdbCommand(
-          'shell cat /etc/superbird/version'
+          `-s ${device.replace('device', '').trim()} shell cat /etc/superbird/version`
         )
         console.log('Raw adb response (version):', versionResponse)
         if (versionResponse) {
@@ -73,7 +73,9 @@ const DisplayDeviceData = ({ setEnabled, device }: DisplayDeviceDataProps): JSX.
         }
 
         // Get USID info
-        const usidResponse = await window.electron.runAdbCommand('shell cat /sys/class/efuse/usid')
+        const usidResponse = await window.electron.runAdbCommand(
+          `-s ${device.replace('device', '').trim()} shell cat /sys/class/efuse/usid`
+        )
         console.log('Raw adb response (usid):', usidResponse)
         // Set USID data
         if (usidResponse) {
@@ -85,7 +87,7 @@ const DisplayDeviceData = ({ setEnabled, device }: DisplayDeviceDataProps): JSX.
 
         // Get MAC BT info
         const macBtResponse = await window.electron.runAdbCommand(
-          'shell cat /sys/class/efuse/mac_bt'
+          `-s ${device.replace('device', '').trim()} shell cat /sys/class/efuse/mac_bt`
         )
         console.log('Raw adb response (mac_bt):', macBtResponse)
 
@@ -162,7 +164,7 @@ const DisplayDeviceData = ({ setEnabled, device }: DisplayDeviceDataProps): JSX.
   }
 
   const handleRestart = async (): Promise<void> => {
-    await window.electron.runAdbCommand('shell reboot')
+    await window.electron.runAdbCommand(`-s ${device.replace('device', '').trim()} shell reboot`)
     handleLogging()
     handleExit()
   }
@@ -173,7 +175,9 @@ const DisplayDeviceData = ({ setEnabled, device }: DisplayDeviceDataProps): JSX.
   }
   const handleAdbCommand = async (command: string): Promise<void | undefined> => {
     try {
-      window.electron.runAdbCommand((deviceData?.usid ? `-s ${deviceData?.usid} ` : '') + command)
+      window.electron.runAdbCommand(
+        (device ? `-s ${device.replace('device', '').trim()} ` : '') + command
+      )
       handleLogging()
     } catch (Error) {
       console.log(Error)
@@ -195,7 +199,7 @@ const DisplayDeviceData = ({ setEnabled, device }: DisplayDeviceDataProps): JSX.
                 <IconCarThing
                   iconSize={250}
                   fontSize={100}
-                  text={`${device.replace('device', '')}`}
+                  text={`${device.replace('device', '').trim()}`}
                   highlighted={[]}
                   highlightColor="yellow"
                 />

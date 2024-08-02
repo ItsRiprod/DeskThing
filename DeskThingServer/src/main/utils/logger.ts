@@ -60,6 +60,19 @@ class Logger {
   public async error(message: string): Promise<void> {
     this.log(LogLevel.ERROR, message)
   }
+
+  public async getLogs(): Promise<string[]> {
+    console.log('LOGGER: Getting logs')
+    return new Promise((resolve, reject) => {
+      fs.readFile(logFile, 'utf8', (err, data) => {
+        if (err) {
+          return reject(err)
+        }
+        const logs = data.trim().split('\n').filter(Boolean)
+        resolve(logs)
+      })
+    })
+  }
 }
 
 export default Logger.getInstance()

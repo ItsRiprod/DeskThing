@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAppStore, App } from '../../store/appStore'
 import { IconX, IconPause, IconPlay, IconDetails, IconPulsing } from '../icons'
 import DisplayAppData from '../Overlays/DisplayAppData'
-import { RequestStoreInstance, Request } from '../../store'
+import RequestStoreInstance, { Request } from '../../store/requestStore'
 
 export type View = 'apps' | 'local' | 'web'
 

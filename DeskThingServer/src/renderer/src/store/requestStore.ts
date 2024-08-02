@@ -20,12 +20,19 @@ interface RequestStoreEvents {
 
 class RequestStore extends EventEmitter<RequestStoreEvents> {
   private requestQueue: Request[]
-
+  private static instance: RequestStore
   constructor() {
     super()
     this.requestQueue = []
 
     window.electron.ipcRenderer.on('display-user-form', this.handleDisplayUserForm.bind(this))
+  }
+
+  static getInstance(): RequestStore {
+    if (!RequestStore.instance) {
+      RequestStore.instance = new RequestStore()
+    }
+    return RequestStore.instance
   }
 
   public hasActiveRequest(appName: string): boolean {
@@ -65,4 +72,4 @@ class RequestStore extends EventEmitter<RequestStoreEvents> {
   }
 }
 
-export const RequestStoreInstance = new RequestStore()
+export default RequestStore.getInstance()

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import Apps from './Apps'
-import Adb from './Adb'
+import Adb from '../ADB/Adb'
 import Tabs from './Tabs'
 
 export type View = 'apps' | 'adb'

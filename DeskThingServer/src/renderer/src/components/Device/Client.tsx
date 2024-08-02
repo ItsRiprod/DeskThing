@@ -3,7 +3,7 @@ import { IconLogoLoading } from '../icons'
 import githubStore, { GithubRelease, GithubAsset } from '../../store/githubStore'
 import ReleaseList from '../ReleaseList'
 
-const Web = (): JSX.Element => {
+const Client = (): JSX.Element => {
   const [releases, setReleases] = useState<GithubRelease[]>([])
   const [openReleaseId, setOpenReleaseId] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
@@ -91,4 +91,4 @@ const Web = (): JSX.Element => {
   )
 }
 
-export default Web
+export default Client

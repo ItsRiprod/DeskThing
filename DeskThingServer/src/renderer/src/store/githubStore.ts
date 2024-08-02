@@ -80,7 +80,13 @@ interface CacheEntry {
 
 class GithubStore {
   private cache: Map<string, CacheEntry> = new Map()
-
+  private static instance: GithubStore
+  static getInstance(): GithubStore {
+    if (!GithubStore.instance) {
+      GithubStore.instance = new GithubStore()
+    }
+    return GithubStore.instance
+  }
   // Check if it has been more than an hour since the last request
   private isCacheValid(cacheEntry: CacheEntry): boolean {
     const currentTime = Date.now()
@@ -106,5 +112,4 @@ class GithubStore {
   }
 }
 
-const githubStore = new GithubStore()
-export default githubStore
+export default GithubStore.getInstance()

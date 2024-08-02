@@ -20,11 +20,15 @@ export const HandleDeviceData = async (data: any): Promise<void> => {
         break
     }
   } catch (Exception) {
-    dataListener.emit(MESSAGE_TYPES.ERROR, 'HandleDeviceData encountered the error ' + Exception)
+    dataListener.asyncEmit(
+      MESSAGE_TYPES.ERROR,
+      'HandleDeviceData encountered the error ' + Exception
+    )
   }
 }
 export const HandlePushWebApp = async (
-  reply: (channel: string, data: ReplyData) => void
+  reply: (channel: string, data: ReplyData) => void,
+  deviceId: string
 ): Promise<void> => {
   try {
     const userDataPath = app.getPath('userData')
@@ -32,22 +36,26 @@ export const HandlePushWebApp = async (
     let response
     console.log('Remounting...')
     reply('logging', { status: true, data: 'Remounting...', final: false })
-    response = await handleAdbCommands('shell mount -o remount,rw /')
+    response = await handleAdbCommands(`-s ${deviceId} shell mount -o remount,rw /`)
     reply('logging', { status: true, data: response || 'Moving...', final: false })
     response = await handleAdbCommands(
-      'shell mv /usr/share/qt-superbird-app/webapp /tmp/webapp-orig'
+      `-s ${deviceId} shell mv /usr/share/qt-superbird-app/webapp /tmp/webapp-orig`
     )
     reply('logging', { status: true, data: response || 'Moving...', final: false })
-    response = await handleAdbCommands('shell mv /tmp/webapp-orig /usr/share/qt-superbird-app/')
+    response = await handleAdbCommands(
+      `-s ${deviceId} shell mv /tmp/webapp-orig /usr/share/qt-superbird-app/`
+    )
 
     reply('logging', { status: true, data: response || 'Removing old app...', final: false })
-    response = await handleAdbCommands('shell rm -r /tmp/webapp-orig')
+    response = await handleAdbCommands(`-s ${deviceId} shell rm -r /tmp/webapp-orig`)
 
     reply('logging', { status: true, data: response || 'Pushing new app...', final: false })
-    response = await handleAdbCommands(`push ${extractDir}/ /usr/share/qt-superbird-app/webapp`)
+    response = await handleAdbCommands(
+      `-s ${deviceId} push ${extractDir}/ /usr/share/qt-superbird-app/webapp`
+    )
 
     reply('logging', { status: true, data: response || 'Restarting Chromium', final: false })
-    response = await handleAdbCommands('shell supervisorctl restart chromium')
+    response = await handleAdbCommands(`-s ${deviceId} shell supervisorctl restart chromium`)
 
     reply('logging', { status: true, data: response, final: true })
   } catch (Exception) {
@@ -57,7 +65,10 @@ export const HandlePushWebApp = async (
       final: true,
       error: `${Exception}`
     })
-    dataListener.emit(MESSAGE_TYPES.ERROR, 'HandlePushWebApp encountered the error ' + Exception)
+    dataListener.asyncEmit(
+      MESSAGE_TYPES.ERROR,
+      'HandlePushWebApp encountered the error ' + Exception
+    )
   }
 }
 
@@ -98,7 +109,7 @@ export const HandleWebappZipFromUrl = (
           fs.unlinkSync(join(extractDir, 'temp.zip'))
 
           console.log(`Successfully extracted ${zipFileUrl} to ${extractDir}`)
-          dataListener.emit(
+          dataListener.asyncEmit(
             MESSAGE_TYPES.LOGGING,
             `Successfully extracted ${zipFileUrl} to ${extractDir}`
           )
@@ -107,7 +118,7 @@ export const HandleWebappZipFromUrl = (
           reply('logging', { status: true, data: 'Success!', final: true })
         } catch (error) {
           console.error('Error extracting zip file:', error)
-          dataListener.emit(MESSAGE_TYPES.ERROR, `Error extracting zip file: ${error}`)
+          dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `Error extracting zip file: ${error}`)
 
           // Notify failure to the frontend
           reply('logging', {
@@ -121,7 +132,7 @@ export const HandleWebappZipFromUrl = (
 
       response.on('error', (error) => {
         console.error('Error downloading zip file:', error)
-        dataListener.emit(MESSAGE_TYPES.ERROR, `Error downloading zip file: ${error}`)
+        dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `Error downloading zip file: ${error}`)
 
         // Notify failure to the frontend
         reply('logging', {
@@ -134,7 +145,7 @@ export const HandleWebappZipFromUrl = (
     } else {
       const errorMessage = `Failed to download zip file: ${response.statusCode}`
       console.error(errorMessage)
-      dataListener.emit(MESSAGE_TYPES.ERROR, errorMessage)
+      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, errorMessage)
 
       // Notify failure to the frontend
       reply('logging', {
@@ -148,7 +159,7 @@ export const HandleWebappZipFromUrl = (
 
   request.on('error', (error) => {
     console.error('Error sending request:', error)
-    dataListener.emit(MESSAGE_TYPES.ERROR, `Error sending request: ${error}`)
+    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `Error sending request: ${error}`)
 
     // Notify failure to the frontend
     reply('logging', {

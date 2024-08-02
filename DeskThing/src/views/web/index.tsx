@@ -16,7 +16,6 @@ const WebView: React.FC<WebViewProps> = ({ currentView }) => {
       if (event.origin != 'http://localhost:8891') return
 
       console.log('Received message from iframe:', event)
-      // Add your logic to handle the received data here
     };
 
     window.addEventListener('message', handleMessage);

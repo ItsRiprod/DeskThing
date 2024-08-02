@@ -107,11 +107,6 @@ async function handleDataFromApp(app: string, type: string, ...args: any[]): Pro
         sendMessageToClients({ app: args[0].app || app, type: args[0].type, data: args[0].data })
       }
       break
-    case 'manifest':
-      if (app && args[0]) {
-        addAppManifest(args[0], app)
-      }
-      break
     case 'toApp':
       if (args[1] && args[0]) {
         console.log(`SERVER: Sending data to app ${args[0]}`, ...args.slice(1))
@@ -198,25 +193,30 @@ async function runApp(appName: string): Promise<void> {
         console.error(`Manifest for app ${appName} not found at ${manifestPath}`)
         return
       }
-      const manifest: Manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'))
-
+      const manifest = await getManifest(getAppFilePath(appName))
+      if (manifest == undefined) {
+        console.error(`Manifest for app ${appName} is invalid!`)
+        return
+      }
       // Check if all required apps are running
-      const requiredApps = manifest.requires || []
-      for (const requiredApp of requiredApps) {
-        if (!runningApps.has(requiredApp)) {
-          console.error(
-            `Unable to run ${appName}! This app requires '${requiredApp}' to be enabled and running.`
-          )
-          dataListener.asyncEmit(
-            MESSAGE_TYPES.ERROR,
-            `Unable to run ${appName}! This app requires '${requiredApp}' to be enabled and running.`
-          )
-          const appConfig = getAppByName(appName)
-          if (appConfig) {
-            appConfig.running = false
-            setAppData(appConfig)
+      if (manifest?.requires) {
+        const requiredApps = manifest.requires || []
+        for (const requiredApp of requiredApps) {
+          if (!runningApps.has(requiredApp)) {
+            console.error(
+              `Unable to run ${appName}! This app requires '${requiredApp}' to be enabled and running.`
+            )
+            dataListener.asyncEmit(
+              MESSAGE_TYPES.ERROR,
+              `Unable to run ${appName}! This app requires '${requiredApp}' to be enabled and running.`
+            )
+            const appConfig = getAppByName(appName)
+            if (appConfig) {
+              appConfig.running = false
+              setAppData(appConfig)
+            }
+            return
           }
-          return
         }
       }
 
@@ -246,7 +246,7 @@ async function runApp(appName: string): Promise<void> {
             return () => dataListener.removeListener(event, listener)
           }
         })
-        await sendMessageToApp(appName, 'get', 'manifest')
+        addAppManifest(manifest, appName)
         sendPrefData()
       } else {
         console.error(`App entry point ${appEntryPoint} does not export a start function.`)
@@ -415,7 +415,7 @@ async function stopAllApps(): Promise<void> {
   }
 }
 
-async function getManifest(fileLocation: string): Promise<returnData | undefined> {
+async function getManifest(fileLocation: string): Promise<Manifest | undefined> {
   try {
     const manifestPath = join(fileLocation, 'manifest.json')
     if (!fs.existsSync(manifestPath)) {
@@ -426,12 +426,18 @@ async function getManifest(fileLocation: string): Promise<returnData | undefined
     const parsedManifest = JSON.parse(manifest)
 
     const returnData = {
-      appId: parsedManifest.id,
-      appName: parsedManifest.label,
-      appVersion: parsedManifest.version,
-      author: parsedManifest.author,
+      isAudioSource: parsedManifest.isAudioSource,
+      requires: parsedManifest.requires,
+      label: parsedManifest.label,
+      version: parsedManifest.version,
+      description: parsedManifest.description || undefined,
+      author: parsedManifest.author || undefined,
+      id: parsedManifest.id,
+      isWebApp: parsedManifest.isWebApp,
+      isLocalApp: parsedManifest.isLocalApp,
       platforms: parsedManifest.platforms,
-      requirements: parsedManifest.requires
+      homepage: parsedManifest.homepage || undefined,
+      repository: parsedManifest.repository || undefined
     }
     return returnData
   } catch (error) {
@@ -498,9 +504,10 @@ async function handleZip(zipFilePath: string, event?): Promise<returnData> {
     })
 
     event && event.reply('logging', { status: true, data: 'Getting Manifest', final: false })
-    let returnData = await getManifest(tempDir)
+    const manifestData = await getManifest(tempDir)
+    let returnData
 
-    if (!returnData) {
+    if (!manifestData) {
       dataListener.asyncEmit(
         MESSAGE_TYPES.ERROR,
         `SERVER: Error getting manifest from ${zipFilePath}`
@@ -512,6 +519,15 @@ async function handleZip(zipFilePath: string, event?): Promise<returnData> {
         author: '',
         platforms: [],
         requirements: []
+      }
+    } else {
+      returnData = {
+        appId: manifestData.id,
+        appName: manifestData.label,
+        appVersion: manifestData.version,
+        author: manifestData.author,
+        platforms: manifestData.platforms,
+        requirements: manifestData.requires
       }
     }
 
@@ -548,7 +564,7 @@ async function handleZipFromUrl(zipUrlPath: string, event): Promise<void> {
     }
     const writeStream = fs.createWriteStream(join(tempZipPath, 'temp.zip'))
     writeStream.on('error', (error) => {
-      dataListener.emit(MESSAGE_TYPES.ERROR, `Error writing to temp file: ${error.message}`)
+      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `Error writing to temp file: ${error.message}`)
       throw new Error(`Error writing to temp file: ${error.message}`)
     })
 
@@ -556,7 +572,7 @@ async function handleZipFromUrl(zipUrlPath: string, event): Promise<void> {
     const request = net.request(zipUrlPath)
     request.on('response', (response) => {
       if (response.statusCode !== 200) {
-        dataListener.emit(
+        dataListener.asyncEmit(
           MESSAGE_TYPES.ERROR,
           `Failed to download zip file: ${response.statusCode}`
         )
@@ -582,7 +598,7 @@ async function handleZipFromUrl(zipUrlPath: string, event): Promise<void> {
           console.log(`Successfully processed and deleted ${tempZipPath}`)
           event.reply('zip-name', { status: true, data: returnData, final: true })
         } catch (error) {
-          dataListener.emit(MESSAGE_TYPES.ERROR, `Error processing zip file: ${error}`)
+          dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `Error processing zip file: ${error}`)
         } finally {
           // Clean up the temporary zip file
           try {
@@ -596,11 +612,11 @@ async function handleZipFromUrl(zipUrlPath: string, event): Promise<void> {
     })
 
     request.on('error', (error) =>
-      dataListener.emit(MESSAGE_TYPES.ERROR, `Error sending request: ${error}`)
+      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `Error sending request: ${error}`)
     )
     request.end()
   } catch (error) {
-    dataListener.emit(MESSAGE_TYPES.ERROR, `Error handling zip file: ${error}`)
+    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `Error handling zip file: ${error}`)
     throw new Error('Error handling zip file')
   }
 }

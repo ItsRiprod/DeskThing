@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAppStore, App } from '../../store/appStore'
 import { IconX, IconPause, IconPlay, IconDetails, IconPulsing } from '../icons'
 import DisplayAppData from '../Overlays/DisplayAppData'
-import { RequestStoreInstance, Request } from '../../store'
+import RequestStoreInstance, { Request } from '../../store/requestStore'
 
 export type View = 'apps' | 'local' | 'web'
 
@@ -69,6 +69,9 @@ const Apps = (): JSX.Element => {
       <div className="pt-5 w-full flex justify-center">
         {enabled && <DisplayAppData appIndex={appIndex} setEnabled={setEnabled} app={app} />}
         <div className="pt-5 w-full flex 2xl:flex-row 2xl:flex-wrap flex-col items-center gap-2">
+          <p className="italic text-red-700 font-geistMono">
+            Do not use unless you know what you&apos;re doing
+          </p>
           <div className="flex items-center">
             <input
               type="text"

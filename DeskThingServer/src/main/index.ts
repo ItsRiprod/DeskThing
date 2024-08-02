@@ -21,8 +21,11 @@ const IPC_CHANNELS = {
   RUN_STOP_APP: 'stop-app',
   RUN_ADB: 'run-adb-command',
   RUN_DEVICE_COMMAND: 'run-device-command',
+  GET_SETTINGS: 'get-settings',
+  SAVE_SETTINGS: 'save-settings',
   GET_APPS: 'get-apps',
   GET_GITHUB: 'fetch-github-releases',
+  GET_LOGS: 'get-logs',
   GET_MAPS: 'get-maps',
   SET_MAP: 'set-maps',
   STOP_APP: 'stop-app',
@@ -34,6 +37,7 @@ const IPC_CHANNELS = {
   EXTRACT_WEBAPP_ZIP: 'extract-webapp-zip',
   EXTRACT_APP_ZIP_URL: 'extract-app-zip-url',
   PUSH_STAGED_WEBAPP: 'push-staged',
+  SHUTDOWN: 'shutdown',
   DEV_ADD_APP: 'dev-add-app'
 }
 
@@ -122,6 +126,7 @@ function initializeTray(): void {
 }
 
 async function setupIpcHandlers(): Promise<void> {
+  const settingsStore = await import('./handlers/settingsHandler')
   const { getAppData } = await import('./handlers/configHandler')
   const {
     handleZipFromUrl,
@@ -200,14 +205,17 @@ async function setupIpcHandlers(): Promise<void> {
     const returnData = await handleZipFromUrl(zipFileUrl, event) // Extract to user data folder
     console.log('SERVER: Return Data after Extraction:', returnData)
   })
-  ipcMain.on(IPC_CHANNELS.PUSH_STAGED_WEBAPP, async (event) => {
+  ipcMain.on(IPC_CHANNELS.SHUTDOWN, async () => {
+    app.quit()
+  })
+  ipcMain.on(IPC_CHANNELS.PUSH_STAGED_WEBAPP, async (event, deviceId) => {
     try {
       console.log('Pushing stages webapp...')
-      HandlePushWebApp(event.reply)
+      HandlePushWebApp(event.reply, deviceId)
     } catch (error) {
       event.reply(IPC_CHANNELS.PUSH_STAGED_WEBAPP, { success: false, error: error })
       console.error('Error extracting zip file:', error)
-      dataListener.emit(MESSAGE_TYPES.ERROR, error)
+      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, error)
     }
   })
   ipcMain.on(
@@ -234,6 +242,16 @@ async function setupIpcHandlers(): Promise<void> {
   ipcMain.handle(IPC_CHANNELS.RUN_ADB, async (event, command) => {
     return await handleAdbCommands(command, event)
   })
+  ipcMain.handle(IPC_CHANNELS.GET_LOGS, async () => {
+    const Logger = await import('./utils/logger')
+    return await Logger.default.getLogs()
+  })
+  ipcMain.handle(IPC_CHANNELS.GET_SETTINGS, async () => {
+    return await settingsStore.default.getSettings()
+  })
+  ipcMain.handle(IPC_CHANNELS.SAVE_SETTINGS, async (_event, settings) => {
+    return await settingsStore.default.saveSettings(settings)
+  })
   ipcMain.handle(IPC_CHANNELS.GET_MAPS, async (event) => {
     event.sender.send('logging', { status: true, data: 'Maps Retrieved!', final: true })
     return await loadMappings()
@@ -246,7 +264,7 @@ async function setupIpcHandlers(): Promise<void> {
     try {
       return await getReleases(url)
     } catch (error) {
-      dataListener.emit(MESSAGE_TYPES.ERROR, error)
+      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, error)
       return []
     }
   })
@@ -270,6 +288,9 @@ async function setupIpcHandlers(): Promise<void> {
     sendIpcData('connections', numConnections)
     connections = numConnections
     console.log('Number of clients', numConnections)
+  })
+  dataListener.on(MESSAGE_TYPES.SETTINGS, (newSettings) => {
+    sendIpcData('settings-updated', newSettings)
   })
 }
 

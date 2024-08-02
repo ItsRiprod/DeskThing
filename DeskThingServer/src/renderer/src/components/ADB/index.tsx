@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import Tabs from './Tabs'
 import Devices from './Devices'
-import Web from './Web'
+import Adb from './Adb'
 
-export type View = 'devices' | 'webapps'
+export type View = 'devices' | 'adb'
 
 const Index = (): JSX.Element => {
   const [currentView, setCurrentView] = useState<View>('devices')
@@ -11,8 +11,8 @@ const Index = (): JSX.Element => {
     switch (currentView) {
       case 'devices':
         return <Devices />
-      case 'webapps':
-        return <Web />
+      case 'adb':
+        return <Adb />
       default:
         return undefined
     }

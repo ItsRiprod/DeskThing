@@ -1,37 +1,31 @@
 import { useEffect, useState, useRef } from 'react'
-import logStore, { log } from '../store/logStore'
+import logStore, { Log } from '../store/logStore'
 import { IconLogoGearLoading } from './icons'
 
 const LogDisplay = (): JSX.Element => {
-  const [logs, setLogs] = useState<log[]>([])
+  const [logs, setLogs] = useState<Log[]>([])
   const logEndRef = useRef<HTMLDivElement>(null)
   const logContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const updateLogs = (data: log[]): void => {
-      // Ensure dates are new objects
-      const newLogs = data.map((log) => ({
-        ...log,
-        date: new Date(log.date)
-      }))
-      setLogs(newLogs)
-      console.log('New Data', newLogs)
+    const updateLogs = (data: Log[]): void => {
+      setLogs(data)
+      console.log('New Data', data)
     }
 
-    // Initialize logs
-    const initialLogs = logStore.getLogs().map((log) => ({
-      ...log,
-      date: new Date(log.date)
-    }))
-    setLogs(initialLogs)
+    const initializeLogs = async (): Promise<void> => {
+      const initialLogs = await logStore.getLogs()
+      setLogs(initialLogs)
+      setTimeout(() => {
+        if (logEndRef.current) {
+          logEndRef.current.scrollIntoView({ behavior: 'smooth' })
+        }
+      }, 200)
+    }
 
-    setTimeout(() => {
-      if (logEndRef.current) {
-        logEndRef.current.scrollIntoView({ behavior: 'smooth' })
-      }
-    }, 200)
-
+    initializeLogs()
     logStore.on('update', updateLogs)
+
     return () => {
       logStore.off('update', updateLogs)
     }
@@ -66,8 +60,10 @@ const LogDisplay = (): JSX.Element => {
         {logs.length > 0 ? (
           logs.map((log, index) => (
             <div key={index} className="font-geistMono">
-              <p className={`p-2 ${getBackgroundColor(log.type)} border-t border-zinc-900`}>
-                [{log.date.toLocaleTimeString()}]{' ' + log.log}
+              <p
+                className={`p-2 ${getBackgroundColor(log.type.toLowerCase())} border-t border-zinc-900`}
+              >
+                [{log.date}] {' ' + log.log}
               </p>
             </div>
           ))

@@ -2,8 +2,9 @@ import { useState } from 'react'
 import Tabs from './Tabs'
 import Devices from './Devices'
 import Loading from '../Loading'
+import Client from './Client'
 
-export type View = 'mappings' | 'status'
+export type View = 'mappings' | 'status' | 'client'
 
 const Index = (): JSX.Element => {
   const [currentView, setCurrentView] = useState<View>('mappings')
@@ -13,6 +14,8 @@ const Index = (): JSX.Element => {
         return <Devices />
       case 'status':
         return <Loading message="Not Implemented" />
+      case 'client':
+        return <Client />
       default:
         return undefined
     }

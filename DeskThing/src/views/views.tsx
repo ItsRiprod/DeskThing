@@ -84,11 +84,11 @@ const ViewManager = () => {
 
     const handleSwipe = (direction: number) => {
       const apps = appStore.getApps();
-      const currentIndex = apps.findIndex((app) => app.name === currentView);
+      const currentIndex = apps.findIndex((app) => app.manifest.id === currentView);
       if (currentIndex !== -1) {
         const newIndex = currentIndex + direction;
         if (newIndex >= 0 && newIndex < apps.length) {
-          appStore.setCurrentView(apps[newIndex].name);
+          appStore.setCurrentView(apps[newIndex].manifest.id);
         }
       }
     };

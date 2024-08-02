@@ -1,4 +1,4 @@
-import { AppData, App } from '@renderer/store'
+import { AppData, App } from '@renderer/store/appStore'
 import { useState, useEffect } from 'react'
 
 interface DisplayAppDataProps {

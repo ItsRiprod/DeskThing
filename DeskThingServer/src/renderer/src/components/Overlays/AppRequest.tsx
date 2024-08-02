@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { RequestStoreInstance, Request, AuthScopes } from '../../store/'
+import RequestStore, { Request, AuthScopes } from '../../store/requestStore'
 
 const appRequest = (): JSX.Element => {
   const [requestData, setRequestData] = useState<AuthScopes>({})
@@ -13,7 +13,7 @@ const appRequest = (): JSX.Element => {
   }
   const handleSubmit = (): void => {
     if (requestId) {
-      RequestStoreInstance.resolveRequest(requestId, formData)
+      RequestStore.resolveRequest(requestId, formData)
       setRequestId(null)
       setRequestData({})
       setFormData({})
@@ -33,10 +33,10 @@ const appRequest = (): JSX.Element => {
       console.log(request)
     }
 
-    RequestStoreInstance.on('trigger-request-display', handleTriggerRequestDisplay)
+    RequestStore.on('trigger-request-display', handleTriggerRequestDisplay)
 
     return (): void => {
-      RequestStoreInstance.off('trigger-request-display', handleTriggerRequestDisplay)
+      RequestStore.off('trigger-request-display', handleTriggerRequestDisplay)
     }
   }, [])
 

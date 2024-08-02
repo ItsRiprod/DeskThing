@@ -95,7 +95,7 @@ const CountUpTimer: React.FC<CountUpTimerProps> = ({
           className={`bg-green-500 static rounded-r-full h-full`}
           style={{
             width: `${(ms / msEnd) * 100 || 0}%`,
-            transition: touching ? 'none' : 'width 1s ease-out',
+            transition: touching ? 'none' : 'width 0.2s',
           }}
           />
         <p className={`m-0 p-0 -translate-y-8 font-bold ${touching ? '' : ''}`}>{msToTime(ms)}/{msToTime(msEnd)}</p>

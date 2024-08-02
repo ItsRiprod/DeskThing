@@ -65,11 +65,11 @@ const writeData = (data: AppData): void => {
   try {
     const result = writeToFile<AppData>(data, 'apps.json')
     if (!result) {
-      dataListener.emit(MESSAGE_TYPES.ERROR, 'Error writing data')
+      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'Error writing data')
     }
     sendIpcData('app-data', data) // Send data to the web UI
   } catch (err) {
-    dataListener.emit(MESSAGE_TYPES.ERROR, 'Error writing data' + err)
+    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'Error writing data' + err)
     console.error('Error writing data:', err)
   }
 }

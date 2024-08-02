@@ -44,7 +44,7 @@ async function checkFirewallRuleExists(port: number): Promise<boolean> {
       const result = await runCommand(checkCommand)
       return result.trim() === 'true'
     } else {
-      dataListener.emit(MESSAGE_TYPES.ERROR, `FIREWALL: Unsupported OS!`)
+      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `FIREWALL: Unsupported OS!`)
       console.error('Unsupported OS')
       return false
     }
@@ -63,14 +63,14 @@ async function setupFirewall(port: number): Promise<void> {
   try {
     const ruleExists = await checkFirewallRuleExists(port)
     if (ruleExists) {
-      dataListener.emit(
+      dataListener.asyncEmit(
         MESSAGE_TYPES.LOGGING,
         `FIREWALL: Firewall rule for port ${port} verified successfully`
       )
       console.log(`Firewall rule for port ${port} verified successfully`)
       return
     } else {
-      dataListener.emit(
+      dataListener.asyncEmit(
         MESSAGE_TYPES.ERROR,
         `FIREWALL: Failed to verify firewall rule for port ${port}!`
       )
@@ -101,7 +101,7 @@ async function setupFirewall(port: number): Promise<void> {
 
       try {
         await runCommand(`powershell -ExecutionPolicy Bypass -File "${tempScriptPath}"`)
-        dataListener.emit(
+        dataListener.asyncEmit(
           MESSAGE_TYPES.LOGGING,
           `FIREWALL: Firewall rules set up successfully on Windows`
         )
@@ -124,7 +124,7 @@ async function setupFirewall(port: number): Promise<void> {
       `
 
       await runCommand(`echo "${script}" | bash`)
-      dataListener.emit(
+      dataListener.asyncEmit(
         MESSAGE_TYPES.LOGGING,
         `FIREWALL: Firewall rules set up successfully on Linux`
       )
@@ -143,7 +143,7 @@ async function setupFirewall(port: number): Promise<void> {
       `
 
       await runCommand(`echo "${script}" | bash`)
-      dataListener.emit(
+      dataListener.asyncEmit(
         MESSAGE_TYPES.LOGGING,
         `FIREWALL: Firewall rules set up successfully on macOS`
       )
@@ -152,7 +152,7 @@ async function setupFirewall(port: number): Promise<void> {
       console.error('Unsupported OS')
     }
   } catch (error) {
-    dataListener.emit(
+    dataListener.asyncEmit(
       MESSAGE_TYPES.ERROR,
       `FIREWALL: Error encountered trying to setup firewall for ${port}! Run administrator and try again`
     )

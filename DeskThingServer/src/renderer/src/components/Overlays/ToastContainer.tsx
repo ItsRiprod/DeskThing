@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import Toast from './Toast'
-import logStore, { log } from '../../store/logStore'
+import logStore, { Log } from '../../store/logStore'
 
-interface ToastData extends log {
+interface ToastData extends Log {
   id: string
 }
 
@@ -10,12 +10,12 @@ const ToastContainer: React.FC = () => {
   const [toasts, setToasts] = useState<ToastData[]>([])
 
   useEffect(() => {
-    const handleNewLog = (log: log): void => {
+    const handleNewLog = (log: Log): void => {
       setToasts((prevToasts) => [
         ...prevToasts,
         {
           ...log,
-          date: new Date(log.date),
+          date: log.date,
           id: generateUniqueId()
         }
       ])

@@ -8,10 +8,12 @@ import {
   IconLogo,
   IconLogoGear,
   IconLogs,
+  IconPower,
   IconTransfer,
   IconWrench
 } from './icons'
 import { useReward } from 'react-rewards'
+import SettingsOverlay from './Overlays/SettingsOverlay'
 
 type View = 'appsList' | 'adb' | 'logDisplay' | 'preferences' | 'dev' // Define possible views
 
@@ -22,6 +24,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ setCurrentView, currentView }) => {
   const [connections, setConnections] = useState<number>(0)
+  const [enabled, setEnabled] = useState<boolean>(false)
   const confettiConfig = {
     startVelocity: 6,
     elementCount: 7,
@@ -49,8 +52,13 @@ const Sidebar: React.FC<SidebarProps> = ({ setCurrentView, currentView }) => {
       getConnections()
     }, 1500)
 
+    const intervalId = setInterval(() => {
+      getConnections()
+    }, 30000)
+
     return () => {
       removeListener()
+      clearInterval(intervalId)
       clearTimeout(timeoutId)
     }
   }, [])
@@ -60,6 +68,7 @@ const Sidebar: React.FC<SidebarProps> = ({ setCurrentView, currentView }) => {
   return (
     <div className="container w-full top-0 sm:pt-5 sm:justify-between sm:px-3 md:max-w-52 sm:max-w-24 gap-5 sm:relative rounded-lg flex sm:flex-col sm:overflow-x-hidden overflow-x-scroll items-center border-2 border-zinc-800 sm:h-full p-2">
       <div className="container w-full top-0 gap-5 sm:relative flex sm:flex-col items-center">
+        {enabled && <SettingsOverlay setEnabled={setEnabled} />}
         <div className="flex items-center">
           {connections == 0 ? (
             <IconConnecting className="text-white pt-1" iconSize={24} />
@@ -97,7 +106,7 @@ const Sidebar: React.FC<SidebarProps> = ({ setCurrentView, currentView }) => {
               onClick={() => handleClick('preferences')}
             >
               <IconCarThing strokeWidth={18} />
-              <span className="hidden md:inline">Device</span>
+              <span className="hidden md:inline">Client</span>
             </button>
           </li>
           <li>
@@ -121,8 +130,11 @@ const Sidebar: React.FC<SidebarProps> = ({ setCurrentView, currentView }) => {
         </ul>
       </div>
       <div className="flex sm:flex-col md:flex-row justify-start gap-3 w-full items-center text-zinc-500">
-        <button className=" sm:border p-2 rounded-xl border-zinc-500 hover:bg-zinc-900 hover:text-white">
-          <IconLogoGear iconSize={24} />
+        <button
+          className=" sm:border p-2 rounded-xl border-zinc-500 hover:bg-zinc-900 hover:text-red-500"
+          onClick={() => window.electron.ipcRenderer.send('shutdown')}
+        >
+          <IconPower iconSize={24} />
         </button>
         <a
           href="https://buymeacoffee.com/riprod"
@@ -134,6 +146,12 @@ const Sidebar: React.FC<SidebarProps> = ({ setCurrentView, currentView }) => {
           <span id="rewardId" />
           <IconCoffee iconSize={24} strokeWidth={2} />
         </a>
+        <button
+          className=" sm:border p-2 rounded-xl border-zinc-500 hover:bg-zinc-900 hover:text-white"
+          onClick={() => setEnabled(true)}
+        >
+          <IconLogoGear iconSize={24} />
+        </button>
       </div>
     </div>
   )

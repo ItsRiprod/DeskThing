@@ -2,9 +2,13 @@ import { getAppData } from './configHandler' // Assuming you have a config handl
 import { sendMessageToApp } from './appHandler' // Assuming you have an app handler for sending messages
 import http from 'http'
 import url from 'url'
-const PORT = 8888
+import settingsStore from './settingsHandler'
+import dataListener, { MESSAGE_TYPES } from '../utils/events'
 
 const successView = '<h1>Success</h1><p>You can now close this window.</p>'
+
+let server: http.Server | null = null
+let callBackPort: number
 
 function handleCallback(req: http.IncomingMessage, res: http.ServerResponse): void {
   const parsedUrl = url.parse(req.url || '', true)
@@ -33,19 +37,51 @@ function handleCallback(req: http.IncomingMessage, res: http.ServerResponse): vo
   res.end(successView)
 }
 
-const server = http.createServer((req, res) => {
-  // Handle only POST requests to /callback/*
+const startServer = async (): Promise<void> => {
+  if (server) {
+    await server.close(() => {
+      console.log('CALLBACK: Previous server closed.')
+    })
+  }
 
-  const parsedUrl = new URL(`http://${req.headers.host}${req.url}`)
-  const pathname = parsedUrl.pathname
-  if (pathname.startsWith('/callback/')) {
-    handleCallback(req, res)
+  console.log('CALLBACK: Starting server...')
+  server = http.createServer((req, res) => {
+    const parsedUrl = new URL(`http://${req.headers.host}${req.url}`)
+    const pathname = parsedUrl.pathname
+    if (pathname.startsWith('/callback/')) {
+      handleCallback(req, res)
+    } else {
+      res.writeHead(404, { 'Content-Type': 'text/html' })
+      res.end('<h1>Not Found</h1><p>The requested URL was not found on this server.</p>')
+    }
+  })
+
+  console.log('CALLBACK: Listening...')
+  server.listen(callBackPort, () => {
+    dataListener.asyncEmit(
+      MESSAGE_TYPES.MESSAGE,
+      `CALLBACK: running at http://localhost:${callBackPort}/`
+    )
+  })
+}
+
+const initializeServer = async (): Promise<void> => {
+  try {
+    const settings = await settingsStore.getSettings()
+    callBackPort = settings.callbackPort
+    await startServer()
+  } catch (error) {
+    console.error('CALLBACK: Failed to get settings or start the server:', error)
+  }
+}
+
+dataListener.on(MESSAGE_TYPES.SETTINGS, (newSettings) => {
+  if (newSettings.callbackPort != callBackPort) {
+    callBackPort = newSettings.callbackPort
+    startServer()
   } else {
-    res.writeHead(404, { 'Content-Type': 'text/html' })
-    res.end('<h1>Not Found</h1><p>The requested URL was not found on this server.</p>')
+    dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'CALLBACK: Not starting - port is not changed')
   }
 })
 
-server.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}/`)
-})
+initializeServer()

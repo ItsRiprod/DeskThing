@@ -1,5 +1,5 @@
 // Importing the "class" that I like to use to store all the data n whatnot. Not needed, just makes life easier
-const SpotifyHandler = require('./discord.js');
+const DiscordHandler = require('./discord.js');
 
 let discord
 
