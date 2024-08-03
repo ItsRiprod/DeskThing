@@ -1,5 +1,5 @@
 // src/controlStore.ts
-import socket, { song_data } from '../helpers/WebSocketService';
+import WebSocketService, { song_data } from '../helpers/WebSocketService';
 import * as AudioControls from '../components/audioControls';
 import * as AudioControlActions from '../utils/audioControlActions';
 
@@ -63,7 +63,20 @@ class ControlStore {
   private constructor() {
     this.initializeRegistry();
     this.initializeTrays();
+    this.setupWebSocket();
+  }
+
+  private async setupWebSocket() {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    const socket = await WebSocketService; // Ensure WebSocketService is initialized
     socket.on('client', this.handleClientData.bind(this));
+  }
+
+  static getInstance(): ControlStore {
+    if (!ControlStore.instance) {
+      ControlStore.instance = new ControlStore();
+    }
+    return ControlStore.instance;
   }
 
   private initializeRegistry() {
@@ -109,13 +122,6 @@ class ControlStore {
     this.handleConfigUpdate(initialTrayConfig);
   }
 
-  static getInstance(): ControlStore {
-    if (!ControlStore.instance) {
-      ControlStore.instance = new ControlStore();
-    }
-    return ControlStore.instance;
-  }
-
   private handleConfigUpdate(data: ButtonMapping): void {
     for (const [key, button] of Object.entries(data)) {
       if (button.source !='server') {
@@ -138,7 +144,6 @@ class ControlStore {
         console.warn(`No action found for name: ${button.name}`);
       }
     }
-    console.log(data)
   }
 
   private handleClientData(msg: any): void {
@@ -146,12 +151,7 @@ class ControlStore {
       const data = msg.data as song_data;
       this.songData = data;
       this.notifySongDataUpdate();
-    } else if (msg.type === 'settings') {
-      if (msg.data[0] === 'server') {
-        this.handleConfigUpdate(msg.data[0].settings.button_mapping as ButtonMapping);
-      }
     } else if (msg.type === 'button_mappings') {
-      console.log(msg.data)
       this.handleConfigUpdate(msg.data as ButtonMapping);
     } else if (msg.type === 'component_update') {
       const { name, component } = msg.data;

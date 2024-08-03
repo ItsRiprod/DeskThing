@@ -4,7 +4,7 @@ import { IconVolumeDown } from '../icons';
 
 const VolDownComponent: React.FC = () => {  
   return (
-        <button onClick={VolDown}>
+        <button className="bg-transparent" onClick={VolDown}>
             <IconVolumeDown iconSize={75}  />
         </button>
     )

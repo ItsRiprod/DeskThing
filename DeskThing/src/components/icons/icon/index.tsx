@@ -8,6 +8,8 @@ interface IconProps {
   desc?: string;
   descId?: string;
   className?: string;
+  width?: number
+  height?: number
   dangerouslySetInnerHTML?: { __html: string };
 }
 
@@ -20,15 +22,17 @@ export const Icon: React.FC<IconProps> = ({
   descId,
   className,
   dangerouslySetInnerHTML,
+  width = iconSize,
+  height = iconSize,
   ...restProps
 }): JSX.Element => {
   return (
     <svg
       color={color}
       role="img"
-      height={iconSize}
-      width={iconSize}
-      viewBox={`0 0 ${iconSize} ${iconSize}`}
+      height={height}
+      width={width}
+      viewBox={`0 0 ${width} ${height}`}
       className={className}
       {...restProps}
     >

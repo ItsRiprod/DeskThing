@@ -66,28 +66,30 @@ const Local: React.FC = () => {
   };
 
   return (
-    <div className={'flex h-screen overflow-hidden'}>
-      <div className="items-center w-96 flex p-7 img_color">
+    <div className={'flex h-screen w-screen overflow-hidden'}>
+      <div className="items-center w-screen flex p-7 img_color text_color">
+        <div className="grow-0 shrink-0 flex items-center sm:w-3/5 md:h-4/5 md:w-auto ">
+
         {imgData && (
-            <img
+          <img
               src={imgData}
               alt="Image"
-              className="h-80 min-w-80 rounded-xl rounded-tl-[50px] shadow-2xl rounded-br-[50px] overflow-hidden"
+              className={`grow-0 shrink-0 lg:h-full aspect-square rounded-xl ${!imageLoaded && 'hidden'} rounded-tl-[50px] shadow-2xl rounded-br-[50px] overflow-hidden`}
               onLoad={() => {setImageLoaded(true)}}
               onError={() => {setImageLoaded(false)}}
-              style={{ display: imageLoaded ? 'block' : 'none' }}
             />
           )}
           {!imageLoaded && <IconAlbum iconSize={300} />}
-      </div>
-      <div className="flex-col overflow-hidden text_color w-full text-left pt-20">
-        <p className="absolute bottom-24 font-semibold max-w-96 overflow-hidden">{`Listening On: ${songData?.device || 'Device name'}`}</p>
-        <div className={`info_container ${transitioning ? 'transition-all ease-in-out duration-700' : ''} `} style={{transform: `translateX(${offset}px)`, opacity: `${opacity}`}}>
-          <p className="m-3">{songData?.album || 'Album'}</p>
-          <h1 className="m-3 font-bold text-4xl">{songData?.track_name || 'Song Title'}</h1>
-          <h3 className="m-3">{songData?.artist || 'Artist'}</h3>
         </div>
-
+        <div className="flex-col justify-between overflow-hidden text-left">
+          <p className="absolute right-3 text-right bottom-24 font-semibold max-w-96 overflow-hidden">{`Listening On: ${songData?.device || 'Device name'}`}</p>
+          <div className={`info_container ${transitioning ? 'transition-all ease-in-out duration-700' : ''} `} style={{transform: `translateX(${offset}px)`, opacity: `${opacity}`}}>
+            <p className="m-3">{songData?.album || 'Album'}</p>
+            <h1 className="m-3 font-bold text-4xl">{songData?.track_name || 'Song Title'}</h1>
+            <h3 className="m-3">{songData?.artist || 'Artist'}</h3>
+          </div>
+          
+        </div>
       </div>
     </div>
   );

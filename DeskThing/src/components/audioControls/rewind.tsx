@@ -5,7 +5,7 @@ import { IconSkipBack } from '../icons';
 const RewindComponent: FC = () => {
  
   return (
-        <button className="text-green-500" onClick={Rewind}>
+        <button className="text-green-500 bg-transparent" onClick={Rewind}>
             <IconSkipBack iconSize={48} />
         </button>
     )

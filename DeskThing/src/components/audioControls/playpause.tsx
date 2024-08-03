@@ -21,7 +21,7 @@ const PlayPauseComponent: React.FC = () => {
   }, []);
   
   return (
-        <button className="text-green-500" onClick={PlayPause}>
+        <button className="text-green-500 bg-transparent" onClick={PlayPause}>
             {songData.is_playing ?  <IconPause iconSize={48} /> : <IconPlay iconSize={48} />}
         </button>
     )

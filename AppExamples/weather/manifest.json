@@ -5,7 +5,7 @@
   "isLocalApp": true,
   "requires": [],
   "label": "Weather App",
-  "version": "v0.6.0",
+  "version": "v0.7.0",
   "description": "Displays the current weather",
   "author": "Riprod",
   "platforms": [

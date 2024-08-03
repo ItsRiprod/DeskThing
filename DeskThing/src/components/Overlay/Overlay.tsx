@@ -23,7 +23,7 @@ const Overlay: FC<OverlayProps> = ({ children }) => {
         if (timer) clearTimeout(timer);
         timer = setTimeout(() => {
           setActive(false);
-        }, 1500);
+        }, 5000);
       }
       return () => {
         if (timer) clearTimeout(timer);

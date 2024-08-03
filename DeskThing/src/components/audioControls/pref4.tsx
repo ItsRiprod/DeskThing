@@ -4,7 +4,7 @@ import { IconDevice } from '../icons';
 
 const Pref4Component: React.FC = () => {  
   return (
-        <button onClick={() => Pref4()}>
+        <button className="bg-transparent" onClick={() => Pref4()}>
             <IconDevice iconSize={75} strokeWidth={24} fontSize={250} text="Pref 4" />
         </button>
     )

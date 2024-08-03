@@ -22,7 +22,7 @@ const getBackgroundColor = (base64ImageContent: string): Promise<[number, number
     const pixelCount = width * height;
     const pixelArray: [number, number, number][] = [];
 
-    for (let i = 0, offset, r, g, b, a; i < pixelCount; i += 2000) {
+    for (let i = 0, offset, r, g, b, a; i < pixelCount; i += 500) {
       offset = i * 4;
       r = pixels[offset + 0];
       g = pixels[offset + 1];

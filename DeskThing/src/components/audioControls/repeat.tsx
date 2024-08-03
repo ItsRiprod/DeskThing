@@ -21,7 +21,7 @@ const RepeatComponent: React.FC = () => {
   }, []);
   
   return (
-        <button onClick={Repeat}>
+        <button className="bg-transparent" onClick={Repeat}>
             {songData.repeat_state == 'off' ? <IconRepeat iconSize={48} /> : songData.repeat_state == 'all' ? <IconRepeat className={'text-green-500'} iconSize={48} /> : <IconRepeatOne className={'text-green-500'} iconSize={48} />}
         </button>
     )

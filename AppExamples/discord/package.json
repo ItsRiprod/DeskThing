@@ -1,6 +1,6 @@
 {
   "name": "discord",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "This app is a discord app that shows your call stats on the DeskThing",
   "main": "index.js",
   "scripts": {

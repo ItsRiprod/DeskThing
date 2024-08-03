@@ -21,7 +21,7 @@ const ShuffleComponent: React.FC = () => {
   }, []);
   
   return (
-    <button className="" onClick={Shuffle}>
+    <button className="bg-transparent" onClick={Shuffle}>
       {songData.shuffle_state ? <IconShuffle iconSize={48} className={'text-green-500'} /> : <IconShuffle iconSize={48} />}
     </button>
     )

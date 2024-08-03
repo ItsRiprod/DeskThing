@@ -1,19 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react'
-import socket, { socketData } from '../../helpers/WebSocketService'
+import WebSocketService, { socketData } from '../../helpers/WebSocketService'
+import { ManifestStore } from '../../store'
 
 interface WebViewProps {
   currentView: string
 }
 
 const WebView: React.FC<WebViewProps> = ({ currentView }) => {
+  const socket = WebSocketService
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [swipeVisible, setSwipeVisible] = useState(false)
   const swipeRef = useRef<HTMLDivElement>(null)
+  const port = ManifestStore.getManifest().port
+  const ip = ManifestStore.getManifest().ip
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       // Handle incoming messages from the iframe
-      if (event.origin != 'http://localhost:8891') return
+      if (event.origin != `http://${ip}:${port}`) return
 
       console.log('Received message from iframe:', event)
     };
@@ -58,11 +62,11 @@ const WebView: React.FC<WebViewProps> = ({ currentView }) => {
 
   return (
     <div className='max-h-screen h-screen pb-14 overflow-hidden'>
-        <div className="touch-none w-full h-0 flex justify-center bg-red-200">
+        <div className="touch-none w-full h-0 flex justify-center items-center bg-red-200">
             <div
               ref={swipeRef}
-              className={`touch-auto fixed h-10 rounded-2xl top-2 bg-gray-900 ${
-                swipeVisible ? 'opacity-100 w-11/12 h-4/6 text-6xl content-center' : 'opacity-30 w-1/4'
+              className={`touch-auto fixed h-10 rounded-2xl top-2 bg-gray-500 ${
+                swipeVisible ? 'opacity-100 w-11/12 h-4/6 flex items-center justify-center text-6xl' : 'opacity-30 w-1/4'
               } transition-all duration-300`}
               onTouchStart={handleTouchStart}
               onTouchEnd={handleTouchEnd}
@@ -72,7 +76,7 @@ const WebView: React.FC<WebViewProps> = ({ currentView }) => {
         </div>
         <iframe
           ref={iframeRef}
-          src={`http://localhost:8891/${currentView}`}
+          src={`http://${ip}:${port}/${currentView}`}
           style={{ width: '100%', height: '100%', border: 'none' }}
           title="Web View"
         />

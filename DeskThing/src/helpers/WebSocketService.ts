@@ -1,3 +1,5 @@
+import { ManifestStore, ServerManifest } from "../store/";
+
 // Computer local IP
 //const BASE_URL = 'ws://192.168.159.100:8891';
 
@@ -5,28 +7,51 @@
 //const BASE_URL = 'ws://192.168.7.1:8891';
 
 // ADB IP
-const BASE_URL = 'ws://localhost:8891';
+//const BASE_URL = 'ws://localhost:8891';
 
 type SocketEventListener = (msg: socketData) => void;
 
-export function create_socket(): WebSocket {
-  return new WebSocket(BASE_URL);
-}
-
 class WebSocketService {
-  socket_connector: () => WebSocket;
+  private static instance: WebSocketService
   listeners: { [app: string]: SocketEventListener[] } = {};
   webSocket: WebSocket;
 
-  constructor(socket_connector: () => WebSocket = create_socket) {
-    this.socket_connector = socket_connector;
-
-    this.webSocket = this.socket_connector();
-    this.connect(this.webSocket);
+  constructor() {
+    ManifestStore.on((manifest) => this.handleManifestChange(manifest));
+    this.initializeSocket()
   }
 
-  reconnect(): void {
-    this.connect(this.socket_connector());
+  static getInstance() {
+    if (!WebSocketService.instance) {
+      WebSocketService.instance = new WebSocketService();
+    }
+    return WebSocketService.instance;
+  }
+
+  private handleManifestChange(manifest: ServerManifest | null): void {
+    if (manifest) {
+      console.log('Reconnecting due to manifest update')
+      this.reconnect();
+    }
+  }
+
+  private initializeSocket(): void {
+    if (this.webSocket) {
+      this.webSocket.close();
+    }
+
+    try {
+      this.webSocket = create_socket();
+      if (this.webSocket) {
+        this.connect(this.webSocket);
+      }
+    } catch (error) {
+      console.error('Failed to initialize WebSocket:', error);
+    }
+  }
+
+  private reconnect(): void {
+    this.connect(create_socket());
   }
 
   connect(webSocket: WebSocket): void {
@@ -53,7 +78,6 @@ class WebSocketService {
   }
 
   post(body: socketData): void {
-    console.log(body)
     if (this.is_ready()) {
       this.webSocket.send(JSON.stringify(body));
     } else {
@@ -70,7 +94,7 @@ class WebSocketService {
         if (!this.listeners[app]) {
           this.listeners[app] = [];
         }
-        ///// console.log('WEBSOCKET', msg)
+        // console.log('WEBSOCKET', msg)
         this.listeners[app].forEach((listener: SocketEventListener) => listener(msg as socketData));
       } catch (e) {
         console.error(e);
@@ -84,7 +108,6 @@ class WebSocketService {
       this.listeners[app] = [];
     }
     this.listeners[app].push(listener);
-
     // Return a function that removes this listener
     return () => {
       this.removeSocketEventListener(app, listener);
@@ -106,8 +129,18 @@ class WebSocketService {
   }
 }
 
-const socket = new WebSocketService();
-export default socket;
+function create_socket(): WebSocket {
+  const manifest = ManifestStore.getManifest();
+  if (manifest) {
+    const { ip, port } = manifest;
+    const BASE_URL = `ws://${ip}:${port}`;
+    return new WebSocket(BASE_URL);
+  } else {
+    throw new Error('Manifest is not available.');
+  }
+}
+
+export default WebSocketService.getInstance()
 
 export interface Manifest {
   isAudioSource: boolean
@@ -132,6 +165,20 @@ export interface App {
   manifest?: Manifest
 }
 
+export interface Settings {
+  app: {
+    [setting: string]: {
+      value: string | number;
+      label: string;
+      options: [
+        {
+          value: string | number;
+          label: string;
+        } 
+      ]
+    };
+  };
+}
 
 export interface socketData {
   app: string;

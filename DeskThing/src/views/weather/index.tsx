@@ -121,9 +121,9 @@ const Weather: React.FC = () => {
   };
 
   return (
-    <div className="view_weather">
+    <div className="h-screen w-screen pb-40">
       {weatherData ? (
-        <div className="weather_container" style={{ backgroundColor: mainColor, color: fontColor }}>
+        <div className="m-3 rounded-3xl h-full flex" style={{ backgroundColor: mainColor, color: fontColor }}>
           <div className="weather_info">
             <div className="weather_card">
               {weatherData.PrecipitationType && (

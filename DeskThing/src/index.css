@@ -27,6 +27,14 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'THEBOLDFONT';
+  src: url(/fonts/THEBOLDFONT.ttf) format('truetype');
+  font-style: normal;
+  font-weight: normal;
+  font-display: swap;
+}
+
 ::-webkit-scrollbar {
   width: 10px;
 }
@@ -172,15 +180,6 @@
      --trello-color-gray: #838c91;
      --trello-color-gray_light: #cfd4d7;  
      --trello-color-gray_dark: #5c5e60;  
-}
-
-button {
-  background-color: unset;
-  border: unset;
-  color: unset;
-  width: unset;
-  height: unset;
-  transition: background-color 0.5s;
 }
 
 p, h1, h2, h3, h4, h5 {

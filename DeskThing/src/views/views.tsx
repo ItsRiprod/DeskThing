@@ -9,6 +9,7 @@ import './views.css';
 import Overlay from '../components/Overlay/Overlay';
 import { AppStore } from '../store';
 import ControlHandler, { ControlKeys } from '../store/controlStore';
+import Landing from './landing';
 
 const ViewManager = () => {
   const [DynamicComponent, setDynamicComponent] = useState<React.LazyExoticComponent<any> | null>(null);
@@ -159,7 +160,7 @@ const ViewManager = () => {
       case 'dashboard':
         return <Dashboard />;
       case 'landing':
-        return <Dashboard />;
+        return <Landing />;
       default:
         if (DynamicComponent) {
           return (

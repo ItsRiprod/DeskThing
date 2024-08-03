@@ -5,7 +5,7 @@
   "isLocalApp": true,
   "requires": [],
   "label": "Utility App",
-  "version": "v0.6.0",
+  "version": "v0.7.0",
   "description": "This app is a utility app that controls the settings of the DeskThing",
   "author": "Riprod",
   "platforms": [
