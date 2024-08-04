@@ -3,6 +3,7 @@ import { useAppStore, App } from '../../store/appStore'
 import { IconX, IconPause, IconPlay, IconDetails, IconPulsing } from '../icons'
 import DisplayAppData from '../Overlays/DisplayAppData'
 import RequestStoreInstance, { Request } from '../../store/requestStore'
+import AppRequestOverlay from '../Overlays/AppRequest'
 
 export type View = 'apps' | 'local' | 'web'
 
@@ -13,6 +14,8 @@ const Apps = (): JSX.Element => {
   const [enabled, setEnabled] = useState(false)
   const [appIndex, setAppIndex] = useState(-1)
   const [appsWithActiveRequests, setAppsWithActiveRequests] = useState<string[]>([])
+  const [currentRequest, setCurrentRequest] = useState<Request | null>(null)
+  const [displayRequest, setDisplayRequest] = useState(false)
   const [path, setPath] = useState('')
 
   const handleAddAndRunApp = (appName: string): void => {
@@ -63,12 +66,23 @@ const Apps = (): JSX.Element => {
   }, [])
 
   const handleRequestTrigger = (appName: string): void => {
-    RequestStoreInstance.triggerRequestDisplay(appName)
+    const request = RequestStoreInstance.getRequestByAppName(appName)
+    if (request) {
+      setCurrentRequest(request)
+      setDisplayRequest(true)
+    }
   }
 
   return (
     <div className="h-svh w-[100%] flex flex-col justify-between items-center">
       <div className="pt-5 w-full flex justify-center">
+        {displayRequest && currentRequest && app && (
+          <AppRequestOverlay
+            requestName={app.name}
+            request={currentRequest}
+            onClose={() => setDisplayRequest(false)}
+          />
+        )}
         {enabled && <DisplayAppData appIndex={appIndex} setEnabled={setEnabled} app={app} />}
         <div className="pt-5 w-full flex 2xl:flex-row 2xl:flex-wrap flex-col items-center gap-2">
           <p className="italic text-red-700 font-geistMono">

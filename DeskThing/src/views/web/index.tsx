@@ -20,14 +20,24 @@ const WebView: React.FC<WebViewProps> = ({ currentView }) => {
       if (event.origin != `http://${ip}:${port}`) return
 
       console.log('Received message from iframe:', event)
-    };
+      if (socket.is_ready()) {
+        const payload = event.data.payload
+        const data = {
+          app: payload.app || currentView,
+          type: payload.type || null,
+          request: payload.request || null,
+          data: payload.data || null,
+        };
+        socket.post(data);
+      }
+    }
 
     window.addEventListener('message', handleMessage);
 
     return () => {
       window.removeEventListener('message', handleMessage);
     };
-  }, []);
+  }, [currentView, ip, port, socket]);
 
   const sendMessageToIframe = (data: any) => {
     if (iframeRef.current && iframeRef.current.contentWindow) {
@@ -52,6 +62,7 @@ const WebView: React.FC<WebViewProps> = ({ currentView }) => {
 
   const handleTouchStart = () => {
     setSwipeVisible(true)
+    sendMessageToIframe({ type: 'message', data: 'hello' })
   }
 
   const handleTouchEnd = () => {

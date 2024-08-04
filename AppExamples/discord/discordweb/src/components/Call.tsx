@@ -1,3 +1,4 @@
+import messageStore from '../stores/messageStore'
 import Controls from './Controls'
 import Profile from './Profile'
 import discordStore, { userData } from '../stores/discordStore'
@@ -7,6 +8,7 @@ export const Call = () => {
     const [callData, setCallData] = useState<userData[]>([])
 
     useEffect(() => {
+        messageStore.sendMessageToParent('server', 'message', 'message', 'Helloooooo')
         const handleCallDataUpdate = (data: userData[]) => {
             setCallData(data)
             console.log('Callback data',data)

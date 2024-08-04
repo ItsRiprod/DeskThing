@@ -7,6 +7,7 @@ class MessageStore {
 
   constructor() {
     this.initialize();
+    this.sendMessageToParent('server', 'message', undefined, 'Hello from the discord app!')
   }
 
   private initialize() {
@@ -75,9 +76,15 @@ class MessageStore {
     this.listeners = this.listeners.filter(listener => listener !== callback);
   }
 
-  public sendMessageToParent() {
+  public sendMessageToParent(app?: string, request?: string, type?: string, data?: any) {
+    const payload = {
+      app: app || 'discord',
+      type: type || 'message',
+      request: request || null,
+      data: data || null
+    };
     window.parent.postMessage(
-      { type: 'IFRAME_ACTION', payload: 'Some data from iframe' },
+      { type: 'IFRAME_ACTION', payload: payload },
       '*' // Use a specific origin if possible for security
     );
   }
