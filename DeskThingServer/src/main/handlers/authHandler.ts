@@ -2,7 +2,7 @@ import { getAppData } from './configHandler' // Assuming you have a config handl
 import { sendMessageToApp } from './appHandler' // Assuming you have an app handler for sending messages
 import http from 'http'
 import url from 'url'
-import settingsStore from './settingsHandler'
+import settingsStore from '../stores/settingsStore'
 import dataListener, { MESSAGE_TYPES } from '../utils/events'
 
 const successView = '<h1>Success</h1><p>You can now close this window.</p>'

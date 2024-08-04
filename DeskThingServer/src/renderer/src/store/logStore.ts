@@ -22,6 +22,11 @@ class LogStore extends EventEmitter<LogEvents> {
     this.logList = []
     this.maxLogLength = maxLogLength
     this.maxNumLogs = 100
+    window.electron.ipcRenderer.on('error', (_event, errorData) => this.addLog('error', errorData))
+    window.electron.ipcRenderer.on('log', (_event, logData) => this.addLog('log', logData))
+    window.electron.ipcRenderer.on('message', (_event, messageData) =>
+      this.addLog('message', messageData)
+    )
   }
 
   static getInstance(): LogStore {
@@ -91,6 +96,7 @@ class LogStore extends EventEmitter<LogEvents> {
     const logRegex = /^\[(.*?)\]: (\w+) \| (.*)$/
     const match = log.match(logRegex)
     if (match) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const [_, timestamp, type, message] = match
       return {
         type: type,

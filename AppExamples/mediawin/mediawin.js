@@ -23,7 +23,21 @@ class MediaWin {
             "label": "30 seconds"
           },
         ]
-      }
+      },
+      "change_source": {
+        "value": 'true',
+        "label": "Switch Output on Select",
+        "options": [
+          {
+            "value": "true",
+            "label": "Switch"
+          },
+          {
+            "value": "false",
+            "label": "Dont Switch"
+          }
+        ]
+      },
     };
 
     const manifestPath = path.join(__dirname, 'manifest.json');

@@ -42,6 +42,7 @@ class AppStore extends EventEmitter<appStoreEvents> {
     this.appsList = {
       apps: []
     }
+    window.electron.ipcRenderer.on('app-data', this.handleAppData.bind(this))
   }
 
   static getInstance(): AppStore {
@@ -49,6 +50,10 @@ class AppStore extends EventEmitter<appStoreEvents> {
       AppStore.instance = new AppStore()
     }
     return AppStore.instance
+  }
+
+  private handleAppData(_event, response): void {
+    this.setAppList(response.data)
   }
 
   public getAppsList(): AppData {
@@ -142,7 +147,6 @@ export const useAppStore = (): AppStoreHook => {
       if (newAppsList) {
         setAppsList(newAppsList)
       }
-      console.log('Updating things', newAppsList)
     }
 
     appStoreInstance.on('update', handleUpdate)

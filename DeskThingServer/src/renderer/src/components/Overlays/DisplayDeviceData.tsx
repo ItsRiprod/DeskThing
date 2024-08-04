@@ -191,9 +191,17 @@ const DisplayDeviceData = ({ setEnabled, device }: DisplayDeviceDataProps): JSX.
   return (
     <>
       {deviceData != null ? (
-        <div className="pointer-events-auto fixed items-center w-screen flex top-0 justify-around left-0 h-screen z-10">
-          <div className="bg-zinc-900 animate-fade p-5 w-11/12 rounded-lg max-h-[90vh] overflow-auto drop-shadow-lg flex flex-col">
-            <h1 className="shadow-lg flex m-5 bg-zinc-700 p-3 rounded-xl">{device}</h1>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 animate-fade p-5 w-11/12 rounded-lg max-h-[90vh] overflow-auto drop-shadow-lg flex flex-col">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-white">{device}</h2>
+              <button
+                onClick={handleExit}
+                className="text-gray-400 border-red-600 border p-2 rounded-lg hover:text-white hover:bg-red-500 focus:outline-none"
+              >
+                <IconX />
+              </button>
+            </div>
             <div className="flex items-center flex-col p-5">
               <div className="flex items-center gap-5">
                 <IconCarThing
@@ -286,7 +294,7 @@ const DisplayDeviceData = ({ setEnabled, device }: DisplayDeviceDataProps): JSX.
                 )}
               </div>
             </div>
-            <div className="bg-zinc-700 p-5 m-1 flex justify-between items-center rounded-lg drop-shadow-lg">
+            <div className="border-zinc-700 border-2 p-5 m-1 flex justify-between items-center rounded-lg drop-shadow-lg">
               <button
                 className="border hover:bg-red-500 border-red-500 transition-colors p-5 rounded-lg drop-shadow-lg"
                 onClick={handleExit}
@@ -313,7 +321,7 @@ const DisplayDeviceData = ({ setEnabled, device }: DisplayDeviceDataProps): JSX.
                 </div>
                 <div className="flex items-center">
                   {weToolTip ? (
-                    <p className="relative">{weToolTip}</p>
+                    <p className="relative"></p>
                   ) : (
                     <p className="relative text-zinc-500">
                       <i>Warning: Advanced use only. May cause damage.</i>
@@ -321,12 +329,13 @@ const DisplayDeviceData = ({ setEnabled, device }: DisplayDeviceDataProps): JSX.
                   )}
                   <button
                     onClick={() => handleSendCommand(device)}
-                    className="border-2 border-cyan-600 hover:bg-cyan-500 p-2 rounded-lg"
+                    className="border-2 group gap-2 flex border-cyan-600 hover:bg-cyan-500 p-2 rounded-lg"
                     onMouseEnter={() =>
                       setWStooltip(types[device] == 'adb' ? 'Send ADB Command' : 'Send WS Command')
                     }
                     onMouseLeave={() => setWStooltip('')}
                   >
+                    <p className="group-hover:block hidden">{weToolTip}</p>
                     <IconPlay iconSize={24} />
                   </button>
                 </div>

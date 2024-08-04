@@ -1,7 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Overlays from './components/Overlays'
-import { useAppStore, AppData } from './store/appStore'
-import logInstance from './store/logStore'
 
 import Sidebar from './components/Sidebar'
 import ContentArea from './components/ContentArea'
@@ -10,41 +8,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 type View = 'appsList' | 'preferences' | 'logDisplay' | 'adb' | 'dev'
 
 function App(): JSX.Element {
-  const { setAppList } = useAppStore()
   const [currentView, setCurrentView] = useState<View>('appsList')
-
-  useEffect(() => {
-    const handleAppData = (data: AppData): void => {
-      handleAppDataJson(data)
-    }
-    const handleLog = async (errorData, type): Promise<void> => {
-      logInstance.addLog(type, errorData)
-    }
-
-    // Set up listener for 'app-data' event
-    const removeListener = window.electron.ipcRenderer.on('app-data', (_event, response) =>
-      handleAppData(response.data)
-    )
-    const removeErrorListener = window.electron.ipcRenderer.on('error', (_event, errorData) =>
-      handleLog(errorData, 'error')
-    )
-    const removeLogListener = window.electron.ipcRenderer.on('log', (_event, errorData) =>
-      handleLog(errorData, 'log')
-    )
-    const removeMessageListener = window.electron.ipcRenderer.on('message', (_event, errorData) =>
-      handleLog(errorData, 'message')
-    )
-
-    return () => {
-      removeListener()
-      removeErrorListener()
-      removeLogListener()
-      removeMessageListener()
-    }
-  }, [])
-  const handleAppDataJson = (data: AppData): void => {
-    setAppList(data)
-  }
 
   return (
     <div className="bg-black overflow-hidden">

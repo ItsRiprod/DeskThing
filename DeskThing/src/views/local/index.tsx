@@ -3,6 +3,7 @@ import './styles.css';
 import React, { useEffect, useState } from 'react';
 import socket, { socketData, song_data } from '../../helpers/WebSocketService';
 import { IconAlbum } from '../../components/icons';
+import { AppStore } from '../../store';
 
 const Local: React.FC = () => {
   const [songData, setSongData] = useState<song_data>();
@@ -55,15 +56,48 @@ const Local: React.FC = () => {
   },);
 
   useEffect(() => {
+    const handleGetSongData = () => {
+      const settings = AppStore.getSettings()
+      const changeSource = settings.local?.change_source?.value == "true"
+      // set playback location
+      if (changeSource) {
+        sendSettingsUpdate('utility', 'playback_location', 'local')
+        if (socket.is_ready()) {
+          const data = { app: 'local', type: 'get', request: 'song' };
+          socket.post(data);
+        }
+      } else {
+        if (socket.is_ready()) {
+          const data = { app: 'utility', type: 'get', request: 'song' };
+          socket.post(data);
+        }
+      }
+      if (socket.is_ready()) {
+        const data = { app: 'utility', type: 'get', request: 'song' };
+        socket.post(data);
+      }
+    };
+
     handleGetSongData();
   }, [])
 
-  const handleGetSongData = () => {
+  
+  const sendSettingsUpdate = (app: string, setting: string, value: string) => {
     if (socket.is_ready()) {
-      const data = { app: 'utility', type: 'get', request: 'song' };
+      const data = {
+        app: app,
+        type: 'set',
+        request: 'update_setting',
+        data: {
+          setting: setting,
+          value: value,
+        }
+      };
       socket.post(data);
     }
-  };
+  }
+
+  
 
   return (
     <div className={'flex h-screen w-screen overflow-hidden'}>

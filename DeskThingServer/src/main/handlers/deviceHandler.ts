@@ -7,6 +7,19 @@ import { app, net } from 'electron'
 import { handleAdbCommands } from './adbHandler'
 import { ReplyData } from '..'
 
+export interface ServerManifest {
+  name: string
+  id: string
+  short_name: string
+  description: string
+  builtFor: string
+  reactive: boolean
+  author: string
+  version: string
+  port: number
+  ip: string
+}
+
 export const HandleDeviceData = async (data: any): Promise<void> => {
   try {
     const deviceData = JSON.parse(data)
@@ -171,4 +184,102 @@ export const HandleWebappZipFromUrl = (
   })
 
   request.end()
+}
+
+export const handleClientManifestUpdate = async (
+  webContents,
+  partialManifest: Partial<ServerManifest>
+): Promise<void> => {
+  const userDataPath = app.getPath('userData')
+  const extractDir = join(userDataPath, 'webapp')
+  const manifestPath = join(extractDir, 'manifest.js')
+
+  webContents.send('logging', { status: true, data: 'Updating manifest...', final: false })
+  try {
+    // Ensure the directory exists
+    await fs.promises.mkdir(extractDir, { recursive: true })
+
+    // Read the existing manifest
+    const existingManifest = await getClientManifest(webContents, true)
+
+    // Merge the existing manifest with the partial updates
+    const updatedManifest: Partial<ServerManifest> = {
+      ...existingManifest,
+      ...partialManifest
+    }
+
+    // Prepare the manifest content
+    const manifestContent = `window.manifest = ${JSON.stringify(updatedManifest, null, 2)};`
+
+    // Write the updated manifest to the file
+    await fs.promises.writeFile(manifestPath, manifestContent, 'utf8')
+    console.log('Manifest file updated successfully')
+    webContents.send('logging', { status: true, data: 'Manifest Updated!', final: true })
+    dataListener.asyncEmit(
+      MESSAGE_TYPES.LOGGING,
+      'DEVICE HANDLER: Manifest file updated successfully'
+    )
+  } catch (error) {
+    console.error('Error updating manifest file:', error)
+    dataListener.asyncEmit(
+      MESSAGE_TYPES.ERROR,
+      'DEVICE HANDLER: Error updating manifest file: ' + error
+    )
+  }
+}
+
+export const getClientManifest = async (
+  webContents,
+  utility: boolean = false
+): Promise<ServerManifest | null> => {
+  console.log('Getting manifest...')
+  const userDataPath = app.getPath('userData')
+  const manifestPath = join(userDataPath, 'webapp', 'manifest.js')
+  console.log('manifestPath: ', manifestPath)
+  if (!fs.existsSync(manifestPath)) {
+    console.log('Manifest file not found')
+    webContents.send('logging', {
+      status: false,
+      data: 'Manifest file not found',
+      final: true
+    })
+    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'DEVICE HANDLER: Manifest file not found')
+    return null
+  }
+  webContents.send('logging', {
+    status: true,
+    data: 'Manifest file read successfully',
+    final: false
+  })
+
+  try {
+    const data = await fs.promises.readFile(manifestPath, 'utf8')
+
+    const jsonStart = data.indexOf('{')
+    const jsonEnd = data.lastIndexOf('}')
+    const jsonData = data.substring(jsonStart, jsonEnd + 1)
+
+    const manifest: ServerManifest = JSON.parse(jsonData)
+    webContents.send('logging', {
+      status: true,
+      data: 'Manifest loaded!',
+      final: !utility
+    })
+    dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'DEVICE HANDLER: Manifest file read successfully')
+    console.log(manifest)
+    return manifest
+  } catch (error) {
+    console.error('Error reading or parsing manifest file:', error)
+    dataListener.asyncEmit(
+      MESSAGE_TYPES.ERROR,
+      'DEVICE HANDLER: Error reading or parsing manifest file: ' + error
+    )
+    webContents.send('logging', {
+      status: false,
+      data: 'Unable to read Server Manifest file',
+      final: true,
+      error: 'Unable to read manifest file' + error
+    })
+    return null
+  }
 }

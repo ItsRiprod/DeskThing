@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   IconCarThing,
+  IconDetails,
   IconDisconnect,
   IconLogoGearLoading,
   IconRefresh,
@@ -9,6 +10,7 @@ import {
 } from '../icons'
 import DisplayDeviceData from '../Overlays/DisplayDeviceData'
 import settingsStore from '@renderer/store/settingsStore'
+import ClientSettings from '../ClientSettings'
 
 const Device = (): JSX.Element => {
   const [devices, setDevices] = useState<string[]>([])
@@ -18,6 +20,7 @@ const Device = (): JSX.Element => {
   const [error, setError] = useState('')
   const [currentDevice, setCurrentDevice] = useState('')
   const [port, setPort] = useState<number>(-1)
+
   useEffect(() => {
     handlePush()
   }, [enabled])
@@ -115,6 +118,7 @@ const Device = (): JSX.Element => {
     <div className="pt-5 flex flex-col w-full items-center p-5">
       <div className="flex flex-row items-center justify-between w-full"></div>
       {enabled && <DisplayDeviceData setEnabled={setEnabled} device={currentDevice} />}
+      <ClientSettings />
       {devices.length > 0 ? (
         <div className="w-full">
           <div className="w-full">
@@ -145,9 +149,18 @@ const Device = (): JSX.Element => {
                     {loading ? '' : tooltip[1] == index ? tooltip[0] : ''}
                   </p>
                   <button
+                    onClick={() => handleDeviceClick(device)}
+                    className="border-2 top-10 border-green-600 hover:bg-green-500  p-2 rounded-lg"
+                    onMouseEnter={() => setTooltip(['Device Details', index])}
+                    onMouseLeave={() => setTooltip(['', index])}
+                    disabled={loading}
+                  >
+                    <IconDetails iconSize={24} />
+                  </button>
+                  <button
                     onClick={() => handlePushStaged(device.replace('device', '').trim())}
                     className="border-2 top-10 border-cyan-600 hover:bg-cyan-500  p-2 rounded-lg"
-                    onMouseEnter={() => setTooltip(['Push Staged Webapp', index])}
+                    onMouseEnter={() => setTooltip(['Push Staged Client', index])}
                     onMouseLeave={() => setTooltip(['', index])}
                     disabled={loading}
                   >
@@ -195,12 +208,12 @@ const Device = (): JSX.Element => {
             ))}
           </div>
           <div className="pt-5">
-            <p>Current Port: {port}</p>
             <button
-              className="border-cyan-500 flex gap-3 border p-5 rounded-2xl hover:bg-cyan-600"
+              className="group border-cyan-500 flex gap-3 border p-3 rounded-xl hover:bg-cyan-600"
               onClick={() => handlePush()}
             >
-              Refresh Devices <IconTransfer />
+              <IconRefresh />
+              <p className="group-hover:block hidden">Refresh Devices</p>
             </button>
           </div>
         </div>

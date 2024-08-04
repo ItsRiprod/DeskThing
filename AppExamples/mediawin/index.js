@@ -27,7 +27,14 @@ async function onMessageFromMain(event, ...args) {
       case 'data':
 
         if (args[0]?.settings != null) {
-          mediawin.settings = args[0].settings
+          ['refresh_interval', 'output_device', 'change_source'].forEach(key => {
+            if (args[0].settings?.[key]) {
+              spotify.settings[key] = args[0].settings[key];
+            } else {
+              const settings = { settings: spotify.settings };
+              spotify.sendDataToMainFn('add', settings);
+            }
+          });
         } else {
           const settings = { settings: mediawin.settings }
           mediawin.sendDataToMainFn('add', settings)

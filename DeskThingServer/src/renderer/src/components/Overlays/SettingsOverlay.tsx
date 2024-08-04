@@ -45,42 +45,56 @@ const SettingsOverlay = ({ setEnabled }: SettingsOverlayProps): JSX.Element => {
   }
 
   return (
-    <div className="pointer-events-auto fixed top-0 items-center h-screen w-screen flex justify-around left-0 z-10">
-      <div className="bg-slate-600 animate-fade p-5 w-11/12 rounded-lg max-h-[90vh] overflow-auto drop-shadow-lg flex flex-col">
-        <h1 className="shadow-lg m-5 bg-slate-700 p-3 rounded-xl">Settings</h1>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-gray-800 animate-fade p-5 w-11/12 rounded-lg max-h-[90vh] overflow-auto drop-shadow-lg flex flex-col">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold text-white">Server Settings</h2>
+          <button
+            onClick={() => setEnabled(false)}
+            className="text-gray-400 border-red-600 border p-3 rounded-lg hover:text-white hover:bg-red-500 focus:outline-none"
+          >
+            <IconX />
+          </button>
+        </div>
 
-        <div className="bg-slate-500 p-5 m-1 rounded-lg drop-shadow-lg">
-          <div className="shadow-lg m-5 bg-slate-600 p-3 rounded-xl flex justify-between items-center">
+        <div className="p-5 m-1 rounded-lg drop-shadow-lg">
+          <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex justify-between items-center">
             <p>Callback Port:</p>
             <input
               type="number"
               value={settings.callbackPort}
               onChange={(e) => handleSettingChange('callbackPort', Number(e.target.value))}
-              className="form-input h-10 w-24 text-blue-600"
+              className="h-10 bg-slate-500 rounded focus:bg-white active:bg-white focus:text-black active:text-black px-2 text-white-600"
             />
           </div>
 
-          <div className="shadow-lg m-5 bg-slate-600 p-3 rounded-xl flex justify-between items-center">
+          <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex justify-between items-center">
             <p>Device Port:</p>
             <input
               type="number"
               value={settings.devicePort}
               onChange={(e) => handleSettingChange('devicePort', Number(e.target.value))}
-              className="form-input h-10 w-24 text-blue-600"
+              className="h-10 bg-slate-500 rounded focus:bg-white active:bg-white focus:text-black active:text-black px-2 text-white-600"
             />
           </div>
 
-          <div className="shadow-lg m-5 bg-slate-600 p-3 rounded-xl flex justify-between items-center">
+          <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex justify-between items-center">
             <p>Address:</p>
             <input
               type="text"
               value={settings.address}
               onChange={(e) => handleSettingChange('address', e.target.value)}
-              className="form-input h-10 w-48 text-blue-600"
+              className="h-10 bg-slate-500 rounded focus:bg-white active:bg-white focus:text-black active:text-black px-2 text-white-600"
             />
           </div>
+          <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex justify-between items-center">
+            <p>Local IP:</p>
+            <div className="h-10 bg-slate-500 flex items-center rounded px-2 text-gray-300">
+              <p>{settings.localIp}</p>
+            </div>
+          </div>
 
-          <div className="shadow-lg m-5 bg-slate-600 p-3 rounded-xl flex justify-between items-center">
+          <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex justify-between items-center">
             <p>Auto Start:</p>
             <input
               disabled={true}
@@ -91,7 +105,7 @@ const SettingsOverlay = ({ setEnabled }: SettingsOverlayProps): JSX.Element => {
             />
           </div>
 
-          <div className="shadow-lg m-5 bg-slate-600 p-3 rounded-xl flex justify-between items-center">
+          <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex justify-between items-center">
             <p>Minimize App:</p>
             <input
               disabled={true}
@@ -105,22 +119,24 @@ const SettingsOverlay = ({ setEnabled }: SettingsOverlayProps): JSX.Element => {
 
         <div className="bg-slate-700 p-5 m-1 flex justify-between rounded-lg drop-shadow-lg">
           <button
-            className="bg-red-700 hover:bg-red-500 transition-colors p-5 rounded-lg drop-shadow-lg"
+            className="flex border-red-600 border hover:bg-red-500 p-3 rounded-lg drop-shadow-lg"
             onClick={() => setEnabled(false)}
           >
             <IconX iconSize={24} />
           </button>
           <div className="flex gap-4">
             <button
-              className="bg-yellow-600 hover:bg-yellow-500 transition-colors p-5 rounded-lg drop-shadow-lg"
+              className="group gap-2 flex border-cyan-600 border hover:bg-cyan-500 p-3 rounded-lg drop-shadow-lg"
               onClick={handleReset}
             >
+              <p className="group-hover:block hidden">Reset</p>
               <IconRefresh iconSize={24} />
             </button>
             <button
-              className="bg-green-600 hover:bg-green-500 transition-colors p-5 rounded-lg drop-shadow-lg"
+              className="group gap-2 flex border-green-600 border hover:bg-green-500 p-3 rounded-lg drop-shadow-lg"
               onClick={handleSave}
             >
+              <p className="group-hover:block hidden">Save</p>
               <IconPlay iconSize={24} />
             </button>
           </div>

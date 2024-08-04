@@ -101,7 +101,7 @@ const Footer: React.FC = () => {
     return () => {
       document.removeEventListener('touchstart', handleTouchOutside);
     };
-  }, []);
+  }, [handleTouchOutside]);
 
   useEffect(() => {
 
@@ -124,7 +124,8 @@ const Footer: React.FC = () => {
   return (
     <div className={`fixed flex max-w-full bottom-0 transition-all ease-out duration-200 bg-zinc-900 ${visible ? 'h-36' : 'h-16'}`}
     ref={playerIslandRef}
-    onTouchStart={handleTouchInside}>
+    onTouchStart={handleTouchInside}
+    onMouseEnter={handleTouchInside}>
         <button className='max-w-40' onTouchStart={handleGetSongData} onClick={handleGetSongData}>
             {imageData && (
               <img

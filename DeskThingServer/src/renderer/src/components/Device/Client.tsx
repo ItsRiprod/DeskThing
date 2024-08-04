@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { IconLogoLoading } from '../icons'
 import githubStore, { GithubRelease, GithubAsset } from '../../store/githubStore'
 import ReleaseList from '../ReleaseList'
+import ClientSettings from '../ClientSettings'
 
 const Client = (): JSX.Element => {
   const [releases, setReleases] = useState<GithubRelease[]>([])
@@ -65,7 +66,7 @@ const Client = (): JSX.Element => {
 
   return (
     <div className="pt-5 flex flex-col justify-around items-center">
-      <div className="w-full max-w-2xl">
+      <div className="w-full p-3 max-w-2xl">
         {loading ? (
           <div className="mb-4 flex flex-col items-center justify-center">
             <IconLogoLoading iconSize={256} />
@@ -78,13 +79,16 @@ const Client = (): JSX.Element => {
             </div>
           </div>
         ) : (
-          <ReleaseList
-            releases={releases}
-            openReleaseId={openReleaseId}
-            toggleDropdown={toggleDropdown}
-            filterAssets={filterAssets}
-            handleAssetClick={handleAssetClick}
-          />
+          <div>
+            <ClientSettings />
+            <ReleaseList
+              releases={releases}
+              openReleaseId={openReleaseId}
+              toggleDropdown={toggleDropdown}
+              filterAssets={filterAssets}
+              handleAssetClick={handleAssetClick}
+            />
+          </div>
         )}
       </div>
     </div>

@@ -71,7 +71,7 @@ async function onMessageFromMain(event, ...args) {
           await spotify.login()
         }
 
-        ['refresh_interval', 'output_device'].forEach(key => {
+        ['refresh_interval', 'output_device', 'change_source'].forEach(key => {
           if (args[0].settings?.[key]) {
             spotify.settings[key] = args[0].settings[key];
           } else {
@@ -122,7 +122,6 @@ const handleGet = async (...args) => {
   switch (args[0].toString()) {
     case 'song':
       response = await spotify.returnSongData()
-      spotify.transfer()
       break
     case 'manifest':
       response = spotify.manifest
@@ -175,6 +174,9 @@ const handleSet = async (...args) => {
       break
     case 'shuffle':
       response = await spotify.shuffle(args[1])
+      break
+    case 'transfer':
+      response = await spotify.transfer()
       break
     case 'update_setting':
       if (args[1] != null) {

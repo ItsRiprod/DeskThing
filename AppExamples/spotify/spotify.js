@@ -45,6 +45,20 @@ class SpotifyHandler {
           }
         ]
       },
+      "change_source": {
+        "value": 'true',
+        "label": "Switch Output on Select",
+        "options": [
+          {
+            "value": "true",
+            "label": "Switch"
+          },
+          {
+            "value": "false",
+            "label": "Dont Switch"
+          }
+        ]
+      },
     };
 
     const manifestPath = path.join(__dirname, 'manifest.json');
@@ -382,9 +396,12 @@ class SpotifyHandler {
             
           delay *= 1.3 // how long to increase the delay between attempts
           await new Promise((resolve) => setTimeout(resolve, delay))
-        } else {
+        } else if (currentPlayback.currently_playing_type === 'show') {
           currentPlayback = await this.getCurrentEpisode()
           this.sendLog('Playing a podcast!')
+        } else {
+          this.sendError('No song is playing or detected!')
+          new_id = null
         }
       } while (new_id === id && Date.now() - startTime < timeout && delay < 1000)
 
@@ -438,7 +455,7 @@ class SpotifyHandler {
         songData.thumbnail = await getImageData(imageUrl)
 
         this.sendDataToMainFn('data', { app: 'client', type: 'song', data: songData })
-      } else {
+      } else if (currentPlayback.currently_playing_type === 'show') {
         songData = {
           album: currentPlayback?.item.show.name,
           artist: currentPlayback?.item.show.publisher,

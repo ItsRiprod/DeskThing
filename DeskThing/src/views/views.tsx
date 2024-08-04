@@ -108,7 +108,7 @@ const ViewManager = () => {
   useEffect(() => {
     const listener = (msg: socketData) => {
       if (msg.type === 'set_view' && typeof msg.data === 'string') {
-        //appStore.setCurrentView(msg.data);
+        appStore.setCurrentView(msg.data);
       }
     };
     const handleAppUpdate = (data: App[]) => {

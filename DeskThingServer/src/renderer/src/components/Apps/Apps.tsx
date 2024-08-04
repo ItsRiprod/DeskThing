@@ -3,6 +3,7 @@ import { useAppStore, App } from '../../store/appStore'
 import { IconX, IconPause, IconPlay, IconDetails, IconPulsing } from '../icons'
 import DisplayAppData from '../Overlays/DisplayAppData'
 import RequestStoreInstance, { Request } from '../../store/requestStore'
+import AppRequestOverlay from '../Overlays/AppRequest'
 
 export type View = 'apps' | 'local' | 'web'
 
@@ -12,6 +13,8 @@ const Apps = (): JSX.Element => {
   const [enabled, setEnabled] = useState(false)
   const [appIndex, setAppIndex] = useState(-1)
   const [appsWithActiveRequests, setAppsWithActiveRequests] = useState<string[]>([])
+  const [currentRequest, setCurrentRequest] = useState<[string, Request | null]>(['', null])
+  const [displayRequest, setDisplayRequest] = useState(false)
 
   const handleAddAndRunApp = (appName: string): void => {
     window.electron.ipcRenderer.send('add-app', appName)
@@ -55,12 +58,23 @@ const Apps = (): JSX.Element => {
   }, [])
 
   const handleRequestTrigger = (appName: string): void => {
-    RequestStoreInstance.triggerRequestDisplay(appName)
+    const request = RequestStoreInstance.getRequestByAppName(appName)
+    if (request) {
+      setCurrentRequest([appName, request])
+      setDisplayRequest(true)
+    }
   }
 
   return (
     <div className="h-svh w-[100%] flex flex-col justify-between items-center">
       <div className="pt-5 w-full flex justify-center">
+        {displayRequest && currentRequest[1] && currentRequest[0] && (
+          <AppRequestOverlay
+            requestName={currentRequest[0]}
+            request={currentRequest[1]}
+            onClose={() => setDisplayRequest(false)}
+          />
+        )}
         {enabled && <DisplayAppData appIndex={appIndex} setEnabled={setEnabled} data={appsList} />}
         {appsList?.apps?.length > 0 && Object.keys(appsList.apps).length > 0 ? (
           <div className="pt-5 w-full flex 2xl:flex-row 2xl:flex-wrap flex-col items-center gap-2">
@@ -70,11 +84,17 @@ const Apps = (): JSX.Element => {
                 className="border-2 border-zinc-400 p-5 w-11/12 md:w-11/12 2xl:w-96 h-fit flex justify-between rounded-3xl shadow-lg px-5 items-center"
               >
                 <div className="flex flex-wrap sm:flex-nowrap gap-2">
-                  <button onClick={() => handleDetails(appIndex)} className="hover:text-slate-600">
-                    <IconDetails />
+                  <button
+                    onClick={() => handleDetails(appIndex)}
+                    className="group flex  gap-2 border-2 top-10 border-green-600 hover:bg-green-500  p-2 rounded-lg"
+                  >
+                    <IconDetails iconSize={24} />
+                    <p className="group-hover:block hidden">Details</p>
                   </button>
-                  <p>{app.manifest ? app.manifest.label : app.name}</p>
-                  <p className="text-zinc-400 text-xs">{app.manifest?.version}</p>
+                  <div>
+                    <p>{app.manifest ? app.manifest.label : app.name}</p>
+                    <p className="text-zinc-400 text-xs font-geistMono">{app.manifest?.version}</p>
+                  </div>
                 </div>
                 {appsWithActiveRequests.includes(app.name) ? (
                   <div className="flex items-center md:flex-row flex-col">
@@ -104,7 +124,7 @@ const Apps = (): JSX.Element => {
                   </div>
                 ) : app.enabled ? (
                   <div className="flex items-center md:flex-row flex-col">
-                    <div className="flex-col flex items-end">
+                    <div className="flex-col flex font-geistMono items-end pr-2">
                       {tooltips[appIndex] ? (
                         <p className="text-white">{tooltips[appIndex]}</p>
                       ) : app.running ? (
@@ -196,6 +216,24 @@ const Apps = (): JSX.Element => {
                       }
                     >
                       <IconPlay />
+                    </button>
+                    <button
+                      onClick={() => handleDetails(appIndex)}
+                      className="border-2 top-10 border-green-600 hover:bg-green-500  p-2 rounded-lg"
+                      onMouseEnter={() =>
+                        setTooltips((prevTooltips) => ({
+                          ...prevTooltips,
+                          [appIndex]: 'App Details'
+                        }))
+                      }
+                      onMouseLeave={() =>
+                        setTooltips((prevTooltips) => ({
+                          ...prevTooltips,
+                          [appIndex]: ''
+                        }))
+                      }
+                    >
+                      <IconDetails iconSize={24} />
                     </button>
                   </div>
                 )}

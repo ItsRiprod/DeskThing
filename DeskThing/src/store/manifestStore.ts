@@ -29,6 +29,11 @@ class ManifestStore {
 
   constructor() {
     this.loadManifest()
+    this.initializeListeners()
+  }
+
+  private async initializeListeners(): Promise<void> {
+    
   }
 
   private loadManifest(): void {

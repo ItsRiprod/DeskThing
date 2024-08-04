@@ -12,6 +12,8 @@ declare global {
       setMaps: (name: string, map: any) => Promise<void>
       getSettings: () => Promise<any>
       saveSettings: (settings: any) => Promise<void>
+      getClientManifest: () => Promise<any>
+      setClientManifest: (manifest: any) => Promise<void>
     }
     api: unknown // Or define `api` more specifically if you have a shape for it
   }

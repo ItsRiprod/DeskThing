@@ -35,10 +35,10 @@ const ReleaseList: React.FC<ReleaseListProps> = ({
           {filterAssets(release.assets).map((asset) => (
             <button
               key={asset.id}
-              className="block px-4 py-4 text-zinc-300 text-sm border-zinc-800 rounded hover:bg-cyan-700 hover:text-white"
               onClick={() => handleAssetClick(asset)}
+              className="group m-2 flex gap-2 text-zinc-300 hover:text-white border border-green-400 hover:bg-green-400 p-2 rounded-lg"
             >
-              {asset.name}
+              <h2 className="font-geistMono">{asset.name}</h2>
             </button>
           ))}
         </div>

@@ -13606,6 +13606,20 @@ var require_spotify = __commonJS({
                 "label": "Default"
               }
             ]
+          },
+          "change_source": {
+            "value": "true",
+            "label": "Switch Output on Select",
+            "options": [
+              {
+                "value": "true",
+                "label": "Switch"
+              },
+              {
+                "value": "false",
+                "label": "Dont Switch"
+              }
+            ]
           }
         };
         const manifestPath = path.join(__dirname, "manifest.json");
@@ -13897,9 +13911,12 @@ var require_spotify = __commonJS({
               }
               delay *= 1.3;
               await new Promise((resolve) => setTimeout(resolve, delay));
-            } else {
+            } else if (currentPlayback.currently_playing_type === "show") {
               currentPlayback = await this.getCurrentEpisode();
               this.sendLog("Playing a podcast!");
+            } else {
+              this.sendError("No song is playing or detected!");
+              new_id = null;
             }
           } while (new_id === id && Date.now() - startTime < timeout && delay < 1e3);
           if (new_id === id) {
@@ -13944,7 +13961,7 @@ var require_spotify = __commonJS({
             const imageUrl = currentPlayback.item.album.images[0].url;
             songData.thumbnail = await getImageData(imageUrl);
             this.sendDataToMainFn("data", { app: "client", type: "song", data: songData });
-          } else {
+          } else if (currentPlayback.currently_playing_type === "show") {
             songData = {
               album: currentPlayback?.item.show.name,
               artist: currentPlayback?.item.show.publisher,
@@ -14054,7 +14071,7 @@ async function onMessageFromMain(event, ...args) {
           spotify.sendError("No refresh token found, logging in...");
           await spotify.login();
         }
-        ["refresh_interval", "output_device"].forEach((key) => {
+        ["refresh_interval", "output_device", "change_source"].forEach((key) => {
           if (args[0].settings?.[key]) {
             spotify.settings[key] = args[0].settings[key];
           } else {
@@ -14097,7 +14114,6 @@ var handleGet = async (...args) => {
   switch (args[0].toString()) {
     case "song":
       response = await spotify.returnSongData();
-      spotify.transfer();
       break;
     case "manifest":
       response = spotify.manifest;
@@ -14149,6 +14165,9 @@ var handleSet = async (...args) => {
       break;
     case "shuffle":
       response = await spotify.shuffle(args[1]);
+      break;
+    case "transfer":
+      response = await spotify.transfer();
       break;
     case "update_setting":
       if (args[1] != null) {

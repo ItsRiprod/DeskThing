@@ -118,9 +118,12 @@ const Utility: FC = (): JSX.Element => {
         )) : (
           <div className="flex justify-center flex-col items-center h-full">
             <IconDevice iconSize={512} text={`${serverManifest.version}`} fontSize={110} />
-            <p>{serverManifest.name}</p>
-            <p>{serverManifest.port}</p>
-            <p>{serverManifest.ip}</p>
+            <div>
+              <p>{serverManifest.version}</p>
+              <p>{serverManifest.name}</p>
+              <p>{serverManifest.port}</p>
+              <p>{serverManifest.ip}</p>
+            </div>
           </div>
         )}
       </div>

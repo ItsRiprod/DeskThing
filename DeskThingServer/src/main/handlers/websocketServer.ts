@@ -7,7 +7,7 @@ import { getDefaultMappings, ButtonMapping, setDefaultMappings } from './keyMapH
 import { readData, addData } from './dataHandler'
 import dataListener, { MESSAGE_TYPES } from '../utils/events'
 import { HandleDeviceData } from './deviceHandler'
-import settingsStore from './settingsHandler'
+import settingsStore from '../stores/settingsStore'
 
 import * as fs from 'fs'
 // App Hosting

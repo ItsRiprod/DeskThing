@@ -1,20 +1,24 @@
-import { useState, useEffect } from 'react'
-import { EventEmitter } from '../utility/eventEmitter'
+/**
+ * TODO: Finish setting up clientStore to save client details and data
+ */
 
-export interface Manifest {
-  isAudioSource: boolean
-  requires: Array<string>
-  label: string
+//import { EventEmitter } from '../utility/eventEmitter'
+
+export interface ServerManifest {
+  name: string
+  id: string
+  short_name: string
+  description: string
+  builtFor: string
+  reactive: boolean
+  author: string
   version: string
-  description?: string
-  author?: string
-  platforms: Array<string>
-  homepage?: string
-  repository?: string
+  port: number
+  ip: string
 }
-
+/*
 interface ClientStoreEvents {
-  update: Manifest
+  manifest: ServerManifest
 }
 
 class ClientStore extends EventEmitter<ClientStoreEvents> {
@@ -92,3 +96,4 @@ class ClientStore extends EventEmitter<ClientStoreEvents> {
 }
 
 export default ClientStore.getInstance()
+*/

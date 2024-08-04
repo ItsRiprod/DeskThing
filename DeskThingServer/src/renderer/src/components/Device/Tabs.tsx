@@ -30,7 +30,7 @@ const Tabs: React.FC<TopbarProps> = ({ setCurrentView, currentView }) => {
           className={`${currentView === 'client' ? 'bg-zinc-900 hover:bg-zinc-700 border-b-2 border-green-500' : 'hover:bg-zinc-800'} flex-grow p-3`}
           onClick={() => handleClick('client')}
         >
-          Client Settings
+          Client Download
         </button>
       </div>
     </div>

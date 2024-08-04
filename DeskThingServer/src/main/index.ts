@@ -3,8 +3,10 @@ import { join } from 'path'
 import path from 'path'
 import icon from '../../resources/icon.ico?asset'
 import { GithubRelease } from './types/types'
+import { ServerManifest } from './handlers/deviceHandler'
 
 let mainWindow: BrowserWindow | null = null
+let clientWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 
 export interface ReplyData {
@@ -28,6 +30,8 @@ const IPC_CHANNELS = {
   GET_LOGS: 'get-logs',
   GET_MAPS: 'get-maps',
   SET_MAP: 'set-maps',
+  GET_CLIENT_MANIFEST: 'get-client-manifest',
+  SET_CLIENT_MANIFEST: 'set-client-manifest',
   STOP_APP: 'stop-app',
   DISABLE_APP: 'disable-app',
   PURGE_APP: 'purge-app',
@@ -91,6 +95,57 @@ function createMainWindow(): BrowserWindow {
   return window
 }
 
+function createClientWindow(port: number): BrowserWindow {
+  const window = new BrowserWindow({
+    width: 800,
+    height: 600,
+    show: false,
+    frame: true,
+    icon: icon,
+    titleBarStyle: 'hidden',
+    titleBarOverlay: {
+      color: '#202020',
+      symbolColor: '#606060',
+      height: 20
+    },
+    webPreferences: {
+      sandbox: false,
+      contextIsolation: true, // For security
+      nodeIntegration: false // For security
+    }
+  })
+
+  window.webContents.on('did-finish-load', () => {
+    window.webContents.executeJavaScript(`
+      const topBar = document.createElement('div');
+      topBar.style.position = 'absolute';
+      topBar.style.top = '0';
+      topBar.style.left = '0';
+      topBar.style.width = '100%';
+      topBar.style.height = '30px'; // Height of the top bar
+      topBar.style.backgroundColor = 'rgba(100, 100, 100, 0.1)'; // Invisible background
+      topBar.style.zIndex = '9999'; // Ensure it appears on top
+      topBar.style.cursor = 'pointer'; // Cursor indicates interaction
+      topBar.style.webkitAppRegion = 'drag';
+      document.body.appendChild(topBar);
+    `)
+  })
+
+  window.on('ready-to-show', () => {
+    window.show()
+  })
+
+  window.on('closed', () => {
+    clientWindow = null
+  })
+
+  window.loadURL(`http://localhost:${port}/client`, {
+    userAgent:
+      'Mozilla/5.0 (Linux; Android 4.2.1; en-us; Nexus 5 Build/JOP40D) AppleWebKit/535.19 (KHTML, like Gecko; googleweblight) Chrome/38.0.1025.166 Mobile Safari/535.19'
+  })
+  return window
+}
+
 function initializeTray(): void {
   tray = new Tray(icon)
 
@@ -105,12 +160,24 @@ function initializeTray(): void {
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: 'Open Window',
+      label: 'Open Server',
       click: (): void => {
         if (mainWindow && !mainWindow.isDestroyed()) {
           mainWindow.focus()
         } else {
           mainWindow = createMainWindow()
+        }
+      }
+    },
+    {
+      label: 'Open Client',
+      click: async (): Promise<void> => {
+        const settingsStore = await import('./stores/settingsStore')
+        const settings = await settingsStore.default.getSettings()
+        if (clientWindow && !clientWindow.isDestroyed()) {
+          clientWindow.focus()
+        } else {
+          clientWindow = createClientWindow(settings.devicePort)
         }
       }
     },
@@ -126,7 +193,7 @@ function initializeTray(): void {
 }
 
 async function setupIpcHandlers(): Promise<void> {
-  const settingsStore = await import('./handlers/settingsHandler')
+  const settingsStore = await import('./stores/settingsStore')
   const { getAppData } = await import('./handlers/configHandler')
   const {
     handleZipFromUrl,
@@ -141,9 +208,17 @@ async function setupIpcHandlers(): Promise<void> {
   const { handleAdbCommands } = await import('./handlers/adbHandler')
   const { sendData } = await import('./handlers/websocketServer')
   const { getReleases } = await import('./handlers/githubHandler')
-  const { HandleWebappZipFromUrl, HandlePushWebApp } = await import('./handlers/deviceHandler')
+  const {
+    HandleWebappZipFromUrl,
+    HandlePushWebApp,
+    handleClientManifestUpdate,
+    getClientManifest
+  } = await import('./handlers/deviceHandler')
   const dataListener = (await import('./utils/events')).default
   const { MESSAGE_TYPES } = await import('./utils/events')
+
+  const { setupFirewall } = await import('./handlers/firewallHandler')
+  setupFirewall((await settingsStore.default.getSettings()).devicePort).catch(console.error)
 
   let connections = 0
   ipcMain.on(IPC_CHANNELS.PING, () => console.log('pong'))
@@ -226,6 +301,26 @@ async function setupIpcHandlers(): Promise<void> {
     }
   )
 
+  ipcMain.handle(
+    IPC_CHANNELS.SET_CLIENT_MANIFEST,
+    async (event, manifest: Partial<ServerManifest>) => {
+      try {
+        await handleClientManifestUpdate(event.sender, manifest)
+      } catch (error) {
+        dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'SERVER: Error saving manifest' + error)
+        console.error('Error setting client manifest:', error)
+      }
+    }
+  )
+  ipcMain.handle(IPC_CHANNELS.GET_CLIENT_MANIFEST, async (event) => {
+    try {
+      const manifest = await getClientManifest(event.sender)
+      return manifest
+    } catch (error) {
+      console.error('Error getting client manifest:', error)
+      return null
+    }
+  })
   ipcMain.handle(IPC_CHANNELS.SELECT_ZIP_FILE, async () => {
     if (!mainWindow) return null
 
@@ -349,9 +444,6 @@ async function loadModules(): Promise<void> {
     await import('./handlers/websocketServer')
     const { loadAndRunEnabledApps } = await import('./handlers/appHandler')
     loadAndRunEnabledApps()
-
-    const { setupFirewall } = await import('./handlers/firewallHandler')
-    setupFirewall(8891).catch(console.error)
   } catch (error) {
     console.error('Error loading modules:', error)
   }

@@ -3,6 +3,7 @@ import './styles.css';
 import React, { useEffect, useState } from 'react';
 import socket, { socketData, song_data } from '../../helpers/WebSocketService';
 import { IconAlbum } from '../../components/icons';
+import { AppStore } from '../../store';
 
 const Spotify: React.FC = () => {
   const [songData, setSongData] = useState<song_data>();
@@ -54,16 +55,43 @@ const Spotify: React.FC = () => {
     };
   },);
 
+  const sendSettingsUpdate = (app: string, setting: string, value: string) => {
+    if (socket.is_ready()) {
+      const data = {
+        app: app,
+        type: 'set',
+        request: 'update_setting',
+        data: {
+          setting: setting,
+          value: value,
+        }
+      };
+      socket.post(data);
+    }
+  }
+
   useEffect(() => {
+    const handleGetSongData = () => {
+      const settings = AppStore.getSettings()
+      const changeSource = settings.spotify?.change_source?.value == "true"
+      // set playback location
+      if (changeSource) {
+        sendSettingsUpdate('utility', 'playback_location', 'spotify')
+        if (socket.is_ready()) {
+          const data = { app: 'spotify', type: 'get', request: 'song' };
+          socket.post(data);
+        }
+      } else {
+        if (socket.is_ready()) {
+          const data = { app: 'utility', type: 'get', request: 'song' };
+          socket.post(data);
+        }
+      }
+    };
+    
     handleGetSongData();
   }, [])
 
-  const handleGetSongData = () => {
-    if (socket.is_ready()) {
-      const data = { app: 'spotify', type: 'get', request: 'song' };
-      socket.post(data);
-    }
-  };
 
   return (
     <div className={'flex font-geist h-screen overflow-hidden'}>

@@ -4,6 +4,7 @@ export interface Settings {
   callbackPort: number
   devicePort: number
   address: string
+  localIp: string
   autoStart: boolean
   minimizeApp: boolean
 }
@@ -23,7 +24,8 @@ class SettingsStore extends EventEmitter<SettingsStoreEvents> {
       devicePort: -1,
       address: '-.-.-.-',
       autoStart: true,
-      minimizeApp: true
+      minimizeApp: true,
+      localIp: '-.-.-.-'
     }
 
     window.electron.ipcRenderer.on('settings-updated', this.handleSettingsUpdated.bind(this))

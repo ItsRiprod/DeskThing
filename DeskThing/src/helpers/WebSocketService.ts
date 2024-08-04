@@ -166,7 +166,7 @@ export interface App {
 }
 
 export interface Settings {
-  app: {
+  [key: string]: {
     [setting: string]: {
       value: string | number;
       label: string;

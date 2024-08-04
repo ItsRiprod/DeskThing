@@ -84,14 +84,14 @@ export const Swap = (index: number = 5) => {
 };
 export const VolUp = () => {
     const volume = controlHandler.getSongData().volume
-    if (volume <= 100) {
+    if (volume <= 95) {
         handleSendCommand(AUDIO_REQUESTS.VOLUME, volume + 5)
         controlHandler.updateSongData({ volume: volume + 5 })
     }
 }
 export const VolDown = () => {
     const volume = controlHandler.getSongData().volume
-    if (volume >= 0) {
+    if (volume >= 5) {
         handleSendCommand(AUDIO_REQUESTS.VOLUME, volume - 5)
         controlHandler.updateSongData({ volume: volume - 5 })
     }
