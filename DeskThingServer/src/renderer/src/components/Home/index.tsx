@@ -1,18 +1,14 @@
 import { useState } from 'react'
-import Tabs from './Tabs'
 import Devices from './Devices'
-import Adb from './Adb'
-
-export type View = 'devices' | 'adb'
+import Tabs, { View } from '../Tabs'
 
 const Index = (): JSX.Element => {
-  const [currentView, setCurrentView] = useState<View>('devices')
+  const views: View[] = [{ id: 'devices', display: 'Devices' }]
+  const [currentView, setCurrentView] = useState<View>(views[0])
   const renderView = (): JSX.Element | undefined => {
-    switch (currentView) {
+    switch (currentView.id) {
       case 'devices':
         return <Devices />
-      case 'adb':
-        return <Adb />
       default:
         return undefined
     }
@@ -20,7 +16,7 @@ const Index = (): JSX.Element => {
 
   return (
     <>
-      <Tabs currentView={currentView} setCurrentView={setCurrentView} />
+      <Tabs currentView={currentView} setCurrentView={setCurrentView} views={views} />
       <div className="w-full h-full">{renderView()}</div>
     </>
   )

@@ -1,4 +1,14 @@
-import { app, shell, BrowserWindow, ipcMain, Tray, Menu, dialog } from 'electron'
+import {
+  app,
+  shell,
+  BrowserWindow,
+  ipcMain,
+  Tray,
+  Menu,
+  dialog,
+  nativeImage,
+  NativeImage
+} from 'electron'
 import { join } from 'path'
 import path from 'path'
 import icon from '../../resources/icon.ico?asset'
@@ -98,7 +108,9 @@ function createMainWindow(): BrowserWindow {
 function createClientWindow(port: number): BrowserWindow {
   const window = new BrowserWindow({
     width: 800,
-    height: 600,
+    height: 480,
+    minWidth: 500,
+    minHeight: 140,
     show: false,
     frame: true,
     icon: icon,
@@ -146,8 +158,17 @@ function createClientWindow(port: number): BrowserWindow {
   return window
 }
 
-function initializeTray(): void {
-  tray = new Tray(icon)
+async function initializeTray(): Promise<void> {
+  const settingsStore = await import('./stores/settingsStore')
+
+  let trayIcon: NativeImage
+  if (process.platform === 'win32') {
+    trayIcon = nativeImage.createFromPath(join(__dirname, '../../resources/icon.ico'))
+  } else {
+    trayIcon = nativeImage.createFromPath(join(__dirname, '../../resources/icon.png'))
+  }
+
+  tray = new Tray(trayIcon)
 
   tray.on('click', () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
@@ -172,7 +193,6 @@ function initializeTray(): void {
     {
       label: 'Open Client',
       click: async (): Promise<void> => {
-        const settingsStore = await import('./stores/settingsStore')
         const settings = await settingsStore.default.getSettings()
         if (clientWindow && !clientWindow.isDestroyed()) {
           clientWindow.focus()
@@ -190,6 +210,42 @@ function initializeTray(): void {
   ])
   tray.setToolTip('DeskThing Server')
   tray.setContextMenu(contextMenu)
+}
+
+async function initializeDoc(): Promise<void> {
+  const settingsStore = await import('./stores/settingsStore')
+
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: 'Open Server',
+      click: (): void => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.focus()
+        } else {
+          mainWindow = createMainWindow()
+        }
+      }
+    },
+    {
+      label: 'Open Client',
+      click: async (): Promise<void> => {
+        const settings = await settingsStore.default.getSettings()
+        if (clientWindow && !clientWindow.isDestroyed()) {
+          clientWindow.focus()
+        } else {
+          clientWindow = createClientWindow(settings.devicePort)
+        }
+      }
+    },
+    {
+      label: 'Quit',
+      click: (): void => {
+        app.quit()
+      }
+    }
+  ])
+
+  app.dock.setMenu(contextMenu)
 }
 
 async function setupIpcHandlers(): Promise<void> {
@@ -406,6 +462,12 @@ if (!app.requestSingleInstanceLock()) {
   app.on('ready', () => setupIpcHandlers())
   app.whenReady().then(async () => {
     // Set app user model id for windows
+
+    if (process.platform == 'darwin') {
+      initializeDoc()
+    } else {
+      initializeTray()
+    }
     app.setAppUserModelId('com.electron')
 
     app.on('browser-window-created', (_, window) => {
@@ -414,7 +476,6 @@ if (!app.requestSingleInstanceLock()) {
     })
 
     mainWindow = createMainWindow()
-    initializeTray()
 
     mainWindow.once('ready-to-show', () => {
       loadModules()

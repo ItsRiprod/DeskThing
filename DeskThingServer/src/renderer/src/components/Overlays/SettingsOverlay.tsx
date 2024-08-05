@@ -87,11 +87,15 @@ const SettingsOverlay = ({ setEnabled }: SettingsOverlayProps): JSX.Element => {
               className="h-10 bg-slate-500 rounded focus:bg-white active:bg-white focus:text-black active:text-black px-2 text-white-600"
             />
           </div>
-          <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex justify-between items-center">
-            <p>Local IP:</p>
-            <div className="h-10 bg-slate-500 flex items-center rounded px-2 text-gray-300">
-              <p>{settings.localIp}</p>
-            </div>
+          <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex flex-col gap-3">
+            {settings.localIp.map((ip, index) => (
+              <div key={index} className="flex justify-between items-center">
+                <p>Local IP #{index}:</p>
+                <div className="h-10 bg-slate-500 flex items-center rounded px-2 text-gray-300">
+                  <p>{ip}</p>
+                </div>
+              </div>
+            ))}
           </div>
 
           <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex justify-between items-center">

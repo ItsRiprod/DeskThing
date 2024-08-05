@@ -1,26 +1,22 @@
 import React from 'react'
 import AppsList from './Apps'
 import Dev from './Dev'
-import Adb from './ADB'
-import Device from './Device'
-import LogDisplay from './LogDisplay'
-
-type View = 'appsList' | 'adb' | 'logDisplay' | 'preferences' | 'dev' // Define possible views
+import Home from './Home'
+import Device from './Client' // Define possible views
+import { SidebarView } from '../App'
 
 interface ContentAreaProps {
-  currentView: View
+  currentView: SidebarView
 }
 
 const ContentArea: React.FC<ContentAreaProps> = ({ currentView }) => {
   const renderView = (): JSX.Element | undefined => {
     switch (currentView) {
-      case 'appsList':
+      case 'home':
+        return <Home />
+      case 'apps':
         return <AppsList />
-      case 'adb':
-        return <Adb />
-      case 'logDisplay':
-        return <LogDisplay />
-      case 'preferences':
+      case 'client':
         return <Device />
       case 'dev':
         return <Dev />

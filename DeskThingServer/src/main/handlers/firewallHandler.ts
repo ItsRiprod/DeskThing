@@ -79,6 +79,13 @@ async function setupFirewall(port: number): Promise<void> {
 
     if (platform === 'win32') {
       // PowerShell script for Windows
+      /*
+
+      New-NetFirewallRule -DisplayName "Deskthing Server Inbound" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 8891
+      New-NetFirewallRule -DisplayName "Deskthing Server Outbound" -Direction Outbound -Action Allow -Protocol TCP -LocalPort 8891
+
+
+      */
       const script = `
         $inboundRuleName = "${inboundRuleName}"
         $outboundRuleName = "${outboundRuleName}"

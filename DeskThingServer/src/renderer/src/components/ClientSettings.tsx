@@ -15,6 +15,7 @@ const ClientSettings: React.FC = () => {
     settingsStore.getSettings().then((settings) => {
       setPort(settings.devicePort)
     })
+    handleClientAppRefresh()
   }, [])
 
   const handleClientAppRefresh = async (): Promise<void> => {

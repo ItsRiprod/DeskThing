@@ -36,10 +36,10 @@ const ClientSettingsOverlay: React.FC<ClientSettingsOverlayProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-gray-800 rounded-lg p-6 w-full max-w-2xl">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-white">Client Settings</h2>
+          <h2 className="text-2xl font-bold">Client Settings</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 border-red-600 border p-2 rounded-lg hover:text-white hover:bg-red-500 focus:outline-none"
+            className="text-gray-400 border-red-600 border p-2 rounded-lg hover hover:bg-red-500 focus:outline-none"
           >
             <IconX />
           </button>
@@ -57,7 +57,7 @@ const ClientSettingsOverlay: React.FC<ClientSettingsOverlayProps> = ({
           <div className="border-zinc-500 font-geist border p-2 my-2 rounded-xl">
             <h1 className="text-lg font-semibold flex">Modify Settings</h1>
             <div className="mb-4">
-              <label className="block text-white text-sm mb-2" htmlFor="ip">
+              <label className="block text-sm mb-2" htmlFor="ip">
                 IP Address
               </label>
               <input
@@ -68,37 +68,34 @@ const ClientSettingsOverlay: React.FC<ClientSettingsOverlayProps> = ({
                 className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               />
               <div className="text-xs gap-1 flex-col flex p-1">
-                <div className="flex">
-                  <p>ADB:</p>
-                  <button
-                    onClick={() => setIp('localhost')}
-                    className="font-geistMono bg-slate-900 px-2"
-                  >
-                    localhost
-                  </button>
-                </div>
-                <div className="flex">
+                <button
+                  className="flex p-1 border rounded border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
+                  onClick={() => setIp('localhost')}
+                >
+                  <p>ADB / Local Client:</p>
+                  <p className="font-geistMono bg-slate-900 px-2 rounded">localhost</p>
+                </button>
+                <button
+                  onClick={() => setIp('192.168.7.1')}
+                  className="flex p-1 border rounded border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
+                >
                   <p>Car Thing RNDIS:</p>
+                  <p className="font-geistMono bg-slate-900 px-2  rounded">192.168.7.1</p>
+                </button>
+                {settings?.localIp.map((ip, index) => (
                   <button
-                    onClick={() => setIp('192.168.7.1')}
-                    className="font-geistMono bg-slate-900 px-2"
+                    className="flex p-1 border rounded border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
+                    key={index}
+                    onClick={() => settings && setIp(ip)}
                   >
-                    192.168.7.1
+                    <p>Local Network:</p>
+                    <p className="font-geistMono bg-slate-900 px-2  rounded">{ip}</p>
                   </button>
-                </div>
-                <div className="flex">
-                  <p>Local Network:</p>
-                  <button
-                    onClick={() => settings && setIp(settings?.localIp)}
-                    className="font-geistMono bg-slate-900 px-2"
-                  >
-                    {settings?.localIp}
-                  </button>
-                </div>
+                ))}
               </div>
             </div>
             <div className="mb-4">
-              <label className="block text-white text-sm font-bold mb-2" htmlFor="port">
+              <label className="block text-sm font-bold mb-2" htmlFor="port">
                 Port
               </label>
               <input
@@ -109,23 +106,23 @@ const ClientSettingsOverlay: React.FC<ClientSettingsOverlayProps> = ({
                 className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               />
               <div className="text-xs gap-1 flex-col flex p-1">
-                <div className="flex">
+                <button
+                  onClick={() => settings && setPort(settings?.devicePort)}
+                  className="flex p-1 border rounded border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
+                >
                   <p>Current Port:</p>
-                  <button
-                    onClick={() => settings && setPort(settings?.devicePort)}
-                    className="font-geistMono bg-slate-900 px-2"
-                  >
+                  <p className="font-geistMono bg-slate-900 px-2  rounded">
                     {settings?.devicePort}
-                  </button>
-                </div>
+                  </p>
+                </button>
               </div>
             </div>
             <div className="flex justify-end gap-2">
               <button
-                className="border-cyan-500 group flex gap-3 border-2 p-3 rounded-xl hover:bg-cyan-600"
+                className="border-cyan-600 group flex gap-3 border-2 p-3 rounded-xl hover:bg-cyan-600"
                 onClick={refresh}
               >
-                <p className="group-hover:block hidden">Refresh</p>
+                <p className="group-hover:block hidden">Reset</p>
                 <IconRefresh />
               </button>
               <button

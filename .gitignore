@@ -49,3 +49,4 @@ tsconfig.tsbuildinfo
 /AppExamples/timer_app/
 
 *.zip
+/AppExamples/GLHF

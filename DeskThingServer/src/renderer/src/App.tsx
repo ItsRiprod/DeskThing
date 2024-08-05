@@ -5,10 +5,10 @@ import Sidebar from './components/Sidebar'
 import ContentArea from './components/ContentArea'
 import ErrorBoundary from './components/ErrorBoundary'
 
-type View = 'appsList' | 'preferences' | 'logDisplay' | 'adb' | 'dev'
+export type SidebarView = 'home' | 'apps' | 'client' | 'dev'
 
 function App(): JSX.Element {
-  const [currentView, setCurrentView] = useState<View>('appsList')
+  const [currentView, setCurrentView] = useState<SidebarView>('home')
 
   return (
     <div className="bg-black overflow-hidden">

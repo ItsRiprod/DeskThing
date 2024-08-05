@@ -8,7 +8,7 @@ export interface Settings {
   address: string
   autoStart: boolean
   minimizeApp: boolean
-  localIp: string
+  localIp: string[]
   [key: string]: any // For any additional settings
 }
 
@@ -93,20 +93,30 @@ class SettingsStore {
   }
 }
 
-const getLocalIpAddress = (): string => {
+const getLocalIpAddress = (): string[] => {
   const interfaces = os.networkInterfaces()
+  const localIps: string[] = []
+
   for (const name of Object.keys(interfaces)) {
     const ifaceGroup = interfaces[name]
     if (ifaceGroup) {
-      // Check if ifaceGroup is not undefined
       for (const iface of ifaceGroup) {
         if (iface.family === 'IPv4' && !iface.internal) {
-          return iface.address
+          if (
+            iface.address.startsWith('10.') ||
+            iface.address.startsWith('172.') ||
+            iface.address.startsWith('192.')
+          ) {
+            localIps.push(iface.address)
+          }
         }
       }
     }
   }
-  return '127.0.0.1' // Fallback to localhost if no external IP is found
+  if (localIps.length === 0) {
+    localIps.push('127.0.0.1')
+  }
+  return localIps
 }
 
 export default SettingsStore.getInstance()

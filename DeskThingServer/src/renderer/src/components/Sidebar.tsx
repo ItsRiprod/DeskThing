@@ -4,22 +4,20 @@ import {
   IconCoffee,
   IconConnected,
   IconConnecting,
+  IconHome,
   IconLayoutgrid,
   IconLogo,
   IconLogoGear,
-  IconLogs,
   IconPower,
-  IconTransfer,
   IconWrench
 } from './icons'
 import { useReward } from 'react-rewards'
 import SettingsOverlay from './Overlays/SettingsOverlay'
-
-type View = 'appsList' | 'adb' | 'logDisplay' | 'preferences' | 'dev' // Define possible views
+import { SidebarView } from '../App'
 
 interface SidebarProps {
-  setCurrentView: Dispatch<SetStateAction<View>>
-  currentView: View
+  setCurrentView: Dispatch<SetStateAction<SidebarView>>
+  currentView: SidebarView
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ setCurrentView, currentView }) => {
@@ -31,7 +29,7 @@ const Sidebar: React.FC<SidebarProps> = ({ setCurrentView, currentView }) => {
     decay: 0.99
   }
   const { reward } = useReward('rewardId', 'confetti', confettiConfig)
-  const handleClick = (view: View): void => {
+  const handleClick = (view: SidebarView): void => {
     setCurrentView(view)
   }
 
@@ -84,8 +82,17 @@ const Sidebar: React.FC<SidebarProps> = ({ setCurrentView, currentView }) => {
         <ul className="flex gap-5 sm:flex-col w-full">
           <li>
             <button
-              className={`${currentView === 'appsList' ? 'bg-zinc-800 hover:bg-zinc-700 border-green-500' : 'hover:bg-zinc-900'} sm:border-l flex gap-3 rounded-md w-full p-3`}
-              onClick={() => handleClick('appsList')}
+              className={`${currentView === 'home' ? 'bg-zinc-800 hover:bg-zinc-700 border-green-500' : 'hover:bg-zinc-900'} sm:border-l flex gap-3 rounded-md w-full p-3`}
+              onClick={() => handleClick('home')}
+            >
+              <IconHome />
+              <span className="hidden md:inline">Home</span>
+            </button>
+          </li>
+          <li>
+            <button
+              className={`${currentView === 'apps' ? 'bg-zinc-800 hover:bg-zinc-700 border-green-500' : 'hover:bg-zinc-900'} sm:border-l rounded-md flex gap-3 w-full p-3`}
+              onClick={() => handleClick('apps')}
             >
               <IconLayoutgrid />
               <span className="hidden md:inline">Apps</span>
@@ -93,29 +100,11 @@ const Sidebar: React.FC<SidebarProps> = ({ setCurrentView, currentView }) => {
           </li>
           <li>
             <button
-              className={`${currentView === 'adb' ? 'bg-zinc-800 hover:bg-zinc-700 border-green-500' : 'hover:bg-zinc-900'} sm:border-l rounded-md flex gap-3 w-full p-3`}
-              onClick={() => handleClick('adb')}
-            >
-              <IconTransfer />
-              <span className="hidden md:inline">ADB</span>
-            </button>
-          </li>
-          <li>
-            <button
-              className={`${currentView === 'preferences' ? 'bg-zinc-800 hover:bg-zinc-700 border-green-500' : 'hover:bg-zinc-900'} sm:border-l rounded-md flex gap-3 w-full p-3`}
-              onClick={() => handleClick('preferences')}
+              className={`${currentView === 'client' ? 'bg-zinc-800 hover:bg-zinc-700 border-green-500' : 'hover:bg-zinc-900'} sm:border-l rounded-md flex gap-3 w-full p-3`}
+              onClick={() => handleClick('client')}
             >
               <IconCarThing strokeWidth={18} />
               <span className="hidden md:inline">Client</span>
-            </button>
-          </li>
-          <li>
-            <button
-              className={`${currentView === 'logDisplay' ? 'bg-zinc-800 hover:bg-zinc-700 border-green-500' : 'hover:bg-zinc-900'} sm:border-l rounded-md flex gap-3 w-full p-3`}
-              onClick={() => handleClick('logDisplay')}
-            >
-              <IconLogs />
-              <span className="hidden md:inline">Logs</span>
             </button>
           </li>
           <li>

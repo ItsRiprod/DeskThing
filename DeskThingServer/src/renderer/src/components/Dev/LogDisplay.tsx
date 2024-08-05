@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
-import logStore, { Log } from '../store/logStore'
-import { IconLogoGearLoading } from './icons'
+import logStore, { Log } from '../../store/logStore'
+import { IconLogoGearLoading } from '../icons'
 
 const LogDisplay = (): JSX.Element => {
   const [logs, setLogs] = useState<Log[]>([])
@@ -9,8 +9,7 @@ const LogDisplay = (): JSX.Element => {
 
   useEffect(() => {
     const updateLogs = (data: Log[]): void => {
-      setLogs(data)
-      console.log('New Data', data)
+      setLogs((letLog) => [...letLog, data[data.length - 1]])
     }
 
     const initializeLogs = async (): Promise<void> => {
@@ -33,7 +32,6 @@ const LogDisplay = (): JSX.Element => {
 
   useEffect(() => {
     if (logEndRef.current) {
-      console.log('Handling scroll')
       handleScroll()
     }
   }, [logs])
@@ -54,9 +52,9 @@ const LogDisplay = (): JSX.Element => {
   }
 
   return (
-    <div className="pt-5 w-full h-svh flex-col flex max-h-full items-center">
+    <div className="pt-5 w-full h-full flex-col flex items-center">
       <h1 className="text-2xl mb-5 border-b-2 w-11/12 text-center pb-5">Console Logs</h1>
-      <div ref={logContainerRef} className="w-full p-2 flex flex-col overflow-y-scroll">
+      <div ref={logContainerRef} className="w-full p-2 flex flex-col h-full overflow-y-scroll">
         {logs.length > 0 ? (
           logs.map((log, index) => (
             <div key={index} className="font-geistMono">

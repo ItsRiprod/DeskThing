@@ -85,7 +85,6 @@ class MessageStore {
     };
     window.parent.postMessage(
       { type: 'IFRAME_ACTION', payload: payload },
-      '*' // Use a specific origin if possible for security
     );
   }
 }

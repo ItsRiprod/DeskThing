@@ -174,7 +174,9 @@ class DiscordHandler {
 
   async handleVoiceConnectionStatus(args) {
     if (args.state === 'CONNECTING') {
-      this.sendMessageToClients({ app: 'client', type: 'set_view', data: 'Discord' });
+      if (this.settings.auto_switch_view.value == 'true') {
+        this.sendMessageToClients({ app: 'client', type: 'set_view', data: 'Discord' });
+      }
       await this.sendDataToClients({ action: 'join', data: null });
     }
     if (args.state === 'DISCONNECTED') {

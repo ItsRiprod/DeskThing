@@ -1,15 +1,18 @@
 import { useState } from 'react'
-import Tabs from './Tabs'
 import Devices from './Devices'
 import Loading from '../Loading'
 import Client from './Client'
-
-export type View = 'mappings' | 'status' | 'client'
+import Tabs, { View } from '../Tabs'
 
 const Index = (): JSX.Element => {
-  const [currentView, setCurrentView] = useState<View>('mappings')
+  const views: View[] = [
+    { id: 'mappings', display: 'Button Maps' },
+    { id: 'status', display: 'Status' },
+    { id: 'client', display: 'Client Downloads' }
+  ]
+  const [currentView, setCurrentView] = useState<View>(views[0])
   const renderView = (): JSX.Element | undefined => {
-    switch (currentView) {
+    switch (currentView.id) {
       case 'mappings':
         return <Devices />
       case 'status':
@@ -23,7 +26,7 @@ const Index = (): JSX.Element => {
 
   return (
     <>
-      <Tabs currentView={currentView} setCurrentView={setCurrentView} />
+      <Tabs currentView={currentView} setCurrentView={setCurrentView} views={views} />
       <div className="w-full h-full">{renderView()}</div>
     </>
   )

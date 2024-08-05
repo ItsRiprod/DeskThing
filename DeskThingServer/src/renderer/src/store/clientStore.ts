@@ -2,7 +2,7 @@
  * TODO: Finish setting up clientStore to save client details and data
  */
 
-//import { EventEmitter } from '../utility/eventEmitter'
+import { EventEmitter } from '../utility/eventEmitter'
 
 export interface ServerManifest {
   name: string
@@ -16,14 +16,15 @@ export interface ServerManifest {
   port: number
   ip: string
 }
-/*
+
 interface ClientStoreEvents {
-  manifest: ServerManifest
+  connection: ServerManifest
+  disconnect: ServerManifest
 }
 
 class ClientStore extends EventEmitter<ClientStoreEvents> {
   private static instance: ClientStore
-  private appsList: AppData
+  private connectedApps: ServerManifest[]
 
   constructor() {
     super()
@@ -96,4 +97,4 @@ class ClientStore extends EventEmitter<ClientStoreEvents> {
 }
 
 export default ClientStore.getInstance()
-*/
+
