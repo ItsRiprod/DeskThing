@@ -1,0 +1,21 @@
+{
+  "name": "spotify",
+  "version": "0.7.0",
+  "description": "The spotify app for the DeskThing desktop application",
+  "main": "index.js",
+  "scripts": {
+    "build": "esbuild index.js --bundle --platform=node --outfile=builds/index.js && npm run copy-manifest",
+    "copy-manifest": "node -e \"const fs = require('fs'); fs.copyFileSync('manifest.json', 'builds/manifest.json');\"",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postversion": "node -e \"const fs = require('fs'); const manifest = require('./manifest.json'); const pkg = require('./package.json'); if (manifest.version !== pkg.version) { manifest.version = 'v' + pkg.version; fs.writeFileSync('./manifest.json', JSON.stringify(manifest, null, 2), 'utf8'); console.log('Updated manifest version to ' + pkg.version); }\" && npm install"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.7.2"
+  },
+  "devDependencies": {
+    "esbuild": "0.21.5"
+  }
+}

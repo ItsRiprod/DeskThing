@@ -17,7 +17,7 @@ export default defineConfig({
   plugins: [
     react(),
     legacy({
-      targets: ['Chrome 69'],
+      targets: ['Chrome 69'], // Specify the browsers you want to support
 }),
   ],
   resolve: {
