@@ -46,7 +46,7 @@ linux:
     - from: "adb_source/linux"
       to: "resources/linux"
 appImage:
-  artifactName: ${name}-${version}-linux.${ext}
+  artifactName: ${name}-${version}-linux-setup.${ext}
 npmRebuild: false
 publish:
   provider: generic
