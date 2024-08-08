@@ -18,10 +18,10 @@ DeskThing/server/auth_data.json
 /coverage
 
 # production
-/build
+builds
 /releases
 releases/Linux/deskthing-0.3.0.AppImage
-
+node_modules
 # misc
 .DS_Store
 /.vscode
@@ -32,22 +32,6 @@ yarn-error.log*
 tsconfig.tsbuildinfo
 
 # AppExamples
-/AppExamples/spotify/node_modules
-/AppExamples/spotify/builds
-/AppExamples/utility/node_modules
-/AppExamples/weather/node_modules
-/AppExamples/mediawincs
-/AppExamples/mediawin/node_modules
-/AppExamples/mediawin/builds
-/AppExamples/spotify/builds
-/AppExamples/discord/node_modules
-/AppExamples/discord copy/node_modules
-/AppExamples/discord copy/builds
-/AppExamples/discord/builds
-/AppExamples/discord template/node_modules
-/AppExamples/discord template/builds
-/AppExamples/timer_app/
-
+mediawincs
+CommunityApps
 *.zip
-/AppExamples/GLHF
-/AppExamples/CommunityApps

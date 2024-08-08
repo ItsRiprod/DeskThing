@@ -12,7 +12,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest] # Matrix for multiple OS builds
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
       - name: Checkout repository
@@ -33,100 +33,44 @@ jobs:
           cd ./DeskThingServer
           npm run typecheck
 
-      - name: Build application for Windows
-        if: runner.os == 'Windows'
+      - name: Build application
         run: |
           cd ./DeskThingServer
-          npm run build:win
-
-      - name: Build application for macOS
-        if: runner.os == 'macOS'
-        run: |
-          cd ./DeskThingServer
-          npm run build:mac
-
-      - name: Build application for Linux
-        if: runner.os == 'Linux'
-        run: |
-          cd ./DeskThingServer
-          npm run build:linux
+          npm run build:${{ runner.os }}
 
       - name: Extract version from tag
         id: get_version
-        run: echo "::set-output name=VERSION::${GITHUB_REF/refs\/tags\/v/}"
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
-      - name: Upload artifact for Windows
-        if: runner.os == 'Windows'
+      - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: DeskThing-${{ steps.get_version.outputs.VERSION }}-windows-setup.exe
-          path: ./DeskThingServer/dist/*.exe
-
-      - name: Upload artifact for macOS
-        if: runner.os == 'macOS'
-        uses: actions/upload-artifact@v3
-        with:
-          name: DeskThing-${{ steps.get_version.outputs.VERSION }}-mac-setup.dmg
-          path: ./DeskThingServer/dist/*.dmg
-
-      - name: Upload artifact for Linux
-        if: runner.os == 'Linux'
-        uses: actions/upload-artifact@v3
-        with:
-          name: DeskThing-${{ steps.get_version.outputs.VERSION }}-linux.AppImage
-          path: ./DeskThingServer/dist/*.AppImage
+          name: DeskThing-${{ steps.get_version.outputs.VERSION }}-${{ runner.os }}
+          path: ./DeskThingServer/dist/*.*
 
   release:
-    needs: build # Runs after build job
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Download artifacts for Windows
+      - name: Download artifacts
         uses: actions/download-artifact@v3
         with:
-          name: DeskThing-windows-${{ steps.get_version.outputs.VERSION }}
-          path: ./dist/windows
+          path: ./dist
 
-      - name: Download artifacts for macOS
-        uses: actions/download-artifact@v3
-        with:
-          name: DeskThing-macos-${{ steps.get_version.outputs.VERSION }}
-          path: ./dist/macos
+      - name: Get the version
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
-      - name: Download artifacts for Linux
-        uses: actions/download-artifact@v3
-        with:
-          name: DeskThing-linux-${{ steps.get_version.outputs.VERSION }}
-          path: ./dist/linux
-
-      - name: Check for existing release
-        id: release_check
-        run: |
-          TAG_NAME=$(git describe --tags --exact-match ${{ github.sha }} || echo '')
-          echo "::set-output name=tag_name::${TAG_NAME}"
-
-      - name: Create or update release
-        if: steps.release_check.outputs.tag_name != ''
-        id: create_release
+      - name: Update or create release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ steps.release_check.outputs.tag_name }}
-          files: |
-            ./dist/windows/*.exe
-            ./dist/macos/*.dmg
-            ./dist/linux/*.AppImage
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create new release if no existing release found
-        if: steps.release_check.outputs.tag_name == ''
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            ./dist/windows/*.exe
-            ./dist/macos/*.dmg
-            ./dist/linux/*.AppImage
+          tag_name: ${{ steps.get_version.outputs.VERSION }}
+          files: ./dist/**/*
+          draft: true
+          prerelease: false
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

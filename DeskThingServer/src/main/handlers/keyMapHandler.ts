@@ -4,6 +4,7 @@ import { sendMappings } from './websocketServer'
 
 export type Button = {
   name: string
+  id: string
   description: string
   source: string
 }
@@ -28,41 +29,41 @@ export type FileStructure = {
 const defaultData: FileStructure = {
   version: '0.6.0',
   default: {
-    tray1: { name: 'Shuffle', description: 'Shuffle', source: 'server' },
-    tray2: { name: 'Rewind', description: 'Rewind', source: 'server' },
-    tray3: { name: 'PlayPause', description: 'PlayPause', source: 'server' },
-    tray4: { name: 'Skip', description: 'Skip', source: 'server' },
-    tray5: { name: 'Repeat', description: 'Repeat', source: 'server' },
-    button1: { name: 'Pref1', description: 'Pref1', source: 'server' },
-    button2: { name: 'Pref2', description: 'Pref2', source: 'server' },
-    button3: { name: 'Pref3', description: 'Pref3', source: 'server' },
-    button4: { name: 'Pref4', description: 'Pref4', source: 'server' },
-    button1_long: { name: 'Swap', description: 'Swap', source: 'server' },
-    button2_long: { name: 'Swap', description: 'Swap', source: 'server' },
-    button3_long: { name: 'Swap', description: 'Swap', source: 'server' },
-    button4_long: { name: 'Swap', description: 'Swap', source: 'server' },
-    dial_scroll_right: { name: 'VolUp', description: 'VolUp', source: 'server' },
-    dial_scroll_left: { name: 'VolDown', description: 'VolDown', source: 'server' },
-    dial_press: { name: 'PlayPause', description: 'PlayPause', source: 'server' },
-    dial_press_long: { name: 'Skip', description: 'Skip', source: 'server' },
-    face_press: { name: 'Repeat', description: 'Repeat', source: 'server' },
-    face_long: { name: 'Repeat', description: 'Repeat', source: 'server' }
+    tray1: { name: 'Shuffle', id: 'shuffle', description: 'Shuffle', source: 'server' },
+    tray2: { name: 'Rewind', id: 'rewind', description: 'Rewind', source: 'server' },
+    tray3: { name: 'PlayPause', id: 'playPause', description: 'PlayPause', source: 'server' },
+    tray4: { name: 'Skip', id: 'skip', description: 'Skip', source: 'server' },
+    tray5: { name: 'Repeat', id: 'repeat', description: 'Repeat', source: 'server' },
+    button1: { name: 'Pref1', id: 'pref1', description: 'Pref1', source: 'server' },
+    button2: { name: 'Pref2', id: 'pref2', description: 'Pref2', source: 'server' },
+    button3: { name: 'Pref3', id: 'pref3', description: 'Pref3', source: 'server' },
+    button4: { name: 'Pref4', id: 'pref4', description: 'Pref4', source: 'server' },
+    button1_long: { name: 'Swap', id: 'swap', description: 'Swap', source: 'server' },
+    button2_long: { name: 'Swap', id: 'swap', description: 'Swap', source: 'server' },
+    button3_long: { name: 'Swap', id: 'swap', description: 'Swap', source: 'server' },
+    button4_long: { name: 'Swap', id: 'swap', description: 'Swap', source: 'server' },
+    dial_scroll_right: { name: 'VolUp', id: 'volUp', description: 'VolUp', source: 'server' },
+    dial_scroll_left: { name: 'VolDown', id: 'volDown', description: 'VolDown', source: 'server' },
+    dial_press: { name: 'PlayPause', id: 'playPause', description: 'PlayPause', source: 'server' },
+    dial_press_long: { name: 'Skip', id: 'skip', description: 'Skip', source: 'server' },
+    face_press: { name: 'Repeat', id: 'repeat', description: 'Repeat', source: 'server' },
+    face_long: { name: 'Repeat', id: 'repeat', description: 'Repeat', source: 'server' }
   },
   functions: [
-    { name: 'Shuffle', description: 'Shuffle', source: 'server' },
-    { name: 'Rewind', description: 'Rewind', source: 'server' },
-    { name: 'PlayPause', description: 'PlayPause', source: 'server' },
-    { name: 'Skip', description: 'Skip', source: 'server' },
-    { name: 'Repeat', description: 'Repeat', source: 'server' },
-    { name: 'Pref1', description: 'Pref1', source: 'server' },
-    { name: 'Pref2', description: 'Pref2', source: 'server' },
-    { name: 'Pref3', description: 'Pref3', source: 'server' },
-    { name: 'Pref4', description: 'Pref4', source: 'server' },
-    { name: 'Swap', description: 'Swap', source: 'server' },
-    { name: 'VolDown', description: 'VolDown', source: 'server' },
-    { name: 'VolUp', description: 'VolUp', source: 'server' },
-    { name: 'PlayPause', description: 'PlayPause', source: 'server' },
-    { name: 'Skip', description: 'Skip', source: 'server' }
+    { name: 'Shuffle', id: 'shuffle', description: 'Shuffle', source: 'server' },
+    { name: 'Rewind', id: 'rewind', description: 'Rewind', source: 'server' },
+    { name: 'PlayPause', id: 'playPause', description: 'PlayPause', source: 'server' },
+    { name: 'Skip', id: 'skip', description: 'Skip', source: 'server' },
+    { name: 'Repeat', id: 'repeat', description: 'Repeat', source: 'server' },
+    { name: 'Pref1', id: 'pref1', description: 'Pref1', source: 'server' },
+    { name: 'Pref2', id: 'pref2', description: 'Pref2', source: 'server' },
+    { name: 'Pref3', id: 'pref3', description: 'Pref3', source: 'server' },
+    { name: 'Pref4', id: 'pref4', description: 'Pref4', source: 'server' },
+    { name: 'Swap', id: 'swap', description: 'Swap', source: 'server' },
+    { name: 'VolDown', id: 'volDown', description: 'VolDown', source: 'server' },
+    { name: 'VolUp', id: 'volUp', description: 'VolUp', source: 'server' },
+    { name: 'PlayPause', id: 'playPause', description: 'PlayPause', source: 'server' },
+    { name: 'Skip', id: 'skip', description: 'Skip', source: 'server' }
   ],
   keys: [
     { id: 'tray1', source: 'server' },
