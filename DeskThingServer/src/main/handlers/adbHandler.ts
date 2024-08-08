@@ -11,9 +11,21 @@ const execPath = isDevelopment
 const adbExecutableName = process.platform === 'win32' ? 'adb.exe' : 'adb'
 const adbPath = path.join(execPath, adbExecutableName)
 
+const splitArgs = (str: string): string[] => {
+  const regex: RegExp = /(".*?"|[^"\s]+)(?=\s*|\s*$)/g
+  const matches: string[] = []
+  let match: RegExpExecArray | null
+
+  while ((match = regex.exec(str)) !== null) {
+    matches.push(match[1].replace(/(^"|"$)/g, '')) // Remove surrounding quotes if any
+  }
+
+  return matches
+}
+
 export const handleAdbCommands = (command: string, event?): Promise<string> => {
   return new Promise((resolve, reject) => {
-    execFile(adbPath, command.split(' '), { cwd: execPath }, (error, stdout, stderr) => {
+    execFile(adbPath, splitArgs(command), { cwd: execPath }, (error, stdout, stderr) => {
       if (error) {
         if (event) {
           event.sender.send('logging', {

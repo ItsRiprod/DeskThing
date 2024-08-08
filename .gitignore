@@ -50,3 +50,4 @@ tsconfig.tsbuildinfo
 
 *.zip
 /AppExamples/GLHF
+/AppExamples/CommunityApps

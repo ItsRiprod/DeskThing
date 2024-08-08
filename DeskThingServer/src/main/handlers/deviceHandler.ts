@@ -64,7 +64,7 @@ export const HandlePushWebApp = async (
 
     reply('logging', { status: true, data: response || 'Pushing new app...', final: false })
     response = await handleAdbCommands(
-      `-s ${deviceId} push ${extractDir}/ /usr/share/qt-superbird-app/webapp`
+      `-s ${deviceId} push "${extractDir}/" /usr/share/qt-superbird-app/webapp`
     )
 
     reply('logging', { status: true, data: response || 'Restarting Chromium', final: false })
