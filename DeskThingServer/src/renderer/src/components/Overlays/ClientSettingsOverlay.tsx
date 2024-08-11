@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { IconRefresh, IconUpload, IconX } from '../icons'
+import { IconRefresh, IconSave, IconUpload, IconX } from '../icons'
 import { ServerManifest } from '@renderer/store/clientStore'
 import SettingsStoreInstance, { Settings } from '@renderer/store/settingsStore'
 
@@ -129,8 +129,8 @@ const ClientSettingsOverlay: React.FC<ClientSettingsOverlayProps> = ({
                 className="border-green-500 group flex gap-3 border-2 p-3 rounded-xl hover:bg-green-500"
                 onClick={handleUpload}
               >
-                <p className="group-hover:block hidden">Upload</p>
-                <IconUpload />
+                <p className="group-hover:block hidden">Save</p>
+                <IconSave />
               </button>
             </div>
           </div>

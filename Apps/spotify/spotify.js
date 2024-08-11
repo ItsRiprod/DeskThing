@@ -413,10 +413,10 @@ class SpotifyHandler {
 
       if (currentPlayback.currently_playing_type === 'track') {
         songData = {
-          album: currentPlayback?.item.album.name,
-          artist: currentPlayback?.item.album.artists[0].name,
-          playlist: currentPlayback?.context.type,
-          playlist_id: currentPlayback?.context.uri,
+          album: currentPlayback?.item.album?.name || 'Not Found',
+          artist: currentPlayback?.item.album?.artists[0].name || 'Not Found',
+          playlist: currentPlayback?.context?.type || 'Not Found',
+          playlist_id: currentPlayback?.context?.uri || '123456',
           track_name: currentPlayback?.item.name,
           shuffle_state: currentPlayback?.shuffle_state,
           repeat_state: currentPlayback?.repeat_state == 'context' ? 'all' : currentPlayback.repeat_state,
@@ -459,8 +459,8 @@ class SpotifyHandler {
         songData = {
           album: currentPlayback?.item.show.name,
           artist: currentPlayback?.item.show.publisher,
-          playlist: currentPlayback?.context.type,
-          playlist_id: currentPlayback?.context.uri,
+          playlist: currentPlayback?.context?.type || 'Not Found',
+          playlist_id: currentPlayback?.context?.uri || '123456',
           track_name: currentPlayback?.item.name,
           shuffle_state: currentPlayback?.shuffle_state,
           repeat_state: currentPlayback?.repeat_state == 'context' ? 'all' : currentPlayback.repeat_state,
@@ -502,6 +502,8 @@ class SpotifyHandler {
         songData.thumbnail = await getImageData(imageUrl)
 
         this.sendDataToMainFn('data', { app: 'client',type: 'song', data: songData })
+      } else {
+        this.sendError('Song/Podcast type not supported!')
       }
     } catch (error) {
       this.sendError('Error getting song data:' + error)

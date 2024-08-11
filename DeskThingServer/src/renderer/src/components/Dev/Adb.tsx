@@ -54,7 +54,7 @@ const Adb = (): JSX.Element => {
 
   return (
     <div className="w-full flex flex-col items-center justify-center">
-      <div className="flex flex-col gap-1 justify-end items-end">
+      <div className="flex flex-col gap-1 justify-end w-full items-end">
         <div className="flex mb-5 items-center">
           <p className="mr-3">Change View</p>
           <input
@@ -80,7 +80,7 @@ const Adb = (): JSX.Element => {
             <IconRefresh iconSize={24} />
           </button>
         </div>
-        <div>
+        <div className="flex w-full">
           <input
             type="text"
             placeholder="Enter type"
@@ -94,7 +94,7 @@ const Adb = (): JSX.Element => {
             placeholder="Enter command"
             value={command || ''}
             onChange={(e) => handleCommandChange(e.target.value)}
-            className="border-2 border-gray-300 p-2 rounded-lg text-black"
+            className="border-2 border-gray-300 w-full p-2 rounded-lg text-black"
           />
         </div>
         <div className="flex items-center">

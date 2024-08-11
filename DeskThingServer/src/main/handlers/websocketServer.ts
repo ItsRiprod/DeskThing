@@ -8,6 +8,7 @@ import { readData, addData } from './dataHandler'
 import dataListener, { MESSAGE_TYPES } from '../utils/events'
 import { HandleDeviceData } from './deviceHandler'
 import settingsStore from '../stores/settingsStore'
+import cors from 'cors'
 
 import * as fs from 'fs'
 // App Hosting
@@ -238,6 +239,15 @@ const setupServer = async (): Promise<void> => {
   const expressApp = express()
   httpServer = createServer(expressApp)
 
+  expressApp.use(cors())
+
+  expressApp.use((req, res, next) => {
+    if (req.path.endsWith('.svg')) {
+      res.setHeader('Content-Type', 'image/svg+xml')
+    }
+    next()
+  })
+
   // Serve web apps dynamically based on the URL
   expressApp.use('/:appName', (req, res, next) => {
     const appName = req.params.appName
@@ -265,6 +275,21 @@ const setupServer = async (): Promise<void> => {
       }
     }
   })
+/*
+  expressApp.use('/:appName/icon/', (req, res, next) => {
+    const appName = req.params.appName
+    const iconPath = join(getAppFilePath(appName), 'icon') // Construct the full file path
+
+    console.log(`WEBSOCKET: Serving ${appName} from ${iconPath}`)
+
+    dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Serving ${appName} from ${iconPath}`)
+
+    if (fs.existsSync(iconPath)) {
+      express.static(iconPath)(req, res, next) // Serve the SVG file directly
+    } else {
+      res.status(404).send('File not found')
+    }
+  })*/
 
   server = new WebSocketServer({ server: httpServer })
 
@@ -320,42 +345,38 @@ const setupServer = async (): Promise<void> => {
                       sendMappings(socket)
                     }
                     break
-                  case 'add_app':
+                  case 'update_pref_index':
                     if (parsedMessage.data) {
-                      const appData = await getAppByName(parsedMessage.data.app)
+                      const { app: appName, index: newIndex } = parsedMessage.data
+                      const appData = await getAppByName(appName)
+
                       if (
                         appData &&
                         appData.manifest &&
-                        !appData.manifest.isWebApp &&
-                        !appData.manifest.isLocalApp
+                        (appData.manifest.isWebApp || appData.manifest.isLocalApp)
                       ) {
-                        console.log('WSOCKET: Removing stupid little app')
-                        appData.prefIndex = 10
+                        // Update the existing app's index
+                        appData.prefIndex = newIndex
                         await setAppData(appData)
-                        await sendPrefData(socket)
-                        break
-                      }
-                      const oldApp = await getAppByIndex(parsedMessage.data.index)
-                      if (oldApp) {
-                        dataListener.asyncEmit(
-                          MESSAGE_TYPES.LOGGING,
-                          `WSOCKET: Setting ${oldApp.name} index ${oldApp.prefIndex} to 5`
-                        )
-                        oldApp.prefIndex = 5
-                        await setAppData(oldApp)
-                      }
 
-                      if (appData) {
-                        console.log(
-                          `WSOCKET: Setting ${parsedMessage.data.app} index ${appData.prefIndex} to ${parsedMessage.data.index}`
-                        )
-                        dataListener.asyncEmit(
+                        // Retrieve all apps and reassign their indexes
+                        const allApps = await getAppData().apps // Fetch all apps
+                        allApps.sort((a, b) => a.prefIndex - b.prefIndex)
+
+                        // Reassign indexes to ensure continuity
+                        allApps.forEach((app, index) => (app.prefIndex = index))
+
+                        // Update all apps on the server
+                        await Promise.all(allApps.map((app) => setAppData(app)))
+                        dataListener.emit(
                           MESSAGE_TYPES.LOGGING,
-                          `WSOCKET: Setting ${parsedMessage.data.app} index ${appData.prefIndex} to ${parsedMessage.data.index}`
+                          `WEBSOCKET: Updated app indexes and sent to client`
                         )
-                        appData.prefIndex = parsedMessage.data.index
-                        await setAppData(appData)
-                        await sendPrefData(socket)
+                        console.log('Updated app indexes and sent to client')
+
+                        await sendPrefData(socket) // Send updated data to the client
+                      } else {
+                        console.log(`WSOCKET: App ${appName} is not valid or not allowed`)
                       }
                     }
                     break

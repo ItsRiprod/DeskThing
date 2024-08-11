@@ -1,23 +1,28 @@
 import React from 'react'
-import { Button } from './Devices'
+import { Action } from './Devices'
 
 interface KeyProps {
   keyName: string
-  currentFunction: Button
+  currentAction: Action
+  currentKey: string
   onSelect: (key: string) => void
 }
 
-const Key: React.FC<KeyProps> = ({ keyName, currentFunction, onSelect }) => {
+const Key: React.FC<KeyProps> = ({ keyName, currentKey, currentAction, onSelect }) => {
   const handleButtonClick = (): void => {
     onSelect(keyName)
   }
 
   return (
-    <div className="flex">
-      <button className="border p-3 rounded-2xl hover:bg-zinc-600" onClick={handleButtonClick}>
-        {keyName} {currentFunction?.name}
-      </button>
-    </div>
+    <button
+      onClick={handleButtonClick}
+      className={`group flex border min-w-40 p-3 ${currentKey != keyName ? (currentAction.id == 'none' ? 'border-zinc-600 text-zinc-600' : 'hover:bg-zinc-600') : 'border-cyan-500 text-white hover:bg-cyan-500'} rounded-2xl`}
+    >
+      <div className="flex justify-between w-full">
+        <p className="group-hover:hidden">{keyName}</p>
+        <p className="group-hover:block hidden">{currentAction?.name}</p>
+      </div>
+    </button>
   )
 }
 

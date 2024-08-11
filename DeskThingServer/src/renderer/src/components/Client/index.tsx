@@ -6,8 +6,9 @@ import Tabs, { View } from '../Tabs'
 
 const Index = (): JSX.Element => {
   const views: View[] = [
-    { id: 'mappings', display: 'Button Maps' },
     { id: 'status', display: 'Status' },
+    { id: 'mappings', display: 'Button Maps' },
+    { id: 'local', display: 'Local Client' },
     { id: 'client', display: 'Client Downloads' }
   ]
   const [currentView, setCurrentView] = useState<View>(views[0])
@@ -16,6 +17,8 @@ const Index = (): JSX.Element => {
       case 'mappings':
         return <Devices />
       case 'status':
+        return <Loading message="Not Implemented" />
+      case 'local':
         return <Loading message="Not Implemented" />
       case 'client':
         return <Client />

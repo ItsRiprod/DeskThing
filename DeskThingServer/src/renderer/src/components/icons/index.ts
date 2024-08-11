@@ -25,6 +25,7 @@ export { default as IconLogs } from './icon/IconLogs'
 
 export { default as IconPulsing } from './icon/IconPulsing'
 export { default as IconReload } from './icon/IconReload'
+export { default as IconSave } from './icon/IconSave'
 export { default as IconDetails } from './icon/IconDetails'
 
 export { default as IconGear } from './icon/IconGear'

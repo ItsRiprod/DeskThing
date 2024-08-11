@@ -17,7 +17,7 @@ const Device = (): JSX.Element => {
   const [enabled, setEnabled] = useState(false)
   const [tooltip, setTooltip] = useState<[string, number]>(['', 0])
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState([0, ''])
   const [currentDevice, setCurrentDevice] = useState('')
   const [port, setPort] = useState<number>(-1)
 
@@ -33,7 +33,7 @@ const Device = (): JSX.Element => {
 
   const handlePush = async (): Promise<void> => {
     try {
-      setError('Checking for devices...')
+      setError([0, 'Checking for devices...'])
       setLoading(true)
       const response = await window.electron.runAdbCommand('devices')
       if (response) {
@@ -56,9 +56,9 @@ const Device = (): JSX.Element => {
     }
   }
 
-  const handleAdbCommand = async (command: string): Promise<string | undefined> => {
+  const handleAdbCommand = async (command: string, index: number): Promise<string | undefined> => {
     try {
-      setError(command)
+      setError([index, command])
       setLoading(true)
       const response = await window.electron.runAdbCommand(command)
       if (response) {
@@ -75,9 +75,9 @@ const Device = (): JSX.Element => {
     }
   }
 
-  const handlePushStaged = (deviceId: string): void => {
+  const handlePushStaged = (deviceId: string, index: number): void => {
     try {
-      setError('Pushing app...')
+      setError([index, 'Pushing app...'])
       setLoading(true)
       window.electron.ipcRenderer.send('push-staged', deviceId)
       const unsubscribe = window.electron.ipcRenderer.on('logging', (_event, reply) => {
@@ -89,18 +89,18 @@ const Device = (): JSX.Element => {
           setLoading(true)
         }
         if (!reply.status) {
-          setError(reply.error || 'Unknown error occurred')
+          setError([index, reply.error || 'Unknown error occurred'])
           unsubscribe()
         } else {
           if (reply.data) {
-            setError(reply.data)
+            setError([index, reply.data])
           }
         }
       })
     } catch (error) {
       setLoading(false)
       if (error) {
-        setError(JSON.stringify(error))
+        setError([index, JSON.stringify(error)])
       }
     }
   }
@@ -131,7 +131,7 @@ const Device = (): JSX.Element => {
                   {loading ? (
                     <div className="py-8 pl-3 flex items-center">
                       <IconLogoGearLoading iconSize={85} />
-                      {error}
+                      {error[0] == index ? error[1] : 'ADB Busy...'}
                     </div>
                   ) : (
                     <IconCarThing
@@ -150,7 +150,7 @@ const Device = (): JSX.Element => {
                   </p>
                   <button
                     onClick={() => handleDeviceClick(device)}
-                    className="border-2 top-10 border-green-600 hover:bg-green-500  p-2 rounded-lg"
+                    className={`border-2 top-10 border-green-600 ${!loading && 'hover:bg-green-500'}  p-2 rounded-lg`}
                     onMouseEnter={() => setTooltip(['Device Details', index])}
                     onMouseLeave={() => setTooltip(['', index])}
                     disabled={loading}
@@ -158,8 +158,8 @@ const Device = (): JSX.Element => {
                     <IconDetails iconSize={24} />
                   </button>
                   <button
-                    onClick={() => handlePushStaged(device.replace('device', '').trim())}
-                    className="border-2 top-10 border-cyan-600 hover:bg-cyan-500  p-2 rounded-lg"
+                    onClick={() => handlePushStaged(device.replace('device', '').trim(), index)}
+                    className={`border-2 top-10 border-cyan-600 ${!loading && 'hover:bg-cyan-500'}   p-2 rounded-lg`}
                     onMouseEnter={() => setTooltip(['Push Staged Client', index])}
                     onMouseLeave={() => setTooltip(['', index])}
                     disabled={loading}
@@ -169,10 +169,11 @@ const Device = (): JSX.Element => {
                   <button
                     onClick={() =>
                       handleAdbCommand(
-                        `-s ${device.replace('device', '').trim()} shell supervisorctl restart chromium`
+                        `-s ${device.replace('device', '').trim()} shell supervisorctl restart chromium`,
+                        index
                       )
                     }
-                    className="border-2 top-10 border-cyan-600 hover:bg-cyan-500  p-2 rounded-lg"
+                    className={`border-2 top-10 border-cyan-600 ${!loading && 'hover:bg-cyan-500'}   p-2 rounded-lg`}
                     onMouseEnter={() => setTooltip(['Reload Chromium', index])}
                     onMouseLeave={() => setTooltip(['', index])}
                     disabled={loading}
@@ -182,10 +183,11 @@ const Device = (): JSX.Element => {
                   <button
                     onClick={() =>
                       handleAdbCommand(
-                        `-s ${device.replace('device', '').trim()} reverse tcp:${port} tcp:${port}`
+                        `-s ${device.replace('device', '').trim()} reverse tcp:${port} tcp:${port}`,
+                        index
                       )
                     }
-                    className="border-2 top-10 border-cyan-600 hover:bg-cyan-500  p-2 rounded-lg"
+                    className={`border-2 top-10 border-cyan-600 ${!loading && 'hover:bg-cyan-500'}   p-2 rounded-lg`}
                     onMouseEnter={() => setTooltip(['Setup ADB Socket Port', index])}
                     onMouseLeave={() => setTooltip(['', index])}
                     disabled={loading}
@@ -194,9 +196,12 @@ const Device = (): JSX.Element => {
                   </button>
                   <button
                     onClick={() =>
-                      handleAdbCommand(`-s ${device.replace('device', '').trim()}} reconnect`)
+                      handleAdbCommand(
+                        `-s ${device.replace('device', '').trim()}} reconnect`,
+                        index
+                      )
                     }
-                    className="border-2 top-10 border-red-600 hover:bg-red-500  p-2 rounded-lg"
+                    className={`border-2 top-10 border-red-600 ${!loading && 'hover:bg-red-600'}  p-2 rounded-lg`}
                     onMouseEnter={() => setTooltip(['Reconnect Device', index])}
                     onMouseLeave={() => setTooltip(['', index])}
                     disabled={loading}
@@ -209,7 +214,7 @@ const Device = (): JSX.Element => {
           </div>
           <div className="pt-5">
             <button
-              className="group border-cyan-500 flex gap-3 border p-3 rounded-xl hover:bg-cyan-600"
+              className="group border-cyan-500 flex gap-3 border p-3 rounded-xl hover:bg-cyan-500"
               onClick={() => handlePush()}
             >
               <IconRefresh />
