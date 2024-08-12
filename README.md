@@ -1,18 +1,18 @@
- ![App Creation details](/readme_images/deskthing-banner.png)
+ ![Deskthing Banner](/readme_images/deskthing-banner.png)
 
 *Logo design and artwork by @Dilango*
 
- > [Github Link](https://github.com/ItsRiprod/DeskThing)
+ > ❔[Reddit Link](https://reddit.com/r/DeskThing)
 
- > [Reddit Link](https://reddit.com/r/DeskThing)
+ > 📃[Trello Board](https://trello.com/b/6v0paxqV/deskthing)
 
- > [Trello Board](https://trello.com/b/6v0paxqV/deskthing)
+ > 💬[Deskthing Discord](https://discord.gg/uNS3dhj46D)
 
- > [Deskthing Discord](https://discord.gg/uNS3dhj46D)
+ > 🌐[Official Deskthing Website](https://deskthing.app)
 
- > [Official Deskthing Website](https://deskthing.app)
+ > 📺 [Deskthing Youtube Channel](https://www.youtube.com/@DeskThing)
  
- > [Car Thing Hax Community Discord](https://discord.carth.ing/)
+ > 💬 [Car Thing Hax Community Discord](https://discord.carth.ing/)
 
 # The DeskThing ✔️
 
@@ -23,9 +23,10 @@ This is the DeskThing project. Using Spotify's existing Car Thing, the DeskThing
 **⚠️DO NOT PULL MAIN BRANCH ⚠️**
 
 Instead, go to [The Official Website](https://deskthing.app/) and download the installer for your OS
+For a video walkthrough of v0.6.0, go to [this video](https://youtu.be/nC65O1nP-pk?si=dxUEF6wyzLI2Z72U)
 
 ---
-> All instructions are up-to-date as late of v0.6.0-beta. Later versions may differ in functionality and setup
+> All instructions are up-to-date as late of v0.8.0-beta. Later versions may differ in functionality and setup
 <details>
    <summary><h2>✨ Features</h2></summary>
 
@@ -39,7 +40,7 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
    - [X] Make any button do any function!
    - [X] Control audio with the top buttons, front buttons, back buttons, really whatever you want!
    - [X] Modify them from the Desktop UI
-   - [X] Add more directly from apps! (Basically you can do anything)
+   - [X] Add more directly from apps! (Basically, you can do anything)
 - ### Spotify Integration 🎧
    - [X] Show currently listening (Album, Artist, Song name, album art)
    - [X] Control Spotify (Skip, pause, play, rewind, shuffle, repeat)
@@ -123,14 +124,14 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
    - Run the 'deskthing-0.*.*-*-setup.*' installer on your computer
 
 3. **Check for your device:**
-   - Under the 'Status' tab in v0.5.5 or earlier or 'ADB' tab in v0.5.6 or later, ensure your device shows up. If it does not, join the Discord server and report the issue, this can be buggy on some machines.
+   - Under the 'Devices' tab, ensure your device shows up. If it does not, join the Discord server and report the issue, this can be buggy on some machines.
 > A few things to try if it isn't working is to 1: Use task manager to kill all instances of ADB 2: Run DeskThing as administrator 3: Unplug and plug in your Car thing 4: Install ADB and manually check with `adb devices`
-   - If the device shows up, go to the 'Webapps' tab and click the latest version (Only use the ADB version if RNDIS doesn't work)
+   - If the device shows up, go to the 'Client Downloads' tab and click the latest version. It should show up at the top (Staged: Deskthing CLient)
    - Go back to the 'Devices' tab and click 'Push Staged Webapp' It should take a second, and then your Car Thing should restart.
 4. **Load Apps**
    - Congrats! You're basically done. Now go to 'Apps' and then 'Webapps' and download any apps you want. Ensure you check dependencies before doing so as this could cause errors. 
 
-> Any Issues? Contact me [through the CarThingHax discord server](https://discord.carth.ing/) or via DMs to @riprod
+> Any Issues? Contact me [through the Deskthing discord server](https://discord.gg/qWbSwzWJ4e) or via DMs to @riprod
 
 </details>
 
@@ -143,7 +144,7 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
 
 Links:
 - [image dumps](https://mega.nz/folder/NxNXQCaT#-n1zkoXsJuw-5rQ-ZYzRJw/folder/Ak9FVKxJ)
-> Ensure you download one with ADB and RNDIS enabled (any one of the 'new' ones work) 8.4.4_adb_enabled-new.tar.xz is the current best
+> Ensure you download one with ADB and RNDIS enabled (any one of the '-new' ones work) 8.4.4_adb_enabled-new.tar.xz is the current best option
 - [superbird-tool](https://github.com/Car-Thing-Hax-Community/superbird-tool)
 
 Alternative image dump [here](https://mega.nz/file/RptVUAZT#K__JkdCRWDgC3sVSA64YDBsskOTiZXy1_XBhuVNOmFA) if the first one doesnt work
@@ -159,7 +160,7 @@ Process:
 > Alternatively use **libusbK** if it does not work
 - Run `python superbird_tool.py --restore_device /path/to/extracted/firmware/folder` (This may take a while)
 - After the firmware is flashed, the Car Thing should be ready with ADB enabled. To check, run `adb shell ls -l /usr/share/qt-superbird-app/` and you should see webapp as one of the folders.
-- Ensure that `adb devices` works and registers `12345 device` as one of the options
+- Ensure that `adb devices` works and registers `whateveryouridis device` as one of the options
 - Continue setup from [here](#detailed-setup-instructions)
 
 </details>
@@ -178,4 +179,4 @@ Process:
 
 > Questions? DM me on discord @riprod
 
-⚠️ *The possibility of this bricking your device is very real* ⚠️
+⚠️ *While bricking the Car Thing is extremely difficult - I don't think anyone has done it yet - the possibility is still there. I do not take any responsibility for damages done to the device. Try to use common sense* ⚠️
