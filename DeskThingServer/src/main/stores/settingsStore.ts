@@ -105,6 +105,8 @@ const getLocalIpAddress = (): string[] => {
           if (
             iface.address.startsWith('10.') ||
             iface.address.startsWith('172.') ||
+            iface.address.startsWith('169.') ||
+            iface.address.startsWith('100.') ||
             iface.address.startsWith('192.')
           ) {
             localIps.push(iface.address)

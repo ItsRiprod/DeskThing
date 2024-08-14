@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { IconCarThing } from '../icons'
-import KeyComponent from './Key'
 
 export type Action = {
   name: string

@@ -2,7 +2,7 @@
 import { WebSocketServer } from 'ws'
 import { sendMessageToApp, getAppFilePath } from './appHandler'
 
-import { getAppData, setAppData, getAppByName, getAppByIndex } from './configHandler'
+import { getAppData, setAppData, getAppByName } from './configHandler'
 import { getDefaultMappings, ButtonMapping, setDefaultMappings } from './keyMapHandler'
 import { readData, addData } from './dataHandler'
 import dataListener, { MESSAGE_TYPES } from '../utils/events'

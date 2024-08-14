@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
-import { IconRefresh, IconSave, IconUpload, IconX } from '../icons'
-import { ServerManifest } from '@renderer/store/clientStore'
-import SettingsStoreInstance, { Settings } from '@renderer/store/settingsStore'
+import { IconRefresh, IconSave, IconX } from '../icons'
+import { ServerManifest } from '../../store/clientStore'
+import SettingsStoreInstance, { Settings } from '../../store/settingsStore'
 
 interface ClientSettingsOverlayProps {
   manifest: ServerManifest

@@ -39,8 +39,89 @@ export type FileStructure = {
 }
 
 const defaultData: FileStructure = {
-  version: '0.8.2',
+  version: '0.8.1',
   default: {
+    Pad1: {
+      [EventFlavor.Down]: {
+        flair: '',
+        name: 'VolUp',
+        id: 'volUp',
+        description: 'VolUp',
+        source: 'server'
+      }
+    },
+    Pad2: {
+      [EventFlavor.Down]: {
+        flair: '',
+        name: 'Swipe Left',
+        id: 'swipeL',
+        description: 'Goes to left app',
+        source: 'server'
+      }
+    },
+    Pad3: {
+      [EventFlavor.Down]: {
+        flair: '',
+        name: 'Swipe Right',
+        id: 'swipeR',
+        description: 'Goes to right app',
+        source: 'server'
+      }
+    },
+    Pad4: {
+      [EventFlavor.Down]: {
+        flair: '',
+        name: 'VolDown',
+        id: 'volDown',
+        description: 'VolDown',
+        source: 'server'
+      }
+    },
+    Pad5: {
+      [EventFlavor.Down]: {
+        flair: '',
+        name: 'Hide AppsList',
+        id: 'hide',
+        description: 'Hides the apps list',
+        source: 'server'
+      }
+    },
+    Pad6: {
+      [EventFlavor.Down]: {
+        flair: '',
+        name: 'Show AppsList',
+        id: 'show',
+        description: 'Shows the apps list',
+        source: 'server'
+      }
+    },
+    Pad7: {
+      [EventFlavor.Down]: {
+        flair: '',
+        name: 'Repeat',
+        id: 'repeat',
+        description: 'Repeat',
+        source: 'server'
+      }
+    },
+    Pad8: {
+      [EventFlavor.Down]: {
+        flair: '',
+        name: 'PlayPause',
+        id: 'play',
+        description: 'Plays or Pauses Audio',
+        source: 'server'
+      }
+    },
+    Pad9: {
+      [EventFlavor.Down]: {
+        flair: '',
+        name: 'Fullscreen',
+        id: 'fullscreen',
+        description: 'Fullscreens the application',
+        source: 'server'
+      }
+    },
     DynamicAction1: {
       [EventFlavor.Down]: {
         name: 'Shuffle',
@@ -330,6 +411,13 @@ const defaultData: FileStructure = {
       description: 'Hides the button. Has no action',
       source: 'server',
       flair: ''
+    },
+    {
+      name: 'Fullscreen',
+      id: 'fullscreen',
+      description: 'Toggle Fullscreen',
+      source: 'server',
+      flair: ''
     }
   ],
   keys: [
@@ -348,7 +436,16 @@ const defaultData: FileStructure = {
     { id: 'Scroll', source: 'server' },
     { id: 'Enter', source: 'server' },
     { id: 'Swipe', source: 'server' },
-    { id: 'Escape', source: 'server' }
+    { id: 'Escape', source: 'server' },
+    { id: 'Pad1', source: 'server' },
+    { id: 'Pad2', source: 'server' },
+    { id: 'Pad3', source: 'server' },
+    { id: 'Pad4', source: 'server' },
+    { id: 'Pad5', source: 'server' },
+    { id: 'Pad6', source: 'server' },
+    { id: 'Pad7', source: 'server' },
+    { id: 'Pad8', source: 'server' },
+    { id: 'Pad9', source: 'server' }
   ]
 }
 

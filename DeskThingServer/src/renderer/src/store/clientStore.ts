@@ -24,13 +24,13 @@ interface ClientStoreEvents {
 
 class ClientStore extends EventEmitter<ClientStoreEvents> {
   private static instance: ClientStore
-  private connectedApps: ServerManifest[]
+  //private connectedApps: ServerManifest[] = []
 
   constructor() {
     super()
-    this.appsList = {
-      apps: []
-    }
+    //this.appsList = {
+    //  apps: []
+    //}
   }
   static getInstance(): ClientStore {
     if (!ClientStore.instance) {
@@ -39,6 +39,7 @@ class ClientStore extends EventEmitter<ClientStoreEvents> {
     return ClientStore.instance
   }
 
+  /*
   public getAppsList(): AppData {
     return this.appsList
   }
@@ -94,7 +95,7 @@ class ClientStore extends EventEmitter<ClientStoreEvents> {
     this.appsList = apps
     this.emit('update', this.appsList)
   }
+    */
 }
 
 export default ClientStore.getInstance()
-

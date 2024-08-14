@@ -1,6 +1,11 @@
 const DiscordHandler = require('./discord.js');
+const Deskthing = require('deskthing-app-client').default
 
 let discord
+
+const deskthing = new Deskthing()
+
+deskthing.sendMessage('hello')
 
 async function start({ sendDataToMain }) {
   discord = new DiscordHandler(sendDataToMain)
