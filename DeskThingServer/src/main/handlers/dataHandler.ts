@@ -54,9 +54,9 @@ const addData = (key: string, value: { [key: string]: string }): void => {
 }
 
 // Get data function
-const getData = (key): { [key: string]: string } => {
+const getData = (app): { [key: string]: string } => {
   const data = readData()
-  return data[key]
+  return data[app]
 }
 
 const purgeData = async (appName: string): Promise<void> => {

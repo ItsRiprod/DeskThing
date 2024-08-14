@@ -31,14 +31,22 @@ import { sendIpcAuthMessage, openAuthWindow } from '../index'
 import { sendMessageToClients, sendPrefData } from './websocketServer'
 import dataListener, { MESSAGE_TYPES } from '../utils/events'
 
+type OutgoingEvent = 'message' | 'get' | 'set' | 'add' | 'open' | 'data' | 'toApp' | 'error' | 'log'
+type toServer = (event: OutgoingEvent, data: any) => void
+type SysEvents = (event: string, listener: (...args: any[]) => void) => void
+type startData = {
+  toServer: toServer
+  SysEvents: SysEvents
+}
+
 interface AppInstance {
-  start: () => void
-  onMessageFromMain: OnMessageFromMainType
-  stop: () => void
+  start: ({ toServer, SysEvents }: startData) => Response
+  toClient: ToClientType
+  stop: () => Response
 }
 
 // Type that setups up the expected format for data sent to and from main
-type OnMessageFromMainType = (channel: string, ...args: any[]) => void
+type ToClientType = (channel: string, ...args: any[]) => void
 
 export interface AuthScopes {
   [key: string]: {
@@ -46,6 +54,13 @@ export interface AuthScopes {
     label: string
     value?: string
   }
+}
+
+type Response = {
+  data: any
+  status: number
+  statusText: string
+  request: string[]
 }
 
 // A map of all running apps
@@ -82,8 +97,8 @@ async function handleDataFromApp(app: string, type: string, ...args: any[]): Pro
             console.error(`SERVER: The type of config from ${app} was undefined`)
           }
           break
-        case 'auth':
-          requestAuthData(app, args[1] as AuthScopes)
+        case 'input':
+          requestUserInput(app, args[1] as AuthScopes)
           break
         default:
           break
@@ -131,12 +146,12 @@ async function handleDataFromApp(app: string, type: string, ...args: any[]): Pro
  * @param {string} appName - The name of the app requesting authentication data.
  * @param {string[]} scope - The scope of the authentication request (This is also what the user will be prompted with and how it will be saved in the file).
  */
-async function requestAuthData(appName: string, scope: AuthScopes): Promise<void> {
+async function requestUserInput(appName: string, scope: AuthScopes): Promise<void> {
   // Send IPC message to renderer to display the form
   sendIpcAuthMessage('request-user-data', appName, scope)
 
   ipcMain.once(`user-data-response-${appName}`, async (_event, formData) => {
-    sendMessageToApp(appName, 'data', formData)
+    sendMessageToApp(appName, 'input', formData)
   })
 }
 
@@ -181,71 +196,92 @@ async function runApp(appName: string): Promise<void> {
     } else if (fs.existsSync(appEntryPointCjs)) {
       appEntryPoint = appEntryPointCjs
     } else {
-      console.error(`Entry point for app ${appName} not found.`)
+      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `Entry point for app ${appName} not found.`)
       return
     }
     console.log(appEntryPoint)
     if (fs.existsSync(appEntryPoint)) {
-      const { start, onMessageFromMain, stop } = await import(`file://${resolve(appEntryPoint)}`)
+      const { DeskThing } = await import(`file://${resolve(appEntryPoint)}`)
 
-      const manifestPath = getAppFilePath(appName, 'manifest.json')
-      if (!fs.existsSync(manifestPath)) {
-        console.error(`Manifest for app ${appName} not found at ${manifestPath}`)
-        return
-      }
-      const manifest = await getManifest(getAppFilePath(appName))
-      if (manifest == undefined) {
-        console.error(`Manifest for app ${appName} is invalid!`)
-        return
-      }
-      // Check if all required apps are running
-      if (manifest?.requires) {
-        const requiredApps = manifest.requires || []
-        for (const requiredApp of requiredApps) {
-          if (!runningApps.has(requiredApp)) {
-            console.error(
-              `Unable to run ${appName}! This app requires '${requiredApp}' to be enabled and running.`
-            )
-            dataListener.asyncEmit(
-              MESSAGE_TYPES.ERROR,
-              `Unable to run ${appName}! This app requires '${requiredApp}' to be enabled and running.`
-            )
-            const appConfig = getAppByName(appName)
-            if (appConfig) {
-              appConfig.running = false
-              setAppData(appConfig)
+      let manifest
+
+      const manifestResponse: Response = await DeskThing.getManifest()
+      // Check if all required apps are running (I know this can be better...)
+      if (manifestResponse.status == 200) {
+        manifest = manifestResponse.data
+        if (manifest.requires) {
+          const requiredApps = manifest.requires || []
+          for (const requiredApp of requiredApps) {
+            if (!runningApps.has(requiredApp)) {
+              console.error(
+                `Unable to run ${appName}! This app requires '${requiredApp}' to be enabled and running.`
+              )
+              dataListener.asyncEmit(
+                MESSAGE_TYPES.ERROR,
+                `Unable to run ${appName}! This app requires '${requiredApp}' to be enabled and running.`
+              )
+              const appConfig = getAppByName(appName)
+              if (appConfig) {
+                appConfig.running = false
+                setAppData(appConfig)
+              }
+              return
             }
-            return
           }
         }
+      } else {
+        console.error(
+          `Unable to get manifest for ${appName}! Response message: ${manifestResponse.data.message}`
+        )
+        dataListener.asyncEmit(
+          MESSAGE_TYPES.ERROR,
+          `Unable to get manifest for ${appName}!  Response message: ${manifestResponse.data.message}`
+        )
+        return
       }
 
-      dataListener.asyncEmit(MESSAGE_TYPES.MESSAGE, `Running app ${appName}!`)
-      console.log(`Running ${appEntryPoint}...`)
-      if (typeof start === 'function') {
-        const sendDataToMain = (type: string, ...args: any[]): void => {
+      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `Running app ${appName}!`)
+      if (typeof DeskThing.start === 'function') {
+        const toServer = async (type: OutgoingEvent, ...args: any[]): Promise<void> => {
           handleDataFromApp(appName, type, ...args)
         }
 
-        const listeners: OnMessageFromMainType[] = []
+        const listeners: ToClientType[] = []
 
         const appInstance: AppInstance = {
-          start,
-          onMessageFromMain: (channel, ...args) => {
-            onMessageFromMain(channel, ...args)
+          start: DeskThing.start,
+          toClient: (channel, ...args) => {
+            DeskThing.onMessageFromMain(channel, ...args)
             listeners.forEach((listener) => listener(channel, ...args))
           },
-          stop
+          stop: DeskThing.stop
         }
 
         runningApps.set(appName, appInstance)
-        start({
-          sendDataToMain,
-          sysEvents: (event: string, listener: (...args: any[]) => void) => {
+        const startResponse: Response = await appInstance.start({
+          toServer,
+          SysEvents: (event: string, listener: (...args: any[]) => void) => {
             dataListener.on(event, listener) // Add event listener
             return () => dataListener.removeListener(event, listener)
           }
         })
+        if (startResponse.status == 200) {
+          console.log(
+            `App ${appName} started successfully with response ${startResponse.data.message}`
+          )
+          dataListener.asyncEmit(
+            MESSAGE_TYPES.MESSAGE,
+            `App ${appName} started successfully with response ${startResponse.data.message}`
+          )
+        } else {
+          console.error(
+            `App ${appName} failed to start with response ${startResponse.data.message}`
+          )
+          dataListener.asyncEmit(
+            MESSAGE_TYPES.ERROR,
+            `App ${appName} failed to start with response ${startResponse.data.message}`
+          )
+        }
         addAppManifest(manifest, appName)
         sendPrefData()
       } else {
@@ -275,8 +311,8 @@ async function runApp(appName: string): Promise<void> {
 async function sendMessageToApp(appName: string, type: string, ...args: any[]): Promise<void> {
   try {
     const app = runningApps.get(appName)
-    if (app && typeof app.onMessageFromMain === 'function') {
-      ;(app.onMessageFromMain as OnMessageFromMainType)(type, ...args)
+    if (app && typeof app.toClient === 'function') {
+      ;(app.toClient as ToClientType)(type, ...args)
     } else {
       dataListener.asyncEmit(
         MESSAGE_TYPES.ERROR,

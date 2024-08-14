@@ -1,11 +1,13 @@
-const DiscordHandler = require('./discord.js');
-const Deskthing = require('deskthing-app-client').default
+import DiscordHandler from './discord.js'
+import Deskthing from 'deskthing-app-server'
+
 
 let discord
 
-const deskthing = new Deskthing()
 
-deskthing.sendMessage('hello')
+
+
+Deskthing.on('start', start)
 
 async function start({ sendDataToMain }) {
   discord = new DiscordHandler(sendDataToMain)
@@ -162,4 +164,3 @@ const handleSet = async (...args) => {
     discord.sendDataToMainFn('data', response)
   }
 }
-module.exports = { start, onMessageFromMain, stop }

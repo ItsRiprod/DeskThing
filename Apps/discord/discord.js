@@ -1,13 +1,7 @@
-const fs = require('fs');
-const path = require('path');
-const RPC = require('discord-rpc');
+import RPC from 'discord-rpc';
 
 class DiscordHandler {
-  constructor(sendDataToMainFn) {
-    this.client_secret = undefined;
-    this.client_id = undefined;
-    this.token = undefined;
-    this.sendDataToMainFn = sendDataToMainFn;
+  constructor() {
     this.redirect_url = 'http://localhost:8888/callback/discord';
     this.scopes = [
       'rpc', 'messages.read', 'rpc.video.write', 'rpc.voice.read', 
@@ -33,8 +27,6 @@ class DiscordHandler {
       }
     };
     this.rpc = new RPC.Client({ transport: 'ipc' });
-    this.manifestPath = path.join(__dirname, 'manifest.json');
-    this.manifest = JSON.parse(fs.readFileSync(this.manifestPath, 'utf-8'));
     this.subscriptions = { voice: {} };
     this.startTimestamp = null;
     this.initializeRpc();
@@ -270,4 +262,4 @@ class DiscordHandler {
   }
 }
 
-module.exports = DiscordHandler;
+export default DiscordHandler
