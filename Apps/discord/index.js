@@ -1,14 +1,80 @@
 import DiscordHandler from './discord.js'
-import Deskthing from 'deskthing-app-server'
+import { DeskThing as DK } from 'deskthing-server'
+const DeskThing = DK.getInstance()
+export { DeskThing }
+
+let discord = null
+
+const main = async () => {
+  // Set Data object and ensure it is up-to-date
+  let data = await DeskThing.getData()
+  DeskThing.on('data', (newData) => {
+    data = newData
+    console.log('Getting new data', data)
+  })
+
+  // Initialize settings
+  if (!data.settings?.auto_switch_view) {
+    DeskThing.addSetting("auto_switch_view", "Auto Switch View", true, [{label: 'Disabled', value: false}, {label: 'Enabled', value: true}])
+  }
+  if (!data.settings?.notifications) {
+    DeskThing.addSetting("notifications", "Show Notifications", true, [{label: 'Disabled', value: false}, {label: 'Enabled', value: true}])
+  }
+  // Check if data exists 
+  if (!data?.client_id || !data?.client_secret) {
+    const requestScopes = {
+      'client_id': {
+        'value': '',
+        'label': 'Discord Client ID',
+        'instructions': 'You can get your Discord Client ID from the <a href="https://discord.com/developers/applications" target="_blank" style="color: lightblue;">Discord Application Dashboard</a>. You must create a new discord bot and then under OAuth2 find CLIENT ID - Copy and paste that into this field.',
+      },
+      'client_secret': {
+        'value': '',
+        'label': 'Discord Client Secret',
+        'instructions': 'You can get your Spotify Client Secret from the <a href="https://discord.com/developers/applications" target="_blank" style="color: lightblue;">Discord Application Dashboard</a>. You must create a new application and then under OAuth2 click "Reveal Secret" or "Reset Secret" and copy-paste that here in this field.',
+      },
+      'redirect_url': {
+        'instructions': 'Set the Discord Redirect URI to http://localhost:8888/callback/discord and then click "Save".\n This ensures you can authenticate your account to this application',
+      }
+    }
+
+    DeskThing.getUserInput(requestScopes, async (data) => {
+      console.log('Requesting user input')
+      if (data.client_id && data.client_secret && data.redirect_url) {
+        DeskThing.saveData(data)
+      } else {
+        DeskThing.sendError('Please fill out all fields')
+      }
+    })
+  } else {
+    DeskThing.sendLog('Data Exists!')
+  }
+
+  discord = new DiscordHandler(DeskThing)
+  await discord.registerRPC()
+
+  DeskThing.on('set', handleSet)
+  
+}
+
+const handleSet = (...args) => {
+  if (args[0] == null) {
+    discord.sendError('No args provided')
+    return
+  }
+
+  DeskThing.sendError('Set not implemented yet! Received: ' + args)
+
+}
+
+console.log(DeskThing)
+console.log('Attempting to start deskThing')
+console.log(Object.getOwnPropertyNames(Object.getPrototypeOf(DeskThing))); // List all methods on DeskThing
+DeskThing.on('start', main)
 
 
-let discord
 
-
-
-
-Deskthing.on('start', start)
-
+/*
 async function start({ sendDataToMain }) {
   discord = new DiscordHandler(sendDataToMain)
   
@@ -19,7 +85,7 @@ async function start({ sendDataToMain }) {
 }
 async function stop() {
   discord.sendLog('App stopping...')
-  /** Ensure the RPC stuff is killed */
+  // Ensure the RPC stuff is killed
   discord = null
 }
 
@@ -98,7 +164,7 @@ async function onMessageFromMain(event, ...args) {
             discord.sendDataToMainFn('add', returnData)
           }
           break
-      /** GET / POST / PUT */
+      // GET / POST / PUT
       case 'get':
         handleGet(...args)
         break
@@ -164,3 +230,4 @@ const handleSet = async (...args) => {
     discord.sendDataToMainFn('data', response)
   }
 }
+*/

@@ -5,7 +5,7 @@
   "isLocalApp": false,
   "requires": [],
   "label": "Discord App",
-  "version": "v0.7.0",
+  "version": "v0.8.0",
   "description": "This app is a discord app that shows your call stats on the DeskThing",
   "author": "Riprod",
   "platforms": [

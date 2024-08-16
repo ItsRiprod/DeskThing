@@ -30,6 +30,7 @@ import { getData, setData, addData, purgeData } from './dataHandler'
 import { sendIpcAuthMessage, openAuthWindow } from '../index'
 import { sendMessageToClients, sendPrefData } from './websocketServer'
 import dataListener, { MESSAGE_TYPES } from '../utils/events'
+import { Action, addAction, addKey, removeKey, removeAction, Key } from './keyMapHandler'
 
 type OutgoingEvent = 'message' | 'get' | 'set' | 'add' | 'open' | 'data' | 'toApp' | 'error' | 'log'
 type toServer = (event: OutgoingEvent, data: any) => void
@@ -134,6 +135,51 @@ async function handleDataFromApp(app: string, type: string, ...args: any[]): Pro
     case 'log':
       dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `${app.toUpperCase()}: ${args[0]}`)
       break
+    case 'button':
+      if (args[0] && args[0] == 'add') {
+        try {
+          if (args[1]) {
+            const Key: Key = {
+              id: args[1].id || 'unsetid',
+              source: app
+            }
+            addKey(Key)
+            dataListener.asyncEmit(
+              MESSAGE_TYPES.LOGGING,
+              `${app.toUpperCase()}: Added Button Successfully`
+            )
+          }
+        } catch (Error) {
+          dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: ${Error}`)
+        }
+      } else if (args[0] && args[0] == 'remove') {
+        removeKey(args[1].id)
+      }
+      break
+    case 'action':
+      if (args[0] && args[0] == 'add') {
+        try {
+          if (args[1]) {
+            const Action: Action = {
+              name: args[1].name || 'Default Name',
+              id: args[1].id || 'unsetid',
+              description: args[1].description || 'No description provided',
+              flair: args[1].flair || '',
+              source: app
+            }
+            addAction(Action)
+            dataListener.asyncEmit(
+              MESSAGE_TYPES.LOGGING,
+              `${app.toUpperCase()}: Added Action Successfully`
+            )
+          }
+        } catch (Error) {
+          dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: ${Error}`)
+        }
+      } else if (args[0] && args[0] == 'remove') {
+        removeAction(args[1].id)
+      }
+      break
     default:
       console.log(`Unknown data type from ${app}: ${type}`)
       break
@@ -202,10 +248,10 @@ async function runApp(appName: string): Promise<void> {
     console.log(appEntryPoint)
     if (fs.existsSync(appEntryPoint)) {
       const { DeskThing } = await import(`file://${resolve(appEntryPoint)}`)
-
+      const App = DeskThing
       let manifest
 
-      const manifestResponse: Response = await DeskThing.getManifest()
+      const manifestResponse: Response = await App.getManifest()
       // Check if all required apps are running (I know this can be better...)
       if (manifestResponse.status == 200) {
         manifest = manifestResponse.data
@@ -241,7 +287,7 @@ async function runApp(appName: string): Promise<void> {
       }
 
       dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `Running app ${appName}!`)
-      if (typeof DeskThing.start === 'function') {
+      if (typeof App.start === 'function') {
         const toServer = async (type: OutgoingEvent, ...args: any[]): Promise<void> => {
           handleDataFromApp(appName, type, ...args)
         }
@@ -249,38 +295,49 @@ async function runApp(appName: string): Promise<void> {
         const listeners: ToClientType[] = []
 
         const appInstance: AppInstance = {
-          start: DeskThing.start,
+          start: () =>
+            App.start({
+              toServer,
+              SysEvents: (event: string, listener: (...args: any[]) => void) => {
+                dataListener.on(event, listener) // Add event listener
+                return () => dataListener.removeListener(event, listener)
+              }
+            }),
           toClient: (channel, ...args) => {
-            DeskThing.onMessageFromMain(channel, ...args)
+            App.toClient(channel, ...args)
             listeners.forEach((listener) => listener(channel, ...args))
           },
-          stop: DeskThing.stop
+          stop: () => App.stop()
         }
-
-        runningApps.set(appName, appInstance)
-        const startResponse: Response = await appInstance.start({
-          toServer,
-          SysEvents: (event: string, listener: (...args: any[]) => void) => {
-            dataListener.on(event, listener) // Add event listener
-            return () => dataListener.removeListener(event, listener)
+        try {
+          runningApps.set(appName, appInstance)
+          const startResponse: Response = await appInstance.start({
+            toServer,
+            SysEvents: (event: string, listener: (...args: any[]) => void) => {
+              dataListener.on(event, listener) // Add event listener
+              return () => dataListener.removeListener(event, listener)
+            }
+          })
+          if (startResponse.status == 200) {
+            console.log(
+              `App ${appName} started successfully with response ${startResponse.data.message}`
+            )
+            dataListener.asyncEmit(
+              MESSAGE_TYPES.MESSAGE,
+              `App ${appName} started successfully with response ${startResponse.data.message}`
+            )
+          } else {
+            console.error(
+              `App ${appName} failed to start with response ${startResponse.data.message}`
+            )
+            dataListener.asyncEmit(
+              MESSAGE_TYPES.ERROR,
+              `App ${appName} failed to start with response ${startResponse.data.message}`
+            )
           }
-        })
-        if (startResponse.status == 200) {
-          console.log(
-            `App ${appName} started successfully with response ${startResponse.data.message}`
-          )
-          dataListener.asyncEmit(
-            MESSAGE_TYPES.MESSAGE,
-            `App ${appName} started successfully with response ${startResponse.data.message}`
-          )
-        } else {
-          console.error(
-            `App ${appName} failed to start with response ${startResponse.data.message}`
-          )
-          dataListener.asyncEmit(
-            MESSAGE_TYPES.ERROR,
-            `App ${appName} failed to start with response ${startResponse.data.message}`
-          )
+        } catch (ex) {
+          console.error('Unable to start app', ex)
+          dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `App ${appName} failed to start!` + ex)
         }
         addAppManifest(manifest, appName)
         sendPrefData()
@@ -316,9 +373,9 @@ async function sendMessageToApp(appName: string, type: string, ...args: any[]): 
     } else {
       dataListener.asyncEmit(
         MESSAGE_TYPES.ERROR,
-        `SERVER: App ${appName} not found or does not have onMessageFromMain function.`
+        `SERVER: App ${appName} not found or does not have toClient function.`
       )
-      console.error(`App ${appName} not found or does not have onMessageFromMain function.`)
+      console.error(`App ${appName} not found or does not have toClient function.`)
     }
   } catch (e) {
     console.error(

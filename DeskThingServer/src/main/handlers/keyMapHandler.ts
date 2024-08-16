@@ -593,6 +593,59 @@ const removeKey = (keyId: string): void => {
   saveMappings(mappings)
 }
 
+const addAction = (action: Action): void => {
+  const mappings = loadMappings()
+  if (!Array.isArray(mappings.actions)) throw new Error('Actions array is missing')
+  if (mappings.actions.some((existingActions) => existingActions.id === action.id)) {
+    throw new Error(`Key with id ${action.id} already exists`)
+  }
+  mappings.actions.push(action)
+  saveMappings(mappings)
+}
+
+const removeAction = (actionId: string): void => {
+  const mappings = loadMappings()
+  if (!Array.isArray(mappings.actions)) throw new Error('Actions array is missing')
+  const index = mappings.actions.findIndex((actions) => actions.id === actionId)
+  if (index === -1) throw new Error(`Action with id ${actionId} does not exist`)
+  mappings.actions.splice(index, 1)
+  saveMappings(mappings)
+}
+
+const removeAppData = (appId: string): void => {
+  const mappings = loadMappings()
+
+  // Remove actions associated with the appId
+  mappings.actions = mappings.actions.filter((action) => action.source !== appId)
+
+  // Remove keys associated with the appId
+  mappings.keys = mappings.keys.filter((key) => key.source !== appId)
+
+  // Replace instances of these actions in the default mapping with placeholder data
+  Object.keys(mappings.default).forEach((key) => {
+    const buttonMapping = mappings.default[key]
+    Object.keys(buttonMapping).forEach((flavor) => {
+      const action = buttonMapping[flavor]
+      if (action && action.source === appId) {
+        // Replace with placeholder action (you can customize the placeholder as needed)
+        buttonMapping[flavor] = {
+          flair: '',
+          name: 'Removed',
+          id: 'removed',
+          description: 'App Removed',
+          source: 'server'
+        }
+      }
+    })
+  })
+
+  // Save updated mappings
+  saveMappings(mappings)
+
+  // Send updated mappings to listeners
+  sendMappings()
+}
+
 export {
   loadMappings,
   getMappings,
@@ -602,5 +655,8 @@ export {
   addButton,
   removeButton,
   addKey,
-  removeKey
+  removeKey,
+  addAction,
+  removeAction,
+  removeAppData
 }

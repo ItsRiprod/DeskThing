@@ -1,44 +1,30 @@
 import RPC from 'discord-rpc';
 
 class DiscordHandler {
-  constructor() {
-    this.redirect_url = 'http://localhost:8888/callback/discord';
-    this.scopes = [
-      'rpc', 'messages.read', 'rpc.video.write', 'rpc.voice.read', 
-      'rpc.activities.write', 'rpc.voice.write', 'rpc.screenshare.read', 
-      'rpc.notifications.read', 'rpc.video.read', 'rpc.screenshare.write'
-    ];
-    this.settings = {
-      "auto_switch_view": {
-        "value": 'true',
-        "label": "Auto Focus",
-        "options": [
-          { "value": 'false', "label": "Disabled" },
-          { "value": 'true', "label": "Enabled" }
-        ]
-      },
-      "notifications": {
-        "value": 'true',
-        "label": "Notifications",
-        "options": [
-          { "value": 'false', "label": "Disabled" },
-          { "value": 'true', "label": "Enabled" }
-        ]
-      }
-    };
+  constructor(DeskThing) {
+    this.DeskThing = DeskThing
     this.rpc = new RPC.Client({ transport: 'ipc' });
     this.subscriptions = { voice: {} };
     this.startTimestamp = null;
     this.initializeRpc();
   }
 
-  async registerRPC(clientId) {
+  async registerRPC() {
     try {
       await this.sendLog('Registering RPC and logging in...');
-      RPC.register(clientId);
+      const data = await this.DeskThing.getData();
+      this.client_id = data.client_id;
+      this.client_secret = data.client_secret;
+      this.token = data.token;
+
+      if (!this.client_id || !this.client_secret) {
+        throw new Error('Missing client ID or secret');
+      }
+
+      RPC.register(this.client_id);
       this.rpc = new RPC.Client({ transport: 'ipc' });
       await this.login();
-      await this.unsubscribe()
+      await this.unsubscribe();
       this.subscriptions = { voice: {} };
       await this.initializeRpc();
     } catch (exception) {
@@ -49,18 +35,20 @@ class DiscordHandler {
   async login() {
     try {
       await this.rpc.connect(this.client_id);
+
       if (!this.token) {
         await this.sendLog('Authorizing! Token is null');
         this.token = await this.rpc.authorize({
           scopes: this.scopes,
           clientSecret: this.client_secret,
-          redirectUri: this.redirect_url
+          redirectUri: this.redirect_url,
         });
-        this.sendDataToMainFn('add', { token: this.token });
+        await this.DeskThing.saveData({ token: this.token });
       }
-      this.sendLog('RPC: @login Authenticating! token is'+ this.token)
-      this.rpc.authenticate(this.token)
-      this.sendLog('RPC: @login Auth Successful')
+
+      this.sendLog('RPC: @login Authenticating! token is ' + this.token);
+      this.rpc.authenticate(this.token);
+      this.sendLog('RPC: @login Auth Successful');
     } catch (exception) {
       this.sendError(`Discord RPC Error: ${exception.message}`);
     }
@@ -71,9 +59,11 @@ class DiscordHandler {
     try {
       this.rpc.on('ready', async () => {
         this.sendLog('RPC ready! Setting activity and subscribing to events');
-        this.setActivity();
+        const cancelTask = this.DeskThing.addBackgroundTask(async () => {
+          await this.setActivity();
+          await new Promise(resolve => setTimeout(resolve, 1000))
+        });
         this.setSubscribe();
-        setInterval(() => this.setActivity(), 1000);
       });
 
       this.rpc.on('VOICE_CHANNEL_SELECT', async (args) => {
@@ -133,7 +123,7 @@ class DiscordHandler {
         await this.rpc.subscribe('VOICE_STATE_CREATE', { channel_id: channelId }),
         await this.rpc.subscribe('VOICE_STATE_DELETE', { channel_id: channelId }),
         await this.rpc.subscribe('SPEAKING_START', { channel_id: channelId }),
-        await this.rpc.subscribe('SPEAKING_STOP', { channel_id: channelId })
+        await this.rpc.subscribe('SPEAKING_STOP', { channel_id: channelId }),
       ];
       console.log('Subscribed to voice events for channel', channelId);
     }
@@ -229,11 +219,11 @@ class DiscordHandler {
   }
 
   async sendLog(message) {
-    this.sendDataToMainFn('log', message );
+    this.DeskThing.sendLog(message);
   }
 
   async sendError(message) {
-    this.sendDataToMainFn('error', message );
+    this.DeskThing.sendError(message); 
   }
 
   async sendDataToClients(data, action) {
@@ -242,7 +232,7 @@ class DiscordHandler {
   }
 
   async sendMessageToClients(message) {
-    this.sendDataToMainFn('data', message);
+    this.DeskThing.sendDataToClient(message); 
   }
 
   createMessage(type, action, data) {
