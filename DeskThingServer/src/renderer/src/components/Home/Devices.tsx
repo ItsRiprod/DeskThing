@@ -11,8 +11,10 @@ import {
 import DisplayDeviceData from '../Overlays/DisplayDeviceData'
 import settingsStore from '@renderer/store/settingsStore'
 import ClientSettings from '../ClientSettings'
+import { ClientStore } from '@renderer/store/clientStore'
 
 const Device = (): JSX.Element => {
+  const clientStore = ClientStore.getInstance()
   const [devices, setDevices] = useState<string[]>([])
   const [enabled, setEnabled] = useState(false)
   const [tooltip, setTooltip] = useState<[string, number]>(['', 0])
@@ -35,16 +37,12 @@ const Device = (): JSX.Element => {
     try {
       setError([0, 'Checking for devices...'])
       setLoading(true)
-      const response = await window.electron.runAdbCommand('devices')
+      const response = await clientStore.requestADBDevices()
       if (response) {
         console.log(response)
         setLoading(false)
         // Assuming response is a string with device names separated by newline
         const deviceList = response
-          .split('\n')
-          .filter(
-            (line) => line && !line.startsWith('List of devices attached') && line.trim() !== ''
-          )
         setDevices(deviceList)
       } else {
         console.log('No devices found!')
@@ -118,7 +116,9 @@ const Device = (): JSX.Element => {
     <div className="pt-5 flex flex-col w-full items-center p-5">
       <div className="flex flex-row items-center justify-between w-full"></div>
       {enabled && <DisplayDeviceData setEnabled={setEnabled} device={currentDevice} />}
-      <ClientSettings />
+      <div className="border-b-2 w-full border-slate-700 p-2">
+        <ClientSettings />
+        </div>
       {devices.length > 0 ? (
         <div className="w-full">
           <div className="w-full">

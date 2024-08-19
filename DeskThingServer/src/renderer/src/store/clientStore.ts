@@ -19,7 +19,7 @@ type EVENTS = 'ADBDevices' | 'Connections' | string
 
 type callback = (data: string[]) => void
 
-class ClientStore {
+export class ClientStore {
   private static instance: ClientStore
   private ADBDevices: string[] = []
   //private connectedApps: ServerManifest[] = []

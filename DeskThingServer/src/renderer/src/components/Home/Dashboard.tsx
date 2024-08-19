@@ -40,7 +40,11 @@ const Dashboard = (): JSX.Element => {
     const listener = clientStore.on('ADBDevices', handleADBDevice)
     logStore.on('update', handleLogs)
     const initializeADB = async (): Promise<void> => {
-      setDevices(await clientStore.getADBDevices())
+      let devices = await clientStore.getADBDevices()
+      if (!devices) {
+        devices = await clientStore.requestADBDevices()
+      }
+      setDevices(devices)
       setApps(appStoreInstance.getAppsList().apps)
       setLogs((await logStore.getLogs()).slice(0, 7))
     }
@@ -54,17 +58,16 @@ const Dashboard = (): JSX.Element => {
 
   return (
     <div className="pt-5 grid gap-2 max-w-full overflow-hidden w-full items-center p-5">
-      <div className="flex flex-row items-center justify-between w-full"></div>
       {enabled && <DisplayDeviceData setEnabled={setEnabled} device={currentDevice} />}
       <Widget>
         <div className="p-5">
           <ClientSettings />
         </div>
       </Widget>
-      <div className="flex gap-3 justify-between">
-        <div className="shrink-0">
+      <div className="flex gap-3 overflow-scroll max-w-full justify-between">
+        <div className="">
           <Widget>
-            <div className="px-3 shrink-0">
+            <div className="px-3 ">
               {devices &&
                 devices.map((device) => (
                   <div
@@ -86,10 +89,10 @@ const Dashboard = (): JSX.Element => {
           </Widget>
         </div>
         <Widget>
-          <div className="max-h-64 shrink overflow-hidden flex flex-col-reverse bottom-0">
+          <div className="flex flex-col-reverse bottom-0">
             {logs.length > 0 &&
               logs.map((log, index) => (
-                <div key={index} className={`text-wrap font-geistMono transition-all duration-500`}>
+                <div key={index} className={`text-xs font-geistMono transition-all duration-500`}>
                   <p
                     className={`p-2 ${getBackgroundColor(log.type.toLowerCase())} border-t border-zinc-900`}
                   >
