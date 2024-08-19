@@ -60,7 +60,7 @@ const AppRequestOverlay: FC<AppRequestProps> = ({ request, onClose, requestName 
                   <input
                     className="rounded-sm flex-1 focus:ring-4 focus-visible:ring-cyan-700 focus-visible:text-black text-slate-500"
                     type="text"
-                    value={formData[field] || ''}
+                    value={formData[field] || requestData[field].value || ''}
                     onChange={(e) => handleInputChange(field, e.target.value)}
                   />
                 </div>

@@ -1,148 +1,126 @@
-const UtilityHandler = require('./utility.js')
+import { Console } from 'console'
+import { DeskThing as DK} from 'deskthing-server'
+const DeskThing = DK.getInstance()
+export { DeskThing }
 
-let utility
-const listeners = []
-
-async function start({ sendDataToMain, sysEvents }) {
-  utility = new UtilityHandler(sendDataToMain)
+const main = async () => {
+  let Data = await DeskThing.getData()
+  DeskThing.on('data', (data) => {
+    Data = data
+  })
   
-  sysEvents = sysEvents
-  const removeConfigListener = sysEvents('config', handleConfigEvent)
-  listeners.push(removeConfigListener)
-  
-  // Get the data from main
-  sendDataToMain('get', 'data')
-  sendLog('App started successfully!')
-}
-async function stop() {
-  sendLog('App stopping...')
-
-  listeners.forEach(removeListener => removeListener())
-  listeners.length = 0
-  utility = null
-}
-
-const handleConfigEvent = async () => {
-  sendLog('Handling Config Event')
-  
-  // When the config changes, request the audiosources config item to update the audio sources
-  utility.sendDataToMainFn('get', 'config', 'audiosources')
-}
-
-const sendLog = (message) => {
-  utility.sendDataToMainFn('log', message)
-}
-const sendError = (message) => {
-  utility.sendDataToMainFn('error', message)
-}
-
-async function onMessageFromMain(event, ...args) {
-  sendLog(`Received event ${event} with args `, ...args)
-  try {
-    switch (event) {
-      case 'message':
-        // Disabled for conciseness 
-        break
-
-      case 'data':
-        if (args[0] == null) {
-          const data = {
-            settings: utility.settings
+  if (!Data.settings.playback_location) {
+    DeskThing.addSettings({
+      playback_location: {
+        value: 'local',
+        label: 'Playback Location',
+        options: [
+          {
+            value: 'local',
+            label: 'Local'
           }
-          utility.sendDataToMainFn('set', data)
-        } else {
-          utility.settings = args[0].settings
-          utility.sendDataToMainFn('get', 'config', 'audiosources')
-        }
-        break
-      case 'config':
-        if (args[0] == undefined) {
-          sendLog(' Unknown config data received')
-        } else {
-          if (args[0].audiosources) {
-            const sources = []
-            
-            args[0].audiosources.map(value => {
-              sources.push({
-                label: value,
-                value: value
-              })
-            })
-            
-            utility.settings.playback_location.options = sources
-
-            const data = {
-              settings: utility.settings
-            }
-            utility.sendDataToMainFn('set', data)
-
-          }
-        }
-        break
-      /** GET / POST / PUT */
-      case 'get':
-        handleGet(...args)
-        break
-      case 'set':
-        handleSet(...args)
-        break
-      default:
-        sendError('Unknown message:', event, ...args)
-        break
-    }
-  } catch (error) {
-    
-    sendError('Error in onMessageFromMain:', error)
+        ]
+      },
+      refresh_interval: {
+        value: 30000,
+        label: "Refresh interval",
+        options: [
+          {
+            value: 0,
+            label: "Disabled"
+          },
+          {
+            value: 5000,
+            label: "5 seconds"
+          },
+          {
+            value: 30000,
+            label: "30 seconds"
+          },
+        ]
+      },
+    })
   }
-}
-
-const handleGet = async (...args) => {
-
-  if (args[0] == null) {
-    sendError('No args provided')
-    return
+  
+  const handleGet = async (data) => {
+    console.log('UTILITY LOG: Handling Get Event', data, Data)
+    console.log('Sending data to ', Data.settings.playback_location.value, data.type, data.request, data.payload)
+    DeskThing.sendDataToOtherApp(Data.settings.playback_location.value, {type: data.type, request: data.request, payload: data.payload})
   }
-
-  let response
-  switch (args[0].toString()) {
-    case 'manifest':
-      response = utility.manifest
-      utility.sendDataToMainFn('manifest', response)
-      break
-    default:
-      response = utility.handleCommand('get', ...args)
-      break
+  DeskThing.on('get', handleGet)
+  
+  const handleSet = async (data) => {
+    console.log('UTILITY LOG: Handling Set Event', data, Data)
+    console.log('Sending data to ', Data.settings.playback_location.value, data.request, data.payload)
+    DeskThing.sendDataToOtherApp(Data.settings.playback_location.value, {type: data.type, request: data.request, payload: data.payload})
   }
-  utility.sendDataToMainFn('data', response)
-}
-const handleSet = async (...args) => {
-
-  if (args[0] == null) {
-    sendError('UTILITY: No args provided')
-    return
-  }
-  let response
-  switch (args[0].toString()) {
-    case 'update_setting':
-      if (args[1] != null) {
-        const {setting, value} = args[1];
-        utility.settings[setting].value = value
-
-        sendLog('New Setting', utility.settings)
-        const settings = { settings: utility.settings }
-        utility.sendDataToMainFn('add', settings)
-      } else {
-        sendError('No args provided')
-        response = 'No args provided'
+  DeskThing.on('set', handleSet)
+  
+  const handleConfigEvent = async (data = null) => {
+    console.log('UTILITY LOG: Handling Config Event', data)
+    let configData = data.payload
+    // Check if null
+    if (configData == null) {
+      configData = await DeskThing.getConfig('audiosources')
+      // Check again after getting more 
+      if (configData == null) {
+        DeskThing.sendError('No config data found')
+        return
       }
-      break
-    default:
-      response = utility.handleCommand('set', ...args)
-      break
+    }
+
+    DeskThing.sendLog('Handling Config Event')
+    const sources = []
+    console.log(configData)
+
+    configData.audiosources.map(value => {
+      sources.push({
+        label: value,
+        value: value
+      })
+      })
+
+    Data.settings.playback_location.options = sources
+    
+    DeskThing.addSetting(Data.settings.playback_location)
+
+  }
+  DeskThing.onSystem('config', handleConfigEvent)
+  handleConfigEvent()
+  
+
+
+  let refreshFunction = null
+  const updateRefreshLoop = () => {
+    // Clear the last loop
+    if (refreshFunction) {
+      console.log('Clearing refresh loop')
+      refreshFunction()
+    }
+    console.log('Starting refresh loop')
+    refreshFunction = DeskThing.addBackgroundTaskLoop(async () => {
+      if (Data.settings?.refresh_interval && Data.settings.refresh_interval.value != 0) {
+        DeskThing.sendLog('Refreshing data!')
+        DeskThing.sendDataToOtherApp(Data.settings.playback_location.value, {type: 'get', request: 'song', payload: ''})
+        setTimeout(refreshFunction, Data.settings?.refresh_interval.value)
+        return false
+      } else {
+        DeskThing.sendLog('Refresh interval disabled')
+        return true
+      }
+    })
+  }
+  const handleSettings = async (newSettings) => {
+    if (Data.settings?.refresh_interval && newSettings.refresh_interval && Data.settings.refresh_interval.value != newSettings.refresh_interval.value) {
+      console.log('New Timeout Interval')
+      updateRefreshLoop()
+    }
+
   }
 
-  if (response != null) {
-    utility.sendDataToMainFn('data', response)
-  }
+  DeskThing.on('settings', handleSettings)
+  // Start the loop
+  updateRefreshLoop()
 }
-module.exports = { start, onMessageFromMain, stop }
+
+DeskThing.on('start', main)

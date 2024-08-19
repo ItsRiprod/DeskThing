@@ -1,56 +1,15 @@
-const { exec } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { exec } from 'child_process';
 
 class MediaWin {
-  constructor(sendDataToMainFn) {
-    this.sendDataToMainFn = sendDataToMainFn
-    this.settings = {
-      "refresh_interval": {
-        "value": 30000,
-        "label": "Refresh interval",
-        "options": [
-          {
-            "value": 0,
-            "label": "Disabled"
-          },
-          {
-            "value": 5000,
-            "label": "5 seconds"
-          },
-          {
-            "value": 30000,
-            "label": "30 seconds"
-          },
-        ]
-      },
-      "change_source": {
-        "value": 'true',
-        "label": "Switch Output on Select",
-        "options": [
-          {
-            "value": "true",
-            "label": "Switch"
-          },
-          {
-            "value": "false",
-            "label": "Dont Switch"
-          }
-        ]
-      },
-    };
-
-    const manifestPath = path.join(__dirname, 'manifest.json');
-    this.manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
-
-    this.sendLog('Manifest loaded:', this.manifest);
+  constructor(DeskThing) {
+    this.DeskThing = DeskThing
   }
 
   async sendLog(message) {
-    this.sendDataToMainFn('log', message)
+    this.DeskThing.sendLog(message)
   }
   async sendError(message) {
-    this.sendDataToMainFn('error', message)
+    this.DeskThing.sendError(message)
   }
 
   async returnSongData(id = null, retryCount = 0) {
@@ -99,7 +58,6 @@ class MediaWin {
 
         try {
           const result = JSON.parse(stdout);
-          this.sendLog(`${command} with response` + stdout);
           resolve(result);
         } catch (parseError) {
           this.sendError('Error parsing JSON:' + parseError);
@@ -185,4 +143,4 @@ class MediaWin {
   }
 }
 
-module.exports = MediaWin
+export default MediaWin

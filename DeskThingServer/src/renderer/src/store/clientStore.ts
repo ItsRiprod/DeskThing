@@ -2,8 +2,6 @@
  * TODO: Finish setting up clientStore to save client details and data
  */
 
-import { EventEmitter } from '../utility/eventEmitter'
-
 export interface ServerManifest {
   name: string
   id: string
@@ -17,17 +15,17 @@ export interface ServerManifest {
   ip: string
 }
 
-interface ClientStoreEvents {
-  connection: ServerManifest
-  disconnect: ServerManifest
-}
+type EVENTS = 'ADBDevices' | 'Connections' | string
 
-class ClientStore extends EventEmitter<ClientStoreEvents> {
+type callback = (data: string[]) => void
+
+class ClientStore {
   private static instance: ClientStore
+  private ADBDevices: string[] = []
   //private connectedApps: ServerManifest[] = []
-
+  listeners: { [key in EVENTS]: callback[] } = {}
   constructor() {
-    super()
+    this.requestADBDevices()
     //this.appsList = {
     //  apps: []
     //}
@@ -37,6 +35,52 @@ class ClientStore extends EventEmitter<ClientStoreEvents> {
       ClientStore.instance = new ClientStore()
     }
     return ClientStore.instance
+  }
+
+  requestADBDevices = async (): Promise<string[]> => {
+    const response = await window.electron.runAdbCommand('devices')
+    if (response) {
+      console.log(response)
+      // Assuming response is a string with device names separated by newline
+      const deviceList = response
+        .split('\n')
+        .filter(
+          (line) => line && !line.startsWith('List of devices attached') && line.trim() !== ''
+        )
+        .map((line) => line.replace('device', '').trim())
+      this.ADBDevices = deviceList
+      this.notifyListeners('ADBDevices', deviceList)
+      return deviceList
+    } else {
+      console.log('No devices found')
+      return []
+    }
+  }
+
+  getADBDevices = async (): Promise<string[]> => {
+    if (this.ADBDevices) {
+      return this.ADBDevices
+    } else {
+      return this.requestADBDevices()
+    }
+  }
+
+  on(event: EVENTS, callback: callback): () => void {
+    if (this.listeners[event]) {
+      this.listeners[event].push(callback)
+    } else {
+      this.listeners[event] = [callback]
+    }
+
+    return () => {
+      this.listeners[event] = this.listeners[event].filter((cb) => cb !== callback)
+    }
+  }
+
+  notifyListeners(event: EVENTS, data: string[]): void {
+    if (this.listeners[event]) {
+      this.listeners[event].forEach((callback) => callback(data))
+    }
   }
 
   /*

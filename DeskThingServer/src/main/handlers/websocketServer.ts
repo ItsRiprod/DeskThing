@@ -24,6 +24,15 @@ let settings
 let httpServer: HttpServer
 let server: WebSocketServer
 
+let numConnections = 0
+
+export interface socketData {
+  app: string
+  type: string
+  request?: string
+  payload?: Array<string> | string | object | number | { [key: string]: string | Array<string> }
+}
+
 const updateServerSettings = (newSettings): void => {
   if (settings.devicePort !== newSettings.devicePort || settings.address !== newSettings.address) {
     settings = newSettings
@@ -96,15 +105,6 @@ const restartServer = (): void => {
   }
 }
 
-let numConnections = 0
-
-export interface socketData {
-  app: string
-  type: string
-  request?: string
-  data?: Array<string> | string | object | number | { [key: string]: string | Array<string> }
-}
-
 const sendMessageToClients = async (message: socketData): Promise<void> => {
   if (server) {
     server.clients.forEach((client) => {
@@ -119,7 +119,7 @@ const sendMessageToClients = async (message: socketData): Promise<void> => {
 
 const sendResponse = async (socket, message): Promise<void> => {
   try {
-    sendData(socket, { app: 'client', type: 'response', data: message })
+    sendData(socket, { app: 'client', type: 'response', payload: message })
   } catch (error) {
     console.error('WSOCKET: Error sending message:', error)
   }
@@ -128,10 +128,14 @@ const sendData = async (socket, socketData: socketData): Promise<void> => {
   try {
     if (socket != null) {
       socket.send(
-        JSON.stringify({ app: socketData.app, type: socketData.type, data: socketData.data })
+        JSON.stringify({ app: socketData.app, type: socketData.type, payload: socketData.payload })
       )
     } else {
-      sendMessageToClients({ app: socketData.app, type: socketData.type, data: socketData.data })
+      sendMessageToClients({
+        app: socketData.app,
+        type: socketData.type,
+        payload: socketData.payload
+      })
     }
   } catch (error) {
     console.error('WSOCKET: Error sending message:', error)
@@ -140,7 +144,7 @@ const sendData = async (socket, socketData: socketData): Promise<void> => {
 
 const sendError = async (socket, error): Promise<void> => {
   try {
-    sendData(socket, { app: 'client', type: 'error', data: error })
+    sendData(socket, { app: 'client', type: 'error', payload: error })
   } catch (error) {
     console.error('WSOCKET: Error sending message:', error)
   }
@@ -169,8 +173,8 @@ const sendPrefData = async (socket = null): Promise<void> => {
       console.error('appData or appData.apps is undefined or null', appData)
     }
 
-    sendData(socket, { app: 'client', type: 'config', data: appData.apps })
-    sendData(socket, { app: 'client', type: 'settings', data: settings })
+    sendData(socket, { app: 'client', type: 'config', payload: appData.apps })
+    sendData(socket, { app: 'client', type: 'settings', payload: settings })
     console.log('WSOCKET: Preferences sent!')
   } catch (error) {
     console.error('WSOCKET: Error getting config data:', error)
@@ -182,11 +186,11 @@ const sendMappings = async (socket: WebSocket | null = null): Promise<void> => {
   try {
     const mappings = getDefaultMappings()
     if (socket) {
-      sendData(socket, { app: 'client', type: 'button_mappings', data: mappings })
+      sendData(socket, { app: 'client', type: 'button_mappings', payload: mappings })
       console.log('WSOCKET: Button mappings sent!')
       dataListener.asyncEmit(MESSAGE_TYPES.MESSAGE, `WEBSOCKET: Client has been sent button maps!`)
     } else {
-      sendMessageToClients({ app: 'client', type: 'button_mappings', data: mappings })
+      sendMessageToClients({ app: 'client', type: 'button_mappings', payload: mappings })
       dataListener.asyncEmit(MESSAGE_TYPES.MESSAGE, `WEBSOCKET: Client has been sent button maps!`)
     }
   } catch (error) {
@@ -203,7 +207,7 @@ const sendTime = async (): Promise<void> => {
   const formattedHours = hours % 12 || 12
   const formattedMinutes = minutes < 10 ? '0' + minutes : minutes
   const time = `${formattedHours}:${formattedMinutes} ${ampm}`
-  sendMessageToClients({ app: 'client', type: 'time', data: time })
+  sendMessageToClients({ app: 'client', type: 'time', payload: time })
   console.log(time)
 }
 const getDelayToNextMinute = async (): Promise<number> => {
@@ -275,7 +279,7 @@ const setupServer = async (): Promise<void> => {
       }
     }
   })
-/*
+  /*
   expressApp.use('/:appName/icon/', (req, res, next) => {
     const appName = req.params.appName
     const iconPath = join(getAppFilePath(appName), 'icon') // Construct the full file path
@@ -323,31 +327,30 @@ const setupServer = async (): Promise<void> => {
           `WEBSOCKET: Client has sent a message ${message}`
         )
         if (parsedMessage.app && parsedMessage.app !== 'server') {
-          sendMessageToApp(
-            parsedMessage.app.toLowerCase(),
-            parsedMessage.type,
-            parsedMessage.request,
-            parsedMessage.data
-          )
+          sendMessageToApp(parsedMessage.app.toLowerCase(), {
+            type: parsedMessage.type,
+            request: parsedMessage.request,
+            payload: parsedMessage.payload
+          })
         } else if (parsedMessage.app === 'server') {
           try {
             switch (parsedMessage.type) {
               case 'preferences':
-                addData(parsedMessage.request, parsedMessage.data)
+                addData(parsedMessage.request, parsedMessage.payload)
                 break
               case 'set':
                 switch (parsedMessage.request) {
                   case 'button_maps':
-                    if (parsedMessage.data) {
-                      const mappings: ButtonMapping = parsedMessage.data
+                    if (parsedMessage.payload) {
+                      const mappings: ButtonMapping = parsedMessage.payload
                       setDefaultMappings(mappings)
                       console.log('WSOCKET: Button mappings updated and saved.')
                       sendMappings(socket)
                     }
                     break
                   case 'update_pref_index':
-                    if (parsedMessage.data) {
-                      const { app: appName, index: newIndex } = parsedMessage.data
+                    if (parsedMessage.payload) {
+                      const { app: appName, index: newIndex } = parsedMessage.payload
                       const appData = await getAppByName(appName)
 
                       if (
@@ -390,10 +393,10 @@ const setupServer = async (): Promise<void> => {
                 sendTime()
                 break
               case 'message':
-                dataListener.asyncEmit(MESSAGE_TYPES.MESSAGE, `WSOCKET ${parsedMessage.data}`)
+                dataListener.asyncEmit(MESSAGE_TYPES.MESSAGE, `WSOCKET ${parsedMessage.payload}`)
                 break
               case 'device':
-                HandleDeviceData(parsedMessage.data)
+                HandleDeviceData(parsedMessage.payload)
                 break
               default:
                 break

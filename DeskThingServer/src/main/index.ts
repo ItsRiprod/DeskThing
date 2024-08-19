@@ -57,8 +57,8 @@ const IPC_CHANNELS = {
 
 function createMainWindow(): BrowserWindow {
   const window = new BrowserWindow({
-    width: 950,
-    height: 670,
+    width: 1035,
+    height: 730,
     minWidth: 500,
     minHeight: 400,
     icon: icon,

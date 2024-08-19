@@ -28,12 +28,32 @@ import {
 } from './configHandler'
 import { getData, setData, addData, purgeData } from './dataHandler'
 import { sendIpcAuthMessage, openAuthWindow } from '../index'
-import { sendMessageToClients, sendPrefData } from './websocketServer'
+import { sendMessageToClients, sendPrefData, socketData } from './websocketServer'
 import dataListener, { MESSAGE_TYPES } from '../utils/events'
-import { Action, addAction, addKey, removeKey, removeAction, Key } from './keyMapHandler'
+import {
+  Action,
+  addAction,
+  addKey,
+  removeKey,
+  removeAction,
+  Key,
+  removeAppData
+} from './keyMapHandler'
 
-type OutgoingEvent = 'message' | 'get' | 'set' | 'add' | 'open' | 'data' | 'toApp' | 'error' | 'log'
-type toServer = (event: OutgoingEvent, data: any) => void
+type OutgoingEvent =
+  | 'message'
+  | 'get'
+  | 'set'
+  | 'add'
+  | 'open'
+  | 'data'
+  | 'toApp'
+  | 'error'
+  | 'log'
+  | 'action'
+  | 'button'
+  | string
+type toServer = (appData: IncomingData) => void
 type SysEvents = (event: string, listener: (...args: any[]) => void) => void
 type startData = {
   toServer: toServer
@@ -44,10 +64,11 @@ interface AppInstance {
   start: ({ toServer, SysEvents }: startData) => Response
   toClient: ToClientType
   stop: () => Response
+  purge: () => Response
 }
 
 // Type that setups up the expected format for data sent to and from main
-type ToClientType = (channel: string, ...args: any[]) => void
+type ToClientType = (data: IncomingData) => void
 
 export interface AuthScopes {
   [key: string]: {
@@ -64,6 +85,12 @@ type Response = {
   request: string[]
 }
 
+type IncomingData = {
+  type: OutgoingEvent
+  request?: string
+  payload?: any | AuthScopes | socketData
+}
+
 // A map of all running apps
 const runningApps = new Map<string, AppInstance>()
 
@@ -75,72 +102,80 @@ let devAppPath: string
  * @param {string} type - The type of data or action requested.
  * @param {...any[]} args - Additional arguments related to the data or action.
  */
-async function handleDataFromApp(app: string, type: string, ...args: any[]): Promise<void> {
-  console.log(`SERVER: Received data from main process on channel ${app}`, args)
-  switch (type) {
+async function handleDataFromApp(app: string, appData: IncomingData): Promise<void> {
+  console.log(`SERVER: App Data: ${app}`, appData)
+  switch (appData.type) {
     case 'message':
-      const [message] = args
+      const message = appData.payload
       console.log(`SERVER: Message from ${app}: ${message}`)
       dataListener.asyncEmit(MESSAGE_TYPES.MESSAGE, message)
       break
     case 'get':
-      switch (args[0]) {
+      switch (appData.request) {
         case 'data':
           const value = getData(app)
-          sendMessageToApp(app, 'data', value)
+          sendMessageToApp(app, { type: 'data', payload: value })
           break
         case 'config':
-          if (args[1]) {
-            const value = getConfig(args[1])
-            sendMessageToApp(app, 'config', value)
+          if (appData.payload) {
+            const value = getConfig(appData.payload)
+            sendMessageToApp(app, { type: 'config', payload: value })
           } else {
-            sendMessageToApp(app, 'error', 'The type of config to retrieve was undefined!')
+            sendMessageToApp(app, {
+              type: 'error',
+              payload: 'The type of config to retrieve was undefined!'
+            })
             console.error(`SERVER: The type of config from ${app} was undefined`)
           }
           break
         case 'input':
-          requestUserInput(app, args[1] as AuthScopes)
+          console.log('Input requested')
+          requestUserInput(app, appData.payload as AuthScopes)
           break
         default:
           break
       }
       break
     case 'set':
+      setData(app, appData.payload)
+      break
     case 'add':
-      const [data] = args
-      if (type === 'set') {
-        setData(app, data)
-      } else {
-        addData(app, data)
-      }
+      console.log('SERVER: Adding data ', appData.payload)
+      addData(app, appData.payload)
       break
     case 'open':
-      const [auth_url] = args
-      openAuthWindow(auth_url)
+      openAuthWindow(appData.payload)
       break
     case 'data':
-      if (app && args[0]) {
-        sendMessageToClients({ app: args[0].app || app, type: args[0].type, data: args[0].data })
+      if (app && appData.payload) {
+        sendMessageToClients({
+          app: appData.payload.app || app,
+          type: appData.payload.type || '',
+          payload: appData.payload.payload || '',
+          request: appData.payload.request || ''
+        })
       }
       break
     case 'toApp':
-      if (args[1] && args[0]) {
-        console.log(`SERVER: Sending data to app ${args[0]}`, ...args.slice(1))
-        sendMessageToApp(args[0], args[1], ...args.slice(2))
+      if (appData.payload && appData.request) {
+        console.log(`SERVER: Sending data to app ${appData.request}`, appData.payload)
+        sendMessageToApp(appData.request, appData.payload)
+      } else {
+        console.log('SERVER: App data malformed', appData)
       }
       break
     case 'error':
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: ${args[0]}`)
+      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: ${appData.payload}`)
       break
     case 'log':
-      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `${app.toUpperCase()}: ${args[0]}`)
+      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `${app.toUpperCase()}: ${appData.payload}`)
       break
     case 'button':
-      if (args[0] && args[0] == 'add') {
+      if (appData.request == 'add') {
         try {
-          if (args[1]) {
+          if (appData.payload) {
             const Key: Key = {
-              id: args[1].id || 'unsetid',
+              id: appData.payload.id || 'unsetid',
               source: app
             }
             addKey(Key)
@@ -152,19 +187,19 @@ async function handleDataFromApp(app: string, type: string, ...args: any[]): Pro
         } catch (Error) {
           dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: ${Error}`)
         }
-      } else if (args[0] && args[0] == 'remove') {
-        removeKey(args[1].id)
+      } else if (appData.request == 'remove') {
+        removeKey(appData.payload.id)
       }
       break
     case 'action':
-      if (args[0] && args[0] == 'add') {
+      if (appData.request == 'add') {
         try {
-          if (args[1]) {
+          if (appData.payload) {
             const Action: Action = {
-              name: args[1].name || 'Default Name',
-              id: args[1].id || 'unsetid',
-              description: args[1].description || 'No description provided',
-              flair: args[1].flair || '',
+              name: appData.payload.name || 'Default Name',
+              id: appData.payload.id || 'unsetid',
+              description: appData.payload.description || 'No description provided',
+              flair: appData.payload.flair || '',
               source: app
             }
             addAction(Action)
@@ -176,12 +211,12 @@ async function handleDataFromApp(app: string, type: string, ...args: any[]): Pro
         } catch (Error) {
           dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: ${Error}`)
         }
-      } else if (args[0] && args[0] == 'remove') {
-        removeAction(args[1].id)
+      } else if (appData.request == 'remove') {
+        removeAction(appData.payload.id)
       }
       break
     default:
-      console.log(`Unknown data type from ${app}: ${type}`)
+      console.log(`Unknown data type from ${app}: ${appData.type}`)
       break
   }
 }
@@ -197,7 +232,7 @@ async function requestUserInput(appName: string, scope: AuthScopes): Promise<voi
   sendIpcAuthMessage('request-user-data', appName, scope)
 
   ipcMain.once(`user-data-response-${appName}`, async (_event, formData) => {
-    sendMessageToApp(appName, 'input', formData)
+    sendMessageToApp(appName, { type: 'input', payload: formData })
   })
 }
 
@@ -288,8 +323,8 @@ async function runApp(appName: string): Promise<void> {
 
       dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `Running app ${appName}!`)
       if (typeof App.start === 'function') {
-        const toServer = async (type: OutgoingEvent, ...args: any[]): Promise<void> => {
-          handleDataFromApp(appName, type, ...args)
+        const toServer = async (data: IncomingData): Promise<void> => {
+          handleDataFromApp(appName, data)
         }
 
         const listeners: ToClientType[] = []
@@ -303,11 +338,12 @@ async function runApp(appName: string): Promise<void> {
                 return () => dataListener.removeListener(event, listener)
               }
             }),
-          toClient: (channel, ...args) => {
-            App.toClient(channel, ...args)
-            listeners.forEach((listener) => listener(channel, ...args))
+          toClient: (data: IncomingData) => {
+            App.toClient(data)
+            listeners.forEach((listener) => listener(data))
           },
-          stop: () => App.stop()
+          stop: () => App.stop(),
+          purge: () => App.purge()
         }
         try {
           runningApps.set(appName, appInstance)
@@ -365,11 +401,11 @@ async function runApp(appName: string): Promise<void> {
  * @param {string} type - The type of message being sent.
  * @param {...any[]} args - Additional arguments for the message.
  */
-async function sendMessageToApp(appName: string, type: string, ...args: any[]): Promise<void> {
+async function sendMessageToApp(appName: string, data: IncomingData): Promise<void> {
   try {
     const app = runningApps.get(appName)
     if (app && typeof app.toClient === 'function') {
-      ;(app.toClient as ToClientType)(type, ...args)
+      ;(app.toClient as ToClientType)(data)
     } else {
       dataListener.asyncEmit(
         MESSAGE_TYPES.ERROR,
@@ -379,8 +415,8 @@ async function sendMessageToApp(appName: string, type: string, ...args: any[]): 
     }
   } catch (e) {
     console.error(
-      `Error attempting to send message to app ${appName} with ${type} and data: `,
-      args,
+      `Error attempting to send message to app ${appName} with ${data.type} and data: `,
+      data,
       e
     )
   }
@@ -412,7 +448,7 @@ async function stopApp(appName: string): Promise<void> {
 
     const appInstance = runningApps.get(appName)
     if (appInstance && typeof appInstance.stop === 'function') {
-      appInstance.stop()
+      await appInstance.stop()
     }
     runningApps.delete(appName)
     console.log('stopped ', appName)
@@ -436,6 +472,43 @@ async function disableApp(appName: string): Promise<void> {
 
     if (!appConfig) {
       console.log('App not found in config, add it')
+      // App not found in config, add it
+      const newAppConfig = { name: appName, enabled: false, running: false, prefIndex: 5 } // 5 is the default index
+      await setAppData(newAppConfig)
+    } else if (appConfig.enabled) {
+      // App found but not enabled, enable it
+      appConfig.enabled = false
+      // Save updated config file (if enabled changed)
+      await setAppData(appConfig)
+      console.log('Disabled ', appName)
+    } else {
+      console.log(`App ${appName} is already disabled`)
+    }
+
+    sendPrefData()
+  } catch (error) {
+    console.error('Error disabling app:', error)
+    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `SERVER: Error disabling app ${error}.`)
+  }
+}
+/**
+ * Stops an app from running and then purges it via the purge() request
+ *
+ * @param {string} appName - The name of the app to disable.
+ */
+async function purgeApp(appName: string): Promise<void> {
+  try {
+    const appInstance = runningApps.get(appName)
+    if (appInstance && typeof appInstance.purge === 'function') {
+      await appInstance.purge()
+    }
+    runningApps.delete(appName)
+    console.log('stopped ', appName)
+    // Load existing apps config
+    const appConfig = await getAppByName(appName)
+
+    if (!appConfig) {
+      console.log('App not found in config, adding it')
       // App not found in config, add it
       const newAppConfig = { name: appName, enabled: false, running: false, prefIndex: 5 } // 5 is the default index
       await setAppData(newAppConfig)
@@ -734,7 +807,6 @@ async function loadAndRunEnabledApps(): Promise<void> {
           `SERVER: Automatically running app ${appConfig.name}`
         )
         await runApp(appConfig.name)
-        await sendMessageToApp(appConfig.name, 'get', 'manifest')
       }
     }
   } catch (error) {
@@ -799,7 +871,7 @@ async function purgeAppData(appName: string): Promise<void> {
     dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `SERVER: Purging App ${appName}`)
     // Ensure that the app is not running
     if (runningApps.has(appName)) {
-      await disableApp(appName) // Ensure the app has stopped
+      await purgeApp(appName) // Ensure the app has stopped
     }
 
     // Purge App Data
@@ -807,6 +879,9 @@ async function purgeAppData(appName: string): Promise<void> {
 
     // Purge App Config
     await purgeAppConfig(appName)
+
+    // Remove buttons / keys associated with app
+    await removeAppData(appName)
 
     // Get path to file
     const appDirectory = getAppFilePath(appName)

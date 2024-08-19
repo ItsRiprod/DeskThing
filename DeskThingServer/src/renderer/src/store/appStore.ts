@@ -43,6 +43,7 @@ class AppStore extends EventEmitter<appStoreEvents> {
       apps: []
     }
     window.electron.ipcRenderer.on('app-data', this.handleAppData.bind(this))
+    window.electron.ipcRenderer.send('get-apps')
   }
 
   static getInstance(): AppStore {

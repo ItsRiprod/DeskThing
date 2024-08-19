@@ -15,5 +15,12 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, '../builds'),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        assetFileNames: '[name]-[hash][extname]',
+        chunkFileNames: '[name]-[hash].js',
+        entryFileNames: '[name]-[hash].js',
+      },
+    },
   },
 })

@@ -1,49 +1,40 @@
-export type userData = {
-    id: string
-    username: string
-    channel_id?: string
-    nick?: string
-    avatar?: string
-    speaking?: boolean
-    muted?: boolean
-    state?: string 
-    profile?: string 
-    [key: string]: string | boolean | undefined | number
-}
+import { DeskThing } from "deskthing-client"
+import { SocketData } from "deskthing-client/dist/types"
 
-type discordData = {
-    action: ACTION_TYPES
-    user: userData
-    [key: string]: string | boolean | userData | undefined
-}
-
-export enum ACTION_TYPES {
-    SPEAKING = 'speaking', // Whether or not the user is speaking
-    CONNECT = 'connect', // When a user connects
-    DISCONNECT = 'disconnect', // When a user disconnects
-    UPDATE = 'update', // When something is updated
-    STATUS = 'status', // When you leave/join
+export interface userData {
+  id: string
+  username?: string | undefined
+  nick?: string | undefined
+  speaking?: boolean | undefined
+  volume?: number | undefined
+  avatar?: string | undefined
+  mute?: boolean | undefined
+  deaf?: boolean | undefined
+  profile?: string | undefined
 }
 
 type EventUpdateCallbacks = (data: userData[]) => void
 
-  class ViewStore {
-    private static instance: ViewStore;
-    //private listeners: (() => void)[] = []
+  class DiscordStore {
+    private DeskThing: DeskThing
+    private static instance: DiscordStore;
+    private listeners: (() => void)[] = []
+    
     private appUpdateCallbacks: EventUpdateCallbacks[] = [];
     private callData: userData[] = []
     //private notificationStack: userData[] = [] // Will be used later for notifications
 
 
     private constructor() {
-      //this.listeners.push(socket.on('client',this.handleClientData.bind(this)))
+      this.DeskThing = DeskThing.getInstance()
+      this.listeners.push(this.DeskThing.on('discord', this.handleDiscordData.bind(this)))
     }
   
-    static getInstance(): ViewStore {
-      if (!ViewStore.instance) {
-        ViewStore.instance = new ViewStore();
+    static getInstance(): DiscordStore {
+      if (!DiscordStore.instance) {
+        DiscordStore.instance = new DiscordStore();
       }
-      return ViewStore.instance;
+      return DiscordStore.instance;
     }
 
     // Notify all registered callbacks of the song data update
@@ -57,57 +48,58 @@ type EventUpdateCallbacks = (data: userData[]) => void
       };
     }
     
-    async handleDiscordData(msg: discordData): Promise<void> {
-        console.log(msg)
-        const user = msg.user;
-        const index = this.callData.findIndex(u => u.id === user.id);
-        
-        switch (msg.action) {
-          case ACTION_TYPES.SPEAKING:
-            if (index !== -1) {
-              this.callData[index].speaking = user.speaking;
-            } else {
-              this.callData.push(user);
-            }
-            break;
-          case ACTION_TYPES.CONNECT:
-            if (index !== -1) {
-              this.callData[index] = user;
-            } else {
-              this.callData.push(user);
-            }
-            break;
-          case ACTION_TYPES.DISCONNECT:
-            if (index !== -1) {
-              this.callData.splice(index, 1);
-            }
-            break;
-          case ACTION_TYPES.UPDATE:
-              if (index !== -1) {
-                  this.callData[index] = { ...this.callData[index], ...user };
-                } else {
-                    console.log('Pushing Data')
-                    this.callData.push(user);
-              }
+    async handleDiscordData(data: SocketData): Promise<void> {
+        if (data.type == 'data') {
+          switch (data.request) {
+            case 'join':
+              this.callData = []
+              this.requestCallData()
               break;
-          case ACTION_TYPES.STATUS:
-            // Disconnecting from call
-            this.callData = []
+            case 'leave':
+              this.callData = []
+              break;
+          case 'disconnect':
+            this.requestCallData()
+            break;
+          case 'update':
+            if (data.payload)
+              this.updateCallData(data.payload[0])
+            break;
+          case 'voice':
+            if (data.payload)
+              this.updateCallData(data.payload[0])
+            break;
+          case 'call':
+            this.callData = data.payload as userData[];
+            break;
+          default:
             break;
         }
-        
-        this.notifyDataUpdates();
       }
 
-    async updateCallData(newData: userData) {
-        this.callData = [newData,...this.callData]
-        this.notifyDataUpdates()
+      this.notifyDataUpdates();
     }
 
-      getCallData(): userData[] {
-        return this.callData;
+    async updateCallData(newData: userData) {
+      this.callData = this.callData.map(user => 
+        user.id === newData.id ? { ...user, ...newData } : user
+      );
+  
+      // If the user ID is not present in the array, add the new user
+      if (!this.callData.some(user => user.id === newData.id) && newData.id) {
+        this.callData = [newData, ...this.callData];
       }
+  
+      this.notifyDataUpdates();
+    }
 
+    getCallData(): userData[] {
+      return this.callData;
+    }
+
+    requestCallData(): void {
+      this.DeskThing.sendMessageToParent({type: 'get', request: 'call'})
+    }
 
     cleanup() {
         //this.listeners.forEach(removeListener => removeListener())
@@ -115,4 +107,4 @@ type EventUpdateCallbacks = (data: userData[]) => void
       }
   }
 
-  export default ViewStore.getInstance();
+  export default DiscordStore.getInstance();
