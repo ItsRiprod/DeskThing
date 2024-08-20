@@ -423,7 +423,7 @@ const setupServer = async (): Promise<void> => {
 }
 
 dataListener.on(MESSAGE_TYPES.SETTINGS, (newSettings) => {
-  updateServerSettings(newSettings)
+  updateServerSettings(newSettings.payload)
 })
 
 // Setting up the server for the first time

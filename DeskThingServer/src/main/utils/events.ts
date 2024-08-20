@@ -1,5 +1,6 @@
 import EventEmitter from 'events'
 import Logger from './logger'
+import { socketData } from '../handlers/websocketServer'
 
 export const MESSAGE_TYPES = {
   ERROR: 'error',
@@ -17,16 +18,16 @@ class Events extends EventEmitter {
     super()
   }
 
-  async asyncEmit(event: string, ...args: any[]): Promise<void> {
+  async asyncEmit(event: string, data: string | socketData | string | unknown): Promise<void> {
     return new Promise((resolve) => {
       setImmediate(() => {
-        this.emit(event, ...args)
+        this.emit(event, data)
         if (event == MESSAGE_TYPES.ERROR) {
-          Logger.error(`Event emitted: ${event} with arguments: ${JSON.stringify(args)}`)
+          Logger.error(`Event emitted: ${event} with arguments: ${JSON.stringify(data)}`)
         } else if (event == MESSAGE_TYPES.LOGGING) {
-          Logger.info(`Event emitted: ${event} with arguments: ${JSON.stringify(args)}`)
+          Logger.info(`Event emitted: ${event} with arguments: ${JSON.stringify(data)}`)
         } else {
-          Logger.debug(`Event emitted: ${event} with arguments: ${JSON.stringify(args)}`)
+          Logger.debug(`Event emitted: ${event} with arguments: ${JSON.stringify(data)}`)
         }
         resolve()
       })

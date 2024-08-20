@@ -20,7 +20,11 @@ class SettingsStore {
     this.loadSettings()
       .then((settings) => {
         this.settings = settings
-        dataListener.asyncEmit(MESSAGE_TYPES.SETTINGS, this.settings)
+        dataListener.asyncEmit(MESSAGE_TYPES.SETTINGS, {
+          type: 'settings',
+          payload: this.settings,
+          app: 'server'
+        })
       })
       .catch((err) => {
         console.error('Error initializing settings:', err)
@@ -44,7 +48,11 @@ class SettingsStore {
 
   public updateSetting(key: string, value: any): void {
     this.settings[key] = value
-    dataListener.asyncEmit(MESSAGE_TYPES.SETTINGS, this.settings)
+    dataListener.asyncEmit(MESSAGE_TYPES.SETTINGS, {
+      type: 'settings',
+      payload: this.settings,
+      app: 'server'
+    })
     this.saveSettings()
   }
 
@@ -69,7 +77,11 @@ class SettingsStore {
     try {
       this.settings = settings
       await writeToFile(settings, this.settingsFilePath)
-      dataListener.asyncEmit(MESSAGE_TYPES.SETTINGS, settings)
+      dataListener.asyncEmit(MESSAGE_TYPES.SETTINGS, {
+        type: 'settings',
+        payload: settings,
+        app: 'server'
+      })
       dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'SETTINGS: Updated settings!')
     } catch (err) {
       console.error('Error saving settings:', err)

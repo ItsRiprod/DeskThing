@@ -135,7 +135,12 @@ const addConfig = (configName: string, config: string | Array<string>, data = re
   } else {
     data.config[configName] = config
   }
-  dataListener.asyncEmit(MESSAGE_TYPES.CONFIG)
+  console.log('THIS IS THE FIRST TIME THIS IS BEING EMITTED - TRY AND TRACK IT')
+  dataListener.asyncEmit(MESSAGE_TYPES.CONFIG, {
+    app: 'server',
+    type: 'config',
+    payload: data.config
+  })
   writeData(data)
 }
 const getConfig = (
@@ -191,7 +196,11 @@ const purgeAppConfig = async (appName: string): Promise<void> => {
   }
 
   writeData(data)
-  dataListener.asyncEmit(MESSAGE_TYPES.CONFIG)
+  dataListener.asyncEmit(MESSAGE_TYPES.CONFIG, {
+    app: 'server',
+    type: 'config',
+    payload: data.config
+  })
 }
 
 export {

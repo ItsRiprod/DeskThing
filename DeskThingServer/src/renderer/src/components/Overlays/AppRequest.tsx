@@ -1,4 +1,4 @@
-import { FC, useState } from 'react'
+import { FC, useEffect, useState } from 'react'
 import RequestStore, { Request, AuthScopes } from '../../store/requestStore'
 import { IconX } from '../icons'
 
@@ -18,6 +18,18 @@ const AppRequestOverlay: FC<AppRequestProps> = ({ request, onClose, requestName 
       [field]: value
     })
   }
+  useEffect(() => {
+    const initialFormData: { [key: string]: string } = {}
+
+    Object.keys(requestData).forEach((field) => {
+      if (formData[field] == null) {
+        initialFormData[field] = requestData[field].value || ''
+      }
+    })
+
+    setFormData(initialFormData)
+  }, [requestData])
+
   const handleSubmit = (): void => {
     if (requestId) {
       RequestStore.resolveRequest(requestId, formData)
@@ -60,7 +72,7 @@ const AppRequestOverlay: FC<AppRequestProps> = ({ request, onClose, requestName 
                   <input
                     className="rounded-sm flex-1 focus:ring-4 focus-visible:ring-cyan-700 focus-visible:text-black text-slate-500"
                     type="text"
-                    value={formData[field] || requestData[field].value || ''}
+                    value={formData[field] || ''}
                     onChange={(e) => handleInputChange(field, e.target.value)}
                   />
                 </div>

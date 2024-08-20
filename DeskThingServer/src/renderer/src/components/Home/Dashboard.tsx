@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import DisplayDeviceData from '../Overlays/DisplayDeviceData'
-import settingsStore from '@renderer/store/settingsStore'
 import ClientSettings from '../ClientSettings'
 import Widget from '../Widget'
 import clientStore from '@renderer/store/clientStore'
@@ -13,16 +12,12 @@ const Dashboard = (): JSX.Element => {
   const [enabled, setEnabled] = useState(false)
   const [currentDevice, setCurrentDevice] = useState('')
   const [logs, setLogs] = useState<Log[]>([])
-  const [port, setPort] = useState<number>(-1)
   const [apps, setApps] = useState<App[]>([])
 
   useEffect(() => {
     const handleADBDevice = (devices: string[]): void => {
       setDevices(devices)
     }
-    settingsStore.getSettings().then((settings) => {
-      setPort(settings.devicePort)
-    })
     const handleLogs = (newLog: Log[]): void => {
       const nextLog = newLog.pop()
       if (nextLog) {
@@ -64,11 +59,11 @@ const Dashboard = (): JSX.Element => {
           <ClientSettings />
         </div>
       </Widget>
-      <div className="flex gap-3 overflow-scroll max-w-full justify-between">
+      <div className="flex gap-3 overflow-y-scroll max-w-full justify-between">
         <div className="">
           <Widget>
             <div className="px-3 ">
-              {devices &&
+              {devices.length > 0 ? (
                 devices.map((device) => (
                   <div
                     key={device}
@@ -84,7 +79,12 @@ const Dashboard = (): JSX.Element => {
                       <IconCarThing text={device} iconSize={124} />
                     </button>
                   </div>
-                ))}
+                ))
+              ) : (
+                <div className="p-2">
+                  <p className="font-geistMono text-center">No Device Detected</p>
+                </div>
+              )}
             </div>
           </Widget>
         </div>

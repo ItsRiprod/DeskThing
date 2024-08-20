@@ -31,7 +31,7 @@ function handleCallback(req: http.IncomingMessage, res: http.ServerResponse): vo
 
   const code = parsedUrl.query.code as string
   console.log('AUTH CODE: ', code)
-  sendMessageToApp(appName, 'callback-data', { code })
+  sendMessageToApp(appName, { type: 'callback-data', payload: code })
 
   res.writeHead(200, { 'Content-Type': 'text/html' })
   res.end(successView)
@@ -76,8 +76,8 @@ const initializeServer = async (): Promise<void> => {
 }
 
 dataListener.on(MESSAGE_TYPES.SETTINGS, (newSettings) => {
-  if (newSettings.callbackPort != callBackPort) {
-    callBackPort = newSettings.callbackPort
+  if (newSettings.payload.callbackPort != callBackPort) {
+    callBackPort = newSettings.payload.callbackPort
     startServer()
   } else {
     dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'CALLBACK: Not starting - port is not changed')

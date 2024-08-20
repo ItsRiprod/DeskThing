@@ -2,7 +2,6 @@ import { useState } from 'react'
 import Devices from './Devices'
 import Dashboard from './Dashboard'
 import Tabs, { View } from '../Tabs'
-import Loading from '../Loading'
 
 const Index = (): JSX.Element => {
   const views: View[] = [

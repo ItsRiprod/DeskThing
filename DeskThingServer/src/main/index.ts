@@ -315,7 +315,6 @@ async function setupIpcHandlers(): Promise<void> {
   })
   ipcMain.on(IPC_CHANNELS.HANDLE_ZIP, async (event, zipFilePath: string) => {
     event.reply('logging', { status: true, data: 'Handling zipped app', final: false })
-    console.log('SERVER: handling zip file event', event)
 
     const returnData = await handleZip(zipFilePath, event) // Extract to user data folder
 
@@ -349,13 +348,10 @@ async function setupIpcHandlers(): Promise<void> {
       dataListener.asyncEmit(MESSAGE_TYPES.ERROR, error)
     }
   })
-  ipcMain.on(
-    IPC_CHANNELS.USER_DATA_RESPONSE,
-    (event, requestId: string, type: string, ...args: any[]) => {
-      console.log(event)
-      sendMessageToApp(requestId, type, args)
-    }
-  )
+  ipcMain.on(IPC_CHANNELS.USER_DATA_RESPONSE, (event, requestId: string, data: any) => {
+    console.log(event)
+    sendMessageToApp(requestId, data)
+  })
 
   ipcMain.handle(
     IPC_CHANNELS.SET_CLIENT_MANIFEST,

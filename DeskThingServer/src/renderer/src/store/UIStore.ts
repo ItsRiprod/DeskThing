@@ -6,6 +6,8 @@
  *
  */
 
+/*
+
 type StateCallback = (state: App[] | string | ViewMode) => void
 
 export class UIStore {
@@ -54,7 +56,7 @@ export class UIStore {
 
   /**
    *  Getter and Setters
-   */
+   *
 
   private async updateAvailableViews(apps: App[]): Promise<void> {
     const filteredApps = apps.filter((app) => app.manifest?.isWebApp || app.manifest?.isLocalApp)
@@ -113,7 +115,7 @@ export class UIStore {
 
   /**
    * Manage View Navigation
-   */
+   *
 
   async shiftViewLeft(): Promise<void> {
     const currentIndex = this.views.findIndex((app) => app.name === this.currentView)
@@ -186,7 +188,7 @@ export class UIStore {
 
   /**
    * Peek Timeout Management
-   */
+   *
 
   private startPeekTimeout(): void {
     this.clearPeekTimeout() // Clear any existing timeout before starting a new one
@@ -206,3 +208,4 @@ export class UIStore {
 }
 
 export default UIStore.getInstance()
+*/

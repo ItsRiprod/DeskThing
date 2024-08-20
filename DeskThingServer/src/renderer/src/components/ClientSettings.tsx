@@ -7,7 +7,6 @@ import ClientSettingsOverlay from './Overlays/ClientSettingsOverlay'
 const ClientSettings: React.FC = () => {
   const [clientManifest, setClientManifest] = useState<ServerManifest | null>(null)
   const [port, setPort] = useState<number>(-1)
-  const [tooltip, setTooltip] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
   const [details, setDetails] = useState<boolean>(false)
 
