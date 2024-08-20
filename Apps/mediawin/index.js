@@ -53,6 +53,13 @@ const handleGet = async (data) => {
       response = { app: 'client', type: 'song', payload: response }
       DeskThing.sendDataToClient(response)
       break
+    case 'refresh':
+      response = await mediawin.checkForRefresh()
+      if (response) {
+        response = { app: 'client', type: 'song', payload: response }
+        DeskThing.sendDataToClient(response)
+      }
+      break
     default:
       DeskThing.sendError(`Unknown request: ${data.request}`)
       break

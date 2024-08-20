@@ -2,9 +2,10 @@
   "name": "spotify",
   "version": "0.8.0",
   "description": "The spotify app for the DeskThing desktop application",
-  "main": "index.js",
+  "main": "index.ts",
+  "type":"module",
   "scripts": {
-    "build": "esbuild index.js --bundle --platform=node --outfile=builds/index.js && node buildHelper.js",
+    "build": "esbuild index.ts --bundle --platform=node --outfile=builds/index.js && node buildHelper.cjs",
     "test": "echo \"Error: no test specified\" && exit 1",
     "postversion": "node -e \"const fs = require('fs'); const manifest = require('./public/manifest.json'); const pkg = require('./package.json'); if (manifest.version !== pkg.version) { manifest.version = 'v' + pkg.version; fs.writeFileSync('./public/manifest.json', JSON.stringify(manifest, null, 2), 'utf8'); console.log('Updated manifest version to ' + pkg.version); }\" && npm install"
   },

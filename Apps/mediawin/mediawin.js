@@ -3,6 +3,7 @@ import { exec } from 'child_process';
 class MediaWin {
   constructor(DeskThing) {
     this.DeskThing = DeskThing
+    this.currentId = null
   }
 
   async sendLog(message) {
@@ -22,6 +23,7 @@ class MediaWin {
 
         // Check if result.id is different from the passed id
         if (result.id !== id) {
+          this.currentId = result.id;
           const musicData = result;
           musicData.thumbnail = "data:image/png;base64," + musicData.thumbnail;
           musicData.volume = await this.getVolumeInfo();
@@ -44,6 +46,16 @@ class MediaWin {
     } catch (error) {
       this.sendError(`Error executing next command: ${error}`);
       return false;
+    }
+  }
+
+  async checkForRefresh() {
+    const result = await this.executeCommand('')
+    if (result === false) {
+      this.sendError('Music Data returned false! There was an error');
+      return false;
+    } else if (result.id !== this.currentId) {
+      return this.returnSongData()
     }
   }
 
