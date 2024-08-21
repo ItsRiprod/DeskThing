@@ -60,7 +60,6 @@ type method = 'get' | 'put' | 'post' | 'delete'
 class SpotifyHandler {
   public Data: savedData = {}
   private DeskThing: DK
-  private tempRefreshToken: string | null = null
   private BASE_URL = 'https://api.spotify.com/v1/me/player'
   private currentSongId: string = ""
 
@@ -154,15 +153,11 @@ class SpotifyHandler {
       return
     }
 
-    if (!this.Data.refresh_token && !this.tempRefreshToken) {
+    if (!this.Data.refresh_token) {
       this.DeskThing.sendError("Refresh Token is undefined! Authenticating")
       await this.login()
       return
-    } else if (!this.tempRefreshToken && this.Data.refresh_token) {
-      this.tempRefreshToken = this.Data.refresh_token
     }
-
-    if (!this.tempRefreshToken) return
 
     const authOptions = {
       url: 'https://accounts.spotify.com/api/token',
@@ -173,8 +168,7 @@ class SpotifyHandler {
           'Basic ' + Buffer.from(this.Data.client_id + ':' + this.Data.client_secret).toString('base64')
       },
       data: new URLSearchParams({
-        refresh_token: this.tempRefreshToken,
-        client_id: this.Data.client_id,
+        refresh_token: this.Data.refresh_token,
         grant_type: 'refresh_token'
       }).toString()
     }
@@ -184,10 +178,20 @@ class SpotifyHandler {
       this.DeskThing.sendLog('Access token refreshed!')
       const access_token = response.data.access_token
       this.DeskThing.saveData({access_token: access_token})
-      this.tempRefreshToken = response.data.refresh_token
+      if (response.data.refresh_token) {
+        this.DeskThing.saveData({refresh_token: response.data.refresh_token})
+      } else {
+        console.log('No access token returned!')
+      }
       return
     } catch (error) {
-      this.DeskThing.sendError('Error getting access token!')
+      this.DeskThing.sendError('Error getting access token!' + error)
+      if (!isAxiosError(error)) return
+      
+      if (error.response && error.response.status === 400) {
+        this.DeskThing.sendLog('Refresh Tokens returned code 400 - Logging in')
+        await this.login()
+      }
       throw error
     }
   }
@@ -224,7 +228,11 @@ class SpotifyHandler {
       this.DeskThing.sendLog('Access token refreshed!')
       const access_token = response.data.access_token
       this.DeskThing.saveData({access_token: access_token})
-      this.tempRefreshToken = response.data.refresh_token
+      if (response.data.refresh_token) {
+        this.DeskThing.saveData({refresh_token: response.data.refresh_token})
+      } else {
+        console.log('No access token returned!')
+      }
       return
     } catch (error) {
       this.DeskThing.sendError('Error getting access token:' + error)
@@ -292,7 +300,8 @@ class SpotifyHandler {
    * @returns {Promise<Object|boolean>} The response data.
    */
   async makeRequest(method: method, url: string, data: any = null, attempt: number = 0): Promise<any> {
-    if (this.DeskThing.stopRequested) return
+    if (this.DeskThing.stopRequested) return // kill if the app has been asked to stop
+
     this.DeskThing.sendLog(`Handling request to url ${url}`)
     try {
       if (!this.Data.client_id || !this.Data.client_secret) {
@@ -327,9 +336,11 @@ class SpotifyHandler {
         }
         await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait five seconds
         if (attempt < 8) {
-          this.DeskThing.sendLog('Retrying! Attempt #' + attempt + method + url + data);
+          this.DeskThing.sendLog('Retrying! Attempt #' + attempt + ' ' + method + url + data);
           const retryResponse = await this.makeRequest(method, url, data, attempt + 1);
           return retryResponse !== undefined ? retryResponse : true;
+        } else {
+          this.DeskThing.sendLog('Failed to make request after 8 attempts. Cancelling request.');
         }
       }
     } catch (error) {
@@ -460,6 +471,7 @@ class SpotifyHandler {
   }
 
   async checkForRefresh() {
+    console.log('Checking for refresh...')
     const currentPlayback = await this.getCurrentPlayback()
 
     if (currentPlayback.currently_playing_type === 'track') {
@@ -483,7 +495,6 @@ class SpotifyHandler {
         device: currentPlayback?.device.name,
         device_id: currentPlayback?.device.id,
         id: currentPlayback?.item.id,
-        thumbnail: null,
       }
 
       this.DeskThing.sendDataToClient({ app: 'client', type: 'song', payload: songData })
@@ -497,7 +508,7 @@ class SpotifyHandler {
     try {
       const startTime = Date.now()
       const timeout = 5000
-      let delay = 100
+      let delay = 500
       let currentPlayback
       let new_id
 
@@ -509,8 +520,7 @@ class SpotifyHandler {
         }
         if (currentPlayback.currently_playing_type === 'track') {
           new_id = currentPlayback.item.id
-          if (delay !== 100) {
-
+          if (delay !== 500) {
             this.DeskThing.sendLog(`Song has not changed. Trying again...`)
           }
             
@@ -522,6 +532,7 @@ class SpotifyHandler {
         } else {
           this.DeskThing.sendError('No song is playing or detected!')
           new_id = null
+          delay = 9999
         }
       } while (new_id === id && Date.now() - startTime < timeout && delay < 1000)
 
@@ -529,7 +540,7 @@ class SpotifyHandler {
         throw new Error('Timeout Reached!')
       }
 
-      let songData: SongData
+      let songData: Partial<SongData>
 
       if (currentPlayback.currently_playing_type === 'track') {
         songData = {
@@ -552,7 +563,6 @@ class SpotifyHandler {
           device: currentPlayback?.device.name,
           device_id: currentPlayback?.device.id,
           id: currentPlayback?.item.id,
-          thumbnail: null,
         }
 
         
@@ -573,9 +583,10 @@ class SpotifyHandler {
 
         this.DeskThing.sendDataToClient({ app: 'client', type: 'song', payload: songData })
         const imageUrl = currentPlayback.item.album.images[0].url
-        songData.thumbnail = await this.DeskThing.encodeImageFromUrl(imageUrl)
+        const encodedImage = await this.DeskThing.encodeImageFromUrl(imageUrl, 'jpeg')
 
-        this.DeskThing.sendDataToClient({ app: 'client', type: 'song', payload: songData })
+        // Only update the thumbnail
+        this.DeskThing.sendDataToClient({ app: 'client', type: 'song', payload: { thumbnail: encodedImage}  })
       } else if (currentPlayback.currently_playing_type === 'show') {
         songData = {
           album: currentPlayback?.item.show.name,
@@ -617,9 +628,10 @@ class SpotifyHandler {
 
         this.DeskThing.sendDataToClient({ app: 'client', type: 'song', payload: songData })
         const imageUrl = currentPlayback.item.album.images[0].url
-        songData.thumbnail = await this.DeskThing.encodeImageFromUrl(imageUrl)
+        const encodedImage = await this.DeskThing.encodeImageFromUrl(imageUrl, 'jpeg')
 
-        this.DeskThing.sendDataToClient({ app: 'client', type: 'song', payload: songData })
+        // Only update the thumbnail
+        this.DeskThing.sendDataToClient({ app: 'client', type: 'song', payload: { thumbnail: encodedImage}  })
       } else {
         this.DeskThing.sendError('Song/Podcast type not supported!')
       }

@@ -119,6 +119,7 @@ const main = async () => {
           DeskThing.sendLog('Refreshing data! ' + Data.settings.refresh_interval.value)
           DeskThing.sendDataToOtherApp(Data.settings.playback_location.value, {type: 'get', request: 'refresh', payload: ''})
           await sleep(Data.settings.refresh_interval.value);
+          console.log('Finished sleeping. Sending another request!')
           return false
         } catch (ex) {
           DeskThing.sendError('Error refreshing data' + ex)

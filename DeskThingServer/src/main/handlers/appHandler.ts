@@ -293,7 +293,39 @@ async function runApp(appName: string): Promise<void> {
         if (manifest.requires) {
           const requiredApps = manifest.requires || []
           for (const requiredApp of requiredApps) {
-            if (!runningApps.has(requiredApp)) {
+            if (!runningApps.has(requiredApp) && requiredApp.length > 2) {
+              console.error(
+                `Unable to run ${appName}! This app requires '${requiredApp}' to be enabled and running.`
+              )
+              dataListener.asyncEmit(
+                MESSAGE_TYPES.ERROR,
+                `Unable to run ${appName}! This app requires '${requiredApp}' to be enabled and running.`
+              )
+              const appConfig = getAppByName(appName)
+              if (appConfig) {
+                appConfig.running = false
+                setAppData(appConfig)
+              }
+              return
+            }
+          }
+        }
+      } else if (manifestResponse.status == 500) {
+        const manifestPath = getAppFilePath(appName, 'manifest.json')
+        if (!fs.existsSync(manifestPath)) {
+          console.error(`Manifest for app ${appName} not found at ${manifestPath}`)
+          return
+        }
+        manifest = await getManifest(getAppFilePath(appName))
+        if (manifest == undefined) {
+          console.error(`Manifest for app ${appName} is invalid!`)
+          return
+        }
+        // Check if all required apps are running
+        if (manifest?.requires) {
+          const requiredApps = manifest.requires || []
+          for (const requiredApp of requiredApps) {
+            if (!runningApps.has(requiredApp) && requiredApp.length > 2) {
               console.error(
                 `Unable to run ${appName}! This app requires '${requiredApp}' to be enabled and running.`
               )

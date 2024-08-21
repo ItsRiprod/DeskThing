@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { IconX, IconRefresh, IconPlay } from '../icons'
+import { IconX, IconRefresh, IconSave } from '../icons'
 import SettingsStoreInstance, { Settings } from '@renderer/store/settingsStore'
 
 interface SettingsOverlayProps {
@@ -100,33 +100,40 @@ const SettingsOverlay = ({ setEnabled }: SettingsOverlayProps): JSX.Element => {
 
           <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex justify-between items-center">
             <p>Auto Start:</p>
-            <input
-              disabled={true}
-              type="checkbox"
-              checked={settings.autoStart}
-              onChange={(e) => handleSettingChange('autoStart', e.target.checked)}
-              className="form-checkbox h-5 w-5 text-blue-600"
-            />
+            <div className="group flex items-center">
+              <p className="group-hover:block hidden">Not Implemented</p>
+              <input
+                disabled={true}
+                type="checkbox"
+                checked={settings.autoStart}
+                onChange={(e) => handleSettingChange('autoStart', e.target.checked)}
+                className="form-checkbox h-5 w-5 text-blue-600"
+              />
+            </div>
           </div>
 
           <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex justify-between items-center">
             <p>Minimize App:</p>
-            <input
-              disabled={true}
-              type="checkbox"
-              checked={settings.minimizeApp}
-              onChange={(e) => handleSettingChange('minimizeApp', e.target.checked)}
-              className="form-checkbox h-5 w-5 text-blue-600"
-            />
+            <div className="group flex items-center">
+              <p className="group-hover:block hidden">Not Implemented</p>
+              <input
+                disabled={true}
+                type="checkbox"
+                checked={settings.minimizeApp}
+                onChange={(e) => handleSettingChange('minimizeApp', e.target.checked)}
+                className="form-checkbox h-5 w-5 text-blue-600"
+              />
+            </div>
           </div>
         </div>
 
         <div className="bg-slate-700 p-5 m-1 flex justify-between rounded-lg drop-shadow-lg">
           <button
-            className="flex border-red-600 border hover:bg-red-500 p-3 rounded-lg drop-shadow-lg"
+            className="flex group border-red-600 border hover:bg-red-500 p-3 rounded-lg drop-shadow-lg"
             onClick={() => setEnabled(false)}
           >
             <IconX iconSize={24} />
+            <p className="hidden group-hover:block">Exit</p>
           </button>
           <div className="flex gap-4">
             <button
@@ -141,7 +148,7 @@ const SettingsOverlay = ({ setEnabled }: SettingsOverlayProps): JSX.Element => {
               onClick={handleSave}
             >
               <p className="group-hover:block hidden">Save</p>
-              <IconPlay iconSize={24} />
+              <IconSave iconSize={24} />
             </button>
           </div>
         </div>

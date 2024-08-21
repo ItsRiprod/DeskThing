@@ -118,27 +118,30 @@ const Sidebar: React.FC<SidebarProps> = ({ setCurrentView, currentView }) => {
           </li>
         </ul>
       </div>
-      <div className="flex sm:flex-col md:flex-row justify-start gap-3 w-full items-center text-zinc-500">
+      <div className="flex sm:flex-col md:flex-row sm:items-start sm:justify-between justify-start gap-3 w-full items-end text-zinc-500">
         <button
-          className=" sm:border p-2 rounded-xl border-zinc-500 hover:bg-zinc-900 hover:text-red-500"
+          className="group sm:flex-col items-center flex-row-reverse flex sm:border p-2 rounded-xl border-zinc-500 hover:bg-zinc-900 hover:text-red-500"
           onClick={() => window.electron.ipcRenderer.send('shutdown')}
         >
+          <p className="group-hover:block hidden">Close</p>
           <IconPower iconSize={24} />
         </button>
         <a
           href="https://buymeacoffee.com/riprod"
           target="_blank"
           rel="noreferrer"
-          className="fill-fuchsia-600 hover:bg-fuchsia-600 hover:text-black hover:border-fuchsia-600 text-fuchsia-600 sm:border p-2 rounded-xl border-zinc-500"
+          className="group sm:flex-col items-center flex-row-reverse flex fill-fuchsia-600 hover:bg-fuchsia-600 hover:text-black hover:border-fuchsia-600 text-fuchsia-600 sm:border p-2 rounded-xl border-zinc-500"
           onMouseEnter={reward}
         >
           <span id="rewardId" />
+          <p className="group-hover:block hidden">Support!</p>
           <IconCoffee iconSize={24} strokeWidth={2} />
         </a>
         <button
-          className=" sm:border p-2 rounded-xl border-zinc-500 hover:bg-zinc-900 hover:text-white"
+          className="group sm:flex-col items-center flex-row-reverse flex sm:border p-2 rounded-xl border-zinc-500 hover:bg-zinc-900 hover:text-white"
           onClick={() => setEnabled(true)}
         >
+          <p className="group-hover:block hidden">Settings</p>
           <IconLogoGear iconSize={24} />
         </button>
       </div>

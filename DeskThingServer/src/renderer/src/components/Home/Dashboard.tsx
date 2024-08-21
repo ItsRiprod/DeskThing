@@ -107,11 +107,18 @@ const Dashboard = (): JSX.Element => {
         <div className="p-5">
           {apps &&
             apps.map((app, index) => (
-              <div key={index} className="flex flex-row items-center justify-between w-full">
+              <div
+                key={index}
+                className="flex border-b p-2 border-slate-700 flex-row items-center justify-between w-full"
+              >
                 <div className="flex flex-row items-center justify-between w-full">
                   <div>
                     <p>{app.manifest ? app.manifest.label : app.name}</p>
                     <p className="text-zinc-400 text-xs font-geistMono">{app.manifest?.version}</p>
+                  </div>
+                  <div>
+                    {app.enabled && <p className="text-zinc-400 text-xs font-geistMono">Enabled</p>}
+                    {app.running && <p className="text-zinc-400 text-xs font-geistMono">Running</p>}
                   </div>
                 </div>
               </div>

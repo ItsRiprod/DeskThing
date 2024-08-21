@@ -30,6 +30,7 @@ const ClientSettingsOverlay: React.FC<ClientSettingsOverlayProps> = ({
     const updatedManifest = { ...manifest, ip, port }
     await window.electron.setClientManifest(updatedManifest)
     refresh()
+    onClose()
   }
 
   return (

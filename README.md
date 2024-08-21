@@ -51,9 +51,9 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
    - [X] Show currently listening (Album, Artist, Song name, album art)
    - [X] Control the current media (Skip, pause, play, rewind, shuffle, repeat)
    - *no setup instructions yet. Drag-n-drop the .zip from /releases/apps/ into the GUI*
-- ### ~~Discord Integration 💬~~ *to be migrated*
+- ### Discord Integration 💬
    - [X] Show current call status (Participants, who's talking, their mute status)
-   - [ ] ~~Control Discord (Mute/Unmute  Deafen//Undeafen Disconnect)~~
+   - [X] Control Discord (Mute/Unmute  Deafen/Undeafen Disconnect)
    - [ ] ~~Control Individual User Volume~~
    - [ ] ~~See message preview~~
    - Discord app [installation instructions here](/DeskThing/server/apps/discord#discord-app-install)
@@ -180,3 +180,20 @@ Process:
 > Questions? DM me on discord @riprod
 
 ⚠️ *While bricking the Car Thing is extremely difficult - I don't think anyone has done it yet - the possibility is still there. I do not take any responsibility for damages done to the device. Try to use common sense* ⚠️
+
+
+# Developing Apps
+Interested in developing an app? Well here's a great place to start! Make sure you join the DeskThing discord server so I, or anyone else, can help you out!
+
+Start with
+```sh
+npm create deskthing@latest
+```
+And follow the prompts to set up the app environment. From there, you can reference:
+https://github.com/ItsRiprod/deskthing-template
+https://github.com/ItsRiprod/deskthing-app-client
+https://github.com/ItsRiprod/deskthing-app-server
+
+And any of the apps included under /Apps/ in this github repo
+
+Good luck!
