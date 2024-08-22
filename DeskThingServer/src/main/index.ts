@@ -194,11 +194,13 @@ async function initializeTray(): Promise<void> {
     {
       label: 'Open Client',
       click: async (): Promise<void> => {
-        const settings = await settingsStore.default.getSettings()
         if (clientWindow && !clientWindow.isDestroyed()) {
           clientWindow.focus()
         } else {
-          clientWindow = createClientWindow(settings.devicePort)
+          const data = await settingsStore.default.getSettings()
+          if (data.payload) {
+            clientWindow = createClientWindow(data.payload.devicePort)
+          }
         }
       }
     },
@@ -230,11 +232,13 @@ async function initializeDoc(): Promise<void> {
     {
       label: 'Open Client',
       click: async (): Promise<void> => {
-        const settings = await settingsStore.default.getSettings()
         if (clientWindow && !clientWindow.isDestroyed()) {
           clientWindow.focus()
         } else {
-          clientWindow = createClientWindow(settings.devicePort)
+          const data = await settingsStore.default.getSettings()
+          if (data.payload) {
+            clientWindow = createClientWindow(data.payload.devicePort)
+          }
         }
       }
     },

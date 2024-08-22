@@ -13,6 +13,10 @@ export interface Settings {
   [key: string]: any // For any additional settings
 }
 
+export interface SettingsData extends socketData {
+  payload: Settings
+}
+
 class SettingsStore {
   private settings: Settings
   private settingsFilePath: string = 'settings.json'
@@ -43,7 +47,7 @@ class SettingsStore {
     return SettingsStore.instance
   }
 
-  public async getSettings(): Promise<socketData> {
+  public async getSettings(): Promise<SettingsData> {
     if (this.settings) {
       return { type: 'settings', app: 'server', payload: this.settings }
     } else {
@@ -62,7 +66,7 @@ class SettingsStore {
     this.saveSettings()
   }
 
-  public async loadSettings(): Promise<socketData> {
+  public async loadSettings(): Promise<SettingsData> {
     try {
       const data = await readFromFile<Settings>(this.settingsFilePath)
       dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'SETTINGS: Loaded settings!')
