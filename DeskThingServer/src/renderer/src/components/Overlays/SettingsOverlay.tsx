@@ -14,6 +14,7 @@ const SettingsOverlay = ({ setEnabled }: SettingsOverlayProps): JSX.Element => {
     const fetchSettings = async (): Promise<void> => {
       const currentSettings = await SettingsStoreInstance.getSettings()
       setSettings(currentSettings)
+      console.log('Got ', currentSettings)
     }
     fetchSettings()
   }, [])
@@ -30,13 +31,19 @@ const SettingsOverlay = ({ setEnabled }: SettingsOverlayProps): JSX.Element => {
 
   const handleSave = async (): Promise<void> => {
     if (settings) {
-      await SettingsStoreInstance.saveSettings(settings)
+      const socketData = {
+        type: 'settings',
+        payload: settings,
+        app: 'server'
+      }
+      await SettingsStoreInstance.saveSettings(socketData)
+      await SettingsStoreInstance.requestSettings()
       setEnabled(false)
     }
   }
 
   const handleReset = async (): Promise<void> => {
-    const defaultSettings = await window.electron.getSettings()
+    const defaultSettings = await SettingsStoreInstance.requestSettings()
     setSettings(defaultSettings)
   }
 
@@ -88,20 +95,21 @@ const SettingsOverlay = ({ setEnabled }: SettingsOverlayProps): JSX.Element => {
             />
           </div>
           <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex flex-col gap-3">
-            {settings.localIp.map((ip, index) => (
-              <div key={index} className="flex justify-between items-center">
-                <p>Local IP #{index}:</p>
-                <div className="h-10 bg-slate-500 flex items-center rounded px-2 text-gray-300">
-                  <p>{ip}</p>
+            {settings?.localIp &&
+              settings.localIp.map((ip, index) => (
+                <div key={index} className="flex justify-between items-center">
+                  <p>Local IP #{index + 1}:</p>
+                  <div className="h-10 bg-slate-500 flex items-center rounded px-2 text-gray-300">
+                    <p>{ip}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
 
           <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex justify-between items-center">
             <p>Auto Start:</p>
             <div className="group flex items-center">
-              <p className="group-hover:block hidden">Not Implemented</p>
+              <p className="group-hover:block hidden">Pending Implementation</p>
               <input
                 disabled={true}
                 type="checkbox"
@@ -115,7 +123,7 @@ const SettingsOverlay = ({ setEnabled }: SettingsOverlayProps): JSX.Element => {
           <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex justify-between items-center">
             <p>Minimize App:</p>
             <div className="group flex items-center">
-              <p className="group-hover:block hidden">Not Implemented</p>
+              <p className="group-hover:block hidden">Pending Implementation</p>
               <input
                 disabled={true}
                 type="checkbox"

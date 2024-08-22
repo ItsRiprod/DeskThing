@@ -39,7 +39,7 @@ export type FileStructure = {
 }
 
 const defaultData: FileStructure = {
-  version: '0.8.1',
+  version: '0.8.0',
   default: {
     Pad1: {
       [EventFlavor.Down]: {
@@ -298,8 +298,8 @@ const defaultData: FileStructure = {
     Enter: {
       [EventFlavor.Down]: {
         name: 'PlayPause',
-        id: 'playPause',
-        description: 'PlayPause',
+        id: 'play',
+        description: 'play',
         flair: '',
         source: 'server'
       },
@@ -312,18 +312,18 @@ const defaultData: FileStructure = {
       }
     },
     Escape: {
-      [EventFlavor.Down]: {
-        name: 'Repeat',
-        id: 'repeat',
-        description: 'Repeat',
+      [EventFlavor.Short]: {
         flair: '',
+        name: 'Show AppsList',
+        id: 'show',
+        description: 'Shows the apps list',
         source: 'server'
       },
       [EventFlavor.Long]: {
-        name: 'Repeat',
         flair: '',
-        id: 'repeat',
-        description: 'Repeat',
+        name: 'Hide AppsList',
+        id: 'hide',
+        description: 'Hides the apps list',
         source: 'server'
       }
     },
@@ -361,7 +361,7 @@ const defaultData: FileStructure = {
   actions: [
     { name: 'Shuffle', id: 'shuffle', description: 'Shuffle', source: 'server', flair: '' },
     { name: 'Rewind', id: 'rewind', description: 'Rewind', source: 'server', flair: '' },
-    { name: 'PlayPause', id: 'playPause', description: 'PlayPause', source: 'server', flair: '' },
+    { name: 'PlayPause', id: 'play', description: 'PlayPause', source: 'server', flair: '' },
     { name: 'Skip', id: 'skip', description: 'Skip', source: 'server', flair: '' },
     { name: 'Repeat', id: 'repeat', description: 'Repeat', source: 'server', flair: '' },
     { name: 'Pref', id: 'pref', description: 'Change the View', source: 'server', flair: '' },

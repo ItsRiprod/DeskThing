@@ -1,18 +1,18 @@
 import { useState } from 'react'
-import Devices from './Devices'
+import Walkthrough from './Walkthrough'
 import Dashboard from './Dashboard'
 import Tabs, { View } from '../Tabs'
 
 const Index = (): JSX.Element => {
   const views: View[] = [
     { id: 'dashboard', display: 'Dashboard' },
-    { id: 'devices', display: 'Devices' }
+    { id: 'walkthrough', display: 'Walkthrough' }
   ]
   const [currentView, setCurrentView] = useState<View>(views[0])
   const renderView = (): JSX.Element | undefined => {
     switch (currentView.id) {
-      case 'devices':
-        return <Devices />
+      case 'walkthrough':
+        return <Walkthrough />
       case 'dashboard':
         return <Dashboard />
       default:

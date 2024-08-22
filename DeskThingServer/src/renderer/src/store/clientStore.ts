@@ -15,26 +15,39 @@ export interface ServerManifest {
   ip: string
 }
 
-type EVENTS = 'ADBDevices' | 'Connections' | string
+type EVENTS = 'ADBDevices' | 'Connections' | 'numConnections' | string
 
 type callback = (data: string[]) => void
+type connectionCallback = (data: number) => void
 
 export class ClientStore {
   private static instance: ClientStore
   private ADBDevices: string[] = []
+  private numConnections: number = 0
   //private connectedApps: ServerManifest[] = []
   listeners: { [key in EVENTS]: callback[] } = {}
+  private connectionListeners: connectionCallback[] = []
   constructor() {
+    window.electron.ipcRenderer.on('connections', (event, data) =>
+      this.handleConnection(event, data.data)
+    )
     this.requestADBDevices()
+    this.getConnections()
     //this.appsList = {
     //  apps: []
     //}
   }
+
   static getInstance(): ClientStore {
     if (!ClientStore.instance) {
       ClientStore.instance = new ClientStore()
     }
     return ClientStore.instance
+  }
+
+  handleConnection = (_event, num: number): void => {
+    this.numConnections = num
+    this.connectionListeners.forEach((callback) => callback(this.numConnections))
   }
 
   requestADBDevices = async (): Promise<string[]> => {
@@ -56,12 +69,28 @@ export class ClientStore {
       return []
     }
   }
+  requestConnections = (): void => window.electron.ipcRenderer.send('get-connections')
+
+  getConnections = (): number => {
+    return this.numConnections
+  }
 
   getADBDevices = async (): Promise<string[]> => {
     if (this.ADBDevices) {
       return this.ADBDevices
     } else {
       return this.requestADBDevices()
+    }
+  }
+  onConnection(callback: connectionCallback): () => void {
+    if (this.connectionListeners) {
+      this.connectionListeners.push(callback)
+    } else {
+      this.connectionListeners = [callback]
+    }
+
+    return () => {
+      this.connectionListeners = this.connectionListeners.filter((cb) => cb !== callback)
     }
   }
 

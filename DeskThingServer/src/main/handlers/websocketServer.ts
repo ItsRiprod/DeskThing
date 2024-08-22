@@ -7,7 +7,7 @@ import { getDefaultMappings, ButtonMapping, setDefaultMappings } from './keyMapH
 import { readData, addData } from './dataHandler'
 import dataListener, { MESSAGE_TYPES } from '../utils/events'
 import { HandleDeviceData } from './deviceHandler'
-import settingsStore from '../stores/settingsStore'
+import settingsStore, { Settings } from '../stores/settingsStore'
 import cors from 'cors'
 
 import * as fs from 'fs'
@@ -20,7 +20,7 @@ import { join } from 'path'
 // Create a WebSocket server that listens on port 8891
 // const server = new WebSocketServer({ port: 8891 })
 // const server = new WebSocketServer({ port: 8891 })
-let settings
+let settings: Settings
 let httpServer: HttpServer
 let server: WebSocketServer
 
@@ -30,10 +30,16 @@ export interface socketData {
   app: string
   type: string
   request?: string
-  payload?: Array<string> | string | object | number | { [key: string]: string | Array<string> }
+  payload?:
+    | Array<string>
+    | string
+    | object
+    | number
+    | { [key: string]: string | Array<string> }
+    | Settings
 }
 
-const updateServerSettings = (newSettings): void => {
+const updateServerSettings = (newSettings: Settings): void => {
   if (settings.devicePort !== newSettings.devicePort || settings.address !== newSettings.address) {
     settings = newSettings
     restartServer()
@@ -237,7 +243,8 @@ const setupServer = async (): Promise<void> => {
   if (!settings) {
     // Return if there are no settings
     dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'WSOCKET: No settings found, getting them now')
-    settings = await settingsStore.getSettings()
+    const socketData = await settingsStore.getSettings()
+    settings = socketData.payload as Settings
   }
 
   const expressApp = express()
@@ -423,7 +430,11 @@ const setupServer = async (): Promise<void> => {
 }
 
 dataListener.on(MESSAGE_TYPES.SETTINGS, (newSettings) => {
-  updateServerSettings(newSettings.payload)
+  if (settings.payload) {
+    updateServerSettings(newSettings.payload)
+  } else {
+    dataListener.emit(MESSAGE_TYPES.LOGGING, 'WSOCKET: No settings received!')
+  }
 })
 
 // Setting up the server for the first time

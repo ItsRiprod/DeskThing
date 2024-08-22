@@ -243,7 +243,10 @@ export const getClientManifest = async (
       data: 'Manifest file not found',
       final: true
     })
-    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'DEVICE HANDLER: Manifest file not found')
+    dataListener.asyncEmit(
+      MESSAGE_TYPES.ERROR,
+      'DEVICE HANDLER: Client Manifest file not found! (Is it downloaded?)'
+    )
     return null
   }
   webContents.send('logging', {

@@ -1,178 +1,245 @@
 import { useEffect, useState } from 'react'
-import { IconCarThing } from '../icons'
-
-export type Action = {
-  name: string
-  id: string
-  description: string
-  source: string
-}
-
-export type Key = {
-  id: string
-  source: string
-}
-
-export enum EventFlavor {
-  Up,
-  Down,
-  Left,
-  Right,
-  Short,
-  Long
-}
-
-export type ButtonMapping = {
-  [key: string]: {
-    [flavor in EventFlavor]?: Action
-  }
-}
-export type FileStructure = {
-  default: ButtonMapping
-  [key: string]: ButtonMapping | Action[] | Key[] | string
-  actions: Action[]
-  keys: Key[]
-  version: string
-}
+import {
+  IconCarThing,
+  IconDetails,
+  IconDisconnect,
+  IconLogoGearLoading,
+  IconRefresh,
+  IconTransfer,
+  IconUpload
+} from '../icons'
+import DisplayDeviceData from '../Overlays/DisplayDeviceData'
+import settingsStore from '@renderer/store/settingsStore'
+import ClientSettings from '../ClientSettings'
+import { ClientStore } from '@renderer/store/clientStore'
 
 const Device = (): JSX.Element => {
-  const [mapping, setMapping] = useState<ButtonMapping>({})
-  const [buttons, setButtons] = useState<Key[]>([])
-  const [actions, setActions] = useState<Action[]>([])
-  const [currentAction, setCurrentAction] = useState<Action | null>(null)
-  const [currentKey, setCurrentKey] = useState('')
-  const [selectedFlavor, setSelectedFlavor] = useState<EventFlavor>(EventFlavor.Short)
-  const [tooltip, setToolTip] = useState<string>('')
+  const clientStore = ClientStore.getInstance()
+  const [devices, setDevices] = useState<string[]>([])
+  const [enabled, setEnabled] = useState(false)
+  const [tooltip, setTooltip] = useState<[string, number]>(['', 0])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState([0, ''])
+  const [currentDevice, setCurrentDevice] = useState('')
+  const [port, setPort] = useState<number>(-1)
 
   useEffect(() => {
-    const loadMapping = async (): Promise<void> => {
-      try {
-        const mappings = (await window.electron.getMaps()) as FileStructure
-        console.log(mappings)
-        setMapping(mappings.default)
-        setActions(mappings.actions)
-        setButtons(mappings.keys)
-      } catch (error) {
-        console.error('Error loading mappings:', error)
-      }
-    }
+    handlePush()
+  }, [enabled])
 
-    loadMapping()
+  useEffect(() => {
+    settingsStore.getSettings().then((settings) => {
+      setPort(settings.devicePort)
+    })
   }, [])
 
-  const handleFlavorSelect = (flavor: EventFlavor): void => {
-    setSelectedFlavor(flavor)
-    if (mapping && currentKey && mapping[currentKey][flavor]) {
-      setCurrentAction(mapping[currentKey][flavor])
-    } else {
-      setCurrentAction(null)
+  const handlePush = async (): Promise<void> => {
+    try {
+      setError([0, 'Checking for devices...'])
+      setLoading(true)
+      const response = await clientStore.requestADBDevices()
+      if (response) {
+        console.log(response)
+        setLoading(false)
+        // Assuming response is a string with device names separated by newline
+        const deviceList = response
+        setDevices(deviceList)
+      } else {
+        console.log('No devices found!')
+        setDevices([])
+      }
+    } catch (error) {
+      console.error('Error fetching devices:', error)
+      setDevices([])
     }
   }
 
-  const handleButtonSelect = async (action: Action): Promise<void> => {
-    if (!currentKey) return
+  const handleAdbCommand = async (command: string, index: number): Promise<string | undefined> => {
+    try {
+      setError([index, command])
+      setLoading(true)
+      const response = await window.electron.runAdbCommand(command)
+      if (response) {
+        setLoading(false)
+        console.log('Response from adb command:', response)
+        return response
+      } else {
+        setLoading(false)
+      }
+      return undefined
+    } catch (Error) {
+      console.log(Error)
+      return undefined
+    }
+  }
 
-    const newMapping = {
-      ...mapping,
-      [currentKey]: {
-        ...mapping[currentKey],
-        [selectedFlavor]: action
+  const handlePushStaged = (deviceId: string, index: number): void => {
+    try {
+      setError([index, 'Pushing app...'])
+      setLoading(true)
+      window.electron.ipcRenderer.send('push-staged', deviceId)
+      const unsubscribe = window.electron.ipcRenderer.on('logging', (_event, reply) => {
+        console.log(reply)
+        if (reply.final) {
+          setLoading(false)
+          unsubscribe()
+        } else {
+          setLoading(true)
+        }
+        if (!reply.status) {
+          setError([index, reply.error || 'Unknown error occurred'])
+          unsubscribe()
+        } else {
+          if (reply.data) {
+            setError([index, reply.data])
+          }
+        }
+      })
+    } catch (error) {
+      setLoading(false)
+      if (error) {
+        setError([index, JSON.stringify(error)])
       }
     }
-    console.log('Sending mappings')
-    setMapping(newMapping)
-    try {
-      await window.electron.setMaps('default', newMapping)
-    } catch (error) {
-      console.error('Failed to save mappings:', error)
-    }
-    if (action) {
-      setCurrentAction(action)
-    } else {
-      setCurrentAction(null)
-    }
   }
 
-  const handleSelect = async (selectedKey: string): Promise<void> => {
-    setCurrentKey(selectedKey)
-    if (mapping && selectedFlavor && mapping[selectedKey][selectedFlavor]) {
-      setCurrentAction(mapping[selectedKey][selectedFlavor])
-    } else {
-      setCurrentAction(null)
-    }
+  const handleDeviceClick = (device: string): void => {
+    setLoading(true)
+    setCurrentDevice(device)
+    setEnabled(true)
+    setTimeout(async () => {
+      setLoading(false)
+    }, 1000)
   }
 
   return (
-    <div className="pt-5 h-full flex lg:flex-row flex-col w-full p-5">
-      <div className="pt-5 flex flex-col items-center p-5">
-        <div className="flex flex-wrap group hover:bg-zinc-950 max-w-full hover:border-l py-5 pl-1 border-zinc-500">
-          {actions.map((action, index) => (
-            <button
-              className={`p-3 border ${currentAction && currentAction.id == action.id ? 'border-cyan-500 hover:bg-cyan-500' : 'text-zinc-500 group-hover:text-white border-zinc-900 hover:bg-zinc-600'}`}
-              key={index}
-              onClick={() => handleButtonSelect(action)}
-              onMouseEnter={() => setToolTip(action.description)}
-              onMouseLeave={() => setToolTip('')}
-            >
-              {action.name}
-            </button>
-          ))}
+    <div className="pt-5 flex flex-col w-full items-center p-5">
+      <div className="flex flex-row items-center justify-between w-full"></div>
+      {enabled && <DisplayDeviceData setEnabled={setEnabled} device={currentDevice} />}
+      <div className="border-b-2 w-full border-slate-700 p-2">
+        <ClientSettings />
         </div>
-        <div className="flex flex-wrap hover:bg-zinc-950 max-w-full hover:border-l pl-1 border-zinc-500 py-5">
-          {buttons &&
-            buttons.map((button) => {
-              const currentAction = mapping[button.id][selectedFlavor] || {
-                name: 'No Action',
-                id: 'none',
-                description: 'No action assigned',
-                source: 'none'
-              }
-              return (
-                <button
-                  key={button.id}
-                  onMouseEnter={() => setToolTip('Source: ' + button.source)}
-                  onMouseLeave={() => setToolTip('')}
-                  onClick={() => handleSelect(button.id)}
-                  className={`group flex border min-w-40 p-3 ${currentKey != button.id ? (currentAction.id == 'none' ? 'border-zinc-700 text-zinc-700' : 'border-zinc-400 hover:bg-zinc-700') : 'border-cyan-500 bg-cyan-950 text-white hover:bg-cyan-500'}`}
-                >
-                  <div className="flex justify-between w-full">
-                    <p className="group-hover:hidden">{button.id}</p>
-                    <p className="group-hover:block hidden">{currentAction?.name}</p>
-                  </div>
-                </button>
-              )
-            })}
-        </div>
-        <div className="flex mb-3 hover:bg-zinc-950 w-full justify-center hover:border-l pl-1 border-zinc-500 py-5">
-          {Object.values(EventFlavor)
-            .filter((value) => typeof value === 'number')
-            .map((flavor) => (
-              <button
-                key={flavor}
-                className={`p-2 m-1 ${selectedFlavor === flavor ? 'bg-blue-500' : 'bg-gray-500'} text-white`}
-                onClick={() => handleFlavorSelect(flavor)}
+      {devices.length > 0 ? (
+        <div className="w-full">
+          <div className="w-full">
+            {devices.map((device, index) => (
+              <div
+                key={index}
+                className="mt-5 items-center flex justify-between px-5 border border-zinc-100 rounded-xl w-full"
               >
-                {EventFlavor[flavor]}
-              </button>
+                <button onClick={() => handleDeviceClick(device)}>
+                  {loading ? (
+                    <div className="py-8 pl-3 flex items-center">
+                      <IconLogoGearLoading iconSize={85} />
+                      {error[0] == index ? error[1] : 'ADB Busy...'}
+                    </div>
+                  ) : (
+                    <IconCarThing
+                      iconSize={150}
+                      fontSize={100}
+                      text={`${device.replace('device', '')}`}
+                      highlighted={[]}
+                      highlightColor="yellow"
+                      className="hover:text-green-500 transition-colors duration-150"
+                    />
+                  )}
+                </button>
+                <div className="gap-3 sm:flex-nowrap flex-wrap flex items-center">
+                  <p className="hidden sm:inline">
+                    {loading ? '' : tooltip[1] == index ? tooltip[0] : ''}
+                  </p>
+                  <button
+                    onClick={() => handleDeviceClick(device)}
+                    className={`border-2 top-10 border-green-600 ${!loading && 'hover:bg-green-500'}  p-2 rounded-lg`}
+                    onMouseEnter={() => setTooltip(['Device Details', index])}
+                    onMouseLeave={() => setTooltip(['', index])}
+                    disabled={loading}
+                  >
+                    <IconDetails iconSize={24} />
+                  </button>
+                  <button
+                    onClick={() => handlePushStaged(device.replace('device', '').trim(), index)}
+                    className={`border-2 top-10 border-cyan-600 ${!loading && 'hover:bg-cyan-500'}   p-2 rounded-lg`}
+                    onMouseEnter={() => setTooltip(['Push Staged Client', index])}
+                    onMouseLeave={() => setTooltip(['', index])}
+                    disabled={loading}
+                  >
+                    <IconUpload iconSize={24} />
+                  </button>
+                  <button
+                    onClick={() =>
+                      handleAdbCommand(
+                        `-s ${device.replace('device', '').trim()} shell supervisorctl restart chromium`,
+                        index
+                      )
+                    }
+                    className={`border-2 top-10 border-cyan-600 ${!loading && 'hover:bg-cyan-500'}   p-2 rounded-lg`}
+                    onMouseEnter={() => setTooltip(['Reload Chromium', index])}
+                    onMouseLeave={() => setTooltip(['', index])}
+                    disabled={loading}
+                  >
+                    <IconRefresh iconSize={24} />
+                  </button>
+                  <button
+                    onClick={() =>
+                      handleAdbCommand(
+                        `-s ${device.replace('device', '').trim()} reverse tcp:${port} tcp:${port}`,
+                        index
+                      )
+                    }
+                    className={`border-2 top-10 border-cyan-600 ${!loading && 'hover:bg-cyan-500'}   p-2 rounded-lg`}
+                    onMouseEnter={() => setTooltip(['Setup ADB Socket Port', index])}
+                    onMouseLeave={() => setTooltip(['', index])}
+                    disabled={loading}
+                  >
+                    <IconTransfer />
+                  </button>
+                  <button
+                    onClick={() =>
+                      handleAdbCommand(
+                        `-s ${device.replace('device', '').trim()}} reconnect`,
+                        index
+                      )
+                    }
+                    className={`border-2 top-10 border-red-600 ${!loading && 'hover:bg-red-600'}  p-2 rounded-lg`}
+                    onMouseEnter={() => setTooltip(['Reconnect Device', index])}
+                    onMouseLeave={() => setTooltip(['', index])}
+                    disabled={loading}
+                  >
+                    <IconDisconnect />
+                  </button>
+                </div>
+              </div>
             ))}
+          </div>
+          <div className="pt-5">
+            <button
+              className="group border-cyan-500 flex gap-3 border p-3 rounded-xl hover:bg-cyan-500"
+              onClick={() => handlePush()}
+            >
+              <IconRefresh />
+              <p className="group-hover:block hidden">Refresh Devices</p>
+            </button>
+          </div>
         </div>
-      </div>
-      <div className="lg:border-l-2 lg:border-b-2 lg:border-t-0 border-t-2 flex flex-col p-3">
-        <p className="font-semibold">{tooltip ? tooltip : 'Details...'}</p>
-        <IconCarThing
-          iconSize={256}
-          strokeWidth={5}
-          highlightColor={'cyan'}
-          highlighted={[currentKey]}
-        />
-        <div className="italic font-extralight text-left">
-          <p>Any button with a number in the name will pass that number to the action</p>
-          <p>e.g. Digit1 will set pref to 1</p>
+      ) : (
+        <div className="flex flex-col items-center justify-center w-full">
+          {loading ? (
+            <div className="">
+              <IconLogoGearLoading iconSize={65} />
+            </div>
+          ) : (
+            <button
+              className="border-cyan-500 flex gap-3 border p-5 rounded-2xl hover:bg-cyan-600"
+              onClick={() => handlePush()}
+            >
+              Check For Devices <IconTransfer />
+            </button>
+          )}
+
+          <p className="mt-5">No devices connected...</p>
         </div>
-        <div className="w-full flex items-end justify-end grow bottom-0 text-zinc-600 italic">
-          <p>Will be updated in v0.9.0</p>
-        </div>
-      </div>
+      )}
     </div>
   )
 }

@@ -9,6 +9,12 @@ export interface Settings {
   minimizeApp: boolean
 }
 
+export type SocketData = {
+  app: string
+  payload: Settings
+  type: string
+}
+
 interface SettingsStoreEvents {
   update: Settings
 }
@@ -39,7 +45,17 @@ class SettingsStore extends EventEmitter<SettingsStoreEvents> {
   }
 
   public async getSettings(): Promise<Settings> {
-    this.settings = await window.electron.getSettings()
+    if (this.settings.callbackPort === -1 || this.settings.devicePort === -1) {
+      const socketData = await window.electron.getSettings()
+      this.settings = socketData.payload as Settings
+    }
+    console.log('Has ', this.settings)
+    return this.settings
+  }
+
+  public async requestSettings(): Promise<Settings> {
+    const socketData = await window.electron.getSettings()
+    this.settings = socketData.payload as Settings
     return this.settings
   }
 
@@ -47,13 +63,16 @@ class SettingsStore extends EventEmitter<SettingsStoreEvents> {
     return this.settings[key]
   }
 
-  public saveSettings(settings: Settings): void {
-    this.emit('update', this.settings)
-    window.electron.saveSettings(settings)
+  public saveSettings(settings: SocketData): void {
+    if (settings.payload) {
+      this.settings = settings.payload
+      this.emit('update', this.settings)
+      window.electron.saveSettings(settings)
+    }
   }
 
-  private handleSettingsUpdated(_event: any, updatedSettings: Settings): void {
-    this.settings = updatedSettings
+  private handleSettingsUpdated(_event: any, updatedSettings: SocketData): void {
+    this.settings = updatedSettings.payload as Settings
     this.emit('update', this.settings)
   }
 }

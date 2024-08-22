@@ -249,7 +249,10 @@ export function getAppFilePath(appName: string, fileName: string = '/'): string 
     if (devAppPath) {
       path = join(devAppPath, fileName)
     } else {
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'Developer app path not set!')
+      dataListener.asyncEmit(
+        MESSAGE_TYPES.ERROR,
+        'Developer app path not set! (Expected if on startup)'
+      )
     }
   } else {
     path = join(app.getPath('userData'), 'apps', appName, fileName)
@@ -277,7 +280,10 @@ async function runApp(appName: string): Promise<void> {
     } else if (fs.existsSync(appEntryPointCjs)) {
       appEntryPoint = appEntryPointCjs
     } else {
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `Entry point for app ${appName} not found.`)
+      dataListener.asyncEmit(
+        MESSAGE_TYPES.ERROR,
+        `Entry point for app ${appName} not found. (Does it have an index.js file?)`
+      )
       return
     }
     console.log(appEntryPoint)
@@ -441,7 +447,7 @@ async function sendMessageToApp(appName: string, data: IncomingData): Promise<vo
     } else {
       dataListener.asyncEmit(
         MESSAGE_TYPES.ERROR,
-        `SERVER: App ${appName} not found or does not have toClient function.`
+        `SERVER: App ${appName} not found or does not have toClient function. (is it running?)`
       )
       console.error(`App ${appName} not found or does not have toClient function.`)
     }

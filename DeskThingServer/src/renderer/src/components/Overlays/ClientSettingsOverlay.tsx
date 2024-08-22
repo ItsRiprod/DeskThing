@@ -83,16 +83,17 @@ const ClientSettingsOverlay: React.FC<ClientSettingsOverlayProps> = ({
                   <p>Car Thing RNDIS:</p>
                   <p className="font-geistMono bg-slate-900 px-2  rounded">192.168.7.1</p>
                 </button>
-                {settings?.localIp.map((ip, index) => (
-                  <button
-                    className="flex p-1 border rounded border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
-                    key={index}
-                    onClick={() => settings && setIp(ip)}
-                  >
-                    <p>Local Network:</p>
-                    <p className="font-geistMono bg-slate-900 px-2  rounded">{ip}</p>
-                  </button>
-                ))}
+                {settings?.localIp &&
+                  settings.localIp.map((ip, index) => (
+                    <button
+                      className="flex p-1 border rounded border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
+                      key={index}
+                      onClick={() => settings && setIp(ip)}
+                    >
+                      <p>Local Network:</p>
+                      <p className="font-geistMono bg-slate-900 px-2  rounded">{ip}</p>
+                    </button>
+                  ))}
               </div>
             </div>
             <div className="mb-4">

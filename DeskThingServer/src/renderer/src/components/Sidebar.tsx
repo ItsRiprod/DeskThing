@@ -14,6 +14,7 @@ import {
 import { useReward } from 'react-rewards'
 import SettingsOverlay from './Overlays/SettingsOverlay'
 import { SidebarView } from '../App'
+import { ClientStore } from '@renderer/store'
 
 interface SidebarProps {
   setCurrentView: Dispatch<SetStateAction<SidebarView>>
@@ -33,25 +34,20 @@ const Sidebar: React.FC<SidebarProps> = ({ setCurrentView, currentView }) => {
     setCurrentView(view)
   }
 
-  const getConnections = (): void => window.electron.ipcRenderer.send('get-connections')
-
   useEffect(() => {
-    const handleConnection = (_event, num: number): void => {
-      setConnections(num)
-      console.log('got connections', num)
+    const handleConnection = (data: number): void => {
+      setConnections(data)
+      console.log('got connections', data)
     }
 
     console.log('got connections', connections)
-    const removeListener = window.electron.ipcRenderer.on('connections', (event, data) =>
-      handleConnection(event, data.data)
-    )
-
+    const removeListener = ClientStore.onConnection(handleConnection)
     const timeoutId = setTimeout(() => {
-      getConnections()
+      ClientStore.requestConnections()
     }, 1500)
 
     const intervalId = setInterval(() => {
-      getConnections()
+      ClientStore.requestConnections()
     }, 30000)
 
     return () => {
@@ -118,7 +114,7 @@ const Sidebar: React.FC<SidebarProps> = ({ setCurrentView, currentView }) => {
           </li>
         </ul>
       </div>
-      <div className="flex sm:flex-col md:flex-row sm:items-start sm:justify-between justify-start gap-3 w-full items-end text-zinc-500">
+      <div className="flex sm:flex-col md:flex-row sm:items-start md:items-end sm:justify-between justify-start gap-3 w-full items-end text-zinc-500">
         <button
           className="group sm:flex-col items-center flex-row-reverse flex sm:border p-2 rounded-xl border-zinc-500 hover:bg-zinc-900 hover:text-red-500"
           onClick={() => window.electron.ipcRenderer.send('shutdown')}

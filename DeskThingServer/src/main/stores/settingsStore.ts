@@ -1,6 +1,7 @@
 import { readFromFile, writeToFile } from '../utils/fileHandler'
 import dataListener, { MESSAGE_TYPES } from '../utils/events'
 import os from 'os'
+import { socketData } from '../handlers/websocketServer'
 
 export interface Settings {
   callbackPort: number
@@ -21,16 +22,18 @@ class SettingsStore {
     this.settings = this.getDefaultSettings()
     this.loadSettings()
       .then((settings) => {
-        this.settings = settings
-        this.settings.localIp = getLocalIpAddress()
-        dataListener.asyncEmit(MESSAGE_TYPES.SETTINGS, {
-          type: 'settings',
-          payload: this.settings,
-          app: 'server'
-        })
+        if (settings.payload) {
+          this.settings = settings.payload as Settings
+          this.settings.localIp = getLocalIpAddress()
+          dataListener.asyncEmit(MESSAGE_TYPES.SETTINGS, {
+            type: 'settings',
+            payload: this.settings,
+            app: 'server'
+          })
+        }
       })
       .catch((err) => {
-        console.error('Error initializing settings:', err)
+        console.error('SETTINGS: Error initializing settings:', err)
       })
   }
   static getInstance(): SettingsStore {
@@ -40,11 +43,11 @@ class SettingsStore {
     return SettingsStore.instance
   }
 
-  public async getSettings(): Promise<Settings> {
+  public async getSettings(): Promise<socketData> {
     if (this.settings) {
-      return this.settings
+      return { type: 'settings', app: 'server', payload: this.settings }
     } else {
-      console.log('Settings not initialized. Loading settings...')
+      console.log('SETTINGS: Settings not initialized. Loading settings...')
       return await this.loadSettings()
     }
   }
@@ -59,7 +62,7 @@ class SettingsStore {
     this.saveSettings()
   }
 
-  public async loadSettings(): Promise<Settings> {
+  public async loadSettings(): Promise<socketData> {
     try {
       const data = await readFromFile<Settings>(this.settingsFilePath)
       dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'SETTINGS: Loaded settings!')
@@ -67,27 +70,32 @@ class SettingsStore {
         // File does not exist, create it with default settings
         const defaultSettings = this.getDefaultSettings()
         await writeToFile(defaultSettings, this.settingsFilePath)
-        return defaultSettings
+        console.log('SETTINGS: Returning default settings')
+        return { type: 'settings', app: 'server', payload: defaultSettings }
       }
-      return data
+      return { type: 'settings', app: 'server', payload: data }
     } catch (err) {
       console.error('Error loading settings:', err)
       const defaultSettings = this.getDefaultSettings()
       defaultSettings.localIp = getLocalIpAddress()
-      return defaultSettings
+      return { type: 'settings', app: 'server', payload: defaultSettings }
     }
   }
 
-  public async saveSettings(settings = this.settings): Promise<void> {
+  public async saveSettings(settings: socketData | undefined = undefined): Promise<void> {
     try {
-      this.settings = settings
-      await writeToFile(settings, this.settingsFilePath)
-      dataListener.asyncEmit(MESSAGE_TYPES.SETTINGS, {
-        type: 'settings',
-        payload: this.settings,
-        app: 'server'
-      })
-      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'SETTINGS: Updated settings!')
+      if (settings) {
+        this.settings = settings.payload as Settings
+        await writeToFile(this.settings, this.settingsFilePath)
+        dataListener.asyncEmit(MESSAGE_TYPES.SETTINGS, {
+          type: 'settings',
+          payload: this.settings,
+          app: 'server'
+        })
+        dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'SETTINGS: Updated settings!')
+      } else {
+        dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'SETTINGS: Invalid setting format!')
+      }
     } catch (err) {
       console.error('Error saving settings:', err)
     }
@@ -115,11 +123,12 @@ const getLocalIpAddress = (): string[] => {
       for (const iface of ifaceGroup) {
         if (iface.family === 'IPv4' && !iface.internal) {
           if (
-            iface.address.startsWith('10.') ||
-            iface.address.startsWith('172.') ||
-            iface.address.startsWith('169.') ||
-            iface.address.startsWith('100.') ||
-            iface.address.startsWith('192.')
+            (iface.address.startsWith('10.') ||
+              iface.address.startsWith('172.') ||
+              iface.address.startsWith('169.') ||
+              iface.address.startsWith('100.') ||
+              iface.address.startsWith('192.')) &&
+            iface.address !== '192.168.7.1'
           ) {
             localIps.push(iface.address)
           }
