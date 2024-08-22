@@ -14,6 +14,7 @@ import path from 'path'
 import icon from '../../resources/icon.ico?asset'
 import { GithubRelease } from './types/types'
 import { ServerManifest } from './handlers/deviceHandler'
+import { Settings } from './stores/settingsStore'
 
 let mainWindow: BrowserWindow | null = null
 let clientWindow: BrowserWindow | null = null
@@ -274,7 +275,12 @@ async function setupIpcHandlers(): Promise<void> {
   const { MESSAGE_TYPES } = await import('./utils/events')
 
   const { setupFirewall } = await import('./handlers/firewallHandler')
-  setupFirewall((await settingsStore.default.getSettings()).devicePort).catch(console.error)
+  const payload = (await settingsStore.default.getSettings()).payload as Settings
+  if (payload) {
+    setupFirewall(payload.devicePort).catch(console.error)
+  } else {
+    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'No settings found!')
+  }
 
   let connections = 0
   ipcMain.on(IPC_CHANNELS.PING, () => console.log('pong'))
