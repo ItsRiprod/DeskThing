@@ -67,7 +67,7 @@ jobs:
 
       - name: Upload Windows binaries to release
         if: ${{ matrix.os == 'windows-latest' }}
-        uses: jaywcjlove/github-action-upload-assets@main
+        uses: actions/upload-artifact@v4
         with:
-          asset-path: '["${{ github.workspace }}\DeskThingServer\dist\deskthing-setup-*"]'
-          tag: ${{ steps.get_current_release.outputs.tag_name }}
+          name: deskthing-setup-${{matrix.os}}-${{ steps.get_current_release.outputs.tag_name }}
+          path: ${{ github.workspace }}\DeskThingServer/dist/**/*
