@@ -3,8 +3,7 @@ name: build and release
 on:
   push:
     tags:
-      - 'v*.*.*' # Triggers on version tags
-      - 'v*.*.*-*' # Trigger for pre-release tags
+      - v[0-9]+.[0-9]+.[0-9]+*
   workflow_dispatch: # Allows manual triggering
 
 jobs:
@@ -42,13 +41,6 @@ jobs:
           package_root: ${{ github.workspace }}/DeskThingServer
           release: ${{ startsWith(github.ref, 'refs/tags/v') }}
 
-      - name: List dir windows
-        if: ${{ matrix.os == 'windows-latest' }}
-        run: |
-          dir /S
-          cd DesthingServer
-          dir /S
-
       - name: Get Current Release
         id: get_current_release
         uses: joutvhu/get-release@v1
@@ -59,16 +51,23 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload MacOS/Linux binaries to release
-        if: ${{ matrix.os != 'windows-latest' }}
+      - name: Upload MacOS binaries to release
+        if: ${{ matrix.os == 'macos-latest' }}
         uses: jaywcjlove/github-action-upload-assets@main
         with:
-          asset-path: '["${{ github.workspace }}/DeskThingServer/dist/deskthing-*"]'
+          asset-path: '["${{ github.workspace }}/DeskThingServer/dist/deskthing-mac-*"]'
           tag: ${{ steps.get_current_release.outputs.tag_name }}
 
-      # - name: Upload Windows binaries to release
-      #   if: ${{ matrix.os == 'windows-latest' }}
-      #   uses: jaywcjlove/github-action-upload-assets@main
-      #   with:
-      #     asset-path: '["${{ github.workspace }}\DeskThingServer\dist\**\*"]'
-      #     tag: ${{ steps.get_current_release.outputs.tag_name }}
+      - name: Upload Linux binaries to release
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        uses: jaywcjlove/github-action-upload-assets@main
+        with:
+          asset-path: '["${{ github.workspace }}/DeskThingServer/dist/deskthing-linux-*"]'
+          tag: ${{ steps.get_current_release.outputs.tag_name }}
+
+      - name: Upload Windows binaries to release
+        if: ${{ matrix.os == 'windows-latest' }}
+        uses: jaywcjlove/github-action-upload-assets@main
+        with:
+          asset-path: '["${{ github.workspace }}\DeskThingServer\dist\deskthing-setup-*"]'
+          tag: ${{ steps.get_current_release.outputs.tag_name }}
