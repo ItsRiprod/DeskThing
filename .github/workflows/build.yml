@@ -47,7 +47,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: deskthing-macos-${{ matrix.arch }}
-          path: ${{ github.workspace }}/DeskThingServer/dist/*
+          path: ${{ github.workspace }}/DeskThingServer/dist/deskthing-*.dmg
 
   release:
     runs-on: ${{ matrix.os }}
@@ -87,7 +87,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: deskthing-${{matrix.os}}
-          path: ${{ github.workspace }}/DeskThingServer/dist/*
+          path: ${{ github.workspace }}/DeskThingServer/dist/deskthing*
 
   publish:
     needs: [release, macos]
