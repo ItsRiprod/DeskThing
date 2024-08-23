@@ -63,5 +63,5 @@ jobs:
         if: ${{ matrix.os == 'windows-latest' }}
         uses: jaywcjlove/github-action-upload-assets@main
         with:
-          asset-path: '["${{ github.workspace }}\DeskThingServer\dist\deskthing-*"]'
+          asset-path: '[".\DeskThingServer\dist\deskthing-*"]'
           tag: ${{ steps.get_current_release.outputs.tag_name }}
