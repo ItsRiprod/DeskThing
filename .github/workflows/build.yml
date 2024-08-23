@@ -13,7 +13,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [macos-latest, ubuntu-latest, windows-latest]
 
     name: Build ${{ matrix.os }}
     steps:
@@ -59,9 +59,9 @@ jobs:
           asset-path: '["${{ github.workspace }}/DeskThingServer/dist/deskthing-*"]'
           tag: ${{ steps.get_current_release.outputs.tag_name }}
 
-      - name: Upload windows binaries to release
+      - name: Upload Windows binaries to release
         if: ${{ matrix.os == 'windows-latest' }}
         uses: jaywcjlove/github-action-upload-assets@main
         with:
-          asset-path: '["${{ github.workspace }}\DeskThingServer\dist\deskthing-0.8.0-setup.exe.blockmap", "${{ github.workspace }}\DeskThingServer\dist\deskthing-0.8.0-setup.exe"]'
+          asset-path: '["${{ github.workspace }}\DeskThingServer\dist\**\*"]'
           tag: ${{ steps.get_current_release.outputs.tag_name }}
