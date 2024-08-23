@@ -28,7 +28,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache-dependency-path: ${{ github.workspace }}/DeskThingServer/package-lock.json
+          cache-dependency-path: /DeskThingServer/package-lock.json
       - run: npm ci
       - run: npm test
 
