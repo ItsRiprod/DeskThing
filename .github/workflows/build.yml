@@ -7,12 +7,54 @@ on:
   workflow_dispatch: # Allows manual triggering
 
 jobs:
+  macos:
+    strategy:
+      matrix:
+        os-version: ['12', '14']
+        include:
+          - os-version: '12'
+            arch: x86_64
+          - os-version: '14'
+            arch: aarch64
+    runs-on: macos-${{ matrix.os-version }}
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github
+            DeskThingServer
+
+      - name: Install Node.js, NPM
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: |
+          cd DeskThingServer
+          npm ci
+
+      - name: Build/release Electron app
+        uses: paneron/action-electron-builder@v1.8.1
+        with:
+          github_token: ${{ secrets.github_token }}
+          package_manager: npm
+          package_root: ${{ github.workspace }}/DeskThingServer
+          release: ${{ startsWith(github.ref, 'refs/tags/v') }}
+
+      - name: Upload binaries to artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: deskthing-setup-macos
+          path: ${{ github.workspace }}/DeskThingServer/dist/*
+
   release:
     runs-on: ${{ matrix.os }}
 
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest]
 
     name: Build ${{ matrix.os }}
     steps:
@@ -41,6 +83,18 @@ jobs:
           package_root: ${{ github.workspace }}/DeskThingServer
           release: ${{ startsWith(github.ref, 'refs/tags/v') }}
 
+      - name: Upload binaries to artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: deskthing-setup-${{matrix.os}}
+          path: ${{ github.workspace }}/DeskThingServer/dist/*
+
+  publish:
+    needs: [release, macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
       - name: Get Current Release
         id: get_current_release
         uses: joutvhu/get-release@v1
@@ -51,21 +105,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload binaries to artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: deskthing-setup-${{matrix.os}}-${{ steps.get_current_release.outputs.tag_name }}
-          path: ${{ github.workspace }}\DeskThingServer/dist/*
-
-  publish:
-    needs: [release]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.get_current_release.outputs.tag_name }}
           files: |
-            deskthing-setup-*
+            deskthing-setup-macos/*
+            deskthing-setup-ubuntu-latest/*
+            deskthing-setup-windows-latest/*
