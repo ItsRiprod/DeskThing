@@ -46,7 +46,7 @@ jobs:
       - name: Upload binaries to artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: deskthing-setup-macos
+          name: deskthing-macos-${{ matrix.arch }}
           path: ${{ github.workspace }}/DeskThingServer/dist/*
 
   release:
@@ -86,7 +86,7 @@ jobs:
       - name: Upload binaries to artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: deskthing-setup-${{matrix.os}}
+          name: deskthing-${{matrix.os}}
           path: ${{ github.workspace }}/DeskThingServer/dist/*
 
   publish:
@@ -111,6 +111,7 @@ jobs:
         with:
           tag_name: ${{ steps.get_current_release.outputs.tag_name }}
           files: |
-            deskthing-setup-macos/*
-            deskthing-setup-ubuntu-latest/*
-            deskthing-setup-windows-latest/*
+            deskthing-macos-aarch64/*
+            deskthing-macos-x86_64/*
+            deskthing-ubuntu-latest/*
+            deskthing-windows-latest/*
