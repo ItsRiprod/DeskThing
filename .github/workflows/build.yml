@@ -28,9 +28,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: cd DeskThingServer
+      - run: |
+          cd DeskThingServer
           npm ci
-      - run: cd DeskThingServer
+      - run: |
+          cd DeskThingServer
           npm test
 
       - name: Build/release Electron app
