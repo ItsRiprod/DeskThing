@@ -18,9 +18,9 @@ const ReleaseList: React.FC<ReleaseListProps> = ({
   handleAssetClick
 }) => {
   return releases.map((release) => (
-    <div key={release.id} className="mx-5">
+    <div key={release.id} className="mx-5 border-l-2 rounded-xl border-zinc-700">
       <button
-        className="w-full justify-between flex px-4 py-4 text-left border-t-2 rounded border-zinc-700 hover:bg-zinc-900 hover:rounded-2xl focus:outline-none"
+        className="w-full justify-between flex px-4 py-4 text-left border-t-2 rounded-xl border-zinc-700 hover:bg-zinc-900 focus:outline-none"
         onClick={() => toggleDropdown(release.id)}
       >
         {release.name}

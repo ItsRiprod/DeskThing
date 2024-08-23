@@ -118,7 +118,7 @@ const Device = (): JSX.Element => {
       {enabled && <DisplayDeviceData setEnabled={setEnabled} device={currentDevice} />}
       <div className="border-b-2 w-full border-slate-700 p-2">
         <ClientSettings />
-        </div>
+      </div>
       {devices.length > 0 ? (
         <div className="w-full">
           <div className="w-full">

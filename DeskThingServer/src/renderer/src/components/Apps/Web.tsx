@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
-import { IconLogoLoading } from '../icons'
+import { IconArrowDown, IconArrowRight, IconLogoLoading } from '../icons'
 import githubStore, { GithubRelease, GithubAsset } from '../../store/githubStore'
 import ReleaseList from '../ReleaseList'
 import RunPreppedApp from './RunPreppedApp'
+import SettingsStoreInstance from '@renderer/store/settingsStore'
+import Loading from '../Loading'
 interface responseData {
   status: boolean
   data: returnData
@@ -18,8 +20,14 @@ interface returnData {
   requirements: string[]
 }
 
+interface RepoReleases {
+  repoUrl: string
+  releases: GithubRelease[]
+}
+
 const Web = (): JSX.Element => {
-  const [releases, setReleases] = useState<GithubRelease[]>([])
+  const [repoReleases, setRepoReleases] = useState<RepoReleases[]>([])
+  const [openRepoUrl, setOpenRepoUrl] = useState<string | null>(null)
   const [openReleaseId, setOpenReleaseId] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
   const [appData, setAppData] = useState<returnData | null>(null)
@@ -28,14 +36,36 @@ const Web = (): JSX.Element => {
 
   useEffect(() => {
     const fetchData = async (): Promise<void> => {
-      const data = await githubStore.fetchReleases('https://github.com/ItsRiprod/DeskThing')
-      setReleases(data)
+      try {
+        const settings = await SettingsStoreInstance.getSettings()
+
+        const appRepos = settings.appRepos
+
+        if (appRepos.length === 0) {
+          setError('No app repositories configured')
+          return
+        }
+
+        const allReleases: RepoReleases[] = []
+        for (const repoUrl of appRepos) {
+          const releases = await githubStore.fetchReleases(repoUrl)
+          allReleases.push({ repoUrl, releases })
+        }
+        setRepoReleases(allReleases)
+      } catch (err) {
+        setError(`Error fetching releases: ${err}`)
+      }
     }
 
     fetchData()
   }, [])
 
-  const toggleDropdown = (releaseId: number): void => {
+  const toggleRepoDropdown = (repoUrl: string): void => {
+    setOpenRepoUrl(openRepoUrl === repoUrl ? null : repoUrl)
+    setOpenReleaseId(null) // Close any open release when toggling repo
+  }
+
+  const toggleReleaseDropdown = (releaseId: number): void => {
     setOpenReleaseId(openReleaseId === releaseId ? null : releaseId)
   }
 
@@ -107,14 +137,29 @@ const Web = (): JSX.Element => {
                 {error}
               </div>
             </div>
+          ) : repoReleases.length > 0 ? (
+            repoReleases.map((repo) => (
+              <div key={repo.repoUrl} className="border-l rounded-xl">
+                <button
+                  className="w-full flex justify-between px-4 py-2 text-left border-t mb-2 rounded-xl hover:font-bold focus:outline-none"
+                  onClick={() => toggleRepoDropdown(repo.repoUrl)}
+                >
+                  {repo.repoUrl}
+                  {openRepoUrl === repo.repoUrl ? <IconArrowDown /> : <IconArrowRight />}
+                </button>
+                {openRepoUrl === repo.repoUrl && (
+                  <ReleaseList
+                    releases={repo.releases}
+                    openReleaseId={openReleaseId}
+                    toggleDropdown={toggleReleaseDropdown}
+                    filterAssets={filterAssets}
+                    handleAssetClick={handleAssetClick}
+                  />
+                )}
+              </div>
+            ))
           ) : (
-            <ReleaseList
-              releases={releases}
-              openReleaseId={openReleaseId}
-              toggleDropdown={toggleDropdown}
-              filterAssets={filterAssets}
-              handleAssetClick={handleAssetClick}
-            />
+            <Loading message={'Fetching Releases'} />
           )}
         </div>
       ) : (

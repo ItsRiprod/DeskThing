@@ -37,12 +37,12 @@ class SettingsStore extends EventEmitter<SettingsStoreEvents> {
       globalADB: true,
       localIp: ['-.-.-.-'],
       appRepos: [
-        'https://github.com/ItsRiprod/DeskThing',
-        'https://github.com/ItsRiprod/deskthing-apps'
+        'https://github.com/ItsRiprod/deskthing-apps',
+        'https://github.com/ItsRiprod/DeskThing'
       ],
       clientRepos: [
-        'https://github.com/ItsRiprod/DeskThing',
-        'https://github.com/ItsRiprod/deskthing-client'
+        'https://github.com/ItsRiprod/deskthing-client',
+        'https://github.com/ItsRiprod/DeskThing'
       ]
     }
 

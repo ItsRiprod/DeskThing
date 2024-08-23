@@ -248,6 +248,20 @@ const Apps = (): JSX.Element => {
               </div>
             )}
           </div>
+          <div className="font-geist p-5 italic ">
+            <p>
+              For the brave adventurers, this is what I use while developing apps so that I
+              don&apos;t need to keep zipping them to load them. If you want to attempt and take
+              advantage of this tool, change the &quot;id&quot; of your app manifest to
+              &quot;developer-app&quot; and enter the absolute file path to the /builds or /dist
+              file of your app. Then you should be able to run it just like you would any other app.
+              Once you compile a new version of your app, restart DeskThingServer with the power
+              button and put in the path again. This will unload the cache of your last version and
+              ensure it is running the latest.
+            </p>
+            <p>Enjoy!</p>
+            <p className="text-sm mt-5">-Riprod</p>
+          </div>
         </div>
       </div>
     </div>

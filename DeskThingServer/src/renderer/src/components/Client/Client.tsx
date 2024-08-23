@@ -1,11 +1,19 @@
 import { useEffect, useState } from 'react'
-import { IconLogoLoading } from '../icons'
+import { IconArrowDown, IconArrowRight, IconLogoLoading } from '../icons'
 import githubStore, { GithubRelease, GithubAsset } from '../../store/githubStore'
 import ReleaseList from '../ReleaseList'
 import ClientSettings from '../ClientSettings'
+import SettingsStoreInstance from '@renderer/store/settingsStore'
+import Loading from '../Loading'
+
+interface RepoReleases {
+  repoUrl: string
+  releases: GithubRelease[]
+}
 
 const Client = (): JSX.Element => {
-  const [releases, setReleases] = useState<GithubRelease[]>([])
+  const [repoReleases, setRepoReleases] = useState<RepoReleases[]>([])
+  const [openRepoUrl, setOpenRepoUrl] = useState<string | null>(null)
   const [openReleaseId, setOpenReleaseId] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -13,19 +21,32 @@ const Client = (): JSX.Element => {
 
   useEffect(() => {
     const fetchData = async (): Promise<void> => {
-      const data = await githubStore.fetchReleases('https://github.com/ItsRiprod/DeskThing')
-      setReleases(data)
+      try {
+        const settings = await SettingsStoreInstance.getSettings()
+
+        const appRepos = settings.clientRepos
+
+        if (appRepos.length === 0) {
+          setError('No app repositories configured')
+          return
+        }
+
+        const allReleases: RepoReleases[] = []
+        for (const repoUrl of appRepos) {
+          const releases = await githubStore.fetchReleases(repoUrl)
+          allReleases.push({ repoUrl, releases })
+        }
+        setRepoReleases(allReleases)
+      } catch (err) {
+        setError(`Error fetching releases: ${err}`)
+      }
     }
 
     fetchData()
   }, [])
 
-  const toggleDropdown = (releaseId: number): void => {
-    setOpenReleaseId(openReleaseId === releaseId ? null : releaseId)
-  }
-
   const filterAssets = (assets: GithubAsset[]): GithubAsset[] => {
-    return assets.filter((asset) => asset.name.includes('deskthing-client-build'))
+    return assets.filter((asset) => asset.name.includes('-client'))
   }
 
   const handleLogging = async (): Promise<void> => {
@@ -64,6 +85,15 @@ const Client = (): JSX.Element => {
     }
   }
 
+  const toggleRepoDropdown = (repoUrl: string): void => {
+    setOpenRepoUrl(openRepoUrl === repoUrl ? null : repoUrl)
+    setOpenReleaseId(null) // Close any open release when toggling repo
+  }
+
+  const toggleReleaseDropdown = (releaseId: number): void => {
+    setOpenReleaseId(openReleaseId === releaseId ? null : releaseId)
+  }
+
   return (
     <div className="pt-5 flex flex-col justify-around items-center">
       <div className="w-full p-3 max-w-2xl">
@@ -81,13 +111,30 @@ const Client = (): JSX.Element => {
         ) : (
           <div>
             <ClientSettings />
-            <ReleaseList
-              releases={releases}
-              openReleaseId={openReleaseId}
-              toggleDropdown={toggleDropdown}
-              filterAssets={filterAssets}
-              handleAssetClick={handleAssetClick}
-            />
+            {repoReleases.length > 0 ? (
+              repoReleases.map((repo) => (
+                <div key={repo.repoUrl} className="border-l rounded-xl">
+                  <button
+                    className="w-full flex justify-between px-4 py-2 text-left border-t mb-2 rounded-xl hover:font-bold focus:outline-none"
+                    onClick={() => toggleRepoDropdown(repo.repoUrl)}
+                  >
+                    {repo.repoUrl}
+                    {openRepoUrl === repo.repoUrl ? <IconArrowDown /> : <IconArrowRight />}
+                  </button>
+                  {openRepoUrl === repo.repoUrl && (
+                    <ReleaseList
+                      releases={repo.releases}
+                      openReleaseId={openReleaseId}
+                      toggleDropdown={toggleReleaseDropdown}
+                      filterAssets={filterAssets}
+                      handleAssetClick={handleAssetClick}
+                    />
+                  )}
+                </div>
+              ))
+            ) : (
+              <Loading message={'Fetching Releases'} />
+            )}
           </div>
         )}
       </div>

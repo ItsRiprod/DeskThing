@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { IconX, IconRefresh, IconSave } from '../icons'
+import { IconX, IconRefresh, IconSave, IconPlus } from '../icons'
 import SettingsStoreInstance, { Settings } from '@renderer/store/settingsStore'
+import { LogStore } from '@renderer/store'
 
 interface SettingsOverlayProps {
   setEnabled: (enabled: boolean) => void
@@ -8,6 +9,8 @@ interface SettingsOverlayProps {
 
 const SettingsOverlay = ({ setEnabled }: SettingsOverlayProps): JSX.Element => {
   const [settings, setSettings] = useState<Settings | null>(null)
+  const [newAppRepo, setNewAppRepo] = useState<string>('')
+  const [newClientRepo, setNewClientRepo] = useState<string>('')
 
   useEffect(() => {
     // Fetch current settings from electron store
@@ -45,6 +48,39 @@ const SettingsOverlay = ({ setEnabled }: SettingsOverlayProps): JSX.Element => {
   const handleReset = async (): Promise<void> => {
     const defaultSettings = await SettingsStoreInstance.requestSettings()
     setSettings(defaultSettings)
+  }
+
+  const handleAddRepo = (type: 'app' | 'client'): void => {
+    const url = type === 'app' ? newAppRepo : newClientRepo
+    if (url && validateURL(url)) {
+      handleSettingChange(type === 'app' ? 'appRepos' : 'clientRepos', [
+        ...(type === 'app' ? settings?.appRepos : settings?.clientRepos)!,
+        url
+      ])
+      type === 'app' ? setNewAppRepo('') : setNewClientRepo('')
+    } else {
+      LogStore.addLog('error', `Invalid ${type} repository URL: ${url}`)
+    }
+  }
+
+  const handleDeleteRepo = (type: 'app' | 'client', index: number): void => {
+    const updatedRepos = (type === 'app' ? settings?.appRepos : settings?.clientRepos)!.filter(
+      (_, i) => i !== index
+    )
+    handleSettingChange(type === 'app' ? 'appRepos' : 'clientRepos', updatedRepos)
+  }
+
+  const validateURL = (url: string): boolean => {
+    const pattern = new RegExp(
+      '^(https?:\\/\\/)?' + // protocol
+        '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' + // domain name
+        '((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
+        '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
+        '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
+        '(\\#[-a-z\\d_]*)?$',
+      'i'
+    ) // fragment locator
+    return !!pattern.test(url)
   }
 
   if (!settings) {
@@ -147,29 +183,68 @@ const SettingsOverlay = ({ setEnabled }: SettingsOverlayProps): JSX.Element => {
             </div>
           </div>
 
-          <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex justify-between items-center">
+          <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex flex-col gap-3">
             <p>Saved App Repos:</p>
-            <div className="group flex items-center">
-              <p className="group-hover:block hidden">Use local adb (false) or global adb (true)</p>
+            {settings?.appRepos.map((repo, index) => (
+              <div key={index} className="flex justify-between items-center">
+                <div className="h-10 bg-slate-500 flex items-center rounded px-2 text-gray-300">
+                  <p>{repo}</p>
+                </div>
+                <button
+                  onClick={() => handleDeleteRepo('app', index)}
+                  className="text-red-500 hover:text-red-700 focus:outline-none"
+                >
+                  <IconX />
+                </button>
+              </div>
+            ))}
+            <div className="flex">
               <input
-                type="checkbox"
-                checked={settings.globalADB}
-                onChange={(e) => handleSettingChange('globalADB', e.target.checked)}
-                className="form-checkbox h-5 w-5 text-blue-600"
+                type="text"
+                value={newAppRepo}
+                onChange={(e) => setNewAppRepo(e.target.value)}
+                placeholder="Add new app repo"
+                className="h-10 bg-slate-500 rounded focus:bg-white active:bg-white focus:text-black active:text-black px-2 text-white-600 flex-grow"
               />
+              <button
+                onClick={() => handleAddRepo('app')}
+                className="text-green-500 hover:text-green-700 focus:outline-none ml-2"
+              >
+                <IconPlus />
+              </button>
             </div>
           </div>
 
-          <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex justify-between items-center">
+          {/* Saved Client Repos */}
+          <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex flex-col gap-3">
             <p>Saved Client Repos:</p>
-            <div className="group flex items-center">
-              <p className="group-hover:block hidden">Use local adb (false) or global adb (true)</p>
+            {settings?.clientRepos.map((repo, index) => (
+              <div key={index} className="flex justify-between items-center">
+                <div className="h-10 bg-slate-500 flex items-center rounded px-2 text-gray-300">
+                  <p>{repo}</p>
+                </div>
+                <button
+                  onClick={() => handleDeleteRepo('client', index)}
+                  className="text-red-500 hover:text-red-700 focus:outline-none"
+                >
+                  <IconX />
+                </button>
+              </div>
+            ))}
+            <div className="flex">
               <input
-                type="checkbox"
-                checked={settings.globalADB}
-                onChange={(e) => handleSettingChange('globalADB', e.target.checked)}
-                className="form-checkbox h-5 w-5 text-blue-600"
+                type="text"
+                value={newClientRepo}
+                onChange={(e) => setNewClientRepo(e.target.value)}
+                placeholder="Add new client repo"
+                className="h-10 bg-slate-500 rounded focus:bg-white active:bg-white focus:text-black active:text-black px-2 text-white-600 flex-grow"
               />
+              <button
+                onClick={() => handleAddRepo('client')}
+                className="text-green-500 hover:text-green-700 focus:outline-none ml-2"
+              >
+                <IconPlus />
+              </button>
             </div>
           </div>
         </div>
