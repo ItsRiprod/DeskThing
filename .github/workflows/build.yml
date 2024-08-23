@@ -58,5 +58,5 @@ jobs:
         with:
           repo_token: ${{ secrets.github_token }}
           file: ./DeskThingServer/dist/*
-          asset_name: DeskThing-${{ matrix.os }}
+          asset_name: DeskThingServer-${{ runner.os }}-${{ steps.get_current_release.outputs.tag_name }}
           tag: ${{ steps.get_current_release.outputs.tag_name }}
