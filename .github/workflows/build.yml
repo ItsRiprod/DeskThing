@@ -1,4 +1,4 @@
-name: Build/release
+name: build and release
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
     name: Build ${{ matrix.os }}
     steps:
@@ -50,6 +50,6 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.github_token }}
-          file: ${{ github.workspace }}/DeskThingServer/dist/*
+          file: ./DeskThingServer/dist/*
           asset_name: DeskThing-${{ steps.get_version.outputs.VERSION }}-${{ matrix.os }}
           tag: ${{ steps.get_version.outputs.VERSION }}
