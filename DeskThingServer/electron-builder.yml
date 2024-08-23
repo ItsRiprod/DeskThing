@@ -14,7 +14,7 @@ asarUnpack:
   - bin/**
 win:
   executableName: DeskThing
-  artifactName: ${name}-windows-${version}-setup.${ext}
+  artifactName: ${name}-${os}-setup-${version}.${ext}
   extraFiles:
     - from: 'adb_source/win'
       to: 'resources/win'
@@ -35,7 +35,7 @@ mac:
     - from: 'adb_source/mac'
       to: 'resources/mac'
 dmg:
-  artifactName: ${name}-mac-${version}-setup.${ext}
+  artifactName: ${name}-${os}-${arch}-${version}-setup.${ext}
 linux:
   target:
     - AppImage
@@ -46,7 +46,7 @@ linux:
     - from: 'adb_source/linux'
       to: 'resources/linux'
 appImage:
-  artifactName: ${name}-linux-${version}-setup.${ext}
+  artifactName: ${name}-${os}-${version}-setup.${ext}
 npmRebuild: false
 publish:
   provider: generic
