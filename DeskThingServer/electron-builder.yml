@@ -19,7 +19,7 @@ win:
     - from: 'adb_source/win'
       to: 'resources/win'
 nsis:
-  artifactName: ${name}-setup-${version}.${ext}
+  artifactName: ${name}-${os}-setup-${version}.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
