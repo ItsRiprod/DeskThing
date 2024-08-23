@@ -52,7 +52,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload mac/linux binaries to release
+      - name: Upload MacOS/Linux binaries to release
         if: ${{ matrix.os != 'windows-latest' }}
         uses: jaywcjlove/github-action-upload-assets@main
         with:
@@ -63,5 +63,5 @@ jobs:
         if: ${{ matrix.os == 'windows-latest' }}
         uses: jaywcjlove/github-action-upload-assets@main
         with:
-          asset-path: '[".\DeskThingServer\dist\deskthing-*"]'
+          asset-path: '["${{ github.workspace }}\DeskThingServer\dist\deskthing-0.8.0-setup.exe.blockmap", "${{ github.workspace }}\DeskThingServer\dist\deskthing-0.8.0-setup.exe"]'
           tag: ${{ steps.get_current_release.outputs.tag_name }}
