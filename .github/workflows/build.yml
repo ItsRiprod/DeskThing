@@ -49,14 +49,11 @@ jobs:
           latest: true
           pattern: '^v.*'
           prerelease: true
-          debug: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload binaries to release
-        uses: svenstaro/upload-release-action@v2
+        uses: jaywcjlove/github-action-upload-assets@main
         with:
-          repo_token: ${{ secrets.github_token }}
-          file: ./DeskThingServer/dist/*
-          asset_name: DeskThingServer-${{ runner.os }}-${{ steps.get_current_release.outputs.tag_name }}
+          asset-path: '["${{ github.workspace }}/DeskThingServer/dist/*"]'
           tag: ${{ steps.get_current_release.outputs.tag_name }}
