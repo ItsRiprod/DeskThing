@@ -15,6 +15,7 @@ jobs:
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
 
+    name: Build ${{ matrix.os }}
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v4
@@ -27,6 +28,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache-dependency-path: ${{ github.workspace }}/DeskThingServer/package-lock.json
+      - run: npm ci
+      - run: npm test
 
       - name: Build/release Electron app
         uses: paneron/action-electron-builder@v1.8.1
