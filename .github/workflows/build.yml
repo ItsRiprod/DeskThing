@@ -45,7 +45,7 @@ jobs:
       - name: List dir windows
         if: ${{ matrix.os == 'windows-latest' }}
         run: |
-          cd DesthingServer\dist
+          cd DesthingServer/dist
           dir /S
 
       - name: Get Current Release
