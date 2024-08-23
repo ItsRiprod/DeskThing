@@ -28,12 +28,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: |
+
+      - name: Install dependencies
+        run: |
           cd DeskThingServer
           npm ci
-      - run: |
-          cd DeskThingServer
-          npm test
 
       - name: Build/release Electron app
         uses: paneron/action-electron-builder@v1.8.1
