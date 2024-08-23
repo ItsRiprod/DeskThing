@@ -3,13 +3,19 @@ import dataListener, { MESSAGE_TYPES } from '../utils/events'
 import os from 'os'
 import { socketData } from '../handlers/websocketServer'
 
+const settingsVersion = '0.8.0'
+
 export interface Settings {
+  version: string
   callbackPort: number
   devicePort: number
   address: string
   autoStart: boolean
   minimizeApp: boolean
   localIp: string[]
+  globalADB: boolean
+  appRepos: string[]
+  clientRepos: string[]
   [key: string]: any // For any additional settings
 }
 
@@ -70,7 +76,7 @@ class SettingsStore {
     try {
       const data = await readFromFile<Settings>(this.settingsFilePath)
       dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'SETTINGS: Loaded settings!')
-      if (!data) {
+      if (!data || data.version !== settingsVersion) {
         // File does not exist, create it with default settings
         const defaultSettings = this.getDefaultSettings()
         await writeToFile(defaultSettings, this.settingsFilePath)
@@ -107,12 +113,22 @@ class SettingsStore {
 
   private getDefaultSettings(): Settings {
     return {
+      version: settingsVersion,
       callbackPort: 8888,
       devicePort: 8891,
       address: '0.0.0.0',
       autoStart: false,
       minimizeApp: true,
-      localIp: getLocalIpAddress()
+      globalADB: false,
+      localIp: getLocalIpAddress(),
+      appRepos: [
+        'https://github.com/ItsRiprod/DeskThing',
+        'https://github.com/ItsRiprod/deskthing-apps'
+      ],
+      clientRepos: [
+        'https://github.com/ItsRiprod/DeskThing',
+        'https://github.com/ItsRiprod/deskthing-client'
+      ]
     }
   }
 }

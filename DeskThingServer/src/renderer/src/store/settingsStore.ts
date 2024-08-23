@@ -7,6 +7,9 @@ export interface Settings {
   localIp: string[]
   autoStart: boolean
   minimizeApp: boolean
+  globalADB: boolean
+  appRepos: string[]
+  clientRepos: string[]
 }
 
 export type SocketData = {
@@ -31,7 +34,16 @@ class SettingsStore extends EventEmitter<SettingsStoreEvents> {
       address: '-.-.-.-',
       autoStart: true,
       minimizeApp: true,
-      localIp: ['-.-.-.-']
+      globalADB: true,
+      localIp: ['-.-.-.-'],
+      appRepos: [
+        'https://github.com/ItsRiprod/DeskThing',
+        'https://github.com/ItsRiprod/deskthing-apps'
+      ],
+      clientRepos: [
+        'https://github.com/ItsRiprod/DeskThing',
+        'https://github.com/ItsRiprod/deskthing-client'
+      ]
     }
 
     window.electron.ipcRenderer.on('settings-updated', this.handleSettingsUpdated.bind(this))

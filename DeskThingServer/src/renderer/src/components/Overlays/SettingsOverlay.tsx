@@ -133,6 +133,45 @@ const SettingsOverlay = ({ setEnabled }: SettingsOverlayProps): JSX.Element => {
               />
             </div>
           </div>
+
+          <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex justify-between items-center">
+            <p>Global ADB:</p>
+            <div className="group flex items-center">
+              <p className="group-hover:block hidden">Use local adb (false) or global adb (true)</p>
+              <input
+                type="checkbox"
+                checked={settings.globalADB}
+                onChange={(e) => handleSettingChange('globalADB', e.target.checked)}
+                className="form-checkbox h-5 w-5 text-blue-600"
+              />
+            </div>
+          </div>
+
+          <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex justify-between items-center">
+            <p>Saved App Repos:</p>
+            <div className="group flex items-center">
+              <p className="group-hover:block hidden">Use local adb (false) or global adb (true)</p>
+              <input
+                type="checkbox"
+                checked={settings.globalADB}
+                onChange={(e) => handleSettingChange('globalADB', e.target.checked)}
+                className="form-checkbox h-5 w-5 text-blue-600"
+              />
+            </div>
+          </div>
+
+          <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex justify-between items-center">
+            <p>Saved Client Repos:</p>
+            <div className="group flex items-center">
+              <p className="group-hover:block hidden">Use local adb (false) or global adb (true)</p>
+              <input
+                type="checkbox"
+                checked={settings.globalADB}
+                onChange={(e) => handleSettingChange('globalADB', e.target.checked)}
+                className="form-checkbox h-5 w-5 text-blue-600"
+              />
+            </div>
+          </div>
         </div>
 
         <div className="bg-slate-700 p-5 m-1 flex justify-between rounded-lg drop-shadow-lg">
