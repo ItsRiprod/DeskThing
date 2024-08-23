@@ -42,10 +42,21 @@ jobs:
           package_root: ${{ github.workspace }}/DeskThingServer
           release: ${{ startsWith(github.ref, 'refs/tags/v') }}
 
+      - name: Get Current Release
+        id: get_current_release
+        uses: joutvhu/get-release@v1
+        with:
+          latest: true
+          pattern: '^v.*'
+          prerelease: true
+          debug: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.github_token }}
           file: ./DeskThingServer/dist/*
           asset_name: DeskThing-${{ matrix.os }}
-          tag: ${{ github.event.release.tag_name }}
+          tag: ${{ steps.get_current_release.outputs.upload_url }}
