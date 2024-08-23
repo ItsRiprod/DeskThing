@@ -28,9 +28,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache-dependency-path: /DeskThingServer/package-lock.json
-      - run: npm ci
-      - run: npm test
+      - run: cd ${{ github.workspace }}/DeskThingServer
+          npm ci
+      - run: cd ${{ github.workspace }}/DeskThingServer
+          npm test
 
       - name: Build/release Electron app
         uses: paneron/action-electron-builder@v1.8.1
