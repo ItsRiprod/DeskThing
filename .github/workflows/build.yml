@@ -59,4 +59,4 @@ jobs:
           repo_token: ${{ secrets.github_token }}
           file: ./DeskThingServer/dist/*
           asset_name: DeskThing-${{ matrix.os }}
-          tag: ${{ steps.get_current_release.outputs.upload_url }}
+          tag: ${{ steps.get_current_release.outputs.tag_name }}
