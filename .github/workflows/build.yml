@@ -55,19 +55,20 @@ jobs:
         if: ${{ matrix.os == 'macos-latest' }}
         uses: jaywcjlove/github-action-upload-assets@main
         with:
-          asset-path: '["${{ github.workspace }}/DeskThingServer/dist/deskthing-mac-*"]'
+          asset-path: '["${{ github.workspace }}/DeskThingServer/dist/deskthing-mac-*.dmg"]'
           tag: ${{ steps.get_current_release.outputs.tag_name }}
 
       - name: Upload Linux binaries to release
         if: ${{ matrix.os == 'ubuntu-latest' }}
         uses: jaywcjlove/github-action-upload-assets@main
         with:
-          asset-path: '["${{ github.workspace }}/DeskThingServer/dist/deskthing-linux-*"]'
+          asset-path: '["${{ github.workspace }}/DeskThingServer/dist/deskthing-linux-*.AppImage"]'
           tag: ${{ steps.get_current_release.outputs.tag_name }}
 
       - name: Upload Windows binaries to release
         if: ${{ matrix.os == 'windows-latest' }}
-        uses: actions/upload-artifact@v4
+        uses: AButler/upload-release-assets@v3.0
         with:
-          name: deskthing-setup-${{matrix.os}}-${{ steps.get_current_release.outputs.tag_name }}
-          path: ${{ github.workspace }}\DeskThingServer/dist/**/*
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          files: ${{ github.workspace }}\DeskThingServer/dist/deskthing-setup-*.exe
+          release-tag: ${{ steps.get_current_release.outputs.tag_name }}
