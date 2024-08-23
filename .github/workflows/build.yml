@@ -51,24 +51,21 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload MacOS binaries to release
-        if: ${{ matrix.os == 'macos-latest' }}
-        uses: jaywcjlove/github-action-upload-assets@main
+      - name: Upload binaries to artifacts
+        uses: actions/upload-artifact@v4
         with:
-          asset-path: '["${{ github.workspace }}/DeskThingServer/dist/deskthing-mac-*.dmg"]'
-          tag: ${{ steps.get_current_release.outputs.tag_name }}
+          name: deskthing-setup-${{matrix.os}}-${{ steps.get_current_release.outputs.tag_name }}
+          path: ${{ github.workspace }}\DeskThingServer/dist/*
 
-      - name: Upload Linux binaries to release
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        uses: jaywcjlove/github-action-upload-assets@main
+  publish:
+    needs: [release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+      - uses: softprops/action-gh-release@v2
         with:
-          asset-path: '["${{ github.workspace }}/DeskThingServer/dist/deskthing-linux-*.AppImage"]'
-          tag: ${{ steps.get_current_release.outputs.tag_name }}
-
-      - name: Upload Windows binaries to release
-        if: ${{ matrix.os == 'windows-latest' }}
-        uses: AButler/upload-release-assets@v3.0
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          files: ${{ github.workspace }}\DeskThingServer/dist/deskthing-setup-*.exe
-          release-tag: ${{ steps.get_current_release.outputs.tag_name }}
+          files: |
+            deskthing-setup-*
