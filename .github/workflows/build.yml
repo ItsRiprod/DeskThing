@@ -55,5 +55,5 @@ jobs:
       - name: Upload binaries to release
         uses: jaywcjlove/github-action-upload-assets@main
         with:
-          asset-path: '["${{ github.workspace }}/DeskThingServer/dist/*"]'
+          asset-path: '["${{ github.workspace }}/DeskThingServer/dist/deskthing-*"]'
           tag: ${{ steps.get_current_release.outputs.tag_name }}
