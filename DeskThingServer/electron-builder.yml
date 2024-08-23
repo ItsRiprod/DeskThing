@@ -14,12 +14,12 @@ asarUnpack:
   - bin/**
 win:
   executableName: DeskThing
-  artifactName: ${name}-${os}-setup-${version}.${ext}
+  artifactName: ${name}-${os}-${version}-setup.${ext}
   extraFiles:
     - from: 'adb_source/win'
       to: 'resources/win'
 nsis:
-  artifactName: ${name}-${os}-setup-${version}.${ext}
+  artifactName: ${name}-${os}-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
