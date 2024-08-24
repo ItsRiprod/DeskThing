@@ -14,12 +14,12 @@ asarUnpack:
   - bin/**
 win:
   executableName: DeskThing
-  artifactName: ${name}-${version}-windows-setup.${ext}
+  artifactName: ${name}-${os}-${version}-setup.${ext}
   extraFiles:
-    - from: "adb_source/win"
-      to: "resources/win"
+    - from: 'adb_source/win'
+      to: 'resources/win'
 nsis:
-  artifactName: ${name}-${version}-setup.${ext}
+  artifactName: ${name}-${os}-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
@@ -32,10 +32,10 @@ mac:
     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
   notarize: false
   extraFiles:
-    - from: "adb_source/mac"
-      to: "resources/mac"
+    - from: 'adb_source/mac'
+      to: 'resources/mac'
 dmg:
-  artifactName: ${name}-${version}-mac-setup.${ext}
+  artifactName: ${name}-${os}-${arch}-${version}-setup.${ext}
 linux:
   target:
     - AppImage
@@ -43,10 +43,10 @@ linux:
   maintainer: Riprod
   category: Utility
   extraFiles:
-    - from: "adb_source/linux"
-      to: "resources/linux"
+    - from: 'adb_source/linux'
+      to: 'resources/linux'
 appImage:
-  artifactName: ${name}-${version}-linux-setup.${ext}
+  artifactName: ${name}-${os}-${version}-setup.${ext}
 npmRebuild: false
 publish:
   provider: generic
