@@ -119,7 +119,7 @@ const Sidebar: React.FC<SidebarProps> = ({ setCurrentView, currentView }) => {
           className="group sm:flex-col items-center flex-row-reverse flex sm:border p-2 rounded-xl border-zinc-500 hover:bg-zinc-900 hover:text-red-500"
           onClick={() => window.electron.ipcRenderer.send('shutdown')}
         >
-          <p className="group-hover:block hidden">Close</p>
+          <p className="group-hover:block hidden">Shutdown</p>
           <IconPower iconSize={24} />
         </button>
         <a

@@ -25,10 +25,12 @@ const splitArgs = (str: string): string[] => {
 }
 
 export const handleAdbCommands = async (command: string, event?): Promise<string> => {
-  const useGlobalADB = (await settingsStore.getSettings()).payload.globalADB || true
+  const settings = await settingsStore.getSettings()
+  const useGlobalADB = settings.payload.globalADB === true
+  dataListener.emit(MESSAGE_TYPES.LOGGING, useGlobalADB ? 'Using Global ADB' : 'Using Local ADB')
   return new Promise((resolve, reject) => {
     execFile(
-      useGlobalADB ? adbPath : 'adb',
+      useGlobalADB ? 'adb' : adbPath,
       splitArgs(command),
       { cwd: execPath },
       (error, stdout, stderr) => {

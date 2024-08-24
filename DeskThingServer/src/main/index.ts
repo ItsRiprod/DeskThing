@@ -12,6 +12,7 @@ import {
 import { join } from 'path'
 import path from 'path'
 import icon from '../../resources/icon.ico?asset'
+import linuxIcon from '../../resources/icon.png?asset'
 import { GithubRelease } from './types/types'
 import { ServerManifest } from './handlers/deviceHandler'
 import { Settings } from './stores/settingsStore'
@@ -65,7 +66,7 @@ function createMainWindow(): BrowserWindow {
     icon: icon,
     show: false,
     autoHideMenuBar: true,
-    ...(process.platform === 'linux' ? { icon: icon } : {}),
+    ...(process.platform === 'linux' ? { icon: linuxIcon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false

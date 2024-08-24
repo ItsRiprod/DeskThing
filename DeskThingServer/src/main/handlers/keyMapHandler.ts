@@ -612,6 +612,10 @@ const removeAction = (actionId: string): void => {
   saveMappings(mappings)
 }
 
+/**
+ * Removes all keys and mappings relating to the App
+ * @param appId The ID of the app to remove
+ */
 const removeAppData = (appId: string): void => {
   const mappings = loadMappings()
 

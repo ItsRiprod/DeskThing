@@ -540,16 +540,19 @@ async function purgeApp(appName: string): Promise<void> {
     if (appInstance && typeof appInstance.purge === 'function') {
       await appInstance.purge()
     }
-    runningApps.delete(appName)
+    const isDeleted = runningApps.delete(appName)
     console.log('stopped ', appName)
+    dataListener.emit(
+      MESSAGE_TYPES.LOGGING,
+      isDeleted
+        ? `Deleted ${appName} from runningApps map`
+        : `Unable to find or delete ${appName} from runningApps map`
+    )
     // Load existing apps config
     const appConfig = await getAppByName(appName)
 
     if (!appConfig) {
-      console.log('App not found in config, adding it')
-      // App not found in config, add it
-      const newAppConfig = { name: appName, enabled: false, running: false, prefIndex: 5 } // 5 is the default index
-      await setAppData(newAppConfig)
+      console.log('App not found in config, nothing to set!')
     } else if (appConfig.enabled) {
       // App found but not enabled, enable it
       appConfig.enabled = false
@@ -559,10 +562,6 @@ async function purgeApp(appName: string): Promise<void> {
     } else {
       console.log(`App ${appName} is already disabled`)
     }
-
-    // Remove the app from memory cache
-    const appDirectory = getAppFilePath(appName)
-    clearCache(appDirectory)
 
     sendPrefData()
   } catch (error) {
@@ -580,20 +579,24 @@ async function clearCache(dir: string): Promise<void> {
 
       if (stats.isDirectory()) {
         // Recursively clear directories
-        //clearCache(itemPath)
+        clearCache(itemPath)
       } else if (stats.isFile()) {
-        // Resolve and clear file from cache
-        const resolvedPath = require.resolve(itemPath)
-        if (require.cache[resolvedPath]) {
-          delete require.cache[resolvedPath]
-          console.log(`Removed ${resolvedPath} from cache`)
-          dataListener.asyncEmit(
-            MESSAGE_TYPES.LOGGING,
-            `SERVER: Removed ${resolvedPath} from cache`
-          )
-        } else {
-          console.log(`${resolvedPath} not in cache`)
-          dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `SERVER: ${resolvedPath} not in cache!`)
+        try {
+          // Resolve and clear file from cache
+          const resolvedPath = require.resolve(itemPath)
+          if (require.cache[resolvedPath]) {
+            delete require.cache[resolvedPath]
+            console.log(`Removed ${resolvedPath} from cache`)
+            dataListener.asyncEmit(
+              MESSAGE_TYPES.LOGGING,
+              `SERVER: Removed ${resolvedPath} from cache`
+            )
+          } else {
+            console.log(`${resolvedPath} not in cache`)
+            dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `SERVER: ${resolvedPath} not in cache!`)
+          }
+        } catch (e) {
+          console.log(e)
         }
       }
     })
