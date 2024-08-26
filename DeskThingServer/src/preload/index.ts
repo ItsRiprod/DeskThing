@@ -13,8 +13,22 @@ const api = {
   getLogs: (): Promise<string[]> => ipcRenderer.invoke('get-logs'),
   getMaps: (): Promise<any> => ipcRenderer.invoke('get-maps'),
   setMaps: (name: string, map: any): Promise<void> => ipcRenderer.invoke('set-maps', name, map),
+  getAppData: (appId: string): Promise<{ [key: string]: string }> =>
+    ipcRenderer.invoke('get-app-data', appId),
   getSettings: (): Promise<any> => ipcRenderer.invoke('get-settings'),
   saveSettings: (settings: any): Promise<void> => ipcRenderer.invoke('save-settings', settings),
+  saveAppSetting: (
+    appId: string,
+    setting: { id: string; value: string | number | boolean }
+  ): Promise<void> =>
+    ipcRenderer.invoke('send-to-app', {
+      app: appId,
+      type: 'set',
+      request: 'settings',
+      payload: setting
+    }),
+  saveAppData: (appId: string, data: { [key: string]: string | any }): Promise<void> =>
+    ipcRenderer.invoke('set-app-data', appId, data),
   getClientManifest: (): Promise<any> => ipcRenderer.invoke('get-client-manifest'),
   setClientManifest: (manifest: any): Promise<void> =>
     ipcRenderer.invoke('set-client-manifest', manifest)

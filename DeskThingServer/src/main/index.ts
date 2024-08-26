@@ -16,6 +16,7 @@ import linuxIcon from '../../resources/icon.png?asset'
 import { GithubRelease } from './types/types'
 import { ServerManifest } from './handlers/deviceHandler'
 import { Settings } from './stores/settingsStore'
+import { socketData } from './handlers/websocketServer'
 
 let mainWindow: BrowserWindow | null = null
 let clientWindow: BrowserWindow | null = null
@@ -38,12 +39,14 @@ const IPC_CHANNELS = {
   GET_SETTINGS: 'get-settings',
   SAVE_SETTINGS: 'save-settings',
   GET_APPS: 'get-apps',
+  GET_APP_DATA: 'get-app-data',
   GET_GITHUB: 'fetch-github-releases',
   GET_LOGS: 'get-logs',
   GET_MAPS: 'get-maps',
   SET_MAP: 'set-maps',
   GET_CLIENT_MANIFEST: 'get-client-manifest',
   SET_CLIENT_MANIFEST: 'set-client-manifest',
+  SET_APP_DATA: 'set-app-data',
   STOP_APP: 'stop-app',
   DISABLE_APP: 'disable-app',
   PURGE_APP: 'purge-app',
@@ -54,7 +57,8 @@ const IPC_CHANNELS = {
   EXTRACT_APP_ZIP_URL: 'extract-app-zip-url',
   PUSH_STAGED_WEBAPP: 'push-staged',
   SHUTDOWN: 'shutdown',
-  DEV_ADD_APP: 'dev-add-app'
+  DEV_ADD_APP: 'dev-add-app',
+  SEND_TO_APP: 'send-to-app'
 }
 
 function createMainWindow(): BrowserWindow {
@@ -266,6 +270,7 @@ async function setupIpcHandlers(): Promise<void> {
     stopApp,
     purgeAppData
   } = await import('./handlers/appHandler')
+  const { getData, setData } = await import('./handlers/dataHandler')
   const { loadMappings, setMappings } = await import('./handlers/keyMapHandler')
   const { handleAdbCommands } = await import('./handlers/adbHandler')
   const { sendData } = await import('./handlers/websocketServer')
@@ -364,6 +369,34 @@ async function setupIpcHandlers(): Promise<void> {
     sendMessageToApp(requestId, data)
   })
 
+  ipcMain.handle(IPC_CHANNELS.SEND_TO_APP, async (event, data: socketData) => {
+    console.log('sending data to app: ', data.app, data)
+    await sendMessageToApp(data.app, data)
+    event.sender.emit('logging', { status: true, data: 'Finished', final: true })
+  })
+
+  ipcMain.handle(
+    IPC_CHANNELS.SET_APP_DATA,
+    async (event, appId: string, data: { [key: string]: string }) => {
+      console.log('Saving app data: ', data)
+      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'SERVER: Saving ' + appId + "'s data " + data)
+      await setData(appId, data)
+      event.sender.emit('logging', { status: true, data: 'Finished', final: true })
+    }
+  )
+
+  ipcMain.handle(IPC_CHANNELS.GET_APP_DATA, async (event, appId: string) => {
+    try {
+      const data = await getData(appId)
+      event.sender.emit('logging', { status: true, data: 'Finished', final: true })
+      return data
+    } catch (error) {
+      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'SERVER: Error saving manifest' + error)
+      console.error('Error setting client manifest:', error)
+      event.sender.emit('logging', { status: false, data: 'Unfinished', error: error, final: true })
+      return null
+    }
+  })
   ipcMain.handle(
     IPC_CHANNELS.SET_CLIENT_MANIFEST,
     async (event, manifest: Partial<ServerManifest>) => {

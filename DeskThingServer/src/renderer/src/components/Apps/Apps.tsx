@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useAppStore, App } from '../../store/appStore'
-import { IconX, IconPause, IconPlay, IconDetails, IconPulsing } from '../icons'
+import { IconX, IconPause, IconPlay, IconDetails, IconPulsing, IconLogoGear } from '../icons'
 import DisplayAppData from '../Overlays/DisplayAppData'
 import RequestStoreInstance, { Request } from '../../store/requestStore'
 import AppRequestOverlay from '../Overlays/AppRequest'
+import AppSettingsOverlay from '../Overlays/AppSettingsOverlay'
 
 export type View = 'apps' | 'local' | 'web'
 
@@ -11,6 +12,7 @@ const Apps = (): JSX.Element => {
   const { appsList } = useAppStore()
   const [tooltips, setTooltips] = useState<string[]>([])
   const [enabled, setEnabled] = useState(false)
+  const [sEnabled, setSEnabled] = useState(false)
   const [appIndex, setAppIndex] = useState(-1)
   const [appsWithActiveRequests, setAppsWithActiveRequests] = useState<string[]>([])
   const [currentRequest, setCurrentRequest] = useState<[string, Request | null]>(['', null])
@@ -31,6 +33,10 @@ const Apps = (): JSX.Element => {
   const handleDetails = (appIndex: number): void => {
     setAppIndex(appIndex)
     setEnabled(true)
+  }
+  const handleSettings = (appIndex: number): void => {
+    setAppIndex(appIndex)
+    setSEnabled(true)
   }
   const requestAppsList = (): void => window.electron.ipcRenderer.send('get-apps')
 
@@ -76,23 +82,33 @@ const Apps = (): JSX.Element => {
           />
         )}
         {enabled && <DisplayAppData appIndex={appIndex} setEnabled={setEnabled} data={appsList} />}
+        {sEnabled && (
+          <AppSettingsOverlay appIndex={appIndex} setEnabled={setSEnabled} data={appsList} />
+        )}
         {appsList?.apps?.length > 0 && Object.keys(appsList.apps).length > 0 ? (
-          <div className="pt-5 w-full flex 2xl:flex-row 2xl:flex-wrap flex-col items-center gap-2">
+          <div className="pt-5 w-full flex xl:flex-row xl:flex-wrap flex-col items-center gap-2">
             {(appsList.apps as App[]).map((app, appIndex) => (
               <div
                 key={appIndex}
-                className="border-2 border-zinc-400 p-5 w-11/12 md:w-11/12 2xl:w-96 h-fit flex justify-between rounded-3xl shadow-lg px-5 items-center"
+                className="border-2 border-zinc-400 p-5 w-11/12 md:w-11/12 xl:w-fit h-fit flex justify-between rounded-3xl shadow-lg px-5 items-center"
               >
-                <div className="flex flex-wrap sm:flex-nowrap gap-2">
+                <div className="flex flex-wrap sm:flex-nowrap gap-2 xl:mr-2">
+                  <button
+                    className="group h-fit flex gap-2 border-2 border-gray-500 hover:bg-gray-500 text-gray-400 hover:text-gray-200 p-2 rounded-lg"
+                    onClick={() => handleSettings(appIndex)}
+                  >
+                    <IconLogoGear />
+                    <p className="group-hover:block hidden text-white">Settings</p>
+                  </button>
                   <button
                     onClick={() => handleDetails(appIndex)}
-                    className="group flex  gap-2 border-2 top-10 border-green-600 hover:bg-green-500  p-2 rounded-lg"
+                    className="group h-fit flex gap-2 border-2 top-10 border-green-600 hover:bg-green-500  p-2 rounded-lg"
                   >
                     <IconDetails iconSize={24} />
                     <p className="group-hover:block hidden">Details</p>
                   </button>
                   <div>
-                    <p>{app.manifest ? app.manifest.label : app.name}</p>
+                    <p className="lg:text-nowrap">{app.manifest ? app.manifest.label : app.name}</p>
                     <p className="text-zinc-400 text-xs font-geistMono">{app.manifest?.version}</p>
                   </div>
                 </div>
@@ -121,6 +137,24 @@ const Apps = (): JSX.Element => {
                     >
                       <IconPulsing />
                     </button>
+                    <button
+                      className="border-2 border-red-600 hover:bg-red-500 p-2 rounded-lg"
+                      onClick={() => handleDisableApp(app.name)}
+                      onMouseEnter={() =>
+                        setTooltips((prevTooltips) => ({
+                          ...prevTooltips,
+                          [appIndex]: 'Disable App'
+                        }))
+                      }
+                      onMouseLeave={() =>
+                        setTooltips((prevTooltips) => ({
+                          ...prevTooltips,
+                          [appIndex]: ''
+                        }))
+                      }
+                    >
+                      <IconX />
+                    </button>
                   </div>
                 ) : app.enabled ? (
                   <div className="flex items-center md:flex-row flex-col">
@@ -133,7 +167,6 @@ const Apps = (): JSX.Element => {
                         <p className="text-red-600">Stopped</p>
                       )}
                     </div>
-
                     {app.running ? (
                       <button
                         className="border-2 border-amber-600 hover:bg-amber-500 m-1 p-2 rounded-lg"
