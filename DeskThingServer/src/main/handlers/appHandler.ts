@@ -288,7 +288,7 @@ async function runApp(appName: string): Promise<void> {
     }
     console.log(appEntryPoint)
     if (fs.existsSync(appEntryPoint)) {
-      const { DeskThing } = await import(`file://${resolve(appEntryPoint)}`)
+      const { DeskThing } = await import(`file://${resolve(appEntryPoint)}?cacheBust=${Date.now()}`)
       const App = DeskThing
       let manifest
 
@@ -585,12 +585,14 @@ async function clearCache(dir: string): Promise<void> {
           // Resolve and clear file from cache
           const resolvedPath = require.resolve(itemPath)
           if (require.cache[resolvedPath]) {
+            console.log(require.cache[resolvedPath])
             delete require.cache[resolvedPath]
             console.log(`Removed ${resolvedPath} from cache`)
             dataListener.asyncEmit(
               MESSAGE_TYPES.LOGGING,
               `SERVER: Removed ${resolvedPath} from cache`
             )
+            console.log(require.cache[resolvedPath])
           } else {
             console.log(`${resolvedPath} not in cache`)
             dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `SERVER: ${resolvedPath} not in cache!`)
