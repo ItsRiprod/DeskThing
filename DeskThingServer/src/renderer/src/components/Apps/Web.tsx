@@ -165,6 +165,7 @@ const Web = (): JSX.Element => {
 
   return (
     <div className="pt-5 flex flex-col justify-around items-center">
+      <h1 className="text-2xl font-semibold font-geist my-2">Downloadable Apps</h1>
       {!appData?.appId ? (
         <div className="w-full max-w-2xl">
           {loading ? (
