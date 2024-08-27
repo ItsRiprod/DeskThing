@@ -142,6 +142,8 @@ const AppSettingsOverlay: React.FC<AppSettingsOverlayProps> = ({ appIndex, setEn
                           />
                         </div>
                       )
+                    } else {
+                      return null
                     }
                   })}
               </div>

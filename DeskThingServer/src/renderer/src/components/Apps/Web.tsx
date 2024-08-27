@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { IconArrowDown, IconArrowRight, IconLogoLoading } from '../icons'
+import { DragEvent, useEffect, useState } from 'react'
+import { IconArrowDown, IconArrowRight, IconLogoLoading, IconUpload } from '../icons'
 import githubStore, { GithubRelease, GithubAsset } from '../../store/githubStore'
 import ReleaseList from '../ReleaseList'
 import RunPreppedApp from './RunPreppedApp'
@@ -11,6 +11,7 @@ interface responseData {
   final: boolean
   error?: string
 }
+
 interface returnData {
   appId: string
   appName: string
@@ -29,6 +30,7 @@ const Web = (): JSX.Element => {
   const [repoReleases, setRepoReleases] = useState<RepoReleases[]>([])
   const [openRepoUrl, setOpenRepoUrl] = useState<string | null>(null)
   const [openReleaseId, setOpenReleaseId] = useState<number | null>(null)
+  const [dragActive, setDragActive] = useState(false)
   const [loading, setLoading] = useState(false)
   const [appData, setAppData] = useState<returnData | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -122,6 +124,45 @@ const Web = (): JSX.Element => {
     setAppData(null)
   }
 
+  const handleDrop = async (event: DragEvent<HTMLDivElement>): Promise<void> => {
+    event.preventDefault()
+    setDragActive(false)
+    setLoading(true)
+    console.log('App Dropped')
+
+    const files = Array.from(event.dataTransfer.files)
+    for (const file of files) {
+      if (file.name.endsWith('.zip')) {
+        await handleZipFile(file.path)
+      }
+    }
+  }
+  async function handleZipFile(zipFilePath: string): Promise<void> {
+    try {
+      // Notify the main process to handle the zip file
+      window.electron.ipcRenderer.send('handle-zip', zipFilePath)
+      handleLogging()
+      window.electron.ipcRenderer.once('zip-name', (_event, response: responseData) => {
+        console.log('Received appId:', response)
+        if (response.status) {
+          setAppData(response.data)
+        }
+        setLoading(false)
+      })
+    } catch (error) {
+      console.error('Error handling zip file:', error)
+    }
+  }
+
+  const handleClick = async (): Promise<void> => {
+    const file = await window.electron.selectZipFile()
+    if (file) {
+      setLoading(true)
+      await handleZipFile(file.path)
+      console.log(file.name)
+    }
+  }
+
   return (
     <div className="pt-5 flex flex-col justify-around items-center">
       {!appData?.appId ? (
@@ -160,6 +201,22 @@ const Web = (): JSX.Element => {
             ))
           ) : (
             <Loading message={'Fetching Releases'} />
+          )}
+          {!loading && (
+            <div className="w-full flex flex-col items-center justify-center mt-5">
+              <h1 className="text-2xl font-semibold font-geist my-2">Local Apps</h1>
+              <div
+                className={`p-10 rounded-3xl flex flex-col items-center hover:bg-zinc-800 border-2 sm:w-30 md:w-96 md:text-2xl 2xl:w-auto 2xl:text-3xl border-zinc-200 transition-colors ${dragActive ? 'drag-active' : ''}`}
+                onDrop={handleDrop}
+                onDragOver={(e) => e.preventDefault()}
+                onDragEnter={() => setDragActive(true)}
+                onDragLeave={() => setDragActive(false)}
+                onClick={handleClick}
+              >
+                <IconUpload iconSize={100} />
+                <p>Drop App.zip File Here</p>
+              </div>
+            </div>
           )}
         </div>
       ) : (

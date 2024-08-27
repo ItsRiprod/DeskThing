@@ -10,7 +10,6 @@ const Index = (): JSX.Element => {
     { id: 'devices', display: 'Devices' },
     { id: 'status', display: 'Status' },
     { id: 'mappings', display: 'Button Maps' },
-    { id: 'local', display: 'Local Client' },
     { id: 'client', display: 'Client Downloads' }
   ]
   const [currentView, setCurrentView] = useState<View>(views[0])
@@ -21,8 +20,6 @@ const Index = (): JSX.Element => {
       case 'devices':
         return <Devices />
       case 'status':
-        return <Loading message="Not Implemented" />
-      case 'local':
         return <Loading message="Not Implemented" />
       case 'client':
         return <Client />
