@@ -180,26 +180,38 @@ const Web = (): JSX.Element => {
               </div>
             </div>
           ) : repoReleases.length > 0 ? (
-            repoReleases.map((repo) => (
-              <div key={repo.repoUrl} className="border-l rounded-xl">
-                <button
-                  className="w-full flex justify-between px-4 py-2 text-left border-t mb-2 rounded-xl hover:font-bold focus:outline-none"
-                  onClick={() => toggleRepoDropdown(repo.repoUrl)}
-                >
-                  {repo.repoUrl}
-                  {openRepoUrl === repo.repoUrl ? <IconArrowDown /> : <IconArrowRight />}
-                </button>
-                {openRepoUrl === repo.repoUrl && (
-                  <ReleaseList
-                    releases={repo.releases}
-                    openReleaseId={openReleaseId}
-                    toggleDropdown={toggleReleaseDropdown}
-                    filterAssets={filterAssets}
-                    handleAssetClick={handleAssetClick}
-                  />
-                )}
-              </div>
-            ))
+            repoReleases.map((repo) => {
+              const repoName = new URL(repo.repoUrl).pathname.split('/').slice(-1)[0]
+              return (
+                <div key={repo.repoUrl} className="border-l rounded-xl hover:bg-gray-950">
+                  <button
+                    className="w-full flex p-5 text-left border-t mb-2 rounded-xl hover:font-bold focus:outline-none"
+                    onClick={() => toggleRepoDropdown(repo.repoUrl)}
+                  >
+                    <div className="h-full">
+                      {openRepoUrl === repo.repoUrl ? (
+                        <IconArrowDown iconSize={48} />
+                      ) : (
+                        <IconArrowRight iconSize={48} />
+                      )}
+                    </div>
+                    <div>
+                      <h1 className="text-xl">{repoName}</h1>
+                      <p className="italic text-gray-500">{repo.repoUrl}</p>
+                    </div>
+                  </button>
+                  {openRepoUrl === repo.repoUrl && (
+                    <ReleaseList
+                      releases={repo.releases}
+                      openReleaseId={openReleaseId}
+                      toggleDropdown={toggleReleaseDropdown}
+                      filterAssets={filterAssets}
+                      handleAssetClick={handleAssetClick}
+                    />
+                  )}
+                </div>
+              )
+            })
           ) : (
             <Loading message={'Fetching Releases'} />
           )}

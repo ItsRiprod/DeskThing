@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { IconRefresh, IconSave, IconX } from '../icons'
 import { ServerManifest } from '../../store/clientStore'
 import SettingsStoreInstance, { Settings } from '../../store/settingsStore'
+import { App, appStoreInstance } from '@renderer/store'
 
 interface ClientSettingsOverlayProps {
   manifest: ServerManifest
@@ -15,6 +16,9 @@ const ClientSettingsOverlay: React.FC<ClientSettingsOverlayProps> = ({
   refresh
 }) => {
   const [ip, setIp] = useState(manifest.ip)
+  const [apps, setApps] = useState<App[]>(appStoreInstance.getAppsList().apps)
+  const [defaultView, setDefaultView] = useState(manifest.default_view)
+  const [mini, setMini] = useState(manifest.miniplayer)
   const [port, setPort] = useState(manifest.port)
   const [settings, setSettings] = useState<Settings | null>(null)
 
@@ -25,9 +29,14 @@ const ClientSettingsOverlay: React.FC<ClientSettingsOverlayProps> = ({
       setSettings(currentSettings)
     }
     fetchSettings()
+    const onAppUpdate = (apps: App[]): void => {
+      setApps(apps)
+    }
+    appStoreInstance.on('update', (data) => onAppUpdate(data.apps))
   }, [])
+
   const handleUpload = async (): Promise<void> => {
-    const updatedManifest = { ...manifest, ip, port }
+    const updatedManifest = { ...manifest, ip, port, default_view: defaultView, miniplayer: mini }
     await window.electron.setClientManifest(updatedManifest)
     refresh()
     onClose()
@@ -116,6 +125,77 @@ const ClientSettingsOverlay: React.FC<ClientSettingsOverlayProps> = ({
                   <p className="font-geistMono bg-slate-900 px-2  rounded">
                     {settings?.devicePort}
                   </p>
+                </button>
+              </div>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-bold mb-2" htmlFor="view">
+                Default View
+              </label>
+              <input
+                type="string"
+                id="view"
+                value={defaultView}
+                onChange={(e) => setDefaultView(e.target.value)}
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              />
+              <div className="text-xs gap-1 flex-col flex p-1">
+                <button
+                  className="flex p-1 border rounded border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
+                  onClick={() => setDefaultView('landing')}
+                >
+                  <p className="font-geistMono bg-slate-900 px-2  rounded">Landing</p>
+                </button>
+                <button
+                  className="flex p-1 border rounded border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
+                  onClick={() => setDefaultView('dashboard')}
+                >
+                  <p className="font-geistMono bg-slate-900 px-2  rounded">Dashboard</p>
+                </button>
+                {apps &&
+                  apps.map((app, index) => (
+                    <button
+                      className="flex p-1 border rounded border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
+                      key={index}
+                      onClick={() => app && setDefaultView(app.name)}
+                    >
+                      <p className="font-geistMono bg-slate-900 px-2  rounded">
+                        {app.manifest?.label || app.name}
+                      </p>
+                    </button>
+                  ))}
+              </div>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-bold mb-2" htmlFor="mini">
+                Miniplayer Mode
+              </label>
+              <input
+                type="string"
+                id="mini"
+                value={mini}
+                readOnly
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-gray-100 cursor-not-allowed"
+                onChange={(e) => setMini(e.target.value)}
+              />
+              <div className="text-xs gap-1 flex-col flex p-1">
+                <button
+                  className="flex p-1 border rounded border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
+                  onClick={() => setMini('peek')}
+                >
+                  <p className="font-geistMono bg-slate-900 px-2  rounded">Peek</p>
+                </button>
+                <button
+                  className="flex p-1 border rounded border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
+                  onClick={() => setMini('hidden')}
+                >
+                  <p className="font-geistMono bg-slate-900 px-2  rounded">Hidden</p>
+                </button>
+                <button
+                  className="flex p-1 border rounded border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
+                  onClick={() => setMini('full')}
+                >
+                  <p className="font-geistMono bg-slate-900 px-2  rounded">Full</p>
                 </button>
               </div>
             </div>

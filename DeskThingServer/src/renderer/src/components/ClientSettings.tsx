@@ -39,9 +39,9 @@ const ClientSettings: React.FC = () => {
       )}
       {clientManifest ? (
         <div className="flex flex-col justify-center">
-          <div className="font-geistMono flex flex-col sm:flex-row text-sm sm:text-nowrap sm:text-xl">
+          <div className="font-geistMono flex flex-col gap-2 sm:flex-row text-sm sm:text-nowrap sm:text-xl">
             <p>Staged:</p>
-            <p>{clientManifest.name}</p>
+            <p className="text-green-500 font-semibold">{clientManifest.name}</p>
           </div>
           <p className="sm:text-sm text-xs">
             {clientManifest.version} - {clientManifest.ip}
@@ -49,8 +49,8 @@ const ClientSettings: React.FC = () => {
         </div>
       ) : (
         <div className="flex flex-col justify-center">
-          <h1 className="font-geistMono text-sm flex-nowrap text-nowrap sm:text-xl">
-            Staged Client: None
+          <h1 className="font-geistMono text-sm flex-nowrap gap-2 flex text-nowrap sm:text-xl">
+            Staged Client: <p className="text-rose-500 font-semibold">None</p>
           </h1>
           <p>Server Port: {port}</p>
         </div>

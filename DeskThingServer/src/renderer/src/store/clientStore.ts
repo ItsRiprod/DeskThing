@@ -13,6 +13,8 @@ export interface ServerManifest {
   version: string
   port: number
   ip: string
+  default_view: string
+  miniplayer: string
 }
 
 type EVENTS = 'ADBDevices' | 'Connections' | 'numConnections' | string

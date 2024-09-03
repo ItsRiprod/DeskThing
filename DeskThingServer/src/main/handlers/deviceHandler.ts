@@ -18,6 +18,8 @@ export interface ServerManifest {
   version: string
   port: number
   ip: string
+  default_view: string
+  miniplayer: string
 }
 
 export const HandleDeviceData = async (data: any): Promise<void> => {
@@ -245,7 +247,7 @@ export const getClientManifest = async (
     })
     dataListener.asyncEmit(
       MESSAGE_TYPES.ERROR,
-      'DEVICE HANDLER: Client Manifest file not found! (Is it downloaded?)'
+      'DEVICE HANDLER: Client Manifest file not found! (Is the client downloaded?)'
     )
     return null
   }

@@ -10,7 +10,6 @@ export type View = 'apps' | 'local' | 'web'
 
 const Apps = (): JSX.Element => {
   const { appsList } = useAppStore()
-  const [tooltips, setTooltips] = useState<string[]>([])
   const [enabled, setEnabled] = useState(false)
   const [sEnabled, setSEnabled] = useState(false)
   const [appIndex, setAppIndex] = useState(-1)
@@ -72,7 +71,7 @@ const Apps = (): JSX.Element => {
   }
 
   return (
-    <div className="h-svh w-[100%] flex flex-col justify-between items-center">
+    <div className="h-vh w-[100%] flex flex-col justify-between items-center">
       <div className="pt-5 w-full flex justify-center">
         {displayRequest && currentRequest[1] && currentRequest[0] && (
           <AppRequestOverlay
@@ -86,11 +85,11 @@ const Apps = (): JSX.Element => {
           <AppSettingsOverlay appIndex={appIndex} setEnabled={setSEnabled} data={appsList} />
         )}
         {appsList?.apps?.length > 0 && Object.keys(appsList.apps).length > 0 ? (
-          <div className="pt-5 w-full flex xl:flex-row xl:flex-wrap flex-col items-center gap-2">
+          <div className="pt-5 w-full flex xl:flex-row xl:flex-wrap xl:gap-5 xl:px-5 flex-col items-center gap-2">
             {(appsList.apps as App[]).map((app, appIndex) => (
               <div
                 key={appIndex}
-                className="border-2 border-zinc-400 p-5 w-11/12 md:w-11/12 xl:w-fit h-fit flex justify-between rounded-3xl shadow-lg px-5 items-center"
+                className="border-2 border-zinc-400 p-5 w-11/12 md:w-11/12 xl:w-fit xl:gap-5 h-fit flex justify-between rounded-3xl shadow-lg px-5 items-center"
               >
                 <div className="flex flex-wrap sm:flex-nowrap gap-2 xl:mr-2">
                   <button
@@ -112,175 +111,86 @@ const Apps = (): JSX.Element => {
                     <p className="text-zinc-400 text-xs font-geistMono">{app.manifest?.version}</p>
                   </div>
                 </div>
-                {appsWithActiveRequests.includes(app.name) ? (
-                  <div className="flex items-center md:flex-row flex-col">
-                    {tooltips[appIndex] ? (
-                      <p>{tooltips[appIndex]}</p>
-                    ) : (
-                      <p className="text-blue-300">Data Request</p>
-                    )}
-                    <button
-                      className="border-2 border-blue-600 hover:bg-blue-500 m-1 p-2 rounded-lg"
-                      onClick={() => handleRequestTrigger(app.name)}
-                      onMouseEnter={() =>
-                        setTooltips((prevTooltips) => ({
-                          ...prevTooltips,
-                          [appIndex]: 'Handle Request'
-                        }))
-                      }
-                      onMouseLeave={() =>
-                        setTooltips((prevTooltips) => ({
-                          ...prevTooltips,
-                          [appIndex]: ''
-                        }))
-                      }
-                    >
-                      <IconPulsing />
-                    </button>
-                    <button
-                      className="border-2 border-red-600 hover:bg-red-500 p-2 rounded-lg"
-                      onClick={() => handleDisableApp(app.name)}
-                      onMouseEnter={() =>
-                        setTooltips((prevTooltips) => ({
-                          ...prevTooltips,
-                          [appIndex]: 'Disable App'
-                        }))
-                      }
-                      onMouseLeave={() =>
-                        setTooltips((prevTooltips) => ({
-                          ...prevTooltips,
-                          [appIndex]: ''
-                        }))
-                      }
-                    >
-                      <IconX />
-                    </button>
-                  </div>
-                ) : app.enabled ? (
-                  <div className="flex items-center md:flex-row flex-col">
-                    <div className="flex-col flex font-geistMono items-end pr-2">
-                      {tooltips[appIndex] ? (
-                        <p className="text-white">{tooltips[appIndex]}</p>
-                      ) : app.running ? (
-                        <p className="text-green-500">Running</p>
-                      ) : (
-                        <p className="text-red-600">Stopped</p>
-                      )}
-                    </div>
+                <div className="flex md:items-center items-end justify-end md:flex-row flex-col xl:w-96">
+                  <div className="flex-col flex font-geistMono items-end pr-2">
                     {app.running ? (
-                      <button
-                        className="border-2 border-amber-600 hover:bg-amber-500 m-1 p-2 rounded-lg"
-                        onClick={() => handleStopApp(app.name)}
-                        onMouseEnter={() =>
-                          setTooltips((prevTooltips) => ({
-                            ...prevTooltips,
-                            [appIndex]: 'Pause App'
-                          }))
-                        }
-                        onMouseLeave={() =>
-                          setTooltips((prevTooltips) => ({
-                            ...prevTooltips,
-                            [appIndex]: ''
-                          }))
-                        }
-                      >
-                        <IconPause />
-                      </button>
+                      <p className="text-green-500">Running</p>
+                    ) : app.enabled ? (
+                      <p className="text-red-600">Stopped</p>
                     ) : (
-                      <button
-                        className="border-2 border-cyan-600 hover:bg-cyan-500 m-1 p-2 rounded-lg"
-                        onClick={() => handleAddAndRunApp(app.name)}
-                        onMouseEnter={() =>
-                          setTooltips((prevTooltips) => ({
-                            ...prevTooltips,
-                            [appIndex]: 'Run App'
-                          }))
-                        }
-                        onMouseLeave={() =>
-                          setTooltips((prevTooltips) => ({
-                            ...prevTooltips,
-                            [appIndex]: ''
-                          }))
-                        }
-                      >
-                        <IconPlay />
-                      </button>
+                      <p className="text-zinc-600 pr-2">Disabled</p>
                     )}
-                    <button
-                      className="border-2 border-red-600 hover:bg-red-500 p-2 rounded-lg"
-                      onClick={() => handleDisableApp(app.name)}
-                      onMouseEnter={() =>
-                        setTooltips((prevTooltips) => ({
-                          ...prevTooltips,
-                          [appIndex]: 'Disable App'
-                        }))
-                      }
-                      onMouseLeave={() =>
-                        setTooltips((prevTooltips) => ({
-                          ...prevTooltips,
-                          [appIndex]: ''
-                        }))
-                      }
-                    >
-                      <IconX />
-                    </button>
                   </div>
-                ) : (
-                  <div className="flex items-center md:flex-row flex-col">
-                    {tooltips[appIndex] ? (
-                      <p>{tooltips[appIndex]}</p>
-                    ) : (
-                      <p className="text-zinc-600">Disabled</p>
-                    )}
+                  {appsWithActiveRequests.includes(app.name) && (
+                    <div className="flex items-center md:flex-row flex-col">
+                      <button
+                        className="group flex border-2 gap-3 border-blue-600 hover:bg-blue-500 m-1 p-2 rounded-lg"
+                        onClick={() => handleRequestTrigger(app.name)}
+                      >
+                        <p className="group-hover:block hidden text-white">
+                          Handle<p className="hidden lg:inline"> Request</p>
+                        </p>
+                        <IconPulsing />
+                      </button>
+                    </div>
+                  )}
+                  {app.enabled ? (
+                    <>
+                      {app.running ? (
+                        <button
+                          className="group flex gap-3 border-2 border-amber-600 hover:bg-amber-500 mx-1 p-2 rounded-lg"
+                          onClick={() => handleStopApp(app.name)}
+                        >
+                          <p className="group-hover:block hidden text-white">
+                            Pause<p className="hidden lg:inline"> App</p>
+                          </p>
+                          <IconPause />
+                        </button>
+                      ) : (
+                        <button
+                          className="gap-3 flex group border-2 border-cyan-600 hover:bg-cyan-500 mx-1 p-2 rounded-lg"
+                          onClick={() => handleAddAndRunApp(app.name)}
+                        >
+                          <p className="group-hover:block hidden text-white">
+                            Run<p className="hidden lg:inline"> App</p>
+                          </p>
+                          <IconPlay />
+                        </button>
+                      )}
+                      <button
+                        className="flex gap-3 group border-2 border-red-600 hover:bg-red-500 mx-1 p-2 rounded-lg"
+                        onClick={() => handleDisableApp(app.name)}
+                      >
+                        <p className="group-hover:block hidden text-white">
+                          Disable<p className="hidden lg:inline"> App</p>
+                        </p>
+                        <IconX />
+                      </button>
+                    </>
+                  ) : (
                     <button
-                      className="border-2 border-cyan-600 hover:bg-cyan-500 m-1 p-2 rounded-lg"
+                      className="group gap-3 flex border-2 border-cyan-600 hover:bg-cyan-500 mx-1 p-2 rounded-lg"
                       onClick={() => handleAddAndRunApp(app.name)}
-                      onMouseEnter={() =>
-                        setTooltips((prevTooltips) => ({
-                          ...prevTooltips,
-                          [appIndex]: 'Enable App'
-                        }))
-                      }
-                      onMouseLeave={() =>
-                        setTooltips((prevTooltips) => ({
-                          ...prevTooltips,
-                          [appIndex]: ''
-                        }))
-                      }
                     >
+                      <p className="group-hover:block hidden text-white">
+                        Enable<p className="hidden lg:inline"> App</p>
+                      </p>
                       <IconPlay />
                     </button>
-                    <button
-                      onClick={() => handleDetails(appIndex)}
-                      className="border-2 top-10 border-green-600 hover:bg-green-500  p-2 rounded-lg"
-                      onMouseEnter={() =>
-                        setTooltips((prevTooltips) => ({
-                          ...prevTooltips,
-                          [appIndex]: 'App Details'
-                        }))
-                      }
-                      onMouseLeave={() =>
-                        setTooltips((prevTooltips) => ({
-                          ...prevTooltips,
-                          [appIndex]: ''
-                        }))
-                      }
-                    >
-                      <IconDetails iconSize={24} />
-                    </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="border-2 border-zinc-200 p-5 w-[90%] h-fit flex justify-center rounded-3xl shadow-lg px-5 align-baseline">
+          <div className="border-2 border-zinc-200 p-5 w-[90%] h-fit flex flex-col items-center gap-5 justify-center rounded-3xl shadow-lg px-5 align-baseline">
             <button
               className="border-2 border-cyan-600 hover:bg-cyan-500 bg-cyan-600  p-2 rounded-lg"
               onClick={() => requestAppsList()}
             >
-              Request Apps
+              Refresh Apps List
             </button>
+            <p className="italic text-gray-500">Are any downloaded?</p>
           </div>
         )}
       </div>

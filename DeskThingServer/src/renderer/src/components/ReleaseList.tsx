@@ -1,5 +1,5 @@
 import React from 'react'
-import { IconArrowDown, IconArrowRight } from './icons'
+import { IconArrowDown, IconArrowRight, IconDownload } from './icons'
 import { GithubAsset, GithubRelease } from '../store/githubStore'
 
 interface ReleaseListProps {
@@ -36,8 +36,9 @@ const ReleaseList: React.FC<ReleaseListProps> = ({
             <button
               key={asset.id}
               onClick={() => handleAssetClick(asset)}
-              className="group m-2 flex gap-2 text-zinc-300 hover:text-white border border-green-400 hover:bg-green-400 p-2 rounded-lg"
+              className="group m-2 flex gap-2 text-zinc-300 hover:text-white border border-green-400 hover:bg-zinc-800 p-2 rounded-lg"
             >
+              <IconDownload className="group-hover:stroke-2" />
               <h2 className="font-geistMono">{asset.name}</h2>
             </button>
           ))}
