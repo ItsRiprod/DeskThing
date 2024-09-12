@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 600 15" width="600" height="15">
+  <foreignObject width="100%" height="100%">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 15" width="600" height="15">
+      <style>
+        .line {
+          stroke-dasharray: 600;
+          stroke-dashoffset: 600;
+          animation: dash 5s linear infinite;
+        }
+        @keyframes dash {
+          to {
+            stroke-dashoffset: -600;
+          }
+        }
+        @media (prefers-reduced-motion) {
+          .line {
+            animation: none;
+          }
+        }
+      </style>
+        <line class="line" x1="0" y1="7.5" x2="600" y2="7.5" stroke="white" stroke-width="2"/>
+</svg>
+  </foreignObject>
+</svg>

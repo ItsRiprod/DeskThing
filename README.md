@@ -30,6 +30,8 @@ For a video walkthrough of v0.6.0, go to [this video](https://youtu.be/nC65O1nP-
 <details>
    <summary><h2>✨ Features</h2></summary>
 
+<img src="readme_images/bar.svg" style="width: 100%;" alt="Click to see the source">
+
 The DeskThing is a simple CarThing Chromium-based website that can communicate with a Desktop APP on your computer. The CarThing can:
 
 - ### All In One Package 📦
@@ -91,6 +93,8 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
       <h3>Planned Apps</h3>
    </summary>
 
+<img src="readme_images/bar.svg" style="width: 100%;" alt="Click to see the source">
+
 - Macropad / Streamdeck
 - GUI Companion
 - Dashboard/Settings for config changes
@@ -111,6 +115,8 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
    <summary>
       <h2>▶️ Setting Up</h2>
    </summary>
+
+<img src="readme_images/bar.svg" style="width: 100%;" alt="Click to see the source">
 
 ### Detailed Setup Instructions
 
@@ -168,6 +174,8 @@ Thanks! Have a good day
    <summary>
       <h2>📸Flashing</h2>
    </summary>
+
+<img src="readme_images/bar.svg" style="width: 100%;" alt="Click to see the source">
 
 Links:
 - [image dumps](https://mega.nz/folder/NxNXQCaT#-n1zkoXsJuw-5rQ-ZYzRJw/folder/Ak9FVKxJ)
