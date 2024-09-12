@@ -114,6 +114,14 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
 
 ### Detailed Setup Instructions
 
+‼️ There is now a youtube tutorial walking through this process ‼️
+
+[Setting up to v0.6.0 that shows how to flash](https://youtu.be/nC65O1nP-pk?si=umjOsybdfmQud6I0)
+
+[Upgrading to v0.8.0 from 0.6.0](https://www.youtube.com/watch?v=Exu7KMcbN4k)
+
+*Step-by-step instructions*
+
 1. **Flash Your CarThing:**
    - Follow the instructions in the [superbird-tool repository](https://github.com/Car-Thing-Hax-Community/superbird-tool) to flash your CarThing device with the necessary image.
 > If you need help, refer to the [detailed instructions](#flashing) at the end of this page
@@ -132,6 +140,25 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
    - Congrats! You're basically done. Now go to 'Apps' and then 'Webapps' and download any apps you want. Ensure you check dependencies before doing so as this could cause errors. 
 
 > Any Issues? Contact me [through the Deskthing discord server](https://discord.gg/qWbSwzWJ4e) or via DMs to @riprod
+
+⚠️Note for MacOS⚠️
+
+First, when you install the DeskThing installer, you'll need to run
+```
+sudo xattr -r -d com.apple.quarantine DeskThing.app
+```
+to fix the app. Otherwise it'll say it's corrupted or something
+
+Because ADB on the car thing and MacOS is funky, you need to run this on the DeskThing's ADB
+```
+chmod +x /Applications/DeskThing.app/Contents/Resources/mac/adb
+```
+
+Finally, the image linked above won't always work for MacOS. So instead, use the following image (it is a discord download for now) as it fixes ADB for MacOS
+
+https://cdn.discordapp.com/attachments/1243762430631481395/1272624114766577845/8.4.4_adb_enabled-new.tar.xz?ex=66cad051&is=66c97ed1&hm=befb7c49b203d752dbb9f4986377ea0be8fcde4f9f2db874de7c62a668bbd046&
+
+Thanks! Have a good day
 
 </details>
 
