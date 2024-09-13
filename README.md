@@ -226,8 +226,12 @@ npm create deskthing@latest
 ```
 And follow the prompts to set up the app environment. From there, you can reference:
 https://github.com/ItsRiprod/deskthing-template
+
 https://github.com/ItsRiprod/deskthing-app-client
+
 https://github.com/ItsRiprod/deskthing-app-server
+
+https://github.com/ItsRiprod/deskthing-client
 
 And any of the apps included under /Apps/ in this github repo
 
