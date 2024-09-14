@@ -1,3 +1,4 @@
+import { disconnectClient } from '../handlers/websocketServer'
 import { Client } from '../types/'
 
 type ClientListener = (client: Client[]) => void
@@ -46,6 +47,12 @@ class ConnectionStore {
   removeClient(connectionId: string): void {
     console.log('Removing client:', connectionId)
     this.clients = this.clients.filter((c) => c.connectionId !== connectionId)
+    this.notifyListeners()
+  }
+
+  removeAllClients(): void {
+    console.log('Removing all clients')
+    this.clients = []
     this.notifyListeners()
   }
 

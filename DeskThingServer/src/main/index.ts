@@ -33,6 +33,7 @@ export interface ReplyData {
 const IPC_CHANNELS = {
   PING: 'ping',
   GET_CONNECTIONS: 'get-connections',
+  REMOVE_CONNECTIONS: 'remove-connection',
   ADD_APP: 'add-app',
   RUN_STOP_APP: 'stop-app',
   RUN_ADB: 'run-adb-command',
@@ -276,7 +277,7 @@ async function setupIpcHandlers(): Promise<void> {
   const { getData, setData } = await import('./handlers/dataHandler')
   const { loadMappings, setMappings } = await import('./handlers/keyMapHandler')
   const { handleAdbCommands } = await import('./handlers/adbHandler')
-  const { sendData } = await import('./handlers/websocketServer')
+  const { sendData, disconnectClient } = await import('./handlers/websocketServer')
   const { getReleases } = await import('./handlers/githubHandler')
   const {
     HandleWebappZipFromUrl,
@@ -301,6 +302,11 @@ async function setupIpcHandlers(): Promise<void> {
     const clients = await ConnectionStore.getClients()
     event.reply('connections', { status: true, data: clients.length, final: false })
     event.reply('clients', { status: true, data: clients, final: true })
+  })
+
+  ipcMain.on(IPC_CHANNELS.REMOVE_CONNECTIONS, async (event, connectionId: string) => {
+    disconnectClient(connectionId)
+    event.reply('logging', { status: true, data: 'Finished', final: true })
   })
 
   ipcMain.on(IPC_CHANNELS.ADD_APP, async (event, appName: string) => {

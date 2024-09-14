@@ -32,7 +32,7 @@ const Dashboard = (): JSX.Element => {
     }
 
     appStoreInstance.on('update', handleAppUpdate)
-    const listener = clientStore.on('ADBDevices', handleADBDevice)
+    const listener = clientStore.on('ADBDevices', (device) => handleADBDevice(device as string[]))
     logStore.on('update', handleLogs)
     const initializeADB = async (): Promise<void> => {
       let devices = await clientStore.getADBDevices()

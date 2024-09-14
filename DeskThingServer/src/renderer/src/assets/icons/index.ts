@@ -26,6 +26,7 @@ export { default as IconLogoGear } from './icon/IconLogoGear'
 export { default as IconLogo } from './icon/IconLogo'
 export { default as IconLogs } from './icon/IconLogs'
 export { default as IconPlus } from './icon/IconPlus'
+export { default as IconQR } from './icon/IconQR'
 export { default as IconFolderOpen } from './icon/IconFolderOpen'
 
 export { default as IconPulsing } from './icon/IconPulsing'

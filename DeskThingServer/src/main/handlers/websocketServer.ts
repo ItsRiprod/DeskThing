@@ -17,6 +17,7 @@ import { createServer, Server as HttpServer } from 'http'
 import { app as electronApp } from 'electron'
 import { join } from 'path'
 import ConnectionStore from '../stores/connectionsStore'
+import { Client } from '../types'
 
 // Create a WebSocket server that listens on port 8891
 // const server = new WebSocketServer({ port: 8891 })
@@ -55,6 +56,7 @@ const restartServer = (): void => {
     if (server) {
       console.log('WSOCKET: Shutting down the WebSocket server...')
       dataListener.emit(MESSAGE_TYPES.LOGGING, 'WSOCKET: Shutting down the WebSocket server...')
+      ConnectionStore.removeAllClients()
 
       server.clients.forEach((client) => {
         client.terminate()
@@ -193,10 +195,10 @@ const sendMappings = async (socket: WebSocket | null = null): Promise<void> => {
     if (socket) {
       sendData(socket, { app: 'client', type: 'button_mappings', payload: mappings })
       console.log('WSOCKET: Button mappings sent!')
-      dataListener.asyncEmit(MESSAGE_TYPES.MESSAGE, `WEBSOCKET: Client has been sent button maps!`)
+      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Client has been sent button maps!`)
     } else {
       sendMessageToClients({ app: 'client', type: 'button_mappings', payload: mappings })
-      dataListener.asyncEmit(MESSAGE_TYPES.MESSAGE, `WEBSOCKET: Client has been sent button maps!`)
+      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Client has been sent button maps!`)
     }
   } catch (error) {
     console.error('WSOCKET: Error getting button mappings:', error)
@@ -237,11 +239,26 @@ const initializeTimer = async (): Promise<void> => {
 
 initializeTimer()
 
+export const disconnectClient = (connectionId: string): void => {
+  const client = ConnectionStore.getClients().find((c) => c.connectionId === connectionId)
+  if (client && server) {
+    server.clients.forEach((ws: WebSocket) => {
+      if (ws._socket.remoteAddress && ws._socket.remoteAddress.includes(client.ip)) {
+        ws.terminate()
+        console.log(`Forcibly disconnected client: ${connectionId}`)
+      }
+    })
+    ConnectionStore.removeClient(connectionId)
+  } else {
+    console.log(`Client not found or server not running: ${connectionId}`)
+  }
+}
+
 const setupServer = async (): Promise<void> => {
   dataListener.asyncEmit(MESSAGE_TYPES.MESSAGE, 'WSOCKET: Attempting to setup the server')
   if (!settings) {
     // Return if there are no settings
-    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'WSOCKET: No settings found, getting them now')
+    dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'WSOCKET: No settings found, getting them now')
     const socketData = await settingsStore.getSettings()
     settings = socketData.payload as Settings
   }
@@ -280,14 +297,29 @@ const setupServer = async (): Promise<void> => {
         if (fs.existsSync(manifestPath)) {
           let manifestContent = fs.readFileSync(manifestPath, 'utf8')
 
-          const client = {
+          const getDeviceType = (userAgent: string | undefined): string => {
+            if (!userAgent) return 'unknown'
+            userAgent = userAgent.toLowerCase()
+            if (userAgent.includes('iphone')) return 'iphone'
+            if (userAgent.includes('win')) return 'windows'
+            if (userAgent.includes('ipad')) return 'tablet'
+            if (userAgent.includes('mac')) return 'mac'
+            if (userAgent.includes('android')) {
+              if (userAgent.includes('mobile')) return 'android'
+              return 'tablet'
+            }
+            return 'unknown'
+          }
+
+          const client: Client = {
             ip: clientIp as string,
             connected: false,
             connectionId: crypto.randomUUID(),
             timestamp: Date.now(),
             userAgent: req.headers['user-agent'] || '',
             hostname: req.hostname || '',
-            headers: req.headers
+            headers: req.headers,
+            device_type: getDeviceType(req.headers['user-agent'])
           }
 
           ConnectionStore.addClient(client)
@@ -302,6 +334,10 @@ const setupServer = async (): Promise<void> => {
           manifestContent = manifestContent.replace(
             /"port":\s*".*?"/,
             `"port": "${clientPort || '8891'}"`
+          )
+          manifestContent = manifestContent.replace(
+            /"device_type":\s*".*?"/,
+            `"device_type": "${getDeviceType(req.headers['user-agent'])}"`
           )
 
           res.type('application/javascript').send(manifestContent)
@@ -358,19 +394,21 @@ const setupServer = async (): Promise<void> => {
 
     const clientIp = socket._socket.remoteAddress
 
+    const conClient = ConnectionStore.getClients().find((client) => client.ip === clientIp)
+
     console.log(`WSOCKET: Client connected! Looking for client with IP ${clientIp}`)
-    const client = {
-      ip: clientIp as string,
+    const client: Client = {
+      ip: conClient?.ip || (clientIp as string),
       connected: true,
-      timestamp: Date.now(),
-      connectionId: crypto.randomUUID()
+      timestamp: conClient?.timestamp || Date.now(),
+      connectionId: conClient?.connectionId || crypto.randomUUID()
     }
 
     console.log(
       `WSOCKET: Client with id: ${client.connectionId} connected!\nWSOCKET: Sending preferences...`
     )
 
-    if (client) {
+    if (client && !conClient) {
       ConnectionStore.addClient(client)
       client.connected = true
     } else {
@@ -484,17 +522,22 @@ const setupServer = async (): Promise<void> => {
                   if (newClient) {
                     // Remove the old client
                     console.log('WSOCKET: Client already exists, updating...')
-                    ConnectionStore.removeClient(client.connectionId)
+                    if (newClient.connectionId != client.connectionId) {
+                      ConnectionStore.removeClient(client.connectionId)
+                    }
 
                     // Update the client to the new one
-                    client.ip = newClient.ip
                     client.connected = true
                     client.timestamp = newClient.timestamp
+                    client.client_name = manifest.name
+                    client.device_type = newClient.device_type || manifest.device_type
+                    client.version = manifest.version
+                    client.description = manifest.description
                     client.connectionId =
                       newClient.connectionId == null
                         ? (client.connectionId as UUID)
                         : (newClient.connectionId as UUID)
-                    ConnectionStore.updateClient(newClient.connectionId, { connected: true })
+                    ConnectionStore.updateClient(newClient.connectionId, client)
                   } else {
                     // Update the current client
                     console.log('WSOCKET: Client does not exist, adding...')
@@ -507,7 +550,8 @@ const setupServer = async (): Promise<void> => {
                       client_name: manifest.name,
                       version: manifest.version,
                       description: manifest.description,
-                      connected: true
+                      connected: true,
+                      device_type: manifest.device_type
                     })
                   }
                 }

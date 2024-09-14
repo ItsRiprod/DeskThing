@@ -3,22 +3,26 @@ import ClientSettings from '../../components/ClientSettings'
 import { Client } from '@renderer/store/clientStore'
 import { ClientStore, SettingsStore } from '@renderer/store'
 import { Settings } from '@renderer/store/settingsStore'
+import ConnectionStats from '@renderer/components/ConnectionStats'
+import { IconQR } from '@renderer/assets/icons'
+import QROverlay from '@renderer/overlays/QROverlay'
 
-interface StatusProps {
-  // Define your props here
-}
-
-const Status: React.FC<StatusProps> = () => {
+const Status: React.FC = () => {
   const [clients, setClients] = useState<Client[]>(ClientStore.getClients())
   const [ips, setIps] = useState<string[]>([])
+  const [port, setPort] = useState<number>(8891)
+  const [qrVisible, setQrVisible] = useState(false)
+  const [qrCode, setQrCode] = useState('')
 
   useEffect(() => {
     const getIps = async (): Promise<void> => {
       const settings = await SettingsStore.getSettings()
       setIps(settings.localIp)
+      setPort(settings.devicePort)
     }
     const handleSettingsUpdate = async (settings: Settings): Promise<void> => {
       setIps(settings.localIp)
+      setPort(settings.devicePort)
     }
     const handleClientUpdate = (clients: Client[]) => {
       setClients(clients)
@@ -38,39 +42,36 @@ const Status: React.FC<StatusProps> = () => {
     }
   })
 
+  const handleQrClick = (qrCode: string): void => {
+    setQrCode(qrCode + ':' + port)
+    setQrVisible(true)
+  }
+
   return (
     <div className="pt-5 flex flex-col w-full items-center p-5">
+      {qrVisible && <QROverlay ip={qrCode} onClose={() => setQrVisible(false)} />}
       <div className="border-b-2 w-full border-slate-700 p-2">
         <ClientSettings />
       </div>
-      <div className="w-full max-w-2xl">
-        <h2 className="text-2xl font-bold mb-4">Connected Clients</h2>
-        <ul className="space-y-4">
+      <div className="w-full justify-between flex">
+        <div className="w-full border rounded-lg gap-2 flex flex-col border-gray-700 p-2">
+          <h2 className="text-2xl font-bold m-4">Connected Clients</h2>
           {clients &&
-            clients.map((client, index) => (
-              <li
+            clients.map((client, index) => <ConnectionStats key={index} client={client} />)}
+        </div>
+        <div className="w-fit max-w-2xl border rounded-lg gap-2 flex flex-col border-gray-700 p-2">
+          {ips &&
+            ips.map((ip, index) => (
+              <button
+                onClick={() => handleQrClick(ip)}
                 key={index}
-                className="flex items-center justify-between p-4 border border-zinc-700 rounded-xl hover:bg-zinc-900"
+                className="flex gap-2 hover:bg-gray-800 w-full text-gray-300 hover:text-white border-gray-300 hover:border-white items-center p-3 border rounded-lg"
               >
-                <span className="text-lg">{client.ip}</span>
-                <span className="text-lg">{client.connected ? 'connected' : ''}</span>
-                <div className="space-x-2">
-                  <button
-                    onClick={() => console.log(`Set ${client.connected} to view`)}
-                    className="px-3 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg transition-colors duration-150"
-                  >
-                    Set to View
-                  </button>
-                  <button
-                    onClick={() => console.log(`Disconnect ${client}`)}
-                    className="px-3 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors duration-150"
-                  >
-                    Disconnect
-                  </button>
-                </div>
-              </li>
+                <IconQR />
+                <p className="font-semibold">{ip}</p>
+              </button>
             ))}
-        </ul>
+        </div>
       </div>
     </div>
   )

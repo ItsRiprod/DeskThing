@@ -2,7 +2,7 @@ import { DragEvent, useEffect, useState } from 'react'
 import { IconArrowDown, IconArrowRight, IconLogoLoading, IconUpload } from '../../assets/icons'
 import githubStore, { GithubRelease, GithubAsset } from '../../store/githubStore'
 import ReleaseList from '../../components/ReleaseList'
-import RunPreppedApp from './RunPreppedApp'
+import RunPreppedApp from '../../components/RunPreppedApp'
 import SettingsStoreInstance from '@renderer/store/settingsStore'
 import Loading from '../../components/Loading'
 interface responseData {

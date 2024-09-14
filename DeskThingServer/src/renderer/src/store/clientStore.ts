@@ -11,6 +11,8 @@ export interface ServerManifest {
   ip: string
   default_view: string
   miniplayer: string
+  uuid?: string
+  device_type: string
 }
 
 export interface Client {
@@ -26,6 +28,7 @@ export interface Client {
   version?: string
   client_name?: string
   description?: string
+  device_type: string
 }
 
 type EVENTS = 'ADBDevices' | 'Connections' | 'Clients' | string
