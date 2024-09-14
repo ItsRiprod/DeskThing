@@ -13,10 +13,11 @@ import { join } from 'path'
 import path from 'path'
 import icon from '../../resources/icon.ico?asset'
 import linuxIcon from '../../resources/icon.png?asset'
-import { GithubRelease } from './types/types'
+import { Client, GithubRelease } from './types/types'
 import { ServerManifest } from './handlers/deviceHandler'
 import { Settings } from './stores/settingsStore'
 import { socketData } from './handlers/websocketServer'
+import ConnectionStore from './stores/connectionsStore'
 
 let mainWindow: BrowserWindow | null = null
 let clientWindow: BrowserWindow | null = null
@@ -56,9 +57,11 @@ const IPC_CHANNELS = {
   EXTRACT_WEBAPP_ZIP: 'extract-webapp-zip',
   EXTRACT_APP_ZIP_URL: 'extract-app-zip-url',
   PUSH_STAGED_WEBAPP: 'push-staged',
+  PUSH_PROXY_SCRIPT: 'push-proxy-script',
   SHUTDOWN: 'shutdown',
   DEV_ADD_APP: 'dev-add-app',
-  SEND_TO_APP: 'send-to-app'
+  SEND_TO_APP: 'send-to-app',
+  OPEN_LOG_FOLDER: 'open-log-folder'
 }
 
 function createMainWindow(): BrowserWindow {
@@ -278,6 +281,7 @@ async function setupIpcHandlers(): Promise<void> {
   const {
     HandleWebappZipFromUrl,
     HandlePushWebApp,
+    SetupProxy,
     handleClientManifestUpdate,
     getClientManifest
   } = await import('./handlers/deviceHandler')
@@ -292,11 +296,11 @@ async function setupIpcHandlers(): Promise<void> {
     dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'No settings found!')
   }
 
-  let connections = 0
   ipcMain.on(IPC_CHANNELS.PING, () => console.log('pong'))
   ipcMain.on(IPC_CHANNELS.GET_CONNECTIONS, async (event) => {
-    event.reply('connections', { status: true, data: connections, final: true })
-    console.log('SERVER: connections', connections)
+    const clients = await ConnectionStore.getClients()
+    event.reply('connections', { status: true, data: clients.length, final: false })
+    event.reply('clients', { status: true, data: clients, final: true })
   })
 
   ipcMain.on(IPC_CHANNELS.ADD_APP, async (event, appName: string) => {
@@ -356,11 +360,21 @@ async function setupIpcHandlers(): Promise<void> {
   })
   ipcMain.on(IPC_CHANNELS.PUSH_STAGED_WEBAPP, async (event, deviceId) => {
     try {
-      console.log('Pushing stages webapp...')
+      console.log('Pushing staged webapp...')
       HandlePushWebApp(event.reply, deviceId)
     } catch (error) {
       event.reply(IPC_CHANNELS.PUSH_STAGED_WEBAPP, { success: false, error: error })
       console.error('Error extracting zip file:', error)
+      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, error)
+    }
+  })
+  ipcMain.on(IPC_CHANNELS.PUSH_PROXY_SCRIPT, async (event, deviceId) => {
+    try {
+      console.log('Pushing proxy script...')
+      SetupProxy(event.reply, deviceId)
+    } catch (error) {
+      event.reply(IPC_CHANNELS.PUSH_PROXY_SCRIPT, { success: false, error: error })
+      console.error('Error pushing proxy script:', error)
       dataListener.asyncEmit(MESSAGE_TYPES.ERROR, error)
     }
   })
@@ -466,6 +480,11 @@ async function setupIpcHandlers(): Promise<void> {
     return await sendData(null, data)
   })
 
+  ipcMain.handle(IPC_CHANNELS.OPEN_LOG_FOLDER, async () => {
+    const logPath = path.join(app.getPath('userData'))
+    await shell.openPath(logPath)
+  })
+
   dataListener.on(MESSAGE_TYPES.ERROR, (errorData) => {
     sendIpcData('error', errorData)
   })
@@ -475,10 +494,9 @@ async function setupIpcHandlers(): Promise<void> {
   dataListener.on(MESSAGE_TYPES.MESSAGE, (errorData) => {
     sendIpcData('message', errorData)
   })
-  dataListener.on(MESSAGE_TYPES.CONNECTION, (numConnections) => {
-    sendIpcData('connections', numConnections)
-    connections = numConnections
-    console.log('Number of clients', numConnections)
+  ConnectionStore.on((clients: Client[]) => {
+    sendIpcData('connections', { status: true, data: clients.length, final: false })
+    sendIpcData('clients', { status: true, data: clients, final: true })
   })
   dataListener.on(MESSAGE_TYPES.SETTINGS, (newSettings) => {
     sendIpcData('settings-updated', newSettings)

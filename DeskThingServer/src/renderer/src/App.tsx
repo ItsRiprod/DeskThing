@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import Overlays from './components/Overlays'
+import Overlays from './overlays'
 
 import Sidebar from './components/Sidebar'
 import ContentArea from './components/ContentArea'

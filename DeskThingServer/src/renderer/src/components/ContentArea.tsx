@@ -1,8 +1,8 @@
 import React from 'react'
-import AppsList from './Apps'
-import Dev from './Dev'
-import Home from './Home'
-import Device from './Client' // Define possible views
+import AppsList from '../pages/Apps'
+import Dev from '../pages/Dev'
+import Home from '../pages/Home'
+import Device from '../pages/Client' // Define possible views
 import { SidebarView } from '../App'
 
 interface ContentAreaProps {

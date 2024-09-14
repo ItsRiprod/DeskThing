@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
-import { WebSocketServer } from 'ws'
+import WebSocket, { WebSocketServer } from 'ws'
 import { sendMessageToApp, getAppFilePath } from './appHandler'
 
 import { getAppData, setAppData, getAppByName } from './configHandler'
@@ -9,6 +8,7 @@ import dataListener, { MESSAGE_TYPES } from '../utils/events'
 import { HandleDeviceData } from './deviceHandler'
 import settingsStore, { Settings } from '../stores/settingsStore'
 import cors from 'cors'
+import crypto, { UUID } from 'crypto'
 
 import * as fs from 'fs'
 // App Hosting
@@ -16,15 +16,14 @@ import express from 'express'
 import { createServer, Server as HttpServer } from 'http'
 import { app as electronApp } from 'electron'
 import { join } from 'path'
+import ConnectionStore from '../stores/connectionsStore'
 
 // Create a WebSocket server that listens on port 8891
 // const server = new WebSocketServer({ port: 8891 })
 // const server = new WebSocketServer({ port: 8891 })
 let settings: Settings
 let httpServer: HttpServer
-let server: WebSocketServer
-
-let numConnections = 0
+let server: WebSocketServer | null
 
 export interface socketData {
   app: string
@@ -156,7 +155,7 @@ const sendError = async (socket, error): Promise<void> => {
   }
 }
 
-const sendPrefData = async (socket = null): Promise<void> => {
+const sendPrefData = async (socket: WebSocket | null = null): Promise<void> => {
   try {
     const appData = await getAppData()
     const config = await readData()
@@ -270,10 +269,51 @@ const setupServer = async (): Promise<void> => {
         `WEBSOCKET: Serving ${appName} from ${webAppDir}`
       )
 
-      if (fs.existsSync(webAppDir)) {
-        express.static(webAppDir)(req, res, next)
+      const clientIp = req.hostname
+
+      const clientPort = req.socket.port
+
+      console.log(`WEBSOCKET: Serving ${appName} from ${webAppDir} to ${clientIp}`)
+
+      if (req.path.endsWith('manifest.js')) {
+        const manifestPath = join(webAppDir, 'manifest.js')
+        if (fs.existsSync(manifestPath)) {
+          let manifestContent = fs.readFileSync(manifestPath, 'utf8')
+
+          const client = {
+            ip: clientIp as string,
+            connected: false,
+            connectionId: crypto.randomUUID(),
+            timestamp: Date.now(),
+            userAgent: req.headers['user-agent'] || '',
+            hostname: req.hostname || '',
+            headers: req.headers
+          }
+
+          ConnectionStore.addClient(client)
+
+          manifestContent = manifestContent.replace(
+            /"ip":\s*".*?"/,
+            `"ip": "${clientIp === '127.0.0.1' ? 'localhost' : clientIp}"`
+          )
+          manifestContent = manifestContent.includes('"uuid"')
+            ? manifestContent.replace(/"uuid":\s*".*?"/, `"uuid":"${client.connectionId}"`)
+            : manifestContent.replace(/{/, `{\n  "uuid": "${client.connectionId}",`)
+          manifestContent = manifestContent.replace(
+            /"port":\s*".*?"/,
+            `"port": "${clientPort || '8891'}"`
+          )
+
+          res.type('application/javascript').send(manifestContent)
+        } else {
+          res.status(404).send('Manifest not found')
+        }
       } else {
-        res.status(404).send('App not found')
+        if (fs.existsSync(webAppDir)) {
+          express.static(webAppDir)(req, res, next)
+        } else {
+          res.status(404).send('App not found')
+        }
       }
     } else {
       const appPath = getAppFilePath(appName)
@@ -313,25 +353,43 @@ const setupServer = async (): Promise<void> => {
   })
 
   // Handle incoming messages from the client
-  server.on('connection', async (socket) => {
-    numConnections = server.clients.size
-    dataListener.asyncEmit(
-      MESSAGE_TYPES.LOGGING,
-      `WEBSOCKET: Client has connected! ${numConnections} in total`
+  server.on('connection', async (socket: WebSocket) => {
+    // Handle the incoming connection and add it to the ConnectionStore
+
+    const clientIp = socket._socket.remoteAddress
+
+    console.log(`WSOCKET: Client connected! Looking for client with IP ${clientIp}`)
+    const client = {
+      ip: clientIp as string,
+      connected: true,
+      timestamp: Date.now(),
+      connectionId: crypto.randomUUID()
+    }
+
+    console.log(
+      `WSOCKET: Client with id: ${client.connectionId} connected!\nWSOCKET: Sending preferences...`
     )
-    dataListener.asyncEmit(MESSAGE_TYPES.CONNECTION, numConnections)
+
+    if (client) {
+      ConnectionStore.addClient(client)
+      client.connected = true
+    } else {
+      console.log('Something has gone horribly wrong')
+    }
 
     console.log('WSOCKET: Client connected!\nWSOCKET: Sending preferences...')
     dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Sending client preferences...`)
+
     sendPrefData(socket)
     sendMappings(socket)
+
     socket.on('message', async (message) => {
       try {
         const parsedMessage = JSON.parse(message)
-        console.log('WSOCKET: Getting data', parsedMessage)
+        console.log(`WSOCKET: ${client.connectionId} sent message `, parsedMessage)
         dataListener.asyncEmit(
           MESSAGE_TYPES.LOGGING,
-          `WEBSOCKET: Client has sent a message ${message}`
+          `WEBSOCKET: Client ${client.connectionId} has sent ${message}`
         )
         if (parsedMessage.app && parsedMessage.app !== 'server') {
           sendMessageToApp(parsedMessage.app.toLowerCase(), {
@@ -400,10 +458,59 @@ const setupServer = async (): Promise<void> => {
                 sendTime()
                 break
               case 'message':
-                dataListener.asyncEmit(MESSAGE_TYPES.MESSAGE, `WSOCKET ${parsedMessage.payload}`)
+                dataListener.asyncEmit(
+                  MESSAGE_TYPES.MESSAGE,
+                  `${client.connectionId}: ${parsedMessage.payload}`
+                )
                 break
               case 'device':
                 HandleDeviceData(parsedMessage.payload)
+                break
+              case 'manifest':
+                if (parsedMessage.payload) {
+                  const manifest = parsedMessage.payload
+                  if (!manifest) return
+
+                  console.log('WSOCKET: Received manifest from client', manifest)
+
+                  // Check if the client already exists
+                  const newClient = manifest.uuid
+                    ? ConnectionStore.getClients().find(
+                        (client) => client.connectionId === manifest.uuid
+                      )
+                    : null
+
+                  // This means the client already exists
+                  if (newClient) {
+                    // Remove the old client
+                    console.log('WSOCKET: Client already exists, updating...')
+                    ConnectionStore.removeClient(client.connectionId)
+
+                    // Update the client to the new one
+                    client.ip = newClient.ip
+                    client.connected = true
+                    client.timestamp = newClient.timestamp
+                    client.connectionId =
+                      newClient.connectionId == null
+                        ? (client.connectionId as UUID)
+                        : (newClient.connectionId as UUID)
+                    ConnectionStore.updateClient(newClient.connectionId, { connected: true })
+                  } else {
+                    // Update the current client
+                    console.log('WSOCKET: Client does not exist, adding...')
+
+                    ConnectionStore.updateClient(client.connectionId, {
+                      connectionId:
+                        manifest.uuid == null
+                          ? (client.connectionId as UUID)
+                          : (manifest.uuid as UUID),
+                      client_name: manifest.name,
+                      version: manifest.version,
+                      description: manifest.description,
+                      connected: true
+                    })
+                  }
+                }
                 break
               default:
                 break
@@ -419,12 +526,11 @@ const setupServer = async (): Promise<void> => {
     })
 
     socket.on('close', () => {
-      numConnections = server.clients.size
       dataListener.asyncEmit(
         MESSAGE_TYPES.LOGGING,
-        `WSOCKET: Client has disconnected! ${numConnections} in total`
+        `WSOCKET: Client ${client.connectionId} has disconnected!`
       )
-      dataListener.asyncEmit(MESSAGE_TYPES.CONNECTION, numConnections)
+      ConnectionStore.removeClient(client.connectionId)
     })
   })
 }

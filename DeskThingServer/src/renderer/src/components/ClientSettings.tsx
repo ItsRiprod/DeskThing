@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { IconLogoGear, IconLogoGearLoading, IconRefresh } from './icons'
+import { IconLogoGear, IconLogoGearLoading, IconRefresh } from '../assets/icons'
 import settingsStore from '@renderer/store/settingsStore'
 import { ServerManifest } from '@renderer/store/clientStore'
-import ClientSettingsOverlay from './Overlays/ClientSettingsOverlay'
+import ClientSettingsOverlay from '../overlays/ClientSettingsOverlay'
 
 const ClientSettings: React.FC = () => {
   const [clientManifest, setClientManifest] = useState<ServerManifest | null>(null)

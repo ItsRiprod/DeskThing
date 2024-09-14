@@ -1,101 +1,56 @@
-import { readFromFile, writeToFile } from '../utils/fileHandler'
-import dataListener, { MESSAGE_TYPES } from '../utils/events'
+import { Client } from '../types/'
 
-export interface Settings {
-  callbackPort: number
-  devicePort: number
-  address: string
-  autoStart: boolean
-  minimizeApp: boolean
-  [key: string]: any // For any additional settings
-}
+type ClientListener = (client: Client[]) => void
 
-class SettingsStore {
-  private settings: Settings
-  private settingsFilePath: string = 'settings.json'
-  private static instance: SettingsStore
+class ConnectionStore {
+  private clients: Client[] = []
+  private static instance: ConnectionStore
+  private clientListeners: ClientListener[] = []
 
-  constructor() {
-    this.settings = this.getDefaultSettings()
-    this.loadSettings()
-      .then((settings) => {
-        this.settings = settings
-        dataListener.asyncEmit(MESSAGE_TYPES.SETTINGS, {
-          type: 'settings',
-          payload: this.settings,
-          app: 'server'
-        })
-      })
-      .catch((err) => {
-        console.error('Error initializing settings:', err)
-      })
-  }
-  static getInstance(): SettingsStore {
-    if (!SettingsStore.instance) {
-      SettingsStore.instance = new SettingsStore()
+  static getInstance(): ConnectionStore {
+    if (!ConnectionStore.instance) {
+      ConnectionStore.instance = new ConnectionStore()
     }
-    return SettingsStore.instance
+    return ConnectionStore.instance
   }
 
-  public async getSettings(): Promise<Settings> {
-    if (this.settings) {
-      return this.settings
-    } else {
-      console.log('Settings not initialized. Loading settings...')
-      return await this.loadSettings()
+  on(listener: ClientListener): () => void {
+    this.clientListeners.push(listener)
+
+    return () => {
+      this.clientListeners = this.clientListeners.filter((l) => l !== listener)
     }
   }
 
-  public updateSetting(key: string, value: any): void {
-    this.settings[key] = value
-    dataListener.asyncEmit(MESSAGE_TYPES.SETTINGS, {
-      type: 'settings',
-      payload: this.settings,
-      app: 'server'
-    })
-    this.saveSettings()
+  getClients(): Client[] {
+    console.log('Getting clients:', this.clients)
+    return this.clients
   }
 
-  public async loadSettings(): Promise<Settings> {
-    try {
-      const data = await readFromFile<Settings>(this.settingsFilePath)
-      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'SETTINGS: Loaded settings!')
-      if (!data) {
-        // File does not exist, create it with default settings
-        const defaultSettings = this.getDefaultSettings()
-        await writeToFile(defaultSettings, this.settingsFilePath)
-        return defaultSettings
-      }
-      return data
-    } catch (err) {
-      console.error('Error loading settings:', err)
-      return this.getDefaultSettings()
+  addClient(client: Client): void {
+    console.log('Adding client:', client)
+    this.clients.push(client)
+    this.notifyListeners()
+  }
+
+  updateClient(connectionId: string, updates: Partial<Client>): void {
+    console.log('Updating client:', connectionId, updates)
+    const clientIndex = this.clients.findIndex((c) => c.connectionId === connectionId)
+
+    if (clientIndex !== -1) {
+      this.clients[clientIndex] = { ...this.clients[clientIndex], ...updates }
+      this.notifyListeners()
     }
   }
 
-  public async saveSettings(settings = this.settings): Promise<void> {
-    try {
-      this.settings = settings
-      await writeToFile(settings, this.settingsFilePath)
-      dataListener.asyncEmit(MESSAGE_TYPES.SETTINGS, {
-        type: 'settings',
-        payload: settings,
-        app: 'server'
-      })
-      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'SETTINGS: Updated settings!')
-    } catch (err) {
-      console.error('Error saving settings:', err)
-    }
+  removeClient(connectionId: string): void {
+    console.log('Removing client:', connectionId)
+    this.clients = this.clients.filter((c) => c.connectionId !== connectionId)
+    this.notifyListeners()
   }
 
-  private getDefaultSettings(): Settings {
-    return {
-      callbackPort: 8888,
-      devicePort: 8891,
-      address: '0.0.0.0',
-      autoStart: false,
-      minimizeApp: true
-    }
+  notifyListeners(): void {
+    this.clientListeners.forEach((listener) => listener(this.clients))
   }
 }
-export default SettingsStore.getInstance()
+export default ConnectionStore.getInstance()

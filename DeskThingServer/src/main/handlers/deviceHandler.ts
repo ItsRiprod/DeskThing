@@ -288,3 +288,332 @@ export const getClientManifest = async (
     return null
   }
 }
+
+const isDevelopment = process.env.NODE_ENV === 'development'
+const scriptDir = isDevelopment
+  ? join(__dirname, '..', '..', 'resources', 'scripts')
+  : join(process.resourcesPath, 'scripts')
+
+export const SetupProxy = async (
+  reply: (channel: string, data: ReplyData) => void,
+  deviceId: string
+): Promise<void> => {
+  try {
+    const userDataPath = app.getPath('userData')
+    const scriptPath = join(scriptDir, 'setup-proxy.sh')
+    const tempProxyConfPath = join(userDataPath, 'proxy.conf')
+
+    const tempScriptPath = '/tmp/setup-proxy.sh'
+    const targetScriptPath = '/etc/setup-proxy.sh'
+    const proxyConfPath = '/etc/supervisor.d/setup-proxy.conf'
+
+    // Check if setup-proxy.sh exists in the application directory
+    if (!fs.existsSync(scriptPath)) {
+      throw new Error(`Script ${scriptPath} does not exist.`)
+    }
+
+    // Upload setup-proxy.sh script
+    reply('logging', { status: true, data: 'Uploading setup-proxy.sh...', final: false })
+    let response = await handleAdbCommands(`-s ${deviceId} push "${scriptPath}"  ${tempScriptPath}`)
+    reply('logging', { status: true, data: response || 'Uploaded setup-proxy.sh.', final: false })
+
+    // Set executable permissions for the script
+    response = await handleAdbCommands(`-s ${deviceId} shell chmod +x ${tempScriptPath}`)
+    reply('logging', {
+      status: true,
+      data: response || 'Set executable permissions for setup-proxy.sh.',
+      final: false
+    })
+
+    console.log('Remounting...')
+    reply('logging', { status: true, data: 'Remounting...', final: false })
+    response = await handleAdbCommands(`-s ${deviceId} shell mount -o remount,rw /`)
+
+    response = await handleAdbCommands(
+      `-s ${deviceId} shell mv ${tempScriptPath} ${targetScriptPath}`
+    )
+    reply('logging', {
+      status: true,
+      data: response || 'Moved setup-proxy.sh to /etc/.',
+      final: false
+    })
+
+    try {
+      await EnsureSupervisorInclude(reply, deviceId)
+    } catch (error) {
+      console.error('Error ensuring supervisor include:', error)
+      reply('logging', {
+        status: false,
+        data: 'Error ensuring supervisor include: ' + error,
+        error: 'Error ensuring supervisor include: ' + error,
+        final: true
+      })
+    }
+
+    // Create Supervisor configuration file
+    reply('logging', { status: true, data: 'Creating Supervisor configuration...', final: false })
+    const supervisorConfig = `[program:setupProxy]
+command=${targetScriptPath}
+autostart=true
+autorestart=true
+stderr_logfile=/var/log/setup-proxy.err.log
+stdout_logfile=/var/log/setup-proxy.out.log
+user=root`
+
+    // Write Supervisor configuration to file
+    reply('logging', { status: true, data: 'Uploading Supervisor configuration...', final: false })
+
+    fs.writeFileSync(tempProxyConfPath, supervisorConfig)
+
+    response = await handleAdbCommands(
+      `-s ${deviceId} push "${tempProxyConfPath}" ${proxyConfPath}`
+    )
+    reply('logging', {
+      status: true,
+      data: response || 'Uploaded Supervisor configuration.',
+      final: false
+    })
+
+    // Reread and update Supervisor
+    response = await handleAdbCommands(`-s ${deviceId} shell supervisorctl reread`)
+    reply('logging', {
+      status: true,
+      data: response || 'Supervisor reread configuration.',
+      final: false
+    })
+    response = await handleAdbCommands(`-s ${deviceId} shell supervisorctl update`)
+    reply('logging', {
+      status: true,
+      data: response || 'Supervisor updated configuration.',
+      final: true
+    })
+    // Start the Supervisor program
+    response = await handleAdbCommands(`-s ${deviceId} shell supervisorctl start setupProxy`)
+    reply('logging', {
+      status: true,
+      data: response || 'Started setup-proxy program.',
+      final: true
+    })
+
+    fs.unlinkSync(tempProxyConfPath)
+  } catch (Exception) {
+    reply('logging', {
+      status: false,
+      data: 'There has been an error setting up the proxy.',
+      final: true,
+      error: `${Exception}`
+    })
+    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'SetupProxy encountered the error ' + Exception)
+  }
+}
+
+/**
+ * Not Currently in use
+ * Does not work
+ * Do not use this
+ * @param reply The reply function for logging and feedback
+ * @param deviceId the device id to run this on
+ * @param filePath the path  to the file to add to supervisor
+ */
+export const AppendToSupervisor = async (
+  reply: (channel: string, data: ReplyData) => void,
+  deviceId: string,
+  filePath: string
+): Promise<void> => {
+  try {
+    const userDataPath = app.getPath('userData')
+    const tempConfPath = join(userDataPath, 'temp_supervisor.conf')
+    const supervisorConfPath = '/etc/supervisord.conf'
+
+    // Pull existing Supervisor configuration
+    reply('logging', {
+      status: true,
+      data: 'Pulling existing Supervisor configuration...',
+      final: false
+    })
+    let response = await handleAdbCommands(
+      `-s ${deviceId} pull ${supervisorConfPath} "${tempConfPath}"`
+    )
+    reply('logging', {
+      status: true,
+      data: response || 'Pulled Supervisor configuration.',
+      final: false
+    })
+
+    // Read the existing and new configuration
+    const existingConf = fs.readFileSync(tempConfPath, 'utf8')
+    const newConf = fs.readFileSync(filePath, 'utf8')
+
+    // Check if new configuration is already present
+    const newConfLines = newConf.split('\n').filter((line) => line.trim())
+    const existingConfLines = existingConf.split('\n').filter((line) => line.trim())
+
+    // Identify if new configuration already exists in the existing config
+    const newConfigExists = newConfLines.some((newLine) =>
+      existingConfLines.some((existingLine) => existingLine.includes(newLine.split(':')[0]))
+    )
+
+    if (newConfigExists) {
+      // Remove existing configuration if present
+      reply('logging', {
+        status: true,
+        data: 'Updating existing Supervisor configuration...',
+        final: false
+      })
+
+      // Remove existing configuration block from the temp file
+      const updatedConf = existingConfLines
+        .filter((line) => !newConfLines.some((newLine) => line.includes(newLine.split(':')[0])))
+        .join('\n')
+
+      fs.writeFileSync(tempConfPath, updatedConf + '\n' + newConf)
+    } else {
+      // Append new configuration
+      reply('logging', { status: true, data: 'Appending new configuration...', final: false })
+      fs.writeFileSync(tempConfPath, existingConf + '\n' + newConf)
+    }
+
+    // Push updated configuration
+    reply('logging', {
+      status: true,
+      data: 'Uploading updated Supervisor configuration...',
+      final: false
+    })
+
+    response = await handleAdbCommands(
+      `-s ${deviceId} push "${tempConfPath}" ${supervisorConfPath}`
+    )
+    reply('logging', {
+      status: true,
+      data: response || 'Uploaded updated Supervisor configuration.',
+      final: false
+    })
+
+    // Apply Supervisor configuration
+    response = await handleAdbCommands(`-s ${deviceId} shell supervisorctl reread`)
+    reply('logging', {
+      status: true,
+      data: response || 'Supervisor reread configuration.',
+      final: false
+    })
+
+    response = await handleAdbCommands(`-s ${deviceId} shell supervisorctl update`)
+    reply('logging', {
+      status: true,
+      data: response || 'Supervisor updated configuration.',
+      final: false
+    })
+
+    reply('logging', {
+      status: true,
+      data: 'Supervisor configuration updated and applied.',
+      final: true
+    })
+  } catch (Exception) {
+    reply('logging', {
+      status: false,
+      data: `Error appending to Supervisor: ${Exception}`,
+      final: true,
+      error: `${Exception}`
+    })
+    dataListener.asyncEmit(
+      MESSAGE_TYPES.ERROR,
+      'AppendToSupervisor encountered the error ' + Exception
+    )
+  }
+}
+
+/**
+ * Ensures that the Supervisor configuration includes the [include] file necessary.
+ * @param reply
+ * @param deviceId
+ */
+export const EnsureSupervisorInclude = async (
+  reply: (channel: string, data: ReplyData) => void,
+  deviceId: string
+): Promise<void> => {
+  try {
+    const userDataPath = app.getPath('userData')
+    const tempConfPath = join(userDataPath, 'temp_supervisor.conf')
+    const supervisorConfPath = '/etc/supervisord.conf'
+
+    // Pull existing Supervisor configuration
+    reply('logging', {
+      status: true,
+      data: 'Pulling existing Supervisor configuration...',
+      final: false
+    })
+    let response = await handleAdbCommands(
+      `-s ${deviceId} pull ${supervisorConfPath} "${tempConfPath}"`
+    )
+    reply('logging', {
+      status: true,
+      data: response || 'Pulled Supervisor configuration.',
+      final: false
+    })
+
+    // Read the existing configuration
+    const existingConf = fs.readFileSync(tempConfPath, 'utf8')
+
+    // Check if [include] section is present
+    const includeSectionRegex = /^\[include\]\s*$/m
+    const includeSectionPresent = includeSectionRegex.test(existingConf)
+
+    if (!includeSectionPresent) {
+      // Append [include] section if not present
+      const includeSection = `[include]
+files = /etc/supervisor.d/*.conf\n`
+      const updatedConf = existingConf + '\n' + includeSection
+
+      // Write the updated configuration to a temporary file
+      fs.writeFileSync(tempConfPath, updatedConf)
+
+      // Push updated configuration
+      reply('logging', {
+        status: true,
+        data: 'Uploading updated Supervisor configuration...',
+        final: false
+      })
+      response = await handleAdbCommands(
+        `-s ${deviceId} push "${tempConfPath}" ${supervisorConfPath}`
+      )
+      reply('logging', {
+        status: true,
+        data: response || 'Uploaded updated Supervisor configuration.',
+        final: false
+      })
+
+      // Apply Supervisor configuration
+      response = await handleAdbCommands(`-s ${deviceId} shell supervisorctl reread`)
+      reply('logging', {
+        status: true,
+        data: response || 'Supervisor reread configuration.',
+        final: false
+      })
+
+      response = await handleAdbCommands(`-s ${deviceId} shell supervisorctl update`)
+      reply('logging', {
+        status: true,
+        data: response || 'Supervisor updated configuration.',
+        final: true
+      })
+    } else {
+      reply('logging', {
+        status: true,
+        data: '[include] section already present. No need to update.',
+        final: true
+      })
+    }
+  } catch (Exception) {
+    reply('logging', {
+      status: false,
+      data: `Error ensuring Supervisor [include] section: ${Exception}`,
+      final: true,
+      error: `${Exception}`
+    })
+    dataListener.asyncEmit(
+      MESSAGE_TYPES.ERROR,
+      'EnsureSupervisorInclude encountered the error ' + Exception
+    )
+  }
+}

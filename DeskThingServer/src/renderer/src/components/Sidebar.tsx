@@ -10,9 +10,9 @@ import {
   IconLogoGear,
   IconPower,
   IconWrench
-} from './icons'
+} from '../assets/icons'
 import { useReward } from 'react-rewards'
-import SettingsOverlay from './Overlays/SettingsOverlay'
+import SettingsOverlay from '../overlays/SettingsOverlay'
 import { SidebarView } from '../App'
 import { ClientStore } from '@renderer/store'
 
@@ -41,7 +41,7 @@ const Sidebar: React.FC<SidebarProps> = ({ setCurrentView, currentView }) => {
     }
 
     console.log('got connections', connections)
-    const removeListener = ClientStore.onConnection(handleConnection)
+    const removeListener = ClientStore.on('Connections', (data) => handleConnection(data as number))
     const timeoutId = setTimeout(() => {
       ClientStore.requestConnections()
     }, 1500)

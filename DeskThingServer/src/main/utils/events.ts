@@ -8,7 +8,6 @@ export const MESSAGE_TYPES = {
   MESSAGE: 'message',
   CONFIG: 'config',
   SETTINGS: 'settings',
-  CONNECTION: 'connection',
   MAPPINGS: 'mapping'
 }
 

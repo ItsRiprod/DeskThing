@@ -70,3 +70,18 @@ export interface GithubRelease {
   zipball_url: string
   body: string
 }
+
+export interface Client {
+  ip: string
+  port?: number
+  hostname?: string
+  headers?: Record<string, string>
+  userAgent?: string
+  connectionId: string
+  connected: boolean
+  timestamp: number
+  currentApp?: string
+  version?: string
+  client_name?: string
+  description?: string
+}

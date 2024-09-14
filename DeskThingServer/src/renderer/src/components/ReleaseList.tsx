@@ -1,5 +1,5 @@
 import React from 'react'
-import { IconArrowDown, IconArrowRight, IconDownload } from './icons'
+import { IconArrowDown, IconArrowRight, IconDownload } from '../assets/icons'
 import { GithubAsset, GithubRelease } from '../store/githubStore'
 
 interface ReleaseListProps {

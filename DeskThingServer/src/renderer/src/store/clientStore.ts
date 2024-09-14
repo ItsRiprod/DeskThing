@@ -1,7 +1,3 @@
-/**
- * TODO: Finish setting up clientStore to save client details and data
- */
-
 export interface ServerManifest {
   name: string
   id: string
@@ -17,27 +13,37 @@ export interface ServerManifest {
   miniplayer: string
 }
 
-type EVENTS = 'ADBDevices' | 'Connections' | 'numConnections' | string
+export interface Client {
+  ip: string
+  port?: number
+  hostname?: string
+  headers?: Record<string, string>
+  userAgent?: string
+  connectionId: string
+  connected: boolean
+  timestamp: number
+  currentApp?: string
+  version?: string
+  client_name?: string
+  description?: string
+}
 
-type callback = (data: string[]) => void
-type connectionCallback = (data: number) => void
+type EVENTS = 'ADBDevices' | 'Connections' | 'Clients' | string
+
+type callback = (client: string[] | Client[] | number) => void
 
 export class ClientStore {
   private static instance: ClientStore
   private ADBDevices: string[] = []
-  private numConnections: number = 0
-  //private connectedApps: ServerManifest[] = []
-  listeners: { [key in EVENTS]: callback[] } = {}
-  private connectionListeners: connectionCallback[] = []
+  private connections: number = 0
+  private clients: Client[] = []
+  private listeners: { [key in EVENTS]: callback[] } = {}
   constructor() {
     window.electron.ipcRenderer.on('connections', (event, data) =>
-      this.handleConnection(event, data.data)
+      this.handleConnection(event, data)
     )
+    window.electron.ipcRenderer.on('clients', (event, data) => this.handleClients(event, data))
     this.requestADBDevices()
-    this.getConnections()
-    //this.appsList = {
-    //  apps: []
-    //}
   }
 
   static getInstance(): ClientStore {
@@ -47,9 +53,13 @@ export class ClientStore {
     return ClientStore.instance
   }
 
-  handleConnection = (_event, num: number): void => {
-    this.numConnections = num
-    this.connectionListeners.forEach((callback) => callback(this.numConnections))
+  private handleConnection = (_event, ipcData): void => {
+    this.connections = ipcData.data
+    this.notifyListeners('Connections', this.connections)
+  }
+  private handleClients = (_event, ipcData): void => {
+    this.clients = ipcData.data
+    this.notifyListeners('Clients', this.clients)
   }
 
   requestADBDevices = async (): Promise<string[]> => {
@@ -74,7 +84,7 @@ export class ClientStore {
   requestConnections = (): void => window.electron.ipcRenderer.send('get-connections')
 
   getConnections = (): number => {
-    return this.numConnections
+    return this.connections
   }
 
   getADBDevices = async (): Promise<string[]> => {
@@ -84,15 +94,13 @@ export class ClientStore {
       return this.requestADBDevices()
     }
   }
-  onConnection(callback: connectionCallback): () => void {
-    if (this.connectionListeners) {
-      this.connectionListeners.push(callback)
-    } else {
-      this.connectionListeners = [callback]
-    }
 
-    return () => {
-      this.connectionListeners = this.connectionListeners.filter((cb) => cb !== callback)
+  getClients = (): Client[] => {
+    if (this.clients) {
+      return this.clients
+    } else {
+      this.getConnections()
+      return []
     }
   }
 
@@ -108,69 +116,11 @@ export class ClientStore {
     }
   }
 
-  notifyListeners(event: EVENTS, data: string[]): void {
+  notifyListeners(event: EVENTS, data: string[] | Client[] | number): void {
     if (this.listeners[event]) {
       this.listeners[event].forEach((callback) => callback(data))
     }
   }
-
-  /*
-  public getAppsList(): AppData {
-    return this.appsList
-  }
-
-  public removeAppFromList(appName: string): void {
-    const existingAppIndex = this.appsList['apps'].findIndex((app: App) => app.name === appName)
-    if (existingAppIndex !== -1) {
-      this.appsList['apps'].splice(existingAppIndex)
-      this.emit('update', this.appsList)
-      console.log('App removed', appName, this.appsList)
-    } else {
-      console.log('App not found in the list!')
-    }
-  }
-
-  public addAppToList(appName: string): void {
-    let newAppName = appName
-    if (appName.endsWith('.zip')) {
-      newAppName = appName.replace('.zip', '')
-    }
-    const appData: App = {
-      name: newAppName,
-      enabled: false,
-      running: false,
-      prefIndex: 0
-    }
-
-    if (!this.appsList['apps']) {
-      this.appsList['apps'] = []
-    }
-
-    this.appsList['apps'].push(appData)
-    this.emit('update', this.appsList)
-  }
-
-  public disableApp(appName: string): void {
-    if (this.appsList['apps'] == null) {
-      this.appsList = { apps: [] }
-      this.emit('update', this.appsList)
-      console.log('Clearing data because apps is null')
-    }
-    const existingAppIndex = this.appsList['apps'].findIndex((app: App) => app.name === appName)
-    if (existingAppIndex !== -1) {
-      this.appsList.apps[existingAppIndex].enabled = false
-      this.emit('update', this.appsList)
-      console.log('App disabled', appName)
-    } else {
-      console.log(`App ${appName} not found in the list!`, this.appsList)
-    }
-  }
-
-  public setAppList(apps: AppData): void {
-    this.appsList = apps
-    this.emit('update', this.appsList)
-  }
-    */
 }
 
 export default ClientStore.getInstance()
