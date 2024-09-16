@@ -1,18 +1,18 @@
-import { AppData, App } from '@renderer/store/appStore'
+import { App } from '@renderer/store/appStore'
 import { useState, useEffect } from 'react'
 import { IconX } from '../assets/icons'
 
 interface DisplayAppDataProps {
   appIndex: number
   setEnabled: (boolean) => void
-  data?: AppData
+  data?: App[]
   app?: App
 }
 
 const DisplayAppData = ({ appIndex, setEnabled, data, app }: DisplayAppDataProps): JSX.Element => {
-  const [appData, setAppData] = useState(data ? data.apps[appIndex] : app)
+  const [appData, setAppData] = useState(data ? data[appIndex] : app)
   useEffect(() => {
-    setAppData(data ? data.apps[appIndex] : app)
+    setAppData(data ? data[appIndex] : app)
   }, [data, appIndex])
 
   const handleExit = (): void => {

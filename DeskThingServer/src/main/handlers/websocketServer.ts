@@ -1,8 +1,7 @@
 import WebSocket, { WebSocketServer } from 'ws'
-import { sendMessageToApp, getAppFilePath } from './appHandler'
+import { sendMessageToApp, getAppFilePath } from './apps/'
 
-import { getAppData, setAppData, getAppByName } from './configHandler'
-import { getDefaultMappings, ButtonMapping, setDefaultMappings } from './keyMapHandler'
+import { getDefaultMappings, setDefaultMappings } from './keyMapHandler'
 import { readData, addData } from './dataHandler'
 import dataListener, { MESSAGE_TYPES } from '../utils/events'
 import { HandleDeviceData } from './deviceHandler'
@@ -17,7 +16,8 @@ import { createServer, Server as HttpServer } from 'http'
 import { app as electronApp } from 'electron'
 import { join } from 'path'
 import ConnectionStore from '../stores/connectionsStore'
-import { Client } from '../types'
+import { Client, ButtonMapping } from '../types'
+import AppState from './apps/appState'
 
 // Create a WebSocket server that listens on port 8891
 // const server = new WebSocketServer({ port: 8891 })
@@ -159,16 +159,16 @@ const sendError = async (socket, error): Promise<void> => {
 
 const sendPrefData = async (socket: WebSocket | null = null): Promise<void> => {
   try {
-    const appData = await getAppData()
+    const appData = await AppState.getAllBase()
     const config = await readData()
-    if (!appData || !appData.apps) {
+    if (!appData) {
       throw new Error('Invalid configuration format')
     }
 
     const settings = {}
 
-    if (appData && appData.apps) {
-      appData.apps.map((app) => {
+    if (appData && appData) {
+      appData.map((app) => {
         if (app && app.manifest) {
           const appConfig = config[app.manifest.id]
           if (appConfig?.settings) {
@@ -180,7 +180,7 @@ const sendPrefData = async (socket: WebSocket | null = null): Promise<void> => {
       console.error('appData or appData.apps is undefined or null', appData)
     }
 
-    sendData(socket, { app: 'client', type: 'config', payload: appData.apps })
+    sendData(socket, { app: 'client', type: 'config', payload: appData })
     sendData(socket, { app: 'client', type: 'settings', payload: settings })
     console.log('WSOCKET: Preferences sent!')
   } catch (error) {
@@ -454,7 +454,7 @@ const setupServer = async (): Promise<void> => {
                   case 'update_pref_index':
                     if (parsedMessage.payload) {
                       const { app: appName, index: newIndex } = parsedMessage.payload
-                      const appData = await getAppByName(appName)
+                      const appData = await AppState.get(appName)
 
                       if (
                         appData &&
@@ -463,17 +463,8 @@ const setupServer = async (): Promise<void> => {
                       ) {
                         // Update the existing app's index
                         appData.prefIndex = newIndex
-                        await setAppData(appData)
+                        await AppState.add(appData)
 
-                        // Retrieve all apps and reassign their indexes
-                        const allApps = await getAppData().apps // Fetch all apps
-                        allApps.sort((a, b) => a.prefIndex - b.prefIndex)
-
-                        // Reassign indexes to ensure continuity
-                        allApps.forEach((app, index) => (app.prefIndex = index))
-
-                        // Update all apps on the server
-                        await Promise.all(allApps.map((app) => setAppData(app)))
                         dataListener.emit(
                           MESSAGE_TYPES.LOGGING,
                           `WEBSOCKET: Updated app indexes and sent to client`

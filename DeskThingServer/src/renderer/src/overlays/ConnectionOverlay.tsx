@@ -1,5 +1,5 @@
 import React from 'react'
-import { IconRefresh, IconSave, IconX } from '../assets/icons'
+import { IconX } from '../assets/icons'
 import { Client } from '../store/clientStore'
 
 interface ConnectionOverlayProps {

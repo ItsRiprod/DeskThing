@@ -24,7 +24,7 @@ const Status: React.FC = () => {
       setIps(settings.localIp)
       setPort(settings.devicePort)
     }
-    const handleClientUpdate = (clients: Client[]) => {
+    const handleClientUpdate = (clients: Client[]): void => {
       setClients(clients)
     }
 

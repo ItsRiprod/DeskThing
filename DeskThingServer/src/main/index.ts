@@ -265,15 +265,10 @@ async function initializeDoc(): Promise<void> {
 async function setupIpcHandlers(): Promise<void> {
   const settingsStore = await import('./stores/settingsStore')
   const { getAppData } = await import('./handlers/configHandler')
-  const {
-    handleZipFromUrl,
-    addApp,
-    sendMessageToApp,
-    handleZip,
-    disableApp,
-    stopApp,
-    purgeAppData
-  } = await import('./handlers/appHandler')
+  const { handleZipFromUrl, sendMessageToApp, handleZip, AppHandler } = await import(
+    './handlers/apps'
+  )
+  const appHandler = AppHandler.getInstance()
   const { getData, setData } = await import('./handlers/dataHandler')
   const { loadMappings, setMappings } = await import('./handlers/keyMapHandler')
   const { handleAdbCommands } = await import('./handlers/adbHandler')
@@ -310,33 +305,34 @@ async function setupIpcHandlers(): Promise<void> {
   })
 
   ipcMain.on(IPC_CHANNELS.ADD_APP, async (event, appName: string) => {
-    await addApp(event, appName)
+    await appHandler.run(appName)
     event.reply('logging', { status: true, data: 'Finished', final: true })
   })
   ipcMain.on(IPC_CHANNELS.DEV_ADD_APP, async (event, appPath: string) => {
-    await addApp(event, 'developer-app', appPath)
+    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'Developer App Not implemented Yet ', appPath)
+    // await appHandler.run('developer-app', appPath)
     event.reply('logging', { status: true, data: 'Finished', final: true })
   })
   ipcMain.on(IPC_CHANNELS.GET_APPS, (event) => {
     event.reply('logging', { status: true, data: 'Getting data', final: false })
-    const data = getAppData()
+    const data = appHandler.getAllBase()
     event.reply('logging', { status: true, data: 'Finished', final: true })
     event.reply('app-data', { status: true, data: data, final: true })
   })
   ipcMain.on(IPC_CHANNELS.STOP_APP, async (event, appName: string) => {
     event.reply('logging', { status: true, data: 'Stopping App', final: false })
-    await stopApp(appName)
+    await appHandler.stop(appName)
     event.reply('logging', { status: true, data: 'Finished', final: true })
   })
   ipcMain.on(IPC_CHANNELS.DISABLE_APP, async (event, appName: string) => {
     event.reply('logging', { status: true, data: 'Disabling App', final: false })
-    await disableApp(appName)
+    await appHandler.disable(appName)
     event.reply('logging', { status: true, data: 'Finished', final: true })
   })
   ipcMain.on(IPC_CHANNELS.PURGE_APP, async (event, appName: string) => {
     event.reply('logging', { status: true, data: 'Purging App', final: false })
     console.log(`====== PURGING APP ${appName} ========`)
-    await purgeAppData(appName)
+    await appHandler.purge(appName)
     event.reply('logging', { status: true, data: 'Finished', final: true })
   })
   ipcMain.on(IPC_CHANNELS.HANDLE_ZIP, async (event, zipFilePath: string) => {
@@ -567,7 +563,7 @@ async function loadModules(): Promise<void> {
   try {
     await import('./handlers/authHandler')
     await import('./handlers/websocketServer')
-    const { loadAndRunEnabledApps } = await import('./handlers/appHandler')
+    const { loadAndRunEnabledApps } = await import('./handlers/apps')
     loadAndRunEnabledApps()
   } catch (error) {
     console.error('Error loading modules:', error)

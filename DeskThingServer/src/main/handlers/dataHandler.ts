@@ -59,11 +59,11 @@ const getData = (app): { [key: string]: string } => {
   return data[app]
 }
 
-const purgeData = async (appName: string): Promise<void> => {
+const purgeAppData = async (appName: string): Promise<void> => {
   console.log('SERVER: Deleting app data...')
   const data = readData()
   delete data[appName]
   writeData(data)
 }
 
-export { setData, getData, addData, readData, purgeData }
+export { setData, getData, addData, readData, purgeAppData }

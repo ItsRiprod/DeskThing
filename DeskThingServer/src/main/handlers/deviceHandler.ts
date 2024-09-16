@@ -2,7 +2,6 @@ import { sendIpcData } from '..'
 import dataListener, { MESSAGE_TYPES } from '../utils/events'
 import { join } from 'path'
 import * as fs from 'fs'
-import * as unzipper from 'unzipper'
 import { app, net } from 'electron'
 import { handleAdbCommands } from './adbHandler'
 import { ReplyData } from '..'
@@ -87,10 +86,10 @@ export const HandlePushWebApp = async (
   }
 }
 
-export const HandleWebappZipFromUrl = (
+export const HandleWebappZipFromUrl = async (
   reply: (channel: string, data: ReplyData) => void,
   zipFileUrl: string
-): void => {
+): Promise<void> => {
   const userDataPath = app.getPath('userData')
   const extractDir = join(userDataPath, 'webapp')
 
@@ -99,29 +98,34 @@ export const HandleWebappZipFromUrl = (
     fs.mkdirSync(extractDir, { recursive: true })
   }
 
-  // Download the zip file from the provided URL
+  const AdmZip = await import('adm-zip')
+
+  reply('logging', { status: true, data: 'Downloading...', final: false })
+
   const request = net.request(zipFileUrl)
 
   request.on('response', (response) => {
     if (response.statusCode === 200) {
-      const writeStream = fs.createWriteStream(join(extractDir, 'temp.zip'))
+      const chunks: Buffer[] = []
 
       response.on('data', (chunk) => {
-        writeStream.write(chunk)
+        chunks.push(chunk)
       })
 
       response.on('end', async () => {
-        writeStream.end()
+        const buffer = Buffer.concat(chunks)
+        const tempZipPath = join(extractDir, 'temp.zip')
+
+        // Write the buffer to a temporary file
+        fs.writeFileSync(tempZipPath, buffer)
 
         // Extract the downloaded zip file
         try {
-          await fs
-            .createReadStream(join(extractDir, 'temp.zip'))
-            .pipe(unzipper.Extract({ path: extractDir }))
-            .promise()
+          const zip = new AdmZip(tempZipPath)
+          zip.extractAllTo(extractDir, true)
 
           // Optionally remove the temporary zip file
-          fs.unlinkSync(join(extractDir, 'temp.zip'))
+          fs.unlinkSync(tempZipPath)
 
           console.log(`Successfully extracted ${zipFileUrl} to ${extractDir}`)
           dataListener.asyncEmit(
@@ -140,7 +144,7 @@ export const HandleWebappZipFromUrl = (
             status: false,
             data: 'Failed to extract!',
             final: true,
-            error: 'No error provided'
+            error: error instanceof Error ? error.message : String(error)
           })
         }
       })

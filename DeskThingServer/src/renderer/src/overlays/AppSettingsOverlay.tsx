@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import { IconRefresh, IconSave, IconX } from '../assets/icons'
-import { AppData } from '@renderer/store'
+import { App } from '@renderer/store'
 
 interface AppSettingsOverlayProps {
   appIndex: number
   setEnabled: (boolean) => void
-  data: AppData
+  data: App[]
 }
 
 export interface Settings {
@@ -25,7 +25,7 @@ type AppSettingData = {
 }
 
 const AppSettingsOverlay: React.FC<AppSettingsOverlayProps> = ({ appIndex, setEnabled, data }) => {
-  const currentApp = data ? data.apps[appIndex].name : null
+  const currentApp = data ? data[appIndex].name : null
   const [appData, setAppData] = useState<AppSettingData>({})
   const [visibleOptions, setVisibleOptions] = useState<string>()
   const fetchSettings = async (): Promise<void> => {
@@ -72,7 +72,7 @@ const AppSettingsOverlay: React.FC<AppSettingsOverlayProps> = ({ appIndex, setEn
       <div className="bg-gray-800 rounded-lg p-6 w-full max-w-2xl">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold">
-            {data.apps[appIndex]?.manifest?.label || currentApp} Settings
+            {data[appIndex]?.manifest?.label || currentApp} Settings
           </h2>
           <button
             onClick={() => setEnabled(false)}

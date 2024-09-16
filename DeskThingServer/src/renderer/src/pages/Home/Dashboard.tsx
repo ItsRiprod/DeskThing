@@ -5,7 +5,7 @@ import Widget from '../../components/Widget'
 import clientStore from '@renderer/store/clientStore'
 import { IconCarThing } from '../../assets/icons'
 import logStore, { Log } from '@renderer/store/logStore'
-import { App, AppData, appStoreInstance } from '@renderer/store'
+import { App, appStoreInstance } from '@renderer/store'
 
 const Dashboard = (): JSX.Element => {
   const [devices, setDevices] = useState<string[]>([])
@@ -27,8 +27,8 @@ const Dashboard = (): JSX.Element => {
         })
       }
     }
-    const handleAppUpdate = (apps: AppData): void => {
-      setApps(apps.apps)
+    const handleAppUpdate = (apps: App[]): void => {
+      setApps(apps)
     }
 
     appStoreInstance.on('update', handleAppUpdate)
@@ -40,7 +40,7 @@ const Dashboard = (): JSX.Element => {
         devices = await clientStore.requestADBDevices()
       }
       setDevices(devices)
-      setApps(appStoreInstance.getAppsList().apps)
+      setApps(appStoreInstance.getAppsList())
       setLogs((await logStore.getLogs()).slice(0, 7))
     }
     initializeADB()

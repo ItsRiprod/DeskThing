@@ -1,37 +1,8 @@
 import { sendIpcData } from '..'
+import { AppData, App, Manifest } from '../types'
 import dataListener, { MESSAGE_TYPES } from '../utils/events'
 import { readFromFile, writeToFile } from '../utils/fileHandler'
-import { ButtonMapping } from './keyMapHandler'
-export interface Manifest {
-  isAudioSource: boolean
-  requires: Array<string>
-  label: string
-  version: string
-  description?: string
-  author?: string
-  id: string
-  isWebApp: boolean
-  isLocalApp: boolean
-  platforms: Array<string>
-  homepage?: string
-  repository?: string
-}
-
-export interface App {
-  name: string
-  enabled: boolean
-  running: boolean
-  prefIndex: number
-  manifest?: Manifest
-}
-
-export interface Config {
-  [appName: string]: string | string[]
-}
-export interface AppData {
-  apps: App[]
-  config: Config
-}
+import { ButtonMapping } from '../types'
 
 const defaultData: AppData = {
   apps: [],
@@ -88,6 +59,13 @@ const setAppData = async (newApp: App): Promise<void> => {
     // Add new app
     data.apps.push(newApp)
   }
+  writeData(data)
+}
+
+// Set data function
+const setAppsData = async (appsList: App[]): Promise<void> => {
+  const data = readData()
+  data.apps = appsList
   writeData(data)
 }
 
@@ -205,6 +183,7 @@ const purgeAppConfig = async (appName: string): Promise<void> => {
 
 export {
   setAppData,
+  setAppsData,
   getAppData,
   getAppByName,
   getAppByIndex,

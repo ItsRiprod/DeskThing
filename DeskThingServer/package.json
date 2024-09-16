@@ -20,15 +20,14 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.0",
     "@electron-toolkit/utils": "^3.0.0",
+    "adm-zip": "^0.5.16",
     "axios": "^1.7.2",
     "cors": "^2.8.5",
     "cross-unzip": "^0.2.1",
     "electron-updater": "^6.1.7",
     "express": "^4.19.2",
-    "jszip": "^3.10.1",
     "react-qr-code": "^2.0.15",
     "react-rewards": "^2.0.4",
-    "unzipper": "^0.12.1",
     "uuid": "^10.0.0",
     "ws": "^8.17.1"
   },

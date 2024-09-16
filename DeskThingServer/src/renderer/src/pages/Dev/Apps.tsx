@@ -41,8 +41,8 @@ const Apps = (): JSX.Element => {
   const requestAppsList = (): void => window.electron.ipcRenderer.send('get-apps')
 
   useEffect(() => {
-    if (appsList?.apps?.length > 0) {
-      const developerApp = appsList.apps.find((app) => app.name === 'developer-app')
+    if (appsList?.length > 0) {
+      const developerApp = appsList.find((app) => app.name === 'developer-app')
       setApp(developerApp)
     }
     // Subscribe to changes in request status

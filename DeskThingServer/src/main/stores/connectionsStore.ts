@@ -1,4 +1,3 @@
-import { disconnectClient } from '../handlers/websocketServer'
 import { Client } from '../types/'
 
 type ClientListener = (client: Client[]) => void

@@ -1,5 +1,5 @@
 import { getAppData } from './configHandler' // Assuming you have a config handler for active apps
-import { sendMessageToApp } from './appHandler' // Assuming you have an app handler for sending messages
+import { sendMessageToApp } from './apps/' // Assuming you have an app handler for sending messages
 import http from 'http'
 import url from 'url'
 import settingsStore, { Settings } from '../stores/settingsStore'
