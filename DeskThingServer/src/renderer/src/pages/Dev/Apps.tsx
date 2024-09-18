@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useAppStore, App } from '../../store/appStore'
+import { App, appStoreInstance } from '../../store/appStore'
 import { IconX, IconPause, IconPlay, IconDetails, IconPulsing } from '../../assets/icons'
 import DisplayAppData from '../../overlays/DisplayAppData'
 import RequestStoreInstance, { Request } from '../../store/requestStore'
@@ -8,7 +8,7 @@ import AppRequestOverlay from '../../overlays/AppRequest'
 export type View = 'apps' | 'local' | 'web'
 
 const Apps = (): JSX.Element => {
-  const { appsList } = useAppStore()
+  const [appsList, setAppsList] = useState<App[]>(appStoreInstance.getAppsList())
   const [app, setApp] = useState<App>()
   const [tooltips, setTooltips] = useState<string[]>([])
   const [enabled, setEnabled] = useState(false)
@@ -51,6 +51,12 @@ const Apps = (): JSX.Element => {
       setAppsWithActiveRequests(appsWithActiveRequests)
     }
 
+    const onAppStoreUpdate = (apps: App[]): void => {
+      setAppsList(apps)
+    }
+
+    const removeAppListener = appStoreInstance.on('update', onAppStoreUpdate)
+
     onRequestUpdate(RequestStoreInstance.getQueue()) // Get initial queue of requests
 
     RequestStoreInstance.on('request', onRequestUpdate)
@@ -58,6 +64,7 @@ const Apps = (): JSX.Element => {
     return () => {
       // Clean up the subscription on unmount
       RequestStoreInstance.off('request', onRequestUpdate)
+      removeAppListener()
     }
   }, [appsList])
 

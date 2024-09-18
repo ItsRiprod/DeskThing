@@ -1,43 +1,30 @@
-import { useEffect, useRef, useState } from 'react'
-import { useAppStore, App } from '../../store/appStore'
+import { useEffect, useState } from 'react'
+import { App, appStoreInstance } from '../../store/appStore'
 import DisplayAppData from '../../overlays/DisplayAppData'
 import AppSettingsOverlay from '../../overlays/AppSettingsOverlay'
 import AppComponent from '../../components/AppComponent'
 export type View = 'apps' | 'local' | 'web'
 
 const Apps = (): JSX.Element => {
-  const { appsList, setAppList } = useAppStore()
+  const [appsList, setAppList] = useState<App[]>(appStoreInstance.getAppsList())
   const [enabled, setEnabled] = useState(false)
   const [sEnabled, setSEnabled] = useState(false)
   const [appIndex, setAppIndex] = useState(1)
-  const dragItem = useRef<number | null>(null)
-  const dragOverItem = useRef<number | null>(null)
 
-  const requestAppsList = (): void => window.electron.ipcRenderer.send('get-apps')
+  const requestAppsList = (): void => appStoreInstance.requestApps()
 
   useEffect(() => {
-    requestAppsList()
-  }, [])
-
-  const handleDragStart = (index: number) => {
-    dragItem.current = index
-  }
-
-  const handleDragEnter = (index: number) => {
-    dragOverItem.current = index
-  }
-
-  const handleDragEnd = () => {
-    if (dragItem.current !== null && dragOverItem.current !== null) {
-      const copyListItems = [...appsList]
-      const dragItemContent = copyListItems[dragItem.current]
-      copyListItems.splice(dragItem.current, 1)
-      copyListItems.splice(dragOverItem.current, 0, dragItemContent)
-      dragItem.current = null
-      dragOverItem.current = null
-      setAppList(copyListItems)
+    const onAppStoreUpdate = (apps: App[]): void => {
+      setAppList(apps)
     }
-  }
+
+    const removeAppListener = appStoreInstance.on('update', onAppStoreUpdate)
+    requestAppsList()
+
+    return () => {
+      removeAppListener()
+    }
+  }, [])
 
   return (
     <div className="h-vh w-[100%] flex flex-col justify-between items-center">
@@ -47,25 +34,16 @@ const Apps = (): JSX.Element => {
           <AppSettingsOverlay appIndex={appIndex} setEnabled={setSEnabled} data={appsList} />
         )}
         {appsList?.length > 0 && Object.keys(appsList).length > 0 ? (
-          <div className="pt-5 w-full flex xl:flex-row xl:flex-wrap xl:gap-5 xl:px-5 flex-col items-center gap-2">
+          <div className="pt-5 w-full flex xl:flex-row xl:flex-wrap xl:gap-5 xl:px-5 flex-col items-center">
             {(appsList as App[]).map((app, index) => (
-              <div
+              <AppComponent
                 key={index}
-                draggable
-                onDragStart={() => handleDragStart(index)}
-                onDragEnter={() => handleDragEnter(index)}
-                onDragEnd={handleDragEnd}
-                onDragOver={(e) => e.preventDefault()}
-                className="w-full"
-              >
-                <AppComponent
-                  appIndex={index}
-                  app={app}
-                  setSEnabled={setSEnabled}
-                  setEnabled={setEnabled}
-                  setAppIndex={setAppIndex}
-                />
-              </div>
+                appIndex={index}
+                app={app}
+                setSEnabled={setSEnabled}
+                setEnabled={setEnabled}
+                setAppIndex={setAppIndex}
+              />
             ))}
           </div>
         ) : (

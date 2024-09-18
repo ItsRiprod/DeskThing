@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react'
 import { EventEmitter } from '../utility/eventEmitter'
 
 export interface Manifest {
@@ -32,12 +31,14 @@ interface appStoreEvents {
 class AppStore extends EventEmitter<appStoreEvents> {
   private static instance: AppStore
   private appsList: App[]
+  private order: string[]
 
   constructor() {
     super()
     this.appsList = []
+    this.order = []
     window.electron.ipcRenderer.on('app-data', this.handleAppData.bind(this))
-    window.electron.ipcRenderer.send('get-apps')
+    this.requestApps()
   }
 
   static getInstance(): AppStore {
@@ -47,18 +48,42 @@ class AppStore extends EventEmitter<appStoreEvents> {
     return AppStore.instance
   }
 
+  public requestApps = (): void => {
+    window.electron.ipcRenderer.send('get-apps')
+  }
+
   private handleAppData(_event, response): void {
     this.setAppList(response.data)
+    this.order = response.data.map((app) => app.name)
   }
 
   public getAppsList(): App[] {
     return this.appsList
   }
 
+  public getOrder(): string[] {
+    return this.order
+  }
+  public setOrder(order: string[]): void {
+    this.order = order
+    console.log('Order set to:', this.order)
+    this.organizeAppsList()
+  }
+  private organizeAppsList(): void {
+    console.log('Organizing apps list...')
+    if (this.appsList) {
+      const organizedApps = this.order
+        .map((appName) => this.appsList.find((app) => app.name === appName))
+        .filter((app) => app !== undefined) as App[]
+      this.appsList = organizedApps
+      this.emit('update', this.appsList)
+    }
+  }
+
   public removeAppFromList(appName: string): void {
-    const existingAppIndex = this.appsList['apps'].findIndex((app: App) => app.name === appName)
+    const existingAppIndex = this.appsList.findIndex((app: App) => app.name === appName)
     if (existingAppIndex !== -1) {
-      this.appsList['apps'].splice(existingAppIndex)
+      this.appsList.splice(existingAppIndex)
       this.emit('update', this.appsList)
       console.log('App removed', appName, this.appsList)
     } else {
@@ -78,21 +103,21 @@ class AppStore extends EventEmitter<appStoreEvents> {
       prefIndex: 0
     }
 
-    if (!this.appsList['apps']) {
-      this.appsList['apps'] = []
+    if (!this.appsList) {
+      this.appsList = []
     }
 
-    this.appsList['apps'].push(appData)
+    this.appsList.push(appData)
     this.emit('update', this.appsList)
   }
 
   public disableApp(appName: string): void {
-    if (this.appsList['apps'] == null) {
+    if (this.appsList == null) {
       this.appsList = []
       this.emit('update', this.appsList)
       console.log('Clearing data because apps is null')
     }
-    const existingAppIndex = this.appsList['apps'].findIndex((app: App) => app.name === appName)
+    const existingAppIndex = this.appsList.findIndex((app: App) => app.name === appName)
     if (existingAppIndex !== -1) {
       this.appsList[existingAppIndex].enabled = false
       this.emit('update', this.appsList)
@@ -109,47 +134,3 @@ class AppStore extends EventEmitter<appStoreEvents> {
 }
 
 export const appStoreInstance = AppStore.getInstance()
-
-interface AppStoreHook {
-  appsList: App[]
-  addAppToList: (appName: string) => void
-  removeAppFromList: (appName: string) => void
-  setAppList: (apps: App[]) => void
-  disableApp: (appName: string) => void
-}
-
-export const useAppStore = (): AppStoreHook => {
-  const [appsList, setAppsList] = useState<App[]>(appStoreInstance.getAppsList())
-
-  const addAppToList = (appName: string): void => {
-    appStoreInstance.addAppToList(appName)
-  }
-
-  const removeAppFromList = (appName: string): void => {
-    appStoreInstance.removeAppFromList(appName)
-  }
-
-  const setAppList = (apps: App[]): void => {
-    appStoreInstance.setAppList(apps)
-  }
-
-  const disableApp = (appName: string): void => {
-    appStoreInstance.disableApp(appName)
-  }
-
-  useEffect(() => {
-    const handleUpdate = (newAppsList: App[]): void => {
-      if (newAppsList) {
-        setAppsList(newAppsList)
-      }
-    }
-
-    appStoreInstance.on('update', handleUpdate)
-
-    return () => {
-      appStoreInstance.off('update', handleUpdate)
-    }
-  }, [])
-
-  return { appsList, addAppToList, setAppList, removeAppFromList, disableApp }
-}
