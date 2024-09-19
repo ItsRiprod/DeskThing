@@ -66,18 +66,8 @@ class AppStore extends EventEmitter<appStoreEvents> {
   }
   public setOrder(order: string[]): void {
     this.order = order
-    console.log('Order set to:', this.order)
-    this.organizeAppsList()
-  }
-  private organizeAppsList(): void {
-    console.log('Organizing apps list...')
-    if (this.appsList) {
-      const organizedApps = this.order
-        .map((appName) => this.appsList.find((app) => app.name === appName))
-        .filter((app) => app !== undefined) as App[]
-      this.appsList = organizedApps
-      this.emit('update', this.appsList)
-    }
+    window.electron.ipcRenderer.send('set-app-order', this.order)
+    this.requestApps()
   }
 
   public removeAppFromList(appName: string): void {

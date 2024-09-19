@@ -40,6 +40,7 @@ const IPC_CHANNELS = {
   RUN_DEVICE_COMMAND: 'run-device-command',
   GET_SETTINGS: 'get-settings',
   SAVE_SETTINGS: 'save-settings',
+  SET_ORDER: 'set-app-order',
   GET_APPS: 'get-apps',
   GET_APP_DATA: 'get-app-data',
   GET_GITHUB: 'fetch-github-releases',
@@ -318,6 +319,10 @@ async function setupIpcHandlers(): Promise<void> {
     const data = appHandler.getAllBase()
     event.reply('logging', { status: true, data: 'Finished', final: true })
     event.reply('app-data', { status: true, data: data, final: true })
+  })
+  ipcMain.on(IPC_CHANNELS.SET_ORDER, (event, order) => {
+    appHandler.reorder(order)
+    event.reply('logging', { status: true, data: 'Finished', final: true })
   })
   ipcMain.on(IPC_CHANNELS.STOP_APP, async (event, appName: string) => {
     event.reply('logging', { status: true, data: 'Stopping App', final: false })

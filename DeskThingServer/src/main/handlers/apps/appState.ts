@@ -57,6 +57,7 @@ export class AppHandler {
     const { setAppsData } = await import('../configHandler')
     const apps = this.getAllBase()
     await setAppsData(apps)
+    this.notify()
   }
 
   private async saveAppToFile(name: string): Promise<void> {
