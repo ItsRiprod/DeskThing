@@ -28,7 +28,7 @@ export class AppHandler {
    * Loads the apps from file
    */
   async loadApps(): Promise<void> {
-    console.log('Loading apps...')
+    console.log('[appState] [loadApps]: Loading apps...')
     const { getAppData } = await import('../configHandler')
     const data = await getAppData()
     data.apps.forEach((app) => {
@@ -48,9 +48,6 @@ export class AppHandler {
         this.order.push(app.name)
       }
     })
-
-    // Sort the order array based on prefIndex
-    this.order.sort((a, b) => this.apps[a].prefIndex - this.apps[b].prefIndex)
   }
 
   private async saveAppsToFile(): Promise<void> {
@@ -100,14 +97,17 @@ export class AppHandler {
    * @returns all apps
    */
   getAll(): AppInstance[] {
+    console.log('Getting all in the order of: ', this.order)
     return this.order.map((name) => this.apps[name])
   }
 
   getAllBase(): App[] {
-    return this.order.map((name) => {
+    const baseApp = this.order.map((name) => {
       const { func: _func, ...baseApp } = this.apps[name]
       return baseApp
     })
+    console.log('The base order is', this.order)
+    return baseApp
   }
   remove(name: string): boolean {
     if (!(name in this.apps)) {
@@ -141,6 +141,14 @@ export class AppHandler {
   reorder(order: string[]): void {
     this.order = order
     // Save new order
+    this.saveAppsToFile()
+  }
+  setItemOrder(name: string, newIndex: number): void {
+    const index = this.order.indexOf(name)
+    if (index !== -1) {
+      this.order.splice(index, 1)
+      this.order.splice(newIndex, 0, name)
+    }
     this.saveAppsToFile()
   }
   getOrder(): string[] {

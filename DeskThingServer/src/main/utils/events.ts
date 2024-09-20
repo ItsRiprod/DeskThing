@@ -44,11 +44,15 @@ class Events extends EventEmitter {
     return new Promise((resolve) => {
       setImmediate(() => {
         // Ensure that two arguments are only emitted at once
-        this.emit(event, data.join(' '))
+        if (Array.isArray(data) && data.length > 0 && typeof data[0] === 'string') {
+          this.emit(event, data.join(' '))
+        } else {
+          this.emit(event, data[0])
+        }
 
-        if (event == MESSAGE_TYPES.ERROR) {
+        if (event === MESSAGE_TYPES.ERROR) {
           Logger.error(`[${event}]: ${JSON.stringify(data)}`)
-        } else if (event == MESSAGE_TYPES.LOGGING) {
+        } else if (event === MESSAGE_TYPES.LOGGING) {
           Logger.info(`[${event}]: ${JSON.stringify(data)}`)
         } else {
           Logger.debug(`[${event}]: ${JSON.stringify(data)}`)

@@ -63,7 +63,8 @@ const IPC_CHANNELS = {
   SHUTDOWN: 'shutdown',
   DEV_ADD_APP: 'dev-add-app',
   SEND_TO_APP: 'send-to-app',
-  OPEN_LOG_FOLDER: 'open-log-folder'
+  OPEN_LOG_FOLDER: 'open-log-folder',
+  REFRESH_FIREWALL: 'refresh-firewall'
 }
 
 function createMainWindow(): BrowserWindow {
@@ -265,7 +266,6 @@ async function initializeDoc(): Promise<void> {
 
 async function setupIpcHandlers(): Promise<void> {
   const settingsStore = await import('./stores/settingsStore')
-  const { getAppData } = await import('./handlers/configHandler')
   const { handleZipFromUrl, sendMessageToApp, handleZip, AppHandler } = await import(
     './handlers/apps'
   )
@@ -284,14 +284,6 @@ async function setupIpcHandlers(): Promise<void> {
   } = await import('./handlers/deviceHandler')
   const dataListener = (await import('./utils/events')).default
   const { MESSAGE_TYPES } = await import('./utils/events')
-
-  const { setupFirewall } = await import('./handlers/firewallHandler')
-  const payload = (await settingsStore.default.getSettings()).payload as Settings
-  if (payload) {
-    setupFirewall(payload.devicePort).catch(console.error)
-  } else {
-    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'No settings found!')
-  }
 
   ipcMain.on(IPC_CHANNELS.PING, () => console.log('pong'))
   ipcMain.on(IPC_CHANNELS.GET_CONNECTIONS, async (event) => {
@@ -316,6 +308,7 @@ async function setupIpcHandlers(): Promise<void> {
   })
   ipcMain.on(IPC_CHANNELS.GET_APPS, (event) => {
     event.reply('logging', { status: true, data: 'Getting data', final: false })
+    console.log('Getting app data')
     const data = appHandler.getAllBase()
     event.reply('logging', { status: true, data: 'Finished', final: true })
     event.reply('app-data', { status: true, data: data, final: true })
@@ -418,6 +411,49 @@ async function setupIpcHandlers(): Promise<void> {
       return null
     }
   })
+  ipcMain.handle(IPC_CHANNELS.REFRESH_FIREWALL, async (event) => {
+    try {
+      const { setupFirewall } = await import('./handlers/firewallHandler')
+      event.sender.emit('logging', { status: true, data: 'Refreshing Firewall', final: false })
+      const payload = (await settingsStore.default.getSettings()).payload as Settings
+      if (payload) {
+        dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, '[firewall] Setting up firewall')
+        try {
+          await setupFirewall(payload.devicePort, (message) => {
+            if (event.sender.isDestroyed()) return
+            event.sender.send('logging', message)
+          })
+        } catch (firewallError) {
+          console.log(firewallError)
+          if (!(firewallError instanceof Error)) return
+
+          dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `FIREWALL: ${firewallError.message}`)
+          event.sender.emit('logging', {
+            status: false,
+            data: 'Error in firewall',
+            error: firewallError.message,
+            final: true
+          })
+          return
+        }
+      } else {
+        dataListener.asyncEmit(MESSAGE_TYPES.ERROR, '[firewall] No settings found!')
+        event.sender.emit('logging', {
+          status: false,
+          data: 'Error in firewall',
+          error: 'No settings found!',
+          final: true
+        })
+      }
+    } catch (error) {
+      dataListener.asyncEmit(
+        MESSAGE_TYPES.ERROR,
+        'SERVER: [firewall] Error saving manifest' + error
+      )
+      console.error('[Firewall] Error setting client manifest:', error)
+      event.sender.emit('logging', { status: false, data: 'Unfinished', error: error, final: true })
+    }
+  })
   ipcMain.handle(
     IPC_CHANNELS.SET_CLIENT_MANIFEST,
     async (event, manifest: Partial<ServerManifest>) => {
@@ -462,6 +498,7 @@ async function setupIpcHandlers(): Promise<void> {
     return await settingsStore.default.getSettings()
   })
   ipcMain.handle(IPC_CHANNELS.SAVE_SETTINGS, async (_event, settings) => {
+    console.log('Saving settings', settings)
     return await settingsStore.default.saveSettings(settings)
   })
   ipcMain.handle(IPC_CHANNELS.GET_MAPS, async (event) => {

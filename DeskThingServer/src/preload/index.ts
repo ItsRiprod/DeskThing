@@ -33,6 +33,7 @@ const api = {
   setClientManifest: (manifest: any): Promise<void> =>
     ipcRenderer.invoke('set-client-manifest', manifest),
   openLogFolder: (): Promise<void> => ipcRenderer.invoke('open-log-folder'),
+  refreshFirewall: (): Promise<void> => ipcRenderer.invoke('refresh-firewall')
 }
 // Use `contextBridge` APIs to expose Electron APIs to
 // renderer only if context isolation is enabled, otherwise

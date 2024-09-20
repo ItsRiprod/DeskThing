@@ -57,7 +57,7 @@ class SettingsStore extends EventEmitter<SettingsStoreEvents> {
   }
 
   public async getSettings(): Promise<Settings> {
-    if (this.settings.callbackPort === -1 || this.settings.devicePort === -1) {
+    if (this.settings?.callbackPort === -1 || this.settings?.devicePort === -1) {
       const socketData = await window.electron.getSettings()
       this.settings = socketData.payload as Settings
     }

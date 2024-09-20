@@ -1,6 +1,6 @@
 {
   "name": "deskthing",
-  "version": "0.8.4",
+  "version": "0.9.0",
   "description": "A DeskThing server UI to interface with the DeskThing car thing app",
   "main": "./out/main/index.js",
   "author": "Riprod",
@@ -20,7 +20,9 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.0",
     "@electron-toolkit/utils": "^3.0.0",
+    "@types/auto-launch": "^5.0.5",
     "adm-zip": "^0.5.16",
+    "auto-launch": "^5.0.6",
     "axios": "^1.7.2",
     "cors": "^2.8.5",
     "cross-unzip": "^0.2.1",

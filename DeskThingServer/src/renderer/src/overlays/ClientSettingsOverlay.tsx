@@ -16,7 +16,7 @@ const ClientSettingsOverlay: React.FC<ClientSettingsOverlayProps> = ({
   refresh
 }) => {
   const [ip, setIp] = useState(manifest.ip)
-  const [apps, setApps] = useState<App[]>(appStoreInstance.getAppsList()?.apps || [])
+  const [apps, setApps] = useState<App[]>(appStoreInstance.getAppsList() || [])
   const [defaultView, setDefaultView] = useState(manifest.default_view)
   const [mini, setMini] = useState(manifest.miniplayer)
   const [port, setPort] = useState(manifest.port)
@@ -32,7 +32,7 @@ const ClientSettingsOverlay: React.FC<ClientSettingsOverlayProps> = ({
     const onAppUpdate = (apps: App[]): void => {
       setApps(apps)
     }
-    appStoreInstance.on('update', (data) => onAppUpdate(data.apps))
+    appStoreInstance.on('update', (data) => onAppUpdate(data))
   }, [])
 
   const handleUpload = async (): Promise<void> => {

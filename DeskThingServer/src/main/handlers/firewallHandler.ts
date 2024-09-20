@@ -55,12 +55,16 @@ async function checkFirewallRuleExists(port: number): Promise<boolean> {
 }
 
 // Firewall setup function
-async function setupFirewall(port: number): Promise<void> {
+async function setupFirewall(
+  port: number,
+  reply: (params: { status: boolean; data: string; final: boolean; error?: string | Error }) => void
+): Promise<void> {
   const platform = os.platform()
   const inboundRuleName = 'Deskthing Server Inbound'
   const outboundRuleName = 'Deskthing Server Outbound'
 
   try {
+    reply && reply({ status: true, data: 'Checking if rules exist', final: false })
     const ruleExists = await checkFirewallRuleExists(port)
     if (ruleExists) {
       dataListener.asyncEmit(
@@ -68,7 +72,7 @@ async function setupFirewall(port: number): Promise<void> {
         `FIREWALL: Firewall rule for port ${port} verified successfully`
       )
       console.log(`Firewall rule for port ${port} verified successfully`)
-      return
+      reply && reply({ status: true, data: 'Verified that the rule exists!', final: false })
     } else {
       dataListener.asyncEmit(
         MESSAGE_TYPES.ERROR,
@@ -86,6 +90,7 @@ async function setupFirewall(port: number): Promise<void> {
 
 
       */
+      reply && reply({ status: true, data: 'Running setup for windows', final: false })
       const script = `
         $inboundRuleName = "${inboundRuleName}"
         $outboundRuleName = "${outboundRuleName}"
@@ -113,10 +118,13 @@ async function setupFirewall(port: number): Promise<void> {
           `FIREWALL: Firewall rules set up successfully on Windows`
         )
         console.log('Firewall rules set up successfully on Windows')
+
+        reply && reply({ status: true, data: 'Firewall ran without error', final: false })
       } finally {
         fs.unlinkSync(tempScriptPath)
       }
     } else if (platform === 'linux') {
+      reply && reply({ status: true, data: 'Running setup scripts for Linux', final: false })
       // Bash script for iptables on Linux
       const script = `
         #!/bin/bash
@@ -137,6 +145,12 @@ async function setupFirewall(port: number): Promise<void> {
       )
       console.log('Firewall rules set up successfully on Linux')
     } else if (platform === 'darwin') {
+      reply &&
+        reply({
+          status: true,
+          data: 'Running setup scripts for MacOS (WARN: RNDIS does not work on MacOS)',
+          final: false
+        })
       // Bash script for pfctl on macOS
       const script = `
         #!/bin/bash
@@ -163,8 +177,12 @@ async function setupFirewall(port: number): Promise<void> {
       MESSAGE_TYPES.ERROR,
       `FIREWALL: Error encountered trying to setup firewall for ${port}! Run administrator and try again`
     )
+    if (error instanceof Error) {
+      reply && reply({ status: false, data: 'Error in firewall', error: error, final: true })
+    }
     console.error(error)
   }
-}
 
+  reply && reply({ status: true, data: 'Firewall run successfully!', final: true })
+}
 export { setupFirewall }

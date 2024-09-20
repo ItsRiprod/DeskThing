@@ -53,6 +53,7 @@ class AppStore extends EventEmitter<appStoreEvents> {
   }
 
   private handleAppData(_event, response): void {
+    console.log('Received app data:', response)
     this.setAppList(response.data)
     this.order = response.data.map((app) => app.name)
   }

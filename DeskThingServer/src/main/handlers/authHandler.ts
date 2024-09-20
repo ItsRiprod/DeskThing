@@ -76,11 +76,15 @@ const initializeServer = async (): Promise<void> => {
 }
 
 dataListener.on(MESSAGE_TYPES.SETTINGS, (newSettings) => {
-  if (newSettings.payload.callbackPort != callBackPort) {
-    callBackPort = newSettings.payload.callbackPort
-    startServer()
-  } else {
-    dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'CALLBACK: Not starting - port is not changed')
+  try {
+    if (newSettings.payload.callbackPort != callBackPort) {
+      callBackPort = newSettings.payload.callbackPort
+      startServer()
+    } else {
+      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'CALLBACK: Not starting - port is not changed')
+    }
+  } catch (error) {
+    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'CALLBACK: Error updating with settings', error)
   }
 })
 

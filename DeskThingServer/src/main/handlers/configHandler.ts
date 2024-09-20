@@ -19,10 +19,10 @@ const readData = (): AppData => {
     const data = readFromFile<AppData>(dataFilePath)
     if (!data) {
       // File does not exist, create it with default data
+      console.log('File does not exist, creating it with default data')
       writeToFile(defaultData, dataFilePath)
       return defaultData
     }
-
     // If data is of type AppData, return it
     return data as AppData
   } catch (err) {

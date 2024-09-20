@@ -23,6 +23,7 @@ declare global {
       getClientManifest: () => Promise<any>
       setClientManifest: (manifest: any) => Promise<void>
       openLogFolder: () => Promise<void>
+      refreshFirewall: () => Promise<void>
     }
     api: unknown // Or define `api` more specifically if you have a shape for it
   }

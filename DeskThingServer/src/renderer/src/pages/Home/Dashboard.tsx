@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import DisplayDeviceData from '../../overlays/DisplayDeviceData'
 import ClientSettings from '../../components/ClientSettings'
 import Widget from '../../components/Widget'
-import clientStore from '@renderer/store/clientStore'
+import { Client } from '@renderer/store/clientStore'
 import { IconCarThing } from '../../assets/icons'
 import logStore, { Log } from '@renderer/store/logStore'
-import { App, appStoreInstance } from '@renderer/store'
+import { App, appStoreInstance, ClientStore } from '@renderer/store'
+import ConnectionStats from '@renderer/components/ConnectionStats'
 
 const Dashboard = (): JSX.Element => {
   const [devices, setDevices] = useState<string[]>([])
@@ -13,6 +14,7 @@ const Dashboard = (): JSX.Element => {
   const [currentDevice, setCurrentDevice] = useState('')
   const [logs, setLogs] = useState<Log[]>([])
   const [apps, setApps] = useState<App[]>([])
+  const [connectedDevices, setConnectedDevices] = useState<Client[]>(ClientStore.getClients())
 
   useEffect(() => {
     const handleADBDevice = (devices: string[]): void => {
@@ -30,14 +32,21 @@ const Dashboard = (): JSX.Element => {
     const handleAppUpdate = (apps: App[]): void => {
       setApps(apps)
     }
+    const handleClientUpdates = (client: Client[]): void => {
+      setConnectedDevices(client)
+    }
 
     appStoreInstance.on('update', handleAppUpdate)
-    const listener = clientStore.on('ADBDevices', (device) => handleADBDevice(device as string[]))
+    const listener = ClientStore.on('ADBDevices', (device) => handleADBDevice(device as string[]))
+    const listener2 = ClientStore.on('Clients', (clients) =>
+      handleClientUpdates(clients as Client[])
+    )
+
     logStore.on('update', handleLogs)
     const initializeADB = async (): Promise<void> => {
-      let devices = await clientStore.getADBDevices()
+      let devices = await ClientStore.getADBDevices()
       if (!devices) {
-        devices = await clientStore.requestADBDevices()
+        devices = await ClientStore.requestADBDevices()
       }
       setDevices(devices)
       setApps(appStoreInstance.getAppsList())
@@ -46,6 +55,7 @@ const Dashboard = (): JSX.Element => {
     initializeADB()
     return () => {
       listener()
+      listener2()
       logStore.off('update', handleLogs)
       appStoreInstance.off('update', handleAppUpdate)
     }
@@ -103,28 +113,50 @@ const Dashboard = (): JSX.Element => {
           </div>
         </Widget>
       </div>
-      <Widget>
-        <div className="p-5">
-          {apps &&
-            apps.map((app, index) => (
-              <div
-                key={index}
-                className="flex border-b p-2 border-slate-700 flex-row items-center justify-between w-full"
-              >
-                <div className="flex flex-row items-center justify-between w-full">
-                  <div>
-                    <p>{app.manifest ? app.manifest.label : app.name}</p>
-                    <p className="text-zinc-400 text-xs font-geistMono">{app.manifest?.version}</p>
-                  </div>
-                  <div>
-                    {app.enabled && <p className="text-zinc-400 text-xs font-geistMono">Enabled</p>}
-                    {app.running && <p className="text-zinc-400 text-xs font-geistMono">Running</p>}
+      <div className="flex">
+        <Widget>
+          <div className="p-5">
+            {apps &&
+              apps.map((app, index) => (
+                <div
+                  key={index}
+                  className="flex border-b p-2 border-slate-700 flex-row items-center justify-between w-full"
+                >
+                  <div className="flex flex-row items-center justify-between w-full">
+                    <div>
+                      <p>{app.manifest ? app.manifest.label : app.name}</p>
+                      <p className="text-zinc-400 text-xs font-geistMono">
+                        {app.manifest?.version}
+                      </p>
+                    </div>
+                    <div>
+                      {app.enabled && (
+                        <p className="text-zinc-400 text-xs font-geistMono">Enabled</p>
+                      )}
+                      {app.running && (
+                        <p className="text-zinc-400 text-xs font-geistMono">Running</p>
+                      )}
+                    </div>
                   </div>
                 </div>
+              ))}
+          </div>
+        </Widget>
+        <Widget>
+          <div className="p-5">
+            {connectedDevices ? (
+              <div className="flex flex-col-reverse bottom-0">
+                {connectedDevices.length > 0 &&
+                  connectedDevices.map((device, index) => (
+                    <ConnectionStats key={index} client={device} />
+                  ))}
               </div>
-            ))}
-        </div>
-      </Widget>
+            ) : (
+              <div></div>
+            )}
+          </div>
+        </Widget>
+      </div>
     </div>
   )
 }

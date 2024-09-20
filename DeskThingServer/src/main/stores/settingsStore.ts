@@ -63,6 +63,9 @@ class SettingsStore {
   }
 
   public updateSetting(key: string, value: any): void {
+    if (key === 'autoStart') {
+      this.updateAutoLaunch(value)
+    }
     this.settings[key] = value
     dataListener.asyncEmit(MESSAGE_TYPES.SETTINGS, {
       type: 'settings',
@@ -76,6 +79,7 @@ class SettingsStore {
     try {
       const data = await readFromFile<Settings>(this.settingsFilePath)
       dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'SETTINGS: Loaded settings!')
+
       if (!data || data.version !== settingsVersion) {
         // File does not exist, create it with default settings
         const defaultSettings = this.getDefaultSettings()
@@ -83,12 +87,30 @@ class SettingsStore {
         console.log('SETTINGS: Returning default settings')
         return { type: 'settings', app: 'server', payload: defaultSettings }
       }
+      if (data.autoStart !== undefined) {
+        await this.updateAutoLaunch(data.autoStart)
+      }
+
       return { type: 'settings', app: 'server', payload: data }
     } catch (err) {
       console.error('Error loading settings:', err)
       const defaultSettings = this.getDefaultSettings()
       defaultSettings.localIp = getLocalIpAddress()
       return { type: 'settings', app: 'server', payload: defaultSettings }
+    }
+  }
+
+  private async updateAutoLaunch(enable: boolean): Promise<void> {
+    const AutoLaunch = await import('auto-launch')
+    const autoLaunch = new AutoLaunch.default({
+      name: 'DeskThing',
+      path: process.execPath
+    })
+
+    if (enable) {
+      await autoLaunch.enable()
+    } else {
+      await autoLaunch.disable()
     }
   }
 

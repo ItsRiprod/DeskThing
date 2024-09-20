@@ -160,6 +160,7 @@ const sendError = async (socket, error): Promise<void> => {
 const sendPrefData = async (socket: WebSocket | null = null): Promise<void> => {
   try {
     const appData = await AppState.getAllBase()
+    console.log('Client Request: ', appData)
     const config = await readData()
     if (!appData) {
       throw new Error('Invalid configuration format')
@@ -454,27 +455,7 @@ const setupServer = async (): Promise<void> => {
                   case 'update_pref_index':
                     if (parsedMessage.payload) {
                       const { app: appName, index: newIndex } = parsedMessage.payload
-                      const appData = await AppState.get(appName)
-
-                      if (
-                        appData &&
-                        appData.manifest &&
-                        (appData.manifest.isWebApp || appData.manifest.isLocalApp)
-                      ) {
-                        // Update the existing app's index
-                        appData.prefIndex = newIndex
-                        await AppState.add(appData)
-
-                        dataListener.emit(
-                          MESSAGE_TYPES.LOGGING,
-                          `WEBSOCKET: Updated app indexes and sent to client`
-                        )
-                        console.log('Updated app indexes and sent to client')
-
-                        await sendPrefData(socket) // Send updated data to the client
-                      } else {
-                        console.log(`WSOCKET: App ${appName} is not valid or not allowed`)
-                      }
+                      AppState.setItemOrder(appName, newIndex)
                     }
                     break
                   default:

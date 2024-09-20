@@ -1,5 +1,12 @@
 import { useState, useEffect } from 'react'
-import { IconX, IconRefresh, IconSave, IconPlus } from '../assets/icons'
+import {
+  IconX,
+  IconRefresh,
+  IconSave,
+  IconPlus,
+  IconReload,
+  IconLogoGearLoading
+} from '../assets/icons'
 import SettingsStoreInstance, { Settings } from '@renderer/store/settingsStore'
 import { LogStore } from '@renderer/store'
 
@@ -7,10 +14,19 @@ interface SettingsOverlayProps {
   setEnabled: (enabled: boolean) => void
 }
 
+interface ReplyData {
+  status: boolean
+  data: string
+  final: boolean
+  error?: string
+}
+
 const SettingsOverlay = ({ setEnabled }: SettingsOverlayProps): JSX.Element => {
   const [settings, setSettings] = useState<Settings | null>(null)
   const [newAppRepo, setNewAppRepo] = useState<string>('')
   const [newClientRepo, setNewClientRepo] = useState<string>('')
+  const [loading, setLoading] = useState(false)
+  const [firewallOutput, setFirewallOutput] = useState<ReplyData[]>([])
 
   useEffect(() => {
     // Fetch current settings from electron store
@@ -43,6 +59,30 @@ const SettingsOverlay = ({ setEnabled }: SettingsOverlayProps): JSX.Element => {
       await SettingsStoreInstance.requestSettings()
       setEnabled(false)
     }
+  }
+
+  const handleRefreshFirewall = (): void => {
+    window.electron.refreshFirewall()
+    setFirewallOutput([])
+    console.log('Refreshing firewall')
+    const unsubscribe = window.electron.ipcRenderer.on('logging', (_event, reply) => {
+      console.log(reply)
+      if (reply.final) {
+        setLoading(false)
+        unsubscribe()
+      } else {
+        setLoading(true)
+      }
+
+      if (!reply.status) {
+        setFirewallOutput((data) => [...data, reply])
+        unsubscribe()
+      } else {
+        if (reply.data) {
+          setFirewallOutput((data) => [...data, reply])
+        }
+      }
+    })
   }
 
   const handleReset = async (): Promise<void> => {
@@ -84,7 +124,7 @@ const SettingsOverlay = ({ setEnabled }: SettingsOverlayProps): JSX.Element => {
   }
 
   if (!settings) {
-    return <div>Loading...</div>
+    return <div className="fixed left-1/2 top-1/2">Loading...</div>
   }
 
   return (
@@ -99,8 +139,78 @@ const SettingsOverlay = ({ setEnabled }: SettingsOverlayProps): JSX.Element => {
             <IconX />
           </button>
         </div>
-
         <div className="p-5 m-1 rounded-lg drop-shadow-lg">
+          <h1 className="m-5 font-semibold text-3xl">GENERAL</h1>
+          <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex justify-between items-center">
+            <p>Auto Start on Boot:</p>
+            <div className="group flex items-center">
+              <p className="group-hover:block hidden">Run DeskThing when the computer boots</p>
+              <input
+                type="checkbox"
+                checked={settings.autoStart}
+                onChange={(e) => handleSettingChange('autoStart', e.target.checked)}
+                className="form-checkbox h-5 w-5 text-blue-600"
+              />
+            </div>
+          </div>
+
+          <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex justify-between items-center">
+            <p>Run App in Background:</p>
+            <div className="group flex items-center">
+              <p className="group-hover:block hidden">Pending Implementation</p>
+              <input
+                disabled={true}
+                type="checkbox"
+                checked={settings.minimizeApp}
+                onChange={(e) => handleSettingChange('minimizeApp', e.target.checked)}
+                className="form-checkbox h-5 w-5 text-blue-600"
+              />
+            </div>
+          </div>
+
+          <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex justify-between items-center">
+            <p>Global ADB:</p>
+            <div className="group flex items-center">
+              <p className="group-hover:block hidden">Use local adb (false) or global adb (true)</p>
+              <input
+                type="checkbox"
+                checked={settings.globalADB}
+                onChange={(e) => handleSettingChange('globalADB', e.target.checked)}
+                className="form-checkbox h-5 w-5 text-blue-600"
+              />
+            </div>
+          </div>
+
+          <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl">
+            <div className="flex justify-between items-center">
+              <p>Firewall Config:</p>
+              <div className="group flex items-center">
+                <button
+                  onClick={handleRefreshFirewall}
+                  className={`border rounded-xl p-2 ${loading ? 'border-amber-500 hover:bg-amber-500' : 'border-red-500 hover:bg-red-500'} hover:text-white flex gap-2 hover:font-semibold`}
+                  disabled={loading}
+                >
+                  <p className="group-hover:block hidden">Refresh Firewall</p>
+                  {loading ? <IconLogoGearLoading /> : <IconReload />}
+                </button>
+              </div>
+            </div>
+            {firewallOutput && (
+              <div className="py-2">
+                {firewallOutput.map((reply, index) => (
+                  <div
+                    key={index}
+                    className={`font-geistMono border-l-2 pl-1 bg-black/15 border-black ${!reply.status ? 'text-red-500' : reply.final ? 'text-green-500 border-b' : 'text-slate-500'}`}
+                  >
+                    <p>{reply.data}</p>
+                    <p className="italic text-xs">{reply.error}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <h1 className="m-5 font-semibold text-3xl">IP / NETWORK</h1>
           <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex justify-between items-center">
             <p>Callback Port:</p>
             <input
@@ -142,46 +252,7 @@ const SettingsOverlay = ({ setEnabled }: SettingsOverlayProps): JSX.Element => {
               ))}
           </div>
 
-          <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex justify-between items-center">
-            <p>Auto Start:</p>
-            <div className="group flex items-center">
-              <p className="group-hover:block hidden">Pending Implementation</p>
-              <input
-                disabled={true}
-                type="checkbox"
-                checked={settings.autoStart}
-                onChange={(e) => handleSettingChange('autoStart', e.target.checked)}
-                className="form-checkbox h-5 w-5 text-blue-600"
-              />
-            </div>
-          </div>
-
-          <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex justify-between items-center">
-            <p>Minimize App:</p>
-            <div className="group flex items-center">
-              <p className="group-hover:block hidden">Pending Implementation</p>
-              <input
-                disabled={true}
-                type="checkbox"
-                checked={settings.minimizeApp}
-                onChange={(e) => handleSettingChange('minimizeApp', e.target.checked)}
-                className="form-checkbox h-5 w-5 text-blue-600"
-              />
-            </div>
-          </div>
-
-          <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex justify-between items-center">
-            <p>Global ADB:</p>
-            <div className="group flex items-center">
-              <p className="group-hover:block hidden">Use local adb (false) or global adb (true)</p>
-              <input
-                type="checkbox"
-                checked={settings.globalADB}
-                onChange={(e) => handleSettingChange('globalADB', e.target.checked)}
-                className="form-checkbox h-5 w-5 text-blue-600"
-              />
-            </div>
-          </div>
+          <h1 className="m-5 font-semibold text-3xl">DOWNLOADS</h1>
 
           <div className="shadow-lg m-5 border-zinc-500 border p-3 rounded-xl flex flex-col gap-3">
             <p>Saved App Repos:</p>
