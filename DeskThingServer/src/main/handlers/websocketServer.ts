@@ -422,6 +422,9 @@ const setupServer = async (): Promise<void> => {
     sendPrefData(socket)
     sendMappings(socket)
 
+    const messageThrottles = new Map()
+    const THROTTLE_DELAY = 100 // milliseconds
+
     socket.on('message', async (message) => {
       try {
         const parsedMessage = JSON.parse(message)
@@ -431,16 +434,40 @@ const setupServer = async (): Promise<void> => {
           `WEBSOCKET: Client ${client.connectionId} has sent ${message}`
         )
         if (parsedMessage.app && parsedMessage.app !== 'server') {
-          sendMessageToApp(parsedMessage.app.toLowerCase(), {
-            type: parsedMessage.type,
-            request: parsedMessage.request,
-            payload: parsedMessage.payload
-          })
+          const messageKey = `${parsedMessage.app}-${parsedMessage.type}-${parsedMessage.request}`
+          const now = Date.now()
+          if (
+            !messageThrottles.has(messageKey) ||
+            now - messageThrottles.get(messageKey) > THROTTLE_DELAY
+          ) {
+            messageThrottles.set(messageKey, now)
+            sendMessageToApp(parsedMessage.app.toLowerCase(), {
+              type: parsedMessage.type,
+              request: parsedMessage.request,
+              payload: parsedMessage.payload
+            })
+            messageThrottles.forEach((timestamp, key) => {
+              if (now - timestamp > THROTTLE_DELAY) {
+                messageThrottles.delete(key)
+              }
+            })
+          }
+
+          // Delete old keys from the throttle
         } else if (parsedMessage.app === 'server') {
           try {
             switch (parsedMessage.type) {
               case 'preferences':
                 addData(parsedMessage.request, parsedMessage.payload)
+                break
+              case 'heartbeat':
+                socket.send(
+                  JSON.stringify({
+                    type: 'heartbeat',
+                    app: 'client',
+                    payload: new Date().toISOString()
+                  })
+                )
                 break
               case 'set':
                 switch (parsedMessage.request) {
