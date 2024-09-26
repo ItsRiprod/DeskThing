@@ -16,6 +16,7 @@ let devAppPath: string
  */
 export async function getManifest(fileLocation: string): Promise<Manifest | undefined> {
   try {
+    console.log('[getManifest] Getting manifest for app')
     const manifestPath = join(fileLocation, 'manifest.json')
     if (!existsSync(manifestPath)) {
       throw new Error('manifest.json not found after extraction')
@@ -38,6 +39,7 @@ export async function getManifest(fileLocation: string): Promise<Manifest | unde
       homepage: parsedManifest.homepage || undefined,
       repository: parsedManifest.repository || undefined
     }
+    console.log('[getManifest] Successfully got manifest for app')
     return returnData
   } catch (error) {
     console.error('Error getting manifest:', error)

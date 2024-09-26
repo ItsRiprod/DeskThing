@@ -95,3 +95,12 @@ export interface DeskThing {
   purge: () => Promise<Response>
   getManifest: () => Promise<Response>
 }
+
+export interface ReturnData {
+  appId: string
+  appName: string
+  appVersion: string
+  author: string
+  platforms: string[]
+  requirements: string[]
+}

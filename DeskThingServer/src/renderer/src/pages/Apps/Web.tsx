@@ -119,6 +119,7 @@ const Web = (): JSX.Element => {
   }
 
   const handleAddAndRunApp = async (): Promise<void> => {
+    console.log('Adding and running app, appData:', appData?.appId)
     window.electron.ipcRenderer.send('add-app', appData?.appId)
     window.electron.ipcRenderer.send('get-apps')
     setAppData(null)

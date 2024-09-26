@@ -336,7 +336,17 @@ async function setupIpcHandlers(): Promise<void> {
   ipcMain.on(IPC_CHANNELS.HANDLE_ZIP, async (event, zipFilePath: string) => {
     event.reply('logging', { status: true, data: 'Handling zipped app', final: false })
 
-    const returnData = await handleZip(zipFilePath, event) // Extract to user data folder
+    const returnData = await appHandler.addZIP(zipFilePath, event) // Extract to user data folder
+
+    if (!returnData) {
+      event.reply('logging', {
+        status: false,
+        data: returnData,
+        error: '[handleZip] No data returned!',
+        final: true
+      })
+      return
+    }
 
     event.reply('logging', { status: true, data: 'Finished', final: true })
     event.reply('zip-name', { status: true, data: returnData, final: true })
@@ -352,8 +362,7 @@ async function setupIpcHandlers(): Promise<void> {
   })
   ipcMain.on(IPC_CHANNELS.EXTRACT_APP_ZIP_URL, async (event, zipFileUrl) => {
     event.reply('logging', { status: true, data: 'Handling app from URL...', final: false })
-    const returnData = await handleZipFromUrl(zipFileUrl, event) // Extract to user data folder
-    console.log('SERVER: Return Data after Extraction:', returnData)
+    await appHandler.addURL(zipFileUrl, event) // Extract to user data folder
   })
   ipcMain.on(IPC_CHANNELS.SHUTDOWN, async () => {
     app.quit()

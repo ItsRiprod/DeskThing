@@ -1,4 +1,4 @@
-import { App, AppInstance, Manifest } from '../../types'
+import { App, AppInstance, Manifest, ReturnData } from '../../types'
 import { sendPrefData } from '../websocketServer'
 
 /**
@@ -223,9 +223,9 @@ export class AppHandler {
    * @param name The ID of the app
    * @returns
    */
-  async run(name: string): Promise<void> {
+  async run(name: string): Promise<boolean> {
     if (!(name in this.apps)) {
-      return Promise.reject(new Error(`App ${name} not found`))
+      return false
     }
 
     this.apps[name].running = true
@@ -234,18 +234,53 @@ export class AppHandler {
     const { run } = await import('./appInstaller')
     await run(name)
     this.saveAppToFile(name)
-    return
+    return true
   }
 
   async start(name: string): Promise<boolean> {
     if (!(name in this.apps)) {
-      return Promise.reject(new Error(`App ${name} not found`))
+      return false
     }
 
     this.apps[name].running = true
     this.enable(name)
     const { start } = await import('./appInstaller')
     return await start(name)
+  }
+
+  async addURL(url: string, event): Promise<ReturnData | void> {
+    const { handleZipFromUrl } = await import('./appInstaller')
+    const returnData = await handleZipFromUrl(url, event)
+    if (returnData) {
+      const App: AppInstance = {
+        name: returnData.appId,
+        enabled: false,
+        running: false,
+        prefIndex: 10,
+        func: {}
+      }
+
+      this.add(App)
+
+      return returnData
+    }
+  }
+  async addZIP(zip: string, event): Promise<ReturnData | void> {
+    const { handleZip } = await import('./appInstaller')
+    const returnData = await handleZip(zip, event)
+    if (returnData) {
+      const App: AppInstance = {
+        name: returnData.appId,
+        enabled: false,
+        running: false,
+        prefIndex: 10,
+        func: {}
+      }
+
+      this.add(App)
+
+      return returnData
+    }
   }
 
   /**

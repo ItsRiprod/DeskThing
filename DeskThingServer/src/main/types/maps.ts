@@ -9,6 +9,7 @@ export type Action = {
 export type Key = {
   id: string
   source: string
+  description: string
 }
 
 export enum EventFlavor {

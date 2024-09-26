@@ -4,14 +4,14 @@ import { readFromFile, writeToFile } from '../utils/fileHandler'
 import { sendMappings } from './websocketServer'
 
 const defaultData: FileStructure = {
-  version: '0.8.0',
+  version: '0.9.0',
   default: {
     Pad1: {
       [EventFlavor.Down]: {
         flair: '',
         name: 'VolUp',
         id: 'volUp',
-        description: 'VolUp',
+        description: 'Turns the volume up',
         source: 'server'
       }
     },
@@ -20,7 +20,7 @@ const defaultData: FileStructure = {
         flair: '',
         name: 'Swipe Left',
         id: 'swipeL',
-        description: 'Goes to left app',
+        description: 'Swipes to left app',
         source: 'server'
       }
     },
@@ -29,7 +29,7 @@ const defaultData: FileStructure = {
         flair: '',
         name: 'Swipe Right',
         id: 'swipeR',
-        description: 'Goes to right app',
+        description: 'Swipes to right app',
         source: 'server'
       }
     },
@@ -38,7 +38,7 @@ const defaultData: FileStructure = {
         flair: '',
         name: 'VolDown',
         id: 'volDown',
-        description: 'VolDown',
+        description: 'Turns down the volume',
         source: 'server'
       }
     },
@@ -65,7 +65,7 @@ const defaultData: FileStructure = {
         flair: '',
         name: 'Repeat',
         id: 'repeat',
-        description: 'Repeat',
+        description: 'Repeats the song',
         source: 'server'
       }
     },
@@ -83,7 +83,7 @@ const defaultData: FileStructure = {
         flair: '',
         name: 'Fullscreen',
         id: 'fullscreen',
-        description: 'Fullscreens the application',
+        description: 'Attempts to Fullscreen the application (Does not work on IOS)',
         source: 'server'
       }
     },
@@ -91,7 +91,7 @@ const defaultData: FileStructure = {
       [EventFlavor.Down]: {
         name: 'Shuffle',
         id: 'shuffle',
-        description: 'Shuffle',
+        description: 'Shuffles the current song',
         source: 'server',
         flair: ''
       }
@@ -100,7 +100,7 @@ const defaultData: FileStructure = {
       [EventFlavor.Down]: {
         name: 'Repeat',
         id: 'repeat',
-        description: 'Repeat',
+        description: 'Repeats the song',
         source: 'server',
         flair: ''
       }
@@ -110,7 +110,7 @@ const defaultData: FileStructure = {
         name: 'Rewind',
         id: 'rewind',
         flair: '',
-        description: 'Rewind',
+        description: 'Rewinds the song',
         source: 'server'
       }
     },
@@ -146,7 +146,7 @@ const defaultData: FileStructure = {
         name: 'Skip',
         flair: '',
         id: 'skip',
-        description: 'Skip',
+        description: 'Skips the track',
         source: 'server'
       }
     },
@@ -155,14 +155,14 @@ const defaultData: FileStructure = {
         name: 'Pref',
         flair: '',
         id: 'pref',
-        description: 'Pref',
+        description: 'Sets the preference to the current digit (i.e digit1 = pref1)',
         source: 'server'
       },
       [EventFlavor.Long]: {
         name: 'Swap',
         flair: '',
         id: 'swap',
-        description: 'Swap',
+        description: 'Swaps the current view with the pressed one (i.e digit1 = preset1)',
         source: 'server'
       }
     },
@@ -171,14 +171,14 @@ const defaultData: FileStructure = {
         name: 'Pref',
         flair: '',
         id: 'pref',
-        description: 'Pref',
+        description: 'Sets the preference to the current digit (i.e digit1 = pref1)',
         source: 'server'
       },
       [EventFlavor.Long]: {
         name: 'Swap',
         flair: '',
         id: 'swap',
-        description: 'Swap',
+        description: 'Swaps the current view with the pressed one (i.e digit1 = preset1)',
         source: 'server'
       }
     },
@@ -187,14 +187,14 @@ const defaultData: FileStructure = {
         name: 'Pref',
         flair: '',
         id: 'pref',
-        description: 'Pref',
+        description: 'Sets the preference to the current digit (i.e digit1 = pref1)',
         source: 'server'
       },
       [EventFlavor.Long]: {
         name: 'Swap',
         flair: '',
         id: 'swap',
-        description: 'Swap',
+        description: 'Swaps the current view with the pressed one (i.e digit1 = preset1)',
         source: 'server'
       }
     },
@@ -203,14 +203,14 @@ const defaultData: FileStructure = {
         name: 'Pref',
         flair: '',
         id: 'pref',
-        description: 'Pref',
+        description: 'Sets the preference to the current digit (i.e digit1 = pref1)',
         source: 'server'
       },
       [EventFlavor.Long]: {
         name: 'Swap',
         flair: '',
         id: 'swap',
-        description: 'Swap',
+        description: 'Swaps the current view with the pressed one (i.e digit1 = preset1)',
         source: 'server'
       }
     },
@@ -219,14 +219,14 @@ const defaultData: FileStructure = {
         flair: '',
         name: 'Dashboard',
         id: 'dashboard',
-        description: 'Open Dashboard',
+        description: 'Opens Dashboard',
         source: 'server'
       },
       [EventFlavor.Long]: {
         flair: '',
         name: 'Utility',
         id: 'utility',
-        description: 'Open Utility',
+        description: 'Opens Utility',
         source: 'server'
       }
     },
@@ -235,7 +235,7 @@ const defaultData: FileStructure = {
         name: 'VolUp',
         flair: '',
         id: 'volUp',
-        description: 'VolUp',
+        description: 'Turns the volume up',
         source: 'server'
       },
       [EventFlavor.Up]: {
@@ -324,16 +324,53 @@ const defaultData: FileStructure = {
     }
   },
   actions: [
-    { name: 'Shuffle', id: 'shuffle', description: 'Shuffle', source: 'server', flair: '' },
-    { name: 'Rewind', id: 'rewind', description: 'Rewind', source: 'server', flair: '' },
-    { name: 'PlayPause', id: 'play', description: 'PlayPause', source: 'server', flair: '' },
-    { name: 'Skip', id: 'skip', description: 'Skip', source: 'server', flair: '' },
-    { name: 'Repeat', id: 'repeat', description: 'Repeat', source: 'server', flair: '' },
+    {
+      name: 'Shuffle',
+      id: 'shuffle',
+      description: 'Shuffles the song',
+      source: 'server',
+      flair: ''
+    },
+    { name: 'Rewind', id: 'rewind', description: 'Rewinds the song', source: 'server', flair: '' },
+    {
+      name: 'PlayPause',
+      id: 'play',
+      description: 'Plays or Pauses the song',
+      source: 'server',
+      flair: ''
+    },
+    { name: 'Skip', id: 'skip', description: 'Skips the song', source: 'server', flair: '' },
+    { name: 'Repeat', id: 'repeat', description: 'Toggles repeat', source: 'server', flair: '' },
     { name: 'Pref', id: 'pref', description: 'Change the View', source: 'server', flair: '' },
-    { name: 'Swap', id: 'swap', description: 'Swap', source: 'server', flair: '' },
-    { name: 'VolDown', id: 'volDown', description: 'VolDown', source: 'server', flair: '' },
-    { name: 'VolUp', id: 'volUp', description: 'VolUp', source: 'server', flair: '' },
-    { flair: '', name: 'Utility', id: 'utility', description: 'Open Utility', source: 'server' },
+    {
+      name: 'Swap',
+      id: 'swap',
+      description: 'Swaps the current view with the selected one',
+      source: 'server',
+      flair: ''
+    },
+    {
+      name: 'VolDown',
+      id: 'volDown',
+      description: 'Turns the volume up',
+      source: 'server',
+      flair: ''
+    },
+    {
+      name: 'VolUp',
+      id: 'volUp',
+      description: 'Turns the volume down',
+      source: 'server',
+      flair: ''
+    },
+    { name: 'Utility', id: 'utility', description: 'Opens Utility', source: 'server', flair: '' },
+    {
+      name: 'Dashboard',
+      id: 'dashboard',
+      description: 'Opens Dashboard',
+      source: 'server',
+      flair: ''
+    },
     {
       flair: '',
       name: 'Dashboard',
@@ -386,31 +423,99 @@ const defaultData: FileStructure = {
     }
   ],
   keys: [
-    { id: 'DynamicAction1', source: 'server' },
-    { id: 'DynamicAction2', source: 'server' },
-    { id: 'DynamicAction3', source: 'server' },
-    { id: 'DynamicAction4', source: 'server' },
-    { id: 'Action5', source: 'server' },
-    { id: 'Action6', source: 'server' },
-    { id: 'Action7', source: 'server' },
-    { id: 'Digit1', source: 'server' },
-    { id: 'Digit2', source: 'server' },
-    { id: 'Digit3', source: 'server' },
-    { id: 'Digit4', source: 'server' },
-    { id: 'KeyM', source: 'server' },
-    { id: 'Scroll', source: 'server' },
-    { id: 'Enter', source: 'server' },
-    { id: 'Swipe', source: 'server' },
-    { id: 'Escape', source: 'server' },
-    { id: 'Pad1', source: 'server' },
-    { id: 'Pad2', source: 'server' },
-    { id: 'Pad3', source: 'server' },
-    { id: 'Pad4', source: 'server' },
-    { id: 'Pad5', source: 'server' },
-    { id: 'Pad6', source: 'server' },
-    { id: 'Pad7', source: 'server' },
-    { id: 'Pad8', source: 'server' },
-    { id: 'Pad9', source: 'server' }
+    {
+      description:
+        'DynamicAction1 The First bottom Mniplayer that only shows when the song title is tapped',
+      id: 'DynamicAction1',
+      source: 'server'
+    },
+    {
+      description:
+        'DynamicAction2 The Second bottom Mniplayer that only shows when the song title is tapped',
+      id: 'DynamicAction2',
+      source: 'server'
+    },
+    {
+      description:
+        'DynamicAction3 The Third bottom Mniplayer that only shows when the song title is tapped',
+      id: 'DynamicAction3',
+      source: 'server'
+    },
+    {
+      description:
+        'DynamicAction4 The Fourth bottom Mniplayer that only shows when the song title is tapped',
+      id: 'DynamicAction4',
+      source: 'server'
+    },
+    {
+      description: 'Action5 The Fifth bottom Mniplayer that always show',
+      id: 'Action5',
+      source: 'server'
+    },
+    {
+      description: 'Action6 The Sixth bottom Mniplayer that always show',
+      id: 'Action6',
+      source: 'server'
+    },
+    {
+      description: 'Action7 The Seventh bottom Mniplayer that always show',
+      id: 'Action7',
+      source: 'server'
+    },
+    { description: 'Physical Button Digit1', id: 'Digit1', source: 'server' },
+    { description: 'Physical Button Digit2', id: 'Digit2', source: 'server' },
+    { description: 'Physical Button Digit3', id: 'Digit3', source: 'server' },
+    { description: 'Physical Button Digit4', id: 'Digit4', source: 'server' },
+    { description: 'Physical Button KeyM', id: 'KeyM', source: 'server' },
+    { description: 'Physical Button Scroll', id: 'Scroll', source: 'server' },
+    { description: 'Physical Button Enter', id: 'Enter', source: 'server' },
+    { description: 'Physical Button Swipe', id: 'Swipe', source: 'server' },
+    { description: 'Physical Button Escape', id: 'Escape', source: 'server' },
+    {
+      description: 'Touch Pad1 on the fullscsreen miniplayer view. Numbered LTR Top to bottom',
+      id: 'Pad1',
+      source: 'server'
+    },
+    {
+      description: 'Touch Pad2 on the fullscsreen miniplayer view. Numbered LTR Top to bottom',
+      id: 'Pad2',
+      source: 'server'
+    },
+    {
+      description: 'Touch Pad3 on the fullscsreen miniplayer view. Numbered LTR Top to bottom',
+      id: 'Pad3',
+      source: 'server'
+    },
+    {
+      description: 'Touch Pad4 on the fullscsreen miniplayer view. Numbered LTR Top to bottom',
+      id: 'Pad4',
+      source: 'server'
+    },
+    {
+      description: 'Touch Pad5 on the fullscsreen miniplayer view. Numbered LTR Top to bottom',
+      id: 'Pad5',
+      source: 'server'
+    },
+    {
+      description: 'Touch Pad6 on the fullscsreen miniplayer view. Numbered LTR Top to bottom',
+      id: 'Pad6',
+      source: 'server'
+    },
+    {
+      description: 'Touch Pad7 on the fullscsreen miniplayer view. Numbered LTR Top to bottom',
+      id: 'Pad7',
+      source: 'server'
+    },
+    {
+      description: 'Touch Pad8 on the fullscsreen miniplayer view. Numbered LTR Top to bottom',
+      id: 'Pad8',
+      source: 'server'
+    },
+    {
+      description: 'Touch Pad9 on the fullscsreen miniplayer view. Numbered LTR Top to bottom',
+      id: 'Pad9',
+      source: 'server'
+    }
   ]
 }
 
@@ -615,7 +720,37 @@ const removeAppData = (appId: string): void => {
   sendMappings()
 }
 
+const updateFlair = (id: string, flair: string): void => {
+  const mappings = loadMappings()
+  if (!mappings.default) throw new Error('Default mappings are missing')
+
+  // Update flair for all actions with the given id
+  if (Array.isArray(mappings.actions)) {
+    mappings.actions = mappings.actions.map((action) => {
+      if (action.id === id) {
+        return { ...action, flair }
+      }
+      return action
+    })
+  }
+
+  // Update flair in default mappings
+  Object.keys(mappings.default).forEach((key) => {
+    const buttonMapping = mappings.default[key]
+    Object.keys(buttonMapping).forEach((flavor) => {
+      const action = buttonMapping[flavor]
+      if (action && action.id === id) {
+        buttonMapping[flavor] = { ...action, flair }
+      }
+    })
+  })
+
+  saveMappings(mappings)
+  sendMappings()
+}
+
 export {
+  updateFlair,
   loadMappings,
   getMappings,
   setMappings,

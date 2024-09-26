@@ -86,6 +86,7 @@ export async function handleDataFromApp(app: string, appData: IncomingData): Pro
           if (appData.payload) {
             const Key: Key = {
               id: appData.payload.id || 'unsetid',
+              description: appData.payload.description || 'Default Description',
               source: app
             }
             addKey(Key)
@@ -99,6 +100,10 @@ export async function handleDataFromApp(app: string, appData: IncomingData): Pro
         }
       } else if (appData.request == 'remove') {
         removeKey(appData.payload.id)
+      } else if (appData.request == 'flair') {
+        if (appData.payload) {
+          updateFlair(appData.payload.id, appData.payload.flair)
+        }
       }
       break
     case 'action':
