@@ -724,6 +724,7 @@ const updateFlair = (id: string, flair: string): void => {
   const mappings = loadMappings()
   if (!mappings.default) throw new Error('Default mappings are missing')
 
+  console.log('Updating flair for id:', id, 'with flair:', flair)
   // Update flair for all actions with the given id
   if (Array.isArray(mappings.actions)) {
     mappings.actions = mappings.actions.map((action) => {

@@ -11,7 +11,9 @@ import { ipcMain } from 'electron'
  * @param {...any[]} args - Additional arguments related to the data or action.
  */
 export async function handleDataFromApp(app: string, appData: IncomingData): Promise<void> {
-  const { addKey, removeKey, addAction, removeAction } = await import('../keyMapHandler')
+  const { addKey, removeKey, updateFlair, addAction, removeAction } = await import(
+    '../keyMapHandler'
+  )
   const { sendMessageToClients } = await import('../websocketServer')
   const { getData, setData, addData } = await import('../dataHandler')
   const { getConfig } = await import('../configHandler')
@@ -100,10 +102,6 @@ export async function handleDataFromApp(app: string, appData: IncomingData): Pro
         }
       } else if (appData.request == 'remove') {
         removeKey(appData.payload.id)
-      } else if (appData.request == 'flair') {
-        if (appData.payload) {
-          updateFlair(appData.payload.id, appData.payload.flair)
-        }
       }
       break
     case 'action':
@@ -128,6 +126,10 @@ export async function handleDataFromApp(app: string, appData: IncomingData): Pro
         }
       } else if (appData.request == 'remove') {
         removeAction(appData.payload.id)
+      } else if (appData.request == 'update') {
+        if (appData.payload) {
+          updateFlair(appData.payload.id, appData.payload.flair)
+        }
       }
       break
     default:
