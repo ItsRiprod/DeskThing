@@ -279,7 +279,7 @@ const setupServer = async (): Promise<void> => {
   // Serve web apps dynamically based on the URL
   expressApp.use('/:appName', (req, res, next) => {
     const appName = req.params.appName
-    if (appName === 'client') {
+    if (appName === 'client' || appName == null) {
       const userDataPath = electronApp.getPath('userData')
       const webAppDir = join(userDataPath, 'webapp')
       dataListener.asyncEmit(
