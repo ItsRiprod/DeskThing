@@ -1,28 +1,45 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
+import { AppDataInterface } from '@shared/types'
 
 type AppData = { [key: string]: string }
 
 declare global {
   interface Window {
     electron: ElectronAPI & {
-      selectZipFile: () => Promise<{ name: string; path: string } | null>
-      runAdbCommand: (command: string) => Promise<string | null>
-      runDeviceCommand: (type: string, command: string) => Promise<void>
-      fetchReleases: (url: string) => Promise<[]>
+      getApps: () => Promise<App[]>
+      getAppData: (appId: string) => Promise<AppDataInterface | null>
+      setAppData: (appId: string, data: AppDataInterface) => Promise<void>
+      stopApp: (appId: string) => Promise<void>
+      disableApp: (appId: string) => Promise<void>
+      runApp: (appId: string) => Promise<void>
+      enableApp: (appId: string) => Promise<void>
+      purgeApp: (appId: string) => Promise<void>
+      handleAppZip: (path: string) => Promise<void>
+      handleAppUrl: (url: string) => Promise<void>
+      handleResponseToUserData: (requestId: string, payload: IncomingData) => Promise<void>
+      handleDevAppZip: (path: string) => Promise<void>
+      sendDataToApp: (data: SocketData) => Promise<void>
+      orderApps: (data: string[]) => Promise<void>
+      handleClientZip: (path: string) => Promise<void>
+      handleClientURL: (url: string) => Promise<void>
+      handleClientADB: (command: string) => Promise<string>
+      getClientManifest: () => Promise<ServerManifest>
+      pushStagedApp: (clientId: string) => Promise<void>
+      pushProxyScript: (clientId: string) => Promise<void>
+      handleClientCommand: (command: SocketData) => Promise<void>
+      ping: () => Promise<void>
+      getConnections: () => Promise<Client[]>
+      getDevices: () => Promise<string[]>
+      disconnectClient: (connectionId: string) => Promise<void>
+      saveSettings: (settings: Settings) => Promise<void>
+      getSettings: () => Promise<Settings>
+      fetchGithub: (url: string) => Promise<GithubRelease[]>
       getLogs: () => Promise<string[]>
-      getMaps: () => Promise<any>
-      setMaps: (name: string, map: any) => Promise<void>
-      getSettings: () => Promise<any>
-      saveSettings: (settings: any) => Promise<void>
-      saveAppSetting: (
-        appId: string,
-        settings: { id: string; value: string | number | boolean }
-      ) => Promise<void>
-      saveAppData: (appId: string, data: { [key: string]: string | any }) => Promise<void>
-      getAppData: (appId: string) => Promise<AppData>
-      getClientManifest: () => Promise<any>
-      setClientManifest: (manifest: any) => Promise<void>
-      openLogFolder: () => Promise<void>
+      getMappings: () => Promise<ButtonMapping>
+      addProfile: (profile: string, baseProfile?: string) => Promise<ButtonMapping>
+      deleteProfile: (profile: string) => Promise<ButtonMapping>
+      shutdown: () => Promise<void>
+      openLogsFolder: () => Promise<void>
       refreshFirewall: () => Promise<void>
     }
     api: unknown // Or define `api` more specifically if you have a shape for it

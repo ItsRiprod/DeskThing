@@ -1,22 +1,8 @@
-import {
-  app,
-  shell,
-  BrowserWindow,
-  ipcMain,
-  Tray,
-  Menu,
-  dialog,
-  nativeImage,
-  NativeImage
-} from 'electron'
+import { AppIPCData, Client, IPC_HANDLERS, UtilityIPCData } from '@shared/types'
+import { app, shell, BrowserWindow, ipcMain, Tray, Menu, nativeImage, NativeImage } from 'electron'
 import { join } from 'path'
-import path from 'path'
 import icon from '../../resources/icon.ico?asset'
 import linuxIcon from '../../resources/icon.png?asset'
-import { Client, GithubRelease } from './types/types'
-import { ServerManifest } from './handlers/deviceHandler'
-import { Settings } from './stores/settingsStore'
-import { socketData } from './handlers/websocketServer'
 import ConnectionStore from './stores/connectionsStore'
 
 let mainWindow: BrowserWindow | null = null
@@ -28,43 +14,6 @@ export interface ReplyData {
   data: any
   final: boolean
   error?: string
-}
-
-const IPC_CHANNELS = {
-  PING: 'ping',
-  GET_CONNECTIONS: 'get-connections',
-  REMOVE_CONNECTIONS: 'remove-connection',
-  ADD_APP: 'add-app',
-  RUN_STOP_APP: 'stop-app',
-  RUN_ADB: 'run-adb-command',
-  RUN_DEVICE_COMMAND: 'run-device-command',
-  GET_SETTINGS: 'get-settings',
-  SAVE_SETTINGS: 'save-settings',
-  SET_ORDER: 'set-app-order',
-  GET_APPS: 'get-apps',
-  GET_APP_DATA: 'get-app-data',
-  GET_GITHUB: 'fetch-github-releases',
-  GET_LOGS: 'get-logs',
-  GET_MAPS: 'get-maps',
-  SET_MAP: 'set-maps',
-  GET_CLIENT_MANIFEST: 'get-client-manifest',
-  SET_CLIENT_MANIFEST: 'set-client-manifest',
-  SET_APP_DATA: 'set-app-data',
-  STOP_APP: 'stop-app',
-  DISABLE_APP: 'disable-app',
-  PURGE_APP: 'purge-app',
-  HANDLE_ZIP: 'handle-zip',
-  USER_DATA_RESPONSE: 'user-data-response',
-  SELECT_ZIP_FILE: 'select-zip-file',
-  EXTRACT_WEBAPP_ZIP: 'extract-webapp-zip',
-  EXTRACT_APP_ZIP_URL: 'extract-app-zip-url',
-  PUSH_STAGED_WEBAPP: 'push-staged',
-  PUSH_PROXY_SCRIPT: 'push-proxy-script',
-  SHUTDOWN: 'shutdown',
-  DEV_ADD_APP: 'dev-add-app',
-  SEND_TO_APP: 'send-to-app',
-  OPEN_LOG_FOLDER: 'open-log-folder',
-  REFRESH_FIREWALL: 'refresh-firewall'
 }
 
 function createMainWindow(): BrowserWindow {
@@ -82,7 +31,6 @@ function createMainWindow(): BrowserWindow {
       sandbox: false
     }
   })
-
   window.webContents.session.webRequest.onHeadersReceived((details, callback) => {
     callback({
       responseHeaders: {
@@ -209,8 +157,8 @@ async function initializeTray(): Promise<void> {
           clientWindow.focus()
         } else {
           const data = await settingsStore.default.getSettings()
-          if (data.payload) {
-            clientWindow = createClientWindow(data.payload.devicePort)
+          if (data) {
+            clientWindow = createClientWindow(data.devicePort)
           }
         }
       }
@@ -247,8 +195,8 @@ async function initializeDoc(): Promise<void> {
           clientWindow.focus()
         } else {
           const data = await settingsStore.default.getSettings()
-          if (data.payload) {
-            clientWindow = createClientWindow(data.payload.devicePort)
+          if (data) {
+            clientWindow = createClientWindow(data.devicePort)
           }
         }
       }
@@ -265,277 +213,65 @@ async function initializeDoc(): Promise<void> {
 }
 
 async function setupIpcHandlers(): Promise<void> {
-  const settingsStore = await import('./stores/settingsStore')
-  const { handleZipFromUrl, sendMessageToApp, handleZip, AppHandler } = await import(
-    './handlers/apps'
-  )
-  const appHandler = AppHandler.getInstance()
-  const { getData, setData } = await import('./handlers/dataHandler')
-  const { loadMappings, setMappings } = await import('./handlers/keyMapHandler')
-  const { handleAdbCommands } = await import('./handlers/adbHandler')
-  const { sendData, disconnectClient } = await import('./handlers/websocketServer')
-  const { getReleases } = await import('./handlers/githubHandler')
-  const {
-    HandleWebappZipFromUrl,
-    HandlePushWebApp,
-    SetupProxy,
-    handleClientManifestUpdate,
-    getClientManifest
-  } = await import('./handlers/deviceHandler')
   const dataListener = (await import('./utils/events')).default
   const { MESSAGE_TYPES } = await import('./utils/events')
 
-  ipcMain.on(IPC_CHANNELS.PING, () => console.log('pong'))
-  ipcMain.on(IPC_CHANNELS.GET_CONNECTIONS, async (event) => {
-    const clients = await ConnectionStore.getClients()
-    event.reply('connections', { status: true, data: clients.length, final: false })
-    event.reply('clients', { status: true, data: clients, final: true })
-  })
+  const { appHandler } = await import('./handlers/appHandler')
+  const { clientHandler } = await import('./handlers/clientHandler')
+  const { utilityHandler } = await import('./handlers/utilityHandler')
 
-  ipcMain.on(IPC_CHANNELS.REMOVE_CONNECTIONS, async (event, connectionId: string) => {
-    disconnectClient(connectionId)
-    event.reply('logging', { status: true, data: 'Finished', final: true })
-  })
+  const defaultHandler = async (data: AppIPCData): Promise<void> => {
+    console.error(`No handler implemented for type: ${data.type} ${data}`)
+    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `No handler implemented for type: ${data.type}`)
+  }
 
-  ipcMain.on(IPC_CHANNELS.ADD_APP, async (event, appName: string) => {
-    await appHandler.run(appName)
-    event.reply('logging', { status: true, data: 'Finished', final: true })
-  })
-  ipcMain.on(IPC_CHANNELS.DEV_ADD_APP, async (event, appPath: string) => {
-    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'Developer App Not implemented Yet ', appPath)
-    // await appHandler.run('developer-app', appPath)
-    event.reply('logging', { status: true, data: 'Finished', final: true })
-  })
-  ipcMain.on(IPC_CHANNELS.GET_APPS, (event) => {
-    event.reply('logging', { status: true, data: 'Getting data', final: false })
-    console.log('Getting app data')
-    const data = appHandler.getAllBase()
-    event.reply('logging', { status: true, data: 'Finished', final: true })
-    event.reply('app-data', { status: true, data: data, final: true })
-  })
-  ipcMain.on(IPC_CHANNELS.SET_ORDER, (event, order) => {
-    appHandler.reorder(order)
-    event.reply('logging', { status: true, data: 'Finished', final: true })
-  })
-  ipcMain.on(IPC_CHANNELS.STOP_APP, async (event, appName: string) => {
-    event.reply('logging', { status: true, data: 'Stopping App', final: false })
-    await appHandler.stop(appName)
-    event.reply('logging', { status: true, data: 'Finished', final: true })
-  })
-  ipcMain.on(IPC_CHANNELS.DISABLE_APP, async (event, appName: string) => {
-    event.reply('logging', { status: true, data: 'Disabling App', final: false })
-    await appHandler.disable(appName)
-    event.reply('logging', { status: true, data: 'Finished', final: true })
-  })
-  ipcMain.on(IPC_CHANNELS.PURGE_APP, async (event, appName: string) => {
-    event.reply('logging', { status: true, data: 'Purging App', final: false })
-    console.log(`====== PURGING APP ${appName} ========`)
-    await appHandler.purge(appName)
-    event.reply('logging', { status: true, data: 'Finished', final: true })
-  })
-  ipcMain.on(IPC_CHANNELS.HANDLE_ZIP, async (event, zipFilePath: string) => {
-    event.reply('logging', { status: true, data: 'Handling zipped app', final: false })
+  ipcMain.handle('APPS', async (event, data: AppIPCData) => {
+    const handler = appHandler[data.type] || defaultHandler
 
-    const returnData = await appHandler.addZIP(zipFilePath, event) // Extract to user data folder
-
-    if (!returnData) {
-      event.reply('logging', {
-        status: false,
-        data: returnData,
-        error: '[handleZip] No data returned!',
-        final: true
-      })
-      return
-    }
-
-    event.reply('logging', { status: true, data: 'Finished', final: true })
-    event.reply('zip-name', { status: true, data: returnData, final: true })
-  })
-  ipcMain.on(IPC_CHANNELS.EXTRACT_WEBAPP_ZIP, async (event, zipFileUrl) => {
     try {
-      event.reply('logging', { status: true, data: 'Handling web app from URL', final: false })
-      HandleWebappZipFromUrl(event.reply, zipFileUrl)
-    } catch (error) {
-      console.error('Error extracting zip file:', error)
-      event.reply('zip-extracted', { success: false, error: error })
-    }
-  })
-  ipcMain.on(IPC_CHANNELS.EXTRACT_APP_ZIP_URL, async (event, zipFileUrl) => {
-    event.reply('logging', { status: true, data: 'Handling app from URL...', final: false })
-    await appHandler.addURL(zipFileUrl, event) // Extract to user data folder
-  })
-  ipcMain.on(IPC_CHANNELS.SHUTDOWN, async () => {
-    app.quit()
-  })
-  ipcMain.on(IPC_CHANNELS.PUSH_STAGED_WEBAPP, async (event, deviceId) => {
-    try {
-      console.log('Pushing staged webapp...')
-      HandlePushWebApp(event.reply, deviceId)
-    } catch (error) {
-      event.reply(IPC_CHANNELS.PUSH_STAGED_WEBAPP, { success: false, error: error })
-      console.error('Error extracting zip file:', error)
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, error)
-    }
-  })
-  ipcMain.on(IPC_CHANNELS.PUSH_PROXY_SCRIPT, async (event, deviceId) => {
-    try {
-      console.log('Pushing proxy script...')
-      SetupProxy(event.reply, deviceId)
-    } catch (error) {
-      event.reply(IPC_CHANNELS.PUSH_PROXY_SCRIPT, { success: false, error: error })
-      console.error('Error pushing proxy script:', error)
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, error)
-    }
-  })
-  ipcMain.on(IPC_CHANNELS.USER_DATA_RESPONSE, (event, requestId: string, data: any) => {
-    console.log(event)
-    sendMessageToApp(requestId, data)
-  })
-
-  ipcMain.handle(IPC_CHANNELS.SEND_TO_APP, async (event, data: socketData) => {
-    console.log('sending data to app: ', data.app, data)
-    await sendMessageToApp(data.app, data)
-    event.sender.emit('logging', { status: true, data: 'Finished', final: true })
-  })
-
-  ipcMain.handle(
-    IPC_CHANNELS.SET_APP_DATA,
-    async (event, appId: string, data: { [key: string]: string }) => {
-      console.log('Saving app data: ', data)
-      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'SERVER: Saving ' + appId + "'s data " + data)
-      await setData(appId, data)
-      event.sender.emit('logging', { status: true, data: 'Finished', final: true })
-    }
-  )
-
-  ipcMain.handle(IPC_CHANNELS.GET_APP_DATA, async (event, appId: string) => {
-    try {
-      const data = await getData(appId)
-      event.sender.emit('logging', { status: true, data: 'Finished', final: true })
-      return data
-    } catch (error) {
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'SERVER: Error saving manifest' + error)
-      console.error('Error setting client manifest:', error)
-      event.sender.emit('logging', { status: false, data: 'Unfinished', error: error, final: true })
-      return null
-    }
-  })
-  ipcMain.handle(IPC_CHANNELS.REFRESH_FIREWALL, async (event) => {
-    try {
-      const { setupFirewall } = await import('./handlers/firewallHandler')
-      event.sender.emit('logging', { status: true, data: 'Refreshing Firewall', final: false })
-      const payload = (await settingsStore.default.getSettings()).payload as Settings
-      if (payload) {
-        dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, '[firewall] Setting up firewall')
-        try {
-          await setupFirewall(payload.devicePort, (message) => {
-            if (event.sender.isDestroyed()) return
-            event.sender.send('logging', message)
-          })
-        } catch (firewallError) {
-          console.log(firewallError)
-          if (!(firewallError instanceof Error)) return
-
-          dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `FIREWALL: ${firewallError.message}`)
-          event.sender.emit('logging', {
-            status: false,
-            data: 'Error in firewall',
-            error: firewallError.message,
-            final: true
-          })
-          return
-        }
+      if (handler) {
+        return await handler(data, event) // Execute the corresponding handler function
       } else {
-        dataListener.asyncEmit(MESSAGE_TYPES.ERROR, '[firewall] No settings found!')
-        event.sender.emit('logging', {
-          status: false,
-          data: 'Error in firewall',
-          error: 'No settings found!',
-          final: true
-        })
+        console.error(`No handler found for type: ${data.type}`)
+        throw new Error(`Unhandled type: ${data.type}`)
       }
     } catch (error) {
-      dataListener.asyncEmit(
-        MESSAGE_TYPES.ERROR,
-        'SERVER: [firewall] Error saving manifest' + error
-      )
-      console.error('[Firewall] Error setting client manifest:', error)
-      event.sender.emit('logging', { status: false, data: 'Unfinished', error: error, final: true })
+      console.error('Error in IPC handler:', error)
+      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `Error in IPC handler: ${error}`)
     }
   })
-  ipcMain.handle(
-    IPC_CHANNELS.SET_CLIENT_MANIFEST,
-    async (event, manifest: Partial<ServerManifest>) => {
-      try {
-        await handleClientManifestUpdate(event.sender, manifest)
-      } catch (error) {
-        dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'SERVER: Error saving manifest' + error)
-        console.error('Error setting client manifest:', error)
+
+  ipcMain.handle('CLIENT', async (event, data: AppIPCData) => {
+    const handler = clientHandler[data.type] || defaultHandler
+    event.sender.send('logging', { status: true, data: 'Loading...', final: true })
+    try {
+      if (handler) {
+        return await handler(data, event) // Execute the corresponding handler function
+      } else {
+        console.error(`No handler found for type: ${data.type}`)
+        throw new Error(`Unhandled type: ${data.type}`)
       }
-    }
-  )
-  ipcMain.handle(IPC_CHANNELS.GET_CLIENT_MANIFEST, async (event) => {
-    try {
-      const manifest = await getClientManifest(event.sender)
-      return manifest
     } catch (error) {
-      console.error('Error getting client manifest:', error)
-      return null
+      console.error('Error in IPC handler:', error)
+      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `Error in IPC handler: ${error}`)
     }
   })
-  ipcMain.handle(IPC_CHANNELS.SELECT_ZIP_FILE, async () => {
-    if (!mainWindow) return null
 
-    const result = await dialog.showOpenDialog(mainWindow, {
-      properties: ['openFile'],
-      filters: [{ name: 'ZIP Files', extensions: ['zip'] }]
-    })
-    if (result.canceled) return null
+  ipcMain.handle('UTILITY', async (event, data: UtilityIPCData) => {
+    console.log('Received IPC data:', data)
+    const handler = utilityHandler[data.type] || defaultHandler
 
-    const filePath = result.filePaths[0]
-    return { path: filePath, name: path.basename(filePath) }
-  })
-
-  ipcMain.handle(IPC_CHANNELS.RUN_ADB, async (event, command) => {
-    return await handleAdbCommands(command, event)
-  })
-  ipcMain.handle(IPC_CHANNELS.GET_LOGS, async () => {
-    const Logger = await import('./utils/logger')
-    return await Logger.default.getLogs()
-  })
-  ipcMain.handle(IPC_CHANNELS.GET_SETTINGS, async () => {
-    return await settingsStore.default.getSettings()
-  })
-  ipcMain.handle(IPC_CHANNELS.SAVE_SETTINGS, async (_event, settings) => {
-    console.log('Saving settings', settings)
-    return await settingsStore.default.saveSettings(settings)
-  })
-  ipcMain.handle(IPC_CHANNELS.GET_MAPS, async (event) => {
-    event.sender.send('logging', { status: true, data: 'Maps Retrieved!', final: true })
-    return await loadMappings()
-  })
-  ipcMain.handle(IPC_CHANNELS.SET_MAP, async (event, name, map) => {
-    event.sender.send('logging', { status: true, data: 'Maps Saved!', final: true })
-    await setMappings(name, map)
-  })
-  ipcMain.handle(IPC_CHANNELS.GET_GITHUB, async (_event, url): Promise<GithubRelease[]> => {
     try {
-      return await getReleases(url)
+      if (handler) {
+        return await handler(data, event) // Execute the corresponding handler function
+      } else {
+        console.error(`No handler found for type: ${data.type}`)
+        throw new Error(`Unhandled type: ${data.type}`)
+      }
     } catch (error) {
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, error)
-      return []
+      console.error('Error in IPC handler:', error)
+      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `Error in IPC handler: ${error}`)
     }
-  })
-  ipcMain.handle(IPC_CHANNELS.RUN_DEVICE_COMMAND, async (event, type, command) => {
-    const data = { app: 'client', type: type, data: JSON.parse(command) }
-    console.log('Sending data', data)
-    event.sender.send('logging', { status: true, data: 'Finished', final: true })
-    return await sendData(null, data)
-  })
-
-  ipcMain.handle(IPC_CHANNELS.OPEN_LOG_FOLDER, async () => {
-    const logPath = path.join(app.getPath('userData'))
-    await shell.openPath(logPath)
   })
 
   dataListener.on(MESSAGE_TYPES.ERROR, (errorData) => {
@@ -548,8 +284,11 @@ async function setupIpcHandlers(): Promise<void> {
     sendIpcData('message', errorData)
   })
   ConnectionStore.on((clients: Client[]) => {
-    sendIpcData('connections', { status: true, data: clients.length, final: false })
+    sendIpcData('connections', { status: true, data: clients.length, final: true })
     sendIpcData('clients', { status: true, data: clients, final: true })
+  })
+  ConnectionStore.onDevice((devices: string[]) => {
+    sendIpcData('adbdevices', { status: true, data: devices, final: true })
   })
   dataListener.on(MESSAGE_TYPES.SETTINGS, (newSettings) => {
     sendIpcData('settings-updated', newSettings)
@@ -614,7 +353,7 @@ async function loadModules(): Promise<void> {
   try {
     await import('./handlers/authHandler')
     await import('./handlers/websocketServer')
-    const { loadAndRunEnabledApps } = await import('./handlers/apps')
+    const { loadAndRunEnabledApps } = await import('./services/apps')
     loadAndRunEnabledApps()
   } catch (error) {
     console.error('Error loading modules:', error)

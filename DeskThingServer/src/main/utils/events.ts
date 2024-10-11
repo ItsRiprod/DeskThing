@@ -1,6 +1,6 @@
 import EventEmitter from 'events'
 import Logger from './logger'
-import { socketData } from '../handlers/websocketServer'
+import { SocketData } from '@shared/types'
 
 /**
  * The MESSAGE_TYPES object defines a set of constants that represent the different types of messages that can be sent or received in the application.
@@ -39,7 +39,7 @@ class Events extends EventEmitter {
    *
    * events.emit(MESSAGE_TYPES.MESSAGE, { content: 'Hello, world!' })
    */
-  async asyncEmit(event: string, ...data: (string | socketData | unknown)[]): Promise<void> {
+  async asyncEmit(event: string, ...data: (string | SocketData | unknown)[]): Promise<void> {
     console.log(`[${event}] `, data)
     return new Promise((resolve) => {
       setImmediate(() => {

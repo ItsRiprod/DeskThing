@@ -35,3 +35,4 @@ tsconfig.tsbuildinfo
 mediawincs
 CommunityApps
 *.zip
+/DeskThingServer/src/renderer/srcBackup

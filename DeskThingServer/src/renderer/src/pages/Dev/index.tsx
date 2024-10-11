@@ -1,36 +1,16 @@
-import { useState } from 'react'
-import Apps from './Apps'
-import Adb from './Adb'
-import LogDisplay from './LogDisplay'
-import Tabs, { View } from '../../components/Tabs'
+import React from 'react'
+import { Outlet } from 'react-router-dom'
+import Loading from '../../components/Loading'
 
-const index = (): JSX.Element => {
-  const views: View[] = [
-    { id: 'log', display: 'Logs' },
-    { id: 'apps', display: 'Dev Apps' },
-    { id: 'adb', display: 'ADB' }
-  ]
-
-  const [currentView, setCurrentView] = useState<View>(views[0])
-  const renderView = (): JSX.Element | undefined => {
-    switch (currentView.id) {
-      case 'apps':
-        return <Apps />
-      case 'adb':
-        return <Adb />
-      case 'log':
-        return <LogDisplay />
-      default:
-        return undefined
-    }
-  }
-
+const Dev: React.FC = () => {
   return (
-    <>
-      <Tabs currentView={currentView} setCurrentView={setCurrentView} views={views} />
-      <div className="w-full h-5/6">{renderView()}</div>
-    </>
+    <div className="flex flex-col items-center justify-center h-full">
+      <h1 className="text-3xl font-bold mb-4">Dev</h1>
+      <p className="text-lg mb-8">This page has not been implemented yet.</p>
+      <Loading message="Settings page is loading..." />
+      <Outlet />
+    </div>
   )
 }
 
-export default index
+export default Dev

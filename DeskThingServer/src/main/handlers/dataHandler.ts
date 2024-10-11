@@ -1,9 +1,8 @@
+import { AppDataInterface } from '@shared/types'
 import { readFromFile, writeToFile } from '../utils/fileHandler'
 
 interface Data {
-  [appName: string]: {
-    [key: string]: string
-  }
+  [appName: string]: AppDataInterface
 }
 
 // Default data structure
@@ -37,13 +36,13 @@ const writeData = (data: Data): void => {
   }
 }
 // Set data function
-const setData = (key: string, value: { [key: string]: string }): void => {
+const setData = (key: string, value: AppDataInterface): void => {
   const data = readData()
   data[key] = value
   writeData(data)
 }
 // Set data function
-const addData = (key: string, value: { [key: string]: string }): void => {
+const addData = (key: string, value: AppDataInterface): void => {
   const data = readData()
   if (!data[key]) {
     data[key] = value
@@ -54,7 +53,7 @@ const addData = (key: string, value: { [key: string]: string }): void => {
 }
 
 // Get data function
-const getData = (app): { [key: string]: string } => {
+const getData = (app: string): AppDataInterface => {
   const data = readData()
   return data[app]
 }

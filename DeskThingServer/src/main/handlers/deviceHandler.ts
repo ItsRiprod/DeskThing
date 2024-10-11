@@ -41,44 +41,48 @@ export const HandleDeviceData = async (data: any): Promise<void> => {
   }
 }
 export const HandlePushWebApp = async (
-  reply: (channel: string, data: ReplyData) => void,
-  deviceId: string
+  deviceId: string,
+  reply?: (channel: string, data: ReplyData) => void
 ): Promise<void> => {
   try {
     const userDataPath = app.getPath('userData')
     const extractDir = join(userDataPath, 'webapp')
     let response
     console.log('Remounting...')
-    reply('logging', { status: true, data: 'Remounting...', final: false })
+    reply && reply('logging', { status: true, data: 'Remounting...', final: false })
     response = await handleAdbCommands(`-s ${deviceId} shell mount -o remount,rw /`)
-    reply('logging', { status: true, data: response || 'Moving...', final: false })
+    reply && reply('logging', { status: true, data: response || 'Moving...', final: false })
     response = await handleAdbCommands(
       `-s ${deviceId} shell mv /usr/share/qt-superbird-app/webapp /tmp/webapp-orig`
     )
-    reply('logging', { status: true, data: response || 'Moving...', final: false })
+    reply && reply('logging', { status: true, data: response || 'Moving...', final: false })
     response = await handleAdbCommands(
       `-s ${deviceId} shell mv /tmp/webapp-orig /usr/share/qt-superbird-app/`
     )
 
-    reply('logging', { status: true, data: response || 'Removing old app...', final: false })
+    reply &&
+      reply('logging', { status: true, data: response || 'Removing old app...', final: false })
     response = await handleAdbCommands(`-s ${deviceId} shell rm -r /tmp/webapp-orig`)
 
-    reply('logging', { status: true, data: response || 'Pushing new app...', final: false })
+    reply &&
+      reply('logging', { status: true, data: response || 'Pushing new app...', final: false })
     response = await handleAdbCommands(
       `-s ${deviceId} push "${extractDir}/" /usr/share/qt-superbird-app/webapp`
     )
 
-    reply('logging', { status: true, data: response || 'Restarting Chromium', final: false })
+    reply &&
+      reply('logging', { status: true, data: response || 'Restarting Chromium', final: false })
     response = await handleAdbCommands(`-s ${deviceId} shell supervisorctl restart chromium`)
 
-    reply('logging', { status: true, data: response, final: true })
+    reply && reply('logging', { status: true, data: response, final: true })
   } catch (Exception) {
-    reply('logging', {
-      status: false,
-      data: 'There has been an error',
-      final: true,
-      error: `${Exception}`
-    })
+    reply &&
+      reply('logging', {
+        status: false,
+        data: 'There has been an error',
+        final: true,
+        error: `${Exception}`
+      })
     dataListener.asyncEmit(
       MESSAGE_TYPES.ERROR,
       'HandlePushWebApp encountered the error ' + Exception

@@ -29,3 +29,28 @@ export const writeToFile = <T>(data: T, filepath: string): boolean => {
     return false
   }
 }
+
+export const writeToGlobalFile = <T>(data: T, filepath: string): boolean => {
+  try {
+    fs.writeFileSync(filepath, JSON.stringify(data, null, 2))
+    return true
+  } catch (err) {
+    console.error('Error writing data:', err)
+    return false
+  }
+}
+
+export const readFromGlobalFile = <T>(filename: string): T | false => {
+  const dataFilePath = join(app.getPath('userData'), filename)
+  try {
+    if (!fs.existsSync(dataFilePath)) {
+      // File does not exist, create it with default data
+      return false
+    }
+    const rawData = fs.readFileSync(dataFilePath)
+    return JSON.parse(rawData.toString())
+  } catch (err) {
+    console.error('Error reading data:', err)
+    return false
+  }
+}

@@ -1,23 +1,25 @@
+import { Client, Settings, SocketData } from '@shared/types'
 import WebSocket, { WebSocketServer } from 'ws'
-import { sendMessageToApp, getAppFilePath } from './apps/'
+import { sendMessageToApp, getAppFilePath } from '../services/apps'
 
-import { getDefaultMappings, setDefaultMappings } from './keyMapHandler'
+import keyMapStore from '../stores/keyMapStore'
 import { readData, addData } from './dataHandler'
 import dataListener, { MESSAGE_TYPES } from '../utils/events'
 import { HandleDeviceData } from './deviceHandler'
-import settingsStore, { Settings } from '../stores/settingsStore'
+import settingsStore from '../stores/settingsStore'
 import cors from 'cors'
 import crypto, { UUID } from 'crypto'
 
 import * as fs from 'fs'
+
 // App Hosting
 import express from 'express'
-import { createServer, Server as HttpServer } from 'http'
+import { createServer, Server as HttpServer, IncomingMessage } from 'http'
 import { app as electronApp } from 'electron'
 import { join } from 'path'
 import ConnectionStore from '../stores/connectionsStore'
-import { Client, ButtonMapping } from '../types'
-import AppState from './apps/appState'
+import AppState from '../services/apps/appState'
+import { getDeviceType } from '../services/client/clientUtils'
 
 // Create a WebSocket server that listens on port 8891
 // const server = new WebSocketServer({ port: 8891 })
@@ -25,19 +27,6 @@ import AppState from './apps/appState'
 let settings: Settings
 let httpServer: HttpServer
 let server: WebSocketServer | null
-
-export interface socketData {
-  app: string
-  type: string
-  request?: string
-  payload?:
-    | Array<string>
-    | string
-    | object
-    | number
-    | { [key: string]: string | Array<string> }
-    | Settings
-}
 
 const updateServerSettings = (newSettings: Settings): void => {
   if (settings.devicePort !== newSettings.devicePort || settings.address !== newSettings.address) {
@@ -112,7 +101,7 @@ const restartServer = (): void => {
   }
 }
 
-const sendMessageToClients = async (message: socketData): Promise<void> => {
+const sendMessageToClients = async (message: SocketData): Promise<void> => {
   if (server) {
     server.clients.forEach((client) => {
       if (client.readyState === 1) {
@@ -131,7 +120,7 @@ const sendResponse = async (socket, message): Promise<void> => {
     console.error('WSOCKET: Error sending message:', error)
   }
 }
-const sendData = async (socket, socketData: socketData): Promise<void> => {
+const sendData = async (socket, socketData: SocketData): Promise<void> => {
   try {
     if (socket != null) {
       socket.send(
@@ -160,7 +149,6 @@ const sendError = async (socket, error): Promise<void> => {
 const sendPrefData = async (socket: WebSocket | null = null): Promise<void> => {
   try {
     const appData = await AppState.getAllBase()
-    console.log('Client Request: ', appData)
     const config = await readData()
     if (!appData) {
       throw new Error('Invalid configuration format')
@@ -192,7 +180,7 @@ const sendPrefData = async (socket: WebSocket | null = null): Promise<void> => {
 
 const sendMappings = async (socket: WebSocket | null = null): Promise<void> => {
   try {
-    const mappings = getDefaultMappings()
+    const mappings = keyMapStore.getMapping()
     if (socket) {
       sendData(socket, { app: 'client', type: 'button_mappings', payload: mappings })
       console.log('WSOCKET: Button mappings sent!')
@@ -261,7 +249,7 @@ const setupServer = async (): Promise<void> => {
     // Return if there are no settings
     dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'WSOCKET: No settings found, getting them now')
     const socketData = await settingsStore.getSettings()
-    settings = socketData.payload as Settings
+    settings = socketData as Settings
   }
 
   const expressApp = express()
@@ -276,82 +264,64 @@ const setupServer = async (): Promise<void> => {
     next()
   })
 
+  const handleClientConnection = (appName, req, res, next): void => {
+    const userDataPath = electronApp.getPath('userData')
+    const webAppDir = join(userDataPath, 'webapp')
+    dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Serving ${appName} from ${webAppDir}`)
+
+    const clientIp = req.hostname
+
+    const clientPort = req.socket.port
+
+    console.log(`WEBSOCKET: Serving ${appName} from ${webAppDir} to ${clientIp}`)
+
+    if (req.path.endsWith('manifest.js')) {
+      const manifestPath = join(webAppDir, 'manifest.js')
+      if (fs.existsSync(manifestPath)) {
+        let manifestContent = fs.readFileSync(manifestPath, 'utf8')
+        const connectionId = crypto.randomUUID()
+
+        manifestContent = manifestContent.replace(
+          /"ip":\s*".*?"/,
+          `"ip": "${clientIp === '127.0.0.1' ? 'localhost' : clientIp}"`
+        )
+
+        manifestContent = manifestContent.includes('"uuid"')
+          ? manifestContent.replace(/"uuid":\s*".*?"/, `"uuid":"${connectionId}"`)
+          : manifestContent.replace(/{/, `{\n  "uuid": "${connectionId}",`)
+
+        manifestContent = manifestContent.replace(
+          /"port":\s*".*?"/,
+          `"port": "${clientPort || '8891'}"`
+        )
+
+        manifestContent = manifestContent.replace(
+          /"device_type":\s*".*?"/,
+          `"device_type": "${getDeviceType(req.headers['user-agent'])}"`
+        )
+
+        res.type('application/javascript').send(manifestContent)
+      } else {
+        res.status(404).send('Manifest not found')
+      }
+    } else {
+      if (fs.existsSync(webAppDir)) {
+        express.static(webAppDir)(req, res, next)
+      } else {
+        res.status(404).send('App not found')
+      }
+    }
+  }
+
+  expressApp.use('/', (req, res, next) => {
+    handleClientConnection('client', req, res, next)
+  })
+
   // Serve web apps dynamically based on the URL
   expressApp.use('/:appName', (req, res, next) => {
     const appName = req.params.appName
     if (appName === 'client' || appName == null) {
-      const userDataPath = electronApp.getPath('userData')
-      const webAppDir = join(userDataPath, 'webapp')
-      dataListener.asyncEmit(
-        MESSAGE_TYPES.LOGGING,
-        `WEBSOCKET: Serving ${appName} from ${webAppDir}`
-      )
-
-      const clientIp = req.hostname
-
-      const clientPort = req.socket.port
-
-      console.log(`WEBSOCKET: Serving ${appName} from ${webAppDir} to ${clientIp}`)
-
-      if (req.path.endsWith('manifest.js')) {
-        const manifestPath = join(webAppDir, 'manifest.js')
-        if (fs.existsSync(manifestPath)) {
-          let manifestContent = fs.readFileSync(manifestPath, 'utf8')
-
-          const getDeviceType = (userAgent: string | undefined): string => {
-            if (!userAgent) return 'unknown'
-            userAgent = userAgent.toLowerCase()
-            if (userAgent.includes('iphone')) return 'iphone'
-            if (userAgent.includes('win')) return 'windows'
-            if (userAgent.includes('ipad')) return 'tablet'
-            if (userAgent.includes('mac')) return 'mac'
-            if (userAgent.includes('android')) {
-              if (userAgent.includes('mobile')) return 'android'
-              return 'tablet'
-            }
-            return 'unknown'
-          }
-
-          const client: Client = {
-            ip: clientIp as string,
-            connected: false,
-            connectionId: crypto.randomUUID(),
-            timestamp: Date.now(),
-            userAgent: req.headers['user-agent'] || '',
-            hostname: req.hostname || '',
-            headers: req.headers,
-            device_type: getDeviceType(req.headers['user-agent'])
-          }
-
-          ConnectionStore.addClient(client)
-
-          manifestContent = manifestContent.replace(
-            /"ip":\s*".*?"/,
-            `"ip": "${clientIp === '127.0.0.1' ? 'localhost' : clientIp}"`
-          )
-          manifestContent = manifestContent.includes('"uuid"')
-            ? manifestContent.replace(/"uuid":\s*".*?"/, `"uuid":"${client.connectionId}"`)
-            : manifestContent.replace(/{/, `{\n  "uuid": "${client.connectionId}",`)
-          manifestContent = manifestContent.replace(
-            /"port":\s*".*?"/,
-            `"port": "${clientPort || '8891'}"`
-          )
-          manifestContent = manifestContent.replace(
-            /"device_type":\s*".*?"/,
-            `"device_type": "${getDeviceType(req.headers['user-agent'])}"`
-          )
-
-          res.type('application/javascript').send(manifestContent)
-        } else {
-          res.status(404).send('Manifest not found')
-        }
-      } else {
-        if (fs.existsSync(webAppDir)) {
-          express.static(webAppDir)(req, res, next)
-        } else {
-          res.status(404).send('App not found')
-        }
-      }
+      handleClientConnection(appName, req, res, next)
     } else {
       const appPath = getAppFilePath(appName)
       dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Serving ${appName} from ${appPath}`)
@@ -390,7 +360,7 @@ const setupServer = async (): Promise<void> => {
   })
 
   // Handle incoming messages from the client
-  server.on('connection', async (socket: WebSocket) => {
+  server.on('connection', async (socket: WebSocket, req: IncomingMessage) => {
     // Handle the incoming connection and add it to the ConnectionStore
 
     const clientIp = socket._socket.remoteAddress
@@ -402,17 +372,20 @@ const setupServer = async (): Promise<void> => {
       ip: conClient?.ip || (clientIp as string),
       connected: true,
       timestamp: conClient?.timestamp || Date.now(),
-      connectionId: conClient?.connectionId || crypto.randomUUID()
+      connectionId: conClient?.connectionId || crypto.randomUUID(),
+      userAgent: conClient?.userAgent || req.headers['user-agent'] || '',
+      device_type: conClient?.device_type || getDeviceType(req.headers['user-agent'])
     }
 
     console.log(
       `WSOCKET: Client with id: ${client.connectionId} connected!\nWSOCKET: Sending preferences...`
     )
 
-    if (client && !conClient) {
+    if (!conClient) {
       ConnectionStore.addClient(client)
       client.connected = true
     } else {
+      ConnectionStore.updateClient(conClient.connectionId, client)
       console.log('Something has gone horribly wrong')
     }
 
@@ -471,14 +444,6 @@ const setupServer = async (): Promise<void> => {
                 break
               case 'set':
                 switch (parsedMessage.request) {
-                  case 'button_maps':
-                    if (parsedMessage.payload) {
-                      const mappings: ButtonMapping = parsedMessage.payload
-                      setDefaultMappings(mappings)
-                      console.log('WSOCKET: Button mappings updated and saved.')
-                      sendMappings(socket)
-                    }
-                    break
                   case 'update_pref_index':
                     if (parsedMessage.payload) {
                       const { app: appName, index: newIndex } = parsedMessage.payload
@@ -541,16 +506,17 @@ const setupServer = async (): Promise<void> => {
                     // Update the current client
                     console.log('WSOCKET: Client does not exist, adding...')
 
+                    client.connectionId =
+                      manifest.uuid == null
+                        ? (client.connectionId as UUID)
+                        : (manifest.uuid as UUID)
+
                     ConnectionStore.updateClient(client.connectionId, {
-                      connectionId:
-                        manifest.uuid == null
-                          ? (client.connectionId as UUID)
-                          : (manifest.uuid as UUID),
+                      connectionId: client.connectionId as UUID,
                       client_name: manifest.name,
                       version: manifest.version,
                       description: manifest.description,
-                      connected: true,
-                      device_type: manifest.device_type
+                      connected: true
                     })
                   }
                 }
@@ -579,8 +545,8 @@ const setupServer = async (): Promise<void> => {
 }
 
 dataListener.on(MESSAGE_TYPES.SETTINGS, (newSettings) => {
-  if (settings.payload) {
-    updateServerSettings(newSettings.payload)
+  if (settings) {
+    updateServerSettings(newSettings)
   } else {
     dataListener.emit(MESSAGE_TYPES.LOGGING, 'WSOCKET: No settings received!')
   }

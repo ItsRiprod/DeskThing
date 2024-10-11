@@ -24,10 +24,16 @@ const splitArgs = (str: string): string[] => {
   return matches
 }
 
-export const handleAdbCommands = async (command: string, event?): Promise<string> => {
+export const handleAdbCommands = async (
+  command: string,
+  send?: (channel: string, ...args: any[]) => void
+): Promise<string> => {
   const settings = await settingsStore.getSettings()
-  const useGlobalADB = settings.payload.globalADB === true
-  dataListener.emit(MESSAGE_TYPES.LOGGING, useGlobalADB ? 'Using Global ADB' : 'Using Local ADB')
+  const useGlobalADB = settings.globalADB === true
+  dataListener.asyncEmit(
+    MESSAGE_TYPES.LOGGING,
+    useGlobalADB ? 'Using Global ADB' : 'Using Local ADB'
+  )
   return new Promise((resolve, reject) => {
     execFile(
       useGlobalADB ? 'adb' : adbPath,
@@ -36,19 +42,22 @@ export const handleAdbCommands = async (command: string, event?): Promise<string
       (error, stdout, stderr) => {
         console.log(error, stdout, stderr)
         if (error) {
-          if (event) {
-            event.sender.send('logging', {
+          if (send) {
+            send('logging', {
               status: false,
               data: 'Error Encountered!',
               final: true,
               error: stderr
             })
           }
-          dataListener.emit(MESSAGE_TYPES.ERROR, `ADB Error: ${stderr}, ${command}, ${adbPath}`)
+          dataListener.asyncEmit(
+            MESSAGE_TYPES.ERROR,
+            `ADB Error: ${stderr}, ${command}, ${adbPath}`
+          )
           reject(`ADB Error: ${stderr}, ${command}, ${adbPath}`)
         } else {
-          if (event) {
-            event.sender.send('logging', {
+          if (send) {
+            send('logging', {
               status: true,
               data: 'ADB Success!',
               final: true

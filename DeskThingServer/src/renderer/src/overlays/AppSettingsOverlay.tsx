@@ -1,172 +1,179 @@
-import React, { useEffect, useState } from 'react'
-import { IconRefresh, IconSave, IconX } from '../assets/icons'
-import { App } from '@renderer/store'
+import React, { useEffect, useRef, useState } from 'react'
+import { useAppStore } from '../stores/'
+import { App, AppDataInterface } from '@shared/types'
 
 interface AppSettingsOverlayProps {
-  appIndex: number
-  setEnabled: (boolean) => void
-  data: App[]
+  onClose: () => void
+  app: App
 }
 
-export interface Settings {
-  [key: string]: {
-    value: string | boolean
-    label: string
-    options: {
-      label: string
-      value: string | boolean
-    }[]
-  }
-}
+const AppSettingsOverlay: React.FC<AppSettingsOverlayProps> = ({ onClose, app }) => {
+  const getAppData = useAppStore((appStore) => appStore.getAppData)
+  //const setAppData = useAppStore((appStore) => appStore.setAppData)
+  const [appData, setAppDataState] = useState<AppDataInterface>({})
 
-type AppSettingData = {
-  [key: string]: string | Settings | undefined
-  settings?: Settings
-}
+  const overlayRef = useRef<HTMLDivElement>(null)
 
-const AppSettingsOverlay: React.FC<AppSettingsOverlayProps> = ({ appIndex, setEnabled, data }) => {
-  const currentApp = data ? data[appIndex].name : null
-  const [appData, setAppData] = useState<AppSettingData>({})
-  const [visibleOptions, setVisibleOptions] = useState<string>()
-  const fetchSettings = async (): Promise<void> => {
-    if (currentApp) {
-      const currentData = await window.electron.getAppData(currentApp)
-      setAppData(currentData)
-      console.log('Current Data: ', currentData)
-    }
-  }
   useEffect(() => {
-    // Fetch current settings from electron store
-    fetchSettings()
-  }, [])
-  const handleUpload = async (): Promise<void> => {
-    //const updatedManifest = { ...manifest, ip, port }
-    if (currentApp) {
-      await window.electron.saveAppData(currentApp, appData)
-    }
-    setEnabled(false)
-  }
+    const fetchAppData = async (): Promise<void> => {
+      const data = await getAppData(app.name)
 
-  const saveSettings = async (settingKey: string, value: string | boolean): Promise<void> => {
-    if (currentApp && appData.settings && appData.settings[settingKey]) {
-      const setting = {
-        id: settingKey,
-        value: value
+      // If there is no data, dont add it
+      if (!data) return
+
+      console.log(data)
+      setAppDataState(data)
+    }
+    fetchAppData()
+  }, [getAppData, app.name])
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent): void => {
+      if (overlayRef.current && !overlayRef.current.contains(event.target as Node)) {
+        onClose()
       }
-      await window.electron.saveAppSetting(currentApp, setting)
-      fetchSettings()
     }
-  }
 
-  const handleValueChange = (key: string, value: string): void => {
-    setAppData((prevData) => ({
-      ...prevData,
-      [key]: value
-    }))
-  }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [onClose])
 
-  const hasValues = Object.values(appData).some((val) => typeof val === 'string')
+  if (!app.manifest)
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div ref={overlayRef} className="flex flex-col md:flex-row">
+          <div className="flex flex-col">
+            <div className="flex justify-between mb-2">
+              <h2 className="text-xl font-semibold">No manifest found for app {app.name}</h2>
+            </div>
+            <p className="italic text-gray-400 font-geistMono">Try opening it again</p>
+          </div>
+        </div>
+      </div>
+    )
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-lg p-6 w-full max-w-2xl">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold">
-            {data[appIndex]?.manifest?.label || currentApp} Settings
-          </h2>
-          <button
-            onClick={() => setEnabled(false)}
-            className="text-gray-400 border-red-600 border p-2 rounded-lg hover hover:bg-red-500 focus:outline-none"
-          >
-            <IconX />
-          </button>
-        </div>
-        <div className="overflow-y-auto font-geistMono max-h-[80vh]">
-          <div className="border-zinc-500 font-geist border p-2 my-2 rounded-xl">
-            <h1 className="text-xl p-2 w-full justify-center font-semibold flex">
-              Modify Settings
-            </h1>
-            {appData &&
-              appData.settings &&
-              Object.entries(appData.settings).map(([key, val], index) => (
-                <div
-                  key={index}
-                  className={`my-2 p-2 ${visibleOptions === key ? 'border-slate-600 border bg-slate-800 rounded-xl' : 'hover:border-slate-600 border-l border-transparent'}`}
-                >
-                  <button
-                    className={`flex flex-wrap justify-between w-full ${visibleOptions != key && 'hover:bg-slate-700'} p-3 rounded-xl`}
-                    onClick={() => setVisibleOptions(key)}
-                  >
-                    <div className="text-justify">
-                      <h1 className="font-semibold text-xl">{val.label}</h1>
-                      <h1 className="font-geistMono text-xs italic">{key}</h1>
-                    </div>
-                    <p className="p-5 rounded-xl bg-zinc-500 hover:bg-zinc-400">
-                      {typeof val.value === 'boolean' ? (val.value ? 'true' : 'false') : val.value}
-                    </p>
-                  </button>
-                  {visibleOptions == key && (
-                    <div className="border border-slate-700 rounded-xl p-5 mt-5">
-                      {val.options.map((val, index) => (
-                        <button
-                          key={index}
-                          className="w-full bg-slate-700 my-2 py-2 rounded-full hover:bg-slate-600"
-                          onClick={() => saveSettings(key, val.value)}
-                        >
-                          <p className="font-semibold">{val.label}</p>
-                          <p className="font-geistMono italic text-xs">{val.value}</p>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
+      <div
+        ref={overlayRef}
+        className="flex flex-col w-1/2 min-w-96 max-w-[900px] max-h-full overflow-y-scroll overflow-x-hidden"
+      >
+        <div className="flex flex-col gap-2">
+          <div className="flex justify-between mb-2">
+            <h2 className="text-xl font-semibold">{app.manifest.label}</h2>
+            <h2 className="text-xl font-semibold">{app.manifest.version}</h2>
           </div>
-          {hasValues && (
-            <div className="items-center border-zinc-500 border p-2 my-2 rounded-xl">
-              <h1 className="text-xl p-2 w-full justify-center font-semibold flex">
-                Modify Values
-              </h1>
-              <div className="mb-4">
-                {appData &&
-                  Object.entries(appData).map(([key, val], index) => {
-                    if (typeof val === 'string') {
-                      return (
-                        <div key={index} className="flex mt-4 flex-col">
-                          <label className="block text-sm" htmlFor={key}>
-                            {key}
-                          </label>
-                          <input
-                            type="text"
-                            className="border p-2 rounded text-black"
-                            value={val}
-                            onChange={(e) => handleValueChange(key, e.target.value)}
-                          />
-                        </div>
-                      )
-                    } else {
-                      return null
-                    }
-                  })}
+          <p className="italic text-gray-400 font-geistMono">{app.name}</p>
+          <div className="w-full border bg-black shadow-2xl border-gray-500 rounded-2xl p-5">
+            <div className="grid lg:grid-cols-2 gap-4">
+              <div>
+                <p className="font-semibold">Is Audio Source:</p>
+                <p>{app.manifest.isAudioSource ? 'Yes' : 'No'}</p>
+              </div>
+              <div>
+                <p className="font-semibold">Requires:</p>
+                <ul className="list-disc list-inside">
+                  {app.manifest.requires.map((req, index) => (
+                    <li key={index}>{req}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="font-semibold">Description:</p>
+                <p>{app.manifest.description || 'N/A'}</p>
+              </div>
+              <div>
+                <p className="font-semibold">Author:</p>
+                <p>{app.manifest.author || 'N/A'}</p>
+              </div>
+              <div>
+                <p className="font-semibold">ID:</p>
+                <p>{app.manifest.id}</p>
+              </div>
+              <div>
+                <p className="font-semibold">Is Web App:</p>
+                <p>{app.manifest.isWebApp ? 'Yes' : 'No'}</p>
+              </div>
+              <div>
+                <p className="font-semibold">Is Screen Saver:</p>
+                <p>{app.manifest.isScreenSaver ? 'Yes' : 'No'}</p>
+              </div>
+              <div>
+                <p className="font-semibold">Is Local App:</p>
+                <p>{app.manifest.isLocalApp ? 'Yes' : 'No'}</p>
+              </div>
+              <div>
+                <p className="font-semibold">Platforms:</p>
+                <ul className="list-disc list-inside">
+                  {app.manifest.platforms.map((platform, index) => (
+                    <li key={index}>{platform}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="font-semibold">Homepage:</p>
+                {app.manifest.homepage && (
+                  <a href={app.manifest.homepage} target="_blank" rel="noreferrer noopener">
+                    {app.manifest.homepage || 'N/A'}
+                  </a>
+                )}
+              </div>
+              <div>
+                <p className="font-semibold">Repository:</p>
+                {app.manifest.repository && (
+                  <a href={app.manifest.repository} target="_blank" rel="noreferrer noopener">
+                    {app.manifest.repository || 'N/A'}
+                  </a>
+                )}
               </div>
             </div>
-          )}
-
-          <div className="flex justify-end gap-2">
-            <button
-              className="border-cyan-600 group flex gap-3 border-2 p-3 rounded-xl hover:bg-cyan-600"
-              onClick={fetchSettings}
-            >
-              <p className="group-hover:block hidden">Reset</p>
-              <IconRefresh />
-            </button>
-            <button
-              className="border-green-500 group flex gap-3 border-2 p-3 rounded-xl hover:bg-green-500"
-              onClick={handleUpload}
-            >
-              <p className="group-hover:block hidden">Save</p>
-              <IconSave />
-            </button>
+          </div>
+          <div className="w-full border bg-black shadow-2xl border-gray-500 rounded-2xl p-5">
+            <h1 className="font-semibold pb-5 text-center w-full text-xl">Settings</h1>
+            <div>
+              {appData.settings &&
+                Object.values(appData.settings).map((setting, index) => (
+                  <div key={index}>
+                    <p className="font-semibold">{setting.label}</p>
+                    <p>{setting.value.toString()}</p>
+                  </div>
+                ))}
+            </div>
+          </div>
+          <div className="w-full border bg-black shadow-2xl border-gray-500 rounded-2xl p-5">
+            <h1 className="font-semibold pb-5 text-center w-full text-xl">Data</h1>
+            {appData ? (
+              <div className="grid lg:grid-cols-2 gap-4">
+                {Object.entries(appData).map(([key, value], index) => (
+                  <div key={index}>
+                    {key !== 'settings' && (
+                      <>
+                        <p className="font-semibold">{key}</p>
+                        {Array.isArray(value) ? (
+                          <ul className="list-disc list-inside">
+                            {value.map((item, i) => (
+                              <li key={i}>
+                                {typeof item === 'object' ? JSON.stringify(item) : String(item)}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : typeof value === 'object' ? (
+                          <pre>{JSON.stringify(value, null, 2)}</pre>
+                        ) : (
+                          <p>{String(value)}</p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex">
+                <p>No app data available</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

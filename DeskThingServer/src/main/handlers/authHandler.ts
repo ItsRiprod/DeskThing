@@ -1,9 +1,10 @@
 import { getAppData } from './configHandler' // Assuming you have a config handler for active apps
-import { sendMessageToApp } from './apps/' // Assuming you have an app handler for sending messages
+import { sendMessageToApp } from '../services/apps' // Assuming you have an app handler for sending messages
 import http from 'http'
 import url from 'url'
-import settingsStore, { Settings } from '../stores/settingsStore'
+import settingsStore from '../stores/settingsStore'
 import dataListener, { MESSAGE_TYPES } from '../utils/events'
+import { Settings } from '@shared/types'
 
 const successView = '<h1>Success</h1><p>You can now close this window.</p>'
 
@@ -67,7 +68,7 @@ const startServer = async (): Promise<void> => {
 
 const initializeServer = async (): Promise<void> => {
   try {
-    const settings = (await settingsStore.getSettings()).payload as Settings
+    const settings = (await settingsStore.getSettings()) as Settings
     callBackPort = settings.callbackPort
     await startServer()
   } catch (error) {
@@ -77,8 +78,8 @@ const initializeServer = async (): Promise<void> => {
 
 dataListener.on(MESSAGE_TYPES.SETTINGS, (newSettings) => {
   try {
-    if (newSettings.payload.callbackPort != callBackPort) {
-      callBackPort = newSettings.payload.callbackPort
+    if (newSettings.callbackPort != callBackPort) {
+      callBackPort = newSettings.callbackPort
       startServer()
     } else {
       dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'CALLBACK: Not starting - port is not changed')

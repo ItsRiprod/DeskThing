@@ -23,15 +23,16 @@
     "@types/auto-launch": "^5.0.5",
     "adm-zip": "^0.5.16",
     "auto-launch": "^5.0.6",
-    "axios": "^1.7.2",
     "cors": "^2.8.5",
     "cross-unzip": "^0.2.1",
     "electron-updater": "^6.1.7",
-    "express": "^4.19.2",
+    "express": "^4.21.0",
     "react-qr-code": "^2.0.15",
     "react-rewards": "^2.0.4",
+    "react-router-dom": "^6.26.2",
     "uuid": "^10.0.0",
-    "ws": "^8.17.1"
+    "ws": "^8.17.1",
+    "zustand": "^5.0.0-rc.2"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^2.0.0",

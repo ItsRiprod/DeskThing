@@ -1,8 +1,7 @@
 import { sendIpcData } from '..'
-import { AppData, App, Manifest } from '../types'
+import { AppData, App, Manifest, ButtonMapping } from '@shared/types'
 import dataListener, { MESSAGE_TYPES } from '../utils/events'
 import { readFromFile, writeToFile } from '../utils/fileHandler'
-import { ButtonMapping } from '../types'
 
 const defaultData: AppData = {
   apps: [],

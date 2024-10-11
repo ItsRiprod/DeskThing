@@ -1,27 +1,9 @@
 import { readFromFile, writeToFile } from '../utils/fileHandler'
 import dataListener, { MESSAGE_TYPES } from '../utils/events'
 import os from 'os'
-import { socketData } from '../handlers/websocketServer'
+import { Settings } from '@shared/types'
 
-const settingsVersion = '0.8.0'
-
-export interface Settings {
-  version: string
-  callbackPort: number
-  devicePort: number
-  address: string
-  autoStart: boolean
-  minimizeApp: boolean
-  localIp: string[]
-  globalADB: boolean
-  appRepos: string[]
-  clientRepos: string[]
-  [key: string]: any // For any additional settings
-}
-
-export interface SettingsData extends socketData {
-  payload: Settings
-}
+const settingsVersion = '0.9.0'
 
 class SettingsStore {
   private settings: Settings
@@ -32,14 +14,10 @@ class SettingsStore {
     this.settings = this.getDefaultSettings()
     this.loadSettings()
       .then((settings) => {
-        if (settings.payload) {
-          this.settings = settings.payload as Settings
+        if (settings) {
+          this.settings = settings as Settings
           this.settings.localIp = getLocalIpAddress()
-          dataListener.asyncEmit(MESSAGE_TYPES.SETTINGS, {
-            type: 'settings',
-            payload: this.settings,
-            app: 'server'
-          })
+          dataListener.asyncEmit(MESSAGE_TYPES.SETTINGS, this.settings)
         }
       })
       .catch((err) => {
@@ -53,9 +31,9 @@ class SettingsStore {
     return SettingsStore.instance
   }
 
-  public async getSettings(): Promise<SettingsData> {
+  public async getSettings(): Promise<Settings> {
     if (this.settings) {
-      return { type: 'settings', app: 'server', payload: this.settings }
+      return this.settings
     } else {
       console.log('SETTINGS: Settings not initialized. Loading settings...')
       return await this.loadSettings()
@@ -67,15 +45,11 @@ class SettingsStore {
       this.updateAutoLaunch(value)
     }
     this.settings[key] = value
-    dataListener.asyncEmit(MESSAGE_TYPES.SETTINGS, {
-      type: 'settings',
-      payload: this.settings,
-      app: 'server'
-    })
+    dataListener.asyncEmit(MESSAGE_TYPES.SETTINGS, this.settings)
     this.saveSettings()
   }
 
-  public async loadSettings(): Promise<SettingsData> {
+  public async loadSettings(): Promise<Settings> {
     try {
       const data = await readFromFile<Settings>(this.settingsFilePath)
       dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'SETTINGS: Loaded settings!')
@@ -85,18 +59,18 @@ class SettingsStore {
         const defaultSettings = this.getDefaultSettings()
         await writeToFile(defaultSettings, this.settingsFilePath)
         console.log('SETTINGS: Returning default settings')
-        return { type: 'settings', app: 'server', payload: defaultSettings }
+        return defaultSettings
       }
       if (data.autoStart !== undefined) {
         await this.updateAutoLaunch(data.autoStart)
       }
 
-      return { type: 'settings', app: 'server', payload: data }
+      return data
     } catch (err) {
       console.error('Error loading settings:', err)
       const defaultSettings = this.getDefaultSettings()
       defaultSettings.localIp = getLocalIpAddress()
-      return { type: 'settings', app: 'server', payload: defaultSettings }
+      return defaultSettings
     }
   }
 
@@ -114,16 +88,12 @@ class SettingsStore {
     }
   }
 
-  public async saveSettings(settings: socketData | undefined = undefined): Promise<void> {
+  public async saveSettings(settings?: Settings): Promise<void> {
     try {
       if (settings) {
-        this.settings = settings.payload as Settings
+        this.settings = settings as Settings
         await writeToFile(this.settings, this.settingsFilePath)
-        dataListener.asyncEmit(MESSAGE_TYPES.SETTINGS, {
-          type: 'settings',
-          payload: this.settings,
-          app: 'server'
-        })
+        dataListener.asyncEmit(MESSAGE_TYPES.SETTINGS, this.settings)
         dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'SETTINGS: Updated settings!')
       } else {
         dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'SETTINGS: Invalid setting format!')
@@ -142,6 +112,7 @@ class SettingsStore {
       autoStart: false,
       minimizeApp: true,
       globalADB: false,
+      autoDetectADB: true,
       localIp: getLocalIpAddress(),
       appRepos: [
         'https://github.com/ItsRiprod/deskthing-apps',
