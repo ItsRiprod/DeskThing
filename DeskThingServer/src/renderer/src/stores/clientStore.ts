@@ -20,6 +20,8 @@ interface ClientStoreState {
   setClients: (clients: Client[]) => void
   requestADBDevices: () => Promise<void>
   requestConnections: () => Promise<void>
+  loadClientUrl: (url: string) => Promise<void>
+  loadClientZip: (zip: string) => Promise<void>
 }
 
 // Create Zustand store
@@ -56,6 +58,14 @@ const useClientStore = create<ClientStoreState>((set) => ({
     } catch (error) {
       console.error('Error fetching connections:', error)
     }
+  },
+
+  loadClientUrl: async (url: string): Promise<void> => {
+    await window.electron.handleClientURL(url)
+  },
+
+  loadClientZip: async (zip: string): Promise<void> => {
+    await window.electron.handleClientZip(zip)
   }
 }))
 

@@ -75,7 +75,17 @@ export const appHandler: Record<
   },
   url: async (data, event) => {
     event.sender.send('logging', { status: true, data: 'Handling app from URL...', final: false })
-    await appStore.addURL(data.payload, event) // Extract to user data folder
+
+    const reply = async (status: boolean, data, final: boolean, error: string): Promise<void> => {
+      event.sender.send('logging', {
+        status: status,
+        data: data,
+        final: final,
+        error: error
+      })
+    }
+
+    await appStore.addURL(data.payload, reply) // Extract to user data folder
   },
 
   'user-data-response': async (data) => {

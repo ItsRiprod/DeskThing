@@ -11,6 +11,7 @@ import {
 } from '@renderer/assets/icons'
 import DeviceComponent from '@renderer/components/Device'
 import { deviceMessages } from '@renderer/assets/refreshMessages'
+import MainElement from '@renderer/components/MainElement'
 
 const ClientDevices: React.FC = () => {
   const settings = useSettingsStore((settings) => settings.settings)
@@ -116,20 +117,22 @@ const ClientDevices: React.FC = () => {
           </Button>
         </div>
       </Sidebar>
-      <div className="flex-1 p-6 w-full">
-        <h1 className="text-2xl font-bold mb-4">Client Devices</h1>
-        {devices.length > 0 ? (
-          devices.map((device) => (
-            <div key={device} className="w-full">
-              <DeviceComponent device={device} />
+      <MainElement>
+        <h1 className="text-2xl font-bold mb-4">Connected Devices</h1>
+        <div className="flex-grow">
+          {devices.length > 0 ? (
+            devices.map((device) => (
+              <div key={device} className="w-full">
+                <DeviceComponent device={device} />
+              </div>
+            ))
+          ) : (
+            <div className="flex flex-col justify-center items-center w-full h-full">
+              <p className="text-white">{deviceMessages[currentMessageIndex].message}</p>
             </div>
-          ))
-        ) : (
-          <div className="flex flex-col justify-center items-center w-full h-full">
-            <p className="text-white">{deviceMessages[currentMessageIndex].message}</p>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      </MainElement>
     </div>
   )
 }

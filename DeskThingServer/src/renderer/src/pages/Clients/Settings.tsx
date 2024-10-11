@@ -2,6 +2,7 @@ import React from 'react'
 import Sidebar from '@renderer/components/SideBar'
 import Button from '@renderer/components/Button'
 import { IconPlus } from '@renderer/assets/icons'
+import MainElement from '@renderer/components/MainElement'
 
 const ClientSettings: React.FC = () => {
   return (
@@ -31,7 +32,7 @@ const ClientSettings: React.FC = () => {
           </Button>
         </div>
       </Sidebar>
-      <div className="flex flex-col w-full">
+      <MainElement>
         <div className="w-full h-full flex">
           <div className="border-r-white border-r-2 h-full w-1/2">
             <p>BUTTONS</p>
@@ -44,11 +45,8 @@ const ClientSettings: React.FC = () => {
           <div className="border-r-white border-r-2 h-full w-1/2">
             <p>ACTION</p>
           </div>
-          <div className="w-full h-full">
-            <p>ACTIONS</p>
-          </div>
         </div>
-      </div>
+      </MainElement>
     </div>
   )
 }

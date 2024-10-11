@@ -246,9 +246,9 @@ export class AppHandler {
     return await start(name)
   }
 
-  async addURL(url: string, event): Promise<ReturnData | void> {
+  async addURL(url: string, reply): Promise<ReturnData | void> {
     const { handleZipFromUrl } = await import('./appInstaller')
-    const returnData = await handleZipFromUrl(url, event)
+    const returnData = await handleZipFromUrl(url, reply)
     if (returnData) {
       const App: AppInstance = {
         name: returnData.appId,

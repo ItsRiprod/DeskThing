@@ -5,6 +5,7 @@ import Button from '@renderer/components/Button'
 import { IconQR, IconReload } from '@renderer/assets/icons'
 import QROverlay from '@renderer/overlays/QROverlay'
 import ClientComponent from '@renderer/components/Client'
+import MainElement from '@renderer/components/MainElement'
 
 const ClientStatus: React.FC = () => {
   const settings = useSettingsStore((settings) => settings.settings)
@@ -41,8 +42,8 @@ const ClientStatus: React.FC = () => {
           </Button>
         </div>
       </Sidebar>
-      <div className="flex-1 p-6 w-full">
-        <h1 className="text-2xl font-bold mb-4">Client Connections</h1>
+      <MainElement>
+        <h1 className="text-2xl font-bold mb-4">Connected Clients</h1>
         {clients.length > 0 ? (
           clients.map((client) => (
             <div key={client.connectionId}>
@@ -50,11 +51,11 @@ const ClientStatus: React.FC = () => {
             </div>
           ))
         ) : (
-          <div className="font-geistMono">
+          <div className="font-geistMono w-full h-full items-center flex justify-center">
             <p>No clients connected</p>
           </div>
         )}
-      </div>
+      </MainElement>
     </div>
   )
 }

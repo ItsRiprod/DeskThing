@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
 import usePageStore from '../stores/pageStore'
-import { useNavigate } from 'react-router-dom'
 import {
   IconCarThing,
   IconDownload,
@@ -12,11 +11,8 @@ import {
 const Nav: React.FC = () => {
   const currentPage = usePageStore((pageStore) => pageStore.currentPage)
   const setPage = usePageStore((pageStore) => pageStore.setPage)
-  const navigate = useNavigate()
-
   const handleNavigation = (path: string): void => {
     setPage(path)
-    navigate(path)
   }
 
   return (
@@ -24,7 +20,7 @@ const Nav: React.FC = () => {
       <ul className="flex justify-around">
         <li className="w-full h-full group">
           <NavButton
-            location="dashboard"
+            location="Dashboard"
             currentPage={currentPage}
             handleNavigation={handleNavigation}
           >
@@ -34,7 +30,7 @@ const Nav: React.FC = () => {
         </li>
         <li className="w-full h-full group">
           <NavButton
-            location="clients"
+            location="Clients"
             currentPage={currentPage}
             handleNavigation={handleNavigation}
             subDirectories={['Devices', 'Connections', 'Settings']}
@@ -45,7 +41,7 @@ const Nav: React.FC = () => {
         </li>
         <li className="w-full h-full group">
           <NavButton
-            location="apps/list"
+            location="Apps/List"
             currentPage={currentPage}
             handleNavigation={handleNavigation}
           >
@@ -55,7 +51,7 @@ const Nav: React.FC = () => {
         </li>
         <li className="w-full h-full group">
           <NavButton
-            location="downloads"
+            location="Downloads"
             currentPage={currentPage}
             handleNavigation={handleNavigation}
             subDirectories={['App', 'Client']}
@@ -66,7 +62,7 @@ const Nav: React.FC = () => {
         </li>
         <li className="w-full h-full group">
           <NavButton
-            location="dev"
+            location="Developer"
             currentPage={currentPage}
             handleNavigation={handleNavigation}
             subDirectories={['App', 'ADB', 'Logs']}

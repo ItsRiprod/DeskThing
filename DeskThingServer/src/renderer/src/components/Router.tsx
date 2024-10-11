@@ -11,10 +11,14 @@ import ClientSettings from '@renderer/pages/Clients/Settings'
 import ClientStatus from '@renderer/pages/Clients/Status'
 import ClientDevices from '@renderer/pages/Clients/Devices'
 import AppsList from '@renderer/pages/Apps/AppsList'
+import PageDataListener from '@renderer/listeners/pageDataListener'
+import AppDownloads from '@renderer/pages/Downloads/AppDownloads'
+import ClientDownloads from '@renderer/pages/Downloads/ClientDownloads'
 
 const AppRouter = (): JSX.Element => {
   return (
     <Router>
+      <PageDataListener />
       <div className="flex flex-col h-full">
         <TopBar />
         <Routes>
@@ -30,8 +34,8 @@ const AppRouter = (): JSX.Element => {
             <Route path="list" element={<AppsList />} />
           </Route>
           <Route path="/downloads" element={<Downloads />}>
-            <Route path="app" element={<Loading />} />
-            <Route path="client" element={<Loading />} />
+            <Route path="app" element={<AppDownloads />} />
+            <Route path="client" element={<ClientDownloads />} />
           </Route>
           <Route path="/dev" element={<Dev />}>
             <Route path="logs" element={<Loading />} />

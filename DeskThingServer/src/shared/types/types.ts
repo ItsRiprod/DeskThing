@@ -89,6 +89,11 @@ export interface Client {
   device_type?: { id: number; name: string }
 }
 
+export interface RepoReleases {
+  repoUrl: string
+  releases: GithubRelease[]
+}
+
 export interface SocketData {
   app: string
   type: string

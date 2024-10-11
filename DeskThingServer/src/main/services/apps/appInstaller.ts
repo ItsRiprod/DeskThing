@@ -26,7 +26,7 @@ import { handleDataFromApp } from './appCommunication'
  * - {boolean} success - Whether the extraction was successful.
  * - {string} message - A message about the extraction process.
  */
-export async function handleZip(zipFilePath: string, event?): Promise<ReturnData> {
+export async function handleZip(zipFilePath: string, reply?): Promise<ReturnData> {
   const { getManifest } = await import('./appUtils')
   try {
     console.log(`[handleZip] Extracting ${zipFilePath}...`)
@@ -47,7 +47,7 @@ export async function handleZip(zipFilePath: string, event?): Promise<ReturnData
     }
     mkdirSync(tempDir, { recursive: true })
 
-    event && event.reply('logging', { status: true, data: 'Extracting App', final: false })
+    reply && reply('logging', { status: true, data: 'Extracting App', final: false })
 
     // Extract the .zip file to a temporary location to get the manifest.json
     const AdmZip = await import('adm-zip')
@@ -70,12 +70,12 @@ export async function handleZip(zipFilePath: string, event?): Promise<ReturnData
         resolve()
       } catch (error) {
         dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `SERVER: Error extracting ${zipFilePath}`)
-        event && event.reply('logging', { status: false, data: 'Extraction failed!', final: true })
+        reply && reply('logging', { status: false, data: 'Extraction failed!', final: true })
         reject(error)
       }
     })
 
-    event && event.reply('logging', { status: true, data: 'Getting Manifest', final: false })
+    reply && reply('logging', { status: true, data: 'Getting Manifest', final: false })
 
     const manifestData = await getManifest(tempDir)
     let returnData
@@ -105,8 +105,7 @@ export async function handleZip(zipFilePath: string, event?): Promise<ReturnData
       }
     }
 
-    event &&
-      event.reply('logging', { status: true, data: 'Disabling and purging app', final: false })
+    reply && reply('logging', { status: true, data: 'Disabling and purging app', final: false })
 
     // Create the folder where the app will be stored in
     const appDirectory = join(appPath, returnData.appId)
@@ -125,8 +124,7 @@ export async function handleZip(zipFilePath: string, event?): Promise<ReturnData
     // Move the extracted files from tempDir to appDirectory
     await promises.rename(tempDir, appDirectory)
 
-    event &&
-      event.reply('logging', { status: true, data: 'App files moved successfully', final: false })
+    reply && reply('logging', { status: true, data: 'App files moved successfully', final: false })
 
     dataListener.asyncEmit(
       MESSAGE_TYPES.LOGGING,
@@ -146,7 +144,7 @@ export async function handleZip(zipFilePath: string, event?): Promise<ReturnData
  * @param event
  * @returns
  */
-export async function handleZipFromUrl(zipUrlPath: string, event): Promise<ReturnData | void> {
+export async function handleZipFromUrl(zipUrlPath: string, reply): Promise<ReturnData | void> {
   const tempZipPath = getAppFilePath('downloads', 'temp.zip')
   let returnData: ReturnData | undefined
   try {
@@ -156,7 +154,7 @@ export async function handleZipFromUrl(zipUrlPath: string, event): Promise<Retur
       mkdirSync(getAppFilePath('downloads'), { recursive: true })
     }
 
-    event.reply('logging', { status: true, data: 'Downloading...', final: false })
+    reply('logging', { status: true, data: 'Downloading...', final: false })
 
     const response = await fetch(zipUrlPath)
 
@@ -164,7 +162,7 @@ export async function handleZipFromUrl(zipUrlPath: string, event): Promise<Retur
       console.error(`[handleZipFromFile] Failed to download zip file: ${response.status}`)
       const errorMessage = `Failed to download zip file: ${response.status}`
       dataListener.asyncEmit(MESSAGE_TYPES.ERROR, errorMessage)
-      event.reply('logging', {
+      reply('logging', {
         status: false,
         data: 'Encountered an error',
         final: true,
@@ -173,7 +171,7 @@ export async function handleZipFromUrl(zipUrlPath: string, event): Promise<Retur
       return
     } else {
       console.log(`[handleZipFromUrl] Downloaded ${zipUrlPath}`)
-      event.reply('logging', { status: true, data: 'Downloaded!', final: false })
+      reply('logging', { status: true, data: 'Downloaded!', final: false })
     }
 
     const arrayBuffer = await response.arrayBuffer()
@@ -182,18 +180,18 @@ export async function handleZipFromUrl(zipUrlPath: string, event): Promise<Retur
     console.log(`[handleZipFromUrl] Writing to ${tempZipPath}...`)
     await promises.writeFile(tempZipPath, buffer)
 
-    event.reply('logging', { status: true, data: 'Extracting zip file...', final: false })
+    reply('logging', { status: true, data: 'Extracting zip file...', final: false })
 
-    returnData = await handleZip(tempZipPath, event)
+    returnData = await handleZip(tempZipPath, reply)
     console.log(`Successfully processed and deleted ${tempZipPath}`)
-    event.reply('zip-name', { status: true, data: returnData, final: true })
+    reply('zip-name', { status: true, data: returnData, final: true })
     return returnData
   } catch (error) {
     dataListener.asyncEmit(
       MESSAGE_TYPES.ERROR,
       `[handleZIPfromURL] Error handling zip file: ${error}`
     )
-    throw new Error('[handleZIPfromURL] Error handling zip file')
+    throw new Error('[handleZIPfromURL] Error handling zip file' + error)
   } finally {
     // Clean up the temporary zip file and extracted directory
     try {

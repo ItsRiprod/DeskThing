@@ -7,6 +7,8 @@ interface AppStoreState {
 
   requestApps: () => void
   removeAppFromList: (appName: string) => void
+  loadAppUrl: (appName: string) => void
+  loadAppZip: (appName: string) => void
   setOrder: (order: string[]) => void
   addAppToList: (appName: string) => void
   disableApp: (appName: string) => void
@@ -109,6 +111,14 @@ const useAppStore = create<AppStoreState>((set) => ({
 
   setAppData: (appName: string, data: AppDataInterface): void => {
     window.electron.setAppData(appName, data)
+  },
+
+  loadAppUrl: (appName: string): void => {
+    window.electron.handleAppUrl(appName)
+  },
+
+  loadAppZip: (appName: string): void => {
+    window.electron.handleAppZip(appName)
   }
 }))
 
