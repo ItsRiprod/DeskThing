@@ -1,9 +1,0 @@
-.img_color {
-    background-color: var(--color-albumColor);
-
-}
-
-.text_color {
-    background: linear-gradient(to right, var(--color-albumColor) 15%, var(--bg-tinted-highlight) 130%);
-    color: var(--color-albumText);
-}

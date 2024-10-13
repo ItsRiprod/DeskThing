@@ -1,9 +1,0 @@
-{
-    "modules": [
-        "Spotify",
-        "Discord",
-        "Trello",
-        "Weather",
-        "Utility"
-    ]
-}
