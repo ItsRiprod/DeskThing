@@ -226,14 +226,19 @@ npm create deskthing@latest
 ```
 And follow the prompts to set up the app environment. From there, you can reference:
 
+*The template itself*
 https://github.com/ItsRiprod/deskthing-template
 
+*The app-side connector*
 https://github.com/ItsRiprod/deskthing-app-client
 
+*The server-side connector*
 https://github.com/ItsRiprod/deskthing-app-server
 
+*The client that goes on the Car Thing*
 https://github.com/ItsRiprod/deskthing-client
 
-And any of the apps included under /Apps/ in this github repo
+*App References*
+https://github.com/ItsRiprod/deskthing-apps
 
 Good luck!
