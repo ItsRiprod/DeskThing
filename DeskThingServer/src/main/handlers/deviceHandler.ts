@@ -4,22 +4,7 @@ import { join } from 'path'
 import * as fs from 'fs'
 import { app, net } from 'electron'
 import { handleAdbCommands } from './adbHandler'
-import { ReplyData } from '..'
-
-export interface ServerManifest {
-  name: string
-  id: string
-  short_name: string
-  description: string
-  builtFor: string
-  reactive: boolean
-  author: string
-  version: string
-  port: number
-  ip: string
-  default_view: string
-  miniplayer: string
-}
+import { Client, ReplyData } from '@shared/types'
 
 export const HandleDeviceData = async (data: any): Promise<void> => {
   try {
@@ -125,7 +110,7 @@ export const HandleWebappZipFromUrl = async (
 
         // Extract the downloaded zip file
         try {
-          const zip = new AdmZip(tempZipPath)
+          const zip = new AdmZip.default(tempZipPath)
           zip.extractAllTo(extractDir, true)
 
           // Optionally remove the temporary zip file
@@ -197,23 +182,23 @@ export const HandleWebappZipFromUrl = async (
 }
 
 export const handleClientManifestUpdate = async (
-  webContents,
-  partialManifest: Partial<ServerManifest>
+  send: (channel: string, data: ReplyData) => void,
+  partialManifest: Partial<Client>
 ): Promise<void> => {
   const userDataPath = app.getPath('userData')
   const extractDir = join(userDataPath, 'webapp')
   const manifestPath = join(extractDir, 'manifest.js')
 
-  webContents.send('logging', { status: true, data: 'Updating manifest...', final: false })
+  send('logging', { status: true, data: 'Updating manifest...', final: false })
   try {
     // Ensure the directory exists
     await fs.promises.mkdir(extractDir, { recursive: true })
 
     // Read the existing manifest
-    const existingManifest = await getClientManifest(webContents, true)
+    const existingManifest = await getClientManifest(send, true)
 
     // Merge the existing manifest with the partial updates
-    const updatedManifest: Partial<ServerManifest> = {
+    const updatedManifest: Partial<Client> = {
       ...existingManifest,
       ...partialManifest
     }
@@ -224,7 +209,7 @@ export const handleClientManifestUpdate = async (
     // Write the updated manifest to the file
     await fs.promises.writeFile(manifestPath, manifestContent, 'utf8')
     console.log('Manifest file updated successfully')
-    webContents.send('logging', { status: true, data: 'Manifest Updated!', final: true })
+    send('logging', { status: true, data: 'Manifest Updated!', final: true })
     dataListener.asyncEmit(
       MESSAGE_TYPES.LOGGING,
       'DEVICE HANDLER: Manifest file updated successfully'
@@ -239,16 +224,16 @@ export const handleClientManifestUpdate = async (
 }
 
 export const getClientManifest = async (
-  webContents,
+  send: (channel: string, data: ReplyData) => void,
   utility: boolean = false
-): Promise<ServerManifest | null> => {
+): Promise<Client | null> => {
   console.log('Getting manifest...')
   const userDataPath = app.getPath('userData')
   const manifestPath = join(userDataPath, 'webapp', 'manifest.js')
   console.log('manifestPath: ', manifestPath)
   if (!fs.existsSync(manifestPath)) {
     console.log('Manifest file not found')
-    webContents.send('logging', {
+    send('logging', {
       status: false,
       data: 'Manifest file not found',
       final: true
@@ -259,7 +244,7 @@ export const getClientManifest = async (
     )
     return null
   }
-  webContents.send('logging', {
+  send('logging', {
     status: true,
     data: 'Manifest file read successfully',
     final: false
@@ -272,8 +257,8 @@ export const getClientManifest = async (
     const jsonEnd = data.lastIndexOf('}')
     const jsonData = data.substring(jsonStart, jsonEnd + 1)
 
-    const manifest: ServerManifest = JSON.parse(jsonData)
-    webContents.send('logging', {
+    const manifest: Client = JSON.parse(jsonData)
+    send('logging', {
       status: true,
       data: 'Manifest loaded!',
       final: !utility
@@ -287,7 +272,7 @@ export const getClientManifest = async (
       MESSAGE_TYPES.ERROR,
       'DEVICE HANDLER: Error reading or parsing manifest file: ' + error
     )
-    webContents.send('logging', {
+    send('logging', {
       status: false,
       data: 'Unable to read Server Manifest file',
       final: true,

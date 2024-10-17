@@ -11,9 +11,10 @@ import ClientSettings from '@renderer/pages/Clients/Settings'
 import ClientStatus from '@renderer/pages/Clients/Status'
 import ClientDevices from '@renderer/pages/Clients/Devices'
 import AppsList from '@renderer/pages/Apps/AppsList'
-import PageDataListener from '@renderer/listeners/pageDataListener'
+import PageDataListener from '@renderer/listeners/PageDataListener'
 import AppDownloads from '@renderer/pages/Downloads/AppDownloads'
 import ClientDownloads from '@renderer/pages/Downloads/ClientDownloads'
+import Logs from '@renderer/pages/Dev/Logs'
 
 const AppRouter = (): JSX.Element => {
   return (
@@ -37,8 +38,8 @@ const AppRouter = (): JSX.Element => {
             <Route path="app" element={<AppDownloads />} />
             <Route path="client" element={<ClientDownloads />} />
           </Route>
-          <Route path="/dev" element={<Dev />}>
-            <Route path="logs" element={<Loading />} />
+          <Route path="/developer" element={<Dev />}>
+            <Route path="logs" element={<Logs />} />
             <Route path="app" element={<Loading />} />
             <Route path="adb" element={<Loading />} />
           </Route>

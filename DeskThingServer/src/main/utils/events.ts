@@ -1,6 +1,6 @@
 import EventEmitter from 'events'
 import Logger from './logger'
-import { SocketData } from '@shared/types'
+import { ReplyData, ReplyFn, SocketData } from '@shared/types'
 
 /**
  * The MESSAGE_TYPES object defines a set of constants that represent the different types of messages that can be sent or received in the application.
@@ -64,5 +64,18 @@ class Events extends EventEmitter {
 }
 
 const dataListener = new Events()
+
+/**
+ * Handles and standardizes the way to reply to ipc handlers
+ * @param replyFn
+ * @returns
+ */
+export const ResponseLogger = (replyFn: ReplyFn): ReplyFn => {
+  return async (channel: string, reply: ReplyData): Promise<void> => {
+    dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `[CHANNEL][${channel}]: ${JSON.stringify(reply)}`)
+
+    replyFn(channel, reply)
+  }
+}
 
 export default dataListener

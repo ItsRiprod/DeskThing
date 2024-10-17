@@ -5,6 +5,9 @@ const ClientDataListener = (): null => {
   const setClients = useClientStore((state) => state.setClients)
   const setConnections = useClientStore((state) => state.setConnections)
   const setAdbDevices = useClientStore((state) => state.setADBDevices)
+  const requestADBDevices = useClientStore((state) => state.requestADBDevices)
+  const requestConnections = useClientStore((state) => state.requestConnections)
+  const requestClientManifest = useClientStore((state) => state.requestClientManifest)
 
   useEffect(() => {
     window.electron.ipcRenderer.on('clients', (_event, data) => {
@@ -21,9 +24,9 @@ const ClientDataListener = (): null => {
     })
 
     const getInitialState = async (): Promise<void> => {
-      const initialState = await window.electron.getConnections()
-      setClients(initialState)
-      console.log('Initial state:', initialState)
+      requestConnections()
+      requestADBDevices()
+      requestClientManifest()
     }
 
     getInitialState()

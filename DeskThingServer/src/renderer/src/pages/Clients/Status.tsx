@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import Sidebar from '@renderer/components/SideBar'
+import Sidebar from '@renderer/components/Sidebar'
 import { useClientStore, useSettingsStore } from '@renderer/stores'
 import Button from '@renderer/components/Button'
 import { IconQR, IconReload } from '@renderer/assets/icons'
@@ -43,7 +43,7 @@ const ClientStatus: React.FC = () => {
         </div>
       </Sidebar>
       <MainElement>
-        <h1 className="text-2xl font-bold mb-4">Connected Clients</h1>
+        <h1 className="text-2xl font-bold m-4">Connected Clients</h1>
         {clients.length > 0 ? (
           clients.map((client) => (
             <div key={client.connectionId}>

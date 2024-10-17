@@ -46,7 +46,7 @@ const Dashboard: React.FC = () => {
   ])
 
   return (
-    <div className="grid grid-cols-4 gap-4 p-4">
+    <div className="grid grid-cols-4 gap-4 p-4 w-full h-full">
       {items.map((item, index) => (
         <DashboardItem key={index} {...item} />
       ))}

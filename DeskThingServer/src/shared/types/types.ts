@@ -74,6 +74,7 @@ export type GithubAsset = {
 }
 
 export interface Client {
+  id: string
   ip: string
   port?: number
   hostname?: string
@@ -87,6 +88,8 @@ export interface Client {
   client_name?: string
   description?: string
   device_type?: { id: number; name: string }
+  default_view?: string
+  miniplayer?: string
 }
 
 export interface RepoReleases {

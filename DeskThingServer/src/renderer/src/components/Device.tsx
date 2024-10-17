@@ -13,7 +13,6 @@ const DeviceComponent: React.FC<DeviceComponentProps> = ({ device }) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [enabled, setEnabled] = useState(false)
-  const [tooltip, setTooltip] = useState<string>('')
 
   const handleAdbCommand = async (command: string): Promise<string | undefined> => {
     try {

@@ -1,12 +1,19 @@
-import React from 'react'
-import Sidebar from '@renderer/components/SideBar'
+import React, { useState } from 'react'
+import Sidebar from '@renderer/components/Sidebar'
 import Button from '@renderer/components/Button'
 import { IconPlus } from '@renderer/assets/icons'
 import MainElement from '@renderer/components/MainElement'
 
 const ClientSettings: React.FC = () => {
+  const [disabled, setDisabled] = useState(true)
+
   return (
     <div className="flex h-full w-full">
+      {disabled && (
+        <div className="w-full h-full absolute bg-black/75 flex items-center justify-center">
+          <p className="font-semibold text-4xl">Will be released later</p>
+        </div>
+      )}
       <Sidebar>
         <div className="w-full justify-between h-full flex-col flex">
           <div className="w-full gap-2 flex flex-col">
@@ -34,16 +41,13 @@ const ClientSettings: React.FC = () => {
       </Sidebar>
       <MainElement>
         <div className="w-full h-full flex">
-          <div className="border-r-white border-r-2 h-full w-1/2">
-            <p>BUTTONS</p>
-          </div>
-          <div className="w-full h-full">
-            <p>KEYS</p>
-          </div>
-        </div>
-        <div className="h-full bg-zinc-950 border-t-2 w-full">
-          <div className="border-r-white border-r-2 h-full w-1/2">
-            <p>ACTION</p>
+          <div className="w-full h-full grid grid-rows-3 grid-cols-3">
+            <div className="p-4 w-full h-full col-span-1 row-span-2">
+              <div className="border-r w-full h-full"></div>
+            </div>
+            <div className="w-full h-full col-span-2 row-span-2"></div>
+            <div className="border-t w-full h-full col-span-1"></div>
+            <div className="border-t w-full h-full col-span-2"></div>
           </div>
         </div>
       </MainElement>

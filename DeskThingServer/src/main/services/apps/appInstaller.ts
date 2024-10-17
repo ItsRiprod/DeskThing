@@ -7,7 +7,7 @@ import {
   Response,
   Manifest,
   DeskThing,
-  ReturnData
+  AppReturnData
 } from '@shared/types'
 import { getAppFilePath, getManifest } from './appUtils'
 import { mkdirSync, existsSync, rmSync, promises } from 'node:fs'
@@ -26,7 +26,7 @@ import { handleDataFromApp } from './appCommunication'
  * - {boolean} success - Whether the extraction was successful.
  * - {string} message - A message about the extraction process.
  */
-export async function handleZip(zipFilePath: string, reply?): Promise<ReturnData> {
+export async function handleZip(zipFilePath: string, reply?): Promise<AppReturnData> {
   const { getManifest } = await import('./appUtils')
   try {
     console.log(`[handleZip] Extracting ${zipFilePath}...`)
@@ -144,9 +144,9 @@ export async function handleZip(zipFilePath: string, reply?): Promise<ReturnData
  * @param event
  * @returns
  */
-export async function handleZipFromUrl(zipUrlPath: string, reply): Promise<ReturnData | void> {
+export async function handleZipFromUrl(zipUrlPath: string, reply): Promise<AppReturnData | void> {
   const tempZipPath = getAppFilePath('downloads', 'temp.zip')
-  let returnData: ReturnData | undefined
+  let returnData: AppReturnData | undefined
   try {
     console.log(`[handleZipFromUrl] Downloading ${zipUrlPath}...`)
     if (!existsSync(getAppFilePath('downloads'))) {

@@ -15,7 +15,9 @@ const Papertrail: React.FC = () => {
     ))
   }
 
-  return <div className="w-full bg-zinc-900 p-1 font-geistMono">{renderPapertrail()}</div>
+  return (
+    <div className="w-full bg-zinc-900 p-1 font-geistMono text-gray-500">{renderPapertrail()}</div>
+  )
 }
 
 export default Papertrail

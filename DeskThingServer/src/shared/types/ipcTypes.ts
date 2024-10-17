@@ -1,3 +1,5 @@
+import { AppReturnData } from './app'
+
 export const IPC_HANDLERS = {
   UTILITY: 'utility',
   CLIENT: 'client',
@@ -17,6 +19,7 @@ export type UTILITY_TYPES =
   | 'shutdown'
   | 'open-log-folder'
   | 'refresh-firewall'
+  | 'zip'
 
 export type APP_TYPES =
   | 'app'
@@ -62,3 +65,21 @@ export interface UtilityIPCData {
 }
 
 export type IPCData = AppIPCData | ClientIPCData | UtilityIPCData
+
+export interface LoggingData {
+  status: boolean
+  data: AppReturnData | string // add as needed
+  final: boolean
+  error?: string
+}
+
+export interface ReplyData {
+  status: boolean
+  data: any
+  final: boolean
+  error?: string
+}
+
+export interface ReplyFn {
+  (channel: string, data: ReplyData): Promise<void> | void
+}

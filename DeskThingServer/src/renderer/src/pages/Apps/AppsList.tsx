@@ -1,5 +1,5 @@
 import React from 'react'
-import Sidebar from '@renderer/components/SideBar'
+import Sidebar from '@renderer/components/Sidebar'
 import Button from '@renderer/components/Button'
 import { IconDownload } from '@renderer/assets/icons'
 import { useAppStore, usePageStore } from '@renderer/stores'

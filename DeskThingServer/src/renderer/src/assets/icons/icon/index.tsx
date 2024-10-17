@@ -1,26 +1,26 @@
-import { SVGProps } from "react";
+import { SVGProps } from 'react'
 
 export interface IconProps extends SVGProps<SVGSVGElement> {
-  iconSize?: number;
-  strokeWidth?: number;
-  stroke?: string;
-  color?: string;
-  title?: string;
-  titleId?: string;
-  desc?: string;
-  descId?: string;
-  className?: string;
-  fill?: string;
-  children?: React.ReactNode;
+  iconSize?: number
+  strokeWidth?: number
+  stroke?: string
+  color?: string
+  title?: string
+  titleId?: string
+  desc?: string
+  descId?: string
+  className?: string
+  fill?: string
+  children?: React.ReactNode
 }
 
 export const Icon = ({
   iconSize = 24,
-  color = "currentColor",
+  color = 'currentColor',
   title,
   titleId,
   desc,
-  stroke="currentColor",
+  stroke = 'currentColor',
   fill = 'none',
   descId,
   strokeWidth = 1,
@@ -47,5 +47,5 @@ export const Icon = ({
       {desc && <desc id={descId}>{desc}</desc>}
       {children}
     </svg>
-  );
-};
+  )
+}

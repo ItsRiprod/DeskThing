@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import Sidebar from '@renderer/components/SideBar'
+import Sidebar from '@renderer/components/Sidebar'
 import { useClientStore, useSettingsStore } from '@renderer/stores'
 import Button from '@renderer/components/Button'
 import {
@@ -12,6 +12,7 @@ import {
 import DeviceComponent from '@renderer/components/Device'
 import { deviceMessages } from '@renderer/assets/refreshMessages'
 import MainElement from '@renderer/components/MainElement'
+import ClientSettingsOverlay from '@renderer/overlays/ClientSettingsOverlay'
 
 const ClientDevices: React.FC = () => {
   const settings = useSettingsStore((settings) => settings.settings)
@@ -19,6 +20,7 @@ const ClientDevices: React.FC = () => {
   const refreshClients = useClientStore((clients) => clients.requestADBDevices)
   const saveSettings = useSettingsStore((state) => state.saveSettings)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [showClientSettings, setShowClientSettings] = useState(false)
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0)
   const [refreshCount, setRefreshCount] = useState(0)
 
@@ -56,15 +58,19 @@ const ClientDevices: React.FC = () => {
     if (!isRefreshing) {
       setIsRefreshing(true)
       refreshClients()
-      setRefreshCount((prevCount) => prevCount + 1)
-      setTimeout(() => {
-        setIsRefreshing(false)
-      }, 1200)
+      setTimeout(
+        () => {
+          setIsRefreshing(false)
+          setRefreshCount((prevCount) => prevCount + 1)
+        },
+        Math.random() * 1200 + 300
+      )
     }
   }
 
   return (
     <div className="flex h-full w-full">
+      {showClientSettings && <ClientSettingsOverlay onClose={() => setShowClientSettings(false)} />}
       <Sidebar className="flex justify-between flex-col h-full md:items-stretch items-center">
         <div></div>
         <div className="flex flex-col gap-2">
@@ -78,7 +84,10 @@ const ClientDevices: React.FC = () => {
               {isRefreshing ? 'Searching...' : 'Refresh'}
             </p>
           </Button>
-          <Button className="border-gray-500 hover:bg-gray-500">
+          <Button
+            className="border-gray-500 hover:bg-gray-500"
+            onClick={() => setShowClientSettings(true)}
+          >
             <IconGear strokeWidth={1.5} />
             <p className="md:block hidden text-center flex-grow">Client Settings</p>
           </Button>
@@ -118,19 +127,21 @@ const ClientDevices: React.FC = () => {
         </div>
       </Sidebar>
       <MainElement>
-        <h1 className="text-2xl font-bold mb-4">Connected Devices</h1>
-        <div className="flex-grow">
-          {devices.length > 0 ? (
-            devices.map((device) => (
-              <div key={device} className="w-full">
-                <DeviceComponent device={device} />
+        <h1 className="text-2xl font-bold m-4">Connected Devices</h1>
+        <div className="relative h-full w-full overflow-y-auto">
+          <div className="absolute inset h-full w-full">
+            {devices.length > 0 ? (
+              devices.map((device) => (
+                <div key={device} className="w-full">
+                  <DeviceComponent device={device} />
+                </div>
+              ))
+            ) : (
+              <div className="flex flex-col justify-center items-center w-full h-full">
+                <p className="text-white">{deviceMessages[currentMessageIndex].message}</p>
               </div>
-            ))
-          ) : (
-            <div className="flex flex-col justify-center items-center w-full h-full">
-              <p className="text-white">{deviceMessages[currentMessageIndex].message}</p>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </MainElement>
     </div>

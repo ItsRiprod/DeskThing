@@ -34,6 +34,8 @@ const DeviceOverlay: React.FC<DeviceOverlayProps> = ({ onClose, device }) => {
     }
   }, [onClose])
 
+  console.log(device) // To prevent errors -  should be fixed later
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div ref={overlayRef} className="flex flex-col md:flex-row">

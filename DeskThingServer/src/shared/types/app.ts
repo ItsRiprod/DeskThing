@@ -114,7 +114,7 @@ export interface DeskThing {
   getManifest: () => Promise<Response>
 }
 
-export interface ReturnData {
+export interface AppReturnData {
   appId: string
   appName: string
   appVersion: string

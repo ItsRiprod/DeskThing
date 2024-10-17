@@ -1,4 +1,4 @@
-import { AppIPCData, Client, IPC_HANDLERS, UtilityIPCData } from '@shared/types'
+import { AppIPCData, Client, UtilityIPCData } from '@shared/types'
 import { app, shell, BrowserWindow, ipcMain, Tray, Menu, nativeImage, NativeImage } from 'electron'
 import { join } from 'path'
 import icon from '../../resources/icon.ico?asset'
@@ -8,13 +8,6 @@ import ConnectionStore from './stores/connectionsStore'
 let mainWindow: BrowserWindow | null = null
 let clientWindow: BrowserWindow | null = null
 let tray: Tray | null = null
-
-export interface ReplyData {
-  status: boolean
-  data: any
-  final: boolean
-  error?: string
-}
 
 function createMainWindow(): BrowserWindow {
   const window = new BrowserWindow({
@@ -219,6 +212,7 @@ async function setupIpcHandlers(): Promise<void> {
   const { appHandler } = await import('./handlers/appHandler')
   const { clientHandler } = await import('./handlers/clientHandler')
   const { utilityHandler } = await import('./handlers/utilityHandler')
+  const { ResponseLogger } = await import('./utils/events')
 
   const defaultHandler = async (data: AppIPCData): Promise<void> => {
     console.error(`No handler implemented for type: ${data.type} ${data}`)
@@ -227,10 +221,10 @@ async function setupIpcHandlers(): Promise<void> {
 
   ipcMain.handle('APPS', async (event, data: AppIPCData) => {
     const handler = appHandler[data.type] || defaultHandler
-
+    const replyFn = ResponseLogger(event.sender.send.bind(event.sender))
     try {
       if (handler) {
-        return await handler(data, event) // Execute the corresponding handler function
+        return await handler(data, replyFn) // Execute the corresponding handler function
       } else {
         console.error(`No handler found for type: ${data.type}`)
         throw new Error(`Unhandled type: ${data.type}`)
@@ -243,10 +237,10 @@ async function setupIpcHandlers(): Promise<void> {
 
   ipcMain.handle('CLIENT', async (event, data: AppIPCData) => {
     const handler = clientHandler[data.type] || defaultHandler
-    event.sender.send('logging', { status: true, data: 'Loading...', final: true })
+    const replyFn = ResponseLogger(event.sender.send.bind(event.sender))
     try {
       if (handler) {
-        return await handler(data, event) // Execute the corresponding handler function
+        return await handler(data, replyFn) // Execute the corresponding handler function
       } else {
         console.error(`No handler found for type: ${data.type}`)
         throw new Error(`Unhandled type: ${data.type}`)
@@ -260,10 +254,11 @@ async function setupIpcHandlers(): Promise<void> {
   ipcMain.handle('UTILITY', async (event, data: UtilityIPCData) => {
     console.log('Received IPC data:', data)
     const handler = utilityHandler[data.type] || defaultHandler
+    const replyFn = ResponseLogger(event.sender.send.bind(event.sender))
 
     try {
       if (handler) {
-        return await handler(data, event) // Execute the corresponding handler function
+        return await handler(data, replyFn) // Execute the corresponding handler function
       } else {
         console.error(`No handler found for type: ${data.type}`)
         throw new Error(`Unhandled type: ${data.type}`)

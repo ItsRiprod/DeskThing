@@ -8,9 +8,11 @@ interface SidebarProps {
 
 const MainElement: React.FC<SidebarProps> = ({ children, className }) => {
   return (
-    <div className="flex flex-col h-full w-full">
-      <Papertrail />
-      <div className={'h-full w-full overflow-auto flex flex-col ' + className}>{children}</div>
+    <div className="w-full h-full relative overflow-auto">
+      <div className="flex flex-col h-full w-full absolute inset">
+        <Papertrail />
+        <div className={'h-full w-full overflow-auto flex flex-col ' + className}>{children}</div>
+      </div>
     </div>
   )
 }

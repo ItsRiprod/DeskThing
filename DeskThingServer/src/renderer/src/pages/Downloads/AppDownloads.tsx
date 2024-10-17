@@ -1,39 +1,31 @@
 import React, { useEffect, useState } from 'react'
-import Sidebar from '@renderer/components/SideBar'
+import Sidebar from '@renderer/components/Sidebar'
 import Button from '@renderer/components/Button'
-import { IconLink } from '@renderer/assets/icons'
+import { IconCheck, IconLink, IconLoading, IconPlay, IconUpload } from '@renderer/assets/icons'
 import { useAppStore, useGithubStore, usePageStore, useSettingsStore } from '@renderer/stores'
 import MainElement from '@renderer/components/MainElement'
-import { GithubAsset, GithubRelease, RepoReleases } from '@shared/types'
+import { AppReturnData, GithubAsset, GithubRelease, RepoReleases } from '@shared/types'
 import ReleaseComponent from '@renderer/components/ReleaseComponent'
-
-interface responseData {
-  status: boolean
-  data: returnData
-  final: boolean
-  error?: string
-}
-
-interface returnData {
-  appId: string
-  appName: string
-  appVersion: string
-  author: string
-  platforms: string[]
-  requirements: string[]
-}
+import DownloadNotification from '@renderer/overlays/DownloadNotification'
+import Overlay from '@renderer/overlays/Overlay'
 
 const AppDownloads: React.FC = () => {
   const [repoReleases, setRepoReleases] = useState<RepoReleases[]>([])
   const fetchReleases = useGithubStore((githubStore) => githubStore.fetchReleases)
   const appRepos = useSettingsStore((settingsStore) => settingsStore.settings.appRepos)
   const loadApp = useAppStore((appStore) => appStore.loadAppUrl)
-  const [error, setError] = useState<string | null>(null)
+  const loadAppZip = useAppStore((appStore) => appStore.loadAppZip)
+  const runApp = useAppStore((appStore) => appStore.runApp)
+  const logging = useAppStore((appStore) => appStore.logging)
+  const [showLogging, setShowLogging] = useState(false)
   const setPage = usePageStore((pageStore) => pageStore.setPage)
   const [currentIndex, setCurrentIndex] = useState<number>(0)
+  const [appReturnData, setAppReturnData] = useState<AppReturnData | null>(null)
 
   const [currentVersion, setCurrentVersion] = useState<GithubRelease | null | undefined>(undefined)
   const [currentVersionIndex, setCurrentVersionIndex] = useState<number | null>(null)
+
+  const [selectingFile, setSelectingFile] = useState(false)
 
   const handleReleaseChange = (index: number): void => {
     setCurrentVersionIndex(index)
@@ -52,14 +44,13 @@ const AppDownloads: React.FC = () => {
   }
 
   const gotoClientDownloads = (): void => {
-    setPage('downloads/client')
+    setPage('Downloads/Client')
   }
 
   useEffect(() => {
     const fetchSettings = async (): Promise<void> => {
       try {
         if (appRepos.length === 0) {
-          setError('No app repositories configured')
           return
         }
 
@@ -70,7 +61,6 @@ const AppDownloads: React.FC = () => {
         }
         setRepoReleases(allReleases)
       } catch {
-        setError('No app repositories configured')
         return
       }
     }
@@ -82,6 +72,21 @@ const AppDownloads: React.FC = () => {
     return assets.filter((asset) => asset.name.includes('-app'))
   }
 
+  const handleAssetClick = async (asset: GithubAsset): Promise<void> => {
+    // Send the selected asset to Electron backend for extraction
+    setShowLogging(true)
+    try {
+      const returnData = await loadApp(asset.browser_download_url)
+      setAppReturnData(returnData)
+    } catch (error) {
+      setShowLogging(false)
+    }
+  }
+
+  const handleDownloadFinalized = (): void => {
+    setShowLogging(false)
+  }
+
   const getNameFromRepoUrl = (repoUrl: string): string => {
     const url = new URL(repoUrl)
     const pathParts = url.pathname.split('/')
@@ -89,8 +94,49 @@ const AppDownloads: React.FC = () => {
     return appName
   }
 
+  const handleUploadClick = async (): Promise<void> => {
+    setSelectingFile(true)
+    const file = await window.electron.selectZipFile()
+    setSelectingFile(false)
+    if (file) {
+      setShowLogging(true)
+      try {
+        const returnData = await loadAppZip(file)
+        setAppReturnData(returnData)
+      } catch (error) {
+        setShowLogging(false)
+      }
+    }
+  }
+
   return (
     <div className="flex h-full w-full">
+      {logging && showLogging && (
+        <DownloadNotification loggingData={logging} onClose={handleDownloadFinalized} />
+      )}
+      {appReturnData && (
+        <Overlay onClose={() => setAppReturnData(null)} className="border border-gray-500">
+          <div className="m-3">
+            <h1 className="text-2xl">Successfully Downloaded App</h1>
+            <p>{appReturnData.appName} is installed</p>
+            <div className="font-geistMono border-l pl-2 border-gray-500 text-gray-500 my-2">
+              <p>ID: {appReturnData.appId}</p>
+              <p>Version: {appReturnData.appVersion}</p>
+              <p>Author: {appReturnData.author}</p>
+            </div>
+            <Button
+              className="group border-cyan-500 hover:bg-cyan-500"
+              onClick={() => {
+                setAppReturnData(null)
+                runApp(appReturnData.appId)
+              }}
+            >
+              <p className="group-hover:block hidden">Run App</p>
+              <IconPlay />
+            </Button>
+          </div>
+        </Overlay>
+      )}
       <Sidebar className="flex justify-between flex-col h-full max-h-full md:items-stretch items-center">
         <div className="flex flex-col gap-2">
           <div className="border-b w-full text-center my-1 font-semibold">
@@ -112,7 +158,11 @@ const AppDownloads: React.FC = () => {
         </div>
         <div>
           <div className="flex flex-col gap-2">
-            <Button onClick={gotoClientDownloads}>
+            <Button onClick={handleUploadClick} className="border-gray-500 hover:bg-gray-500">
+              {selectingFile ? <IconLoading strokeWidth={1.5} /> : <IconUpload strokeWidth={1.5} />}
+              <p className="md:block hidden text-center flex-grow">Upload App</p>
+            </Button>
+            <Button onClick={gotoClientDownloads} className="border-gray-500 hover:bg-gray-500">
               <IconLink strokeWidth={1.5} />
               <p className="md:block hidden text-center flex-grow">Clients</p>
             </Button>
@@ -126,7 +176,7 @@ const AppDownloads: React.FC = () => {
               {repoReleases[currentIndex].releases.map((release, index) => (
                 <button
                   key={index}
-                  className={`p-3 w-fit hover:bg-zinc-700 ${currentVersionIndex == index ? 'bg-zinc-800' : ''}`}
+                  className={`p-3 w-fit hover:bg-zinc-700 ${currentVersionIndex == index ? 'bg-zinc-800' : 'text-gray-500 hover:text-white'}`}
                   onClick={() => {
                     handleReleaseChange(index)
                   }}
@@ -139,18 +189,30 @@ const AppDownloads: React.FC = () => {
             <p>Loading...</p>
           )}
         </div>
-        <div className="p-5 w-full h-full overflow-y-auto">
-          {currentVersion ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-              {currentVersion.assets.map((asset, index) => (
-                <ReleaseComponent key={index} asset={asset} onClick={loadApp} />
-              ))}
-            </div>
-          ) : currentVersion === undefined ? (
-            <p>Select a release to see downloads</p>
-          ) : (
-            <p>Release has no versions available</p>
-          )}
+        <div className="relative w-full h-full overflow-y-auto">
+          <div className="absolute inset w-full p-5">
+            {currentVersion ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                {filterAssets(currentVersion.assets).map((asset, index) => (
+                  <ReleaseComponent
+                    key={index}
+                    asset={asset}
+                    onClick={handleAssetClick}
+                    loading={showLogging}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div>
+                <h1 className="text-xl mb-5 font-semibold">App Downloads</h1>
+                {currentVersion === undefined ? (
+                  <p>Select a release to see the available downloads</p>
+                ) : (
+                  <p>Release has no versions available</p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </MainElement>
     </div>

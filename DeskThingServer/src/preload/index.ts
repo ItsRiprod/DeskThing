@@ -3,6 +3,7 @@ import { electronAPI } from '@electron-toolkit/preload'
 import {
   App,
   AppDataInterface,
+  AppReturnData,
   ButtonMapping,
   Client,
   GithubRelease,
@@ -12,7 +13,6 @@ import {
   Settings,
   SocketData
 } from '@shared/types'
-import { ServerManifest } from 'src/main/handlers/deviceHandler'
 
 // Custom APIs for renderer
 const api = {
@@ -48,10 +48,10 @@ const api = {
   purgeApp: async (appId: string): Promise<void> =>
     sendCommand('APPS', { type: 'purge', request: 'set', payload: appId }),
 
-  handleAppZip: async (path: string): Promise<void> =>
+  handleAppZip: async (path: string): Promise<AppReturnData | null> =>
     sendCommand('APPS', { type: 'zip', request: 'set', payload: path }),
 
-  handleAppUrl: async (url: string): Promise<void> =>
+  handleAppUrl: async (url: string): Promise<AppReturnData | null> =>
     sendCommand('APPS', { type: 'url', request: 'set', payload: url }),
 
   handleResponseToUserData: async (requestId: string, payload: IncomingData): Promise<void> =>
@@ -105,11 +105,17 @@ const api = {
       payload: command
     }),
 
-  getClientManifest: (): Promise<ServerManifest> =>
-    sendCommand<ServerManifest>('CLIENT', {
+  getClientManifest: (): Promise<Client> =>
+    sendCommand<Client>('CLIENT', {
       type: 'client-manifest',
       request: 'get',
       payload: undefined
+    }),
+  updateClientManifest: (client: Partial<Client>): Promise<void> =>
+    sendCommand<void>('CLIENT', {
+      type: 'client-manifest',
+      request: 'set',
+      payload: client
     }),
 
   pushStagedApp: (clientId: string): Promise<void> =>
@@ -236,6 +242,14 @@ const api = {
     return sendCommand('UTILITY', {
       type: 'open-log-folder',
       request: 'set',
+      payload: undefined
+    })
+  },
+
+  selectZipFile: (): Promise<string | undefined> => {
+    return sendCommand('UTILITY', {
+      type: 'zip',
+      request: 'get',
       payload: undefined
     })
   },

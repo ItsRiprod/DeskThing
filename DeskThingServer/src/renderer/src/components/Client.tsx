@@ -1,4 +1,4 @@
-import { IconCarThing, IconComputer, IconGlobe, IconMobile } from '@renderer/assets/icons'
+import { IconCarThing, IconComputer, IconMobile } from '@renderer/assets/icons'
 import { Client } from '@shared/types'
 import React from 'react'
 
@@ -30,13 +30,11 @@ const ClientComponent: React.FC<ClientComponentProps> = ({ client }) => {
       <div>
         <h1 className="text-xl font-semibold">{client.client_name || 'Unknown Client'}</h1>
         <p>Version {client.version || 'unknown'}</p>
-        <p>{client.ip || 'unknown'}:{client.port || '0000'}</p>
         <p>
-          {client.connectionId}
+          {client.ip || 'unknown'}:{client.port || '0000'}
         </p>
-        <p>
-          {client.device_type?.name || 'unknown'}
-        </p>
+        <p>{client.connectionId}</p>
+        <p>{client.device_type?.name || 'unknown'}</p>
       </div>
     </div>
   )

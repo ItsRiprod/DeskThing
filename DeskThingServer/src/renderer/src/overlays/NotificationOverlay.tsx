@@ -1,6 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useRef } from 'react'
 import useLogStore from '../stores/logStore'
-import useAppStore from '../stores/appStore'
 import useRequestStore from '../stores/requestStore'
 
 interface NotificationOverlayProps {
@@ -8,7 +7,6 @@ interface NotificationOverlayProps {
 }
 
 const NotificationOverlay: React.FC<NotificationOverlayProps> = ({ onClose }) => {
-  const [apps, setApps] = useState<string[]>([])
   const logs = useLogStore((logStore) => logStore.logList)
   const requests = useRequestStore((state) => state.requestQueue)
   const overlayRef = useRef<HTMLDivElement>(null)

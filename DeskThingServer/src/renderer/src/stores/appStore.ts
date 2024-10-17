@@ -1,14 +1,15 @@
-import { App, AppDataInterface } from '@shared/types'
+import { App, AppDataInterface, AppReturnData, LoggingData } from '@shared/types'
 import { create } from 'zustand'
 
 interface AppStoreState {
   appsList: App[]
   order: string[]
+  logging: LoggingData | null
 
   requestApps: () => void
   removeAppFromList: (appName: string) => void
-  loadAppUrl: (appName: string) => void
-  loadAppZip: (appName: string) => void
+  loadAppUrl: (appName: string) => Promise<AppReturnData | null>
+  loadAppZip: (appName: string) => Promise<AppReturnData | null>
   setOrder: (order: string[]) => void
   addAppToList: (appName: string) => void
   disableApp: (appName: string) => void
@@ -23,6 +24,7 @@ interface AppStoreState {
 const useAppStore = create<AppStoreState>((set) => ({
   appsList: [],
   order: [],
+  logging: null,
 
   // Requests the apps from Electron via IPC
   requestApps: async (): Promise<void> => {
@@ -113,12 +115,31 @@ const useAppStore = create<AppStoreState>((set) => ({
     window.electron.setAppData(appName, data)
   },
 
-  loadAppUrl: (appName: string): void => {
-    window.electron.handleAppUrl(appName)
+  loadAppUrl: async (appName: string): Promise<AppReturnData | null> => {
+    const response = window.electron.handleAppUrl(appName)
+
+    const loggingListener = (_event, reply: LoggingData): void => {
+      set({ logging: reply })
+      if (reply.final === true || reply.status === false) {
+        removeListener()
+      }
+    }
+    const removeListener = window.electron.ipcRenderer.on('logging', loggingListener)
+    return response
   },
 
-  loadAppZip: (appName: string): void => {
-    window.electron.handleAppZip(appName)
+  loadAppZip: async (appName: string): Promise<AppReturnData | null> => {
+    const response = window.electron.handleAppZip(appName)
+
+    const loggingListener = (_event, reply: LoggingData): void => {
+      set({ logging: reply })
+      if (reply.final === true || reply.status === false) {
+        removeListener()
+      }
+    }
+    const removeListener = window.electron.ipcRenderer.on('logging', loggingListener)
+
+    return response
   }
 }))
 

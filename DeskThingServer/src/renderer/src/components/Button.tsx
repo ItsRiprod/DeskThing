@@ -10,7 +10,6 @@ interface ButtonProps {
   disabled?: boolean
   onMouseEnter?: () => void
 }
-
 const Button: React.FC<ButtonProps> = ({
   children,
   onClick,

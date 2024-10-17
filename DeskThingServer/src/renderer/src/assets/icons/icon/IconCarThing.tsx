@@ -1,6 +1,12 @@
 import { Icon } from '.'
 
-function IconCarThing(props): JSX.Element {
+function IconCarThing(props: {
+  strokeWidth?: number
+  highlighted?: string[]
+  highlightColor?: string
+  fontSize?: number
+  text?: string
+}): JSX.Element {
   const strokeWidth = props.strokeWidth || 2
   const highlighted = props.highlighted || []
   const highlightColor = props.highlightColor || ''
@@ -58,7 +64,7 @@ function IconCarThing(props): JSX.Element {
 
           <text
             x="480"
-            y={props.fontSize * 0.2 + 350 || '350'}
+            y={props.fontSize ? props.fontSize * 0.2 + 350 : 350}
             fill="white"
             fontSize={props.fontSize || 100}
             textAnchor="middle"

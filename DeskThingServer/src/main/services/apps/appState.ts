@@ -1,4 +1,4 @@
-import { App, AppInstance, Manifest, ReturnData } from '@shared/types'
+import { App, AppInstance, Manifest, AppReturnData } from '@shared/types'
 import { sendPrefData } from '../../handlers/websocketServer'
 
 /**
@@ -246,7 +246,7 @@ export class AppHandler {
     return await start(name)
   }
 
-  async addURL(url: string, reply): Promise<ReturnData | void> {
+  async addURL(url: string, reply): Promise<AppReturnData | void> {
     const { handleZipFromUrl } = await import('./appInstaller')
     const returnData = await handleZipFromUrl(url, reply)
     if (returnData) {
@@ -263,7 +263,7 @@ export class AppHandler {
       return returnData
     }
   }
-  async addZIP(zip: string, event): Promise<ReturnData | void> {
+  async addZIP(zip: string, event): Promise<AppReturnData | void> {
     const { handleZip } = await import('./appInstaller')
     const returnData = await handleZip(zip, event)
     if (returnData) {
