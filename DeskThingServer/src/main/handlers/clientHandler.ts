@@ -8,12 +8,28 @@ import {
   HandleWebappZipFromUrl,
   SetupProxy
 } from './deviceHandler'
-import { sendData } from './websocketServer'
+import { Client } from '@shared/types'
+import { sendMessageToClients } from '../services/client/clientCom'
 
 export const clientHandler: Record<
   ClientIPCData['type'],
-  (data: ClientIPCData, replyFn: ReplyFn) => Promise<any>
+  (data: ClientIPCData, replyFn: ReplyFn) => Promise<void | string | Client | null>
 > = {
+  pingClient: async (data, replyFn) => {
+    try {
+      replyFn('logging', {
+        status: false,
+        error: 'Not implemented!',
+        data: `Attempted to ping ${data.payload}!`,
+        final: true
+      })
+      return
+    } catch (error) {
+      console.error('Error pinging client:', error)
+      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, error)
+    }
+  },
+
   zip: async (_data, replyFn) => {
     replyFn('logging', {
       status: false,
@@ -42,9 +58,9 @@ export const clientHandler: Record<
   },
   'client-manifest': async (data, replyFn) => {
     if (data.request === 'get') {
-      return await getClientManifest(replyFn)
+      return await getClientManifest(false, replyFn)
     } else if (data.request === 'set') {
-      return await handleClientManifestUpdate(replyFn, data.payload)
+      return await handleClientManifestUpdate(data.payload, replyFn)
     }
     return
   },
@@ -86,7 +102,7 @@ export const clientHandler: Record<
     }
     console.log('Sending data', data)
     replyFn('logging', { status: true, data: 'Finished', final: true })
-    return await sendData(null, message)
+    return await sendMessageToClients(message)
   }
 }
 

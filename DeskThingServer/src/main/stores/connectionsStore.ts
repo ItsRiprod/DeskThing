@@ -69,6 +69,17 @@ class ConnectionStore {
     }
   }
 
+  pingClient(connectionId: string): boolean {
+    console.log('Pinging client:', connectionId)
+    const clientIndex = this.clients.findIndex((c) => c.connectionId === connectionId)
+    console.error('PINGING CLIENTS NOT IMPLEMENTED YET')
+    if (clientIndex !== -1) {
+      // this.clients[clientIndex] = Date.now()
+      return true
+    }
+    return false
+  }
+
   getClients(): Client[] {
     console.log('Getting clients:', this.clients)
     return this.clients

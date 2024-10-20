@@ -6,7 +6,7 @@ import { app, net } from 'electron'
 import { handleAdbCommands } from './adbHandler'
 import { Client, ReplyData } from '@shared/types'
 
-export const HandleDeviceData = async (data: any): Promise<void> => {
+export const HandleDeviceData = async (data: string): Promise<void> => {
   try {
     const deviceData = JSON.parse(data)
 
@@ -50,6 +50,24 @@ export const HandlePushWebApp = async (
     response = await handleAdbCommands(`-s ${deviceId} shell rm -r /tmp/webapp-orig`)
 
     reply &&
+      reply('logging', { status: true, data: response || 'Pushing client ID...', final: false })
+    try {
+      await handleClientManifestUpdate(
+        { adbId: deviceId, device_type: { name: 'Car Thing', id: 4 } },
+        reply
+      )
+    } catch (error) {
+      console.error('Error updating client manifest:', error)
+      reply &&
+        reply('logging', {
+          status: false,
+          data: 'There has been an error updating the client manifests ID.',
+          final: true,
+          error: `${error}`
+        })
+    }
+
+    reply &&
       reply('logging', { status: true, data: response || 'Pushing new app...', final: false })
     response = await handleAdbCommands(
       `-s ${deviceId} push "${extractDir}/" /usr/share/qt-superbird-app/webapp`
@@ -57,9 +75,27 @@ export const HandlePushWebApp = async (
 
     reply &&
       reply('logging', { status: true, data: response || 'Restarting Chromium', final: false })
-    response = await handleAdbCommands(`-s ${deviceId} shell supervisorctl restart chromium`)
+    response = handleAdbCommands(`-s ${deviceId} shell supervisorctl restart chromium`)
 
-    reply && reply('logging', { status: true, data: response, final: true })
+    reply &&
+      reply('logging', { status: true, data: response || 'Cleaning up device ID...', final: false })
+    try {
+      await handleClientManifestUpdate(
+        { adbId: undefined, device_type: { name: 'Unknown', id: 0 } },
+        reply
+      )
+    } catch (error) {
+      console.error('Error updating cleaning manifest:', error)
+      reply &&
+        reply('logging', {
+          status: false,
+          data: 'There has been an error cleaning the client manifests ID.',
+          final: true,
+          error: `${error}`
+        })
+    }
+
+    reply && reply('logging', { status: true, data: await response, final: true })
   } catch (Exception) {
     reply &&
       reply('logging', {
@@ -102,11 +138,11 @@ export const HandleWebappZipFromUrl = async (
       })
 
       response.on('end', async () => {
-        const buffer = Buffer.concat(chunks)
+        const buffer = Buffer.concat(chunks as unknown as Uint8Array[])
         const tempZipPath = join(extractDir, 'temp.zip')
 
         // Write the buffer to a temporary file
-        fs.writeFileSync(tempZipPath, buffer)
+        fs.writeFileSync(tempZipPath, buffer as unknown as string)
 
         // Extract the downloaded zip file
         try {
@@ -137,7 +173,6 @@ export const HandleWebappZipFromUrl = async (
           })
         }
       })
-
       response.on('error', (error) => {
         console.error('Error downloading zip file:', error)
         dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `Error downloading zip file: ${error}`)
@@ -182,20 +217,20 @@ export const HandleWebappZipFromUrl = async (
 }
 
 export const handleClientManifestUpdate = async (
-  send: (channel: string, data: ReplyData) => void,
-  partialManifest: Partial<Client>
+  partialManifest: Partial<Client>,
+  reply?: (channel: string, data: ReplyData) => void
 ): Promise<void> => {
   const userDataPath = app.getPath('userData')
   const extractDir = join(userDataPath, 'webapp')
   const manifestPath = join(extractDir, 'manifest.js')
 
-  send('logging', { status: true, data: 'Updating manifest...', final: false })
+  reply && reply('logging', { status: true, data: 'Updating manifest...', final: false })
   try {
     // Ensure the directory exists
     await fs.promises.mkdir(extractDir, { recursive: true })
 
     // Read the existing manifest
-    const existingManifest = await getClientManifest(send, true)
+    const existingManifest = await getClientManifest(true, reply)
 
     // Merge the existing manifest with the partial updates
     const updatedManifest: Partial<Client> = {
@@ -209,7 +244,7 @@ export const handleClientManifestUpdate = async (
     // Write the updated manifest to the file
     await fs.promises.writeFile(manifestPath, manifestContent, 'utf8')
     console.log('Manifest file updated successfully')
-    send('logging', { status: true, data: 'Manifest Updated!', final: true })
+    reply && reply('logging', { status: true, data: 'Manifest Updated!', final: true })
     dataListener.asyncEmit(
       MESSAGE_TYPES.LOGGING,
       'DEVICE HANDLER: Manifest file updated successfully'
@@ -224,8 +259,8 @@ export const handleClientManifestUpdate = async (
 }
 
 export const getClientManifest = async (
-  send: (channel: string, data: ReplyData) => void,
-  utility: boolean = false
+  utility: boolean = false,
+  reply?: (channel: string, data: ReplyData) => void
 ): Promise<Client | null> => {
   console.log('Getting manifest...')
   const userDataPath = app.getPath('userData')
@@ -233,22 +268,24 @@ export const getClientManifest = async (
   console.log('manifestPath: ', manifestPath)
   if (!fs.existsSync(manifestPath)) {
     console.log('Manifest file not found')
-    send('logging', {
-      status: false,
-      data: 'Manifest file not found',
-      final: true
-    })
+    reply &&
+      reply('logging', {
+        status: false,
+        data: 'Manifest file not found',
+        final: true
+      })
     dataListener.asyncEmit(
       MESSAGE_TYPES.ERROR,
       'DEVICE HANDLER: Client Manifest file not found! (Is the client downloaded?)'
     )
     return null
   }
-  send('logging', {
-    status: true,
-    data: 'Manifest file read successfully',
-    final: false
-  })
+  reply &&
+    reply('logging', {
+      status: true,
+      data: 'Manifest file read successfully',
+      final: false
+    })
 
   try {
     const data = await fs.promises.readFile(manifestPath, 'utf8')
@@ -258,11 +295,12 @@ export const getClientManifest = async (
     const jsonData = data.substring(jsonStart, jsonEnd + 1)
 
     const manifest: Client = JSON.parse(jsonData)
-    send('logging', {
-      status: true,
-      data: 'Manifest loaded!',
-      final: !utility
-    })
+    reply &&
+      reply('logging', {
+        status: true,
+        data: 'Manifest loaded!',
+        final: !utility
+      })
     dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'DEVICE HANDLER: Manifest file read successfully')
     console.log(manifest)
     return manifest
@@ -272,12 +310,13 @@ export const getClientManifest = async (
       MESSAGE_TYPES.ERROR,
       'DEVICE HANDLER: Error reading or parsing manifest file: ' + error
     )
-    send('logging', {
-      status: false,
-      data: 'Unable to read Server Manifest file',
-      final: true,
-      error: 'Unable to read manifest file' + error
-    })
+    reply &&
+      reply('logging', {
+        status: false,
+        data: 'Unable to read Server Manifest file',
+        final: true,
+        error: 'Unable to read manifest file' + error
+      })
     return null
   }
 }

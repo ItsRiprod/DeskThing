@@ -4,12 +4,17 @@ import dataListener, { MESSAGE_TYPES } from '../utils/events'
 import { getData, setData } from './dataHandler'
 import { dialog, BrowserWindow } from 'electron'
 import { sendMessageToApp, AppHandler } from '../services/apps'
-import { App, AppDataInterface } from '@shared/types'
+import { App, AppDataInterface, AppReturnData } from '@shared/types'
 const appStore = AppHandler.getInstance()
 
 export const appHandler: Record<
   AppIPCData['type'],
-  (data: AppIPCData, replyFn: ReplyFn) => Promise<any>
+  (
+    data: AppIPCData,
+    replyFn: ReplyFn
+  ) => Promise<
+    AppDataInterface | boolean | App[] | undefined | void | null | App | string | AppReturnData
+  >
 > = {
   app: async (data, replyFn) => {
     if (data.request == 'get') {
@@ -136,18 +141,18 @@ const setAppData = async (replyFn, id, data: AppDataInterface): Promise<void> =>
   console.log('Saving app data: ', data)
   dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'SERVER: Saving ' + id + "'s data " + data)
   await setData(id, data)
-  replyFn.sender.emit('logging', { status: true, data: 'Finished', final: true })
+  replyFn('logging', { status: true, data: 'Finished', final: true })
 }
 
 const getAppData = async (replyFn, payload): Promise<AppDataInterface | null> => {
   try {
     const data = await getData(payload)
-    replyFn.sender.emit('logging', { status: true, data: 'Finished', final: true })
+    replyFn('logging', { status: true, data: 'Finished', final: true })
     return data
   } catch (error) {
     dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'SERVER: Error saving manifest' + error)
     console.error('Error setting client manifest:', error)
-    replyFn.sender.emit('logging', { status: false, data: 'Unfinished', error: error, final: true })
+    replyFn('logging', { status: false, data: 'Unfinished', error: error, final: true })
     return null
   }
 }

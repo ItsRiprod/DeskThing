@@ -12,7 +12,7 @@ import { ipcMain } from 'electron'
  */
 export async function handleDataFromApp(app: string, appData: IncomingData): Promise<void> {
   const keyMapStore = (await import('../../stores/keyMapStore')).default
-  const { sendMessageToClients } = await import('../../handlers/websocketServer')
+  const { sendMessageToClients } = await import('../client/clientCom')
   const { getData, setData, addData } = await import('../../handlers/dataHandler')
   const { getConfig } = await import('../../handlers/configHandler')
 

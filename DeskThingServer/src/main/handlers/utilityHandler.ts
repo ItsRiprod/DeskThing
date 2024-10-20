@@ -1,7 +1,6 @@
-import { Client, Settings } from '@shared/types'
+import { ButtonMapping, Client, GithubRelease, Settings } from '@shared/types'
 import { ReplyFn, UtilityIPCData } from '@shared/types/ipcTypes'
 import ConnectionStore from '../stores/connectionsStore'
-import { disconnectClient } from './websocketServer'
 import settingsStore from '../stores/settingsStore'
 import { getReleases } from './githubHandler'
 import dataListener, { MESSAGE_TYPES } from '../utils/events'
@@ -10,12 +9,19 @@ import { shell, app, dialog } from 'electron'
 import keyMapStore from '../stores/keyMapStore'
 import logger from '../utils/logger'
 import { setupFirewall } from './firewallHandler'
+import { disconnectClient } from '../services/client/clientCom'
 
 export const utilityHandler: Record<
   UtilityIPCData['type'],
-  (data: UtilityIPCData, replyFn: ReplyFn) => Promise<any>
+  (
+    data: UtilityIPCData,
+    replyFn: ReplyFn
+  ) => Promise<
+    void | string | Client[] | boolean | string[] | Settings | GithubRelease[] | ButtonMapping
+  >
 > = {
   ping: async () => {
+    console.log('Pinged! pong')
     return 'pong'
   },
   zip: async (data): Promise<string | undefined> => {

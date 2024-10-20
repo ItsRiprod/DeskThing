@@ -4,6 +4,7 @@ import os from 'os'
 import { Settings } from '@shared/types'
 
 const settingsVersion = '0.9.0'
+const version_code = 9.0
 
 class SettingsStore {
   private settings: Settings
@@ -40,8 +41,8 @@ class SettingsStore {
     }
   }
 
-  public updateSetting(key: string, value: any): void {
-    if (key === 'autoStart') {
+  public updateSetting(key: string, value: boolean | undefined | string | number | string[]): void {
+    if (key === 'autoStart' && typeof value === 'boolean') {
       this.updateAutoLaunch(value)
     }
     this.settings[key] = value
@@ -54,7 +55,7 @@ class SettingsStore {
       const data = await readFromFile<Settings>(this.settingsFilePath)
       dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'SETTINGS: Loaded settings!')
 
-      if (!data || data.version !== settingsVersion) {
+      if (!data || !data.version_code || data.version_code < version_code) {
         // File does not exist, create it with default settings
         const defaultSettings = this.getDefaultSettings()
         await writeToFile(defaultSettings, this.settingsFilePath)
@@ -106,22 +107,17 @@ class SettingsStore {
   private getDefaultSettings(): Settings {
     return {
       version: settingsVersion,
+      version_code: version_code,
       callbackPort: 8888,
       devicePort: 8891,
       address: '0.0.0.0',
       autoStart: false,
       minimizeApp: true,
       globalADB: false,
-      autoDetectADB: true,
+      autoDetectADB: false,
       localIp: getLocalIpAddress(),
-      appRepos: [
-        'https://github.com/ItsRiprod/deskthing-apps',
-        'https://github.com/ItsRiprod/DeskThing'
-      ],
-      clientRepos: [
-        'https://github.com/ItsRiprod/deskthing-client',
-        'https://github.com/ItsRiprod/DeskThing'
-      ]
+      appRepos: ['https://github.com/ItsRiprod/deskthing-apps'],
+      clientRepos: ['https://github.com/ItsRiprod/deskthing-client']
     }
   }
 }

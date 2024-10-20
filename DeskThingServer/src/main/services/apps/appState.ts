@@ -1,5 +1,5 @@
 import { App, AppInstance, Manifest, AppReturnData } from '@shared/types'
-import { sendPrefData } from '../../handlers/websocketServer'
+import { sendConfigData, sendSettingsData } from '../client/clientCom'
 
 /**
  * TODO: Sync with the file
@@ -20,8 +20,12 @@ export class AppHandler {
     this.loadApps()
   }
 
+  /**
+   * Notifies the client that there were changes
+   */
   async notify(): Promise<void> {
-    sendPrefData()
+    sendConfigData()
+    sendSettingsData()
   }
 
   /**

@@ -1,4 +1,4 @@
-import { AppIPCData, Client, UtilityIPCData } from '@shared/types'
+import { AppIPCData, AuthScopes, Client, UtilityIPCData } from '@shared/types'
 import { app, shell, BrowserWindow, ipcMain, Tray, Menu, nativeImage, NativeImage } from 'electron'
 import { join } from 'path'
 import icon from '../../resources/icon.ico?asset'
@@ -11,7 +11,7 @@ let tray: Tray | null = null
 
 function createMainWindow(): BrowserWindow {
   const window = new BrowserWindow({
-    width: 1035,
+    width: 1130,
     height: 730,
     minWidth: 500,
     minHeight: 400,
@@ -347,7 +347,11 @@ async function openAuthWindow(url: string): Promise<void> {
 async function loadModules(): Promise<void> {
   try {
     await import('./handlers/authHandler')
-    await import('./handlers/websocketServer')
+
+    await import('./services/client/websocket').then(({ restartServer }) => {
+      restartServer()
+    })
+
     const { loadAndRunEnabledApps } = await import('./services/apps')
     loadAndRunEnabledApps()
   } catch (error) {
@@ -355,10 +359,14 @@ async function loadModules(): Promise<void> {
   }
 }
 
-async function sendIpcAuthMessage(_appName: string, requestId: string, scope: any): Promise<void> {
+async function sendIpcAuthMessage(
+  _appName: string,
+  requestId: string,
+  scope: AuthScopes
+): Promise<void> {
   mainWindow?.webContents.send('display-user-form', requestId, scope)
 }
-async function sendIpcData(dataType: string, data: any): Promise<void> {
+async function sendIpcData(dataType: string, data: unknown): Promise<void> {
   mainWindow?.webContents.send(dataType, data)
 }
 
