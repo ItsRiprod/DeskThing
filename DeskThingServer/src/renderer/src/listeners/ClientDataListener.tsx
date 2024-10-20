@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useClientStore } from '../stores'
+import { useClientStore, useNotificationStore } from '../stores'
 
 const ClientDataListener = (): null => {
   const setClients = useClientStore((state) => state.setClients)
@@ -9,9 +9,10 @@ const ClientDataListener = (): null => {
   const requestConnections = useClientStore((state) => state.requestConnections)
   const requestClientManifest = useClientStore((state) => state.requestClientManifest)
 
+  const addTask = useNotificationStore((state) => state.addTask)
+
   useEffect(() => {
     window.electron.ipcRenderer.on('clients', (_event, data) => {
-      console.log('Received clients data:', data)
       setClients(data.data)
     })
 
@@ -27,6 +28,22 @@ const ClientDataListener = (): null => {
       requestConnections()
       requestADBDevices()
       requestClientManifest()
+
+      addTask({
+        id: 'adbdevices-setup',
+        title: 'Find ADB Devices',
+        description: 'You look new around here. Lets try and get your device connected!',
+        status: 'pending',
+        complete: false,
+        steps: [
+          {
+            task: 'Ensure the device is plugged in',
+            status: false,
+            stepId: 'plugged-in'
+          },
+          { task: 'Try refreshing ADB', status: false, stepId: 'refresh' }
+        ]
+      })
     }
 
     getInitialState()

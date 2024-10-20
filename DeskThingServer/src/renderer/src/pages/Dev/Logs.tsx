@@ -1,9 +1,16 @@
 import React, { useEffect, useState, useRef } from 'react'
 import useLogStore from '../../stores/logStore'
-import Sidebar from '@renderer/components/Sidebar'
-import MainElement from '@renderer/components/MainElement'
+import Sidebar from '@renderer/nav/Sidebar'
+import MainElement from '@renderer/nav/MainElement'
 import Button from '@renderer/components/Button'
-import { IconBell, IconCheck, IconCopy, IconFolderOpen, IconLogs, IconWarning } from '@renderer/assets/icons'
+import {
+  IconBell,
+  IconCheck,
+  IconCopy,
+  IconFolderOpen,
+  IconLogs,
+  IconWarning
+} from '@renderer/assets/icons'
 import { useReward } from 'react-rewards'
 
 const Logs: React.FC = () => {
@@ -104,7 +111,7 @@ const Logs: React.FC = () => {
                     ? 'text-red-500'
                     : log.type === 'DEBUG'
                       ? 'text-yellow-500'
-                      : 'text-gray-300'
+                      : 'text-gray-500'
                 }`}
               >
                 [{log.date}] {log.type}: {log.log}

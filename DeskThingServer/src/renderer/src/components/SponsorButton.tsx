@@ -16,12 +16,13 @@ const SponsorButton: React.FC = () => {
       href="https://buymeacoffee.com/riprod"
       target="_blank"
       rel="noreferrer"
-      className="flex-row flex fill-fuchsia-600 hover:bg-fuchsia-600 hover:text-black hover:border-fuchsia-600 text-fuchsia-600 sm:border p-2 rounded-xl border-zinc-500"
+      className="group fill-fuchsia-600 hover:bg-fuchsia-600 hover:text-black text-fuchsia-600"
       onMouseEnter={reward}
     >
       <span id="rewardId" />
       <IconCoffee iconSize={24} strokeWidth={2} />
-      <p className="flex-grow text-center text-lg md:block hidden">Support!</p>
+      <p className="flex-grow text-center text-lg md:block hidden group-hover:hidden">Coffee</p>
+      <p className="flex-grow text-center text-lg group-hover:md:block hidden">Support</p>
     </Button>
   )
 }

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { Client, LoggingData } from '@shared/types'
+import useNotificationStore from './notificationStore'
 
 // Utility function to parse ADB devices
 const parseADBDevices = (response: string): string[] => {
@@ -18,7 +19,7 @@ interface ClientStoreState {
 
   // Actions
   setADBDevices: (devices: string[]) => void
-  setConnections: (connections: number) => void
+  setConnections: (connections: number) => Promise<void>
   setClients: (clients: Client[]) => void
   setClientManifest: (client: Client) => void
   requestClientManifest: () => Promise<Partial<Client>>
@@ -38,12 +39,72 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
   clientManifest: null,
 
   // Setters
-  setADBDevices: (devices: string[]): void => set({ ADBDevices: devices }),
-  setConnections: (connections: number): void => set({ connections }),
-  setClients: (clients: Client[]): void => set({ clients }),
+  setADBDevices: (devices: string[]): void => {
+    set({ ADBDevices: devices })
+
+    // Update the clients array with the new devices
+    set((state) => {
+      const updatedClients = state.clients.filter(
+        (client) => client.connected || devices.includes(client.adbId || 'XXXXX')
+      )
+
+      devices.forEach((deviceId) => {
+        if (!updatedClients.some((client) => client.adbId === deviceId)) {
+          updatedClients.push({
+            adbId: deviceId,
+            device_type: { name: 'Car Thing', id: 4 },
+            client_name: `Car Thing ${deviceId}`,
+            ip: '',
+            port: 0,
+            connectionId: '',
+            connected: false,
+            timestamp: Date.now()
+          })
+        }
+      })
+
+      return { clients: updatedClients as Client[] }
+    })
+  },
+
+  setConnections: async (connections: number): Promise<void> => set({ connections }),
+  setClients: (clients: Client[]): void => {
+    set({ clients })
+    get().requestADBDevices() // update adb mapping
+
+    if (clients.some((client) => client.adbId)) {
+      const resolveTask = useNotificationStore.getInitialState().resolveTask
+      resolveTask('adbdevices-configure')
+    }
+  },
   setClientManifest: (client: Client): void => set({ clientManifest: client }),
+
   requestClientManifest: async (): Promise<Partial<Client>> => {
     const clientManifest = await window.electron.getClientManifest()
+
+    if (!clientManifest) {
+      const addIssue = useNotificationStore.getState().addIssue
+      addIssue({
+        title: 'Client Is Not Installed!',
+        description:
+          'The client wasnt found! Please install the Client in order to finish setting up the server!',
+        id: `client-manifest-missing`,
+        status: 'error',
+        complete: false,
+        steps: [
+          {
+            task: 'Go to Downloads -> Client Downloads and download the latest client',
+            status: false,
+            stepId: 'download'
+          }
+        ]
+      })
+      return {}
+    } else {
+      const removeIssue = useNotificationStore.getState().removeIssue
+      removeIssue('client-manifest-missing')
+    }
+
     set({ clientManifest })
     return clientManifest
   },
@@ -63,7 +124,7 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
       const response = await window.electron.handleClientADB('devices')
       if (response) {
         const deviceList = parseADBDevices(response)
-        set({ ADBDevices: deviceList })
+        get().setADBDevices(deviceList)
       } else {
         console.log('No devices found')
       }

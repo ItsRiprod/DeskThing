@@ -1,9 +1,40 @@
 import { useEffect } from 'react'
-import { useRequestStore } from '../stores'
+import { useClientStore, useNotificationStore } from '@renderer/stores'
 import { AuthScopes } from '@shared/types'
 
 const RequestDataListener = (): null => {
-  const addRequest = useRequestStore((state) => state.addRequest)
+  const addRequest = useNotificationStore((state) => state.addRequest)
+  const resolveTask = useNotificationStore((state) => state.resolveTask)
+  const addTask = useNotificationStore((state) => state.addTask)
+  const devices = useClientStore((state) => state.ADBDevices)
+  const clientManifest = useClientStore((state) => state.clientManifest)
+
+  useEffect(() => {
+    if (devices.length > 0) {
+      resolveTask('adbdevices-setup')
+      addTask({
+        id: 'adbdevices-configure',
+        title: 'Configure ADB Device',
+        description:
+          'Looks like you have some devices connected! Try configuring one of them to run DeskThing!',
+        status: 'pending',
+        complete: false,
+        steps: [
+          {
+            task: 'Ensure you have a client installed',
+            status: clientManifest !== null,
+            stepId: 'install'
+          },
+          {
+            task: 'Hit the Configure Device button to load the client',
+            status: false,
+            stepId: 'configure'
+          },
+          { task: 'Ping the device to make sure its working!', status: false, stepId: 'ping' }
+        ]
+      })
+    }
+  }, [devices])
 
   useEffect(() => {
     const handleDisplayUserForm = (_event, requestId: string, fields: AuthScopes): void => {

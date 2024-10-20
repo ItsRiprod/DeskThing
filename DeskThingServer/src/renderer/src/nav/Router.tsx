@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom'
-import Loading from './Loading'
+import Loading from '../components/Loading'
 import Dashboard from '@renderer/pages/Dashboard'
 import Clients from '@renderer/pages/Clients'
 import Apps from '@renderer/pages/Apps'
@@ -8,13 +8,12 @@ import Dev from '@renderer/pages/Dev'
 import Settings from '@renderer/pages/Settings'
 import TopBar from './TopBar'
 import ClientSettings from '@renderer/pages/Clients/Settings'
-import ClientStatus from '@renderer/pages/Clients/Status'
-import ClientDevices from '@renderer/pages/Clients/Devices'
 import AppsList from '@renderer/pages/Apps/AppsList'
 import PageDataListener from '@renderer/listeners/PageDataListener'
 import AppDownloads from '@renderer/pages/Downloads/AppDownloads'
 import ClientDownloads from '@renderer/pages/Downloads/ClientDownloads'
 import Logs from '@renderer/pages/Dev/Logs'
+import ClientConnections from '@renderer/pages/Clients/Connections'
 
 const AppRouter = (): JSX.Element => {
   return (
@@ -27,9 +26,7 @@ const AppRouter = (): JSX.Element => {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/clients" element={<Clients />}>
             <Route path="settings" element={<ClientSettings />} />
-            <Route path="connections" element={<ClientStatus />} />
-            <Route path="maps" element={<Loading />} />
-            <Route path="devices" element={<ClientDevices />} />
+            <Route path="connections" element={<ClientConnections />} />
           </Route>
           <Route path="/apps" element={<Apps />}>
             <Route path="list" element={<AppsList />} />

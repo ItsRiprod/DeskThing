@@ -1,4 +1,6 @@
-import { SocketData } from './types'
+// Ik this is bad practice but I don't have time to fix it right now
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { GithubAsset, SocketData } from './types'
 
 export type OutgoingEvent =
   | 'message'
@@ -121,4 +123,13 @@ export interface AppReturnData {
   author: string
   platforms: string[]
   requirements: string[]
+}
+
+export interface SortedReleases {
+  [key: string]: GithubAsset[]
+}
+
+export interface ReleaseDetails {
+  name: string
+  version: string
 }

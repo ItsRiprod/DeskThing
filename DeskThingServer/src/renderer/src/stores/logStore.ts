@@ -33,6 +33,10 @@ const useLogStore = create<LogStoreState>((set, get) => ({
   },
 
   addLog: (type: string, log: string): void => {
+    if (typeof log !== 'string') {
+      console.error('Log is not a string')
+      log = JSON.stringify(log)
+    }
     const { maxLogLength, maxNumLogs } = get()
     const truncatedLog = log.length > maxLogLength ? `${log.substring(0, maxLogLength)}...` : log
 

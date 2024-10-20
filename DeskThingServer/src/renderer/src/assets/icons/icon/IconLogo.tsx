@@ -31,7 +31,12 @@ function IconLogo(props): JSX.Element {
               ry="0.5"
               fill="#1ed760"
             />
-            <text y="6.45" className="logo logo_text_slide_asd" fontSize="3.52" fill="currentColor">
+            <text
+              y="6.45"
+              className="font-theBoldFont logo_text_slide_asd"
+              fontSize="3.52"
+              fill="currentColor"
+            >
               D e s k T h i n g
             </text>
           </g>

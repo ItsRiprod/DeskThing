@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import usePageStore from '../stores/pageStore'
 import {
-  IconCarThing,
+  IconCarThingSmall,
   IconDownload,
   IconHome,
   IconLayoutgrid,
@@ -33,9 +33,9 @@ const Nav: React.FC = () => {
             location="Clients"
             currentPage={currentPage}
             handleNavigation={handleNavigation}
-            subDirectories={['Devices', 'Connections', 'Settings']}
+            subDirectories={['Connections', 'Settings']}
           >
-            <IconCarThing iconSize={30} />
+            <IconCarThingSmall iconSize={30} />
             <span className="hidden lg:inline group-hover:inline">Clients</span>
           </NavButton>
         </li>

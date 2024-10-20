@@ -1,93 +1,56 @@
-import React, { useEffect, useState } from 'react'
-import Sidebar from '@renderer/components/Sidebar'
+import React, { useState } from 'react'
+import Sidebar from '@renderer/nav/Sidebar'
 import Button from '@renderer/components/Button'
-import { IconGear, IconLink, IconUpload } from '@renderer/assets/icons'
-import { useClientStore, useGithubStore, usePageStore, useSettingsStore } from '@renderer/stores'
-import MainElement from '@renderer/components/MainElement'
-import { GithubAsset, GithubRelease, RepoReleases } from '@shared/types'
-import ReleaseComponent from '@renderer/components/ReleaseComponent'
+import {
+  IconGear,
+  IconLink,
+  IconUpload,
+  IconDownload,
+  IconLogs,
+  IconLoading
+} from '@renderer/assets/icons'
+import { useClientStore, useGithubStore, usePageStore } from '@renderer/stores'
+import MainElement from '@renderer/nav/MainElement'
 import DownloadNotification from '@renderer/overlays/DownloadNotification'
 import ClientSettingsOverlay from '@renderer/overlays/ClientSettingsOverlay'
+import Overlay from '@renderer/overlays/Overlay'
 
 const ClientDownloads: React.FC = () => {
-  const [repoReleases, setRepoReleases] = useState<RepoReleases[]>([])
-  const fetchReleases = useGithubStore((githubStore) => githubStore.fetchReleases)
-  const clientRepos = useSettingsStore((settingsStore) => settingsStore.settings.clientRepos)
-  const loadClient = useClientStore((clientStore) => clientStore.loadClientUrl)
+  const clientReleases = useGithubStore((githubStore) => githubStore.clientReleases)
+  const extractReleaseDetails = useGithubStore((githubStore) => githubStore.extractReleaseDetails)
+  // Running clients
+  const loadClientUrl = useClientStore((clientStore) => clientStore.loadClientUrl)
   const loadClientZip = useClientStore((clientStore) => clientStore.loadClientZip)
   const logging = useClientStore((clientStore) => clientStore.logging)
+
+  // Displaying overlays
   const [showLogging, setShowLogging] = useState(false)
-  const setPage = usePageStore((pageStore) => pageStore.setPage)
-  const [currentIndex, setCurrentIndex] = useState<number>(0)
   const [showClientSettings, setShowClientSettings] = useState(false)
+  const [selectingFile, setSelectingFile] = useState(false)
 
-  const [currentVersion, setCurrentVersion] = useState<GithubRelease | null | undefined>(undefined)
-  const [currentVersionIndex, setCurrentVersionIndex] = useState<number | null>(null)
+  // Displaying available downloads
+  const [clientDownloads, setClientDownloads] = useState<string | null>(null)
 
-  const handleReleaseChange = (index: number): void => {
-    setCurrentVersionIndex(index)
-    if (repoReleases[index]?.releases) {
-      const currentRelease = repoReleases[index].releases[index]
-      setCurrentVersion(currentRelease)
-    } else {
-      setCurrentVersion(null)
-    }
-  }
-
-  const handleRepoChange = (index: number): void => {
-    setCurrentIndex(index)
-    setCurrentVersion(undefined)
-    setCurrentVersionIndex(null)
-  }
+  // Navigation
+  const setPage = usePageStore((pageStore) => pageStore.setPage)
 
   const gotoAppDownloads = (): void => {
     setPage('Downloads/App')
   }
 
   const handleUploadClick = async (): Promise<void> => {
+    setSelectingFile(true)
     const file = await window.electron.selectZipFile()
-    setShowLogging(true)
-
+    setSelectingFile(false)
     if (file) {
-      await loadClientZip(file)
-      setTimeout(() => {
-        setShowLogging(false)
-      }, 5000)
-    }
-  }
-
-  useEffect(() => {
-    const fetchSettings = async (): Promise<void> => {
+      setShowLogging(true)
       try {
-        if (clientRepos.length === 0) {
-          return
-        }
-
-        const allReleases: RepoReleases[] = []
-        for (const repoUrl of clientRepos) {
-          const releases = await fetchReleases(repoUrl)
-          allReleases.push({ repoUrl, releases })
-        }
-        setRepoReleases(allReleases)
-      } catch {
-        return
+        await loadClientZip(file)
+      } catch (error) {
+        // Handle error
+      } finally {
+        setTimeout(() => setShowLogging(false), 5000)
       }
-    }
-
-    fetchSettings()
-  }, [])
-
-  const filterAssets = (assets: GithubAsset[]): GithubAsset[] => {
-    return assets.filter((asset) => asset.name.includes('-client'))
-  }
-
-  const handleAssetClick = async (asset: GithubAsset): Promise<void> => {
-    // Send the selected asset to Electron backend for extraction
-    setShowLogging(true)
-    try {
-      await loadClient(asset.browser_download_url)
-    } catch (error) {
-      setShowLogging(false)
     }
   }
 
@@ -95,11 +58,35 @@ const ClientDownloads: React.FC = () => {
     setShowLogging(false)
   }
 
-  const getNameFromRepoUrl = (repoUrl: string): string => {
-    const url = new URL(repoUrl)
-    const pathParts = url.pathname.split('/')
-    const appName = pathParts[pathParts.length - 1]
-    return appName
+  const handleDownloadClick = async (url: string): Promise<void> => {
+    setShowLogging(true)
+    setClientDownloads(null)
+    try {
+      await loadClientUrl(url)
+    } catch (error) {
+      await setTimeout(() => setShowLogging(false), 2000)
+    }
+  }
+
+  const handleDownloadLatestClick = async (name: string): Promise<void> => {
+    if (clientReleases[name] && clientReleases[name].length > 0) {
+      const latest = clientReleases[name].reduce((latest, current) =>
+        new Date(current.updated_at) > new Date(latest.updated_at) ? current : latest
+      )
+      handleDownloadClick(latest.browser_download_url)
+    }
+  }
+
+  const handleMoreDownloadsClick = (name: string): void => {
+    setClientDownloads(name)
+  }
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
   return (
@@ -112,88 +99,123 @@ const ClientDownloads: React.FC = () => {
           onClose={handleDownloadFinalized}
         />
       )}
-      <Sidebar className="flex justify-between flex-col h-full max-h-full md:items-stretch items-center">
-        <div className="flex flex-col gap-2">
-          <div className="border-b w-full text-center my-1 font-semibold">
-            <p>
-              <span className="md:inline hidden">Github</span> Source
-            </p>
+      {clientDownloads && (
+        <Overlay
+          onClose={() => setClientDownloads(null)}
+          className="border border-gray-500 w-4/5 lg:w-[960px] h-5/6 p-5 flex flex-col"
+        >
+          <div className="text-2xl py-5">
+            {clientDownloads.charAt(0).toUpperCase() + clientDownloads.slice(1).toLowerCase()}{' '}
+            Client Downloads
           </div>
-          {repoReleases.map((repo, index) => (
-            <Button
-              key={repo.repoUrl}
-              className={`${currentIndex == index ? 'border-gray-500 bg-gray-500' : 'border-gray-500'} `}
-              onClick={() => {
-                handleRepoChange(index)
-              }}
-            >
-              <p className="text-xs md:text-sm">{getNameFromRepoUrl(repo.repoUrl)}</p>
-            </Button>
-          ))}
-        </div>
+          <div className="w-full h-full overflow-y-auto">
+            <div className="w-full h-full flex flex-col gap-2">
+              {clientReleases[clientDownloads] &&
+                clientReleases[clientDownloads].map((release, index) => {
+                  const clientDetails = extractReleaseDetails(release.name)
+                  const fileSize = formatFileSize(release.size)
+
+                  return (
+                    <div
+                      className="flex flex-row justify-between items-center bg-zinc-900 px-3 p-2 rounded"
+                      key={index}
+                    >
+                      <div className="">
+                        <div className="flex items-center">
+                          <h1 className="text-2xl font-semibold">
+                            {clientDetails.name.charAt(0).toUpperCase() +
+                              clientDetails.name.slice(1).toLowerCase()}
+                          </h1>
+                          <p className="italic text-gray-500">
+                            {clientDetails.version.replace('.zip', '')}
+                          </p>
+                        </div>
+                        <p className="text-xs text-gray-500">{release.download_count} Downloads</p>
+                        <p className="text-xs text-gray-500">
+                          Uploaded {new Date(release.created_at).toDateString()}
+                        </p>
+                      </div>
+                      <div>
+                        <Button
+                          className="group gap-2"
+                          onClick={() => handleDownloadClick(release.browser_download_url)}
+                        >
+                          <p className="group-hover:block hidden text-center flex-grow">
+                            Download {fileSize}
+                          </p>
+                          <IconDownload className="group-hover:stroke-2 stroke-1" />
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                })}
+            </div>
+          </div>
+        </Overlay>
+      )}
+      <Sidebar className="flex justify-end flex-col h-full max-h-full md:items-stretch items-center">
         <div>
           <div className="flex flex-col gap-2">
-            <Button
-              className="border-gray-500 hover:bg-gray-500"
-              onClick={() => setShowClientSettings(true)}
-            >
+            <Button className="hover:bg-zinc-900" onClick={() => setShowClientSettings(true)}>
               <IconGear strokeWidth={1.5} />
               <p className="md:block hidden text-center flex-grow">Client Settings</p>
             </Button>
-            <Button onClick={handleUploadClick} className="border-gray-500 hover:bg-gray-500">
-              <IconUpload strokeWidth={1.5} />
+            <Button
+              onClick={handleUploadClick}
+              className="hover:bg-zinc-900"
+              disabled={selectingFile}
+            >
+              {selectingFile ? <IconLoading /> : <IconUpload strokeWidth={1.5} />}
               <p className="md:block hidden text-center flex-grow">Upload Client</p>
             </Button>
-            <Button onClick={gotoAppDownloads} className="border-gray-500 hover:bg-gray-500">
+            <Button onClick={gotoAppDownloads} className="hover:bg-zinc-900">
               <IconLink strokeWidth={1.5} />
               <p className="md:block hidden text-center flex-grow">Apps</p>
             </Button>
           </div>
         </div>
       </Sidebar>
-      <MainElement>
-        <div className="w-full h-20 relative overflow-x-scroll flex flex-col">
-          {repoReleases[currentIndex] ? (
-            <div className="flex absolute inset w-full min-w-fit border-b border-gray-500">
-              {repoReleases[currentIndex].releases.map((release, index) => (
-                <button
-                  key={index}
-                  className={`p-3 w-fit hover:bg-zinc-700 ${currentVersionIndex == index ? 'bg-zinc-800' : 'text-gray-500 hover:text-white'}`}
-                  onClick={() => {
-                    handleReleaseChange(index)
-                  }}
+      <MainElement className="p-4">
+        <div className="w-full h-full relative overflow-y-auto flex flex-col">
+          <div className="absolute inset w-full h-full flex flex-col gap-2">
+            {Object.keys(clientReleases).length > 0 ? (
+              Object.keys(clientReleases).map((name) => (
+                <div
+                  key={name}
+                  className="flex bg-zinc-900 rounded-lg justify-between items-center p-2"
                 >
-                  <p className="text-nowrap">{release.tag_name}</p>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <p>Loading...</p>
-          )}
-        </div>
-        <div className="relative w-full h-full overflow-y-auto">
-          <div className="absolute inset w-full p-5">
-            {currentVersion ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                {filterAssets(currentVersion.assets)
-                  .reverse()
-                  .map((asset, index) => (
-                    <ReleaseComponent
-                      key={index}
-                      asset={asset}
-                      onClick={handleAssetClick}
-                      loading={showLogging}
-                    />
-                  ))}
-              </div>
+                  <div>
+                    <h1 className="text-xl">
+                      {name.charAt(0).toUpperCase() + name.slice(1).toLowerCase()} Client
+                    </h1>
+                    <p className="text-sm text-gray-500">
+                      {clientReleases[name].length} available downloads
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button className="group gap-2" onClick={() => handleDownloadLatestClick(name)}>
+                      <p className="group-hover:block hidden text-center flex-grow">
+                        Download Latest
+                      </p>
+                      <IconDownload className="group-hover:stroke-2 stroke-1" />
+                    </Button>
+                    <Button className="group gap-2" onClick={() => handleMoreDownloadsClick(name)}>
+                      <p className="group-hover:block hidden text-center flex-grow">
+                        More Downloads
+                      </p>
+                      <IconLogs className="group-hover:stroke-2 stroke-1" />
+                    </Button>
+                  </div>
+                </div>
+              ))
             ) : (
-              <div>
-                <h1 className="text-xl mb-5 font-semibold">Client Downloads</h1>
-                {currentVersion === undefined ? (
-                  <p>Select a release to see the available downloads</p>
-                ) : (
-                  <p>Release has no versions available</p>
-                )}
+              <div className="w-full h-full flex flex-col justify-center items-center">
+                <h1 className="text-2xl font-semibold">Uh oh-</h1>
+                <p>Unable to find or fetch releases</p>
+                <p className="text-sm text-gray-500 italic text-center">
+                  Check the logs for a potential reason. You might have hit the Github API limit.
+                  Try again later or add a repo in settings!
+                </p>
               </div>
             )}
           </div>

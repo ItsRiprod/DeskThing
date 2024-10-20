@@ -7,7 +7,11 @@ interface DownloadNotificationProps {
   title?: string
 }
 
-const DownloadNotification: React.FC<DownloadNotificationProps> = ({ loggingData, onClose, title = 'Loading App...' }) => {
+const DownloadNotification: React.FC<DownloadNotificationProps> = ({
+  loggingData,
+  onClose,
+  title = 'Loading App...'
+}) => {
   useEffect(() => {
     if (loggingData) {
       if (loggingData.final) {

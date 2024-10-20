@@ -69,7 +69,7 @@ const ClientSettingsOverlay: React.FC<ClientSettingsOverlayProps> = ({ onClose }
                     {clientSettings.client_name}{' '}
                     <p className="text-xs font-normal">{clientSettings.version}</p>
                   </h1>
-                  <p className="">ID: {clientSettings.id}</p>
+                  <p className="">ID: {clientSettings.client_name}</p>
                 </div>
                 <p className="text-xs italic">{clientSettings.description}</p>
               </div>

@@ -1,5 +1,5 @@
 import ErrorBoundary from './components/ErrorBoundary'
-import AppRouter from './components/Router'
+import AppRouter from './nav/Router'
 import Store from './stores/Store'
 
 export type SidebarView = 'home' | 'apps' | 'client' | 'dev'

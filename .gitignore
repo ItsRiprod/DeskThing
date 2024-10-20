@@ -36,3 +36,4 @@ mediawincs
 CommunityApps
 *.zip
 /DeskThingServer/src/renderer/srcBackup
+/DeskThingServer/docs

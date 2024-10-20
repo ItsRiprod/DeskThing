@@ -2,7 +2,7 @@ import React from 'react'
 
 interface ButtonProps {
   children: React.ReactNode
-  onClick?: () => void
+  onClick?: (e) => void
   className?: string
   href?: string
   target?: string
@@ -20,7 +20,7 @@ const Button: React.FC<ButtonProps> = ({
   disabled,
   onMouseEnter
 }) => {
-  const baseClasses = 'flex-row flex p-3 border hover:font-semibold rounded-xl'
+  const baseClasses = 'flex-row flex p-3 bg-black hover:font-semibold rounded-md'
   const combinedClasses = `${baseClasses} ${className}`
 
   if (href) {

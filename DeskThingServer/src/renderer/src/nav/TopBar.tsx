@@ -7,7 +7,7 @@ const TopBar: React.FC = () => {
   const connections = useClientStore((clientStore) => clientStore.connections)
   const version = process.env.PACKAGE_VERSION
   return (
-    <div className="bg-black border-slate-800 border-b text-white flex items-center justify-between">
+    <div className="bg-zinc-950 border-zinc-800 border-b text-white flex items-center justify-between">
       <div className="flex items-center p-4 min-w-24 md:min-w-48">
         {connections == 0 ? (
           <IconWifiDisconnect className="text-white pt-1" iconSize={24} />

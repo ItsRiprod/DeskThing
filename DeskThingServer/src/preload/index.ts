@@ -84,6 +84,9 @@ const api = {
 
   // Clients
 
+  pingClient: (clientId: string): Promise<string | null> =>
+    sendCommand('CLIENT', { type: 'ping', request: 'set', payload: clientId }),
+
   handleClientZip: async (path: string): Promise<void> =>
     sendCommand('CLIENT', {
       type: 'zip',
@@ -143,7 +146,7 @@ const api = {
   // Utility
 
   ping: (): Promise<void> => {
-    return sendCommand('CLIENT', {
+    return sendCommand('UTILITY', {
       type: 'ping',
       request: 'set',
       payload: undefined

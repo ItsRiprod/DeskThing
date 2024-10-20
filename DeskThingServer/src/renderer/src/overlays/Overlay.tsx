@@ -1,3 +1,5 @@
+import { IconX } from '@renderer/assets/icons'
+import Button from '@renderer/components/Button'
 import React, { useRef, useEffect } from 'react'
 
 interface DownloadConfirmationProps {
@@ -24,7 +26,10 @@ const Overlay: React.FC<DownloadConfirmationProps> = ({ onClose, className, chil
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div ref={overlayRef} className={`bg-black rounded-lg w-fit p-6 ${className}`}>
+      <div ref={overlayRef} className={`relative bg-black rounded-lg ${className}`}>
+        <Button className="absolute top-2 right-2 hover:bg-zinc-900" onClick={onClose}>
+          <IconX />
+        </Button>
         {children}
       </div>
     </div>

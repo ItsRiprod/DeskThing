@@ -6,6 +6,8 @@ type AppData = { [key: string]: string }
 declare global {
   interface Window {
     electron: ElectronAPI & {
+      ping: () => Promise<string>
+      pingClient: (clientId: string) => Promise<string | null>
       getApps: () => Promise<App[]>
       getAppData: (appId: string) => Promise<AppDataInterface | null>
       setAppData: (appId: string, data: AppDataInterface) => Promise<void>

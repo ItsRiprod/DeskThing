@@ -1,3 +1,5 @@
+// Ik this is bad practice but I don't have time to fix it right now
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export interface GithubRelease {
   url: string
   assets_url: string
@@ -74,7 +76,6 @@ export type GithubAsset = {
 }
 
 export interface Client {
-  id: string
   ip: string
   port?: number
   hostname?: string
@@ -82,6 +83,7 @@ export interface Client {
   userAgent?: string
   connectionId: string
   connected: boolean
+  adbId?: string
   timestamp: number
   currentApp?: string
   version?: string
@@ -90,6 +92,26 @@ export interface Client {
   device_type?: { id: number; name: string }
   default_view?: string
   miniplayer?: string
+}
+
+export interface ClientManifest {
+  name: string
+  id: string
+  short_name: string
+  description: string
+  builtFor: string
+  reactive: boolean
+  author: string
+  version: string
+  port: number
+  ip: string
+  default_view: string
+  miniplayer: string
+  compatible_server?: number[]
+  uuid?: string
+  version_code?: number
+  adbId?: string
+  device_type: { id: number; name: string }
 }
 
 export interface RepoReleases {
@@ -112,6 +134,7 @@ export interface SocketData {
 
 export interface Settings {
   version: string
+  version_code: number
   callbackPort: number
   devicePort: number
   address: string

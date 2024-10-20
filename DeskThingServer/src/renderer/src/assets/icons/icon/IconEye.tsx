@@ -1,6 +1,6 @@
 import { Icon } from '.'
 
-function IconSave(props): JSX.Element {
+function IconEye(props): JSX.Element {
   return (
     <Icon {...props}>
       <svg
@@ -11,12 +11,11 @@ function IconSave(props): JSX.Element {
         strokeLinecap="round"
         strokeLinejoin="round"
       >
-        <path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
-        <path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" />
-        <path d="M7 3v4a1 1 0 0 0 1 1h7" />
+        <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
+        <circle cx="12" cy="12" r="3" />
       </svg>
     </Icon>
   )
 }
 
-export default IconSave
+export default IconEye

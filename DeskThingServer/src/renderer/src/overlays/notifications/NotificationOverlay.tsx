@@ -1,0 +1,106 @@
+import React, { useState } from 'react'
+import Overlay from '../Overlay'
+import Button from '@renderer/components/Button'
+import { IconBell, IconLayoutgrid, IconLogs, IconWarning } from '@renderer/assets/icons'
+import LogsPage from './LogsPage'
+import { useNotificationStore } from '@renderer/stores/'
+import RequestsPage from './RequestsPage'
+import TasksPage from './TasksPage'
+import IssuesPage from './IssuesPage'
+
+interface NotificationOverlayProps {
+  onClose: () => void
+}
+
+const NotificationOverlay: React.FC<NotificationOverlayProps> = ({ onClose }) => {
+  const notifState = useNotificationStore((state) => state)
+  const [page, setPage] = useState('logs')
+
+  const activeTasks = notifState.tasks.filter(
+    (task) => task.status !== 'complete' && task.status !== 'rejected'
+  )
+
+  return (
+    <Overlay
+      onClose={onClose}
+      className="border border-gray-500 w-5/6 h-5/6 flex flex-col overflow-hidden"
+    >
+      <div className="w-full py-4 bg-zinc-900 px-5">
+        <h1 className="font-semibold text-2xl">Notifications</h1>
+      </div>
+      <div className="flex h-full">
+        <div className="border-r border-gray-500 p-2 bg-zinc-900 flex flex-col gap-2">
+          <NavComponent
+            setPage={setPage}
+            page="Log"
+            curPage={page}
+            value={notifState.logs.length}
+            Icon={<IconLogs />}
+          />
+          <NavComponent
+            setPage={setPage}
+            page="Issue"
+            curPage={page}
+            value={notifState.issues.length}
+            Icon={<IconWarning />}
+          />
+          <NavComponent
+            setPage={setPage}
+            page="Request"
+            curPage={page}
+            value={notifState.requestQueue.length}
+            Icon={<IconBell />}
+          />
+          <NavComponent
+            setPage={setPage}
+            page="Task"
+            curPage={page}
+            value={activeTasks.length}
+            Icon={<IconLayoutgrid />}
+          />
+        </div>
+        <div className="w-full">
+          {page == 'issue' && <IssuesPage />}
+          {page == 'log' && <LogsPage />}
+          {page == 'request' && <RequestsPage />}
+          {page == 'task' && <TasksPage />}
+        </div>
+      </div>
+    </Overlay>
+  )
+}
+interface NavComponentProps {
+  setPage: (app: string) => void
+  page: string
+  curPage: string
+  value: number
+  Icon: React.ReactElement
+}
+
+const NavComponent = ({
+  setPage,
+  page,
+  curPage,
+  value,
+  Icon
+}: NavComponentProps): React.ReactElement => (
+  <Button
+    onClick={() => setPage(page.toLowerCase())}
+    className={`gap-2 ${curPage == page.toLowerCase() ? 'bg-zinc-800 hover:bg-zinc-700' : 'bg-zinc-900 hover:bg-zinc-800'}`}
+  >
+    {value > 0 ? (
+      <div className="flex">
+        <p>{value}</p>
+        <div className="md:hidden block">{Icon}</div>
+      </div>
+    ) : (
+      Icon
+    )}
+    <p className="hidden md:block">
+      {page}
+      {value != 1 && 's'}
+    </p>
+  </Button>
+)
+
+export default NotificationOverlay

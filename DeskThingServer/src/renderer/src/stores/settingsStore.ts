@@ -13,6 +13,7 @@ interface SettingsStoreState {
 const useSettingsStore = create<SettingsStoreState>((set, get) => ({
   settings: {
     version: '0.0.0',
+    version_code: 0,
     callbackPort: -1,
     devicePort: -1,
     address: '-.-.-.-',
@@ -21,14 +22,8 @@ const useSettingsStore = create<SettingsStoreState>((set, get) => ({
     globalADB: true,
     autoDetectADB: true,
     localIp: ['-.-.-.-'],
-    appRepos: [
-      'https://github.com/ItsRiprod/deskthing-apps',
-      'https://github.com/ItsRiprod/DeskThing'
-    ],
-    clientRepos: [
-      'https://github.com/ItsRiprod/deskthing-client',
-      'https://github.com/ItsRiprod/DeskThing'
-    ]
+    appRepos: ['https://github.com/ItsRiprod/deskthing-apps'],
+    clientRepos: ['https://github.com/ItsRiprod/deskthing-client']
   },
 
   getSettings: async (): Promise<Settings> => {
@@ -51,12 +46,10 @@ const useSettingsStore = create<SettingsStoreState>((set, get) => ({
 
   saveSettings: (settings: Settings): void => {
     set({ settings })
-    console.log('Saving Settings:', settings)
     window.electron.saveSettings(settings)
   },
 
   setSettings: (settings: Settings): void => {
-    console.log('Setting Settings:', settings)
     set({ settings })
   }
 }))
