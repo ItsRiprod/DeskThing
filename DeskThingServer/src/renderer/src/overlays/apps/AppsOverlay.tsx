@@ -1,16 +1,22 @@
 import React from 'react'
 import Overlay from '../Overlay'
-import { IconCarThingSmall, IconComputer, IconServer } from '@renderer/assets/icons'
+import { IconGear, IconLogs, IconPlay } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
-import ClientSettings from './ClientSettings'
-import DeviceSettings from './DeviceSettings'
-import ServerSettings from './ServerSettings'
 import { useSearchParams } from 'react-router-dom'
+import AppActions from './AppActions'
+import AppDetails from './AppDetails'
+import AppSettings from './AppSettings'
+import { App } from '@shared/types'
+import { useAppStore } from '@renderer/stores'
+
+export interface AppSettingProps {
+  app: App
+}
 
 const settingsPages = [
-  { key: 'server', label: 'Server', Icon: IconServer },
-  { key: 'client', label: 'Client', Icon: IconComputer },
-  { key: 'device', label: 'Device', Icon: IconCarThingSmall }
+  { key: 'actions', label: 'Actions', Icon: IconPlay },
+  { key: 'details', label: 'Details', Icon: IconLogs },
+  { key: 'settings', label: 'Settings', Icon: IconGear }
 ]
 
 /**
@@ -20,12 +26,19 @@ const settingsPages = [
  * It allows users to view and modify various client configuration options.
  *
  */
-const SettingsOverlay: React.FC = () => {
+const AppsOverlay: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams()
-  const currentPage = searchParams.get('page') || 'server'
+  const currentPage = searchParams.get('page') || 'details'
+
+  const appId = searchParams.get('appId')
+
+  const app = useAppStore((state) => state.appsList.find((app) => app.name === appId))
+
+  if (!app) return null
 
   const onClose = (): void => {
-    searchParams.delete('settings')
+    searchParams.delete('app')
+    searchParams.delete('appId')
     searchParams.delete('page')
     setSearchParams(searchParams)
   }
@@ -41,7 +54,7 @@ const SettingsOverlay: React.FC = () => {
       className="border border-gray-500 w-5/6 h-5/6 flex flex-col overflow-hidden"
     >
       <div className="w-full py-4 bg-zinc-900 px-5">
-        <h1 className="font-semibold text-2xl">Settings</h1>
+        <h1 className="font-semibold text-2xl">{app.manifest?.label || appId} Settings</h1>
       </div>
       <div className="flex h-full">
         <div className="border-r border-gray-500 p-2 bg-zinc-900 flex flex-col gap-2">
@@ -57,9 +70,9 @@ const SettingsOverlay: React.FC = () => {
           ))}
         </div>
         <div className="w-full">
-          {currentPage == 'client' && <ClientSettings />}
-          {currentPage == 'device' && <DeviceSettings />}
-          {currentPage == 'server' && <ServerSettings />}
+          {currentPage == 'actions' && <AppActions app={app} />}
+          {currentPage == 'details' && <AppDetails app={app} />}
+          {currentPage == 'settings' && <AppSettings app={app} />}
         </div>
       </div>
     </Overlay>
@@ -89,4 +102,4 @@ const SettingsComponent = ({
   </Button>
 )
 
-export default SettingsOverlay
+export default AppsOverlay

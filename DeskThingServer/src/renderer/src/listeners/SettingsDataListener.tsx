@@ -8,11 +8,13 @@ const SettingsDataListener = (): null => {
   const fetchClientRepo = useGithubStore((state) => state.fetchClientRepo)
   const cachedRepos = useGithubStore((state) => state.cachedRepos)
 
+  const dev = false
+
   useEffect(() => {
     const handleSettingsUpdate = async (_event, settings: Settings): Promise<void> => {
       await setSettings(settings)
 
-
+      if (dev) return
       // Fetch and cache releases for new app repos
       if (settings.appRepos) {
         for (const repoUrl of settings.appRepos) {
@@ -35,6 +37,7 @@ const SettingsDataListener = (): null => {
       console.log('Initial Settings', settings)
       setSettings(settings)
 
+      if (dev) return
       // Fetch and cache releases for initial app repos
       if (settings.appRepos) {
         for (const repoUrl of settings.appRepos) {

@@ -2,23 +2,27 @@ import React, { useState } from 'react'
 import Overlay from '../Overlay'
 import Button from '@renderer/components/Button'
 import { IconBell, IconLayoutgrid, IconLogs, IconWarning } from '@renderer/assets/icons'
-import LogsPage from './LogsPage'
+import EvensPage from './EventsPage'
 import { useNotificationStore } from '@renderer/stores/'
 import RequestsPage from './RequestsPage'
 import TasksPage from './TasksPage'
 import IssuesPage from './IssuesPage'
+import { useSearchParams } from 'react-router-dom'
 
-interface NotificationOverlayProps {
-  onClose: () => void
-}
+const NotificationOverlay: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams()
 
-const NotificationOverlay: React.FC<NotificationOverlayProps> = ({ onClose }) => {
   const notifState = useNotificationStore((state) => state)
-  const [page, setPage] = useState('logs')
+  const [page, setPage] = useState('event')
 
   const activeTasks = notifState.tasks.filter(
     (task) => task.status !== 'complete' && task.status !== 'rejected'
   )
+
+  const onClose = (): void => {
+    searchParams.delete('notifications')
+    setSearchParams(searchParams)
+  }
 
   return (
     <Overlay
@@ -32,7 +36,7 @@ const NotificationOverlay: React.FC<NotificationOverlayProps> = ({ onClose }) =>
         <div className="border-r border-gray-500 p-2 bg-zinc-900 flex flex-col gap-2">
           <NavComponent
             setPage={setPage}
-            page="Log"
+            page="Event"
             curPage={page}
             value={notifState.logs.length}
             Icon={<IconLogs />}
@@ -61,7 +65,7 @@ const NotificationOverlay: React.FC<NotificationOverlayProps> = ({ onClose }) =>
         </div>
         <div className="w-full">
           {page == 'issue' && <IssuesPage />}
-          {page == 'log' && <LogsPage />}
+          {page == 'event' && <EvensPage />}
           {page == 'request' && <RequestsPage />}
           {page == 'task' && <TasksPage />}
         </div>
@@ -86,16 +90,10 @@ const NavComponent = ({
 }: NavComponentProps): React.ReactElement => (
   <Button
     onClick={() => setPage(page.toLowerCase())}
-    className={`gap-2 ${curPage == page.toLowerCase() ? 'bg-zinc-800 hover:bg-zinc-700' : 'bg-zinc-900 hover:bg-zinc-800'}`}
+    className={`gap-2 ${curPage == page.toLowerCase() ? 'bg-zinc-800 hover:bg-zinc-700' : 'bg-zinc-900 hover:bg-zinc-800'} ${value == 0 && 'text-gray-500'}`}
   >
-    {value > 0 ? (
-      <div className="flex">
-        <p>{value}</p>
-        <div className="md:hidden block">{Icon}</div>
-      </div>
-    ) : (
-      Icon
-    )}
+    {value > 0 && <p>{value}</p>}
+    <div className="md:hidden block">{Icon}</div>
     <p className="hidden md:block">
       {page}
       {value != 1 && 's'}

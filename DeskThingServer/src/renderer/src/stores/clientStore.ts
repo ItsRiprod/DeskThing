@@ -1,6 +1,7 @@
 import { create } from 'zustand'
-import { Client, LoggingData } from '@shared/types'
+import { Client, ClientManifest, LoggingData } from '@shared/types'
 import useNotificationStore from './notificationStore'
+import useSettingsStore from './settingsStore'
 
 // Utility function to parse ADB devices
 const parseADBDevices = (response: string): string[] => {
@@ -15,19 +16,19 @@ interface ClientStoreState {
   connections: number
   clients: Client[]
   logging: LoggingData | null
-  clientManifest: Client | null
+  clientManifest: ClientManifest | null
 
   // Actions
   setADBDevices: (devices: string[]) => void
   setConnections: (connections: number) => Promise<void>
   setClients: (clients: Client[]) => void
-  setClientManifest: (client: Client) => void
+  setClientManifest: (client: ClientManifest) => void
   requestClientManifest: () => Promise<Partial<Client>>
   requestADBDevices: () => Promise<void>
   requestConnections: () => Promise<void>
   loadClientUrl: (url: string) => Promise<void>
   loadClientZip: (zip: string) => Promise<void>
-  updateClientManifest: (client: Partial<Client>) => void
+  updateClientManifest: (client: Partial<ClientManifest>) => void
 }
 
 // Create Zustand store
@@ -40,9 +41,9 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
 
   // Setters
   setADBDevices: (devices: string[]): void => {
-    set({ ADBDevices: devices })
+    const currentDevices = get().ADBDevices
+    const newDevices = devices.filter((device) => !currentDevices.includes(device))
 
-    // Update the clients array with the new devices
     set((state) => {
       const updatedClients = state.clients.filter(
         (client) => client.connected || devices.includes(client.adbId || 'XXXXX')
@@ -63,8 +64,24 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
         }
       })
 
-      return { clients: updatedClients as Client[] }
+      return {
+        ADBDevices: devices,
+        clients: updatedClients as Client[]
+      }
     })
+
+    if (newDevices.length > 0) {
+      const { autoConfig } = useSettingsStore.getState().settings
+
+      if (autoConfig) {
+        newDevices.forEach((deviceId) => {
+          const client = get().clients.find((c) => c.adbId === deviceId)
+          if (client && !client.connected) {
+            window.electron.configureDevice(deviceId)
+          }
+        })
+      }
+    }
   },
 
   setConnections: async (connections: number): Promise<void> => set({ connections }),
@@ -77,9 +94,9 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
       resolveTask('adbdevices-configure')
     }
   },
-  setClientManifest: (client: Client): void => set({ clientManifest: client }),
+  setClientManifest: (client: ClientManifest): void => set({ clientManifest: client }),
 
-  requestClientManifest: async (): Promise<Partial<Client>> => {
+  requestClientManifest: async (): Promise<Partial<ClientManifest>> => {
     const clientManifest = await window.electron.getClientManifest()
 
     if (!clientManifest) {
@@ -146,7 +163,7 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
   loadClientUrl: async (url: string): Promise<void> => {
     const promise = window.electron.handleClientURL(url)
 
-    const loggingListener = (_event: any, reply: LoggingData): void => {
+    const loggingListener = (_event: Electron.Event, reply: LoggingData): void => {
       set({ logging: reply })
       if (reply.final === true || reply.status === false) {
         removeListener()
@@ -161,7 +178,7 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
   loadClientZip: async (zip: string): Promise<void> => {
     const promise = window.electron.handleClientZip(zip)
 
-    const loggingListener = (_event: any, reply: LoggingData): void => {
+    const loggingListener = (_event: Electron.Event, reply: LoggingData): void => {
       set({ logging: reply })
       if (reply.final === true || reply.status === false) {
         removeListener()

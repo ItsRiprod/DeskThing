@@ -1,11 +1,15 @@
-import React, { useEffect } from 'react'
+import React from 'react'
 import { useNotificationStore } from '@renderer/stores'
+import { IconX } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
-import { IconCheck, IconEye, IconX } from '@renderer/assets/icons'
 
-const LogsPage: React.FC = () => {
+const EvensPage: React.FC = () => {
   const logs = useNotificationStore((state) => state.logs)
   const readLogs = useNotificationStore((state) => state.readLog)
+
+  const handleReadLogs = (): void => {
+    readLogs()
+  }
 
   return (
     <div className="w-full h-full p-4 flex flex-col">
@@ -26,9 +30,9 @@ const LogsPage: React.FC = () => {
               >
                 <button
                   onClick={() => readLogs(index)}
-                  className="border-l pl-2 hover:bg-gray-900 relative group border-gray-500 flex items-center justify-center w-full"
+                  className="pl-2 py-2 rounded-xl hover:bg-zinc-900 relative group border-gray-500 flex items-center justify-center w-full"
                 >
-                  <div className="absolute left-1 text-red-500 hidden group-hover:block">
+                  <div className="absolute right-1  text-red-500 hidden group-hover:block">
                     <IconX />
                   </div>
                   <p>{log.log}</p>
@@ -40,8 +44,13 @@ const LogsPage: React.FC = () => {
           <p className="text-gray-500">No events found.</p>
         )}
       </div>
+      {logs.length > 0 && (
+        <Button onClick={handleReadLogs}>
+          <p>Clear All</p>
+        </Button>
+      )}
     </div>
   )
 }
 
-export default LogsPage
+export default EvensPage

@@ -5,7 +5,7 @@ import { IconPlus } from '@renderer/assets/icons'
 import MainElement from '@renderer/nav/MainElement'
 
 const ClientSettings: React.FC = () => {
-  const [disabled, setDisabled] = useState(true)
+  const [disabled, _setDisabled] = useState(true)
 
   return (
     <div className="flex h-full w-full">

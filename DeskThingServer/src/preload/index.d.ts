@@ -1,5 +1,5 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
-import { AppDataInterface, AppReturnData, Client } from '@shared/types'
+import { AppDataInterface, AppReturnData, Client, ClientManifest } from '@shared/types'
 
 type AppData = { [key: string]: string }
 
@@ -25,7 +25,8 @@ declare global {
       handleClientZip: (path: string) => Promise<void>
       handleClientURL: (url: string) => Promise<void>
       handleClientADB: (command: string) => Promise<string>
-      getClientManifest: () => Promise<Client>
+      configureDevice: (deviceId: string) => Promise<void>
+      getClientManifest: () => Promise<ClientManifest>
       updateClientManifest: (client: Partial<Client>) => Promise<void>
       pushStagedApp: (clientId: string) => Promise<void>
       pushProxyScript: (clientId: string) => Promise<void>
@@ -45,6 +46,7 @@ declare global {
       openLogsFolder: () => Promise<void>
       selectZipFile: () => Promise<string | undefined>
       refreshFirewall: () => Promise<void>
+      restartServer: () => Promise<void>
     }
     api: unknown // Or define `api` more specifically if you have a shape for it
   }

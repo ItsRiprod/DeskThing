@@ -1,11 +1,12 @@
 import { IconBell } from '@renderer/assets/icons'
 import React, { useEffect, useState } from 'react'
 import Button from './Button'
-import NotificationOverlay from '@renderer/overlays/notifications/NotificationOverlay'
 import { useNotificationStore } from '@renderer/stores'
+import { useSearchParams } from 'react-router-dom'
 
 const NotificationButton: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false)
+  const [_searchParams, setSearchParams] = useSearchParams()
+
   const taskNum = useNotificationStore((state) => state.totalTasks)
   const logs = useNotificationStore((state) => state.logs)
   const issues = useNotificationStore((state) => state.issues.length)
@@ -20,10 +21,13 @@ const NotificationButton: React.FC = () => {
     })
   }, [logs])
 
+  const handleOpenNotifications = (): void => {
+    setSearchParams({ notifications: 'true' })
+  }
+
   return (
     <>
-      {isOpen && <NotificationOverlay onClose={() => setIsOpen(false)} />}
-      <Button onClick={() => setIsOpen(true)} className={`gap-2 hover:bg-zinc-900`}>
+      <Button onClick={handleOpenNotifications} className={`gap-2 hover:bg-zinc-900`}>
         {taskNum > 0 ? (
           <p
             className={`${errors > 0 || issues > 0 ? 'bg-red-500' : 'bg-green-500'} p-1 w-full rounded text-xs`}

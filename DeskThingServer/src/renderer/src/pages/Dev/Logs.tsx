@@ -32,7 +32,7 @@ const Logs: React.FC = () => {
     }
   }, [filteredLogs, autoScroll])
 
-  const handleScroll = () => {
+  const handleScroll = (): void => {
     if (logContainerRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = logContainerRef.current
       const isScrolledToBottom = scrollTop + clientHeight >= scrollHeight - 10 // 10px threshold

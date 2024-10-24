@@ -21,6 +21,7 @@ import {
   sendMessageToClient,
   sendSettingsData
 } from './clientCom'
+import { sendIpcData } from '../..'
 
 export let server: WebSocketServer | null = null
 export let httpServer: HttpServer
@@ -32,7 +33,7 @@ let currentAddress
 const messageThrottles = new Map()
 const THROTTLE_DELAY = 100 // milliseconds
 
-export const restartServer = (): void => {
+export const restartServer = async (): Promise<void> => {
   try {
     if (server) {
       console.log('WSOCKET: Shutting down the WebSocket server...')
@@ -228,6 +229,10 @@ const handleServerMessage = (socket, client: Client, messageData: SocketData): v
                 payload: new Date().toISOString()
               })
             )
+            break
+          case 'pong':
+            console.log('Received pong from ', client.connectionId)
+            sendIpcData(`pong-${client.connectionId}`, messageData.payload)
             break
           case 'set':
             switch (messageData.request) {

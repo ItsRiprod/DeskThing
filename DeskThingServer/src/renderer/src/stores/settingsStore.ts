@@ -19,8 +19,9 @@ const useSettingsStore = create<SettingsStoreState>((set, get) => ({
     address: '-.-.-.-',
     autoStart: true,
     minimizeApp: true,
-    globalADB: true,
-    autoDetectADB: true,
+    autoConfig: false,
+    globalADB: false,
+    autoDetectADB: false,
     localIp: ['-.-.-.-'],
     appRepos: ['https://github.com/ItsRiprod/deskthing-apps'],
     clientRepos: ['https://github.com/ItsRiprod/deskthing-client']

@@ -112,6 +112,7 @@ class SettingsStore {
       devicePort: 8891,
       address: '0.0.0.0',
       autoStart: false,
+      autoConfig: false,
       minimizeApp: true,
       globalADB: false,
       autoDetectADB: false,

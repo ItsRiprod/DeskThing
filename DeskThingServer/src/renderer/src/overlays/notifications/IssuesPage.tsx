@@ -14,7 +14,9 @@ const IssuesPage: React.FC = () => {
               <div key={index} className="group">
                 <div className="bg-zinc-900 shadow-md rounded-lg p-4 mb-4">
                   <h2 className="text-xl font-semibold mb-2">{issue.title}</h2>
-                  <p className="text-gray-500 group-hover:text-gray-400 mb-2">{issue.description}</p>
+                  <p className="text-gray-500 group-hover:text-gray-400 mb-2">
+                    {issue.description}
+                  </p>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-500">ID: {issue.id}</span>
                   </div>

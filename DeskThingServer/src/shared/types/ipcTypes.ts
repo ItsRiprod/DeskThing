@@ -22,6 +22,7 @@ export type UTILITY_TYPES =
   | 'shutdown'
   | 'open-log-folder'
   | 'refresh-firewall'
+  | 'restart-server'
   | 'zip'
 
 export type APP_TYPES =
@@ -43,6 +44,7 @@ export type APP_TYPES =
 export type CLIENT_TYPES =
   | 'zip'
   | 'url'
+  | 'configure'
   | 'pingClient'
   | 'client-manifest'
   | 'push-staged'

@@ -3,6 +3,7 @@ import { execFile } from 'child_process'
 import getPlatform from '../utils/get-platform'
 import dataListener, { MESSAGE_TYPES } from '../utils/events'
 import settingsStore from '../stores/settingsStore'
+import { LoggingData } from '@shared/types'
 
 const isDevelopment = process.env.NODE_ENV === 'development'
 const execPath = isDevelopment
@@ -26,7 +27,7 @@ const splitArgs = (str: string): string[] => {
 
 export const handleAdbCommands = async (
   command: string,
-  send?: (channel: string, ...args: any[]) => void
+  send?: (channel: string, ...args: LoggingData[]) => void
 ): Promise<string> => {
   const settings = await settingsStore.getSettings()
   const useGlobalADB = settings.globalADB === true

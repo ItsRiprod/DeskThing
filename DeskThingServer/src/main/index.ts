@@ -1,6 +1,6 @@
 import { AppIPCData, AuthScopes, Client, UtilityIPCData } from '@shared/types'
 import { app, shell, BrowserWindow, ipcMain, Tray, Menu, nativeImage, NativeImage } from 'electron'
-import { join } from 'path'
+import { join, resolve } from 'path'
 import icon from '../../resources/icon.ico?asset'
 import linuxIcon from '../../resources/icon.png?asset'
 import ConnectionStore from './stores/connectionsStore'
@@ -8,6 +8,15 @@ import ConnectionStore from './stores/connectionsStore'
 let mainWindow: BrowserWindow | null = null
 let clientWindow: BrowserWindow | null = null
 let tray: Tray | null = null
+
+// Setup the scheme handler
+if (process.defaultApp) {
+  if (process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient('deskthing', process.execPath, [resolve(process.argv[1])])
+  }
+} else {
+  app.setAsDefaultProtocolClient('deskthing')
+}
 
 function createMainWindow(): BrowserWindow {
   const window = new BrowserWindow({
@@ -44,8 +53,14 @@ function createMainWindow(): BrowserWindow {
   })
 
   window.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
-    return { action: 'deny' }
+    // Prevent opening new windows for internal URLs
+    if (details.url.startsWith('deskthing://')) {
+      handleUrl(details.url)
+      return { action: 'deny' } // Deny new window creation
+    } else {
+      shell.openExternal(details.url) // Open external URLs in the browser
+      return { action: 'deny' }
+    }
   })
 
   // Load the remote URL for development or the local HTML file for production.
@@ -296,24 +311,35 @@ async function setupIpcHandlers(): Promise<void> {
 if (!app.requestSingleInstanceLock()) {
   app.quit()
 } else {
-  app.on('second-instance', () => {
+  app.on('second-instance', (_event, commandLine) => {
+    const url = commandLine.find((arg) => arg.startsWith('deskthing://'))
+    if (url) {
+      handleUrl(url)
+    }
+
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore()
       mainWindow.focus()
     } else {
-      mainWindow = createMainWindow()
+      // mainWindow = createMainWindow()
     }
+
   })
   app.on('ready', () => setupIpcHandlers())
   app.whenReady().then(async () => {
     // Set app user model id for windows
+
+    app.on('open-url', (event, url) => {
+      event.preventDefault()
+      handleUrl(url)
+    })
 
     if (process.platform == 'darwin') {
       initializeDoc()
     } else {
       initializeTray()
     }
-    app.setAppUserModelId('com.electron')
+    app.setAppUserModelId('com.deskthing')
 
     app.on('browser-window-created', (_, window) => {
       const { optimizer } = require('@electron-toolkit/utils')
@@ -341,6 +367,17 @@ if (!app.requestSingleInstanceLock()) {
   })
 }
 
+function handleUrl(url: string | undefined): void {
+  if (url && url.startsWith('deskthing://')) {
+    const path = url.replace('deskthing://', '')
+
+    console.log('Handling URL:', url, path)
+
+    if (mainWindow) {
+      mainWindow.webContents.send('handle-protocol-url', path)
+    }
+  }
+}
 async function openAuthWindow(url: string): Promise<void> {
   await shell.openExternal(url)
 }

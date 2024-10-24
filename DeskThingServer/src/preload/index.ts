@@ -6,6 +6,7 @@ import {
   AppReturnData,
   ButtonMapping,
   Client,
+  ClientManifest,
   GithubRelease,
   IncomingData,
   IPC_HANDLERS,
@@ -85,7 +86,7 @@ const api = {
   // Clients
 
   pingClient: (clientId: string): Promise<string | null> =>
-    sendCommand('CLIENT', { type: 'ping', request: 'set', payload: clientId }),
+    sendCommand('CLIENT', { type: 'pingClient', request: 'set', payload: clientId }),
 
   handleClientZip: async (path: string): Promise<void> =>
     sendCommand('CLIENT', {
@@ -108,13 +109,20 @@ const api = {
       payload: command
     }),
 
-  getClientManifest: (): Promise<Client> =>
-    sendCommand<Client>('CLIENT', {
+  configureDevice: (deviceId: string): Promise<void> =>
+    sendCommand('CLIENT', {
+      type: 'configure',
+      request: 'set',
+      payload: deviceId
+    }),
+
+  getClientManifest: (): Promise<ClientManifest> =>
+    sendCommand<ClientManifest>('CLIENT', {
       type: 'client-manifest',
       request: 'get',
       payload: undefined
     }),
-  updateClientManifest: (client: Partial<Client>): Promise<void> =>
+  updateClientManifest: (client: Partial<ClientManifest>): Promise<void> =>
     sendCommand<void>('CLIENT', {
       type: 'client-manifest',
       request: 'set',
@@ -170,7 +178,7 @@ const api = {
   },
 
   disconnectClient: (connectionId: string): Promise<void> => {
-    return sendCommand('CLIENT', {
+    return sendCommand('UTILITY', {
       type: 'connections',
       request: 'delete',
       payload: connectionId
@@ -260,6 +268,14 @@ const api = {
   refreshFirewall: (): Promise<void> => {
     return sendCommand('UTILITY', {
       type: 'refresh-firewall',
+      request: 'set',
+      payload: undefined
+    })
+  },
+
+  restartServer: (): Promise<void> => {
+    return sendCommand('UTILITY', {
+      type: 'restart-server',
       request: 'set',
       payload: undefined
     })

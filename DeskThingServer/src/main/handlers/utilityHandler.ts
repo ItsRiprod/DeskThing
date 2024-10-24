@@ -10,6 +10,7 @@ import keyMapStore from '../stores/keyMapStore'
 import logger from '../utils/logger'
 import { setupFirewall } from './firewallHandler'
 import { disconnectClient } from '../services/client/clientCom'
+import { restartServer } from '../services/client/websocket'
 
 export const utilityHandler: Record<
   UtilityIPCData['type'],
@@ -95,6 +96,12 @@ export const utilityHandler: Record<
   },
   'refresh-firewall': async (_data, replyFn) => {
     refreshFirewall(replyFn)
+  },
+
+  'restart-server': async (_data, replyFn) => {
+    replyFn('logging', { status: true, data: 'Restarting server...', final: false })
+    await restartServer()
+    replyFn('logging', { status: true, data: 'Server Restarted', final: true })
   }
 }
 

@@ -4,6 +4,8 @@ import { IconPause, IconPlay, IconWrench } from '@renderer/assets/icons'
 import Button from './Button'
 import { useAppStore } from '@renderer/stores'
 import AppSettingsOverlay from '@renderer/overlays/AppSettingsOverlay'
+import AppsOverlay from '@renderer/overlays/apps/AppsOverlay'
+import { useSearchParams } from 'react-router-dom'
 
 interface AppProps {
   app: AppType
@@ -15,9 +17,9 @@ interface RunningProps {
 
 const Running: React.FC<RunningProps> = ({ stopApp }) => {
   return (
-    <Button className="group border-amber-500 border-2 hover:bg-amber-500" onClick={stopApp}>
+    <Button className="group hover:bg-amber-500 gap-2 bg-amber-800" onClick={stopApp}>
       <p className="group-hover:block hidden">Pause</p>
-      <IconPause />
+      <IconPause className="stroke-2" />
     </Button>
   )
 }
@@ -27,9 +29,9 @@ interface StoppedProps {
 }
 const Stopped: React.FC<StoppedProps> = ({ runApp }) => {
   return (
-    <Button className="group border-cyan-500 border-2 hover:bg-cyan-500" onClick={runApp}>
+    <Button className="group hover:bg-cyan-600 bg-cyan-800 gap-2" onClick={runApp}>
       <p className="group-hover:block hidden">Run</p>
-      <IconPlay />
+      <IconPlay className="stroke-2" />
     </Button>
   )
 }
@@ -37,17 +39,20 @@ const Stopped: React.FC<StoppedProps> = ({ runApp }) => {
 const App: React.FC<AppProps> = ({ app }) => {
   const stopApp = useAppStore((appStore) => appStore.stopApp)
   const runApp = useAppStore((appStore) => appStore.runApp)
-  const [showDetails, setShowDetails] = useState(false)
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const showAppDetails = (): void => {
+    searchParams.set('app', 'true')
+    searchParams.set('appId', app.name)
+    setSearchParams(searchParams)
+  }
 
   return (
-    <div className="flex items-center border-gray-500 p-1 justify-between border rounded-xl text-white">
-      {showDetails && <AppSettingsOverlay app={app} onClose={() => setShowDetails(false)} />}
+    <div className="flex items-center bg-zinc-900 p-4 justify-between rounded-xl text-white">
       <div className="flex items-center">
-        <Button
-          onClick={() => setShowDetails(true)}
-          className="border-gray-500 border-2 hover:bg-gray-500"
-        >
+        <Button onClick={showAppDetails} className="group bg-slate-950 hover:bg-slate-900 gap-2">
           <IconWrench />
+          <p className="group-hover:block hidden">Settings</p>
         </Button>
         <div className="px-2">
           <div className="flex items-center gap-2">

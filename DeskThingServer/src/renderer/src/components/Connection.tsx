@@ -11,7 +11,7 @@ import {
 import { Client, LoggingData } from '@shared/types'
 import React, { useState } from 'react'
 import Button from './Button'
-import { useSettingsStore } from '@renderer/stores'
+// import { useSettingsStore } from '@renderer/stores'
 import ClientDetailsOverlay from '@renderer/overlays/ClientDetailsOverlay'
 import DownloadNotification from '@renderer/overlays/DownloadNotification'
 
@@ -20,8 +20,9 @@ interface ConnectionComponentProps {
 }
 
 const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => {
-  const port = useSettingsStore((settings) => settings.settings.devicePort)
+  // const port = useSettingsStore((settings) => settings.settings.devicePort)
   const [loading, setLoading] = useState(false)
+  const [animatingIcons, setAnimatingIcons] = useState<Record<string, boolean>>({})
   const [logging, setLogging] = useState<LoggingData | null>()
   const [enabled, setEnabled] = useState(false)
   const [showLogging, setShowLogging] = useState(false)
@@ -71,7 +72,12 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
     }
   }
 
-  const handlePushStaged = (): void => {
+  const onPushFinish = (): void => {
+    setLoading(false)
+    setShowLogging(false)
+  }
+
+  const configureDevice = async (): Promise<void> => {
     setShowLogging(true)
     if (!client.adbId) {
       setLogging({ status: true, final: true, data: 'No Device Detected' })
@@ -79,9 +85,9 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
     }
 
     try {
-      setLogging({ status: true, final: false, data: 'Pushing App' })
+      setLogging({ status: true, final: false, data: 'Configuring Device' })
       setLoading(true)
-      window.electron.pushStagedApp(client.adbId)
+      window.electron.configureDevice(client.adbId)
       const unsubscribe = window.electron.ipcRenderer.on('logging', (_event, reply) => {
         console.log(reply)
         setLogging(reply)
@@ -98,33 +104,51 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
     }
   }
 
-  const onPushFinish = (): void => {
-    setLoading(false)
-    setShowLogging(false)
-  }
-
-  const handleDeviceClick = (): void => {
-    setLoading(true)
-    setEnabled(true)
-    setTimeout(async () => {
-      setLoading(false)
-    }, 1000)
-  }
-
-  const configureDevice = async (): Promise<void> => {
-    await handlePushStaged()
-    await openPort()
-  }
-
-  const restartChromium = (): void => {
+  const restartChromium = async (): Promise<void> => {
     if (!client.adbId) return
 
-    handleAdbCommand(`-s ${client.adbId} shell supervisorctl restart chromium`)
+    setAnimatingIcons((prev) => ({ ...prev, chromium: true }))
+    await handleAdbCommand(`-s ${client.adbId} shell supervisorctl restart chromium`)
+    setAnimatingIcons((prev) => ({ ...prev, chromium: false }))
   }
 
-  const openPort = (): void => {
-    if (!client.adbId) return
-    handleAdbCommand(`-s ${client.adbId} reverse tcp:${port} tcp:${port}`)
+  const handlePing = async (): Promise<void> => {
+    setAnimatingIcons((prev) => ({ ...prev, ping: true }))
+    await window.electron.pingClient(client.connectionId)
+
+    setShowLogging(true)
+    setLogging({ status: true, final: false, data: 'Pinging client...' })
+
+    const pongPromise = new Promise<void>((resolve) => {
+      const onPong = (_event: Electron.IpcRendererEvent, payload: string): void => {
+        console.log(`Got ping response from ${client.connectionId}: `, payload)
+        setLogging({ status: true, final: true, data: `Ping successful: ${payload}` })
+        setTimeout(() => {
+          setAnimatingIcons((prev) => ({ ...prev, ping: false }))
+        }, 1000)
+        resolve()
+      }
+      window.electron.ipcRenderer.once(`pong-${client.connectionId}`, onPong)
+    })
+
+    const timeoutPromise = new Promise<void>((resolve) => {
+      setTimeout(() => {
+        console.log(`Ping timed out for ${client.connectionId}`)
+        setLogging({ status: false, final: true, data: 'Ping timed out' })
+        setAnimatingIcons((prev) => ({ ...prev, ping: false }))
+        resolve()
+      }, 5000)
+    })
+
+    try {
+      await Promise.race([pongPromise, timeoutPromise])
+    } finally {
+      window.electron.ipcRenderer.removeAllListeners(`pong-${client.connectionId}`)
+    }
+  }
+
+  const handleDisconnect = (): void => {
+    window.electron.disconnectClient(client.connectionId)
   }
 
   return (
@@ -151,18 +175,34 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
         {!client.connected && <p className="text-red-500 italic">Not Connected!</p>}
         {client.adbId && (
           <>
-            <Button className="group hover:bg-zinc-900 gap-2" onClick={restartChromium}>
-              <IconRefresh />
+            <Button
+              className="group hover:bg-zinc-900 gap-2"
+              onClick={restartChromium}
+              disabled={loading}
+            >
+              <IconRefresh
+                className={
+                  animatingIcons.chromium
+                    ? 'rotate-[360deg] transition-transform duration-1000'
+                    : ''
+                }
+              />
               <p className="hidden group-hover:block">
                 Restart <span className="hidden lg:inline">Chromium</span>
               </p>
             </Button>
-            <Button className="group hover:bg-zinc-900 gap-2" onClick={configureDevice}>
-              <IconConfig />
-              <p className="hidden group-hover:block">
-                Config<span className="hidden lg:inline">ure</span>
-              </p>
-            </Button>
+            {!client.connected && (
+              <Button
+                className="group hover:bg-zinc-900 gap-2"
+                onClick={configureDevice}
+                disabled={loading}
+              >
+                <IconConfig />
+                <p className="hidden group-hover:block">
+                  Config<span className="hidden lg:inline">ure</span>
+                </p>
+              </Button>
+            )}
           </>
         )}
         <Button className="group hover:bg-zinc-900 gap-2" onClick={() => setEnabled(true)}>
@@ -171,11 +211,15 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
         </Button>
         {client.connected && (
           <>
-            <Button className="group hover:bg-zinc-900 gap-2">
-              <IconPing />
+            <Button className="group hover:bg-zinc-900 gap-2" onClick={handlePing}>
+              <IconPing className={animatingIcons.ping ? 'animate-ping' : ''} />
               <p className="hidden group-hover:block">Ping</p>
             </Button>
-            <Button className="group bg-red-700 gap-2">
+            <Button
+              className="group bg-red-700 gap-2"
+              disabled={loading}
+              onClick={handleDisconnect}
+            >
               <IconX />
               <p className="hidden group-hover:block">Disconnect</p>
             </Button>

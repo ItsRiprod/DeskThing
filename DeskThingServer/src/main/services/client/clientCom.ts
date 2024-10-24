@@ -7,6 +7,7 @@ import { readData } from '../../handlers/dataHandler'
 import keyMapStore from '../../stores/keyMapStore'
 
 export const sendMessageToClients = async (data: SocketData): Promise<void> => {
+  console.log(`Sending message to clients: ${JSON.stringify(data)}`)
   if (server) {
     server.clients.forEach((client) => {
       if (client.readyState === 1) {

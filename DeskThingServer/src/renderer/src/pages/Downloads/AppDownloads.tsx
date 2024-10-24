@@ -190,33 +190,46 @@ const AppDownloads: React.FC = () => {
       <MainElement className="p-4">
         <div className="w-full h-full relative overflow-y-auto flex flex-col">
           <div className="absolute inset w-full h-full flex flex-col gap-2">
-            {Object.keys(appReleases).map((name) => (
-              <div
-                key={name}
-                className="flex bg-zinc-900 rounded-lg justify-between items-center p-2"
-              >
-                <div>
-                  <h1 className="text-xl">
-                    {name.charAt(0).toUpperCase() + name.slice(1).toLowerCase()} App
-                  </h1>
-                  <p className="text-sm text-gray-500">
-                    {appReleases[name].length} available downloads
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <Button className="group gap-2" onClick={() => handleDownloadLatestClick(name)}>
-                    <p className="group-hover:block hidden text-center flex-grow">
-                      Download Latest
+            {Object.keys(appReleases).length > 0 ? (
+              Object.keys(appReleases).map((name) => (
+                <div
+                  key={name}
+                  className="flex bg-zinc-900 rounded-lg justify-between items-center p-2"
+                >
+                  <div>
+                    <h1 className="text-xl">
+                      {name.charAt(0).toUpperCase() + name.slice(1).toLowerCase()} App
+                    </h1>
+                    <p className="text-sm text-gray-500">
+                      {appReleases[name].length} available downloads
                     </p>
-                    <IconDownload className="group-hover:stroke-2 stroke-1" />
-                  </Button>
-                  <Button className="group gap-2" onClick={() => handleMoreDownloadsClick(name)}>
-                    <p className="group-hover:block hidden text-center flex-grow">More Downloads</p>
-                    <IconLogs className="group-hover:stroke-2 stroke-1" />
-                  </Button>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button className="group gap-2" onClick={() => handleDownloadLatestClick(name)}>
+                      <p className="group-hover:block hidden text-center flex-grow">
+                        Download Latest
+                      </p>
+                      <IconDownload className="group-hover:stroke-2 stroke-1" />
+                    </Button>
+                    <Button className="group gap-2" onClick={() => handleMoreDownloadsClick(name)}>
+                      <p className="group-hover:block hidden text-center flex-grow">
+                        More Downloads
+                      </p>
+                      <IconLogs className="group-hover:stroke-2 stroke-1" />
+                    </Button>
+                  </div>
                 </div>
+              ))
+            ) : (
+              <div className="w-full h-full flex flex-col justify-center items-center">
+                <h1 className="text-2xl font-semibold">Uh oh-</h1>
+                <p>Unable to find or fetch releases</p>
+                <p className="text-sm text-gray-500 italic text-center">
+                  Check the logs for a potential reason. You might have hit the Github API limit.
+                  Try again later or add a repo in settings!
+                </p>
               </div>
-            ))}{' '}
+            )}
           </div>
         </div>
       </MainElement>

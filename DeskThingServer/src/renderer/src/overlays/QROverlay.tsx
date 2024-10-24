@@ -3,16 +3,15 @@ import Button from '@renderer/components/Button'
 import { useSettingsStore } from '@renderer/stores'
 import React, { useRef, useEffect, useState } from 'react'
 import QRCode from 'react-qr-code'
+import { useSearchParams } from 'react-router-dom'
+import Overlay from './Overlay'
 
-interface QROverlayProps {
-  onClose: () => void
-}
 
-const QROverlay: React.FC<QROverlayProps> = ({ onClose }) => {
+const QROverlay: React.FC = () => {
   const settings = useSettingsStore((settings) => settings.settings)
   const [ip, setIp] = useState(settings.localIp[0] + ':' + settings.devicePort)
+  const [searchParams, setSearchParams] = useSearchParams()
 
-  const overlayRef = useRef<HTMLDivElement>(null)
 
   const handleIpClick = (index: number): void => {
     if (settings.localIp[index]) {
@@ -20,22 +19,14 @@ const QROverlay: React.FC<QROverlayProps> = ({ onClose }) => {
     }
   }
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent): void => {
-      if (overlayRef.current && !overlayRef.current.contains(event.target as Node)) {
-        onClose()
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [onClose])
+  const onClose = (): void => {
+    searchParams.delete('qr')
+    setSearchParams(searchParams)
+  }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div ref={overlayRef} className="flex flex-col md:flex-row">
+    <Overlay onClose={onClose}>
+      <div className="flex flex-col md:flex-row">
         <div className="flex flex-col">
           <div className="flex justify-between mb-2">
             <h2 className="text-xl font-semibold">QR Code</h2>
@@ -60,7 +51,7 @@ const QROverlay: React.FC<QROverlayProps> = ({ onClose }) => {
             ))}
         </div>
       </div>
-    </div>
+    </Overlay>
   )
 }
 

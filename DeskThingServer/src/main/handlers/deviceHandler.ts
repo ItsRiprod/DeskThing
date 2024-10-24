@@ -4,7 +4,8 @@ import { join } from 'path'
 import * as fs from 'fs'
 import { app, net } from 'electron'
 import { handleAdbCommands } from './adbHandler'
-import { Client, ReplyData } from '@shared/types'
+import { Client, ClientManifest, ReplyData } from '@shared/types'
+import settingsStore from '../stores/settingsStore'
 
 export const HandleDeviceData = async (data: string): Promise<void> => {
   try {
@@ -25,6 +26,90 @@ export const HandleDeviceData = async (data: string): Promise<void> => {
     )
   }
 }
+
+export const getDeviceManifestVersion = async (deviceId: string): Promise<string> => {
+  try {
+    const manifestPath = '/usr/share/qt-superbird-app/webapp/manifest.js'
+    const response = await handleAdbCommands(`-s ${deviceId} shell cat ${manifestPath}`)
+    // Extract version from manifest content
+    const versionMatch = response.match(/"version":\s*"(.+?)"/i)
+    console.log(versionMatch)
+    if (versionMatch && versionMatch[1]) {
+      return versionMatch[1]
+    } else {
+      throw new Error('Version not found in manifest')
+    }
+  } catch (error) {
+    console.error('Error getting device manifest version:', error)
+    throw error
+  }
+}
+
+export const configureDevice = async (
+  deviceId: string,
+  reply?: (channel: string, data: ReplyData) => void
+): Promise<void> => {
+  const settings = await settingsStore.getSettings()
+
+  if (settings && settings.devicePort) {
+    console.error('Settings not found')
+    reply && reply('logging', { status: true, data: 'Opening Port...', final: false })
+    try {
+      const response = await handleAdbCommands(
+        `-s ${deviceId} reverse tcp:${settings.devicePort} tcp:${settings.devicePort}`
+      )
+      reply && reply('logging', { status: true, data: response || 'Port Opened', final: false })
+    } catch (error) {
+      reply && reply('logging', { status: false, data: 'Unable to open port!', final: false })
+    }
+  } else {
+    reply &&
+      reply('logging', {
+        status: false,
+        data: 'Unable to open port!',
+        error: 'Device Port not found in settings',
+        final: false
+      })
+  }
+
+  const deviceManifestVersion = await getDeviceManifestVersion(deviceId)
+  const clientManifest = await getClientManifest(true, reply)
+  if (clientManifest && deviceManifestVersion !== clientManifest.version) {
+    try {
+      await HandlePushWebApp(deviceId, reply)
+    } catch (error) {
+      reply &&
+        reply('logging', {
+          status: false,
+          data: 'Unable to push webapp!',
+          error: typeof error == 'string' ? error : 'Unknown Error',
+          final: false
+        })
+    }
+  } else {
+    reply &&
+      reply('logging', {
+        status: true,
+        data: 'Device has the same webapp version!',
+        final: false
+      })
+  }
+
+  reply && reply('logging', { status: true, data: 'Restarting Chromium', final: false })
+  try {
+    await handleAdbCommands(`-s ${deviceId} shell supervisorctl restart chromium`)
+  } catch (error) {
+    reply &&
+      reply('logging', {
+        status: false,
+        data: 'Unable to restart chromium!',
+        error: typeof error == 'string' ? error : 'Unknown Error',
+        final: false
+      })
+  }
+  reply && reply('logging', { status: true, data: 'Device Configured!', final: true })
+}
+
 export const HandlePushWebApp = async (
   deviceId: string,
   reply?: (channel: string, data: ReplyData) => void
@@ -261,7 +346,7 @@ export const handleClientManifestUpdate = async (
 export const getClientManifest = async (
   utility: boolean = false,
   reply?: (channel: string, data: ReplyData) => void
-): Promise<Client | null> => {
+): Promise<ClientManifest | null> => {
   console.log('Getting manifest...')
   const userDataPath = app.getPath('userData')
   const manifestPath = join(userDataPath, 'webapp', 'manifest.js')
@@ -294,7 +379,7 @@ export const getClientManifest = async (
     const jsonEnd = data.lastIndexOf('}')
     const jsonData = data.substring(jsonStart, jsonEnd + 1)
 
-    const manifest: Client = JSON.parse(jsonData)
+    const manifest: ClientManifest = JSON.parse(jsonData)
     reply &&
       reply('logging', {
         status: true,

@@ -348,7 +348,7 @@ const setupFunctions = async (appName: string, DeskThing: DeskThing): Promise<vo
     appInstance.func.start = async (): Promise<Response> => {
       return DeskThing.start({
         toServer: (data) => handleDataFromApp(appName, data),
-        SysEvents: (event: string, listener: (...args: any[]) => void) => {
+        SysEvents: (event: string, listener: (...args: string[]) => void) => {
           dataListener.on(event, listener) // Add event listener
           return () => dataListener.removeListener(event, listener)
         }

@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom'
+import { HashRouter as Router, Route, Routes, Navigate } from 'react-router-dom'
 import Loading from '../components/Loading'
 import Dashboard from '@renderer/pages/Dashboard'
 import Clients from '@renderer/pages/Clients'
@@ -14,36 +14,42 @@ import AppDownloads from '@renderer/pages/Downloads/AppDownloads'
 import ClientDownloads from '@renderer/pages/Downloads/ClientDownloads'
 import Logs from '@renderer/pages/Dev/Logs'
 import ClientConnections from '@renderer/pages/Clients/Connections'
+import OverlayWrapper from '@renderer/overlays/OverlaysWrapper'
+import ServerRoutingListener from '@renderer/listeners/ServerRouteListener'
+import WelcomeWidget from '@renderer/pages/Dashboard/WelcomeWidget'
 
 const AppRouter = (): JSX.Element => {
   return (
     <Router>
-      <PageDataListener />
-      <div className="flex flex-col h-full">
-        <TopBar />
-        <Routes>
-          <Route path="/" element={<Loading />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/clients" element={<Clients />}>
-            <Route path="settings" element={<ClientSettings />} />
-            <Route path="connections" element={<ClientConnections />} />
-          </Route>
-          <Route path="/apps" element={<Apps />}>
-            <Route path="list" element={<AppsList />} />
-          </Route>
-          <Route path="/downloads" element={<Downloads />}>
-            <Route path="app" element={<AppDownloads />} />
-            <Route path="client" element={<ClientDownloads />} />
-          </Route>
-          <Route path="/developer" element={<Dev />}>
-            <Route path="logs" element={<Logs />} />
-            <Route path="app" element={<Loading />} />
-            <Route path="adb" element={<Loading />} />
-          </Route>
-          <Route path="/settings" element={<Settings />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </div>
+      <OverlayWrapper>
+        <PageDataListener />
+        <ServerRoutingListener />
+        <div className="flex flex-col h-full">
+          <TopBar />
+          <Routes>
+            <Route path="/" element={<Loading />} />
+            <Route path="/dashboard" element={<WelcomeWidget />} />
+            <Route path="/clients" element={<Clients />}>
+              <Route path="settings" element={<ClientSettings />} />
+              <Route path="connections" element={<ClientConnections />} />
+            </Route>
+            <Route path="/apps" element={<Apps />}>
+              <Route path="list" element={<AppsList />} />
+            </Route>
+            <Route path="/downloads" element={<Downloads />}>
+              <Route path="app" element={<AppDownloads />} />
+              <Route path="client" element={<ClientDownloads />} />
+            </Route>
+            <Route path="/developer" element={<Dev />}>
+              <Route path="logs" element={<Logs />} />
+              <Route path="app" element={<Loading />} />
+              <Route path="adb" element={<Loading />} />
+            </Route>
+            <Route path="/settings" element={<Settings />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
+      </OverlayWrapper>
     </Router>
   )
 }

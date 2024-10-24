@@ -1,8 +1,9 @@
 import React from 'react'
 import { useClientStore, useAppStore } from '@renderer/stores'
 import { Client } from '@shared/types'
+import { AppSettingProps } from './AppsOverlay'
 
-const ClientSettings: React.FC = () => {
+const AppSettings: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
   const clientSettings = useClientStore((state) => state.clientManifest)
   const updateClientSettings = useClientStore((state) => state.updateClientManifest)
   const apps = useAppStore((state) => state.appsList)
@@ -67,4 +68,4 @@ const ClientSettings: React.FC = () => {
   )
 }
 
-export default ClientSettings
+export default AppSettings

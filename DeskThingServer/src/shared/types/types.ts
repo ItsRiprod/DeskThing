@@ -139,6 +139,7 @@ export interface Settings {
   devicePort: number
   address: string
   autoStart: boolean
+  autoConfig: boolean
   minimizeApp: boolean
   localIp: string[]
   globalADB: boolean

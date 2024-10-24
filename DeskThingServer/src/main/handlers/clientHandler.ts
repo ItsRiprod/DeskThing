@@ -2,18 +2,19 @@ import { ClientIPCData, ReplyFn } from '@shared/types/ipcTypes'
 import dataListener, { MESSAGE_TYPES } from '../utils/events'
 import { handleAdbCommands } from './adbHandler'
 import {
+  configureDevice,
   getClientManifest,
   handleClientManifestUpdate,
   HandlePushWebApp,
   HandleWebappZipFromUrl,
   SetupProxy
 } from './deviceHandler'
-import { Client } from '@shared/types'
-import { sendMessageToClients } from '../services/client/clientCom'
+import { ClientManifest, SocketData } from '@shared/types'
+import { sendMessageToClient, sendMessageToClients } from '../services/client/clientCom'
 
 export const clientHandler: Record<
   ClientIPCData['type'],
-  (data: ClientIPCData, replyFn: ReplyFn) => Promise<void | string | Client | null>
+  (data: ClientIPCData, replyFn: ReplyFn) => Promise<void | string | ClientManifest | null>
 > = {
   pingClient: async (data, replyFn) => {
     try {
@@ -23,10 +24,12 @@ export const clientHandler: Record<
         data: `Attempted to ping ${data.payload}!`,
         final: true
       })
-      return
+      sendMessageToClient(data.payload, { app: 'client', type: 'ping' })
+      return `Pinging ${data.payload}...`
     } catch (error) {
       console.error('Error pinging client:', error)
       dataListener.asyncEmit(MESSAGE_TYPES.ERROR, error)
+      return 'Error pinging' + data.payload
     }
   },
 
@@ -55,6 +58,10 @@ export const clientHandler: Record<
     }
 
     return await handleAdbCommands(data.payload, reply)
+  },
+  configure: async (data, replyFn) => {
+    replyFn('logging', { status: true, data: 'Configuring Device', final: false })
+    return await configureDevice(data.payload, replyFn)
   },
   'client-manifest': async (data, replyFn) => {
     if (data.request === 'get') {
@@ -95,10 +102,13 @@ export const clientHandler: Record<
     }
   },
   'run-device-command': async (data, replyFn) => {
-    const message = {
+    const payload = data.payload.payload as string
+
+    const message: SocketData = {
       app: data.payload.app || 'client',
       type: data.payload.type,
-      data: JSON.parse(data.payload.payload)
+      request: data.payload.request,
+      payload: !payload.includes('{') ? data.payload.payload : JSON.parse(data.payload.payload)
     }
     console.log('Sending data', data)
     replyFn('logging', { status: true, data: 'Finished', final: true })

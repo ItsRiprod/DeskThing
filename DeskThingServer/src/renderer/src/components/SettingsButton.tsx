@@ -1,15 +1,18 @@
 import { IconGear } from '@renderer/assets/icons'
-import React, { useState } from 'react'
+import React from 'react'
 import Button from './Button'
-import SettingsOverlay from '@renderer/overlays/settings/SettingsOverlay'
+import { useSearchParams } from 'react-router-dom'
 
 const SettingsButton: React.FC = () => {
-  const [showSettings, setShowSettings] = useState(false)
+  const [_searchParams, setSearchParams] = useSearchParams()
+
+  const handleOpenSettings = (): void => {
+    setSearchParams({ settings: 'true' })
+  }
 
   return (
     <>
-      {showSettings && <SettingsOverlay onClose={() => setShowSettings(false)} />}
-      <Button className="hover:bg-zinc-900" onClick={() => setShowSettings(true)}>
+      <Button className="hover:bg-zinc-900" onClick={handleOpenSettings}>
         <IconGear iconSize={24} strokeWidth={2} />
         <p className="flex-grow text-center text-lg md:block hidden">Settings</p>
       </Button>

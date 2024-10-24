@@ -1,4 +1,10 @@
 import React, { useState } from 'react'
+import LogsWidget from './LogsWidget'
+import ClientsWidget from './ClientsWidget'
+import InfoWidget from './InfoWidget.tsx'
+import Sidebar from '@renderer/nav/Sidebar'
+import MainElement from '@renderer/nav/MainElement'
+import WelcomeWidget from './WelcomeWidget'
 
 interface WidgetProps {
   size: 'small' | 'horizontal' | 'vertical'
@@ -16,40 +22,42 @@ const Widget: React.FC<WidgetProps & React.HTMLAttributes<HTMLDivElement>> = ({
   }
 
   return (
-    <div className={`bg-gray-900 rounded-lg p-4 shadow-md ${sizeClasses[size]}`} {...props}>
+    <div className={`bg-zinc-900 h-full w-full rounded-lg p-1 ${sizeClasses[size]}`} {...props}>
       {children}
     </div>
   )
 }
 
 interface DashboardItemProps {
-  type: string
   size: 'small' | 'horizontal' | 'vertical'
+  Component?: React.ComponentType
 }
 
-const DashboardItem: React.FC<DashboardItemProps> = ({ type, size }) => {
-  return (
-    <Widget size={size}>
-      <h3 className="text-lg font-semibold">{type}</h3>
-      {/* Add specific widget content here */}
-    </Widget>
-  )
+const DashboardItem: React.FC<DashboardItemProps> = ({ size, Component }) => {
+  return <Widget size={size}>{Component && <Component />}</Widget>
 }
 
 const Dashboard: React.FC = () => {
   const [items] = useState<DashboardItemProps[]>([
-    { type: 'Logs', size: 'small' },
-    { type: 'Devices', size: 'horizontal' },
-    { type: 'Tasks', size: 'vertical' },
-    { type: 'Clients', size: 'small' },
-    { type: 'Apps', size: 'horizontal' }
+    { size: 'small', Component: ClientsWidget },
+    { size: 'horizontal', Component: WelcomeWidget },
+    { size: 'vertical', Component: LogsWidget },
+    { size: 'horizontal', Component: LogsWidget },
+    { size: 'small', Component: InfoWidget }
   ])
 
   return (
-    <div className="grid grid-cols-4 gap-4 p-4 w-full h-full">
-      {items.map((item, index) => (
-        <DashboardItem key={index} {...item} />
-      ))}
+    <div className="flex w-full h-full">
+      <Sidebar>
+        <p></p>
+      </Sidebar>
+      <MainElement>
+        <div className="grid overflow-auto grid-cols-4 grid-rows-2 gap-4 p-4 w-full h-full">
+          {items.map((item, index) => (
+            <DashboardItem key={index} {...item} />
+          ))}
+        </div>
+      </MainElement>
     </div>
   )
 }

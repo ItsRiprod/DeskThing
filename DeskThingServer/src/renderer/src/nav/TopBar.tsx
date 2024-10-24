@@ -1,7 +1,7 @@
 import React from 'react'
 import Nav from './Nav'
 import { useClientStore } from '@renderer/stores'
-import { IconLogo, IconWifi, IconWifiDisconnect } from '@renderer/assets/icons'
+import { IconLogo, IconWifi } from '@renderer/assets/icons'
 
 const TopBar: React.FC = () => {
   const connections = useClientStore((clientStore) => clientStore.connections)
@@ -10,7 +10,7 @@ const TopBar: React.FC = () => {
     <div className="bg-zinc-950 border-zinc-800 border-b text-white flex items-center justify-between">
       <div className="flex items-center p-4 min-w-24 md:min-w-48">
         {connections == 0 ? (
-          <IconWifiDisconnect className="text-white pt-1" iconSize={24} />
+          <IconWifi className="text-white pt-1" iconSize={24} />
         ) : (
           <div className="text-green-500 flex">
             <p className="text-xs">{connections == 1 ? '' : connections}</p>
