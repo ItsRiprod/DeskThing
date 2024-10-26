@@ -1,6 +1,5 @@
 import { HashRouter as Router, Route, Routes, Navigate } from 'react-router-dom'
 import Loading from '../components/Loading'
-import Dashboard from '@renderer/pages/Dashboard'
 import Clients from '@renderer/pages/Clients'
 import Apps from '@renderer/pages/Apps'
 import Downloads from '@renderer/pages/Downloads'
@@ -17,6 +16,8 @@ import ClientConnections from '@renderer/pages/Clients/Connections'
 import OverlayWrapper from '@renderer/overlays/OverlaysWrapper'
 import ServerRoutingListener from '@renderer/listeners/ServerRouteListener'
 import WelcomeWidget from '@renderer/pages/Dashboard/WelcomeWidget'
+import DevApp from '@renderer/pages/Dev/DevApp'
+import ADBSettings from '@renderer/pages/Dev/ADBSettings'
 
 const AppRouter = (): JSX.Element => {
   return (
@@ -42,8 +43,8 @@ const AppRouter = (): JSX.Element => {
             </Route>
             <Route path="/developer" element={<Dev />}>
               <Route path="logs" element={<Logs />} />
-              <Route path="app" element={<Loading />} />
-              <Route path="adb" element={<Loading />} />
+              <Route path="app" element={<DevApp />} />
+              <Route path="adb" element={<ADBSettings />} />
             </Route>
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/" replace />} />

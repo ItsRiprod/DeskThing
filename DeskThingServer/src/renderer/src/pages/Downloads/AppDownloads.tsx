@@ -30,6 +30,7 @@ const AppDownloads: React.FC = () => {
   const [showLogging, setShowLogging] = useState(false)
   const [appReturnData, setAppReturnData] = useState<AppReturnData | null>(null)
   const [selectingFile, setSelectingFile] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   // Displaying available downloads
   const [appDownloads, setAppDownloads] = useState<string | null>(null)
@@ -43,19 +44,24 @@ const AppDownloads: React.FC = () => {
 
   const handleDownloadFinalized = (): void => {
     setShowLogging(false)
+    setLoading(false)
   }
 
   const handleUploadClick = async (): Promise<void> => {
     setSelectingFile(true)
+    setLoading(true)
     const file = await window.electron.selectZipFile()
     setSelectingFile(false)
+    setLoading(false)
     if (file) {
       setShowLogging(true)
+      setLoading(true)
       try {
         const returnData = await loadAppZip(file)
         setAppReturnData(returnData)
       } catch (error) {
         setShowLogging(false)
+        setLoading(false)
       }
     }
   }
@@ -70,12 +76,16 @@ const AppDownloads: React.FC = () => {
 
   const handleDownloadClick = async (url: string): Promise<void> => {
     setShowLogging(true)
+    setLoading(true)
     setAppDownloads(null)
     try {
       const returnData = await loadAppUrl(url)
       setAppReturnData(returnData)
     } catch (error) {
-      await setTimeout(() => setShowLogging(false), 2000)
+      await setTimeout(() => {
+        setShowLogging(false)
+        setLoading(false)
+      }, 2000)
     }
   }
 
@@ -134,8 +144,9 @@ const AppDownloads: React.FC = () => {
                       </div>
                       <div>
                         <Button
-                          className="group gap-2"
+                          className={`${!loading && 'group'} gap-2`}
                           onClick={() => handleDownloadClick(release.browser_download_url)}
+                          disabled={loading}
                         >
                           <p className="group-hover:block hidden text-center flex-grow">
                             Download {fileSize}
@@ -205,11 +216,19 @@ const AppDownloads: React.FC = () => {
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    <Button className="group gap-2" onClick={() => handleDownloadLatestClick(name)}>
+                    <Button
+                      className={`${!loading && 'group'} gap-2`}
+                      disabled={loading}
+                      onClick={() => handleDownloadLatestClick(name)}
+                    >
                       <p className="group-hover:block hidden text-center flex-grow">
                         Download Latest
                       </p>
-                      <IconDownload className="group-hover:stroke-2 stroke-1" />
+                      {loading ? (
+                        <IconLoading />
+                      ) : (
+                        <IconDownload className="group-hover:stroke-2 stroke-1" />
+                      )}
                     </Button>
                     <Button className="group gap-2" onClick={() => handleMoreDownloadsClick(name)}>
                       <p className="group-hover:block hidden text-center flex-grow">

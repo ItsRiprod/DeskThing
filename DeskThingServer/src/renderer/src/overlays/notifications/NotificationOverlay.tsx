@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import Overlay from '../Overlay'
 import Button from '@renderer/components/Button'
 import { IconBell, IconLayoutgrid, IconLogs, IconWarning } from '@renderer/assets/icons'
@@ -13,11 +13,16 @@ const NotificationOverlay: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const notifState = useNotificationStore((state) => state)
-  const [page, setPage] = useState('event')
+  const page = searchParams.get('page') || 'event'
 
   const activeTasks = notifState.tasks.filter(
     (task) => task.status !== 'complete' && task.status !== 'rejected'
   )
+
+  const setPage = (page: string): void => {
+    searchParams.set('page', page)
+    setSearchParams(searchParams)
+  }
 
   const onClose = (): void => {
     searchParams.delete('notifications')
@@ -47,6 +52,7 @@ const NotificationOverlay: React.FC = () => {
             curPage={page}
             value={notifState.issues.length}
             Icon={<IconWarning />}
+            className={notifState.issues.length > 0 ? 'bg-red-600' : ''}
           />
           <NavComponent
             setPage={setPage}
@@ -79,6 +85,7 @@ interface NavComponentProps {
   curPage: string
   value: number
   Icon: React.ReactElement
+  className?: string
 }
 
 const NavComponent = ({
@@ -86,11 +93,12 @@ const NavComponent = ({
   page,
   curPage,
   value,
-  Icon
+  Icon,
+  className
 }: NavComponentProps): React.ReactElement => (
   <Button
     onClick={() => setPage(page.toLowerCase())}
-    className={`gap-2 ${curPage == page.toLowerCase() ? 'bg-zinc-800 hover:bg-zinc-700' : 'bg-zinc-900 hover:bg-zinc-800'} ${value == 0 && 'text-gray-500'}`}
+    className={`gap-2 ${curPage == page.toLowerCase() ? 'bg-zinc-800 hover:bg-zinc-700' : 'bg-zinc-900 hover:bg-zinc-800'} ${value == 0 && 'text-gray-500'} ${className}`}
   >
     {value > 0 && <p>{value}</p>}
     <div className="md:hidden block">{Icon}</div>

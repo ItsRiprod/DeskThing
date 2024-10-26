@@ -7,7 +7,8 @@ import {
   IconUpload,
   IconDownload,
   IconLogs,
-  IconLoading
+  IconLoading,
+  IconRefresh
 } from '@renderer/assets/icons'
 import { useClientStore, useGithubStore, usePageStore } from '@renderer/stores'
 import MainElement from '@renderer/nav/MainElement'
@@ -18,6 +19,9 @@ import Overlay from '@renderer/overlays/Overlay'
 const ClientDownloads: React.FC = () => {
   const clientReleases = useGithubStore((githubStore) => githubStore.clientReleases)
   const extractReleaseDetails = useGithubStore((githubStore) => githubStore.extractReleaseDetails)
+  const installedClient = useClientStore((clientStore) => clientStore.clientManifest)
+  const refreshClient = useClientStore((clientStore) => clientStore.requestClientManifest)
+  const [clientRefreshing, setClientRefreshing] = useState(false)
   // Running clients
   const loadClientUrl = useClientStore((clientStore) => clientStore.loadClientUrl)
   const loadClientZip = useClientStore((clientStore) => clientStore.loadClientZip)
@@ -27,6 +31,7 @@ const ClientDownloads: React.FC = () => {
   const [showLogging, setShowLogging] = useState(false)
   const [showClientSettings, setShowClientSettings] = useState(false)
   const [selectingFile, setSelectingFile] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   // Displaying available downloads
   const [clientDownloads, setClientDownloads] = useState<string | null>(null)
@@ -40,16 +45,22 @@ const ClientDownloads: React.FC = () => {
 
   const handleUploadClick = async (): Promise<void> => {
     setSelectingFile(true)
+    setLoading(true)
     const file = await window.electron.selectZipFile()
+    setLoading(false)
     setSelectingFile(false)
     if (file) {
+      setLoading(true)
       setShowLogging(true)
       try {
         await loadClientZip(file)
       } catch (error) {
         // Handle error
       } finally {
-        setTimeout(() => setShowLogging(false), 5000)
+        setTimeout(() => {
+          setLoading(false)
+          setShowLogging(false)
+        }, 5000)
       }
     }
   }
@@ -60,11 +71,15 @@ const ClientDownloads: React.FC = () => {
 
   const handleDownloadClick = async (url: string): Promise<void> => {
     setShowLogging(true)
+    setLoading(true)
     setClientDownloads(null)
     try {
       await loadClientUrl(url)
     } catch (error) {
-      await setTimeout(() => setShowLogging(false), 2000)
+      await setTimeout(() => {
+        setLoading(false)
+        setShowLogging(false)
+      }, 2000)
     }
   }
 
@@ -87,6 +102,12 @@ const ClientDownloads: React.FC = () => {
     const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  }
+
+  const onRefreshClick = async (): Promise<void> => {
+    refreshClient()
+    setClientRefreshing(true)
+    setTimeout(() => setClientRefreshing(false), Math.random() * 1500 + 500)
   }
 
   return (
@@ -153,7 +174,32 @@ const ClientDownloads: React.FC = () => {
           </div>
         </Overlay>
       )}
-      <Sidebar className="flex justify-end flex-col h-full max-h-full md:items-stretch items-center">
+      <Sidebar className="flex justify-between flex-col h-full max-h-full md:items-stretch items-center">
+        <div className="flex flex-col gap-2 items-center justify-center">
+          {installedClient ? (
+            <div>
+              <h1 className="font-semibold">Loaded Client:</h1>
+              <div className="md:block hidden border p-2 rounded-lg bg-zinc-900 border-zinc-800">
+                <p>{installedClient.name}</p>
+                <p>{installedClient.version}</p>
+              </div>
+              <div className="md:hidden flex flex-col items-center">
+                <p>{installedClient.short_name}</p>
+                <p>{installedClient.version_code}</p>
+              </div>
+            </div>
+          ) : (
+            <p>Client Not Found!</p>
+          )}
+          <Button
+            onClick={onRefreshClick}
+            className={`${clientRefreshing && 'text-gray-300'} gap-1 hover:bg-zinc-900`}
+            disabled={clientRefreshing}
+          >
+            <IconRefresh className={`stroke-2 ${clientRefreshing ? 'animate-spin' : ''}`} />
+            <p className="md:block hidden text-center flex-grow">Refresh Client</p>
+          </Button>
+        </div>
         <div>
           <div className="flex flex-col gap-2">
             <Button className="hover:bg-zinc-900" onClick={() => setShowClientSettings(true)}>
@@ -193,13 +239,25 @@ const ClientDownloads: React.FC = () => {
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    <Button className="group gap-2" onClick={() => handleDownloadLatestClick(name)}>
+                    <Button
+                      className="group gap-2"
+                      onClick={() => handleDownloadLatestClick(name)}
+                      disabled={loading}
+                    >
                       <p className="group-hover:block hidden text-center flex-grow">
                         Download Latest
                       </p>
-                      <IconDownload className="group-hover:stroke-2 stroke-1" />
+                      {loading ? (
+                        <IconLoading />
+                      ) : (
+                        <IconDownload className="group-hover:stroke-2 stroke-1" />
+                      )}
                     </Button>
-                    <Button className="group gap-2" onClick={() => handleMoreDownloadsClick(name)}>
+                    <Button
+                      className="group gap-2"
+                      onClick={() => handleMoreDownloadsClick(name)}
+                      disabled={loading}
+                    >
                       <p className="group-hover:block hidden text-center flex-grow">
                         More Downloads
                       </p>

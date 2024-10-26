@@ -154,7 +154,7 @@ export async function handleZipFromUrl(zipUrlPath: string, reply): Promise<AppRe
       mkdirSync(getAppFilePath('downloads'), { recursive: true })
     }
 
-    reply('logging', { status: true, data: 'Downloading...', final: false })
+    reply('logging', { status: true, data: 'Fetching...', final: false })
 
     const response = await fetch(zipUrlPath)
 
@@ -170,23 +170,40 @@ export async function handleZipFromUrl(zipUrlPath: string, reply): Promise<AppRe
       })
       return
     } else {
-      console.log(`[handleZipFromUrl] Downloaded ${zipUrlPath}`)
-      reply('logging', { status: true, data: 'Downloaded!', final: false })
+      console.log(`[handleZipFromUrl] Downloading ${zipUrlPath}`)
+      reply('logging', { status: true, data: 'Downloading... 0%', final: false })
+    }
+
+    const response2 = response.clone()
+    const contentLength = Number(response.headers.get('content-length'))
+    let receivedLength = 0
+    const reader = response2.body.getReader()
+    const chunks = []
+    let lastProgress = 0
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      chunks.push(value)
+      receivedLength += value.length
+      const progress = Math.round((receivedLength / contentLength) * 100)
+      if (progress > lastProgress) {
+        reply('logging', { status: true, data: `Downloading... ${progress}%`, final: false })
+        lastProgress = progress
+      }
     }
 
     const arrayBuffer = await response.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
-
     console.log(`[handleZipFromUrl] Writing to ${tempZipPath}...`)
     await promises.writeFile(tempZipPath, buffer)
 
-    reply('logging', { status: true, data: 'Extracting zip file...', final: false })
+    reply('logging', { status: true, data: 'Extracting...', final: false })
 
     returnData = await handleZip(tempZipPath, reply)
     console.log(`Successfully processed and deleted ${tempZipPath}`)
     reply('zip-name', { status: true, data: returnData, final: true })
-    return returnData
-  } catch (error) {
+    return returnData  } catch (error) {
     dataListener.asyncEmit(
       MESSAGE_TYPES.ERROR,
       `[handleZIPfromURL] Error handling zip file: ${error}`

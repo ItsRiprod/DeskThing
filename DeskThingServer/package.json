@@ -27,6 +27,7 @@
     "cross-unzip": "^0.2.1",
     "electron-updater": "^6.1.7",
     "express": "^4.21.0",
+    "lottie-react": "^2.4.0",
     "react-qr-code": "^2.0.15",
     "react-rewards": "^2.0.4",
     "react-router-dom": "^6.26.2",
