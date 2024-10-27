@@ -162,7 +162,9 @@ chmod +x /Applications/DeskThing.app/Contents/Resources/mac/adb
 
 Finally, the image linked above won't always work for MacOS. So instead, use the following image (it is a discord download for now) as it fixes ADB for MacOS
 
-https://cdn.discordapp.com/attachments/1243762430631481395/1272624114766577845/8.4.4_adb_enabled-new.tar.xz?ex=66cad051&is=66c97ed1&hm=befb7c49b203d752dbb9f4986377ea0be8fcde4f9f2db874de7c62a668bbd046&
+**Go to Releases -> MACOS LISTEN UP to find the updated link**
+*Discord will cycle the url for the link so this one will expire after a given amnt of time*
+[https://cdn.discordapp.com/attachments/1243762430631481395/1272624114766577845/8.4.4_adb_enabled-new.tar.xz?ex=66cad051&is=66c97ed1&hm=befb7c49b203d752dbb9f4986377ea0be8fcde4f9f2db874de7c62a668bbd046&](https://cdn.discordapp.com/attachments/1243762430631481395/1272624114766577845/8.4.4_adb_enabled-new.tar.xz?ex=671e8791&is=671d3611&hm=625ec81558151de46c488343d54dc4bc50b03a4a6d9ee786b82b619c1b270ed3&)
 
 Thanks! Have a good day
 
