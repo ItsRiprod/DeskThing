@@ -1,8 +1,8 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Sidebar from '@renderer/nav/Sidebar'
 import Button from '@renderer/components/Button'
 import { IconDownload } from '@renderer/assets/icons'
-import { useAppStore, usePageStore } from '@renderer/stores'
+import { useAppStore, useNotificationStore, usePageStore } from '@renderer/stores'
 import App from '@renderer/components/App'
 import MainElement from '@renderer/nav/MainElement'
 
@@ -11,6 +11,8 @@ const AppsList: React.FC = () => {
   const order = useAppStore((appStore) => appStore.order)
   const setOrder = useAppStore((appStore) => appStore.setOrder)
   const setPage = usePageStore((pageStore) => pageStore.setPage)
+  const requests = useNotificationStore((notificationStore) => notificationStore.requestQueue)
+  const [activeRequests, setActiveRequests] = useState<string[]>([])
 
   const [draggedApp, setDraggedApp] = useState<string | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
@@ -19,7 +21,11 @@ const AppsList: React.FC = () => {
     setPage('Downloads/App')
   }
 
-  const handleDragStart = (e, appName: string) => {
+  useEffect(() => {
+    setActiveRequests(requests.map((request) => request.appName))
+  }, [requests])
+
+  const handleDragStart = (e, appName: string): void => {
     setDraggedApp(appName)
 
     // Create a custom drag image
@@ -90,7 +96,7 @@ const AppsList: React.FC = () => {
                       dragOverIndex === index ? 'border-t-2 border-zinc-500' : ''
                     }`}
                   >
-                    <App app={app} />
+                    <App app={app} activeRequest={activeRequests.includes(app.name)} />
                     {index === order.length - 1 && dragOverIndex === index && (
                       <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-zinc-500"></div>
                     )}

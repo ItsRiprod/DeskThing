@@ -25,6 +25,11 @@ interface ClientDetailsOverlayProps {
 
 const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, client }) => {
   const port = useSettingsStore((settings) => settings.settings.devicePort)
+  // ADB commands
+  const [command, setCommand] = useState('')
+  const [response, setResponse] = useState('')
+
+  // State Management
   const [loading, setLoading] = useState(false)
   const [animatingIcons, setAnimatingIcons] = useState<Record<string, boolean>>({})
   const [logging, setLogging] = useState<LoggingData | null>()
@@ -302,6 +307,13 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
     getSupervisorData()
   }
 
+  const handleExecuteCommand = async (): Promise<void> => {
+    setAnimatingIcons((prev) => ({ ...prev, command: true }))
+    const response = await window.electron.handleClientADB(`-s ${client.adbId} ${command}`)
+    setResponse(response)
+    setAnimatingIcons((prev) => ({ ...prev, command: false }))
+  }
+
   return (
     <Overlay
       onClose={onClose}
@@ -472,6 +484,38 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
             {client.ip}:{client.port}
           </h3>
         </div>
+        {client.adbId && (
+          <div className="w-full flex flex-col gap-2">
+            <div className="flex items-center gap-2 w-full">
+              <input
+                onChange={(e) => setCommand(e.target.value)}
+                value={command}
+                type="text"
+                placeholder="Enter ADB command..."
+                className="flex-1 px-3 py-2 bg-zinc-900 rounded-md text-white border border-zinc-700 focus:outline-none focus:border-zinc-500"
+              />
+              <Button
+                className="group bg-black group  hover:bg-zinc-950"
+                onClick={handleExecuteCommand}
+              >
+                {animatingIcons.command ? (
+                  <IconLoading />
+                ) : (
+                  <IconPlay className="text-green-500 group-hover:fill-green-500" />
+                )}
+              </Button>
+            </div>
+            {response && (
+              <div className="bg-slate-900 p-2">
+                {response.split('\n').map((line, index) => (
+                  <p key={index} className="text-xs font-geistMono text-gray-300">
+                    {line}
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
       <div className="my-4 italic">
         <p className="text-xs font-geistMono text-gray-500">{client.userAgent}</p>

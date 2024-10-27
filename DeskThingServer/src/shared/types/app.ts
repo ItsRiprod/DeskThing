@@ -92,15 +92,57 @@ export interface AppDataInterface {
   settings?: AppSettings
 }
 
-export interface AppSettings {
-  [key: string]: {
-    value: string | boolean
+export interface SettingsNumber {
+  value: number
+  type: 'number'
+  label: string
+  description?: string
+}
+
+export interface SettingsBoolean {
+  value: boolean
+  type: 'boolean'
+  label: string
+  description?: string
+}
+
+export interface SettingsString {
+  value: string
+  type: 'string'
+  label: string
+  description?: string
+}
+
+export interface SettingsSelect {
+  value: string
+  type: 'select'
+  label: string
+  description?: string
+  options: {
     label: string
-    options: {
-      label: string
-      value: string | boolean
-    }[]
-  }
+    value: string
+  }[]
+}
+
+export interface SettingsMultiSelect {
+  value: boolean[]
+  type: 'multiselect'
+  label: string
+  description?: string
+  options: {
+    label: string
+  }[]
+}
+
+export type SettingsType =
+  | SettingsNumber
+  | SettingsBoolean
+  | SettingsString
+  | SettingsSelect
+  | SettingsMultiSelect
+
+export interface AppSettings {
+  [key: string]: SettingsType
 }
 
 export interface AppData {

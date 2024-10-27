@@ -41,7 +41,7 @@ export const getDeviceManifestVersion = async (deviceId: string): Promise<string
     }
   } catch (error) {
     console.error('Error getting device manifest version:', error)
-    throw error
+    return '0.0.0'
   }
 }
 

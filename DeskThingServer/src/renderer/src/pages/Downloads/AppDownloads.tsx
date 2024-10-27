@@ -162,26 +162,23 @@ const AppDownloads: React.FC = () => {
         </Overlay>
       )}
       {appReturnData && (
-        <Overlay onClose={() => setAppReturnData(null)} className="border border-gray-500">
-          <div className="m-3">
-            <h1 className="text-2xl">Successfully Downloaded App</h1>
-            <p>{appReturnData.appName} is installed</p>
-            <div className="font-geistMono border-l pl-2 border-gray-500 text-gray-500 my-2">
-              <p>ID: {appReturnData.appId}</p>
-              <p>Version: {appReturnData.appVersion}</p>
-              <p>Author: {appReturnData.author}</p>
-            </div>
-            <Button
-              className="group border-cyan-500 hover:bg-cyan-500"
-              onClick={() => {
-                setAppReturnData(null)
-                runApp(appReturnData.appId)
-              }}
-            >
-              <p className="group-hover:block hidden">Run App</p>
-              <IconPlay />
-            </Button>
-          </div>
+        <Overlay
+          onClose={() => setAppReturnData(null)}
+          className="border bg-zinc-950 border-zinc-800 pt-16 p-5"
+        >
+          <h1 className="text-2xl text-green-500">Successfully Downloaded</h1>
+          <p>{appReturnData.appName} is installed</p>
+          <p>v{appReturnData.appVersion}</p>
+          <Button
+            className="hover:bg-zinc-700 flex gap-2 bg-black border border-zinc-800"
+            onClick={() => {
+              setAppReturnData(null)
+              runApp(appReturnData.appId)
+            }}
+          >
+            <IconPlay className="fill-white" />
+            <p>Initialize App</p>
+          </Button>
         </Overlay>
       )}
       <Sidebar className="flex justify-end flex-col h-full max-h-full md:items-stretch items-center">
@@ -205,7 +202,7 @@ const AppDownloads: React.FC = () => {
               Object.keys(appReleases).map((name) => (
                 <div
                   key={name}
-                  className="flex bg-zinc-900 rounded-lg justify-between items-center p-2"
+                  className="flex hover:bg-zinc-800 bg-zinc-900 rounded-lg justify-between items-center p-2"
                 >
                   <div>
                     <h1 className="text-xl">
@@ -217,18 +214,14 @@ const AppDownloads: React.FC = () => {
                   </div>
                   <div className="flex gap-2">
                     <Button
-                      className={`${!loading && 'group'} gap-2`}
+                      className={`${loading ? 'text-gray-600' : 'group'} gap-2`}
                       disabled={loading}
                       onClick={() => handleDownloadLatestClick(name)}
                     >
                       <p className="group-hover:block hidden text-center flex-grow">
                         Download Latest
                       </p>
-                      {loading ? (
-                        <IconLoading />
-                      ) : (
-                        <IconDownload className="group-hover:stroke-2 stroke-1" />
-                      )}
+                      <IconDownload className="group-hover:stroke-2 stroke-1" />
                     </Button>
                     <Button className="group gap-2" onClick={() => handleMoreDownloadsClick(name)}>
                       <p className="group-hover:block hidden text-center flex-grow">

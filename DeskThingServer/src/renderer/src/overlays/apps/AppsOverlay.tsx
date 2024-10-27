@@ -69,10 +69,12 @@ const AppsOverlay: React.FC = () => {
             />
           ))}
         </div>
-        <div className="w-full">
-          {currentPage == 'actions' && <AppActions app={app} />}
-          {currentPage == 'details' && <AppDetails app={app} />}
-          {currentPage == 'settings' && <AppSettings app={app} />}
+        <div className="w-full h-full relative overflow-auto">
+          <div className="absolute inset w-full h-full">
+            {currentPage == 'actions' && <AppActions app={app} />}
+            {currentPage == 'details' && <AppDetails app={app} />}
+            {currentPage == 'settings' && <AppSettings app={app} />}
+          </div>
         </div>
       </div>
     </Overlay>

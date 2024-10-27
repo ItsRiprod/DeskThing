@@ -203,7 +203,8 @@ export async function handleZipFromUrl(zipUrlPath: string, reply): Promise<AppRe
     returnData = await handleZip(tempZipPath, reply)
     console.log(`Successfully processed and deleted ${tempZipPath}`)
     reply('zip-name', { status: true, data: returnData, final: true })
-    return returnData  } catch (error) {
+    return returnData
+  } catch (error) {
     dataListener.asyncEmit(
       MESSAGE_TYPES.ERROR,
       `[handleZIPfromURL] Error handling zip file: ${error}`

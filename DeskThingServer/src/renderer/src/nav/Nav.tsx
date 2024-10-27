@@ -97,6 +97,7 @@ const NavButton = ({
   const handleClick = (): void => {
     if (subDirectories && subDirectories.length > 0) {
       setIsOpen(!isOpen)
+      handleNavigation('/' + location + '/' + subDirectories[0])
     } else {
       handleNavigation('/' + location)
     }

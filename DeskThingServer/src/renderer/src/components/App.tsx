@@ -1,14 +1,13 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { App as AppType } from '@shared/types/app'
 import { IconPause, IconPlay, IconWrench } from '@renderer/assets/icons'
 import Button from './Button'
 import { useAppStore } from '@renderer/stores'
-import AppSettingsOverlay from '@renderer/overlays/AppSettingsOverlay'
-import AppsOverlay from '@renderer/overlays/apps/AppsOverlay'
 import { useSearchParams } from 'react-router-dom'
 
 interface AppProps {
   app: AppType
+  activeRequest?: boolean
 }
 
 interface RunningProps {
@@ -36,7 +35,7 @@ const Stopped: React.FC<StoppedProps> = ({ runApp }) => {
   )
 }
 
-const App: React.FC<AppProps> = ({ app }) => {
+const App: React.FC<AppProps> = ({ app, activeRequest }) => {
   const stopApp = useAppStore((appStore) => appStore.stopApp)
   const runApp = useAppStore((appStore) => appStore.runApp)
   const [searchParams, setSearchParams] = useSearchParams()
@@ -61,13 +60,21 @@ const App: React.FC<AppProps> = ({ app }) => {
               <p className="text-xs text-gray-500 font-geistMono italic">{app.manifest.version}</p>
             )}
           </div>
-          <div className="font-geistMono text-xs flex w-full text-gray-300 justify-between">
-            {app.manifest?.isAudioSource && <p>audiosource</p>}
-            {app.manifest?.isScreenSaver && <p>screensaver</p>}
-          </div>
-          <p className="font-geistMono italic text-xs text-gray-500">
-            Made by {app.manifest?.author || app.manifest?.author}
-          </p>
+          {activeRequest ? (
+            <div className="bg-cyan-500 w-fit px-2 py-1 rounded-full text-xs">
+              <p>Requesting Data</p>
+            </div>
+          ) : (
+            <>
+              <div className="font-geistMono text-xs flex w-full text-gray-300 justify-between">
+                {app.manifest?.isAudioSource && <p>audiosource</p>}
+                {app.manifest?.isScreenSaver && <p>screensaver</p>}
+              </div>
+              <p className="font-geistMono italic text-xs text-gray-500">
+                Made by {app.manifest?.author || app.manifest?.author}
+              </p>
+            </>
+          )}
         </div>
       </div>
       {app.running ? (

@@ -10,11 +10,11 @@ const TopBar: React.FC = () => {
     <div className="bg-zinc-950 border-zinc-800 border-b text-white flex items-center justify-between">
       <div className="flex items-center p-4 min-w-24 md:min-w-48">
         {connections == 0 ? (
-          <IconWifi className="text-white pt-1" iconSize={24} />
+          <IconWifi className="text-white" iconSize={24} />
         ) : (
           <div className="text-green-500 flex">
             <p className="text-xs">{connections == 1 ? '' : connections}</p>
-            <IconWifi className=" pt-1" iconSize={24} />
+            <IconWifi className="" iconSize={24} />
           </div>
         )}
         <IconLogo width={110} height={30} iconSize={50} className={'hidden md:inline'} />

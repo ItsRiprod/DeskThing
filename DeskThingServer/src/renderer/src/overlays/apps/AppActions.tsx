@@ -4,7 +4,6 @@ import Button from '@renderer/components/Button'
 import { IconPlay, IconX } from '@renderer/assets/icons'
 
 const AppActions: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
-
   const handlePurge = (): void => {
     window.electron.purgeApp(app.name)
   }

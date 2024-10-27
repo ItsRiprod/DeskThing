@@ -1,8 +1,7 @@
 import { AppIPCData, AuthScopes, Client, UtilityIPCData } from '@shared/types'
-import { app, shell, BrowserWindow, ipcMain, Tray, Menu, nativeImage, NativeImage } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, Tray, Menu, nativeImage } from 'electron'
 import { join, resolve } from 'path'
-import icon from '../../resources/icon.ico?asset'
-import linuxIcon from '../../resources/icon.png?asset'
+import icon from '../../resources/icon.png?asset'
 import ConnectionStore from './stores/connectionsStore'
 
 let mainWindow: BrowserWindow | null = null
@@ -27,7 +26,7 @@ function createMainWindow(): BrowserWindow {
     icon: icon,
     show: false,
     autoHideMenuBar: true,
-    ...(process.platform === 'linux' ? { icon: linuxIcon } : {}),
+    ...(process.platform === 'linux' ? { icon: icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
@@ -119,22 +118,14 @@ function createClientWindow(port: number): BrowserWindow {
     clientWindow = null
   })
 
-  window.loadURL(`http://localhost:${port}/client`, {
-    userAgent:
-      'Mozilla/5.0 (Linux; Android 4.2.1; en-us; Nexus 5 Build/JOP40D) AppleWebKit/535.19 (KHTML, like Gecko; googleweblight) Chrome/38.0.1025.166 Mobile Safari/535.19'
-  })
+  window.loadURL(`http://localhost:${port}/client`, {})
   return window
 }
 
 async function initializeTray(): Promise<void> {
   const settingsStore = await import('./stores/settingsStore')
 
-  let trayIcon: NativeImage
-  if (process.platform === 'win32') {
-    trayIcon = nativeImage.createFromPath(join(__dirname, '../../resources/icon.ico'))
-  } else {
-    trayIcon = nativeImage.createFromPath(join(__dirname, '../../resources/icon.png'))
-  }
+  const trayIcon = nativeImage.createFromPath(join(__dirname, '../../resources/icon2.png'))
 
   tray = new Tray(trayIcon)
 
@@ -323,7 +314,6 @@ if (!app.requestSingleInstanceLock()) {
     } else {
       // mainWindow = createMainWindow()
     }
-
   })
   app.on('ready', () => setupIpcHandlers())
   app.whenReady().then(async () => {
