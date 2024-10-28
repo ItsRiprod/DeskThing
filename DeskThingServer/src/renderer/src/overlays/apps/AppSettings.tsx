@@ -43,16 +43,14 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
         case 'string':
           return (
             <div>
-              <h3>
-                {setting.label}
-              </h3>
+              <h3>{setting.label}</h3>
 
               <input
                 type="text"
                 value={setting.value as string}
                 onChange={(e) => handleSettingChange(key, e.target.value)}
                 className={commonClasses}
-                />
+              />
             </div>
           )
         case 'number':

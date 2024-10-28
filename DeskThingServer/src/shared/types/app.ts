@@ -95,6 +95,8 @@ export interface AppDataInterface {
 export interface SettingsNumber {
   value: number
   type: 'number'
+  min: number
+  max: number
   label: string
   description?: string
 }
