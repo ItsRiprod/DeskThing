@@ -4,7 +4,6 @@ import Clients from '@renderer/pages/Clients'
 import Apps from '@renderer/pages/Apps'
 import Downloads from '@renderer/pages/Downloads'
 import Dev from '@renderer/pages/Dev'
-import Settings from '@renderer/pages/Settings'
 import TopBar from './TopBar'
 import ClientSettings from '@renderer/pages/Clients/Settings'
 import AppsList from '@renderer/pages/Apps/AppsList'
@@ -46,7 +45,6 @@ const AppRouter = (): JSX.Element => {
               <Route path="app" element={<DevApp />} />
               <Route path="adb" element={<ADBSettings />} />
             </Route>
-            <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>

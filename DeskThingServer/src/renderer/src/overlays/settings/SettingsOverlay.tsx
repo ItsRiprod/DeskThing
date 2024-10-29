@@ -56,7 +56,7 @@ const SettingsOverlay: React.FC = () => {
             />
           ))}
         </div>
-        <div className="w-full">
+        <div className="w-full relative overflow-y-auto">
           {currentPage == 'client' && <ClientSettings />}
           {currentPage == 'device' && <DeviceSettings />}
           {currentPage == 'server' && <ServerSettings />}

@@ -109,7 +109,7 @@ const Logs: React.FC = () => {
                 className={`text-sm font-geistMono break-words whitespace-pre-wrap ${
                   log.type === 'error'
                     ? 'text-red-500'
-                    : log.type === 'DEBUG'
+                    : log.type === 'message'
                       ? 'text-yellow-500'
                       : 'text-gray-500'
                 }`}

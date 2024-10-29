@@ -7,6 +7,7 @@ interface SettingsStoreState {
   requestSettings: () => Promise<Settings>
   getSetting: (key: keyof Settings) => Settings[keyof Settings]
   saveSettings: (settings: Settings) => void
+  savePartialSettings: (settings: Partial<Settings>) => void
   setSettings: (settings: Settings) => void
 }
 
@@ -48,6 +49,13 @@ const useSettingsStore = create<SettingsStoreState>((set, get) => ({
   saveSettings: (settings: Settings): void => {
     set({ settings })
     window.electron.saveSettings(settings)
+  },
+
+  savePartialSettings: (settings: Partial<Settings>): void => {
+    const currentSettings = get().settings
+    const updatedSettings = { ...currentSettings, ...settings }
+    set({ settings: updatedSettings })
+    window.electron.saveSettings(updatedSettings)
   },
 
   setSettings: (settings: Settings): void => {

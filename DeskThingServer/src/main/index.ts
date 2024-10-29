@@ -3,6 +3,7 @@ import { app, shell, BrowserWindow, ipcMain, Tray, Menu, nativeImage } from 'ele
 import { join, resolve } from 'path'
 import icon from '../../resources/icon.png?asset'
 import ConnectionStore from './stores/connectionsStore'
+import settingsStore from './stores/settingsStore'
 
 let mainWindow: BrowserWindow | null = null
 let clientWindow: BrowserWindow | null = null
@@ -351,9 +352,14 @@ if (!app.requestSingleInstanceLock()) {
     })
   })
 
-  app.on('window-all-closed', (e) => {
+  app.on('window-all-closed', async (e) => {
     // Prevent the app from quitting
-    e.preventDefault()
+    const settings = await settingsStore.getSettings()
+    if (settings.minimizeApp) {
+      e.preventDefault()
+    } else {
+      app.quit()
+    }
   })
 }
 

@@ -54,6 +54,20 @@ const DeviceSettings: React.FC = () => {
       </div>
 
       <div className="w-full p-4 flex justify-between items-center">
+        <h2 className="text-xl">Use Global ADB</h2>
+        <Button
+          className="bg-transparent p-0"
+          onClick={() => handleSettingChange('globalADB', !settings.globalADB)}
+        >
+          <IconToggle
+            iconSize={48}
+            checked={settings.globalADB}
+            className={`transition-color ${settings.globalADB ? 'text-green-500' : 'text-gray-500'}`}
+          />
+        </Button>
+      </div>
+
+      <div className="w-full p-4 flex justify-between items-center">
         <h2 className="text-xl">Auto Config</h2>
         <Button
           className="bg-transparent p-0"

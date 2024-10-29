@@ -1,17 +1,28 @@
-import React from 'react'
+import React, { useState } from 'react'
 import useSettingsStore from '../../stores/settingsStore'
 import Button from '@renderer/components/Button'
-import { IconToggle } from '@renderer/assets/icons'
+import { IconLoading, IconSave, IconToggle } from '@renderer/assets/icons'
 
 const ServerSettings: React.FC = () => {
-  const { settings, saveSettings } = useSettingsStore()
+  const initialSettings = useSettingsStore((settings) => settings.settings)
+  const saveSettings = useSettingsStore((settings) => settings.saveSettings)
+  const [settings, setSettings] = useState(initialSettings)
+  const [loading, setLoading] = useState(false)
 
   const handleSettingChange = (key: string, value: string | boolean | number): void => {
-    saveSettings({ ...settings, [key]: value })
+    setSettings({ ...settings, [key]: value })
+  }
+
+  const handleSave = async (): Promise<void> => {
+    setLoading(true)
+    saveSettings(settings)
+    setTimeout(() => {
+      setLoading(false)
+    }, 500)
   }
 
   return (
-    <div className="w-full h-full p-4 flex flex-col divide-y-2 divide-gray-500">
+    <div className="w-full absolute inset h-full p-4 flex flex-col divide-y-2 divide-gray-500">
       <div className="w-full p-4 flex justify-between items-center">
         <h2 className="text-xl">Callback Port</h2>
         <input
@@ -63,6 +74,16 @@ const ServerSettings: React.FC = () => {
             checked={settings.minimizeApp}
             className={`transition-color ${settings.minimizeApp ? 'text-green-500' : 'text-gray-500'}`}
           />
+        </Button>
+      </div>
+      <div className="border-t mt-4 py-5 border-gray-900 w-full flex justify-end">
+        <Button
+          className={`border-green-500 border group gap-2 ${loading ? 'text-gray-100 bg-green-600' : 'hover:bg-green-500'}`}
+          onClick={handleSave}
+          disabled={loading}
+        >
+          {loading ? <IconLoading /> : <IconSave className="stroke-2" />}
+          <p>{loading ? 'Saving' : 'Save'}</p>
         </Button>
       </div>
     </div>

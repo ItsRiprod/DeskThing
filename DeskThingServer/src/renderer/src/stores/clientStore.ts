@@ -41,6 +41,10 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
 
   // Setters
   setADBDevices: (devices: string[]): void => {
+    if (devices.includes('offline')) {
+      window.electron.handleClientADB('reconnect offline')
+    }
+
     const currentDevices = get().ADBDevices
     const newDevices = devices.filter((device) => !currentDevices.includes(device))
 
@@ -126,11 +130,11 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
     return clientManifest
   },
 
-  updateClientManifest: (client: Partial<Client>): void => {
+  updateClientManifest: (client: Partial<ClientManifest>): void => {
     set((state) => ({
       clientManifest: state.clientManifest
         ? { ...state.clientManifest, ...client }
-        : (client as Client)
+        : (client as ClientManifest)
     }))
     window.electron.updateClientManifest(client)
   },
@@ -140,6 +144,9 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
     try {
       const response = await window.electron.handleClientADB('devices')
       if (response) {
+        if (response.includes('offline')) {
+          await window.electron.handleClientADB('reconnect offline')
+        }
         const deviceList = parseADBDevices(response)
         get().setADBDevices(deviceList)
       } else {
