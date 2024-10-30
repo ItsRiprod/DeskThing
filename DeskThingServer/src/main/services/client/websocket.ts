@@ -22,6 +22,7 @@ import {
   sendSettingsData
 } from './clientCom'
 import { sendIpcData } from '../..'
+import MusicHandler from '../../handlers/musicHandler'
 
 export let server: WebSocketServer | null = null
 export let httpServer: HttpServer
@@ -177,14 +178,23 @@ export const setupServer = async (): Promise<void> => {
         messageThrottles.set(messageKey, now)
 
         // Handle non-server messages
-        if (messageData.app && messageData.app !== 'server') {
+        if (
+          messageData.app &&
+          messageData.app !== 'server' &&
+          messageData.app !== 'utility' &&
+          messageData.app !== 'music'
+        ) {
           sendMessageToApp(messageData.app.toLowerCase(), {
             type: messageData.type,
             request: messageData.request,
             payload: messageData.payload
           })
         } else if (messageData.app === 'server') {
+          // Handle server requests
           handleServerMessage(socket, client, messageData)
+        } else if (messageData.app === 'utility' || messageData.app === 'music') {
+          // Handle music requests
+          MusicHandler.handleClientRequest(messageData)
         }
 
         // Cleanup throttle

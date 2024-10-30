@@ -18,6 +18,7 @@ const ClientConnections: React.FC = () => {
   const settings = useSettingsStore((settings) => settings.settings)
   const saveSettings = useSettingsStore((settings) => settings.saveSettings)
   const clients = useClientStore((clients) => clients.clients)
+  const stagedClient = useClientStore((clients) => clients.clientManifest)
   const devices = useClientStore((clients) => clients.ADBDevices)
   const refreshClients = useClientStore((clients) => clients.requestADBDevices)
   const setPage = usePageStore((pageStore) => pageStore.setPage)
@@ -96,6 +97,17 @@ const ClientConnections: React.FC = () => {
               settings.localIp.map((ip, index) => (
                 <div key={index}>{ip + ':' + settings.devicePort}</div>
               ))}
+            <div className="border-t border-gray-500 mt-4 pt-4">
+              <p className="">Staged Client</p>
+              {stagedClient ? (
+                <>
+                  <p className="text-gray-500">{stagedClient.name}</p>
+                  <p className="text-gray-500">Version: {stagedClient.version}</p>
+                </>
+              ) : (
+                <p className="text-red-500 font-semibold">No Client Downloaded</p>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex flex-col gap-2">

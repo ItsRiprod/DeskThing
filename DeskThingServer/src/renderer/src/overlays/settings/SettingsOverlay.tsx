@@ -1,16 +1,18 @@
 import React from 'react'
 import Overlay from '../Overlay'
-import { IconCarThingSmall, IconComputer, IconServer } from '@renderer/assets/icons'
+import { IconCarThingSmall, IconComputer, IconMusic, IconServer } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
 import ClientSettings from './ClientSettings'
 import DeviceSettings from './DeviceSettings'
 import ServerSettings from './ServerSettings'
 import { useSearchParams } from 'react-router-dom'
+import MusicSettings from './MusicSettings'
 
 const settingsPages = [
   { key: 'server', label: 'Server', Icon: IconServer },
   { key: 'client', label: 'Client', Icon: IconComputer },
-  { key: 'device', label: 'Device', Icon: IconCarThingSmall }
+  { key: 'device', label: 'Device', Icon: IconCarThingSmall },
+  { key: 'music', label: 'Music', Icon: IconMusic }
 ]
 
 /**
@@ -60,6 +62,7 @@ const SettingsOverlay: React.FC = () => {
           {currentPage == 'client' && <ClientSettings />}
           {currentPage == 'device' && <DeviceSettings />}
           {currentPage == 'server' && <ServerSettings />}
+          {currentPage == 'music' && <MusicSettings />}
         </div>
       </div>
     </Overlay>

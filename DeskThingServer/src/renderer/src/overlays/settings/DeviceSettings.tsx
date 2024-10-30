@@ -38,7 +38,7 @@ const DeviceSettings: React.FC = () => {
   }
 
   return (
-    <div className="w-full h-full divide-y-2 divide-gray-500 p-4 flex flex-col">
+    <div className="w-full absolute inset h-full divide-y-2 divide-gray-500 p-4 flex flex-col">
       <div className="w-full p-4 flex justify-between items-center">
         <h2 className="text-xl">Auto Detect ADB</h2>
         <Button

@@ -54,30 +54,6 @@ const Logs: React.FC = () => {
     <div className="w-full h-full flex">
       <Sidebar className="flex justify-end flex-col h-full max-h-full md:items-stretch items-center">
         <div className="flex flex-col gap-2">
-          <div className="flex flex-col gap-2 border-l-2 pl-2 border-gray-500 py-2">
-            <p className="font-semibold">Filters</p>
-            <Button
-              onClick={() => setFilter(null)}
-              className={`border-gray-500 ${filter === null ? 'border-l-green-500 border-l-4' : ''}`}
-            >
-              <IconLogs strokeWidth={1.5} />
-              <p className="md:block hidden text-center flex-grow">All</p>
-            </Button>
-            <Button
-              onClick={() => setFilter('message')}
-              className={`border-gray-500 ${filter === 'message' ? 'border-l-green-500 border-l-4' : ''}`}
-            >
-              <IconBell strokeWidth={1.5} />
-              <p className="md:block hidden text-center flex-grow">Messages</p>
-            </Button>
-            <Button
-              onClick={() => setFilter('error')}
-              className={`border-gray-500 ${filter === 'error' ? 'border-l-green-500 border-l-4' : ''}`}
-            >
-              <IconWarning strokeWidth={1.5} />
-              <p className="md:block hidden text-center flex-grow">Errors</p>
-            </Button>
-          </div>
           <Button onClick={handleLogsOpen} className="border-gray-500 hover:bg-gray-500">
             <IconFolderOpen strokeWidth={1.5} />
             <p className="md:block hidden text-center flex-grow">Open Logs</p>
@@ -95,10 +71,32 @@ const Logs: React.FC = () => {
         </div>
       </Sidebar>
       <MainElement>
-        <h2 className="text-xl font-semibold m-4">Logs</h2>
+        <div className="flex gap-2 px-2 my-2 py-2">
+          <Button
+            onClick={() => setFilter(null)}
+            className={`w-full   ${filter === null ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
+          >
+            <IconLogs strokeWidth={1.5} />
+            <p className="md:block hidden text-center flex-grow">All</p>
+          </Button>
+          <Button
+            onClick={() => setFilter('message')}
+            className={`w-full  ${filter === 'message' ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
+          >
+            <IconBell strokeWidth={1.5} />
+            <p className="md:block hidden text-center flex-grow">Messages</p>
+          </Button>
+          <Button
+            onClick={() => setFilter('error')}
+            className={`w-full  ${filter === 'error' ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
+          >
+            <IconWarning strokeWidth={1.5} />
+            <p className="md:block hidden text-center flex-grow">Errors</p>
+          </Button>
+        </div>
         <div
           ref={logContainerRef}
-          className="w-full border-t bg-black shadow-2xl border-gray-500 p-5 max-w-full overflow-auto"
+          className="w-full bg-black shadow-2xl p-5 max-w-full overflow-auto"
           style={{ maxHeight: 'calc(100vh - 8rem)' }}
           onScroll={handleScroll}
         >

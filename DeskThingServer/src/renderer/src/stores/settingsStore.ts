@@ -23,6 +23,8 @@ const useSettingsStore = create<SettingsStoreState>((set, get) => ({
     autoConfig: false,
     globalADB: false,
     autoDetectADB: false,
+    refreshInterval: -1,
+    playbackLocation: undefined,
     localIp: ['-.-.-.-'],
     appRepos: ['https://github.com/ItsRiprod/deskthing-apps'],
     clientRepos: ['https://github.com/ItsRiprod/deskthing-client']

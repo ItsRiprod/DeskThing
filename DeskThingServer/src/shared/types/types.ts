@@ -146,6 +146,8 @@ export interface Settings {
   appRepos: string[]
   autoDetectADB: boolean
   clientRepos: string[]
+  playbackLocation?: string
+  refreshInterval: number
   [key: string]: any // For any additional settings
 }
 

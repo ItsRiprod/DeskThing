@@ -3,8 +3,8 @@ import dataListener, { MESSAGE_TYPES } from '../utils/events'
 import os from 'os'
 import { Settings } from '@shared/types'
 
-const settingsVersion = '0.9.0'
-const version_code = 9.0
+const settingsVersion = '0.9.1'
+const version_code = 9.1
 
 class SettingsStore {
   private settings: Settings
@@ -116,6 +116,8 @@ class SettingsStore {
       minimizeApp: true,
       globalADB: false,
       autoDetectADB: false,
+      refreshInterval: -1,
+      playbackLocation: undefined,
       localIp: getLocalIpAddress(),
       appRepos: ['https://github.com/ItsRiprod/deskthing-apps'],
       clientRepos: ['https://github.com/ItsRiprod/deskthing-client']

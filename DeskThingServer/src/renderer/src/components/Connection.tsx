@@ -200,7 +200,7 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
         {!client.connected && offline ? (
           <p className="text-red-500 italic">Device Offline!</p>
         ) : (
-          <p className="text-red-500 italic">Not Connected!</p>
+          !client.connected && <p className="text-red-500 italic">Not Connected!</p>
         )}
         {client.adbId && !offline && (
           <>

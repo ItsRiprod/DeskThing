@@ -60,14 +60,16 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
           return (
             <SettingComponent key={key} setting={setting}>
               <div>
-                <input
-                  type="number"
-                  value={setting.value as number}
-                  min={setting.min}
-                  max={setting.max}
-                  onChange={(e) => handleSettingChange(key, Number(e.target.value))}
-                  className={commonClasses}
-                />
+                {setting.type == 'number' && (
+                  <input
+                    type="number"
+                    value={setting.value as number}
+                    min={setting.min}
+                    max={setting.max}
+                    onChange={(e) => handleSettingChange(key, Number(e.target.value))}
+                    className={commonClasses}
+                  />
+                )}
               </div>
             </SettingComponent>
           )
@@ -86,39 +88,47 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
         case 'select':
           return (
             <SettingComponent key={key} setting={setting}>
-              <select
-                value={setting.value}
-                onChange={(e) => handleSettingChange(key, e.target.value)}
-                className={commonClasses}
-              >
-                {setting.options?.map((option, index) => (
-                  <option key={index} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              {setting.type == 'select' && (
+                <select
+                  value={setting.value}
+                  onChange={(e) => handleSettingChange(key, e.target.value)}
+                  className={commonClasses}
+                >
+                  {setting.options?.map((option, index) => (
+                    <option key={index} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              )}
             </SettingComponent>
           )
         case 'multiselect':
           return (
             <SettingComponent key={key} setting={setting}>
-              <div className="gap-2 flex max-w-1/2 flex-wrap p-2 bg-zinc-900 border border-gray-700 rounded-md">
-                {setting.options?.map((option, index) => (
-                  <Button
-                    key={index}
-                    className={`flex hover:bg-zinc-800 ${setting.value[index] ? 'text-green-500' : 'text-red-500'}`}
-                    onClick={(e) => {
-                      e.preventDefault()
-                      const currentValues = [...(setting.value as boolean[])]
-                      currentValues[index] = !currentValues[index]
-                      handleSettingChange(key, currentValues)
-                    }}
-                  >
-                    {setting.value[index] ? <IconCheck /> : <IconX />}
-                    <p>{option.label}</p>
-                  </Button>
-                ))}
-              </div>
+              {setting.type == 'multiselect' && (
+                <div className="gap-2 flex max-w-1/2 flex-wrap p-2 bg-zinc-900 border border-gray-700 rounded-md">
+                  {setting.options?.map((option, index) => (
+                    <Button
+                      key={index}
+                      className={`flex hover:bg-zinc-800 ${setting.value.includes(option.value) ? 'text-green-500' : 'text-red-500'}`}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        const currentValues = [...(setting.value as string[])]
+                        if (currentValues.includes(option.value)) {
+                          currentValues.splice(currentValues.indexOf(option.value), 1)
+                        } else {
+                          currentValues.push(option.value)
+                        }
+                        handleSettingChange(key, currentValues)
+                      }}
+                    >
+                      {setting.value[index] ? <IconCheck /> : <IconX />}
+                      <p>{option.label}</p>
+                    </Button>
+                  ))}
+                </div>
+              )}
             </SettingComponent>
           )
         default:
