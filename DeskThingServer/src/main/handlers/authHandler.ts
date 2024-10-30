@@ -13,6 +13,12 @@ let callBackPort: number
 
 function handleCallback(req: http.IncomingMessage, res: http.ServerResponse): void {
   const parsedUrl = url.parse(req.url || '', true)
+
+  dataListener.asyncEmit(
+    MESSAGE_TYPES.LOGGING,
+    `AUTH: Received callback request for ${parsedUrl.pathname}`
+  )
+
   const urlParts = parsedUrl.pathname?.split('/').filter(Boolean)
 
   if (!urlParts || urlParts.length < 2) {

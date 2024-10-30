@@ -177,19 +177,25 @@ export async function handleZipFromUrl(zipUrlPath: string, reply): Promise<AppRe
     const response2 = response.clone()
     const contentLength = Number(response.headers.get('content-length'))
     let receivedLength = 0
-    const reader = response2.body.getReader()
-    const chunks = []
+    const reader = response2.body?.getReader()
+    if (!reader) {
+      throw new Error('Failed to get reader from response body')
+    }
+    const chunks: Uint8Array[] = []
     let lastProgress = 0
 
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      chunks.push(value)
-      receivedLength += value.length
-      const progress = Math.round((receivedLength / contentLength) * 100)
-      if (progress > lastProgress) {
-        reply('logging', { status: true, data: `Downloading... ${progress}%`, final: false })
-        lastProgress = progress
+    let done = false
+    while (!done) {
+      const result = await reader.read()
+      done = result.done
+      if (!done) {
+        chunks.push(result.value as Uint8Array)
+        receivedLength += result.value?.length || 0
+        const progress = Math.round((receivedLength / contentLength) * 100)
+        if (progress > lastProgress) {
+          reply('logging', { status: true, data: `Downloading... ${progress}%`, final: false })
+          lastProgress = progress
+        }
       }
     }
 
@@ -225,7 +231,6 @@ export async function handleZipFromUrl(zipUrlPath: string, reply): Promise<AppRe
     }
   }
 }
-
 /**
  * Runs an app by its name.
  *
