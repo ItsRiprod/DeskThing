@@ -10,6 +10,9 @@ const TasksPage: React.FC = () => {
   return (
     <div className="w-full h-full p-4 flex flex-col">
       <h1 className="text-2xl font-bold mb-4">Tasks</h1>
+      <div className="bg-red-950 px-4 py-1 rounded-lg shadow-lg my-2">
+        <p className="text-xs italic text-gray-300">Tasks are still under development</p>
+      </div>
       {tasks.length > 0 ? (
         <div className="w-full h-full relative overflow-y-auto">
           <div className="absolute inset-0 w-full h-full">

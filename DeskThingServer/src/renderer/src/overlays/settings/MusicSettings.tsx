@@ -35,21 +35,8 @@ const MusicSettings: React.FC = () => {
   }
 
   return (
-    <div className="w-full absolute inset h-full p-4 flex flex-col divide-y-2 divide-gray-500">
-      <div className="w-full p-4 flex justify-between items-center">
-        <h2 className="text-xl">Refresh Interval (seconds)</h2>
-        <div className="flex items-center gap-4">
-          <input
-            type="number"
-            value={settings.refreshInterval === -1 ? '' : settings.refreshInterval / 1000}
-            onChange={(e) => handleSettingChange('refreshInterval', Number(e.target.value) * 1000)}
-            className="focus:text-white bg-zinc-900 text-white rounded px-2 py-2"
-            placeholder="Enter A Value"
-            disabled={settings.refreshInterval === -1}
-          />
-        </div>
-      </div>
-      <div className="w-full p-4 flex justify-between items-center">
+    <div className="w-full absolute inset h-full p-4 flex flex-col">
+      <div className="w-full p-0 px-4 flex justify-between items-center">
         <h2 className="text-xl">Enable Refresh Interval</h2>
         <div className="flex items-center gap-4">
           <Button
@@ -66,23 +53,42 @@ const MusicSettings: React.FC = () => {
           </Button>
         </div>
       </div>
-      <div className="w-full p-4 flex justify-between items-center">
+      <div
+        className={`transition-[height,opacity,border] border-t overflow-hidden ${settings.refreshInterval === -1 ? 'h-0 opacity-50 border-black' : 'h-20 opacity-100 border-gray-500'}`}
+      >
+        <div className={`w-full p-4 flex justify-between items-center`}>
+          <h2 className="text-xl">Refresh Interval (seconds)</h2>
+          <div className="flex items-center gap-4">
+            <input
+              type="number"
+              value={settings.refreshInterval === -1 ? '' : settings.refreshInterval / 1000}
+              onChange={(e) =>
+                handleSettingChange('refreshInterval', Number(e.target.value) * 1000)
+              }
+              className="focus:text-white bg-zinc-900 text-white rounded px-2 py-2"
+              placeholder="Enter A Value"
+              disabled={settings.refreshInterval === -1}
+            />
+          </div>
+        </div>
+      </div>
+      <div className="border-t border-gray-500 w-full p-4 flex justify-between items-center">
         <h2 className="text-xl">Playback Sources</h2>
         <select
           value={settings.playbackLocation}
           onChange={(e) => {
             handleSettingChange('playbackLocation', e.target.value)
           }}
-          className="focus:text-white bg-zinc-900 text-white rounded px-2 py-2"
+          className="bg-zinc-900 rounded hover:cursor-pointer text-white px-2 py-2"
         >
           {audioSources.map((app) => (
-            <option key={app.id} value={app.id}>
+            <option key={app.id} value={app.id} className="rounded-none">
               {app.name}
             </option>
           ))}
         </select>
       </div>
-      <div className="border-t mt-4 py-5 border-gray-900 w-full flex justify-end">
+      <div className="border-t py-5 border-gray-500 w-full flex justify-end">
         <Button
           className={`border-green-500 border group gap-2 ${loading ? 'text-gray-100 bg-green-600' : 'hover:bg-green-500'}`}
           onClick={handleSave}

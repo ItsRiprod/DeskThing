@@ -42,7 +42,7 @@ const SettingsOverlay: React.FC = () => {
       onClose={onClose}
       className="border border-gray-500 w-5/6 h-5/6 flex flex-col overflow-hidden"
     >
-      <div className="w-full py-4 bg-zinc-900 px-5">
+      <div className="w-full py-4 bg-zinc-900 px-5 border-b border-gray-500">
         <h1 className="font-semibold text-2xl">Settings</h1>
       </div>
       <div className="flex h-full">

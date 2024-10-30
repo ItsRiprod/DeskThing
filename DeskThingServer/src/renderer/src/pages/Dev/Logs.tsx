@@ -54,16 +54,12 @@ const Logs: React.FC = () => {
     <div className="w-full h-full flex">
       <Sidebar className="flex justify-end flex-col h-full max-h-full md:items-stretch items-center">
         <div className="flex flex-col gap-2">
-          <Button onClick={handleLogsOpen} className="border-gray-500 hover:bg-gray-500">
+          <Button onClick={handleLogsOpen} className="hover:bg-zinc-900">
             <IconFolderOpen strokeWidth={1.5} />
             <p className="md:block hidden text-center flex-grow">Open Logs</p>
           </Button>
 
-          <Button
-            onClick={handleCopyLogs}
-            className="border-gray-500 hover:bg-gray-500"
-            disabled={isAnimating}
-          >
+          <Button onClick={handleCopyLogs} className="hover:bg-zinc-900" disabled={isAnimating}>
             <span id="rewardId" />
             {isAnimating ? <IconCheck strokeWidth={1.5} /> : <IconCopy strokeWidth={1.5} />}
             <p className="md:block hidden text-center flex-grow">Copy Logs</p>
@@ -71,7 +67,7 @@ const Logs: React.FC = () => {
         </div>
       </Sidebar>
       <MainElement>
-        <div className="flex gap-2 px-2 my-2 py-2">
+        <div className="flex gap-2 px-2 my-2 py-2 bg-zinc-950 border-b border-zinc-900">
           <Button
             onClick={() => setFilter(null)}
             className={`w-full   ${filter === null ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
@@ -104,7 +100,7 @@ const Logs: React.FC = () => {
             {filteredLogs.map((log, index) => (
               <li
                 key={index}
-                className={`text-sm font-geistMono break-words whitespace-pre-wrap ${
+                className={`text-sm hover:bg-zinc-900 font-geistMono break-words whitespace-pre-wrap ${
                   log.type === 'error'
                     ? 'text-red-500'
                     : log.type === 'message'

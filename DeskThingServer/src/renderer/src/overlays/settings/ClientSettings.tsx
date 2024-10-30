@@ -82,7 +82,7 @@ const ClientSettings: React.FC = () => {
           className="focus:text-white bg-zinc-900 text-white rounded px-2 py-2"
         />
       </div>
-      <div className="w-full p-4 flex justify-between items-center">
+      <div className="w-full px-4 flex justify-between items-center">
         <h2 className="text-xl">Use RNDIS</h2>
         <Button
           className="bg-transparent p-0"

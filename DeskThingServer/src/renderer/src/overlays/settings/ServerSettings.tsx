@@ -50,7 +50,7 @@ const ServerSettings: React.FC = () => {
           className="border border-gray-300 focus:text-black text-gray-500 rounded px-2 py-1"
         />
       </div>
-      <div className="w-full p-4 flex justify-between items-center">
+      <div className="w-full px-4 flex justify-between items-center">
         <h2 className="text-xl">Auto Start</h2>
         <Button
           className="bg-transparent p-0"
@@ -63,7 +63,7 @@ const ServerSettings: React.FC = () => {
           />
         </Button>
       </div>
-      <div className="w-full p-4 flex justify-between items-center">
+      <div className="w-full px-4 flex justify-between items-center">
         <h2 className="text-xl">Close To Taskbar</h2>
         <Button
           className="bg-transparent p-0"
@@ -76,7 +76,7 @@ const ServerSettings: React.FC = () => {
           />
         </Button>
       </div>
-      <div className="border-t mt-4 py-5 border-gray-900 w-full flex justify-end">
+      <div className="border-t py-5 border-gray-900 w-full flex justify-end">
         <Button
           className={`border-green-500 border group gap-2 ${loading ? 'text-gray-100 bg-green-600' : 'hover:bg-green-500'}`}
           onClick={handleSave}

@@ -60,7 +60,7 @@ const ADBSettings: React.FC = () => {
 
   return (
     <div className="w-full h-full flex">
-      <Sidebar className="flex justify-end flex-col h-full max-h-full md:items-stretch items-center">
+      <Sidebar className="flex justify-end flex-col h-full gap-2 max-h-full md:items-stretch items-center">
         <Button onClick={handleToggleAdb} className="hover:bg-zinc-900 items-center gap-2">
           <IconToggle
             checked={adbSetting}

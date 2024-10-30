@@ -1,6 +1,6 @@
 import React from 'react'
 import { useNotificationStore } from '@renderer/stores'
-import { IconX } from '@renderer/assets/icons'
+import { IconTrash, IconX } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
 
 const EvensPage: React.FC = () => {
@@ -30,12 +30,12 @@ const EvensPage: React.FC = () => {
               >
                 <button
                   onClick={() => readLogs(index)}
-                  className="pl-2 py-2 rounded-xl hover:bg-zinc-900 relative group border-gray-500 flex items-center justify-center w-full"
+                  className="pl-2 py-2 rounded-xl hover:bg-zinc-900 relative group border-gray-500 flex items-center justify w-full"
                 >
                   <div className="absolute right-1  text-red-500 hidden group-hover:block">
-                    <IconX />
+                    <IconTrash />
                   </div>
-                  <p>{log.log}</p>
+                  <p className="items-start">{log.log}</p>
                 </button>
               </li>
             ))}
@@ -45,7 +45,7 @@ const EvensPage: React.FC = () => {
         )}
       </div>
       {logs.length > 0 && (
-        <Button onClick={handleReadLogs}>
+        <Button className="hover:bg-zinc-900 w-fit" onClick={handleReadLogs}>
           <p>Clear All</p>
         </Button>
       )}

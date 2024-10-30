@@ -13,8 +13,8 @@ import {
 import { useClientStore, useGithubStore, usePageStore } from '@renderer/stores'
 import MainElement from '@renderer/nav/MainElement'
 import DownloadNotification from '@renderer/overlays/DownloadNotification'
-import ClientSettingsOverlay from '@renderer/overlays/ClientSettingsOverlay'
 import Overlay from '@renderer/overlays/Overlay'
+import { useSearchParams } from 'react-router-dom'
 
 const ClientDownloads: React.FC = () => {
   const clientReleases = useGithubStore((githubStore) => githubStore.clientReleases)
@@ -27,9 +27,9 @@ const ClientDownloads: React.FC = () => {
   const loadClientZip = useClientStore((clientStore) => clientStore.loadClientZip)
   const logging = useClientStore((clientStore) => clientStore.logging)
 
+  const [searchParams, setSearchParams] = useSearchParams()
   // Displaying overlays
   const [showLogging, setShowLogging] = useState(false)
-  const [showClientSettings, setShowClientSettings] = useState(false)
   const [selectingFile, setSelectingFile] = useState(false)
   const [loading, setLoading] = useState(false)
 
@@ -110,9 +110,14 @@ const ClientDownloads: React.FC = () => {
     setTimeout(() => setClientRefreshing(false), Math.random() * 1500 + 500)
   }
 
+  const openClientSettings = (): void => {
+    searchParams.set('settings', 'true')
+    searchParams.set('page', 'client')
+    setSearchParams(searchParams)
+  }
+
   return (
     <div className="flex h-full w-full">
-      {showClientSettings && <ClientSettingsOverlay onClose={() => setShowClientSettings(false)} />}
       {logging && showLogging && (
         <DownloadNotification
           title="Loading Client..."
@@ -202,7 +207,7 @@ const ClientDownloads: React.FC = () => {
         </div>
         <div>
           <div className="flex flex-col gap-2">
-            <Button className="hover:bg-zinc-900" onClick={() => setShowClientSettings(true)}>
+            <Button className="hover:bg-zinc-900" onClick={openClientSettings}>
               <IconGear strokeWidth={1.5} />
               <p className="md:block hidden text-center flex-grow">Client Settings</p>
             </Button>

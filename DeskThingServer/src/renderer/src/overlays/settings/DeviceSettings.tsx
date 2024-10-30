@@ -39,7 +39,7 @@ const DeviceSettings: React.FC = () => {
 
   return (
     <div className="w-full absolute inset h-full divide-y-2 divide-gray-500 p-4 flex flex-col">
-      <div className="w-full p-4 flex justify-between items-center">
+      <div className="w-full px-4 flex justify-between items-center">
         <h2 className="text-xl">Auto Detect ADB</h2>
         <Button
           className="bg-transparent p-0"
@@ -53,7 +53,7 @@ const DeviceSettings: React.FC = () => {
         </Button>
       </div>
 
-      <div className="w-full p-4 flex justify-between items-center">
+      <div className="w-full px-4 flex justify-between items-center">
         <h2 className="text-xl">Use Global ADB</h2>
         <Button
           className="bg-transparent p-0"
@@ -67,7 +67,7 @@ const DeviceSettings: React.FC = () => {
         </Button>
       </div>
 
-      <div className="w-full p-4 flex justify-between items-center">
+      <div className="w-full px-4 flex justify-between items-center">
         <h2 className="text-xl">Auto Config</h2>
         <Button
           className="bg-transparent p-0"
@@ -82,7 +82,7 @@ const DeviceSettings: React.FC = () => {
       </div>
 
       <div className="flex flex-col">
-        <div className="w-full p-4 flex justify-between items-center">
+        <div className="w-full px-4 p-3 flex justify-between items-center">
           <h2 className="text-xl">Run Firewall Configuration</h2>
           <Button
             className={`bg-zinc-900 ${!loading && 'hover:bg-zinc-800'}`}

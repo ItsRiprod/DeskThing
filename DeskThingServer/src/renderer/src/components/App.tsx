@@ -46,13 +46,15 @@ const App: React.FC<AppProps> = ({ app, activeRequest }) => {
     setSearchParams(searchParams)
   }
 
+  const showAppRequests = (): void => {
+    searchParams.set('notifications', 'true')
+    searchParams.set('page', 'request')
+    setSearchParams(searchParams)
+  }
+
   return (
     <div className="flex items-center bg-zinc-900 p-4 justify-between rounded-xl text-white">
       <div className="flex items-center">
-        <Button onClick={showAppDetails} className="group bg-slate-950 hover:bg-slate-900 gap-2">
-          <IconWrench />
-          <p className="group-hover:block hidden">Settings</p>
-        </Button>
         <div className="px-2">
           <div className="flex items-center gap-2">
             <h2 className="font-geist font-semibold">{app.manifest?.label || app.name}</h2>
@@ -61,9 +63,12 @@ const App: React.FC<AppProps> = ({ app, activeRequest }) => {
             )}
           </div>
           {activeRequest ? (
-            <div className="bg-cyan-500 w-fit px-2 py-1 rounded-full text-xs">
+            <button
+              className="bg-cyan-500 hover:bg-cyan-600 w-fit px-2 py-1 rounded-full text-xs"
+              onClick={showAppRequests}
+            >
               <p>Requesting Data</p>
-            </div>
+            </button>
           ) : (
             <>
               <div className="font-geistMono text-xs flex w-full text-gray-300 justify-between">
@@ -77,11 +82,17 @@ const App: React.FC<AppProps> = ({ app, activeRequest }) => {
           )}
         </div>
       </div>
-      {app.running ? (
-        <Running stopApp={() => stopApp(app.name)} />
-      ) : (
-        <Stopped runApp={() => runApp(app.name)} />
-      )}
+      <div className="flex items-center gap-2">
+        <Button onClick={showAppDetails} className="group bg-slate-950 hover:bg-slate-900 gap-2">
+          <IconWrench />
+          <p className="group-hover:block hidden">Settings</p>
+        </Button>
+        {app.running ? (
+          <Running stopApp={() => stopApp(app.name)} />
+        ) : (
+          <Stopped runApp={() => runApp(app.name)} />
+        )}
+      </div>
     </div>
   )
 }
