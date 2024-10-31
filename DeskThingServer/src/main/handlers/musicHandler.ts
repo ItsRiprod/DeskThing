@@ -24,6 +24,10 @@ export class MusicHandler {
     const settings = await settingsStore.getSettings() // Get from your settings store
     this.updateRefreshInterval(settings.refreshInterval)
     dataListener.on(MESSAGE_TYPES.SETTINGS, this.handleSettingsUpdate)
+
+    setTimeout(() => {
+      this.refreshMusicData()
+    }, 5000) // Delay to ensure settings are loaded
   }
 
   private handleSettingsUpdate = (settings: Settings): void => {
@@ -51,7 +55,10 @@ export class MusicHandler {
 
   private async refreshMusicData(): Promise<void> {
     if (!this.currentApp || this.currentApp.length == 0) {
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `[MusicHandler]: No current app set!`)
+      dataListener.asyncEmit(
+        MESSAGE_TYPES.ERROR,
+        `[MusicHandler]: No playback location set! Go to settings -> Music to the playback location!`
+      )
       return
     }
 

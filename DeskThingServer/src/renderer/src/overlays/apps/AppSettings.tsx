@@ -28,7 +28,12 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
               ...prev,
               settings: {
                 ...prev.settings,
-                [key]: { ...prev.settings[key], value: value as any }
+                [key]: {
+                  ...prev.settings[key],
+                  // It had to be this way... The way that the type expects a specific value for each type of object means that this can only be every type of value but only one at a time. We have no way of knowing which type of setting it is.
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  value: value as any
+                }
               }
             }
           : prev

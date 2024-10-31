@@ -45,16 +45,16 @@ const AppsList: React.FC = () => {
     })
   }
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, index: number): void => {
     e.preventDefault()
     setDragOverIndex(index)
   }
 
-  const handleDragLeave = () => {
+  const handleDragLeave = (): void => {
     setDragOverIndex(null)
   }
 
-  const handleDrop = (targetAppName: string) => {
+  const handleDrop = (targetAppName: string): void => {
     if (draggedApp && draggedApp !== targetAppName) {
       const newOrder = [...order]
       const draggedIndex = newOrder.indexOf(draggedApp)

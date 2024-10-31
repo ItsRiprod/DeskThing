@@ -15,7 +15,9 @@ const RequestsPage: React.FC = () => {
     <div className="w-full h-full p-4 flex flex-col">
       <h1 className="text-2xl font-bold mb-4">App Requests</h1>
       <div className="bg-red-950 px-4 py-1 rounded-lg shadow-lg my-2">
-        <p className="text-xs italic text-gray-300">Requests will be depreciated in a future release</p>
+        <p className="text-xs italic text-gray-300">
+          Requests will be depreciated in a future release
+        </p>
       </div>
       <div className="w-full h-full relative overflow-y-auto">
         {requests.length > 0 ? (

@@ -22,7 +22,6 @@ import {
   sendSettingsData
 } from './clientCom'
 import { sendIpcData } from '../..'
-import MusicHandler from '../../handlers/musicHandler'
 
 export let server: WebSocketServer | null = null
 export let httpServer: HttpServer
@@ -194,6 +193,7 @@ export const setupServer = async (): Promise<void> => {
           handleServerMessage(socket, client, messageData)
         } else if (messageData.app === 'utility' || messageData.app === 'music') {
           // Handle music requests
+          const MusicHandler = (await import('../../handlers/musicHandler')).default
           MusicHandler.handleClientRequest(messageData)
         }
 

@@ -1,6 +1,6 @@
 import React from 'react'
 import { useNotificationStore } from '@renderer/stores'
-import { IconTrash, IconX } from '@renderer/assets/icons'
+import { IconTrash } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
 
 const EvensPage: React.FC = () => {

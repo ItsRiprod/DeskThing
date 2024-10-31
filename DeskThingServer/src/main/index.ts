@@ -387,6 +387,8 @@ async function loadModules(): Promise<void> {
 
     const { loadAndRunEnabledApps } = await import('./services/apps')
     loadAndRunEnabledApps()
+
+    import('./handlers/musicHandler')
   } catch (error) {
     console.error('Error loading modules:', error)
   }
