@@ -12,6 +12,11 @@ files:
 asarUnpack:
   - resources/**
   - bin/**
+  - "!resources/{,/**/}*.{h,hpp,cpp,cc,cxx}"
+protocols:
+  - name: "DeskThing Protocol"
+    schemes:
+      - deskthing
 win:
   executableName: DeskThing
   artifactName: ${name}-${os}-${version}-setup.${ext}

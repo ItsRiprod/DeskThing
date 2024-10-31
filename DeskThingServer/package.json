@@ -61,15 +61,5 @@
     "typedoc": "^0.26.10",
     "typescript": "^5.3.3",
     "vite": "^5.0.12"
-  },
-  "build": {
-    "protocols": [
-      {
-        "name": "DeskThing Protocol",
-        "schemes": [
-          "deskthing"
-        ]
-      }
-    ]
   }
 }
