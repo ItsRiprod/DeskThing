@@ -33,8 +33,17 @@ export class MusicHandler {
   private handleSettingsUpdate = (settings: Settings): void => {
     this.updateRefreshInterval(settings.refreshInterval)
 
-    if (settings.playbackLocation && settings.playbackLocation !== this.currentApp) {
+    dataListener.asyncEmit(
+      MESSAGE_TYPES.LOGGING,
+      `[MusicHandler]: Received settings update - checking for changes`
+    )
+    if (settings.playbackLocation) {
+      dataListener.asyncEmit(
+        MESSAGE_TYPES.LOGGING,
+        `[MusicHandler]: Setting restarting to use ${settings.playbackLocation}`
+      )
       this.currentApp = settings.playbackLocation
+      this.refreshMusicData()
     }
   }
 
@@ -80,7 +89,15 @@ export class MusicHandler {
   }
 
   public async handleClientRequest(request: SocketData): Promise<void> {
-    if (!this.currentApp) return
+    if (!this.currentApp) {
+      const settings = await settingsStore.getSettings()
+      if (settings.playbackLocation) {
+        this.currentApp = settings.playbackLocation
+      } else {
+        dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `[MusicHandler]: No playback location set!`)
+        return
+      }
+    }
     if (request.app != 'music' && request.app != 'utility') return
 
     if (request.app == 'utility') {

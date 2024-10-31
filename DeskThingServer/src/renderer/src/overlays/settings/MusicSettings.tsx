@@ -24,6 +24,7 @@ const MusicSettings: React.FC = () => {
 
   const handleSettingChange = (key: string, value: string | boolean | number | string[]): void => {
     setSettings({ ...settings, [key]: value })
+    console.log('Settings Updated:', settings)
   }
 
   const handleSave = async (): Promise<void> => {
@@ -79,6 +80,7 @@ const MusicSettings: React.FC = () => {
           onChange={(e) => {
             handleSettingChange('playbackLocation', e.target.value)
           }}
+          defaultValue={'Unset'}
           className="bg-zinc-900 rounded hover:cursor-pointer text-white px-2 py-2"
         >
           {audioSources.map((app) => (
