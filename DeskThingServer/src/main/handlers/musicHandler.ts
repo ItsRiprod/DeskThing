@@ -35,7 +35,7 @@ export class MusicHandler {
 
     dataListener.asyncEmit(
       MESSAGE_TYPES.LOGGING,
-      `[MusicHandler]: Received settings update - checking for changes`
+      `[MusicHandler]: Received settings update - checking for changes | Playback location: ${settings.playbackLocation}`
     )
     if (settings.playbackLocation) {
       dataListener.asyncEmit(
@@ -66,7 +66,7 @@ export class MusicHandler {
     if (!this.currentApp || this.currentApp.length == 0) {
       dataListener.asyncEmit(
         MESSAGE_TYPES.ERROR,
-        `[MusicHandler]: No playback location set! Go to settings -> Music to the playback location!`
+        `[MusicHandler]: No playback location set! Go to settings -> Music to set the playback location!`
       )
       return
     }
@@ -98,6 +98,15 @@ export class MusicHandler {
         return
       }
     }
+
+    if (this.currentApp == 'none') {
+      dataListener.asyncEmit(
+        MESSAGE_TYPES.ERROR,
+        `[MusicHandler]: Playback location is 'none' ! Go to settings -> Music to set the playback location!`
+      )
+      return
+    }
+
     if (request.app != 'music' && request.app != 'utility') return
 
     if (request.app == 'utility') {

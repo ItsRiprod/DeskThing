@@ -88,6 +88,9 @@ const MusicSettings: React.FC = () => {
               {app.name}
             </option>
           ))}
+          <option key={'none'} value={'none'} className="rounded-none">
+            {'None'}
+          </option>
         </select>
       </div>
       <div className="border-t py-5 border-gray-500 w-full flex justify-end">
