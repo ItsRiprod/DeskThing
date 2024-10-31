@@ -1,5 +1,6 @@
 import { AppDataInterface } from '@shared/types'
 import { readFromFile, writeToFile } from '../utils/fileHandler'
+import { sendMessageToApp } from '../services/apps'
 
 interface Data {
   [appName: string]: AppDataInterface
@@ -39,6 +40,8 @@ const writeData = (data: Data): void => {
 const setData = (key: string, value: AppDataInterface): void => {
   const data = readData()
   data[key] = value
+  // Notify the app
+  sendMessageToApp(key, { type: 'data', payload: value })
   writeData(data)
 }
 // Set data function

@@ -172,7 +172,10 @@ export async function requestUserInput(appName: string, scope: AuthScopes): Prom
 export async function sendMessageToApp(appName: string, data: IncomingData): Promise<void> {
   const { AppHandler } = await import('./appState')
   const appHandler = AppHandler.getInstance()
-
+  dataListener.asyncEmit(
+    MESSAGE_TYPES.LOGGING,
+    `[sendMessageToApp] Sending message to ${appName} with ${data.type}`
+  )
   try {
     const app = appHandler.get(appName)
     if (app && typeof app.func.toClient === 'function') {
