@@ -73,7 +73,7 @@ export async function purgeApp(appName: string): Promise<void> {
     if (appName == 'developer-app') return // Cancel here if it is a developer app
     // Remove the file from filesystem
     if (existsSync(dir)) {
-      await rmSync(dir)
+      await rmSync(dir, { recursive: true, force: true })
       console.log(`Purged all data for app ${appName}`)
     }
     dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `SERVER: Purged App ${appName}`)
