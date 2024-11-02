@@ -88,6 +88,21 @@ export class MusicHandler {
     }
   }
 
+  public async setAudioSource(source: string): Promise<void> {
+    if (source.length == 0) {
+      dataListener.asyncEmit(
+        MESSAGE_TYPES.ERROR,
+        `[MusicHandler]: Unable to update playback location. No playback location passed!`
+      )
+      return
+    }
+    dataListener.asyncEmit(
+      MESSAGE_TYPES.LOGGING,
+      `[MusicHandler]: Setting Playback Location to ${source}`
+    )
+    this.currentApp = source
+  }
+
   public async handleClientRequest(request: SocketData): Promise<void> {
     if (!this.currentApp) {
       const settings = await settingsStore.getSettings()

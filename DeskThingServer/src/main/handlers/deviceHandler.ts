@@ -6,6 +6,7 @@ import { app, net } from 'electron'
 import { handleAdbCommands } from './adbHandler'
 import { Client, ClientManifest, ReplyData } from '@shared/types'
 import settingsStore from '../stores/settingsStore'
+import { getLatestRelease } from './githubHandler'
 
 export const HandleDeviceData = async (data: string): Promise<void> => {
   try {
@@ -72,11 +73,56 @@ export const configureDevice = async (
       })
   }
 
+  const clientExists = checkForClient(reply)
+
+  if (!clientExists) {
+    // Download it from github
+    const repos = settings.clientRepos
+
+    reply && reply('logging', { status: true, data: 'Fetching Latest Client...', final: false })
+    const latestReleases = await Promise.all(
+      repos.map(async (repo) => {
+        return await getLatestRelease(repo)
+      })
+    )
+
+    // Sort releases by date and get the latest one
+    const clientAsset = latestReleases
+      .flatMap((release) =>
+        release.assets.map((asset) => ({ ...asset, created_at: release.created_at }))
+      )
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .find((asset) => asset.name.includes('-client'))
+
+    // Download it
+    if (clientAsset) {
+      reply && reply('logging', { status: true, data: 'Downloading Client...', final: false })
+      await HandleWebappZipFromUrl(reply, clientAsset.browser_download_url)
+
+      await setTimeout(async () => {
+        await checkForClient()
+      }, 1000)
+    } else {
+      reply &&
+        reply('logging', {
+          status: false,
+          data: 'No client asset found in latest releases',
+          final: false
+        })
+    }
+  }
+
   const deviceManifestVersion = await getDeviceManifestVersion(deviceId)
   const clientManifest = await getClientManifest(true, reply)
   if (clientManifest && deviceManifestVersion !== clientManifest.version) {
     try {
-      await HandlePushWebApp(deviceId, reply)
+      // Give a 30 second timeout to flash the webapp
+      await Promise.race([
+        HandlePushWebApp(deviceId, reply),
+        new Promise((_, reject) =>
+          setTimeout(() => reject('Timeout: Operation took longer than 30 seconds'), 30000)
+        )
+      ])
     } catch (error) {
       reply &&
         reply('logging', {
@@ -117,6 +163,23 @@ export const HandlePushWebApp = async (
   try {
     const userDataPath = app.getPath('userData')
     const extractDir = join(userDataPath, 'webapp')
+
+    const clientExists = await checkForClient(reply)
+    if (!clientExists) {
+      reply &&
+        reply('logging', {
+          status: false,
+          data: 'Unable to push webapp!',
+          error: 'Client not found!',
+          final: false
+        })
+      dataListener.asyncEmit(
+        MESSAGE_TYPES.ERROR,
+        '[HandlePushWebApp] Client Not Found! Ensure it is downloaded'
+      )
+      return
+    }
+
     let response
     console.log('Remounting...')
     reply && reply('logging', { status: true, data: 'Remounting...', final: false })
@@ -197,7 +260,7 @@ export const HandlePushWebApp = async (
 }
 
 export const HandleWebappZipFromUrl = async (
-  reply: (channel: string, data: ReplyData) => void,
+  reply: ((channel: string, data: ReplyData) => void) | undefined,
   zipFileUrl: string
 ): Promise<void> => {
   const userDataPath = app.getPath('userData')
@@ -210,7 +273,7 @@ export const HandleWebappZipFromUrl = async (
 
   const AdmZip = await import('adm-zip')
 
-  reply('logging', { status: true, data: 'Downloading...', final: false })
+  reply && reply('logging', { status: true, data: 'Downloading...', final: false })
 
   const request = net.request(zipFileUrl)
 
@@ -244,18 +307,19 @@ export const HandleWebappZipFromUrl = async (
           )
 
           // Notify success to the frontend
-          reply('logging', { status: true, data: 'Success!', final: true })
+          reply && reply('logging', { status: true, data: 'Success!', final: true })
         } catch (error) {
           console.error('Error extracting zip file:', error)
           dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `Error extracting zip file: ${error}`)
 
           // Notify failure to the frontend
-          reply('logging', {
-            status: false,
-            data: 'Failed to extract!',
-            final: true,
-            error: error instanceof Error ? error.message : String(error)
-          })
+          reply &&
+            reply('logging', {
+              status: false,
+              data: 'Failed to extract!',
+              final: true,
+              error: error instanceof Error ? error.message : String(error)
+            })
         }
       })
       response.on('error', (error) => {
@@ -263,12 +327,13 @@ export const HandleWebappZipFromUrl = async (
         dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `Error downloading zip file: ${error}`)
 
         // Notify failure to the frontend
-        reply('logging', {
-          status: false,
-          data: 'ERR Downloading file!',
-          final: true,
-          error: error.message
-        })
+        reply &&
+          reply('logging', {
+            status: false,
+            data: 'ERR Downloading file!',
+            final: true,
+            error: error.message
+          })
       })
     } else {
       const errorMessage = `Failed to download zip file: ${response.statusCode}`
@@ -276,12 +341,13 @@ export const HandleWebappZipFromUrl = async (
       dataListener.asyncEmit(MESSAGE_TYPES.ERROR, errorMessage)
 
       // Notify failure to the frontend
-      reply('logging', {
-        status: false,
-        data: 'Failed to download zip file!',
-        final: true,
-        error: errorMessage
-      })
+      reply &&
+        reply('logging', {
+          status: false,
+          data: 'Failed to download zip file!',
+          final: true,
+          error: errorMessage
+        })
     }
   })
 
@@ -290,12 +356,13 @@ export const HandleWebappZipFromUrl = async (
     dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `Error sending request: ${error}`)
 
     // Notify failure to the frontend
-    reply('logging', {
-      status: false,
-      data: 'Failed to download zip file!',
-      final: true,
-      error: error.message
-    })
+    reply &&
+      reply('logging', {
+        status: false,
+        data: 'Failed to download zip file!',
+        final: true,
+        error: error.message
+      })
   })
 
   request.end()
@@ -343,6 +410,28 @@ export const handleClientManifestUpdate = async (
   }
 }
 
+export const checkForClient = async (
+  reply?: (channel: string, data: ReplyData) => void
+): Promise<boolean> => {
+  reply && reply('logging', { status: true, data: 'Checking for client...', final: false })
+  const userDataPath = app.getPath('userData')
+  const extractDir = join(userDataPath, 'webapp')
+  const manifestPath = join(extractDir, 'manifest.js')
+
+  const manifestExists = fs.existsSync(manifestPath)
+  if (!manifestExists) {
+    console.log('Manifest file not found')
+    reply &&
+      reply('logging', {
+        status: false,
+        data: 'Manifest file not found',
+        final: false
+      })
+    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'DEVICE HANDLER: Manifest file not found')
+  }
+  return manifestExists
+}
+
 export const getClientManifest = async (
   utility: boolean = false,
   reply?: (channel: string, data: ReplyData) => void
@@ -361,7 +450,7 @@ export const getClientManifest = async (
       })
     dataListener.asyncEmit(
       MESSAGE_TYPES.ERROR,
-      'DEVICE HANDLER: Client Manifest file not found! (Is the client downloaded?)'
+      'DEVICE HANDLER: Client is not detected or downloaded! Please download the client! (downloads -> client)'
     )
     return null
   }
