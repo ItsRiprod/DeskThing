@@ -1,4 +1,9 @@
- ![Deskthing Banner](/readme_images/deskthing-banner.png)
+![Youtube Banner](https://github.com/user-attachments/assets/78aa432b-e86e-4945-9b57-931a7ae5c5cb)
+
+
+![image](https://github.com/user-attachments/assets/4f4ee062-14df-49df-968a-d196746ef80f)
+![image](https://github.com/user-attachments/assets/5fbf8e30-e468-424e-bad4-b6a4b656feb4)
+
 
 *Logo design and artwork by @Dilango*
 
