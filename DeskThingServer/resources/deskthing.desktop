@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=DeskThing
+Comment=DeskThing desktop companion app
+Exec=/usr/bin/deskthing
+Icon=/usr/share/deskthing/icon.png
+Terminal=false
+Type=Application
+Categories=Utility;
