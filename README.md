@@ -5,8 +5,6 @@
 ![image](https://github.com/user-attachments/assets/5fbf8e30-e468-424e-bad4-b6a4b656feb4)
 
 
-*Logo design and artwork by @Dilango*
-
  > ❔[Reddit Link](https://reddit.com/r/DeskThing)
 
  > 📃[Trello Board](https://trello.com/b/6v0paxqV/deskthing)
@@ -35,13 +33,15 @@ Instead, go to [The Official Website](https://deskthing.app/) and download the i
 For a video walkthrough of v0.6.0, go to [this video](https://youtu.be/nC65O1nP-pk?si=dxUEF6wyzLI2Z72U)
 
 ---
-> All instructions are up-to-date as late of v0.8.0-beta. Later versions may differ in functionality and setup
+> All instructions are up-to-date as late of v0.9.0-beta. Later versions may differ in functionality and setup
 <details>
    <summary><h2>✨ Features</h2></summary>
 
 <img src="readme_images/bar.svg" style="width: 100%;" alt="Click to see the source">
 
 The DeskThing is a simple CarThing Chromium-based website that can communicate with a Desktop APP on your computer. The CarThing can:
+
+Note: Not all of these are updated and are pending a revision. This is new as of v0.7.0
 
 - ### All In One Package 📦
    - [X] Download apps directly from the Desktop App GUI
@@ -154,7 +154,7 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
 4. **Load Apps**
    - Congrats! You're basically done. Now go to 'Apps' and then 'Webapps' and download any apps you want. Ensure you check dependencies before doing so as this could cause errors. 
 
-> Any Issues? Contact me [through the Deskthing discord server](https://discord.gg/qWbSwzWJ4e) or via DMs to @riprod
+> Any Issues? Contact me [through the Deskthing discord server](https://deskthing.app/discord) or via DMs to @riprod
 
 ⚠️Note for MacOS⚠️
 
@@ -173,7 +173,7 @@ Finally, the image linked above won't always work for MacOS. So instead, use the
 
 **Go to Releases -> MACOS LISTEN UP to find the updated link**
 *Discord will cycle the url for the link so this one will expire after a given amnt of time*
-[https://cdn.discordapp.com/attachments/1243762430631481395/1272624114766577845/8.4.4_adb_enabled-new.tar.xz?ex=66cad051&is=66c97ed1&hm=befb7c49b203d752dbb9f4986377ea0be8fcde4f9f2db874de7c62a668bbd046&](https://cdn.discordapp.com/attachments/1243762430631481395/1272624114766577845/8.4.4_adb_enabled-new.tar.xz?ex=671e8791&is=671d3611&hm=625ec81558151de46c488343d54dc4bc50b03a4a6d9ee786b82b619c1b270ed3&)
+[The new location is on thingify.tools. Use v8.9.2](thingify.tools)
 
 Thanks! Have a good day
 
