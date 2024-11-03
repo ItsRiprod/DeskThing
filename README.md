@@ -254,3 +254,15 @@ https://github.com/ItsRiprod/deskthing-client
 https://github.com/ItsRiprod/deskthing-apps
 
 Good luck!
+
+<details>
+<summary>
+ <h2>Action Shots</h2>
+</summary>
+ 
+![2024-11-03 14-52-17 2024-11-03 14_54_36](https://github.com/user-attachments/assets/6df2992d-198e-44e7-a1eb-fc51c0888ee9)
+![2024-11-03_14-49-12 2024-11-03_14_51_33](https://github.com/user-attachments/assets/8fbf94b7-68c4-4000-88f7-c45ea3a027f5)
+![2024-11-03_14-54-50 2024-11-03_14_56_07](https://github.com/user-attachments/assets/358dbd9f-9b8f-4f4a-b6b2-cc3427b53d2d)
+
+
+</details>
