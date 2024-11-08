@@ -135,6 +135,8 @@ Note: Not all of these are updated and are pending a revision. This is new as of
 
 [Upgrading to v0.8.0 from 0.6.0](https://www.youtube.com/watch?v=Exu7KMcbN4k)
 
+[Alternative flashing tutorial](https://youtu.be/Y0paq_qhG5M?si=YcpNOJzzQu8MJJTb)
+
 *Step-by-step instructions*
 
 1. **Flash Your CarThing:**
@@ -188,13 +190,16 @@ Thanks! Have a good day
 
 <img src="readme_images/bar.svg" style="width: 100%;" alt="Click to see the source">
 
+[Alternative flashing tutorial for Windows](https://youtu.be/Y0paq_qhG5M?si=YcpNOJzzQu8MJJTb)
+
+**_It is HIGHLY recommended to use the new ifixit tutorial_**
+https://www.ifixit.com/Guide/How+to+Install+Custom+Firmware+onto+Car+Thing/178814
+
 Links:
 - ~~[image dumps](https://mega.nz/folder/NxNXQCaT#-n1zkoXsJuw-5rQ-ZYzRJw/folder/Ak9FVKxJ)~~
 - [New Image Dumps](https://thingify.tools/firmware/P3QZbZIDWnp5m_azQFQqP)
-> Ensure you download one with ADB and RNDIS enabled (any one of the '-new' ones work) 8.4.4_adb_enabled-new.tar.xz is the current best option
 - [superbird-tool](https://github.com/Car-Thing-Hax-Community/superbird-tool)
 
-~~Alternative image dump [here](https://mega.nz/file/RptVUAZT#K__JkdCRWDgC3sVSA64YDBsskOTiZXy1_XBhuVNOmFA) if the first one doesnt work~~
 Process:
 - Go to superbird-tool and install it based off your operating system. Come back once you can run `python superbird_tool.py --find_device` and see your Car Thing
 - Unplug the Car Thing
@@ -202,9 +207,10 @@ Process:
 - Wait a few seconds. If the screen does not turn on, that means you are in boot mode. You can release the buttons
 - Run `python superbird_tool.py --burn_mode` to enter burn mode
 > Note: This step may say it fails to enter burn mode. This is okay, continue on as if it worked. There is information in the discord as to why this is.
-- Download 8.4.4_adb_enabled-new.tar.xz files from image dumps (linked above) and in that same folder (unzip them)
+- Download 8.9.2-thinglabs.zip files from Thingify Tools (linked above) and in that same folder (unzip them)
 - (Windows only) Download [zadig](https://zadig.akeo.ie/) and install the WinUSB driver for **GX-CHIP** (select it and click "Install Driver")
 > Alternatively use **libusbK** if it does not work
+> you may have to click "Show All devices" to see it
 - Run `python superbird_tool.py --restore_device /path/to/extracted/firmware/folder` (This may take a while)
 - After the firmware is flashed, the Car Thing should be ready with ADB enabled. To check, run `adb shell ls -l /usr/share/qt-superbird-app/` and you should see webapp as one of the folders.
 - Ensure that `adb devices` works and registers `whateveryouridis device` as one of the options
