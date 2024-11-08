@@ -244,20 +244,16 @@ npm create deskthing@latest
 ```
 And follow the prompts to set up the app environment. From there, you can reference:
 
-*The template itself*
-https://github.com/ItsRiprod/deskthing-template
+### [App References](https://github.com/ItsRiprod/deskthing-apps)
+These are apps that make the deskthing "firmware" functional! When you use spotify on your deskthing, it's using the spotify app (linked here). What you interact with is driven by the "src/App.tsx"
 
-*The app-side connector*
-https://github.com/ItsRiprod/deskthing-app-client
+### [The app-side connector](https://github.com/ItsRiprod/deskthing-app-client)
+This is what allows deskthing apps to "function". When you hit the pause button on the spotify app, it makes a request to the deskthing-client which routes your request (through the  deskthing-app-client package, source code linked here). This deskthing-app-client request doesn't return a response, instead it listens for events through the deskthing-app-client using the "on" method. 
 
-*The server-side connector*
-https://github.com/ItsRiprod/deskthing-app-server
+### [The server-side connector](https://github.com/ItsRiprod/deskthing-app-server)
+This is what allows the  deskthing-server to make custom requests. When the  deskthing-server  gets a request to pause the current spotify song, it forwards that action through the deskthing-app-server back to the spotify apps "server/index.ts" which can  be handled in your app using the deskthing-app-server "on" method to respond to custom requests from the deskthing-client.
 
-*The client that goes on the Car Thing*
-https://github.com/ItsRiprod/deskthing-client
-
-*App References*
-https://github.com/ItsRiprod/deskthing-apps
+### [The client that goes on the Car Thing](https://github.com/ItsRiprod/deskthing-client) 
 
 Good luck!
 
