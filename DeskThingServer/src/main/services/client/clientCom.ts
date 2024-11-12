@@ -54,7 +54,9 @@ export const sendConfigData = async (clientId?: string): Promise<void> => {
   try {
     const appData = await appState.getAllBase()
 
-    sendMessageToClient(clientId, { app: 'client', type: 'config', payload: appData })
+    const filteredAppData = appData.filter((app) => app.manifest?.isWebApp !== false)
+
+    sendMessageToClient(clientId, { app: 'client', type: 'config', payload: filteredAppData })
 
     console.log('WSOCKET: Preferences sent!')
   } catch (error) {

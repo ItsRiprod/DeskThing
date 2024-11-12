@@ -1,5 +1,5 @@
 import { defaultData } from '../static/defaultMapping'
-import { Action, ButtonMapping, EventFlavor, Key, MappingStructure } from '@shared/types'
+import { Action, ButtonMapping, EventMode, Key, MappingStructure } from '@shared/types'
 import dataListener, { MESSAGE_TYPES } from '../utils/events'
 import {
   readFromFile,
@@ -114,12 +114,12 @@ export class MappingState {
    */
   isValidButtonMapping = (mapping: ButtonMapping): boolean => {
     try {
-      for (const [key, flavors] of Object.entries(mapping.mapping)) {
+      for (const [key, Modes] of Object.entries(mapping.mapping)) {
         if (typeof key !== 'string') return false
-        if (typeof flavors !== 'object') return false
+        if (typeof Modes !== 'object') return false
 
-        for (const [flavor, action] of Object.entries(flavors)) {
-          if (!Object.values(EventFlavor).includes(Number(flavor))) {
+        for (const [Mode, action] of Object.entries(Modes)) {
+          if (!Object.values(EventMode).includes(Number(Mode))) {
             return false
           }
           if (
@@ -174,8 +174,8 @@ export class MappingState {
       typeof key.source === 'string' &&
       typeof key.version === 'string' &&
       typeof key.enabled === 'boolean' &&
-      Array.isArray(key.flavors) &&
-      key.flavors.every((flavor) => Object.values(EventFlavor).includes(flavor))
+      Array.isArray(key.Modes) &&
+      key.Modes.every((Mode) => Object.values(EventMode).includes(Mode))
     )
   }
 
@@ -189,13 +189,13 @@ export class MappingState {
    * adds a new button mapping to the mapping structure. If the key already exists, it will update the mapping.
    * @param DynamicAction2 - the button to add
    * @param key - The key to map the button to
-   * @param flavor - default is 'onPress'
+   * @param Mode - default is 'onPress'
    * @param profile - default is 'default'
    */
   addButton = (
     action: Action,
     key: string,
-    flavor: EventFlavor,
+    Mode: EventMode,
     profile: string = 'default'
   ): void => {
     const mappings = this.mappings
@@ -219,7 +219,7 @@ export class MappingState {
     }
 
     // Adding the button to the mapping
-    mappings[profile][key][flavor] = action
+    mappings[profile][key][Mode] = action
 
     // Save the mappings to file
     this.mappings = mappings
@@ -228,10 +228,10 @@ export class MappingState {
   /**
    * Removes a button mapping from the mapping structure.
    * @param key - The key to remove the button from
-   * @param flavor - The flavor of the button to remove. Default removes all flavors
+   * @param Mode - The Mode of the button to remove. Default removes all Modes
    * @param profile - default is 'default'
    */
-  removeButton = (key: string, flavor: EventFlavor | null, profile: string = 'default'): void => {
+  removeButton = (key: string, Mode: EventMode | null, profile: string = 'default'): void => {
     const mappings = this.mappings
     if (!mappings[profile]) {
       dataListener.asyncEmit(
@@ -249,7 +249,7 @@ export class MappingState {
       return
     }
 
-    if (flavor === null) {
+    if (Mode === null) {
       // Remove the entire key
       delete mappings[profile][key]
       dataListener.asyncEmit(
@@ -257,15 +257,15 @@ export class MappingState {
         `MAPHANDLER: Key ${key} removed from profile ${profile}`
       )
     } else {
-      // Ensure that the flavor exists in the mapping
-      if (!mappings[profile][key][flavor]) {
+      // Ensure that the Mode exists in the mapping
+      if (!mappings[profile][key][Mode]) {
         dataListener.asyncEmit(
           MESSAGE_TYPES.ERROR,
-          `MAPHANDLER: Flavor ${flavor} does not exist in key ${key} in profile ${profile}!`
+          `MAPHANDLER: Mode ${Mode} does not exist in key ${key} in profile ${profile}!`
         )
       } else {
         // Removing the button from the mapping
-        delete mappings[profile][key][flavor]
+        delete mappings[profile][key][Mode]
       }
     }
 
@@ -455,8 +455,8 @@ export class MappingState {
     const currentMap = mappings.selected_profile
     if (currentMap) {
       const currentMapActions = mappings.profiles[currentMap].mapping
-      Object.values(currentMapActions).forEach((buttonFlavors) => {
-        Object.values(buttonFlavors).forEach((action) => {
+      Object.values(currentMapActions).forEach((buttonModes) => {
+        Object.values(buttonModes).forEach((action) => {
           if (action && action.id === actionId) {
             action.icon = icon
           }

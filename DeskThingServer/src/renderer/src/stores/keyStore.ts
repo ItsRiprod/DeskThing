@@ -5,7 +5,7 @@
  * @version 0.9.0
  */
 import { create } from 'zustand'
-import { Action, Key, MappingStructure, EventFlavor } from '@shared/types'
+import { Action, Key, MappingStructure, EventMode } from '@shared/types'
 
 interface KeyMapStoreState {
   mappingStructure: MappingStructure | null
@@ -35,7 +35,7 @@ interface KeyMapStoreState {
   setSelectedProfile: (profile: string) => void
 
   // Update a specific button mapping (e.g., for remapping actions)
-  updateButtonMapping: (profile: string, keyId: string, flavor: EventFlavor, action: Action) => void
+  updateButtonMapping: (profile: string, keyId: string, Mode: EventMode, action: Action) => void
 }
 
 const useKeyMapStore = create<KeyMapStoreState>((set) => ({
@@ -112,11 +112,11 @@ const useKeyMapStore = create<KeyMapStoreState>((set) => ({
     }))
   },
 
-  // Update a specific button mapping for a key and flavor in the selected profile
+  // Update a specific button mapping for a key and Mode in the selected profile
   updateButtonMapping: (
     profile: string,
     keyId: string,
-    flavor: EventFlavor,
+    Mode: EventMode,
     action: Action
   ): void => {
     set((state) => {
@@ -128,7 +128,7 @@ const useKeyMapStore = create<KeyMapStoreState>((set) => ({
       if (!profileMapping) return state
 
       const mapping = profileMapping.mapping[keyId] || {}
-      mapping[flavor] = action
+      mapping[Mode] = action
 
       profileMapping.mapping[keyId] = mapping
       updatedMappingStructure.profiles[profile] = profileMapping

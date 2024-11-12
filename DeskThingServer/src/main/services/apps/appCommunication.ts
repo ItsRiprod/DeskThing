@@ -90,7 +90,7 @@ export async function handleDataFromApp(app: string, appData: IncomingData): Pro
               source: app,
               version: appData.payload.version || '0.0.0',
               enabled: true,
-              flavors: appData.payload.flavors || []
+              Modes: appData.payload.Modes || []
             }
             keyMapStore.addKey(Key)
             dataListener.asyncEmit(

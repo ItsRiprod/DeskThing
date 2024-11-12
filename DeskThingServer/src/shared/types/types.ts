@@ -75,6 +75,7 @@ export type GithubAsset = {
   browser_download_url: string
 }
 
+// The Client is how the clients are stored to keep track of them
 export interface Client {
   ip: string
   port?: number
@@ -94,6 +95,7 @@ export interface Client {
   miniplayer?: string
 }
 
+// The standard manifest that all the clients should have
 export interface ClientManifest {
   name: string
   id: string
@@ -105,8 +107,6 @@ export interface ClientManifest {
   version: string
   port: number
   ip: string
-  default_view: string
-  miniplayer: string
   compatible_server?: number[]
   uuid?: string
   version_code?: number
@@ -119,6 +119,7 @@ export interface RepoReleases {
   releases: GithubRelease[]
 }
 
+// The socket data that is used for any communication. I.e. between the app-server or server-client
 export interface SocketData {
   app: string
   type: string
@@ -132,6 +133,7 @@ export interface SocketData {
     | Settings
 }
 
+// The settings for the app
 export interface Settings {
   version: string
   version_code: number
@@ -151,6 +153,7 @@ export interface Settings {
   [key: string]: any // For any additional settings
 }
 
+// Used in the Refresh ADB screen to display little messages for the user
 export interface StatusMessage {
   message: string
   weight: number

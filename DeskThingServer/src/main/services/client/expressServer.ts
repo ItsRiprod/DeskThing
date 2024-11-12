@@ -58,7 +58,7 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
   })
 
   // Serve web apps dynamically based on the URL
-  expressApp.use('/:appName', (req, res, next) => {
+  expressApp.use('/app/:appName', (req, res, next) => {
     const appName = req.params.appName
     if (appName === 'client' || appName == null) {
       handleClientConnection(appName, req, res, next)
@@ -71,6 +71,67 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
       } else {
         res.status(404).send('App not found')
       }
+    }
+  })
+
+  // Serve icons dynamically based on the URL
+  expressApp.use('/icon/:appName/:iconName', (req, res, next) => {
+    const iconName = req.params.iconName
+    const appName = req.params.appName
+    if (iconName != null) {
+      const appPath = getAppFilePath(appName)
+      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Serving ${appName} from ${appPath}`)
+
+      if (fs.existsSync(join(appPath, 'icons', iconName))) {
+        express.static(join(appPath, 'icons'))(req, res, next)
+      } else {
+        res.status(404).send('Icon not found')
+      }
+    }
+  })
+
+  // Serve icons dynamically based on the URL
+  expressApp.use('/image/:appName/:imageName', (req, res, next) => {
+    const imageName = req.params.imageName
+    const appName = req.params.appName
+    if (imageName != null) {
+      const appPath = getAppFilePath(appName)
+      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Serving ${appName} from ${appPath}`)
+
+      if (fs.existsSync(join(appPath, 'images', imageName))) {
+        express.static(join(appPath, 'icons'))(req, res, next)
+      } else {
+        res.status(404).send('Icon not found')
+      }
+    }
+  })
+
+  // Proxy external resources
+  expressApp.use('/fetch/:url(*)', async (req, res) => {
+    try {
+      const url = decodeURIComponent(req.params.url)
+      dataListener.asyncEmit(
+        MESSAGE_TYPES.LOGGING,
+        `WEBSOCKET: Fetching external resource from ${url}`
+      )
+
+      const response = await fetch(url)
+      const contentType = response.headers.get('content-type')
+
+      if (contentType) {
+        res.setHeader('Content-Type', contentType)
+      }
+      if (response.body) {
+        response.body.pipeTo(res)
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        dataListener.asyncEmit(
+          MESSAGE_TYPES.LOGGING,
+          `WEBSOCKET: Error fetching external resource: ${error.message}`
+        )
+      }
+      res.status(500).send('Error fetching resource')
     }
   })
 }

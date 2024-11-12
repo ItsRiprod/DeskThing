@@ -73,12 +73,14 @@ export const configureDevice = async (
       })
   }
 
-  const clientExists = checkForClient(reply)
+  const clientExists = await checkForClient(reply)
+  console.log('Device Status:', clientExists)
 
   if (!clientExists) {
     // Download it from github
     const repos = settings.clientRepos
 
+    console.log('Fetching Latest Client...')
     reply && reply('logging', { status: true, data: 'Fetching Latest Client...', final: false })
     const latestReleases = await Promise.all(
       repos.map(async (repo) => {
@@ -102,6 +104,16 @@ export const configureDevice = async (
       await setTimeout(async () => {
         await checkForClient()
       }, 1000)
+
+      await setTimeout(async () => {
+        reply &&
+          reply('logging', {
+            status: true,
+            data: 'Client not found! Downloading Client...',
+            final: false
+          })
+        await checkForClient()
+      }, 5000)
     } else {
       reply &&
         reply('logging', {
