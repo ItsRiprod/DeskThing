@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import { useAppStore } from '@renderer/stores'
-import { AppDataInterface, SettingsType } from '@shared/types'
+import { AppDataInterface, SettingsString, SettingsType } from '@shared/types'
 import { AppSettingProps } from './AppsOverlay'
 import Button from '@renderer/components/Button'
 import { IconCheck, IconLoading, IconSave, IconToggle, IconX } from '@renderer/assets/icons'
@@ -42,6 +42,12 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
     []
   )
 
+  const clampValue = (value: number, min?: number, max?: number): number => {
+    if (min !== undefined && value < min) return min
+    if (max !== undefined && value > max) return max
+    return value
+  }
+
   const renderSettingInput = useCallback(
     (setting: SettingsType, key: string) => {
       const commonClasses =
@@ -55,6 +61,7 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
                 <input
                   type="text"
                   value={setting.value as string}
+                  maxLength={(setting as SettingsString).maxLength}
                   onChange={(e) => handleSettingChange(key, e.target.value)}
                   className={commonClasses + ' w-full'}
                 />
@@ -71,7 +78,11 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
                     value={setting.value as number}
                     min={setting.min}
                     max={setting.max}
-                    onChange={(e) => handleSettingChange(key, Number(e.target.value))}
+                    onChange={(e) => {
+                      let inputValue = Number(e.target.value)
+                      inputValue = clampValue(inputValue, setting.min, setting.max)
+                      handleSettingChange(key, inputValue)
+                    }}
                     className={commonClasses}
                   />
                 )}
@@ -204,9 +215,14 @@ const SettingComponent = ({ setting, children, className }: SettingComponentProp
       className={`py-3 flex gap-3 items-center hover:bg-zinc-950 justify-between w-full border-t relative border-gray-900 ${className}`}
     >
       <div className="w-fit text-nowrap">
-        <p className="text-xs text-gray-500 font-geistMono absolute -top-2 inset">
-          {setting.type?.toUpperCase() || 'Legacy Setting'}
-        </p>
+        <div className="text-xs text-gray-500 font-geistMono absolute -top-2 inset flex justify-between w-full">
+          <p>{setting.type?.toUpperCase() || 'Legacy Setting'}</p>
+          {setting.type === 'number' && (
+            <p>
+              MIN: {setting.min} | MAX: {setting.max}
+            </p>
+          )}
+        </div>
         <div className="group relative w-full">
           <p className="py-3 cursor-help">{setting.label}</p>
           {setting.description && (
