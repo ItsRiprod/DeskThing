@@ -112,6 +112,7 @@ export interface SettingsString {
   value: string
   type: 'string'
   label: string
+  maxLength?: number
   description?: string
 }
 
