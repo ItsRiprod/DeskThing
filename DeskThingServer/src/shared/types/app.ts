@@ -108,6 +108,16 @@ export interface SettingsBoolean {
   description?: string
 }
 
+export interface SettingsRange {
+  value: number
+  type: 'range'
+  label: string
+  min: number
+  max: number
+  step?: number
+  description?: string
+}
+
 export interface SettingsString {
   value: string
   type: 'string'
@@ -130,6 +140,14 @@ export type SettingOption = {
   value: string
 }
 
+export interface SettingsRanked {
+  value: string[]
+  type: 'ranked'
+  label: string
+  description?: string
+  options: SettingOption[]
+}
+
 export interface SettingsMultiSelect {
   value: string[]
   type: 'multiselect'
@@ -145,6 +163,8 @@ export type SettingsType =
   | SettingsString
   | SettingsSelect
   | SettingsMultiSelect
+  | SettingsRange
+  | SettingsRanked
 
 export interface AppSettings {
   [key: string]: SettingsType
