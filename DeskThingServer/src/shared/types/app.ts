@@ -108,6 +108,16 @@ export interface SettingsBoolean {
   description?: string
 }
 
+export interface SettingsRange {
+  value: number
+  type: 'range'
+  label: string
+  min: number
+  max: number
+  step?: number
+  description?: string
+}
+
 export interface SettingsString {
   value: string
   type: 'string'
@@ -145,6 +155,7 @@ export type SettingsType =
   | SettingsString
   | SettingsSelect
   | SettingsMultiSelect
+  | SettingsRange
 
 export interface AppSettings {
   [key: string]: SettingsType

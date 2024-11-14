@@ -103,6 +103,22 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
               </Button>
             </SettingComponent>
           )
+        case 'range':
+          return (
+            <SettingComponent key={key} setting={setting}>
+              {setting.type == 'range' && (
+                <input
+                  type="range"
+                  value={setting.value}
+                  min={setting.min}
+                  max={setting.max}
+                  step={setting.step || 1}
+                  onChange={(e) => handleSettingChange(key, e.target.value)}
+                  className="w-96 max-w-s"
+                />
+              )}
+            </SettingComponent>
+          )
         case 'select':
           return (
             <SettingComponent key={key} setting={setting}>
@@ -181,7 +197,7 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
   }
 
   return (
-    <div className="w-full h-full p-6 flex flex-col overflow-x-hidden">
+    <div className="w-full h-full p-6 flex flex-col">
       {settingsEntries.map(([key, setting]) => renderSettingInput(setting, key))}
       <div className="border-t mt-4 py-5 border-gray-900 w-full flex justify-end">
         <Button
@@ -226,7 +242,10 @@ const SettingComponent = ({ setting, children, className }: SettingComponentProp
           )}
         </div>
       </div>
-      {children}
+      <div className="flex flex-col items-center">
+        {setting.type === 'range' && <div>{setting.value}</div>}
+        {children}
+      </div>
     </div>
   )
 }
