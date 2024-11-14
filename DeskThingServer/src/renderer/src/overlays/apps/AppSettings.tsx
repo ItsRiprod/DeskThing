@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import { useAppStore } from '@renderer/stores'
-import { AppDataInterface, SettingsString, SettingsType } from '@shared/types'
+import { AppDataInterface, SettingOption, SettingsString, SettingsType } from '@shared/types'
 import { AppSettingProps } from './AppsOverlay'
 import Button from '@renderer/components/Button'
-import { IconCheck, IconLoading, IconSave, IconToggle, IconX } from '@renderer/assets/icons'
+import { IconLoading, IconSave, IconToggle } from '@renderer/assets/icons'
+import Select from '@renderer/components/Select'
+import { MultiValue, SingleValue } from 'react-select'
 
 const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
   const getAppData = useAppStore((state) => state.getAppData)
@@ -105,17 +107,15 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
           return (
             <SettingComponent key={key} setting={setting}>
               {setting.type == 'select' && (
-                <select
+                <Select
+                  options={setting.options}
+                  placeholder={setting.placeholder ?? ''}
                   value={setting.value}
-                  onChange={(e) => handleSettingChange(key, e.target.value)}
-                  className={commonClasses}
-                >
-                  {setting.options?.map((option, index) => (
-                    <option key={index} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(selected) => {
+                    const selectedValue = selected as SingleValue<SettingOption>
+                    handleSettingChange(key, selectedValue!.value)
+                  }}
+                />
               )}
             </SettingComponent>
           )
@@ -123,26 +123,18 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
           return (
             <SettingComponent key={key} setting={setting}>
               {setting.type == 'multiselect' && (
-                <div className="gap-2 flex max-w-1/2 flex-wrap p-2 bg-zinc-900 border border-gray-700 rounded-md">
-                  {setting.options?.map((option, index) => (
-                    <Button
-                      key={index}
-                      className={`flex hover:bg-zinc-800 ${setting.value.includes(option.value) ? 'text-green-500' : 'text-red-500'}`}
-                      onClick={(e) => {
-                        e.preventDefault()
-                        const currentValues = [...(setting.value as string[])]
-                        if (currentValues.includes(option.value)) {
-                          currentValues.splice(currentValues.indexOf(option.value), 1)
-                        } else {
-                          currentValues.push(option.value)
-                        }
-                        handleSettingChange(key, currentValues)
-                      }}
-                    >
-                      {setting.value[index] ? <IconCheck /> : <IconX />}
-                      <p>{option.label}</p>
-                    </Button>
-                  ))}
+                <div className="w-96">
+                  <Select
+                    options={setting.options}
+                    value={setting.value}
+                    isMulti={true}
+                    placeholder={setting.placeholder ?? 'Select...'}
+                    onChange={(selected) => {
+                      const selectedValues = selected as MultiValue<SettingOption>
+                      const currentValues = selectedValues.map((value) => value.value)
+                      handleSettingChange(key, currentValues)
+                    }}
+                  />
                 </div>
               )}
             </SettingComponent>

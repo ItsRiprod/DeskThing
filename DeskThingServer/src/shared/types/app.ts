@@ -121,10 +121,13 @@ export interface SettingsSelect {
   type: 'select'
   label: string
   description?: string
-  options: {
-    label: string
-    value: string
-  }[]
+  placeholder?: string
+  options: SettingOption[]
+}
+
+export type SettingOption = {
+  label: string
+  value: string
 }
 
 export interface SettingsMultiSelect {
@@ -132,10 +135,8 @@ export interface SettingsMultiSelect {
   type: 'multiselect'
   label: string
   description?: string
-  options: {
-    label: string
-    value: string
-  }[]
+  placeholder?: string
+  options: SettingOption[]
 }
 
 export type SettingsType =
