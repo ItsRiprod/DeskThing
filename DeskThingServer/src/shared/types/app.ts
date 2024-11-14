@@ -140,6 +140,14 @@ export type SettingOption = {
   value: string
 }
 
+export interface SettingsRanked {
+  value: string[]
+  type: 'ranked'
+  label: string
+  description?: string
+  options: SettingOption[]
+}
+
 export interface SettingsMultiSelect {
   value: string[]
   type: 'multiselect'
@@ -156,6 +164,7 @@ export type SettingsType =
   | SettingsSelect
   | SettingsMultiSelect
   | SettingsRange
+  | SettingsRanked
 
 export interface AppSettings {
   [key: string]: SettingsType

@@ -6,6 +6,7 @@ import Button from '@renderer/components/Button'
 import { IconLoading, IconSave, IconToggle } from '@renderer/assets/icons'
 import Select from '@renderer/components/Select'
 import { MultiValue, SingleValue } from 'react-select'
+import RankableList from '@renderer/components/RankableList'
 
 const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
   const getAppData = useAppStore((state) => state.getAppData)
@@ -151,6 +152,22 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
                       const selectedValues = selected as MultiValue<SettingOption>
                       const currentValues = selectedValues.map((value) => value.value)
                       handleSettingChange(key, currentValues)
+                    }}
+                  />
+                </div>
+              )}
+            </SettingComponent>
+          )
+        case 'ranked':
+          return (
+            <SettingComponent key={key} setting={setting}>
+              {setting.type == 'ranked' && (
+                <div className="w-96 max-w-s">
+                  <RankableList
+                    options={setting.options}
+                    value={setting.value}
+                    onChange={(rankedValues) => {
+                      handleSettingChange(key, rankedValues)
                     }}
                   />
                 </div>
