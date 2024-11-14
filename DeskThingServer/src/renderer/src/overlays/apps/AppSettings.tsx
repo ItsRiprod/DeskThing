@@ -53,7 +53,7 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
   const renderSettingInput = useCallback(
     (setting: SettingsType, key: string) => {
       const commonClasses =
-        'mt-1 block px-3 py-2 bg-black border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm'
+        'mt-1 block px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm'
 
       switch (setting.type || '') {
         case 'string':
@@ -107,15 +107,17 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
           return (
             <SettingComponent key={key} setting={setting}>
               {setting.type == 'select' && (
-                <Select
-                  options={setting.options}
-                  placeholder={setting.placeholder ?? ''}
-                  value={setting.value}
-                  onChange={(selected) => {
-                    const selectedValue = selected as SingleValue<SettingOption>
-                    handleSettingChange(key, selectedValue!.value)
-                  }}
-                />
+                <div className="w-96">
+                  <Select
+                    options={setting.options}
+                    placeholder={setting.placeholder ?? ''}
+                    value={setting.value}
+                    onChange={(selected) => {
+                      const selectedValue = selected as SingleValue<SettingOption>
+                      handleSettingChange(key, selectedValue!.value)
+                    }}
+                  />
+                </div>
               )}
             </SettingComponent>
           )
