@@ -181,7 +181,7 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
   }
 
   return (
-    <div className="w-full h-full p-6 flex flex-col overflow-x-hidden">
+    <div className="w-full h-full p-6 flex flex-col">
       {settingsEntries.map(([key, setting]) => renderSettingInput(setting, key))}
       <div className="border-t mt-4 py-5 border-gray-900 w-full flex justify-end">
         <Button
