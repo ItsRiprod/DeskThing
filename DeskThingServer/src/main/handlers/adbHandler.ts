@@ -3,7 +3,7 @@ import { execFile } from 'child_process'
 import getPlatform from '../utils/get-platform'
 import dataListener, { MESSAGE_TYPES } from '../utils/events'
 import settingsStore from '../stores/settingsStore'
-import { LoggingData } from '@shared/types'
+import { ReplyFn } from '@shared/types'
 
 const isDevelopment = process.env.NODE_ENV === 'development'
 const execPath = isDevelopment
@@ -25,10 +25,7 @@ const splitArgs = (str: string): string[] => {
   return matches
 }
 
-export const handleAdbCommands = async (
-  command: string,
-  send?: (channel: string, ...args: LoggingData[]) => void
-): Promise<string> => {
+export const handleAdbCommands = async (command: string, replyFn?: ReplyFn): Promise<string> => {
   const settings = await settingsStore.getSettings()
   const useGlobalADB = settings.globalADB === true
   dataListener.asyncEmit(
@@ -43,27 +40,25 @@ export const handleAdbCommands = async (
       (error, stdout, stderr) => {
         console.log(error, stdout, stderr)
         if (error) {
-          if (send) {
-            send('logging', {
+          replyFn &&
+            replyFn('logging', {
               status: false,
               data: 'Error Encountered!',
-              final: true,
+              final: false,
               error: stderr
             })
-          }
           dataListener.asyncEmit(
             MESSAGE_TYPES.ERROR,
             `ADB Error: ${stderr}, ${command}, ${adbPath}`
           )
           reject(`ADB Error: ${stderr}, ${command}, ${adbPath}`)
         } else {
-          if (send) {
-            send('logging', {
+          replyFn &&
+            replyFn('logging', {
               status: true,
               data: 'ADB Success!',
-              final: true
+              final: false
             })
-          }
           resolve(stdout)
         }
       }

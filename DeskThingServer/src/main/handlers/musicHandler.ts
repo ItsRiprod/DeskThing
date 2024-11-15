@@ -64,11 +64,21 @@ export class MusicHandler {
 
   private async refreshMusicData(): Promise<void> {
     if (!this.currentApp || this.currentApp.length == 0) {
-      dataListener.asyncEmit(
-        MESSAGE_TYPES.ERROR,
-        `[MusicHandler]: No playback location set! Go to settings -> Music to set the playback location!`
-      )
-      return
+      // Attempt to get music data
+      const currentApp = (await settingsStore.getSettings()).playbackLocation
+      if (!currentApp || currentApp.length == 0) {
+        dataListener.asyncEmit(
+          MESSAGE_TYPES.ERROR,
+          `[MusicHandler]: No playback location set! Go to settings -> Music to set the playback location!`
+        )
+        return
+      } else {
+        dataListener.asyncEmit(
+          MESSAGE_TYPES.LOGGING,
+          `[MusicHandler]: Playback location was not set! Setting to ${currentApp}`
+        )
+        this.currentApp = currentApp
+      }
     }
 
     const app = await getAppByName(this.currentApp)

@@ -29,36 +29,43 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
     const clientIp = req.hostname
 
     console.log(`WEBSOCKET: Serving ${appName} from ${webAppDir} to ${clientIp}`)
+    try {
+      if (req.path.endsWith('manifest.js')) {
+        const manifestPath = join(webAppDir, 'manifest.js')
+        if (fs.existsSync(manifestPath)) {
+          let manifestContent = fs.readFileSync(manifestPath, 'utf8')
 
-    if (req.path.endsWith('manifest.js')) {
-      const manifestPath = join(webAppDir, 'manifest.js')
-      if (fs.existsSync(manifestPath)) {
-        let manifestContent = fs.readFileSync(manifestPath, 'utf8')
+          manifestContent = manifestContent.replace(
+            /"ip":\s*".*?"/,
+            `"ip": "${clientIp === '127.0.0.1' ? 'localhost' : clientIp}"`
+          )
 
-        manifestContent = manifestContent.replace(
-          /"ip":\s*".*?"/,
-          `"ip": "${clientIp === '127.0.0.1' ? 'localhost' : clientIp}"`
-        )
-
-        res.type('application/javascript').send(manifestContent)
+          res.type('application/javascript').send(manifestContent)
+        } else {
+          res.status(404).send('Manifest not found')
+        }
       } else {
-        res.status(404).send('Manifest not found')
+        if (fs.existsSync(webAppDir)) {
+          express.static(webAppDir)(req, res, next)
+        } else {
+          res.status(404).send('App not found')
+        }
       }
-    } else {
-      if (fs.existsSync(webAppDir)) {
-        express.static(webAppDir)(req, res, next)
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error('WEBSOCKET: Error serving app:', error.message)
       } else {
-        res.status(404).send('App not found')
+        console.error('WEBSOCKET: Error serving app:', error)
       }
     }
   }
 
-  expressApp.use('/', (req, res, next) => {
+  expressApp.use(['/', '/client/'], (req, res, next) => {
     handleClientConnection('client', req, res, next)
   })
 
   // Serve web apps dynamically based on the URL
-  expressApp.use('/app/:appName', (req, res, next) => {
+  expressApp.use(['/app/:appName', '/:appName'], (req, res, next) => {
     const appName = req.params.appName
     if (appName === 'client' || appName == null) {
       handleClientConnection(appName, req, res, next)

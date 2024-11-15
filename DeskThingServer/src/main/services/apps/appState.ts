@@ -1,5 +1,7 @@
 import { App, AppInstance, Manifest, AppReturnData } from '@shared/types'
 import { sendConfigData, sendSettingsData } from '../client/clientCom'
+import settingsStore from 'src/main/stores/settingsStore'
+import dataListener from 'src/main/utils/events'
 
 /**
  * TODO: Sync with the file
@@ -34,7 +36,9 @@ export class AppHandler {
   async loadApps(): Promise<void> {
     console.log('[appState] [loadApps]: Loading apps...')
     const { getAppData } = await import('../../handlers/configHandler')
+
     const data = await getAppData()
+
     data.apps.forEach((app) => {
       if (this.apps[app.name]) {
         // Update existing app instance with stored data
@@ -298,6 +302,20 @@ export class AppHandler {
     // Add the manifest to the config file
     addAppManifest(manifest, appName)
     this.saveAppToFile(appName)
+
+    // Check if there is an audiosource set
+    if (manifest.isAudioSource) {
+      const settings = await settingsStore.getSettings()
+      const audiosource = settings.audioSource
+      if (audiosource === 'none') {
+        settings.audioSource = appName
+        dataListener.asyncEmit(
+          'log',
+          '[apps] [appendManifest] [audiosource]: Setting audiosource to ' + appName
+        )
+        settingsStore.saveSettings(settings)
+      }
+    }
   }
 }
 

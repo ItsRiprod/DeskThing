@@ -137,7 +137,7 @@ const getApps = (replyFn: ReplyFn): App[] => {
   return data
 }
 
-const setAppData = async (replyFn, id, data: AppDataInterface): Promise<void> => {
+const setAppData = async (replyFn: ReplyFn, id, data: AppDataInterface): Promise<void> => {
   console.log('Saving app data: ', data)
   dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'SERVER: Saving ' + id + "'s data " + data)
   await setData(id, data)

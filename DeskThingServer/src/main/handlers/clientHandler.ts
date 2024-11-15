@@ -48,24 +48,21 @@ export const clientHandler: Record<
     console.log('Running ADB command:', data.payload)
     replyFn('logging', { status: true, data: 'Working', final: false })
 
-    const reply = async (status, data, final, error): Promise<void> => {
-      replyFn('logging', {
-        status: status,
-        data: data,
-        final: final,
-        error: error
-      })
-    }
-
-    return await handleAdbCommands(data.payload, reply)
+    const response = await handleAdbCommands(data.payload, replyFn)
+    replyFn('logging', { status: true, data: response, final: true })
+    return response
   },
   configure: async (data, replyFn) => {
     replyFn('logging', { status: true, data: 'Configuring Device', final: false })
-    return await configureDevice(data.payload, replyFn)
+    const response = await configureDevice(data.payload, replyFn)
+    replyFn('logging', { status: true, data: 'Device Configured!', final: true })
+    return response
   },
   'client-manifest': async (data, replyFn) => {
     if (data.request === 'get') {
-      return await getClientManifest(false, replyFn)
+      const response = await getClientManifest(replyFn)
+      replyFn('logging', { status: true, data: response, final: true })
+      return response
     } else if (data.request === 'set') {
       return await handleClientManifestUpdate(data.payload, replyFn)
     }
@@ -90,6 +87,11 @@ export const clientHandler: Record<
     try {
       console.log('Pushing proxy script...')
       SetupProxy(replyFn, data.payload)
+      replyFn('logging', {
+        status: true,
+        data: 'Proxy script pushed!',
+        final: true
+      })
     } catch (error) {
       replyFn('logging', {
         status: false,
@@ -116,7 +118,7 @@ export const clientHandler: Record<
   }
 }
 
-const handleUrl = (data, replyFn: ReplyFn): void => {
+const handleUrl = async (data, replyFn: ReplyFn): Promise<void> => {
   try {
     replyFn('logging', {
       status: true,
@@ -124,15 +126,24 @@ const handleUrl = (data, replyFn: ReplyFn): void => {
       final: false
     })
 
-    const reply = async (channel: string, data): Promise<void> => {
-      replyFn(channel, data)
-    }
-
-    HandleWebappZipFromUrl(reply, data.payload)
+    await HandleWebappZipFromUrl(replyFn, data.payload)
+    replyFn('logging', { status: true, data: 'Successfully downloaded client', final: true })
   } catch (error) {
     console.error('Error extracting zip file:', error)
     if (error instanceof Error) {
-      replyFn('zip-extracted', { status: false, error: error.message, data: null, final: true })
+      replyFn('logging', {
+        status: false,
+        error: error.message,
+        data: 'Error handling URL',
+        final: true
+      })
+    } else {
+      replyFn('logging', {
+        status: false,
+        error: 'Unable to download CLIENT',
+        data: 'Error handling URL',
+        final: true
+      })
     }
   }
 }

@@ -43,7 +43,7 @@ const MusicSettings: React.FC = () => {
           <Button
             className="bg-transparent p-0"
             onClick={() =>
-              handleSettingChange('refreshInterval', settings.refreshInterval === -1 ? 5000 : -1)
+              handleSettingChange('refreshInterval', settings.refreshInterval === -1 ? 15000 : -1)
             }
           >
             <IconToggle

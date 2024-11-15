@@ -107,9 +107,6 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
         if (reply.final) {
           unsubscribe()
         }
-        if (!reply.status) {
-          unsubscribe()
-        }
       })
     } catch (error) {
       setLoading(false)
