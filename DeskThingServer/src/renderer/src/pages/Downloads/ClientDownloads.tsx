@@ -75,6 +75,9 @@ const ClientDownloads: React.FC = () => {
     setClientDownloads(null)
     try {
       await loadClientUrl(url)
+      await setTimeout(() => {
+        setLoading(false)
+      }, 2000)
     } catch (error) {
       await setTimeout(() => {
         setLoading(false)

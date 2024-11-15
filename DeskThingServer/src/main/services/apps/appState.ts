@@ -1,7 +1,7 @@
 import { App, AppInstance, Manifest, AppReturnData } from '@shared/types'
 import { sendConfigData, sendSettingsData } from '../client/clientCom'
-import settingsStore from 'src/main/stores/settingsStore'
-import dataListener from 'src/main/utils/events'
+import settingsStore from '../../stores/settingsStore'
+import dataListener from '../../utils/events'
 
 /**
  * TODO: Sync with the file
