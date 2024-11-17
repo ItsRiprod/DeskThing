@@ -1,6 +1,13 @@
 import { defaultData } from '../static/defaultMapping'
-import { Action, ButtonMapping, EventMode, Key, MappingStructure } from '@shared/types'
-import dataListener, { MESSAGE_TYPES } from '../utils/events'
+import {
+  Action,
+  ButtonMapping,
+  MESSAGE_TYPES,
+  EventMode,
+  Key,
+  MappingStructure
+} from '@shared/types'
+import loggingStore from '../stores/loggingStore'
 import {
   readFromFile,
   readFromGlobalFile,
@@ -50,7 +57,7 @@ export class MappingState {
   private loadMappings(): MappingStructure {
     const data = readFromFile('mappings.json') as MappingStructure
     if (!data || data?.version !== defaultData.version) {
-      dataListener.asyncEmit(
+      loggingStore.log(
         MESSAGE_TYPES.ERROR,
         `MAPHANDLER: Mappings file is corrupt or does not exist, using default`
       )
@@ -59,7 +66,7 @@ export class MappingState {
     }
     const parsedData = data as MappingStructure
     if (!this.isValidFileStructure(parsedData)) {
-      dataListener.emit(
+      loggingStore.log(
         MESSAGE_TYPES.ERROR,
         `MAPHANDLER: Mappings file is corrupt, resetting to default`
       )
@@ -73,7 +80,7 @@ export class MappingState {
     if (this.isValidFileStructure(mapping)) {
       writeToFile(mapping, 'mappings.json')
     } else {
-      dataListener.emit(
+      loggingStore.log(
         MESSAGE_TYPES.ERROR,
         `MAPHANDLER: New Mappings file is corrupt, resetting to default`
       )
@@ -192,15 +199,10 @@ export class MappingState {
    * @param Mode - default is 'onPress'
    * @param profile - default is 'default'
    */
-  addButton = (
-    action: Action,
-    key: string,
-    Mode: EventMode,
-    profile: string = 'default'
-  ): void => {
+  addButton = (action: Action, key: string, Mode: EventMode, profile: string = 'default'): void => {
     const mappings = this.mappings
     if (!mappings[profile]) {
-      dataListener.asyncEmit(
+      loggingStore.log(
         MESSAGE_TYPES.ERROR,
         `MAPHANDLER: Profile ${profile} does not exist! Create a new profile with the name ${profile} and try again`
       )
@@ -211,7 +213,7 @@ export class MappingState {
     }
     // Ensure that the structure of the button is valid
     if (!this.isValidAction(action)) {
-      dataListener.emit(
+      loggingStore.log(
         MESSAGE_TYPES.ERROR,
         `MAPHANDLER: Action ${action.id} is invalid, cannot add to mapping`
       )
@@ -234,7 +236,7 @@ export class MappingState {
   removeButton = (key: string, Mode: EventMode | null, profile: string = 'default'): void => {
     const mappings = this.mappings
     if (!mappings[profile]) {
-      dataListener.asyncEmit(
+      loggingStore.log(
         MESSAGE_TYPES.ERROR,
         `MAPHANDLER: Profile ${profile} does not exist! Create a new profile with the name ${profile} and try again`
       )
@@ -242,7 +244,7 @@ export class MappingState {
     }
     // Ensuring the key exists in the mapping
     if (!mappings[profile][key]) {
-      dataListener.asyncEmit(
+      loggingStore.log(
         MESSAGE_TYPES.ERROR,
         `MAPHANDLER: Key ${key} does not exist in profile ${profile}!`
       )
@@ -252,14 +254,14 @@ export class MappingState {
     if (Mode === null) {
       // Remove the entire key
       delete mappings[profile][key]
-      dataListener.asyncEmit(
+      loggingStore.log(
         MESSAGE_TYPES.LOGGING,
         `MAPHANDLER: Key ${key} removed from profile ${profile}`
       )
     } else {
       // Ensure that the Mode exists in the mapping
       if (!mappings[profile][key][Mode]) {
-        dataListener.asyncEmit(
+        loggingStore.log(
           MESSAGE_TYPES.ERROR,
           `MAPHANDLER: Mode ${Mode} does not exist in key ${key} in profile ${profile}!`
         )
@@ -271,7 +273,7 @@ export class MappingState {
 
     // Save the mappings to file
     this.mappings = mappings
-    dataListener.asyncEmit(
+    loggingStore.log(
       MESSAGE_TYPES.LOGGING,
       `MAPHANDLER: Button ${key} removed from profile ${profile}`
     )
@@ -281,7 +283,7 @@ export class MappingState {
     const mappings = this.mappings
     // Validate key structure
     if (!this.isValidKey(key)) {
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `MAPHANDLER: Invalid key structure`)
+      loggingStore.log(MESSAGE_TYPES.ERROR, `MAPHANDLER: Invalid key structure`)
       return
     }
     // Check if the key already exists
@@ -289,11 +291,11 @@ export class MappingState {
     if (existingKeyIndex !== -1) {
       // Replace the existing key
       mappings.keys[existingKeyIndex] = key
-      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `MAPHANDLER: Key ${key.id} updated`)
+      loggingStore.log(MESSAGE_TYPES.LOGGING, `MAPHANDLER: Key ${key.id} updated`)
     } else {
       // Add the new key
       mappings.keys.push(key)
-      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `MAPHANDLER: Key ${key.id} added`)
+      loggingStore.log(MESSAGE_TYPES.LOGGING, `MAPHANDLER: Key ${key.id} added`)
     }
     // Save the mappings
     this.mappings = mappings
@@ -306,9 +308,9 @@ export class MappingState {
     if (keyIndex !== -1) {
       // Remove the key
       mappings.keys.splice(keyIndex, 1)
-      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `MAPHANDLER: Key ${keyId} removed`)
+      loggingStore.log(MESSAGE_TYPES.LOGGING, `MAPHANDLER: Key ${keyId} removed`)
     } else {
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `MAPHANDLER: Key ${keyId} not found`)
+      loggingStore.log(MESSAGE_TYPES.ERROR, `MAPHANDLER: Key ${keyId} not found`)
     }
     // Save the mappings
     this.mappings = mappings
@@ -323,7 +325,7 @@ export class MappingState {
     const mappings = this.mappings
     // Validate action structure
     if (!this.isValidAction(action)) {
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `MAPHANDLER: Invalid action structure`)
+      loggingStore.log(MESSAGE_TYPES.ERROR, `MAPHANDLER: Invalid action structure`)
       return
     }
     // Check if the action already exists
@@ -331,11 +333,11 @@ export class MappingState {
     if (existingActionIndex !== -1) {
       // Replace the existing action
       mappings.actions[existingActionIndex] = action
-      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `MAPHANDLER: Action ${action.id} updated`)
+      loggingStore.log(MESSAGE_TYPES.LOGGING, `MAPHANDLER: Action ${action.id} updated`)
     } else {
       // Add the new action
       mappings.actions.push(action)
-      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `MAPHANDLER: Action ${action.id} added`)
+      loggingStore.log(MESSAGE_TYPES.LOGGING, `MAPHANDLER: Action ${action.id} added`)
     }
     // Save the mappings
     this.mappings = mappings
@@ -348,9 +350,9 @@ export class MappingState {
     if (actionIndex !== -1) {
       // Remove the action
       mappings.actions.splice(actionIndex, 1)
-      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `MAPHANDLER: Action ${actionId} removed`)
+      loggingStore.log(MESSAGE_TYPES.LOGGING, `MAPHANDLER: Action ${actionId} removed`)
     } else {
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `MAPHANDLER: Action ${actionId} not found`)
+      loggingStore.log(MESSAGE_TYPES.ERROR, `MAPHANDLER: Action ${actionId} not found`)
     }
     // Save the mappings
     this.mappings = mappings
@@ -385,7 +387,7 @@ export class MappingState {
     // Remove keys with the specified source
     mappings.keys = mappings.keys.filter((key) => key.source !== sourceId)
 
-    dataListener.asyncEmit(
+    loggingStore.log(
       MESSAGE_TYPES.LOGGING,
       `MAPHANDLER: Actions for source ${sourceId} disabled in all profiles, global actions, and keys`
     )
@@ -427,7 +429,7 @@ export class MappingState {
       }
     })
 
-    dataListener.asyncEmit(
+    loggingStore.log(
       MESSAGE_TYPES.LOGGING,
       `MAPHANDLER: Actions for source ${sourceId} disabled in all profiles, global actions, and keys`
     )
@@ -443,12 +445,9 @@ export class MappingState {
     if (actionIndex !== -1) {
       // Update the icon
       mappings.actions[actionIndex].icon = icon
-      dataListener.asyncEmit(
-        MESSAGE_TYPES.LOGGING,
-        `MAPHANDLER: Icon for action ${actionId} updated`
-      )
+      loggingStore.log(MESSAGE_TYPES.LOGGING, `MAPHANDLER: Icon for action ${actionId} updated`)
     } else {
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `MAPHANDLER: Action ${actionId} not found`)
+      loggingStore.log(MESSAGE_TYPES.ERROR, `MAPHANDLER: Action ${actionId} not found`)
     }
 
     // Update the icon for all actions inside the current profile
@@ -476,7 +475,7 @@ export class MappingState {
       // Update the icon
       return mappings.actions[actionIndex]
     } else {
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `MAPHANDLER: Action ${actionId} not found`)
+      loggingStore.log(MESSAGE_TYPES.ERROR, `MAPHANDLER: Action ${actionId} not found`)
       return null
     }
   }
@@ -492,7 +491,7 @@ export class MappingState {
     if (this.mappings.profiles[profile]) {
       this.mappings.selected_profile = profile
     } else {
-      dataListener.asyncEmit(
+      loggingStore.log(
         MESSAGE_TYPES.ERROR,
         `MAPHANDLER: Profile ${profile} does not exist! Create a new profile with the name ${profile} and try again`
       )
@@ -513,16 +512,13 @@ export class MappingState {
 
     // Check if the profile name already exists
     if (mappings.profiles[profileName]) {
-      dataListener.asyncEmit(
-        MESSAGE_TYPES.ERROR,
-        `MAPHANDLER: Profile "${profileName}" already exists!`
-      )
+      loggingStore.log(MESSAGE_TYPES.ERROR, `MAPHANDLER: Profile "${profileName}" already exists!`)
       return
     }
 
     // Ensure the base profile exists
     if (!mappings.profiles[baseProfile]) {
-      dataListener.asyncEmit(
+      loggingStore.log(
         MESSAGE_TYPES.ERROR,
         `MAPHANDLER: Base profile "${baseProfile}" does not exist!`
       )
@@ -549,7 +545,7 @@ export class MappingState {
     // Save the updated mappings
     this.mappings = mappings
 
-    dataListener.asyncEmit(
+    loggingStore.log(
       MESSAGE_TYPES.LOGGING,
       `MAPHANDLER: Profile "${profileName}" added successfully.`
     )
@@ -564,19 +560,13 @@ export class MappingState {
 
     // Prevent removal of the default profile
     if (profileName === 'default') {
-      dataListener.asyncEmit(
-        MESSAGE_TYPES.ERROR,
-        `MAPHANDLER: The "default" profile cannot be removed.`
-      )
+      loggingStore.log(MESSAGE_TYPES.ERROR, `MAPHANDLER: The "default" profile cannot be removed.`)
       return
     }
 
     // Check if the profile exists
     if (!mappings.profiles[profileName]) {
-      dataListener.asyncEmit(
-        MESSAGE_TYPES.ERROR,
-        `MAPHANDLER: Profile "${profileName}" does not exist!`
-      )
+      loggingStore.log(MESSAGE_TYPES.ERROR, `MAPHANDLER: Profile "${profileName}" does not exist!`)
       return
     }
 
@@ -586,7 +576,7 @@ export class MappingState {
     // If the removed profile was the selected profile, revert to default
     if (mappings.selected_profile === profileName) {
       mappings.selected_profile = 'default'
-      dataListener.asyncEmit(
+      loggingStore.log(
         MESSAGE_TYPES.LOGGING,
         `MAPHANDLER: Selected profile was removed. Reverted to "default" profile.`
       )
@@ -595,7 +585,7 @@ export class MappingState {
     // Save the updated mappings
     this.mappings = mappings
 
-    dataListener.asyncEmit(
+    loggingStore.log(
       MESSAGE_TYPES.LOGGING,
       `MAPHANDLER: Profile "${profileName}" removed successfully.`
     )
@@ -610,7 +600,7 @@ export class MappingState {
     const mappings = this.mappings
 
     if (!mappings.profiles[profile]) {
-      dataListener.asyncEmit(
+      loggingStore.log(
         MESSAGE_TYPES.ERROR,
         `MAPHANDLER: Profile ${profile} does not exist! Cannot export.`
       )
@@ -620,7 +610,7 @@ export class MappingState {
     const profileData = mappings.profiles[profile]
     writeToGlobalFile<ButtonMapping>(profileData, filePath)
 
-    dataListener.asyncEmit(
+    loggingStore.log(
       MESSAGE_TYPES.LOGGING,
       `MAPHANDLER: Profile ${profile} exported to ${filePath}`
     )
@@ -638,7 +628,7 @@ export class MappingState {
     const profileData = readFromGlobalFile<ButtonMapping>(filePath)
 
     if (!profileData) {
-      dataListener.asyncEmit(
+      loggingStore.log(
         MESSAGE_TYPES.ERROR,
         `MAPHANDLER: Failed to load profile data from ${filePath}`
       )
@@ -646,10 +636,7 @@ export class MappingState {
     }
 
     if (!this.isValidButtonMapping(profileData)) {
-      dataListener.asyncEmit(
-        MESSAGE_TYPES.ERROR,
-        `MAPHANDLER: Invalid profile data in file ${filePath}`
-      )
+      loggingStore.log(MESSAGE_TYPES.ERROR, `MAPHANDLER: Invalid profile data in file ${filePath}`)
       return
     }
 
@@ -657,7 +644,7 @@ export class MappingState {
     mappings.profiles[profileName] = profileData
     this.mappings = mappings
 
-    dataListener.asyncEmit(
+    loggingStore.log(
       MESSAGE_TYPES.LOGGING,
       `MAPHANDLER: Profile ${profileName} imported from ${filePath}`
     )
@@ -667,16 +654,13 @@ export class MappingState {
     const mappings = this.mappings
     const profile = mappings.profiles[profileName]
     if (!profile) {
-      dataListener.asyncEmit(
-        MESSAGE_TYPES.ERROR,
-        `MAPHANDLER: Profile ${profileName} does not exist!`
-      )
+      loggingStore.log(MESSAGE_TYPES.ERROR, `MAPHANDLER: Profile ${profileName} does not exist!`)
       return
     }
     // Update the profile with the provided data
     deepMerge(profile, updatedProfile)
     this.mappings = mappings
-    dataListener.asyncEmit(
+    loggingStore.log(
       MESSAGE_TYPES.LOGGING,
       `MAPHANDLER: Profile ${profileName} updated successfully.`
     )

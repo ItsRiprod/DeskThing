@@ -7,9 +7,17 @@ interface SelectProps {
   value: string[] | string
   isMulti?: boolean
   placeholder: string
+  className?: string
   onChange: (value: SingleValue<SettingOption> | MultiValue<SettingOption>) => void
 }
-const Select: React.FC<SelectProps> = ({ options, isMulti, onChange, value, placeholder }) => {
+const Select: React.FC<SelectProps> = ({
+  options,
+  isMulti,
+  onChange,
+  value,
+  placeholder,
+  className
+}) => {
   // We can't use tailwind css here because of how classes are passed into the child components
   const customStyles = {
     control: (provided) => ({
@@ -80,6 +88,7 @@ const Select: React.FC<SelectProps> = ({ options, isMulti, onChange, value, plac
             : options.find((option) => option.value === value)
         }
         options={options}
+        className={className}
         isMulti={isMulti}
         closeMenuOnSelect={!isMulti}
         styles={customStyles}

@@ -11,12 +11,10 @@ export async function getLatestRelease(repoUrl: string): Promise<GithubRelease> 
     const owner = repoMatch[1]
     const repo = repoMatch[2]
 
-    console.log('Repo:', owner, repo)
     const apiUrl = `https://api.github.com/repos/${owner}/${repo}/releases/latest`
     const response = await fetch(apiUrl)
 
     if (!response.ok) {
-      console.log('HTTP error fetching the latest release! Response: ', response)
       throw new Error(`HTTP error! status: ${response.status}`)
     }
 

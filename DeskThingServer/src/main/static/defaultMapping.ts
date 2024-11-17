@@ -103,12 +103,7 @@ const keys: Key[] = [
     description: 'Physical Button Scroll',
     version: '0.9.0',
     enabled: true,
-    Modes: [
-      EventMode.ScrollUp,
-      EventMode.ScrollDown,
-      EventMode.ScrollLeft,
-      EventMode.ScrollRight
-    ]
+    Modes: [EventMode.ScrollUp, EventMode.ScrollDown, EventMode.ScrollLeft, EventMode.ScrollRight]
   },
   {
     id: 'Enter',
@@ -132,12 +127,7 @@ const keys: Key[] = [
     description: 'Touchpad Swipe Button',
     version: '0.9.0',
     enabled: true,
-    Modes: [
-      EventMode.ScrollUp,
-      EventMode.ScrollDown,
-      EventMode.ScrollLeft,
-      EventMode.ScrollRight
-    ]
+    Modes: [EventMode.ScrollUp, EventMode.ScrollDown, EventMode.ScrollLeft, EventMode.ScrollRight]
   },
   {
     id: 'Pad1',

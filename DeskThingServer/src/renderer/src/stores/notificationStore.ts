@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { Log } from './logStore'
+import { Log, MESSAGE_TYPES } from '@shared/types'
 
 export interface AuthScopes {
   [key: string]: {
@@ -40,7 +40,7 @@ interface NotificationStoreState {
   // Logs
 
   readLog: (index?: number) => void
-  addLog: (type: string, message: string) => void
+  addLog: (log: Log) => void
 
   // Tasks
   resolveTask: (taskId: string) => void
@@ -92,15 +92,11 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
     get().calculateTotalTasks()
   },
 
-  addLog: (type: string, message: string): void => {
-    const newLog = {
-      type: type,
-      log: message,
-      date: new Date().toLocaleTimeString()
-    }
+  addLog: (log: Log): void => {
+    if (log.type === MESSAGE_TYPES.LOGGING) return
 
     set((state) => ({
-      logs: [newLog, ...state.logs]
+      logs: [log, ...state.logs]
     }))
 
     get().calculateTotalTasks()

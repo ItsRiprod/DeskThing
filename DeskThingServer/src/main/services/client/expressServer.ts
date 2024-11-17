@@ -1,4 +1,5 @@
-import dataListener, { MESSAGE_TYPES } from '../../utils/events'
+import loggingStore from '../../stores/loggingStore'
+import { MESSAGE_TYPES } from '@shared/types'
 import { app as electronApp } from 'electron'
 import { join } from 'path'
 import { getAppFilePath } from '../apps'
@@ -24,11 +25,14 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
   ): void => {
     const userDataPath = electronApp.getPath('userData')
     const webAppDir = join(userDataPath, 'webapp')
-    dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Serving ${appName} from ${webAppDir}`)
+    loggingStore.log(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Serving ${appName} from ${webAppDir}`)
 
     const clientIp = req.hostname
 
-    console.log(`WEBSOCKET: Serving ${appName} from ${webAppDir} to ${clientIp}`)
+    loggingStore.log(
+      MESSAGE_TYPES.LOGGING,
+      `WEBSOCKET: Serving ${appName} from ${webAppDir} to ${clientIp}`
+    )
     try {
       if (req.path.endsWith('manifest.js')) {
         const manifestPath = join(webAppDir, 'manifest.js')
@@ -71,7 +75,7 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
       handleClientConnection(appName, req, res, next)
     } else {
       const appPath = getAppFilePath(appName)
-      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Serving ${appName} from ${appPath}`)
+      loggingStore.log(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Serving ${appName} from ${appPath}`)
 
       if (fs.existsSync(appPath)) {
         express.static(appPath)(req, res, next)
@@ -87,7 +91,7 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
     const appName = req.params.appName
     if (iconName != null) {
       const appPath = getAppFilePath(appName)
-      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Serving ${appName} from ${appPath}`)
+      loggingStore.log(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Serving ${appName} from ${appPath}`)
 
       if (fs.existsSync(join(appPath, 'icons', iconName))) {
         express.static(join(appPath, 'icons'))(req, res, next)
@@ -103,7 +107,7 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
     const appName = req.params.appName
     if (imageName != null) {
       const appPath = getAppFilePath(appName)
-      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Serving ${appName} from ${appPath}`)
+      loggingStore.log(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Serving ${appName} from ${appPath}`)
 
       if (fs.existsSync(join(appPath, 'images', imageName))) {
         express.static(join(appPath, 'icons'))(req, res, next)
@@ -117,10 +121,7 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
   expressApp.use('/fetch/:url(*)', async (req, res) => {
     try {
       const url = decodeURIComponent(req.params.url)
-      dataListener.asyncEmit(
-        MESSAGE_TYPES.LOGGING,
-        `WEBSOCKET: Fetching external resource from ${url}`
-      )
+      loggingStore.log(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Fetching external resource from ${url}`)
 
       const response = await fetch(url)
       const contentType = response.headers.get('content-type')
@@ -133,7 +134,7 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
       }
     } catch (error) {
       if (error instanceof Error) {
-        dataListener.asyncEmit(
+        loggingStore.log(
           MESSAGE_TYPES.LOGGING,
           `WEBSOCKET: Error fetching external resource: ${error.message}`
         )

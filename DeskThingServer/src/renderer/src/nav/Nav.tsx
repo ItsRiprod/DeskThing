@@ -65,7 +65,7 @@ const Nav: React.FC = () => {
             location="Developer"
             currentPage={currentPage}
             handleNavigation={handleNavigation}
-            subDirectories={['App', 'ADB', 'Logs']}
+            subDirectories={['Logs', 'App', 'ADB']}
           >
             <IconWrench iconSize={30} />
             <span className="hidden lg:inline group-hover:inline">Dev</span>

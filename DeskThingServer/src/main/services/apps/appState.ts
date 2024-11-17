@@ -1,7 +1,6 @@
-import { App, AppInstance, Manifest, AppReturnData } from '@shared/types'
+import { App, AppInstance, Manifest, AppReturnData, MESSAGE_TYPES } from '@shared/types'
 import { sendConfigData, sendSettingsData } from '../client/clientCom'
-import settingsStore from '../../stores/settingsStore'
-import dataListener, { MESSAGE_TYPES } from '../../utils/events'
+import loggingStore from '../../stores/loggingStore'
 
 /**
  * TODO: Sync with the file
@@ -34,7 +33,7 @@ export class AppHandler {
    * Loads the apps from file
    */
   async loadApps(): Promise<void> {
-    console.log('[appState] [loadApps]: Loading apps...')
+    loggingStore.log(MESSAGE_TYPES.LOGGING, '[appState] [loadApps]: Loading apps...')
     const { getAppData } = await import('../../handlers/configHandler')
 
     const data = await getAppData()
@@ -302,20 +301,6 @@ export class AppHandler {
     // Add the manifest to the config file
     addAppManifest(manifest, appName)
     this.saveAppToFile(appName)
-
-    const checkForSettings = async (): Promise<void> => {
-      const settings = await settingsStore.getSettings()
-      const playbackLocation = settings.playbackLocation
-      if (playbackLocation === 'none' || !playbackLocation) {
-        settingsStore.updateSetting('playbackLocation', appName)
-        dataListener.asyncEmit(
-          MESSAGE_TYPES.LOGGING,
-          '[appState][addAppManifest]: Setting playbackLocation to ' + appName
-        )
-      }
-    }
-
-    checkForSettings()
   }
 }
 

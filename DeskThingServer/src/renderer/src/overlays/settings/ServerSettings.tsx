@@ -2,12 +2,21 @@ import React, { useState } from 'react'
 import useSettingsStore from '../../stores/settingsStore'
 import Button from '@renderer/components/Button'
 import { IconLoading, IconSave, IconToggle } from '@renderer/assets/icons'
+import Select from '@renderer/components/Select'
+import { SingleValue } from 'react-select'
+import { LOGGING_LEVEL, SettingOption } from '@shared/types'
 
 const ServerSettings: React.FC = () => {
   const initialSettings = useSettingsStore((settings) => settings.settings)
   const saveSettings = useSettingsStore((settings) => settings.saveSettings)
   const [settings, setSettings] = useState(initialSettings)
   const [loading, setLoading] = useState(false)
+
+  const logLevelOptions = [
+    { value: LOGGING_LEVEL.SYSTEM, label: 'SYSTEM' },
+    { value: LOGGING_LEVEL.APPS, label: 'APPS' },
+    { value: LOGGING_LEVEL.PRODUCTION, label: 'PRODUCTION' }
+  ]
 
   const handleSettingChange = (key: string, value: string | boolean | number): void => {
     setSettings({ ...settings, [key]: value })
@@ -63,6 +72,19 @@ const ServerSettings: React.FC = () => {
           />
         </Button>
       </div>
+      <div className="w-full p-4 flex justify-between items-center">
+        <h2 className="text-xl w-full">Logging Level</h2>
+        <Select
+          options={logLevelOptions}
+          value={settings.logLevel}
+          placeholder={settings.LogLevel}
+          className="w-full"
+          onChange={(selected) => {
+            const selectedValue = selected as SingleValue<SettingOption>
+            handleSettingChange('logLevel', selectedValue?.value || LOGGING_LEVEL.PRODUCTION)
+          }}
+        />
+      </div>
       <div className="w-full px-4 flex justify-between items-center">
         <h2 className="text-xl">Close To Taskbar</h2>
         <Button
@@ -89,5 +111,4 @@ const ServerSettings: React.FC = () => {
     </div>
   )
 }
-
 export default ServerSettings

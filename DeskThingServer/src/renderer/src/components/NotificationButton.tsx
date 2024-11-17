@@ -9,6 +9,7 @@ const NotificationButton: React.FC = () => {
 
   const taskNum = useNotificationStore((state) => state.totalTasks)
   const logs = useNotificationStore((state) => state.logs)
+  const requests = useNotificationStore((state) => state.requestQueue)
   const issues = useNotificationStore((state) => state.issues.length)
   const [errors, setErrors] = useState(0)
 
@@ -30,8 +31,11 @@ const NotificationButton: React.FC = () => {
       <Button onClick={handleOpenNotifications} className={`gap-2 hover:bg-zinc-900`}>
         {taskNum > 0 ? (
           <p
-            className={`${errors > 0 || issues > 0 ? 'bg-red-500' : 'bg-green-500'} p-1 w-full rounded text-xs`}
+            className={`${errors > 0 || issues > 0 ? 'bg-red-500' : 'bg-green-500'} relative p-1 w-full rounded text-xs`}
           >
+            {requests.length > 0 && (
+              <div className="absolute inset-0 rounded w-full h-full animate-ping border-2 border-blue-500"></div>
+            )}
             {taskNum}
           </p>
         ) : (

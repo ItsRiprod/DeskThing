@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import Sidebar from '@renderer/nav/Sidebar'
 import Button from '@renderer/components/Button'
-import { IconDownload } from '@renderer/assets/icons'
+import { IconDownload, IconLink } from '@renderer/assets/icons'
 import { useAppStore, useNotificationStore, usePageStore } from '@renderer/stores'
 import App from '@renderer/components/App'
 import MainElement from '@renderer/nav/MainElement'
@@ -80,31 +80,46 @@ const AppsList: React.FC = () => {
       <MainElement className="relative">
         <div className="absolute top-0 p-5 left-0 w-full h-full">
           {appsList ? (
-            <div className="flex flex-col gap-4">
-              {order.map((appName, index) => {
-                const app = appsList.find((a) => a.name === appName)
-                if (!app) return null
-                return (
-                  <div
-                    key={app.name}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, app.name)}
-                    onDragOver={(e) => handleDragOver(e, index)}
-                    onDragLeave={handleDragLeave}
-                    onDrop={() => handleDrop(app.name)}
-                    className={`relative ${
-                      dragOverIndex === index ? 'border-t-2 border-zinc-500' : ''
-                    }`}
-                  >
-                    <App app={app} activeRequest={activeRequests.includes(app.name)} />
-                    {index === order.length - 1 && dragOverIndex === index && (
-                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-zinc-500"></div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
+            appsList.length > 0 ? (
+              <div className="flex flex-col gap-4">
+                {order.map((appName, index) => {
+                  const app = appsList.find((a) => a.name === appName)
+                  if (!app) return null
+                  return (
+                    <div
+                      key={app.name}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, app.name)}
+                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={() => handleDrop(app.name)}
+                      className={`relative ${
+                        dragOverIndex === index ? 'border-t-2 border-zinc-500' : ''
+                      }`}
+                    >
+                      <App app={app} activeRequest={activeRequests.includes(app.name)} />
+                      {index === order.length - 1 && dragOverIndex === index && (
+                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-zinc-500"></div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              // Shows when the AppsList is initialized but empty
+              <div className="w-full h-full flex flex-col justify-center items-center gap-2">
+                <p>No apps downloaded yet!</p>
+                <Button
+                  onClick={handleDownloadsNav}
+                  className="bg-zinc-900 gap-2 hover:bg-zinc-800"
+                >
+                  <p className="md:block hidden text-center flex-grow">Downloads Page</p>
+                  <IconLink strokeWidth={1.5} />
+                </Button>
+              </div>
+            )
           ) : (
+            // Shows while retrieving the apps list from the store
             <p>Loading...</p>
           )}
         </div>

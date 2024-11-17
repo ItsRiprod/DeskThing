@@ -1,6 +1,6 @@
-import { Client } from '@shared/types'
+import { Client, MESSAGE_TYPES } from '@shared/types'
 import { handleAdbCommands } from '../handlers/adbHandler'
-import dataListener, { MESSAGE_TYPES } from '../utils/events'
+import loggingStore from '../stores/loggingStore'
 import settingsStore from './settingsStore'
 
 type ClientListener = (client: Client[]) => void
@@ -20,7 +20,7 @@ class ConnectionStore {
       this.autoDetectADB = settings.autoDetectADB
     })
 
-    dataListener.on(MESSAGE_TYPES.SETTINGS, (newSettings) => {
+    settingsStore.addListener((newSettings) => {
       try {
         if (newSettings.autoDetectADB !== undefined) {
           this.autoDetectADB = newSettings.autoDetectADB
@@ -31,14 +31,18 @@ class ConnectionStore {
 
           if (newSettings.autoDetectADB) {
             this.checkAutoDetectADB()
-            dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, '[ADB]: Auto-Detect is Enabled')
+            loggingStore.log(MESSAGE_TYPES.LOGGING, '[ADB]: Auto-Detect is Enabled')
           } else {
-            console.log('Auto-detect ADB disabled')
-            dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, '[ADB]: Auto-Detect is Disabled')
+            loggingStore.log(MESSAGE_TYPES.LOGGING, 'Auto-detect ADB disabled')
+            loggingStore.log(MESSAGE_TYPES.LOGGING, '[ADB]: Auto-Detect is Disabled')
           }
         }
       } catch (error) {
-        dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'ADB: Error updating with settings', error)
+        if (error instanceof Error) {
+          loggingStore.log(MESSAGE_TYPES.ERROR, 'ADB: Error updating with settings', error.message)
+        } else {
+          loggingStore.log(MESSAGE_TYPES.ERROR, 'ADB: Error updating with settings', String(error))
+        }
       }
     })
 
@@ -70,7 +74,7 @@ class ConnectionStore {
   }
 
   pingClient(connectionId: string): boolean {
-    console.log('Pinging client:', connectionId)
+    loggingStore.log(MESSAGE_TYPES.LOGGING, 'Pinging client:', connectionId)
     const clientIndex = this.clients.findIndex((c) => c.connectionId === connectionId)
     console.error('PINGING CLIENTS NOT IMPLEMENTED YET')
     if (clientIndex !== -1) {
@@ -81,41 +85,38 @@ class ConnectionStore {
   }
 
   getClients(): Client[] {
-    console.log('Getting clients:', this.clients)
     return this.clients
   }
 
   getDevices(): string[] {
-    console.log('Getting devices:', this.devices)
     return this.devices
   }
 
   addClient(client: Client): void {
-    console.log('Adding client:', client)
     this.clients.push(client)
     this.notifyListeners()
   }
 
   updateClient(connectionId: string, updates: Partial<Client>): void {
-    console.log('Updating client:', connectionId, updates)
+    loggingStore.log(MESSAGE_TYPES.LOGGING, 'Updating client:' + connectionId + updates)
     const clientIndex = this.clients.findIndex((c) => c.connectionId === connectionId)
 
     if (clientIndex !== -1) {
       this.clients[clientIndex] = { ...this.clients[clientIndex], ...updates }
       this.notifyListeners()
     } else {
-      console.log('Client not found:', connectionId)
+      loggingStore.log(MESSAGE_TYPES.LOGGING, 'Client not found:', connectionId)
     }
   }
 
   removeClient(connectionId: string): void {
-    console.log('Removing client:', connectionId)
+    loggingStore.log(MESSAGE_TYPES.LOGGING, 'Removing client:' + connectionId)
     this.clients = this.clients.filter((c) => c.connectionId !== connectionId)
     this.notifyListeners()
   }
 
   removeAllClients(): void {
-    console.log('Removing all clients')
+    loggingStore.log(MESSAGE_TYPES.LOGGING, 'Removing all clients')
     this.clients = []
     this.notifyListeners()
   }
@@ -142,7 +143,7 @@ class ConnectionStore {
         const newDevices = parseADBDevices(result) || []
         this.devices = newDevices
         this.notifyDeviceListeners()
-        dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'ADB Device found!')
+        loggingStore.log(MESSAGE_TYPES.LOGGING, 'ADB Device found!')
         return newDevices
       })
       .catch((error) => {
@@ -158,7 +159,7 @@ class ConnectionStore {
 
     const checkAndAutoDetect = async (): Promise<void> => {
       if (this.autoDetectADB === true) {
-        console.log('Auto-detecting ADB devices...')
+        loggingStore.log(MESSAGE_TYPES.LOGGING, 'Auto-detecting ADB devices...')
         await this.getAdbDevices()
         this.clearTimeout = await setTimeout(checkAndAutoDetect, 7000)
       }

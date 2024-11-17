@@ -1,15 +1,18 @@
 import { readFromFile, writeToFile } from '../utils/fileHandler'
-import dataListener, { MESSAGE_TYPES } from '../utils/events'
+import loggingStore from './loggingStore'
 import os from 'os'
-import { Settings } from '@shared/types'
+import { LOGGING_LEVEL, Settings, MESSAGE_TYPES } from '@shared/types'
 
 const settingsVersion = '0.9.2'
 const version_code = 9.2
+
+type SettingsStoreListener = (settings: Settings) => void
 
 class SettingsStore {
   private settings: Settings
   private settingsFilePath: string = 'settings.json'
   private static instance: SettingsStore
+  private listeners: SettingsStoreListener[] = []
 
   constructor() {
     this.settings = this.getDefaultSettings()
@@ -18,7 +21,7 @@ class SettingsStore {
         if (settings) {
           this.settings = settings as Settings
           this.settings.localIp = getLocalIpAddress()
-          dataListener.asyncEmit(MESSAGE_TYPES.SETTINGS, this.settings)
+          this.notifyListeners()
         }
       })
       .catch((err) => {
@@ -30,6 +33,16 @@ class SettingsStore {
       SettingsStore.instance = new SettingsStore()
     }
     return SettingsStore.instance
+  }
+
+  public addListener(listener: SettingsStoreListener): void {
+    this.listeners.push(listener)
+  }
+
+  private async notifyListeners(): Promise<void> {
+    this.listeners.forEach((listener) => {
+      listener(this.settings)
+    })
   }
 
   public async getSettings(): Promise<Settings> {
@@ -51,14 +64,13 @@ class SettingsStore {
       this.updateAutoLaunch(value)
     }
     this.settings[key] = value
-    dataListener.asyncEmit(MESSAGE_TYPES.SETTINGS, this.settings)
     this.saveSettings()
   }
 
   public async loadSettings(): Promise<Settings> {
     try {
       const data = await readFromFile<Settings>(this.settingsFilePath)
-      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'SETTINGS: Loaded settings!')
+      loggingStore.log(MESSAGE_TYPES.LOGGING, 'SETTINGS: Loaded settings!')
 
       if (!data || !data.version_code || data.version_code < version_code) {
         // File does not exist, create it with default settings
@@ -70,6 +82,8 @@ class SettingsStore {
       if (data.autoStart !== undefined) {
         await this.updateAutoLaunch(data.autoStart)
       }
+
+      this.notifyListeners()
 
       return data
     } catch (err) {
@@ -103,12 +117,13 @@ class SettingsStore {
       if (settings) {
         this.settings = settings as Settings
         await writeToFile(this.settings, this.settingsFilePath)
-        dataListener.asyncEmit(MESSAGE_TYPES.SETTINGS, this.settings)
         console.log('SETTINGS: Updated settings!', this.settings)
-        dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'SETTINGS: Updated settings!')
+        loggingStore.log(MESSAGE_TYPES.LOGGING, 'SETTINGS: Updated settings!')
       } else {
-        dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'SETTINGS: Invalid setting format!')
+        loggingStore.log(MESSAGE_TYPES.LOGGING, 'SETTINGS: Invalid setting format!')
       }
+
+      this.notifyListeners()
     } catch (err) {
       console.error('Error saving settings:', err)
     }
@@ -125,6 +140,7 @@ class SettingsStore {
       callbackPort: 8888,
       devicePort: 8891,
       address: '0.0.0.0',
+      LogLevel: LOGGING_LEVEL.PRODUCTION,
       autoStart: false,
       autoConfig: false,
       minimizeApp: true,

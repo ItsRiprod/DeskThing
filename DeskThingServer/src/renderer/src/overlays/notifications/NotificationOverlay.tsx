@@ -60,7 +60,12 @@ const NotificationOverlay: React.FC = () => {
             curPage={page}
             value={notifState.requestQueue.length}
             Icon={<IconBell />}
-          />
+            className="relative"
+          >
+            {notifState.requestQueue.length > 0 && (
+              <div className="absolute inset-0 rounded w-full h-full animate-pulse border-2 border-blue-500"></div>
+            )}
+          </NavComponent>
           <NavComponent
             setPage={setPage}
             page="Task"
@@ -86,6 +91,7 @@ interface NavComponentProps {
   value: number
   Icon: React.ReactElement
   className?: string
+  children?: React.ReactNode
 }
 
 const NavComponent = ({
@@ -94,17 +100,19 @@ const NavComponent = ({
   curPage,
   value,
   Icon,
+  children,
   className
 }: NavComponentProps): React.ReactElement => (
   <Button
     onClick={() => setPage(page.toLowerCase())}
-    className={`gap-2 ${curPage == page.toLowerCase() ? 'bg-zinc-800 hover:bg-zinc-700' : 'bg-zinc-900 hover:bg-zinc-800'} ${value == 0 && 'text-gray-500'} ${className}`}
+    className={`relative gap-2 ${curPage == page.toLowerCase() ? 'bg-zinc-800 hover:bg-zinc-700' : 'bg-zinc-900 hover:bg-zinc-800'} ${value == 0 && 'text-gray-500'} ${className}`}
   >
     {value > 0 && <p>{value}</p>}
     <div className="md:hidden block">{Icon}</div>
     <p className="hidden md:block">
       {page}
       {value != 1 && 's'}
+      {children}
     </p>
   </Button>
 )

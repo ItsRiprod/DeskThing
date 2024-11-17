@@ -30,6 +30,7 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
   const [showLogging, setShowLogging] = useState(false)
   const [offline, setOffline] = useState(false)
   const refreshADbClients = useClientStore((store) => store.requestADBDevices)
+  const requestClientManifest = useClientStore((store) => store.requestClientManifest)
   const devicePort = useSettingsStore((store) => store.settings.devicePort)
 
   useEffect(() => {
@@ -106,6 +107,7 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
         setLogging(reply)
         if (reply.final) {
           unsubscribe()
+          requestClientManifest()
         }
       })
     } catch (error) {
@@ -219,12 +221,13 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
             </Button>
             {!client.connected && (
               <Button
-                className="group hover:bg-zinc-900 gap-2"
+                className="group relative hover:bg-zinc-900 gap-2"
                 onClick={configureDevice}
                 disabled={loading}
               >
+                <div className="absolute inset-0 w-full h-full border-blue-500 border animate-pulse rounded-lg"></div>
                 <IconConfig />
-                <p className="hidden group-hover:block">
+                <p className="hidden group-hover:block lg:block">
                   Config<span className="hidden lg:inline">ure</span>
                 </p>
               </Button>

@@ -1,10 +1,10 @@
 import { sendIpcData } from '..'
-import dataListener, { MESSAGE_TYPES } from '../utils/events'
+import loggingStore from '../stores/loggingStore'
 import { join } from 'path'
 import * as fs from 'fs'
 import { app, net } from 'electron'
 import { handleAdbCommands } from './adbHandler'
-import { Client, ClientManifest, ReplyData, ReplyFn } from '@shared/types'
+import { Client, ClientManifest, MESSAGE_TYPES, ReplyData, ReplyFn } from '@shared/types'
 import settingsStore from '../stores/settingsStore'
 import { getLatestRelease } from './githubHandler'
 
@@ -17,14 +17,11 @@ export const HandleDeviceData = async (data: string): Promise<void> => {
         sendIpcData('version-status', deviceData)
         break
       default:
-        console.log('Unhandled response', deviceData)
+        loggingStore.log(MESSAGE_TYPES.ERROR, 'HandleDeviceData Unable to find device version')
         break
     }
   } catch (Exception) {
-    dataListener.asyncEmit(
-      MESSAGE_TYPES.ERROR,
-      'HandleDeviceData encountered the error ' + Exception
-    )
+    loggingStore.log(MESSAGE_TYPES.ERROR, 'HandleDeviceData encountered the error ' + Exception)
   }
 }
 
@@ -34,7 +31,6 @@ export const getDeviceManifestVersion = async (deviceId: string): Promise<string
     const response = await handleAdbCommands(`-s ${deviceId} shell cat ${manifestPath}`)
     // Extract version from manifest content
     const versionMatch = response.match(/"version":\s*"(.+?)"/i)
-    console.log(versionMatch)
     if (versionMatch && versionMatch[1]) {
       return versionMatch[1]
     } else {
@@ -88,13 +84,10 @@ export const configureDevice = async (deviceId: string, reply?: ReplyFn): Promis
   // Check if the client is already installed. Install it if it is missing
   try {
     const clientExists = await checkForClient(reply)
-    console.log('Client Exists?:', clientExists)
 
     if (!clientExists) {
       // Download it from github
       const repos = settings.clientRepos
-
-      console.log('Fetching Latest Client...')
       reply && reply('logging', { status: true, data: 'Fetching Latest Client...', final: false })
       const latestReleases = await Promise.all(
         repos.map(async (repo) => {
@@ -254,7 +247,7 @@ export const HandlePushWebApp = async (
           error: 'Client not found!',
           final: false
         })
-      dataListener.asyncEmit(
+      loggingStore.log(
         MESSAGE_TYPES.ERROR,
         '[HandlePushWebApp] Client Not Found! Ensure it is downloaded'
       )
@@ -262,7 +255,6 @@ export const HandlePushWebApp = async (
     }
 
     let response
-    console.log('Remounting...')
     reply && reply('logging', { status: true, data: 'Remounting...', final: false })
     response = await handleAdbCommands(`-s ${deviceId} shell mount -o remount,rw /`)
     reply && reply('logging', { status: true, data: response || 'Writing to tmp...', final: false })
@@ -344,10 +336,7 @@ export const HandlePushWebApp = async (
           error: `${Exception}`
         })
     }
-    dataListener.asyncEmit(
-      MESSAGE_TYPES.ERROR,
-      'HandlePushWebApp encountered the error ' + Exception
-    )
+    loggingStore.log(MESSAGE_TYPES.ERROR, 'HandlePushWebApp encountered the error ' + Exception)
   }
 }
 
@@ -391,9 +380,7 @@ export const HandleWebappZipFromUrl = async (
 
           // Optionally remove the temporary zip file
           fs.unlinkSync(tempZipPath)
-
-          console.log(`Successfully extracted ${zipFileUrl} to ${extractDir}`)
-          dataListener.asyncEmit(
+          loggingStore.log(
             MESSAGE_TYPES.LOGGING,
             `Successfully extracted ${zipFileUrl} to ${extractDir}`
           )
@@ -402,7 +389,7 @@ export const HandleWebappZipFromUrl = async (
           reply && reply('logging', { status: true, data: 'Success!', final: false })
         } catch (error) {
           console.error('Error extracting zip file:', error)
-          dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `Error extracting zip file: ${error}`)
+          loggingStore.log(MESSAGE_TYPES.ERROR, `Error extracting zip file: ${error}`)
 
           // Notify failure to the frontend
           reply &&
@@ -416,7 +403,7 @@ export const HandleWebappZipFromUrl = async (
       })
       response.on('error', (error) => {
         console.error('Error downloading zip file:', error)
-        dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `Error downloading zip file: ${error}`)
+        loggingStore.log(MESSAGE_TYPES.ERROR, `Error downloading zip file: ${error}`)
 
         // Notify failure to the frontend
         reply &&
@@ -430,7 +417,7 @@ export const HandleWebappZipFromUrl = async (
     } else {
       const errorMessage = `Failed to download zip file: ${response.statusCode}`
       console.error(errorMessage)
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, errorMessage)
+      loggingStore.log(MESSAGE_TYPES.ERROR, errorMessage)
 
       // Notify failure to the frontend
       reply &&
@@ -445,7 +432,7 @@ export const HandleWebappZipFromUrl = async (
 
   request.on('error', (error) => {
     console.error('Error sending request:', error)
-    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `Error sending request: ${error}`)
+    loggingStore.log(MESSAGE_TYPES.ERROR, `Error sending request: ${error}`)
 
     // Notify failure to the frontend
     reply &&
@@ -487,18 +474,12 @@ export const handleClientManifestUpdate = async (
 
     // Write the updated manifest to the file
     await fs.promises.writeFile(manifestPath, manifestContent, 'utf8')
-    console.log('Manifest file updated successfully')
+    loggingStore.log(MESSAGE_TYPES.LOGGING, 'Manifest file updated successfully')
     reply && reply('logging', { status: true, data: 'Manifest Updated!', final: false })
-    dataListener.asyncEmit(
-      MESSAGE_TYPES.LOGGING,
-      'DEVICE HANDLER: Manifest file updated successfully'
-    )
+    loggingStore.log(MESSAGE_TYPES.LOGGING, 'DEVICE HANDLER: Manifest file updated successfully')
   } catch (error) {
     console.error('Error updating manifest file:', error)
-    dataListener.asyncEmit(
-      MESSAGE_TYPES.ERROR,
-      'DEVICE HANDLER: Error updating manifest file: ' + error
-    )
+    loggingStore.log(MESSAGE_TYPES.ERROR, 'DEVICE HANDLER: Error updating manifest file: ' + error)
   }
 }
 
@@ -512,14 +493,14 @@ export const checkForClient = async (
 
   const manifestExists = fs.existsSync(manifestPath)
   if (!manifestExists) {
-    console.log('Manifest file not found')
+    loggingStore.log(MESSAGE_TYPES.LOGGING, 'Manifest file not found')
     reply &&
       reply('logging', {
         status: false,
         data: 'Manifest file not found',
         final: false
       })
-    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'DEVICE HANDLER: Manifest file not found')
+    loggingStore.log(MESSAGE_TYPES.ERROR, 'DEVICE HANDLER: Manifest file not found')
   }
   return manifestExists
 }
@@ -527,12 +508,12 @@ export const checkForClient = async (
 export const getClientManifest = async (
   reply?: (channel: string, data: ReplyData) => void
 ): Promise<ClientManifest | null> => {
-  console.log('Getting manifest...')
+  loggingStore.log(MESSAGE_TYPES.LOGGING, 'Getting manifest...')
   const userDataPath = app.getPath('userData')
   const manifestPath = join(userDataPath, 'webapp', 'manifest.js')
-  console.log('manifestPath: ', manifestPath)
+  loggingStore.log(MESSAGE_TYPES.LOGGING, 'manifestPath: ' + manifestPath)
   if (!fs.existsSync(manifestPath)) {
-    console.log('Manifest file not found')
+    loggingStore.log(MESSAGE_TYPES.LOGGING, 'Manifest file not found')
     reply &&
       reply('logging', {
         status: false,
@@ -540,7 +521,7 @@ export const getClientManifest = async (
         data: 'Manifest file not found',
         final: false
       })
-    dataListener.asyncEmit(
+    loggingStore.log(
       MESSAGE_TYPES.ERROR,
       'DEVICE HANDLER: Client is not detected or downloaded! Please download the client! (downloads -> client)'
     )
@@ -567,12 +548,11 @@ export const getClientManifest = async (
         data: 'Manifest loaded!',
         final: false
       })
-    dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'DEVICE HANDLER: Manifest file read successfully')
-    console.log(manifest)
+    loggingStore.log(MESSAGE_TYPES.LOGGING, 'DEVICE HANDLER: Manifest file read successfully')
     return manifest
   } catch (error) {
     console.error('Error reading or parsing manifest file:', error)
-    dataListener.asyncEmit(
+    loggingStore.log(
       MESSAGE_TYPES.ERROR,
       'DEVICE HANDLER: Error reading or parsing manifest file: ' + error
     )
@@ -623,7 +603,7 @@ export const SetupProxy = async (
       final: false
     })
 
-    console.log('Remounting...')
+    loggingStore.log(MESSAGE_TYPES.LOGGING, 'Remounting...')
     reply('logging', { status: true, data: 'Remounting...', final: false })
     response = await handleAdbCommands(`-s ${deviceId} shell mount -o remount,rw /`)
 
@@ -701,7 +681,7 @@ user=root`
       final: false,
       error: `${Exception}`
     })
-    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'SetupProxy encountered the error ' + Exception)
+    loggingStore.log(MESSAGE_TYPES.ERROR, 'SetupProxy encountered the error ' + Exception)
     throw new Error('SetupProxy encountered the error ' + Exception)
   }
 }
@@ -815,10 +795,7 @@ export const AppendToSupervisor = async (
       final: false,
       error: `${Exception}`
     })
-    dataListener.asyncEmit(
-      MESSAGE_TYPES.ERROR,
-      'AppendToSupervisor encountered the error ' + Exception
-    )
+    loggingStore.log(MESSAGE_TYPES.ERROR, 'AppendToSupervisor encountered the error ' + Exception)
   }
 }
 
@@ -910,7 +887,7 @@ files = /etc/supervisor.d/*.conf\n`
       final: false,
       error: `${Exception}`
     })
-    dataListener.asyncEmit(
+    loggingStore.log(
       MESSAGE_TYPES.ERROR,
       'EnsureSupervisorInclude encountered the error ' + Exception
     )

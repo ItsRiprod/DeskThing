@@ -3,8 +3,8 @@ import { sendMessageToApp } from '../services/apps' // Assuming you have an app 
 import http from 'http'
 import url from 'url'
 import settingsStore from '../stores/settingsStore'
-import dataListener, { MESSAGE_TYPES } from '../utils/events'
-import { Settings } from '@shared/types'
+import loggingStore from '../stores/loggingStore'
+import { Settings, MESSAGE_TYPES } from '@shared/types'
 
 const successView = '<h1>Success</h1><p>You can now close this window.</p>'
 
@@ -14,7 +14,7 @@ let callBackPort: number
 function handleCallback(req: http.IncomingMessage, res: http.ServerResponse): void {
   const parsedUrl = url.parse(req.url || '', true)
 
-  dataListener.asyncEmit(
+  loggingStore.log(
     MESSAGE_TYPES.LOGGING,
     `AUTH: Received callback request for ${parsedUrl.pathname}`
   )
@@ -29,7 +29,6 @@ function handleCallback(req: http.IncomingMessage, res: http.ServerResponse): vo
 
   const appName = urlParts[1] // The app name should be the third part after '/callback/'
   const config = getAppData() // Assuming getConfig() returns an object with active apps
-  console.log('AUTH DATA: ', config)
   if (!config.apps || !config.apps.some((app) => app.name === appName && app.enabled)) {
     res.writeHead(404, { 'Content-Type': 'text/html' })
     res.end(`<h1>App Not Found</h1><p>App '${appName}' not found or not active.</p>`)
@@ -37,7 +36,6 @@ function handleCallback(req: http.IncomingMessage, res: http.ServerResponse): vo
   }
 
   const code = parsedUrl.query.code as string
-  console.log('AUTH CODE: ', code)
   sendMessageToApp(appName, { type: 'callback-data', payload: code })
 
   res.writeHead(200, { 'Content-Type': 'text/html' })
@@ -47,11 +45,10 @@ function handleCallback(req: http.IncomingMessage, res: http.ServerResponse): vo
 const startServer = async (): Promise<void> => {
   if (server) {
     await server.close(() => {
-      console.log('CALLBACK: Previous server closed.')
+      loggingStore.log(MESSAGE_TYPES.LOGGING, 'CALLBACK: Shutting down the server...')
     })
   }
 
-  console.log('CALLBACK: Starting server...')
   server = http.createServer((req, res) => {
     const parsedUrl = new URL(`http://${req.headers.host}${req.url}`)
     const pathname = parsedUrl.pathname
@@ -63,9 +60,8 @@ const startServer = async (): Promise<void> => {
     }
   })
 
-  console.log('CALLBACK: Listening...')
   server.listen(callBackPort, () => {
-    dataListener.asyncEmit(
+    loggingStore.log(
       MESSAGE_TYPES.MESSAGE,
       `CALLBACK: running at http://localhost:${callBackPort}/`
     )
@@ -82,16 +78,18 @@ const initializeServer = async (): Promise<void> => {
   }
 }
 
-dataListener.on(MESSAGE_TYPES.SETTINGS, (newSettings) => {
+settingsStore.addListener((newSettings) => {
   try {
     if (newSettings.callbackPort != callBackPort) {
       callBackPort = newSettings.callbackPort
       startServer()
     } else {
-      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'CALLBACK: Not starting - port is not changed')
+      loggingStore.log(MESSAGE_TYPES.LOGGING, 'CALLBACK: Not starting - port is not changed')
     }
   } catch (error) {
-    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'CALLBACK: Error updating with settings', error)
+    if (error instanceof Error) {
+      loggingStore.log(MESSAGE_TYPES.ERROR, 'CALLBACK: Error updating with settings' + error)
+    }
   }
 })
 

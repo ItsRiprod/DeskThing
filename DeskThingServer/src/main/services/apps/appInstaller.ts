@@ -1,13 +1,14 @@
 import { join, resolve } from 'path'
 import { app } from 'electron'
-import dataListener, { MESSAGE_TYPES } from '../../utils/events'
+import loggingStore from '../../stores/loggingStore'
 import {
   IncomingData,
   ToClientType,
   Response,
   Manifest,
   DeskThing,
-  AppReturnData
+  AppReturnData,
+  MESSAGE_TYPES
 } from '@shared/types'
 import { getAppFilePath, getManifest } from './appUtils'
 import { mkdirSync, existsSync, rmSync, promises } from 'node:fs'
@@ -29,11 +30,14 @@ import { handleDataFromApp } from './appCommunication'
 export async function handleZip(zipFilePath: string, reply?): Promise<AppReturnData> {
   const { getManifest } = await import('./appUtils')
   try {
-    console.log(`[handleZip] Extracting ${zipFilePath}...`)
+    loggingStore.log(MESSAGE_TYPES.LOGGING, `[handleZip] Extracting ${zipFilePath}...`)
     const appPath = join(app.getPath('userData'), 'apps') // Extract to user data folder
     // Create the extraction directory if it doesn't exist
     if (!existsSync(appPath)) {
-      console.log(`[handleZip] Creating extraction directory at ${appPath}...`)
+      loggingStore.log(
+        MESSAGE_TYPES.LOGGING,
+        `[handleZip] Creating extraction directory at ${appPath}...`
+      )
       mkdirSync(appPath, { recursive: true })
     }
 
@@ -42,7 +46,10 @@ export async function handleZip(zipFilePath: string, reply?): Promise<AppReturnD
 
     // Delete the temp directory if it exists
     if (existsSync(tempDir)) {
-      console.log(`[handleZip] Removing temporary directory at ${tempDir}...`)
+      loggingStore.log(
+        MESSAGE_TYPES.LOGGING,
+        `[handleZip] Removing temporary directory at ${tempDir}...`
+      )
       rmSync(tempDir, { recursive: true, force: true })
     }
     mkdirSync(tempDir, { recursive: true })
@@ -53,23 +60,29 @@ export async function handleZip(zipFilePath: string, reply?): Promise<AppReturnD
     const AdmZip = await import('adm-zip')
     await new Promise<void>((resolve, reject) => {
       try {
-        console.log(`[handleZip] Extracting app...`)
+        loggingStore.log(MESSAGE_TYPES.LOGGING, `[handleZip] Extracting app...`)
         const zip = new AdmZip.default(zipFilePath)
 
         zip.getEntries().forEach((entry) => {
           if (entry.isDirectory) {
-            console.log(`[handleZip] Skipping directory ${entry.entryName}`)
+            loggingStore.log(
+              MESSAGE_TYPES.LOGGING,
+              `[handleZip] Skipping directory ${entry.entryName}`
+            )
           } else {
-            console.log(`[handleZip] Extracting file ${entry.entryName}`)
+            loggingStore.log(
+              MESSAGE_TYPES.LOGGING,
+              `[handleZip] Extracting file ${entry.entryName}`
+            )
             zip.extractEntryTo(entry, tempDir, true, true)
           }
         })
 
         zip.extractAllTo(tempDir, true)
-        console.log(`[handleZip] App extracted to ${tempDir}`)
+        loggingStore.log(MESSAGE_TYPES.LOGGING, `[handleZip] App extracted to ${tempDir}`)
         resolve()
       } catch (error) {
-        dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `SERVER: Error extracting ${zipFilePath}`)
+        loggingStore.log(MESSAGE_TYPES.ERROR, `SERVER: Error extracting ${zipFilePath}`)
         reply && reply('logging', { status: false, data: 'Extraction failed!', final: true })
         reject(error)
       }
@@ -80,12 +93,9 @@ export async function handleZip(zipFilePath: string, reply?): Promise<AppReturnD
     const manifestData = await getManifest(tempDir)
     let returnData
 
-    console.log(`[handleZip] Fetching manifest...`)
+    loggingStore.log(MESSAGE_TYPES.LOGGING, `[handleZip] Fetching manifest...`)
     if (!manifestData) {
-      dataListener.asyncEmit(
-        MESSAGE_TYPES.ERROR,
-        `SERVER: Error getting manifest from ${zipFilePath}`
-      )
+      loggingStore.log(MESSAGE_TYPES.ERROR, `SERVER: Error getting manifest from ${zipFilePath}`)
       returnData = {
         appId: '',
         appName: '',
@@ -110,7 +120,7 @@ export async function handleZip(zipFilePath: string, reply?): Promise<AppReturnD
     // Create the folder where the app will be stored in
     const appDirectory = join(appPath, returnData.appId)
     if (existsSync(appDirectory)) {
-      console.log(`[handleZip] Old app detected, purging...`)
+      loggingStore.log(MESSAGE_TYPES.LOGGING, `[handleZip] Old app detected, purging...`)
       const { AppHandler } = await import('./appState')
       const appHandler = AppHandler.getInstance()
 
@@ -120,17 +130,20 @@ export async function handleZip(zipFilePath: string, reply?): Promise<AppReturnD
       rmSync(appDirectory, { recursive: true })
     }
 
-    console.log(`[handleZip] Moving files to ${appDirectory}...`)
+    loggingStore.log(MESSAGE_TYPES.LOGGING, `[handleZip] Moving files to ${appDirectory}...`)
     // Move the extracted files from tempDir to appDirectory
     await promises.rename(tempDir, appDirectory)
 
     reply && reply('logging', { status: true, data: 'App files moved successfully', final: false })
 
-    dataListener.asyncEmit(
+    loggingStore.log(
       MESSAGE_TYPES.LOGGING,
       `SERVER: Successfully extracted ${zipFilePath} to ${appDirectory}`
     )
-    console.log(`Successfully extracted ${zipFilePath} to ${appDirectory}`)
+    loggingStore.log(
+      MESSAGE_TYPES.LOGGING,
+      `Successfully extracted ${zipFilePath} to ${appDirectory}`
+    )
     return returnData
   } catch (error) {
     console.error('[handleZIP] Error handling zip file:', error)
@@ -148,9 +161,9 @@ export async function handleZipFromUrl(zipUrlPath: string, reply): Promise<AppRe
   const tempZipPath = getAppFilePath('downloads', 'temp.zip')
   let returnData: AppReturnData | undefined
   try {
-    console.log(`[handleZipFromUrl] Downloading ${zipUrlPath}...`)
+    loggingStore.log(MESSAGE_TYPES.LOGGING, `[handleZipFromUrl] Downloading ${zipUrlPath}...`)
     if (!existsSync(getAppFilePath('downloads'))) {
-      console.log(`[handleZipFromUrl] Creating downloads directory...`)
+      loggingStore.log(MESSAGE_TYPES.LOGGING, `[handleZipFromUrl] Creating downloads directory...`)
       mkdirSync(getAppFilePath('downloads'), { recursive: true })
     }
 
@@ -161,7 +174,7 @@ export async function handleZipFromUrl(zipUrlPath: string, reply): Promise<AppRe
     if (!response.ok) {
       console.error(`[handleZipFromFile] Failed to download zip file: ${response.status}`)
       const errorMessage = `Failed to download zip file: ${response.status}`
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, errorMessage)
+      loggingStore.log(MESSAGE_TYPES.ERROR, errorMessage)
       reply('logging', {
         status: false,
         data: 'Encountered an error',
@@ -170,7 +183,7 @@ export async function handleZipFromUrl(zipUrlPath: string, reply): Promise<AppRe
       })
       return
     } else {
-      console.log(`[handleZipFromUrl] Downloading ${zipUrlPath}`)
+      loggingStore.log(MESSAGE_TYPES.LOGGING, `[handleZipFromUrl] Downloading ${zipUrlPath}`)
       reply('logging', { status: true, data: 'Downloading... 0%', final: false })
     }
 
@@ -201,20 +214,17 @@ export async function handleZipFromUrl(zipUrlPath: string, reply): Promise<AppRe
 
     const arrayBuffer = await response.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
-    console.log(`[handleZipFromUrl] Writing to ${tempZipPath}...`)
+    loggingStore.log(MESSAGE_TYPES.LOGGING, `[handleZipFromUrl] Writing to ${tempZipPath}...`)
     await promises.writeFile(tempZipPath, buffer)
 
     reply('logging', { status: true, data: 'Extracting...', final: false })
 
     returnData = await handleZip(tempZipPath, reply)
-    console.log(`Successfully processed and deleted ${tempZipPath}`)
+    loggingStore.log(MESSAGE_TYPES.LOGGING, `Successfully processed and deleted ${tempZipPath}`)
     reply('zip-name', { status: true, data: returnData, final: true })
     return returnData
   } catch (error) {
-    dataListener.asyncEmit(
-      MESSAGE_TYPES.ERROR,
-      `[handleZIPfromURL] Error handling zip file: ${error}`
-    )
+    loggingStore.log(MESSAGE_TYPES.ERROR, `[handleZIPfromURL] Error handling zip file: ${error}`)
     throw new Error('[handleZIPfromURL] Error handling zip file' + error)
   } finally {
     // Clean up the temporary zip file and extracted directory
@@ -225,7 +235,7 @@ export async function handleZipFromUrl(zipUrlPath: string, reply): Promise<AppRe
       if (existsSync(getAppFilePath('downloads', 'extracted'))) {
         await promises.rm(getAppFilePath('downloads', 'extracted'), { recursive: true })
       }
-      console.log(`Successfully deleted temporary files`)
+      loggingStore.log(MESSAGE_TYPES.LOGGING, `Successfully deleted temporary files`)
     } catch (cleanupError) {
       console.error(`Error deleting temp files: ${cleanupError}`)
     }
@@ -249,7 +259,7 @@ export async function run(appName: string): Promise<void> {
     if (app && typeof app.func.start === 'function') {
       app.func.start()
     } else {
-      console.log(`App ${appName} not found.`)
+      loggingStore.log(MESSAGE_TYPES.LOGGING, `App ${appName} not found.`)
     }
 
     const DeskThing = await getDeskThing(appName)
@@ -270,17 +280,17 @@ export async function run(appName: string): Promise<void> {
       appState.appendManifest(manifest, appName)
     }
 
-    dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `Configuring ${appName}!`)
+    loggingStore.log(MESSAGE_TYPES.LOGGING, `Configuring ${appName}!`)
 
     await setupFunctions(appName, DeskThing)
 
-    dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `Running ${appName}!`)
+    loggingStore.log(MESSAGE_TYPES.LOGGING, `Running ${appName}!`)
     const result = await start(appName)
     if (!result) {
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `App ${appName} failed to start!`)
+      loggingStore.log(MESSAGE_TYPES.ERROR, `App ${appName} failed to start!`)
     }
   } catch (error) {
-    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `Error running app ${error}`)
+    loggingStore.log(MESSAGE_TYPES.ERROR, `Error running app ${error}`)
     console.error('Error running app:', error)
   }
 }
@@ -296,17 +306,14 @@ export const start = async (appName: string): Promise<boolean> => {
   const appInstance = appState.get(appName)
 
   if (!appInstance || !appInstance.func.start || appInstance.func.start === undefined) {
-    dataListener.asyncEmit(
-      MESSAGE_TYPES.ERROR,
-      `App ${appName} not found. or not started correctly`
-    )
+    loggingStore.log(MESSAGE_TYPES.ERROR, `App ${appName} not found. or not started correctly`)
     return false
   }
   // Check if all required apps are running
   const manifest = appInstance.manifest
 
   if (!manifest) {
-    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `App ${appName} not found.`)
+    loggingStore.log(MESSAGE_TYPES.ERROR, `App ${appName} not found.`)
     return false
   }
 
@@ -314,7 +321,7 @@ export const start = async (appName: string): Promise<boolean> => {
     const requiredApps = manifest.requires || []
     for (const requiredApp of requiredApps) {
       if (!appState.getOrder().includes(requiredApp) && requiredApp.length > 2) {
-        dataListener.asyncEmit(
+        loggingStore.log(
           MESSAGE_TYPES.ERROR,
           `Unable to run ${appName}! This app requires '${requiredApp}' to be enabled and running.`
         )
@@ -327,20 +334,20 @@ export const start = async (appName: string): Promise<boolean> => {
   try {
     const startResponse: Response = await appInstance.func.start()
     if (startResponse.status == 200) {
-      dataListener.asyncEmit(
+      loggingStore.log(
         MESSAGE_TYPES.MESSAGE,
         `App ${appName} started successfully with response ${startResponse.data.message}`
       )
       return true
     } else {
-      dataListener.asyncEmit(
+      loggingStore.log(
         MESSAGE_TYPES.ERROR,
         `App ${appName} failed to start with response ${startResponse.data.message}`
       )
       return false
     }
   } catch (error) {
-    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `Error starting app ${error}`)
+    loggingStore.log(MESSAGE_TYPES.ERROR, `Error starting app ${error}`)
     console.error('Error starting app:', error)
   }
   return false
@@ -360,7 +367,7 @@ const setupFunctions = async (appName: string, DeskThing: DeskThing): Promise<vo
   const listeners: ToClientType[] = []
 
   if (!appInstance) {
-    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `App ${appName} not found.`)
+    loggingStore.log(MESSAGE_TYPES.ERROR, `App ${appName} not found.`)
     return
   }
 
@@ -370,9 +377,11 @@ const setupFunctions = async (appName: string, DeskThing: DeskThing): Promise<vo
     appInstance.func.start = async (): Promise<Response> => {
       return DeskThing.start({
         toServer: (data) => handleDataFromApp(appName, data),
-        SysEvents: (event: string, listener: (...args: string[]) => void) => {
-          dataListener.on(event, listener) // Add event listener
-          return () => dataListener.removeListener(event, listener)
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        SysEvents: (_event: string, _listener: (...args: string[]) => void) => {
+          return () => {
+            /* do something with this to let apps listen for server events like apps being added or settings being changed */
+          }
         }
       })
     }
@@ -386,7 +395,7 @@ const setupFunctions = async (appName: string, DeskThing: DeskThing): Promise<vo
 
     appState.add(appInstance)
   } catch (error) {
-    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `Error running app ${error}`)
+    loggingStore.log(MESSAGE_TYPES.ERROR, `Error running app ${error}`)
   }
 }
 
@@ -407,7 +416,7 @@ const handleManifest = async (
     // Manifest not found, searching manually
     const manifestPath = getAppFilePath(appName, 'manifest.json')
     if (!existsSync(manifestPath)) {
-      dataListener.asyncEmit(
+      loggingStore.log(
         MESSAGE_TYPES.ERROR,
         `Manifest for app ${appName} not found at ${manifestPath}`
       )
@@ -426,7 +435,7 @@ const handleManifest = async (
     console.error(
       `Unable to get manifest for ${appName}! Response message: ${manifestResponse.data.message}`
     )
-    dataListener.asyncEmit(
+    loggingStore.log(
       MESSAGE_TYPES.ERROR,
       `Unable to get manifest for ${appName}!  Response message: ${manifestResponse.data.message}`
     )
@@ -451,7 +460,7 @@ const getDeskThing = async (appName): Promise<DeskThing | void> => {
   } else if (existsSync(appEntryPointCjs)) {
     appEntryPoint = appEntryPointCjs
   } else {
-    dataListener.asyncEmit(
+    loggingStore.log(
       MESSAGE_TYPES.ERROR,
       `Entry point for app ${appName} not found. (Does it have an index.js file?)`
     )

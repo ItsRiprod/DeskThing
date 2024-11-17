@@ -113,12 +113,7 @@ const useKeyMapStore = create<KeyMapStoreState>((set) => ({
   },
 
   // Update a specific button mapping for a key and Mode in the selected profile
-  updateButtonMapping: (
-    profile: string,
-    keyId: string,
-    Mode: EventMode,
-    action: Action
-  ): void => {
+  updateButtonMapping: (profile: string, keyId: string, Mode: EventMode, action: Action): void => {
     set((state) => {
       if (!state.mappingStructure) return state
 

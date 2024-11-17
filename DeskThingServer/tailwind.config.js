@@ -10,7 +10,7 @@ module.exports = {
       },
       keyframes: {
         fade: {
-          '0%': { opacity: 0.5, transform: 'translateY(-30px)' },
+          '0%': { opacity: 0, transform: 'translateY(-10px)' },
           '100%': { opacity: 1, transform: 'translateY(0px)' }
         },
         'fade-in-down': {

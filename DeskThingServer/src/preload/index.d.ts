@@ -1,5 +1,5 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
-import { AppDataInterface, AppReturnData, Client, ClientManifest } from '@shared/types'
+import { AppDataInterface, AppReturnData, Client, ClientManifest, Log } from '@shared/types'
 
 type AppData = { [key: string]: string }
 
@@ -38,7 +38,7 @@ declare global {
       saveSettings: (settings: Settings) => Promise<void>
       getSettings: () => Promise<Settings>
       fetchGithub: (url: string) => Promise<GithubRelease[]>
-      getLogs: () => Promise<string[]>
+      getLogs: () => Promise<Log[]>
       getMappings: () => Promise<ButtonMapping>
       addProfile: (profile: string, baseProfile?: string) => Promise<ButtonMapping>
       deleteProfile: (profile: string) => Promise<ButtonMapping>

@@ -62,7 +62,6 @@ const getData = (app: string): AppDataInterface => {
 }
 
 const purgeAppData = async (appName: string): Promise<void> => {
-  console.log('SERVER: Deleting app data...')
   const data = readData()
   delete data[appName]
   writeData(data)

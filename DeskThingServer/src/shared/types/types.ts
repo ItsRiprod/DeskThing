@@ -138,6 +138,7 @@ export interface Settings {
   version: string
   version_code: number
   callbackPort: number
+  LogLevel: LOGGING_LEVEL
   devicePort: number
   address: string
   autoStart: boolean
@@ -158,4 +159,37 @@ export interface StatusMessage {
   message: string
   weight: number
   minimum: number
+}
+
+/**
+ * The MESSAGE_TYPES object defines a set of constants that represent the different types of messages that can be sent or received in the application.
+ * Error, Log, Message, Warning, Fatal, and Debugging.
+ */
+export enum MESSAGE_TYPES {
+  ERROR = 'error',
+  LOGGING = 'log',
+  MESSAGE = 'message',
+  WARNING = 'warning',
+  FATAL = 'fatal',
+  DEBUG = 'debugging'
+}
+
+/**
+ * The LOGGING_LEVEL object defines a set of constants that represent the different levels of logging that can be used in the application.
+ * These levels are used to determine which logs should be displayed in the application.
+ * The levels are: SYSTEM, APPS, and PRODUCTION.
+ * The SYSTEM level is used for system-level logs, the APPS level is used for app and client emitted logs, and the PRODUCTION level is used for only errors, warnings, debugging, and fatal logs.
+ */
+export enum LOGGING_LEVEL {
+  SYSTEM = 'system', // All system-level logs
+  APPS = 'apps', // all app and client emitted logs
+  PRODUCTION = 'production' // Only errors, warnings, debugging, and fatal logs
+}
+
+export interface Log {
+  source: string
+  type: MESSAGE_TYPES
+  log: string
+  trace?: string
+  date?: string
 }

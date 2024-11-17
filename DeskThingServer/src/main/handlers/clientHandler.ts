@@ -1,5 +1,5 @@
-import { ClientIPCData, ReplyFn } from '@shared/types/ipcTypes'
-import dataListener, { MESSAGE_TYPES } from '../utils/events'
+import { ClientIPCData, ClientManifest, SocketData, ReplyFn, MESSAGE_TYPES } from '@shared/types'
+import loggingStore from '../stores/loggingStore'
 import { handleAdbCommands } from './adbHandler'
 import {
   configureDevice,
@@ -9,7 +9,6 @@ import {
   HandleWebappZipFromUrl,
   SetupProxy
 } from './deviceHandler'
-import { ClientManifest, SocketData } from '@shared/types'
 import { sendMessageToClient, sendMessageToClients } from '../services/client/clientCom'
 
 export const clientHandler: Record<
@@ -28,7 +27,11 @@ export const clientHandler: Record<
       return `Pinging ${data.payload}...`
     } catch (error) {
       console.error('Error pinging client:', error)
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, error)
+      if (error instanceof Error) {
+        loggingStore.log(MESSAGE_TYPES.ERROR, error.message)
+      } else {
+        loggingStore.log(MESSAGE_TYPES.ERROR, String(error))
+      }
       return 'Error pinging' + data.payload
     }
   },
@@ -45,7 +48,6 @@ export const clientHandler: Record<
     return handleUrl(data, replyFn)
   },
   adb: async (data, replyFn) => {
-    console.log('Running ADB command:', data.payload)
     replyFn('logging', { status: true, data: 'Working', final: false })
 
     const response = await handleAdbCommands(data.payload, replyFn)
@@ -70,7 +72,7 @@ export const clientHandler: Record<
   },
   'push-staged': async (data, replyFn) => {
     try {
-      console.log('Pushing staged webapp...')
+      loggingStore.log(MESSAGE_TYPES.LOGGING, 'Pushing staged app...')
       HandlePushWebApp(data.payload, replyFn)
     } catch (error) {
       replyFn('logging', {
@@ -79,13 +81,16 @@ export const clientHandler: Record<
         error: 'Failed to push staged app!',
         final: true
       })
-      console.error('Error extracting zip file:', error)
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, error)
+      if (error instanceof Error) {
+        loggingStore.log(MESSAGE_TYPES.ERROR, error.message)
+      } else {
+        loggingStore.log(MESSAGE_TYPES.ERROR, String(error))
+      }
     }
   },
   'push-proxy-script': async (data, replyFn) => {
     try {
-      console.log('Pushing proxy script...')
+      loggingStore.log(MESSAGE_TYPES.LOGGING, 'Pushing proxy script...')
       SetupProxy(replyFn, data.payload)
       replyFn('logging', {
         status: true,
@@ -100,7 +105,11 @@ export const clientHandler: Record<
         final: true
       })
       console.error('Error pushing proxy script:', error)
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, error)
+      if (error instanceof Error) {
+        loggingStore.log(MESSAGE_TYPES.ERROR, error.message)
+      } else {
+        loggingStore.log(MESSAGE_TYPES.ERROR, String(error))
+      }
     }
   },
   'run-device-command': async (data, replyFn) => {
@@ -112,7 +121,6 @@ export const clientHandler: Record<
       request: data.payload.request,
       payload: !payload.includes('{') ? data.payload.payload : JSON.parse(data.payload.payload)
     }
-    console.log('Sending data', data)
     replyFn('logging', { status: true, data: 'Finished', final: true })
     return await sendMessageToClients(message)
   }

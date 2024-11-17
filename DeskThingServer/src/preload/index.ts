@@ -11,6 +11,7 @@ import {
   IncomingData,
   IPC_HANDLERS,
   IPCData,
+  Log,
   Settings,
   SocketData
 } from '@shared/types'
@@ -209,7 +210,7 @@ const api = {
     })
   },
 
-  getLogs: (): Promise<string[]> => {
+  getLogs: (): Promise<Log[]> => {
     return sendCommand('UTILITY', {
       type: 'logs',
       request: 'get',

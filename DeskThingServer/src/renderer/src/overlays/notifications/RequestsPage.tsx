@@ -43,7 +43,7 @@ interface RequestProps {
 const RequestComponent = ({ request }: RequestProps): React.ReactElement => {
   const resolveRequest = useNotificationStore((state) => state.resolveRequest)
   const [expanded, setIsExpanded] = useState(false)
-  const [focusedIndex, setFocusedIndex] = useState(-1)
+  const [focusedIndex, setFocusedIndex] = useState(0)
   const [formData, setFormData] = useState<{ [key: string]: string }>({})
   const [allFieldsFilled, setAllFieldsFilled] = useState(false)
 
@@ -73,7 +73,7 @@ const RequestComponent = ({ request }: RequestProps): React.ReactElement => {
 
   const toggleExpanded = (): void => {
     setIsExpanded(!expanded)
-    setFocusedIndex(-1)
+    setFocusedIndex(0)
   }
 
   useEffect(() => {

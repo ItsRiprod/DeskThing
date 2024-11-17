@@ -1,6 +1,6 @@
 import { sendIpcData } from '..'
-import { AppData, App, Manifest, ButtonMapping } from '@shared/types'
-import dataListener, { MESSAGE_TYPES } from '../utils/events'
+import { AppData, App, MESSAGE_TYPES, Manifest, ButtonMapping } from '@shared/types'
+import loggingStore from '../stores/loggingStore'
 import { readFromFile, writeToFile } from '../utils/fileHandler'
 
 const defaultData: AppData = {
@@ -17,7 +17,6 @@ const readData = (): AppData => {
     const data = readFromFile<AppData>(dataFilePath)
     if (!data) {
       // File does not exist, create it with default data
-      console.log('File does not exist, creating it with default data')
       writeToFile(defaultData, dataFilePath)
       return defaultData
     }
@@ -34,11 +33,11 @@ const writeData = (data: AppData): void => {
   try {
     const result = writeToFile<AppData>(data, 'apps.json')
     if (!result) {
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'Error writing data')
+      loggingStore.log(MESSAGE_TYPES.ERROR, 'Error writing data')
     }
     sendIpcData('app-data', data) // Send data to the web UI
   } catch (err) {
-    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'Error writing data' + err)
+    loggingStore.log(MESSAGE_TYPES.ERROR, 'Error writing data' + err)
     console.error('Error writing data:', err)
   }
 }
@@ -104,12 +103,11 @@ const addConfig = (configName: string, config: string | Array<string>, data = re
   } else {
     data.config[configName] = config
   }
-  console.log('THIS IS THE FIRST TIME THIS IS BEING EMITTED - TRY AND TRACK IT')
-  dataListener.asyncEmit(MESSAGE_TYPES.CONFIG, {
-    app: 'server',
-    type: 'config',
-    payload: data.config
-  })
+  // loggingStore.log(MESSAGE_TYPES.CONFIG, {
+  //   app: 'server',
+  //   type: 'config',
+  //   payload: data.config
+  // })
   writeData(data)
 }
 const getConfig = (
@@ -150,7 +148,7 @@ const getAppByIndex = (index: number): App | undefined => {
 }
 
 const purgeAppConfig = async (appName: string): Promise<void> => {
-  console.log('SERVER: Deleting App From Config...', appName)
+  loggingStore.log(MESSAGE_TYPES.LOGGING, `Purging app: ${appName}`)
   const data = readData()
 
   // Filter out the app to be purged
@@ -158,11 +156,11 @@ const purgeAppConfig = async (appName: string): Promise<void> => {
   data.apps = filteredApps
 
   writeData(data)
-  dataListener.asyncEmit(MESSAGE_TYPES.CONFIG, {
-    app: 'server',
-    type: 'config',
-    payload: data.config
-  })
+  // loggingStore.log(MESSAGE_TYPES.CONFIG, {
+  //   app: 'server',
+  //   type: 'config',
+  //   payload: data.config
+  // })
 }
 
 export {
