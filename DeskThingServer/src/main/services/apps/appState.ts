@@ -1,5 +1,6 @@
-import { App, AppInstance, Manifest, AppReturnData } from '@shared/types'
+import { App, AppInstance, Manifest, AppReturnData, MESSAGE_TYPES } from '@shared/types'
 import { sendConfigData, sendSettingsData } from '../client/clientCom'
+import loggingStore from '../../stores/loggingStore'
 
 /**
  * TODO: Sync with the file
@@ -32,9 +33,11 @@ export class AppHandler {
    * Loads the apps from file
    */
   async loadApps(): Promise<void> {
-    console.log('[appState] [loadApps]: Loading apps...')
+    loggingStore.log(MESSAGE_TYPES.LOGGING, '[appState] [loadApps]: Loading apps...')
     const { getAppData } = await import('../../handlers/configHandler')
+
     const data = await getAppData()
+
     data.apps.forEach((app) => {
       if (this.apps[app.name]) {
         // Update existing app instance with stored data

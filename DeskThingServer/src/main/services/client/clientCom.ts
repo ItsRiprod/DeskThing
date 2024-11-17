@@ -1,13 +1,13 @@
-import { SocketData } from '@shared/types'
+import { SocketData, MESSAGE_TYPES } from '@shared/types'
 import { server, Clients } from './websocket'
-import dataListener, { MESSAGE_TYPES } from '../../utils/events'
+import loggingStore from '../../stores/loggingStore'
 import connectionsStore from '../../stores/connectionsStore'
 import appState from '../apps/appState'
 import { readData } from '../../handlers/dataHandler'
 import keyMapStore from '../../stores/keyMapStore'
 
 export const sendMessageToClients = async (data: SocketData): Promise<void> => {
-  console.log(`Sending message to clients: ${JSON.stringify(data)}`)
+  loggingStore.log(MESSAGE_TYPES.LOGGING, `Sending message to clients: ${JSON.stringify(data)}`)
   if (server) {
     server.clients.forEach((client) => {
       if (client.readyState === 1) {
@@ -15,7 +15,7 @@ export const sendMessageToClients = async (data: SocketData): Promise<void> => {
       }
     })
   } else {
-    dataListener.emit(MESSAGE_TYPES.LOGGING, 'WSOCKET: No server running - setting one up')
+    loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: No server running - setting one up')
   }
 }
 
@@ -25,10 +25,13 @@ export const disconnectClient = (connectionId: string): void => {
   if (client && server) {
     client.socket.terminate()
     Clients.splice(Clients.indexOf(client), 1)
-    console.log(`Forcibly disconnected client: ${connectionId}`)
+    loggingStore.log(MESSAGE_TYPES.LOGGING, `Forcibly disconnected client: ${connectionId}`)
     connectionsStore.removeClient(connectionId)
   } else {
-    console.log(`Client not found or server not running: ${connectionId}`)
+    loggingStore.log(
+      MESSAGE_TYPES.LOGGING,
+      `Client not found or server not running: ${connectionId}`
+    )
   }
 }
 
@@ -54,9 +57,11 @@ export const sendConfigData = async (clientId?: string): Promise<void> => {
   try {
     const appData = await appState.getAllBase()
 
-    sendMessageToClient(clientId, { app: 'client', type: 'config', payload: appData })
+    const filteredAppData = appData.filter((app) => app.manifest?.isWebApp !== false)
 
-    console.log('WSOCKET: Preferences sent!')
+    sendMessageToClient(clientId, { app: 'client', type: 'config', payload: filteredAppData })
+
+    loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Preferences sent!')
   } catch (error) {
     console.error('WSOCKET: Error getting config data:', error)
     sendError(clientId, 'WSOCKET: Error getting config data')
@@ -87,7 +92,7 @@ export const sendSettingsData = async (clientId?: string): Promise<void> => {
     }
 
     sendMessageToClient(clientId, { app: 'client', type: 'settings', payload: settings })
-    console.log('WSOCKET: Preferences sent!')
+    loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Preferences sent!')
   } catch (error) {
     console.error('WSOCKET: Error getting config data:', error)
     sendError(clientId, 'WSOCKET: Error getting config data')
@@ -100,8 +105,8 @@ export const sendMappings = async (clientId?: string): Promise<void> => {
 
     sendMessageToClient(clientId, { app: 'client', type: 'button_mappings', payload: mappings })
 
-    console.log('WSOCKET: Button mappings sent!')
-    dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Client has been sent button maps!`)
+    loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Button mappings sent!')
+    loggingStore.log(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Client has been sent button maps!`)
   } catch (error) {
     console.error('WSOCKET: Error getting button mappings:', error)
     sendError(clientId, 'WSOCKET: Error getting button mappings')

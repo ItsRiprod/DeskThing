@@ -1,10 +1,5 @@
 import { create } from 'zustand'
-
-export interface Log {
-  type: string
-  log: string
-  date: string
-}
+import { Log, MESSAGE_TYPES } from '@shared/types'
 
 interface LogStoreState {
   logList: Log[]
@@ -12,14 +7,14 @@ interface LogStoreState {
   maxNumLogs: number
 
   getLogs: () => Promise<Log[]>
-  addLog: (type: string, log: string) => void
-  addLogsFromFile: (logs: string[]) => void
+  addLog: (log: Log) => void
+  addLogsFromFile: (logs: Log[]) => void
 }
 
 const useLogStore = create<LogStoreState>((set, get) => ({
   logList: [],
   maxLogLength: 1000,
-  maxNumLogs: 100,
+  maxNumLogs: 300,
 
   getLogs: async (): Promise<Log[]> => {
     const { logList } = get()
@@ -32,75 +27,50 @@ const useLogStore = create<LogStoreState>((set, get) => ({
     }
   },
 
-  addLog: (type: string, log: string): void => {
-    if (typeof log !== 'string') {
-      console.error('Log is not a string')
-      log = JSON.stringify(log)
+  addLog: (log: Log): void => {
+    if (typeof log.log !== 'string') {
+      try {
+        if (log.log === null) {
+          log.log = 'null'
+        } else if (log.log === undefined) {
+          log.log = 'undefined'
+        } else if (typeof log.log === 'object') {
+          log.log = JSON.stringify(log.log, null, 2)
+        } else {
+          log.log = String(log.log)
+        }
+      } catch (error) {
+        console.error('Failed to convert log to string:', log, error)
+        log.log = '[Unconvertible Value]'
+      }
     }
     const { maxLogLength, maxNumLogs } = get()
-    const truncatedLog = log.length > maxLogLength ? `${log.substring(0, maxLogLength)}...` : log
+    const truncatedLog =
+      log.log.length > maxLogLength ? `${log.log.substring(0, maxLogLength)}...` : log.log
 
     const newLog = {
-      type: type,
-      log: truncatedLog,
-      date: new Date().toLocaleTimeString()
+      ...log,
+      log: truncatedLog
     }
 
     set((state) => ({
-      logList: [...state.logList, newLog].slice(-maxNumLogs)
+      logList: [...state.logList, newLog as Log].slice(-maxNumLogs)
     }))
 
-    // Emit events (you might want to implement a custom event system or use a library)
-    // For now, we'll just log to console
-    if (type === 'error' || type === 'message') {
-      console.log('New log', newLog)
+    if (log.type != MESSAGE_TYPES.LOGGING) {
+      console.log(newLog)
     }
   },
-
-  addLogsFromFile: (logs: string[]): void => {
-    const { maxLogLength, maxNumLogs } = get()
-    const parsedLogs = logs
-      .map((log) => {
-        const parsedLog = parseLog(log)
-        if (parsedLog) {
-          const truncatedLog =
-            parsedLog.log.length > maxLogLength
-              ? `${parsedLog.log.substring(0, maxLogLength)}...`
-              : parsedLog.log
-
-          return {
-            type: parsedLog.type,
-            log: truncatedLog,
-            date: parsedLog.date
-          }
-        }
-        return null
-      })
-      .filter((log): log is Log => log !== null)
-
+  addLogsFromFile: (logs: Log[]): void => {
+    const { maxNumLogs } = get()
+    console.log('adding logs from file', logs)
     set((state) => ({
-      logList: [...state.logList, ...parsedLogs].slice(-maxNumLogs)
+      logList: [...state.logList, ...logs].slice(-maxNumLogs)
     }))
 
     // Emit update event (for now, just log to console)
     console.log('Logs updated', get().logList)
   }
 }))
-
-function parseLog(log: string): Log | null {
-  const logRegex = /^\[(.*?)\]: (\w+) \| (.*)$/
-  const match = log.match(logRegex)
-  if (match) {
-    const [, timestamp, type, message] = match
-    return {
-      type: type,
-      log: message,
-      date: timestamp
-    }
-  } else {
-    console.error('Failed to parse log:', log)
-  }
-  return null
-}
 
 export default useLogStore

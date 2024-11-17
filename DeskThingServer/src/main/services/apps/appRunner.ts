@@ -1,4 +1,5 @@
-import dataListener, { MESSAGE_TYPES } from '../../utils/events'
+import loggingStore from '../../stores/loggingStore'
+import { MESSAGE_TYPES } from '@shared/types'
 
 /**
  * Loads and runs all enabled apps from appData.json
@@ -12,12 +13,12 @@ export async function loadAndRunEnabledApps(): Promise<void> {
 
   try {
     const appInstances = appHandler.getAll()
-    dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'SERVER: Loaded apps config. Running apps...')
+    loggingStore.log(MESSAGE_TYPES.LOGGING, 'SERVER: Loaded apps config. Running apps...')
     const enabledApps = appInstances.filter((appConfig) => appConfig.enabled === true)
 
     await Promise.all(
       enabledApps.map(async (appConfig) => {
-        dataListener.asyncEmit(
+        loggingStore.log(
           MESSAGE_TYPES.LOGGING,
           `SERVER: Automatically running app ${appConfig.name}`
         )
@@ -29,15 +30,12 @@ export async function loadAndRunEnabledApps(): Promise<void> {
 
     await Promise.all(
       failedApps.map(async (failedApp) => {
-        dataListener.asyncEmit(
-          MESSAGE_TYPES.LOGGING,
-          `SERVER: Attempting to run ${failedApp.name} again`
-        )
+        loggingStore.log(MESSAGE_TYPES.LOGGING, `SERVER: Attempting to run ${failedApp.name} again`)
         await appHandler.run(failedApp.name)
       })
     )
   } catch (error) {
-    dataListener.asyncEmit(
+    loggingStore.log(
       MESSAGE_TYPES.ERROR,
       `SERVER: Error loading and running enabled apps: ${error}`
     )

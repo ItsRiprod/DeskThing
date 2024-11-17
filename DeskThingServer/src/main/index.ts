@@ -1,4 +1,4 @@
-import { AppIPCData, AuthScopes, Client, UtilityIPCData } from '@shared/types'
+import { AppIPCData, AuthScopes, Client, UtilityIPCData, MESSAGE_TYPES } from '@shared/types'
 import { app, shell, BrowserWindow, ipcMain, Tray, Menu, nativeImage } from 'electron'
 import { join, resolve } from 'path'
 import icon from '../../resources/icon.png?asset'
@@ -213,17 +213,16 @@ async function initializeDoc(): Promise<void> {
 }
 
 async function setupIpcHandlers(): Promise<void> {
-  const dataListener = (await import('./utils/events')).default
-  const { MESSAGE_TYPES } = await import('./utils/events')
+  const loggingStore = (await import('./stores/loggingStore')).default
 
   const { appHandler } = await import('./handlers/appHandler')
   const { clientHandler } = await import('./handlers/clientHandler')
   const { utilityHandler } = await import('./handlers/utilityHandler')
-  const { ResponseLogger } = await import('./utils/events')
+  const { ResponseLogger } = await import('./stores/loggingStore')
 
   const defaultHandler = async (data: AppIPCData): Promise<void> => {
     console.error(`No handler implemented for type: ${data.type} ${data}`)
-    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `No handler implemented for type: ${data.type}`)
+    loggingStore.log(MESSAGE_TYPES.ERROR, `No handler implemented for type: ${data.type}`)
   }
 
   ipcMain.handle('APPS', async (event, data: AppIPCData) => {
@@ -238,7 +237,7 @@ async function setupIpcHandlers(): Promise<void> {
       }
     } catch (error) {
       console.error('Error in IPC handler:', error)
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `Error in IPC handler: ${error}`)
+      loggingStore.log(MESSAGE_TYPES.ERROR, `Error in IPC handler: ${error}`)
     }
   })
 
@@ -254,12 +253,11 @@ async function setupIpcHandlers(): Promise<void> {
       }
     } catch (error) {
       console.error('Error in IPC handler:', error)
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `Error in IPC handler: ${error}`)
+      loggingStore.log(MESSAGE_TYPES.ERROR, `Error in IPC handler: ${error}`)
     }
   })
 
   ipcMain.handle('UTILITY', async (event, data: UtilityIPCData) => {
-    console.log('Received IPC data:', data)
     const handler = utilityHandler[data.type] || defaultHandler
     const replyFn = ResponseLogger(event.sender.send.bind(event.sender))
 
@@ -272,18 +270,12 @@ async function setupIpcHandlers(): Promise<void> {
       }
     } catch (error) {
       console.error('Error in IPC handler:', error)
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `Error in IPC handler: ${error}`)
+      loggingStore.log(MESSAGE_TYPES.ERROR, `Error in IPC handler: ${error}`)
     }
   })
 
-  dataListener.on(MESSAGE_TYPES.ERROR, (errorData) => {
-    sendIpcData('error', errorData)
-  })
-  dataListener.on(MESSAGE_TYPES.LOGGING, (errorData) => {
+  loggingStore.addListener((errorData) => {
     sendIpcData('log', errorData)
-  })
-  dataListener.on(MESSAGE_TYPES.MESSAGE, (errorData) => {
-    sendIpcData('message', errorData)
   })
   ConnectionStore.on((clients: Client[]) => {
     sendIpcData('connections', { status: true, data: clients.length, final: true })
@@ -292,7 +284,7 @@ async function setupIpcHandlers(): Promise<void> {
   ConnectionStore.onDevice((devices: string[]) => {
     sendIpcData('adbdevices', { status: true, data: devices, final: true })
   })
-  dataListener.on(MESSAGE_TYPES.SETTINGS, (newSettings) => {
+  settingsStore.addListener((newSettings) => {
     sendIpcData('settings-updated', newSettings)
   })
 }
@@ -366,8 +358,6 @@ if (!app.requestSingleInstanceLock()) {
 function handleUrl(url: string | undefined): void {
   if (url && url.startsWith('deskthing://')) {
     const path = url.replace('deskthing://', '')
-
-    console.log('Handling URL:', url, path)
 
     if (mainWindow) {
       mainWindow.webContents.send('handle-protocol-url', path)

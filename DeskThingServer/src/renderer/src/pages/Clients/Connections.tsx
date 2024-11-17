@@ -95,7 +95,9 @@ const ClientConnections: React.FC = () => {
           <div className="md:block hidden">
             {settings.localIp &&
               settings.localIp.map((ip, index) => (
-                <div key={index}>{ip + ':' + settings.devicePort}</div>
+                <div key={index} className="text-gray-500">
+                  {ip + ':' + settings.devicePort}
+                </div>
               ))}
             <div className="border-t border-gray-500 mt-4 pt-4">
               <p className="">Staged Client</p>

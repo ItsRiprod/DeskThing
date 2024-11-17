@@ -2,6 +2,7 @@ import React from 'react'
 import { useNotificationStore } from '@renderer/stores'
 import { IconTrash } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
+import { MESSAGE_TYPES } from '@shared/types'
 
 const EvensPage: React.FC = () => {
   const logs = useNotificationStore((state) => state.logs)
@@ -21,21 +22,27 @@ const EvensPage: React.FC = () => {
               <li
                 key={index}
                 className={`text-sm font-geistMono break-words whitespace-pre-wrap ${
-                  log.type === 'error'
+                  log.type === MESSAGE_TYPES.ERROR
                     ? 'text-red-500'
-                    : log.type === 'message'
-                      ? 'text-yellow-500'
-                      : 'text-gray-300'
+                    : log.type === MESSAGE_TYPES.FATAL
+                      ? 'text-red-700'
+                      : log.type === MESSAGE_TYPES.WARNING
+                        ? 'text-orange-500'
+                        : log.type === MESSAGE_TYPES.MESSAGE
+                          ? 'text-yellow-500'
+                          : log.type === MESSAGE_TYPES.DEBUG
+                            ? 'text-blue-500'
+                            : 'text-gray-300'
                 }`}
               >
                 <button
                   onClick={() => readLogs(index)}
-                  className="pl-2 py-2 rounded-xl hover:bg-zinc-900 relative group border-gray-500 flex items-center justify w-full"
+                  className="pl-2 py-2 rounded-xl hover:bg-zinc-900 relative group border-gray-500 flex items-center justify-start w-full"
                 >
                   <div className="absolute right-1  text-red-500 hidden group-hover:block">
                     <IconTrash />
                   </div>
-                  <p className="items-start">{log.log}</p>
+                  <p className="text-justify">{log.log}</p>
                 </button>
               </li>
             ))}

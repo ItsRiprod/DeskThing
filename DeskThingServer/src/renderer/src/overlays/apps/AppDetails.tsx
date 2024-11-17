@@ -51,7 +51,7 @@ const AppDetails: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
               rel="noreferrer noopener"
               className="text-blue-500 hover:text-blue-400"
             >
-              {app.manifest.homepage}
+              {app.manifest.repository}
             </a>
           </AppDetail>
         </div>

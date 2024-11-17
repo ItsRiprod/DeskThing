@@ -1,8 +1,9 @@
-import dataListener, { MESSAGE_TYPES } from '../utils/events'
+import loggingStore from '../stores/loggingStore'
 import settingsStore from '../stores/settingsStore'
-import { Settings, SocketData } from '@shared/types'
+import { Settings, SocketData, MESSAGE_TYPES } from '@shared/types'
 import { sendMessageToApp } from '../services/apps'
 import { getAppByName } from './configHandler'
+import appState from '../services/apps/appState'
 
 export class MusicHandler {
   private static instance: MusicHandler
@@ -22,10 +23,13 @@ export class MusicHandler {
 
   private async initializeRefreshInterval(): Promise<void> {
     const settings = await settingsStore.getSettings() // Get from your settings store
+    this.currentApp = settings.playbackLocation || 'none'
+
     this.updateRefreshInterval(settings.refreshInterval)
-    dataListener.on(MESSAGE_TYPES.SETTINGS, this.handleSettingsUpdate)
+    settingsStore.addListener(this.handleSettingsUpdate.bind(this))
 
     setTimeout(() => {
+      loggingStore.log(MESSAGE_TYPES.DEBUG, '[MusicHandler]: Initialized')
       this.refreshMusicData()
     }, 5000) // Delay to ensure settings are loaded
   }
@@ -33,12 +37,12 @@ export class MusicHandler {
   private handleSettingsUpdate = (settings: Settings): void => {
     this.updateRefreshInterval(settings.refreshInterval)
 
-    dataListener.asyncEmit(
+    loggingStore.log(
       MESSAGE_TYPES.LOGGING,
-      `[MusicHandler]: Received settings update - checking for changes | Playback location: ${settings.playbackLocation}`
+      `[MusicHandler]: Received settings update - checking for changes | Playback location: ${this.currentApp} -> ${settings.playbackLocation}`
     )
     if (settings.playbackLocation) {
-      dataListener.asyncEmit(
+      loggingStore.log(
         MESSAGE_TYPES.LOGGING,
         `[MusicHandler]: Setting restarting to use ${settings.playbackLocation}`
       )
@@ -53,7 +57,13 @@ export class MusicHandler {
     }
 
     if (refreshRate < 0) {
-      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `[MusicHandler]: Cancelling Refresh Interval!`)
+      loggingStore.log(MESSAGE_TYPES.LOGGING, `[MusicHandler]: Cancelling Refresh Interval!`)
+      return
+    } else if (refreshRate < 5) {
+      loggingStore.log(
+        MESSAGE_TYPES.WARNING,
+        `[MusicHandler]: Refresh Interval is ${refreshRate}! Performance may be impacted`
+      )
       return
     }
 
@@ -62,66 +72,134 @@ export class MusicHandler {
     }, refreshRate)
   }
 
-  private async refreshMusicData(): Promise<void> {
-    if (!this.currentApp || this.currentApp.length == 0) {
-      dataListener.asyncEmit(
-        MESSAGE_TYPES.ERROR,
-        `[MusicHandler]: No playback location set! Go to settings -> Music to set the playback location!`
+  private async findCurrentPlaybackSource(): Promise<string | null> {
+    const Apps = appState.getAllBase()
+
+    const audioSource = Apps.find((app) => app.manifest?.isAudioSource)
+
+    if (audioSource) {
+      loggingStore.log(
+        MESSAGE_TYPES.WARNING,
+        `[MusicHandler]: Found ${audioSource.name} as an audio source automatically. Applying.`
       )
-      return
+      return audioSource.name
+    } else {
+      loggingStore.log(
+        MESSAGE_TYPES.LOGGING,
+        `[MusicHandler]: Unable to automatically set an audio source. No app found!`
+      )
+      return null
+    }
+  }
+
+  private async getPlaybackSource(): Promise<string | null> {
+    if (this.currentApp == 'disabled') {
+      loggingStore.log(
+        MESSAGE_TYPES.LOGGING,
+        `[MusicHandler]: Music is disabled! Cancelling refresh`
+      )
+      const settings = await settingsStore.getSettings()
+      if (settings.refreshInterval > 0) {
+        settingsStore.updateSetting('refreshInterval', -1)
+      }
+      return null
+    }
+
+    if (this.currentApp == 'none') {
+      const app = await this.findCurrentPlaybackSource()
+      if (app) {
+        this.currentApp = app
+        settingsStore.updateSetting('playbackLocation', app)
+        return app
+      } else {
+        loggingStore.log(
+          MESSAGE_TYPES.ERROR,
+          `[MusicHandler]: No Audiosource Found! Go to Downloads -> Apps and download an audio source! (Spotify, MediaWin, GMP, etc)`
+        )
+        return null
+      }
+    }
+
+    if (!this.currentApp || this.currentApp.length == 0) {
+      // Attempt to get audiosource from settings
+      const currentApp = (await settingsStore.getSettings()).playbackLocation
+      if (!currentApp || currentApp.length == 0) {
+        loggingStore.log(
+          MESSAGE_TYPES.ERROR,
+          `[MusicHandler]: No playback location set! Go to settings -> Music to set the playback location!`
+        )
+        return null
+      } else {
+        loggingStore.log(
+          MESSAGE_TYPES.WARNING,
+          `[MusicHandler]: Playback location was not set! Setting to ${currentApp}`
+        )
+        this.currentApp = currentApp
+      }
     }
 
     const app = await getAppByName(this.currentApp)
 
     if (!app || app.running == false) {
-      dataListener.asyncEmit(
+      loggingStore.log(
         MESSAGE_TYPES.ERROR,
-        `[MusicHandler]: App ${this.currentApp} not found or not running!!`
+        `[MusicHandler]: App ${this.currentApp} is not found or not running!`
       )
+      return null
+    }
+
+    return this.currentApp
+  }
+
+  private async refreshMusicData(): Promise<void> {
+    const currentApp = await this.getPlaybackSource()
+
+    if (!currentApp) {
+      return
     }
 
     try {
-      await sendMessageToApp(this.currentApp, { type: 'get', request: 'refresh', payload: '' })
-      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `[MusicHandler]: Refreshing Music Data!`)
+      await sendMessageToApp(currentApp, { type: 'get', request: 'refresh', payload: '' })
+      loggingStore.log(MESSAGE_TYPES.LOGGING, `[MusicHandler]: Refreshing Music Data!`)
     } catch (error) {
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `[MusicHandler]: Music refresh failed: ${error}`)
+      loggingStore.log(MESSAGE_TYPES.ERROR, `[MusicHandler]: Music refresh failed: ${error}`)
     }
   }
 
-  public async handleClientRequest(request: SocketData): Promise<void> {
-    if (!this.currentApp) {
-      const settings = await settingsStore.getSettings()
-      if (settings.playbackLocation) {
-        this.currentApp = settings.playbackLocation
-      } else {
-        dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `[MusicHandler]: No playback location set!`)
-        return
-      }
-    }
-
-    if (this.currentApp == 'none') {
-      dataListener.asyncEmit(
+  public async setAudioSource(source: string): Promise<void> {
+    if (source.length == 0) {
+      loggingStore.log(
         MESSAGE_TYPES.ERROR,
-        `[MusicHandler]: Playback location is 'none' ! Go to settings -> Music to set the playback location!`
+        `[MusicHandler]: Unable to update playback location. No playback location passed!`
       )
+      return
+    }
+    loggingStore.log(
+      MESSAGE_TYPES.LOGGING,
+      `[MusicHandler]: Setting Playback Location to ${source}`
+    )
+    this.currentApp = source
+  }
+
+  public async handleClientRequest(request: SocketData): Promise<void> {
+    const currentApp = await this.getPlaybackSource()
+
+    if (!currentApp) {
       return
     }
 
     if (request.app != 'music' && request.app != 'utility') return
 
     if (request.app == 'utility') {
-      dataListener.asyncEmit(
+      loggingStore.log(
         MESSAGE_TYPES.LOGGING,
         `[MusicHandler]: Legacy Name called! Support for this will be dropped in future updates. Migrate your app to use 'music' instead!`
       )
     }
 
-    dataListener.asyncEmit(
-      MESSAGE_TYPES.LOGGING,
-      `[MusicHandler]: ${request.type} ${request.request}`
-    )
+    loggingStore.log(MESSAGE_TYPES.LOGGING, `[MusicHandler]: ${request.type} ${request.request}`)
 
-    sendMessageToApp(this.currentApp, {
+    sendMessageToApp(currentApp, {
       type: request.type,
       request: request.request,
       payload: request.payload

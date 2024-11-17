@@ -75,6 +75,7 @@ export type GithubAsset = {
   browser_download_url: string
 }
 
+// The Client is how the clients are stored to keep track of them
 export interface Client {
   ip: string
   port?: number
@@ -94,6 +95,7 @@ export interface Client {
   miniplayer?: string
 }
 
+// The standard manifest that all the clients should have
 export interface ClientManifest {
   name: string
   id: string
@@ -105,8 +107,6 @@ export interface ClientManifest {
   version: string
   port: number
   ip: string
-  default_view: string
-  miniplayer: string
   compatible_server?: number[]
   uuid?: string
   version_code?: number
@@ -119,6 +119,7 @@ export interface RepoReleases {
   releases: GithubRelease[]
 }
 
+// The socket data that is used for any communication. I.e. between the app-server or server-client
 export interface SocketData {
   app: string
   type: string
@@ -132,10 +133,12 @@ export interface SocketData {
     | Settings
 }
 
+// The settings for the app
 export interface Settings {
   version: string
   version_code: number
   callbackPort: number
+  LogLevel: LOGGING_LEVEL
   devicePort: number
   address: string
   autoStart: boolean
@@ -151,8 +154,42 @@ export interface Settings {
   [key: string]: any // For any additional settings
 }
 
+// Used in the Refresh ADB screen to display little messages for the user
 export interface StatusMessage {
   message: string
   weight: number
   minimum: number
+}
+
+/**
+ * The MESSAGE_TYPES object defines a set of constants that represent the different types of messages that can be sent or received in the application.
+ * Error, Log, Message, Warning, Fatal, and Debugging.
+ */
+export enum MESSAGE_TYPES {
+  ERROR = 'error',
+  LOGGING = 'log',
+  MESSAGE = 'message',
+  WARNING = 'warning',
+  FATAL = 'fatal',
+  DEBUG = 'debugging'
+}
+
+/**
+ * The LOGGING_LEVEL object defines a set of constants that represent the different levels of logging that can be used in the application.
+ * These levels are used to determine which logs should be displayed in the application.
+ * The levels are: SYSTEM, APPS, and PRODUCTION.
+ * The SYSTEM level is used for system-level logs, the APPS level is used for app and client emitted logs, and the PRODUCTION level is used for only errors, warnings, debugging, and fatal logs.
+ */
+export enum LOGGING_LEVEL {
+  SYSTEM = 'system', // All system-level logs
+  APPS = 'apps', // all app and client emitted logs
+  PRODUCTION = 'production' // Only errors, warnings, debugging, and fatal logs
+}
+
+export interface Log {
+  source: string
+  type: MESSAGE_TYPES
+  log: string
+  trace?: string
+  date?: string
 }

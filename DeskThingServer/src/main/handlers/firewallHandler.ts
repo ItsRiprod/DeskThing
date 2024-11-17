@@ -1,10 +1,10 @@
 import { exec } from 'child_process'
 import os from 'os'
-import dataListener, { MESSAGE_TYPES } from '../utils/events'
+import loggingStore from '../stores/loggingStore'
 import fs from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
-import { ReplyFn } from '@shared/types'
+import { ReplyFn, MESSAGE_TYPES } from '@shared/types'
 
 // Function to execute shell commands
 function runCommand(command: string): Promise<string> {
@@ -45,7 +45,7 @@ async function checkFirewallRuleExists(port: number): Promise<boolean> {
       const result = await runCommand(checkCommand)
       return result.trim() === 'true'
     } else {
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `FIREWALL: Unsupported OS!`)
+      loggingStore.log(MESSAGE_TYPES.ERROR, `FIREWALL: Unsupported OS!`)
       console.error('Unsupported OS')
       return false
     }
@@ -65,15 +65,18 @@ async function setupFirewall(port: number, reply?: ReplyFn): Promise<void> {
     reply && reply('logging', { status: true, data: 'Checking if rules exist', final: false })
     const ruleExists = await checkFirewallRuleExists(port)
     if (ruleExists) {
-      dataListener.asyncEmit(
+      loggingStore.log(
         MESSAGE_TYPES.LOGGING,
         `FIREWALL: Firewall rule for port ${port} verified successfully`
       )
-      console.log(`Firewall rule for port ${port} verified successfully`)
+      loggingStore.log(
+        MESSAGE_TYPES.LOGGING,
+        `Firewall rule for port ${port} verified successfully`
+      )
       reply &&
         reply('logging', { status: true, data: 'Verified that the rule exists!', final: false })
     } else {
-      dataListener.asyncEmit(
+      loggingStore.log(
         MESSAGE_TYPES.ERROR,
         `FIREWALL: Failed to verify firewall rule for port ${port}!`
       )
@@ -112,11 +115,11 @@ async function setupFirewall(port: number, reply?: ReplyFn): Promise<void> {
 
       try {
         await runCommand(`powershell -ExecutionPolicy Bypass -File "${tempScriptPath}"`)
-        dataListener.asyncEmit(
+        loggingStore.log(
           MESSAGE_TYPES.LOGGING,
           `FIREWALL: Firewall rules set up successfully on Windows`
         )
-        console.log('Firewall rules set up successfully on Windows')
+        loggingStore.log(MESSAGE_TYPES.LOGGING, 'Firewall rules set up successfully on Windows')
 
         reply &&
           reply('logging', { status: true, data: 'Firewall ran without error', final: false })
@@ -140,11 +143,11 @@ async function setupFirewall(port: number, reply?: ReplyFn): Promise<void> {
       `
 
       await runCommand(`echo "${script}" | bash`)
-      dataListener.asyncEmit(
+      loggingStore.log(
         MESSAGE_TYPES.LOGGING,
         `FIREWALL: Firewall rules set up successfully on Linux`
       )
-      console.log('Firewall rules set up successfully on Linux')
+      loggingStore.log(MESSAGE_TYPES.LOGGING, 'Firewall rules set up successfully on Linux')
     } else if (platform === 'darwin') {
       reply &&
         reply('logging', {
@@ -165,16 +168,16 @@ async function setupFirewall(port: number, reply?: ReplyFn): Promise<void> {
       `
 
       await runCommand(`echo "${script}" | bash`)
-      dataListener.asyncEmit(
+      loggingStore.log(
         MESSAGE_TYPES.LOGGING,
         `FIREWALL: Firewall rules set up successfully on macOS`
       )
-      console.log('Firewall rules set up successfully on macOS')
+      loggingStore.log(MESSAGE_TYPES.LOGGING, 'Firewall rules set up successfully on macOS')
     } else {
       console.error('Unsupported OS')
     }
   } catch (error) {
-    dataListener.asyncEmit(
+    loggingStore.log(
       MESSAGE_TYPES.ERROR,
       `FIREWALL: Error encountered trying to setup firewall for ${port}! Run administrator and try again`
     )

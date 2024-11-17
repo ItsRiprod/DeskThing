@@ -1,6 +1,6 @@
 import { rmSync, readdirSync, statSync, existsSync } from 'node:fs'
-import dataListener, { MESSAGE_TYPES } from '../../utils/events'
-
+import loggingStore from '../../stores/loggingStore'
+import { MESSAGE_TYPES } from '@shared/types'
 export async function clearCache(appName: string): Promise<void> {
   try {
     const { join } = await import('path')
@@ -21,24 +21,41 @@ export async function clearCache(appName: string): Promise<void> {
           const resolvedPath = require.resolve(itemPath)
           if (require.cache[resolvedPath]) {
             delete require.cache[resolvedPath]
-            dataListener.asyncEmit(
-              MESSAGE_TYPES.LOGGING,
-              `SERVER: Removed ${resolvedPath} from cache`
+            loggingStore.log(MESSAGE_TYPES.LOGGING, `SERVER: Removed ${resolvedPath} from cache`)
+          } else {
+            loggingStore.log(MESSAGE_TYPES.LOGGING, `SERVER: ${resolvedPath} not in cache!`)
+          }
+        } catch (error) {
+          if (error instanceof Error) {
+            loggingStore.log(
+              MESSAGE_TYPES.ERROR,
+              `SERVER: Error clearing cache for ${itemPath}:`,
+              error.message
             )
           } else {
-            dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `SERVER: ${resolvedPath} not in cache!`)
+            loggingStore.log(
+              MESSAGE_TYPES.ERROR,
+              `SERVER: Error clearing cache for ${itemPath}:`,
+              String(error)
+            )
           }
-        } catch (e) {
-          dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `SERVER: clearCache Error`, e)
         }
       }
     })
   } catch (error) {
-    dataListener.asyncEmit(
-      MESSAGE_TYPES.LOGGING,
-      `SERVER: Error clearing cache for directory ${appName}:`,
-      error
-    )
+    if (error instanceof Error) {
+      loggingStore.log(
+        MESSAGE_TYPES.ERROR,
+        `SERVER: Error clearing cache for directory ${appName}:`,
+        error.message
+      )
+    } else {
+      loggingStore.log(
+        MESSAGE_TYPES.ERROR,
+        `SERVER: Error clearing cache for directory ${appName}:`,
+        String(error)
+      )
+    }
   }
 }
 
@@ -49,7 +66,7 @@ export async function clearCache(appName: string): Promise<void> {
  */
 export async function purgeApp(appName: string): Promise<void> {
   try {
-    dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `SERVER: Purging App ${appName}`)
+    loggingStore.log(MESSAGE_TYPES.LOGGING, `SERVER: Purging App ${appName}`)
 
     const { purgeAppData } = await import('../../handlers/dataHandler')
     const { purgeAppConfig } = await import('../../handlers/configHandler')
@@ -74,9 +91,9 @@ export async function purgeApp(appName: string): Promise<void> {
     // Remove the file from filesystem
     if (existsSync(dir)) {
       await rmSync(dir, { recursive: true, force: true })
-      console.log(`Purged all data for app ${appName}`)
+      loggingStore.log(MESSAGE_TYPES.LOGGING, `Purged all data for app ${appName}`)
     }
-    dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `SERVER: Purged App ${appName}`)
+    loggingStore.log(MESSAGE_TYPES.LOGGING, `SERVER: Purged App ${appName}`)
   } catch (error) {
     console.error(`Error purging app data for ${appName}`, error)
   }

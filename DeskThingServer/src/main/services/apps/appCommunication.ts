@@ -1,6 +1,6 @@
 import { openAuthWindow, sendIpcAuthMessage } from '../..'
-import { AuthScopes, IncomingData, Key, Action, ToClientType } from '@shared/types'
-import dataListener, { MESSAGE_TYPES } from '../../utils/events'
+import { AuthScopes, MESSAGE_TYPES, IncomingData, Key, Action, ToClientType } from '@shared/types'
+import loggingStore from '../../stores/loggingStore'
 import { ipcMain } from 'electron'
 
 /**
@@ -18,7 +18,7 @@ export async function handleDataFromApp(app: string, appData: IncomingData): Pro
 
   switch (appData.type) {
     case 'message':
-      dataListener.asyncEmit(MESSAGE_TYPES.MESSAGE, appData.payload)
+      loggingStore.log(MESSAGE_TYPES.MESSAGE, appData.payload, app.toUpperCase())
       break
     case 'get':
       switch (appData.request) {
@@ -67,7 +67,7 @@ export async function handleDataFromApp(app: string, appData: IncomingData): Pro
       if (appData.payload && appData.request) {
         sendMessageToApp(appData.request, appData.payload)
       } else {
-        dataListener.asyncEmit(
+        loggingStore.log(
           MESSAGE_TYPES.ERROR,
           `${app.toUpperCase()}: App data malformed`,
           appData.payload
@@ -75,10 +75,10 @@ export async function handleDataFromApp(app: string, appData: IncomingData): Pro
       }
       break
     case 'error':
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: ${appData.payload}`)
+      loggingStore.log(MESSAGE_TYPES.ERROR, `${appData.payload}`, app.toUpperCase())
       break
     case 'log':
-      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `${app.toUpperCase()}: ${appData.payload}`)
+      loggingStore.log(MESSAGE_TYPES.LOGGING, `${appData.payload}`, app.toUpperCase())
       break
     case 'button':
       if (appData.request == 'add') {
@@ -90,16 +90,16 @@ export async function handleDataFromApp(app: string, appData: IncomingData): Pro
               source: app,
               version: appData.payload.version || '0.0.0',
               enabled: true,
-              flavors: appData.payload.flavors || []
+              Modes: appData.payload.Modes || []
             }
             keyMapStore.addKey(Key)
-            dataListener.asyncEmit(
+            loggingStore.log(
               MESSAGE_TYPES.LOGGING,
               `${app.toUpperCase()}: Added Button Successfully`
             )
           }
         } catch (Error) {
-          dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: ${Error}`)
+          loggingStore.log(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: ${Error}`)
         }
       } else if (appData.request == 'remove') {
         keyMapStore.removeKey(appData.payload.id)
@@ -122,13 +122,13 @@ export async function handleDataFromApp(app: string, appData: IncomingData): Pro
                 source: app
               }
               keyMapStore.addAction(Action)
-              dataListener.asyncEmit(
+              loggingStore.log(
                 MESSAGE_TYPES.LOGGING,
                 `${app.toUpperCase()}: Added Action Successfully`
               )
             }
           } catch (Error) {
-            dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: ${Error}`)
+            loggingStore.log(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: ${Error}`)
           }
           break
         case 'remove':
@@ -172,7 +172,7 @@ export async function requestUserInput(appName: string, scope: AuthScopes): Prom
 export async function sendMessageToApp(appName: string, data: IncomingData): Promise<void> {
   const { AppHandler } = await import('./appState')
   const appHandler = AppHandler.getInstance()
-  dataListener.asyncEmit(
+  loggingStore.log(
     MESSAGE_TYPES.LOGGING,
     `[sendMessageToApp] Sending message to ${appName} with ${data.type}`
   )
@@ -181,7 +181,7 @@ export async function sendMessageToApp(appName: string, data: IncomingData): Pro
     if (app && typeof app.func.toClient === 'function') {
       ;(app.func.toClient as ToClientType)(data)
     } else {
-      dataListener.asyncEmit(
+      loggingStore.log(
         MESSAGE_TYPES.ERROR,
         `SERVER: App ${appName} not found or does not have toClient function. (is it running?)`
       )

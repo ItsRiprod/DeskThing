@@ -1,19 +1,13 @@
 import React, { useState } from 'react'
 import Sidebar from '@renderer/nav/Sidebar'
 import Button from '@renderer/components/Button'
-import {
-  IconDownload,
-  IconLink,
-  IconLoading,
-  IconLogs,
-  IconPlay,
-  IconUpload
-} from '@renderer/assets/icons'
+import { IconDownload, IconLink, IconLoading, IconLogs, IconUpload } from '@renderer/assets/icons'
 import { useAppStore, useGithubStore, usePageStore } from '@renderer/stores'
 import MainElement from '@renderer/nav/MainElement'
 import { AppReturnData } from '@shared/types'
 import DownloadNotification from '@renderer/overlays/DownloadNotification'
 import Overlay from '@renderer/overlays/Overlay'
+import { SuccessNotification } from '@renderer/overlays/SuccessNotification'
 
 const AppDownloads: React.FC = () => {
   // Getting releases to show
@@ -162,24 +156,11 @@ const AppDownloads: React.FC = () => {
         </Overlay>
       )}
       {appReturnData && (
-        <Overlay
-          onClose={() => setAppReturnData(null)}
-          className="border bg-zinc-950 border-zinc-800 pt-16 p-5"
-        >
-          <h1 className="text-2xl text-green-500">Successfully Downloaded</h1>
-          <p>{appReturnData.appName} is installed</p>
-          <p>v{appReturnData.appVersion}</p>
-          <Button
-            className="hover:bg-zinc-700 flex gap-2 bg-black border border-zinc-800"
-            onClick={() => {
-              setAppReturnData(null)
-              runApp(appReturnData.appId)
-            }}
-          >
-            <IconPlay className="fill-white" />
-            <p>Initialize App</p>
-          </Button>
-        </Overlay>
+        <SuccessNotification
+          runApp={runApp}
+          setAppReturnData={setAppReturnData}
+          appReturnData={appReturnData}
+        />
       )}
       <Sidebar className="flex justify-end flex-col h-full max-h-full md:items-stretch items-center">
         <div>

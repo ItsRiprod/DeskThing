@@ -1,10 +1,16 @@
 import path from 'path'
-import { AppIPCData, ReplyFn } from '@shared/types/ipcTypes'
-import dataListener, { MESSAGE_TYPES } from '../utils/events'
+import {
+  App,
+  AppDataInterface,
+  AppReturnData,
+  AppIPCData,
+  ReplyFn,
+  MESSAGE_TYPES
+} from '@shared/types'
+import loggingStore from '../stores/loggingStore'
 import { getData, setData } from './dataHandler'
 import { dialog, BrowserWindow } from 'electron'
 import { sendMessageToApp, AppHandler } from '../services/apps'
-import { App, AppDataInterface, AppReturnData } from '@shared/types'
 const appStore = AppHandler.getInstance()
 
 export const appHandler: Record<
@@ -109,7 +115,7 @@ export const appHandler: Record<
     return { path: filePath, name: path.basename(filePath) }
   },
   'dev-add-app': async (data, replyFn) => {
-    dataListener.asyncEmit(
+    loggingStore.log(
       MESSAGE_TYPES.ERROR,
       'Developer App Not implemented Yet ',
       data.payload.appPath
@@ -118,7 +124,6 @@ export const appHandler: Record<
     replyFn('logging', { status: true, data: 'Finished', final: true })
   },
   'send-to-app': async (data, replyFn) => {
-    console.log('sending data to app: ', data.payload.app, data)
     await sendMessageToApp(data.payload.app, data.payload)
     replyFn('logging', { status: true, data: 'Finished', final: true })
   },
@@ -130,16 +135,14 @@ export const appHandler: Record<
 
 const getApps = (replyFn: ReplyFn): App[] => {
   replyFn('logging', { status: true, data: 'Getting data', final: false })
-  console.log('Getting app data')
   const data = appStore.getAllBase()
   replyFn('logging', { status: true, data: 'Finished', final: true })
   replyFn('app-data', { status: true, data: data, final: true })
   return data
 }
 
-const setAppData = async (replyFn, id, data: AppDataInterface): Promise<void> => {
-  console.log('Saving app data: ', data)
-  dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'SERVER: Saving ' + id + "'s data " + data)
+const setAppData = async (replyFn: ReplyFn, id, data: AppDataInterface): Promise<void> => {
+  loggingStore.log(MESSAGE_TYPES.LOGGING, 'SERVER: Saving ' + id + "'s data " + data)
   await setData(id, data)
   replyFn('logging', { status: true, data: 'Finished', final: true })
 }
@@ -150,7 +153,7 @@ const getAppData = async (replyFn, payload): Promise<AppDataInterface | null> =>
     replyFn('logging', { status: true, data: 'Finished', final: true })
     return data
   } catch (error) {
-    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'SERVER: Error saving manifest' + error)
+    loggingStore.log(MESSAGE_TYPES.ERROR, 'SERVER: Error saving manifest' + error)
     console.error('Error setting client manifest:', error)
     replyFn('logging', { status: false, data: 'Unfinished', error: error, final: true })
     return null

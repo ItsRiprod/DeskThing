@@ -1,13 +1,20 @@
-import { ButtonMapping, Client, GithubRelease, Settings } from '@shared/types'
-import { ReplyFn, UtilityIPCData } from '@shared/types/ipcTypes'
+import {
+  ReplyFn,
+  UtilityIPCData,
+  ButtonMapping,
+  Client,
+  MESSAGE_TYPES,
+  GithubRelease,
+  Log,
+  Settings
+} from '@shared/types'
 import ConnectionStore from '../stores/connectionsStore'
 import settingsStore from '../stores/settingsStore'
 import { getReleases } from './githubHandler'
-import dataListener, { MESSAGE_TYPES } from '../utils/events'
+import loggingStore from '../stores/loggingStore'
 import path from 'path'
 import { shell, app, dialog } from 'electron'
 import keyMapStore from '../stores/keyMapStore'
-import logger from '../utils/logger'
 import { setupFirewall } from './firewallHandler'
 import { disconnectClient } from '../services/client/clientCom'
 import { restartServer } from '../services/client/websocket'
@@ -18,11 +25,19 @@ export const utilityHandler: Record<
     data: UtilityIPCData,
     replyFn: ReplyFn
   ) => Promise<
-    void | string | Client[] | boolean | string[] | Settings | GithubRelease[] | ButtonMapping
+    | void
+    | string
+    | Client[]
+    | boolean
+    | string[]
+    | Settings
+    | GithubRelease[]
+    | ButtonMapping
+    | Log[]
   >
 > = {
   ping: async () => {
-    console.log('Pinged! pong')
+    loggingStore.log(MESSAGE_TYPES.LOGGING, 'Pinged! pong')
     return 'pong'
   },
   zip: async (data): Promise<string | undefined> => {
@@ -63,14 +78,18 @@ export const utilityHandler: Record<
     try {
       return await getReleases(data.payload)
     } catch (error) {
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, error)
+      if (error instanceof Error) {
+        loggingStore.log(MESSAGE_TYPES.ERROR, error.message)
+      } else {
+        loggingStore.log(MESSAGE_TYPES.ERROR, String(error))
+      }
       return []
     }
   },
   logs: async (data) => {
     switch (data.request) {
       case 'get':
-        return await logger.getLogs()
+        return await loggingStore.getLogs()
       default:
         return
     }
@@ -132,14 +151,13 @@ const refreshFirewall = async (replyFn: ReplyFn): Promise<void> => {
     replyFn('logging', { status: true, data: 'Refreshing Firewall', final: false })
     const payload = (await settingsStore.getSettings()) as Settings
     if (payload) {
-      dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, '[firewall] Setting up firewall')
+      loggingStore.log(MESSAGE_TYPES.LOGGING, '[firewall] Setting up firewall')
       try {
         await setupFirewall(payload.devicePort, replyFn)
       } catch (firewallError) {
-        console.log(firewallError)
         if (!(firewallError instanceof Error)) return
 
-        dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `FIREWALL: ${firewallError.message}`)
+        loggingStore.log(MESSAGE_TYPES.ERROR, `FIREWALL: ${firewallError.message}`)
         replyFn('logging', {
           status: false,
           data: 'Error in firewall',
@@ -149,7 +167,7 @@ const refreshFirewall = async (replyFn: ReplyFn): Promise<void> => {
         return
       }
     } else {
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, '[firewall] No settings found!')
+      loggingStore.log(MESSAGE_TYPES.ERROR, '[firewall] No settings found!')
       replyFn('logging', {
         status: false,
         data: 'Error in firewall',
@@ -158,7 +176,7 @@ const refreshFirewall = async (replyFn: ReplyFn): Promise<void> => {
       })
     }
   } catch (error) {
-    dataListener.asyncEmit(MESSAGE_TYPES.ERROR, 'SERVER: [firewall] Error saving manifest' + error)
+    loggingStore.log(MESSAGE_TYPES.ERROR, 'SERVER: [firewall] Error saving manifest' + error)
     console.error('[Firewall] Error setting client manifest:', error)
     if (error instanceof Error) {
       replyFn('logging', { status: false, data: 'Unfinished', error: error.message, final: true })

@@ -30,7 +30,6 @@ export const sendTime = async (): Promise<void> => {
   const formattedMinutes = minutes < 10 ? '0' + minutes : minutes
   const time = `${formattedHours}:${formattedMinutes} ${ampm}`
   sendMessageToClients({ app: 'client', type: 'time', payload: time })
-  console.log(time)
 }
 
 const initializeTimer = async (): Promise<void> => {

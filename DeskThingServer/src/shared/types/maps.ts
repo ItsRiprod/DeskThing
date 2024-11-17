@@ -17,10 +17,11 @@ export type Key = {
   description?: string // User Readable description
   version: string //  The version of the key
   enabled: boolean // Whether or not the app associated with the key is enabled
-  flavors: EventFlavor[] // The flavors of the key
+  Modes: EventMode[] // The Modes of the key
 }
 
-export enum EventFlavor {
+// The different possible modes of an event
+export enum EventMode {
   KeyUp,
   KeyDown,
   ScrollUp,
@@ -35,6 +36,7 @@ export enum EventFlavor {
   PressLong
 }
 
+// The button mapping profile stored in the file system
 export type ButtonMapping = {
   // The ID of the key
   version: string
@@ -44,7 +46,7 @@ export type ButtonMapping = {
   trigger_app?: string
   mapping: {
     [key: string]: {
-      [flavor in EventFlavor]?: Action
+      [Mode in EventMode]?: Action
     }
   }
 }

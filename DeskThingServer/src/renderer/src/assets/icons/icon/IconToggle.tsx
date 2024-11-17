@@ -3,9 +3,10 @@ import { useEffect, useRef } from 'react'
 
 interface ToggleProps extends IconProps {
   checked: boolean
+  disabled?: boolean
 }
 
-function IconToggle({ checked, ...props }: ToggleProps): JSX.Element {
+function IconToggle({ disabled = false, checked, ...props }: ToggleProps): JSX.Element {
   const circleRef = useRef<SVGCircleElement>(null)
 
   useEffect(() => {
@@ -29,9 +30,16 @@ function IconToggle({ checked, ...props }: ToggleProps): JSX.Element {
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"
+        style={{ opacity: disabled ? 0.5 : 1, cursor: disabled ? 'not-allowed' : 'pointer' }}
       >
         <rect width="20" height="12" x="2" y="6" rx="6" ry="6" />
-        <circle ref={circleRef} cx={checked ? '16' : '8'} cy="12" r="5" fill="white">
+        <circle
+          ref={circleRef}
+          cx={checked ? '16' : '8'}
+          cy="12"
+          r="5"
+          fill={disabled ? `gray` : 'white'}
+        >
           <animate
             attributeName="cx"
             from={checked ? '8' : '16'}

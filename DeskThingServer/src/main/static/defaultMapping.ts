@@ -1,4 +1,4 @@
-import { Key, EventFlavor, Action, MappingStructure, ButtonMapping } from '@shared/types'
+import { Key, EventMode, Action, MappingStructure, ButtonMapping } from '@shared/types'
 
 const keys: Key[] = [
   {
@@ -7,7 +7,7 @@ const keys: Key[] = [
     description: 'First dynamic action button on the miniplayer',
     version: '0.9.0',
     enabled: true,
-    flavors: [EventFlavor.KeyDown]
+    Modes: [EventMode.KeyDown]
   },
   {
     id: 'DynamicAction2',
@@ -15,7 +15,7 @@ const keys: Key[] = [
     description: 'Second dynamic action button on the miniplayer',
     version: '0.9.0',
     enabled: true,
-    flavors: [EventFlavor.KeyDown]
+    Modes: [EventMode.KeyDown]
   },
   {
     id: 'DynamicAction3',
@@ -23,7 +23,7 @@ const keys: Key[] = [
     description: 'Third dynamic action button on the miniplayer',
     version: '0.9.0',
     enabled: true,
-    flavors: [EventFlavor.KeyDown]
+    Modes: [EventMode.KeyDown]
   },
   {
     id: 'DynamicAction4',
@@ -31,7 +31,7 @@ const keys: Key[] = [
     description: 'Fourth dynamic action button on the miniplayer',
     version: '0.9.0',
     enabled: true,
-    flavors: [EventFlavor.KeyDown]
+    Modes: [EventMode.KeyDown]
   },
   {
     id: 'Action5',
@@ -39,7 +39,7 @@ const keys: Key[] = [
     description: 'Fifth action button, always visible on the miniplayer',
     version: '0.9.0',
     enabled: true,
-    flavors: [EventFlavor.KeyDown]
+    Modes: [EventMode.KeyDown]
   },
   {
     id: 'Action6',
@@ -47,7 +47,7 @@ const keys: Key[] = [
     description: 'Sixth action button, always visible on the miniplayer',
     version: '0.9.0',
     enabled: true,
-    flavors: [EventFlavor.KeyDown]
+    Modes: [EventMode.KeyDown]
   },
   {
     id: 'Action7',
@@ -55,7 +55,7 @@ const keys: Key[] = [
     description: 'Seventh action button, always visible on the miniplayer',
     version: '0.9.0',
     enabled: true,
-    flavors: [EventFlavor.KeyDown]
+    Modes: [EventMode.KeyDown]
   },
   {
     id: 'Digit1',
@@ -63,7 +63,7 @@ const keys: Key[] = [
     description: 'Physical Button Digit1',
     version: '0.9.0',
     enabled: true,
-    flavors: [EventFlavor.PressShort, EventFlavor.PressLong, EventFlavor.KeyDown, EventFlavor.KeyUp]
+    Modes: [EventMode.PressShort, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
   },
   {
     id: 'Digit2',
@@ -71,7 +71,7 @@ const keys: Key[] = [
     description: 'Physical Button Digit2',
     version: '0.9.0',
     enabled: true,
-    flavors: [EventFlavor.PressShort, EventFlavor.PressLong, EventFlavor.KeyDown, EventFlavor.KeyUp]
+    Modes: [EventMode.PressShort, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
   },
   {
     id: 'Digit3',
@@ -79,7 +79,7 @@ const keys: Key[] = [
     description: 'Physical Button Digit3',
     version: '0.9.0',
     enabled: true,
-    flavors: [EventFlavor.PressShort, EventFlavor.PressLong, EventFlavor.KeyDown, EventFlavor.KeyUp]
+    Modes: [EventMode.PressShort, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
   },
   {
     id: 'Digit4',
@@ -87,7 +87,7 @@ const keys: Key[] = [
     description: 'Physical Button Digit4',
     version: '0.9.0',
     enabled: true,
-    flavors: [EventFlavor.PressShort, EventFlavor.PressLong, EventFlavor.KeyDown, EventFlavor.KeyUp]
+    Modes: [EventMode.PressShort, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
   },
   {
     id: 'KeyM',
@@ -95,7 +95,7 @@ const keys: Key[] = [
     description: 'Physical Button M',
     version: '0.9.0',
     enabled: true,
-    flavors: [EventFlavor.PressShort, EventFlavor.PressLong, EventFlavor.KeyDown, EventFlavor.KeyUp]
+    Modes: [EventMode.PressShort, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
   },
   {
     id: 'Scroll',
@@ -103,12 +103,7 @@ const keys: Key[] = [
     description: 'Physical Button Scroll',
     version: '0.9.0',
     enabled: true,
-    flavors: [
-      EventFlavor.ScrollUp,
-      EventFlavor.ScrollDown,
-      EventFlavor.ScrollLeft,
-      EventFlavor.ScrollRight
-    ]
+    Modes: [EventMode.ScrollUp, EventMode.ScrollDown, EventMode.ScrollLeft, EventMode.ScrollRight]
   },
   {
     id: 'Enter',
@@ -116,7 +111,7 @@ const keys: Key[] = [
     description: 'Physical Button Enter',
     version: '0.9.0',
     enabled: true,
-    flavors: [EventFlavor.KeyDown, EventFlavor.PressLong, EventFlavor.KeyDown, EventFlavor.KeyUp]
+    Modes: [EventMode.KeyDown, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
   },
   {
     id: 'Escape',
@@ -124,7 +119,7 @@ const keys: Key[] = [
     description: 'Physical Button Escape',
     version: '0.9.0',
     enabled: true,
-    flavors: [EventFlavor.PressShort, EventFlavor.PressLong, EventFlavor.KeyDown, EventFlavor.KeyUp]
+    Modes: [EventMode.PressShort, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
   },
   {
     id: 'Swipe',
@@ -132,12 +127,7 @@ const keys: Key[] = [
     description: 'Touchpad Swipe Button',
     version: '0.9.0',
     enabled: true,
-    flavors: [
-      EventFlavor.ScrollUp,
-      EventFlavor.ScrollDown,
-      EventFlavor.ScrollLeft,
-      EventFlavor.ScrollRight
-    ]
+    Modes: [EventMode.ScrollUp, EventMode.ScrollDown, EventMode.ScrollLeft, EventMode.ScrollRight]
   },
   {
     id: 'Pad1',
@@ -145,7 +135,7 @@ const keys: Key[] = [
     description: 'Touch Pad 1 on the fullscreen miniplayer view',
     version: '0.9.0',
     enabled: true,
-    flavors: [EventFlavor.KeyDown]
+    Modes: [EventMode.KeyDown]
   },
   {
     id: 'Pad2',
@@ -153,7 +143,7 @@ const keys: Key[] = [
     description: 'Touch Pad 2 on the fullscreen miniplayer view',
     version: '0.9.0',
     enabled: true,
-    flavors: [EventFlavor.KeyDown]
+    Modes: [EventMode.KeyDown]
   },
   {
     id: 'Pad3',
@@ -161,7 +151,7 @@ const keys: Key[] = [
     description: 'Touch Pad 3 on the fullscreen miniplayer view',
     version: '0.9.0',
     enabled: true,
-    flavors: [EventFlavor.KeyDown]
+    Modes: [EventMode.KeyDown]
   },
   {
     id: 'Pad4',
@@ -169,7 +159,7 @@ const keys: Key[] = [
     description: 'Touch Pad 4 on the fullscreen miniplayer view',
     version: '0.9.0',
     enabled: true,
-    flavors: [EventFlavor.KeyDown]
+    Modes: [EventMode.KeyDown]
   },
   {
     id: 'Pad5',
@@ -177,7 +167,7 @@ const keys: Key[] = [
     description: 'Touch Pad 5 on the fullscreen miniplayer view',
     version: '0.9.0',
     enabled: true,
-    flavors: [EventFlavor.KeyDown]
+    Modes: [EventMode.KeyDown]
   },
   {
     id: 'Pad6',
@@ -185,7 +175,7 @@ const keys: Key[] = [
     description: 'Touch Pad 6 on the fullscreen miniplayer view',
     version: '0.9.0',
     enabled: true,
-    flavors: [EventFlavor.KeyDown]
+    Modes: [EventMode.KeyDown]
   },
   {
     id: 'Pad7',
@@ -193,7 +183,7 @@ const keys: Key[] = [
     description: 'Touch Pad 7 on the fullscreen miniplayer view',
     version: '0.9.0',
     enabled: true,
-    flavors: [EventFlavor.KeyDown]
+    Modes: [EventMode.KeyDown]
   },
   {
     id: 'Pad8',
@@ -201,7 +191,7 @@ const keys: Key[] = [
     description: 'Touch Pad 8 on the fullscreen miniplayer view',
     version: '0.9.0',
     enabled: true,
-    flavors: [EventFlavor.KeyDown]
+    Modes: [EventMode.KeyDown]
   },
   {
     id: 'Pad9',
@@ -209,7 +199,7 @@ const keys: Key[] = [
     description: 'Touch Pad 9 on the fullscreen miniplayer view',
     version: '0.9.0',
     enabled: true,
-    flavors: [EventFlavor.KeyDown]
+    Modes: [EventMode.KeyDown]
   }
 ]
 
@@ -364,7 +354,7 @@ const defaults: ButtonMapping = {
   version: '0.9.0',
   mapping: {
     Pad1: {
-      [EventFlavor.KeyDown]: {
+      [EventMode.KeyDown]: {
         name: 'Volume Up',
         id: 'volUp',
         value: '15',
@@ -376,7 +366,7 @@ const defaults: ButtonMapping = {
       }
     },
     Pad2: {
-      [EventFlavor.KeyDown]: {
+      [EventMode.KeyDown]: {
         name: 'Open Previous',
         id: 'swipeL',
         description: 'Opens the app at the previous index',
@@ -386,7 +376,7 @@ const defaults: ButtonMapping = {
       }
     },
     Pad3: {
-      [EventFlavor.KeyDown]: {
+      [EventMode.KeyDown]: {
         name: 'Open Next',
         id: 'swipeR',
         description: 'Opens the app at the next index',
@@ -396,7 +386,7 @@ const defaults: ButtonMapping = {
       }
     },
     Pad4: {
-      [EventFlavor.KeyDown]: {
+      [EventMode.KeyDown]: {
         name: 'Volume Down',
         id: 'volDown',
         value: '15',
@@ -408,7 +398,7 @@ const defaults: ButtonMapping = {
       }
     },
     Pad5: {
-      [EventFlavor.KeyDown]: {
+      [EventMode.KeyDown]: {
         name: 'Toggle AppsList',
         id: 'appsList',
         value: 'hide',
@@ -421,7 +411,7 @@ const defaults: ButtonMapping = {
       }
     },
     Pad6: {
-      [EventFlavor.KeyDown]: {
+      [EventMode.KeyDown]: {
         name: 'Toggle AppsList',
         id: 'appsList',
         value: 'show',
@@ -434,7 +424,7 @@ const defaults: ButtonMapping = {
       }
     },
     Pad7: {
-      [EventFlavor.KeyDown]: {
+      [EventMode.KeyDown]: {
         name: 'Repeat',
         id: 'repeat',
         description: 'Toggles repeat',
@@ -444,7 +434,7 @@ const defaults: ButtonMapping = {
       }
     },
     Pad8: {
-      [EventFlavor.KeyDown]: {
+      [EventMode.KeyDown]: {
         name: 'PlayPause',
         id: 'play',
         icon: 'play',
@@ -455,7 +445,7 @@ const defaults: ButtonMapping = {
       }
     },
     Pad9: {
-      [EventFlavor.KeyDown]: {
+      [EventMode.KeyDown]: {
         name: 'Fullscreen',
         id: 'fullscreen',
         description: 'Toggles Fullscreen on most devices',
@@ -465,7 +455,7 @@ const defaults: ButtonMapping = {
       }
     },
     DynamicAction1: {
-      [EventFlavor.KeyDown]: {
+      [EventMode.KeyDown]: {
         name: 'Shuffle',
         id: 'shuffle',
         value: 'toggle',
@@ -478,7 +468,7 @@ const defaults: ButtonMapping = {
       }
     },
     DynamicAction2: {
-      [EventFlavor.KeyDown]: {
+      [EventMode.KeyDown]: {
         name: 'Repeat',
         id: 'repeat',
         description: 'Repeats the song',
@@ -488,7 +478,7 @@ const defaults: ButtonMapping = {
       }
     },
     DynamicAction3: {
-      [EventFlavor.KeyDown]: {
+      [EventMode.KeyDown]: {
         name: 'Rewind',
         id: 'rewind',
         value: 'stop',
@@ -502,7 +492,7 @@ const defaults: ButtonMapping = {
       }
     },
     DynamicAction4: {
-      [EventFlavor.KeyDown]: {
+      [EventMode.KeyDown]: {
         name: 'Hidden Button',
         id: 'hidden',
         description: 'Hides the button. Has no action',
@@ -512,7 +502,7 @@ const defaults: ButtonMapping = {
       }
     },
     Action5: {
-      [EventFlavor.KeyDown]: {
+      [EventMode.KeyDown]: {
         name: 'Hidden Button',
         id: 'hidden',
         description: 'Hides the button. Has no action',
@@ -522,7 +512,7 @@ const defaults: ButtonMapping = {
       }
     },
     Action6: {
-      [EventFlavor.KeyDown]: {
+      [EventMode.KeyDown]: {
         name: 'PlayPause',
         id: 'play',
         icon: 'play',
@@ -533,7 +523,7 @@ const defaults: ButtonMapping = {
       }
     },
     Action7: {
-      [EventFlavor.KeyDown]: {
+      [EventMode.KeyDown]: {
         name: 'Skip',
         id: 'skip',
         description: 'Skips the song',
@@ -543,7 +533,7 @@ const defaults: ButtonMapping = {
       }
     },
     Digit1: {
-      [EventFlavor.PressShort]: {
+      [EventMode.PressShort]: {
         name: 'Open Preference App',
         id: 'pref',
         value: '0',
@@ -553,7 +543,7 @@ const defaults: ButtonMapping = {
         version: '0.9.0',
         enabled: true
       },
-      [EventFlavor.PressLong]: {
+      [EventMode.PressLong]: {
         name: 'Swap Apps',
         id: 'swap',
         value: '0',
@@ -565,7 +555,7 @@ const defaults: ButtonMapping = {
       }
     },
     Digit2: {
-      [EventFlavor.PressShort]: {
+      [EventMode.PressShort]: {
         name: 'Open Preference App',
         id: 'pref',
         value: '1',
@@ -575,7 +565,7 @@ const defaults: ButtonMapping = {
         version: '0.9.0',
         enabled: true
       },
-      [EventFlavor.PressLong]: {
+      [EventMode.PressLong]: {
         name: 'Swap Apps',
         id: 'swap',
         value: '1',
@@ -587,7 +577,7 @@ const defaults: ButtonMapping = {
       }
     },
     Digit3: {
-      [EventFlavor.PressShort]: {
+      [EventMode.PressShort]: {
         name: 'Open Preference App',
         id: 'pref',
         value: '2',
@@ -597,7 +587,7 @@ const defaults: ButtonMapping = {
         version: '0.9.0',
         enabled: true
       },
-      [EventFlavor.PressLong]: {
+      [EventMode.PressLong]: {
         name: 'Swap Apps',
         id: 'swap',
         value: '2',
@@ -609,7 +599,7 @@ const defaults: ButtonMapping = {
       }
     },
     Digit4: {
-      [EventFlavor.PressShort]: {
+      [EventMode.PressShort]: {
         name: 'Open Preference App',
         id: 'pref',
         value: '3',
@@ -619,7 +609,7 @@ const defaults: ButtonMapping = {
         version: '0.9.0',
         enabled: true
       },
-      [EventFlavor.PressLong]: {
+      [EventMode.PressLong]: {
         name: 'Swap Apps',
         id: 'swap',
         value: '3',
@@ -631,7 +621,7 @@ const defaults: ButtonMapping = {
       }
     },
     KeyM: {
-      [EventFlavor.PressShort]: {
+      [EventMode.PressShort]: {
         name: 'Open App',
         id: 'open',
         value: 'dashboard',
@@ -641,7 +631,7 @@ const defaults: ButtonMapping = {
         version: '0.9.0',
         enabled: true
       },
-      [EventFlavor.PressLong]: {
+      [EventMode.PressLong]: {
         name: 'Open App',
         id: 'open',
         value: 'utility',
@@ -653,7 +643,7 @@ const defaults: ButtonMapping = {
       }
     },
     Scroll: {
-      [EventFlavor.ScrollRight]: {
+      [EventMode.ScrollRight]: {
         name: 'Volume Up',
         id: 'volUp',
         value: '15',
@@ -663,7 +653,7 @@ const defaults: ButtonMapping = {
         version: '0.9.0',
         enabled: true
       },
-      [EventFlavor.ScrollUp]: {
+      [EventMode.ScrollUp]: {
         name: 'Volume Up',
         id: 'volUp',
         value: '15',
@@ -673,7 +663,7 @@ const defaults: ButtonMapping = {
         version: '0.9.0',
         enabled: true
       },
-      [EventFlavor.ScrollLeft]: {
+      [EventMode.ScrollLeft]: {
         name: 'Volume Down',
         id: 'volDown',
         value: '15',
@@ -683,7 +673,7 @@ const defaults: ButtonMapping = {
         version: '0.9.0',
         enabled: true
       },
-      [EventFlavor.ScrollDown]: {
+      [EventMode.ScrollDown]: {
         name: 'Volume Down',
         id: 'volDown',
         value: '15',
@@ -695,7 +685,7 @@ const defaults: ButtonMapping = {
       }
     },
     Enter: {
-      [EventFlavor.KeyDown]: {
+      [EventMode.KeyDown]: {
         name: 'PlayPause',
         id: 'play',
         icon: 'play',
@@ -704,7 +694,7 @@ const defaults: ButtonMapping = {
         version: '0.9.0',
         enabled: true
       },
-      [EventFlavor.PressLong]: {
+      [EventMode.PressLong]: {
         name: 'Skip',
         id: 'skip',
         description: 'Skips the song',
@@ -714,7 +704,7 @@ const defaults: ButtonMapping = {
       }
     },
     Escape: {
-      [EventFlavor.PressShort]: {
+      [EventMode.PressShort]: {
         name: 'Toggle AppsList',
         id: 'appsList',
         value: 'show',
@@ -725,7 +715,7 @@ const defaults: ButtonMapping = {
         version: '0.9.0',
         enabled: true
       },
-      [EventFlavor.PressLong]: {
+      [EventMode.PressLong]: {
         name: 'Toggle AppsList',
         id: 'appsList',
         value: 'hide',
@@ -738,7 +728,7 @@ const defaults: ButtonMapping = {
       }
     },
     Swipe: {
-      [EventFlavor.SwipeUp]: {
+      [EventMode.SwipeUp]: {
         name: 'Toggle AppsList',
         id: 'appsList',
         value: 'hide',
@@ -748,7 +738,7 @@ const defaults: ButtonMapping = {
         version: '0.9.0',
         enabled: true
       },
-      [EventFlavor.SwipeDown]: {
+      [EventMode.SwipeDown]: {
         name: 'Toggle AppsList',
         id: 'appsList',
         value: 'show',
@@ -758,7 +748,7 @@ const defaults: ButtonMapping = {
         version: '0.9.0',
         enabled: true
       },
-      [EventFlavor.SwipeLeft]: {
+      [EventMode.SwipeLeft]: {
         name: 'Open Previous',
         id: 'swipeL',
         description: 'Opens the app at the previous index',
@@ -766,7 +756,7 @@ const defaults: ButtonMapping = {
         version: '0.9.0',
         enabled: true
       },
-      [EventFlavor.SwipeRight]: {
+      [EventMode.SwipeRight]: {
         name: 'Open Next',
         id: 'swipeR',
         description: 'Opens the app at the next index',

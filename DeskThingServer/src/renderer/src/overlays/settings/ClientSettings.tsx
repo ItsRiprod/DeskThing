@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useClientStore, useAppStore } from '@renderer/stores'
+import { useClientStore } from '@renderer/stores'
 import { ClientManifest } from '@shared/types'
 import Button from '@renderer/components/Button'
 import { IconToggle, IconSave, IconLoading } from '@renderer/assets/icons'
@@ -7,7 +7,6 @@ import { IconToggle, IconSave, IconLoading } from '@renderer/assets/icons'
 const ClientSettings: React.FC = () => {
   const clientSettings = useClientStore((state) => state.clientManifest)
   const updateClientSettings = useClientStore((state) => state.updateClientManifest)
-  const apps = useAppStore((state) => state.appsList)
   const [localSettings, setLocalSettings] = useState<ClientManifest | null>(clientSettings)
   const [loading, setLoading] = useState(false)
 
@@ -34,34 +33,6 @@ const ClientSettings: React.FC = () => {
 
   return (
     <div className="absolute inset w-full h-full p-4 flex flex-col divide-y-2 divide-gray-500">
-      <div className="w-full p-4 flex justify-between items-center">
-        <h2 className="text-xl">Default View</h2>
-        <select
-          value={localSettings.default_view || ''}
-          onChange={(e) => handleSettingChange('default_view', e.target.value)}
-          className="focus:text-white bg-zinc-900 text-white rounded px-2 py-2"
-        >
-          <option value="landing">Landing</option>
-          <option value="dashboard">Dashboard</option>
-          {apps.map((app) => (
-            <option key={app.name} value={app.name}>
-              {app.manifest?.label || app.name}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="w-full p-4 flex justify-between items-center">
-        <h2 className="text-xl">Miniplayer Mode</h2>
-        <select
-          value={localSettings.miniplayer || ''}
-          onChange={(e) => handleSettingChange('miniplayer', e.target.value)}
-          className="focus:text-white bg-zinc-900 text-white rounded px-2 py-2"
-        >
-          <option value="peek">Peek</option>
-          <option value="hidden">Hidden</option>
-          <option value="full">Full</option>
-        </select>
-      </div>
       <div className="w-full p-4 flex justify-between items-center">
         <h2 className="text-xl">IP Address</h2>
         <div className="flex items-center gap-2">

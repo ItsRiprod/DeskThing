@@ -25,7 +25,7 @@ const Overlay: React.FC<DownloadConfirmationProps> = ({ onClose, className, chil
   }, [onClose])
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed animate-fade inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div ref={overlayRef} className={`relative bg-black rounded-lg ${className}`}>
         <Button className="absolute top-2 right-2 hover:bg-black bg-zinc-900" onClick={onClose}>
           <IconX />

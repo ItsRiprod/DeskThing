@@ -1,5 +1,5 @@
-import { ClientIPCData, ReplyFn } from '@shared/types/ipcTypes'
-import dataListener, { MESSAGE_TYPES } from '../utils/events'
+import { ClientIPCData, ClientManifest, SocketData, ReplyFn, MESSAGE_TYPES } from '@shared/types'
+import loggingStore from '../stores/loggingStore'
 import { handleAdbCommands } from './adbHandler'
 import {
   configureDevice,
@@ -9,7 +9,6 @@ import {
   HandleWebappZipFromUrl,
   SetupProxy
 } from './deviceHandler'
-import { ClientManifest, SocketData } from '@shared/types'
 import { sendMessageToClient, sendMessageToClients } from '../services/client/clientCom'
 
 export const clientHandler: Record<
@@ -28,7 +27,11 @@ export const clientHandler: Record<
       return `Pinging ${data.payload}...`
     } catch (error) {
       console.error('Error pinging client:', error)
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, error)
+      if (error instanceof Error) {
+        loggingStore.log(MESSAGE_TYPES.ERROR, error.message)
+      } else {
+        loggingStore.log(MESSAGE_TYPES.ERROR, String(error))
+      }
       return 'Error pinging' + data.payload
     }
   },
@@ -45,27 +48,23 @@ export const clientHandler: Record<
     return handleUrl(data, replyFn)
   },
   adb: async (data, replyFn) => {
-    console.log('Running ADB command:', data.payload)
     replyFn('logging', { status: true, data: 'Working', final: false })
 
-    const reply = async (status, data, final, error): Promise<void> => {
-      replyFn('logging', {
-        status: status,
-        data: data,
-        final: final,
-        error: error
-      })
-    }
-
-    return await handleAdbCommands(data.payload, reply)
+    const response = await handleAdbCommands(data.payload, replyFn)
+    replyFn('logging', { status: true, data: response, final: true })
+    return response
   },
   configure: async (data, replyFn) => {
     replyFn('logging', { status: true, data: 'Configuring Device', final: false })
-    return await configureDevice(data.payload, replyFn)
+    const response = await configureDevice(data.payload, replyFn)
+    replyFn('logging', { status: true, data: 'Device Configured!', final: true })
+    return response
   },
   'client-manifest': async (data, replyFn) => {
     if (data.request === 'get') {
-      return await getClientManifest(false, replyFn)
+      const response = await getClientManifest(replyFn)
+      replyFn('logging', { status: true, data: response, final: true })
+      return response
     } else if (data.request === 'set') {
       return await handleClientManifestUpdate(data.payload, replyFn)
     }
@@ -73,7 +72,7 @@ export const clientHandler: Record<
   },
   'push-staged': async (data, replyFn) => {
     try {
-      console.log('Pushing staged webapp...')
+      loggingStore.log(MESSAGE_TYPES.LOGGING, 'Pushing staged app...')
       HandlePushWebApp(data.payload, replyFn)
     } catch (error) {
       replyFn('logging', {
@@ -82,14 +81,22 @@ export const clientHandler: Record<
         error: 'Failed to push staged app!',
         final: true
       })
-      console.error('Error extracting zip file:', error)
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, error)
+      if (error instanceof Error) {
+        loggingStore.log(MESSAGE_TYPES.ERROR, error.message)
+      } else {
+        loggingStore.log(MESSAGE_TYPES.ERROR, String(error))
+      }
     }
   },
   'push-proxy-script': async (data, replyFn) => {
     try {
-      console.log('Pushing proxy script...')
+      loggingStore.log(MESSAGE_TYPES.LOGGING, 'Pushing proxy script...')
       SetupProxy(replyFn, data.payload)
+      replyFn('logging', {
+        status: true,
+        data: 'Proxy script pushed!',
+        final: true
+      })
     } catch (error) {
       replyFn('logging', {
         status: false,
@@ -98,7 +105,11 @@ export const clientHandler: Record<
         final: true
       })
       console.error('Error pushing proxy script:', error)
-      dataListener.asyncEmit(MESSAGE_TYPES.ERROR, error)
+      if (error instanceof Error) {
+        loggingStore.log(MESSAGE_TYPES.ERROR, error.message)
+      } else {
+        loggingStore.log(MESSAGE_TYPES.ERROR, String(error))
+      }
     }
   },
   'run-device-command': async (data, replyFn) => {
@@ -110,13 +121,12 @@ export const clientHandler: Record<
       request: data.payload.request,
       payload: !payload.includes('{') ? data.payload.payload : JSON.parse(data.payload.payload)
     }
-    console.log('Sending data', data)
     replyFn('logging', { status: true, data: 'Finished', final: true })
     return await sendMessageToClients(message)
   }
 }
 
-const handleUrl = (data, replyFn: ReplyFn): void => {
+const handleUrl = async (data, replyFn: ReplyFn): Promise<void> => {
   try {
     replyFn('logging', {
       status: true,
@@ -124,15 +134,24 @@ const handleUrl = (data, replyFn: ReplyFn): void => {
       final: false
     })
 
-    const reply = async (channel: string, data): Promise<void> => {
-      replyFn(channel, data)
-    }
-
-    HandleWebappZipFromUrl(reply, data.payload)
+    await HandleWebappZipFromUrl(replyFn, data.payload)
+    replyFn('logging', { status: true, data: 'Successfully downloaded client', final: true })
   } catch (error) {
     console.error('Error extracting zip file:', error)
     if (error instanceof Error) {
-      replyFn('zip-extracted', { status: false, error: error.message, data: null, final: true })
+      replyFn('logging', {
+        status: false,
+        error: error.message,
+        data: 'Error handling URL',
+        final: true
+      })
+    } else {
+      replyFn('logging', {
+        status: false,
+        error: 'Unable to download CLIENT',
+        data: 'Error handling URL',
+        final: true
+      })
     }
   }
 }

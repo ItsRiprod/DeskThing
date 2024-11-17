@@ -1,7 +1,7 @@
-import { Manifest } from '@shared/types'
+import { Manifest, MESSAGE_TYPES } from '@shared/types'
 import { join } from 'path'
 import { existsSync, promises } from 'node:fs'
-import dataListener, { MESSAGE_TYPES } from '../../utils/events'
+import loggingStore from '../../stores/loggingStore'
 import { app } from 'electron'
 
 let devAppPath: string
@@ -16,7 +16,7 @@ let devAppPath: string
  */
 export async function getManifest(fileLocation: string): Promise<Manifest | undefined> {
   try {
-    console.log('[getManifest] Getting manifest for app')
+    loggingStore.log(MESSAGE_TYPES.LOGGING, '[getManifest] Getting manifest for app')
     const manifestPath = join(fileLocation, 'manifest.json')
     if (!existsSync(manifestPath)) {
       throw new Error('manifest.json not found after extraction')
@@ -39,7 +39,7 @@ export async function getManifest(fileLocation: string): Promise<Manifest | unde
       homepage: parsedManifest.homepage || undefined,
       repository: parsedManifest.repository || undefined
     }
-    console.log('[getManifest] Successfully got manifest for app')
+    loggingStore.log(MESSAGE_TYPES.LOGGING, '[getManifest] Successfully got manifest for app')
     return returnData
   } catch (error) {
     console.error('Error getting manifest:', error)
@@ -60,10 +60,7 @@ export function getAppFilePath(appName: string, fileName: string = '/'): string 
     if (devAppPath) {
       path = join(devAppPath, fileName)
     } else {
-      dataListener.asyncEmit(
-        MESSAGE_TYPES.ERROR,
-        'Developer app path not set! (Expected if on startup)'
-      )
+      loggingStore.log(MESSAGE_TYPES.ERROR, 'Developer app path not set! (Expected if on startup)')
     }
   } else {
     path = join(app.getPath('userData'), 'apps', appName, fileName)
