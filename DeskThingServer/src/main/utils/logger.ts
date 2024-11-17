@@ -1,13 +1,7 @@
 import fs from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
-
-// Define log levels
-enum LogLevel {
-  INFO = 'info',
-  DEBUG = 'debug',
-  ERROR = 'error'
-}
+import { MESSAGE_TYPES } from './events'
 
 // Logger configuration
 const logFile = join(app.getPath('userData'), 'application.log')
@@ -34,7 +28,7 @@ class Logger {
   }
 
   // Log a message
-  private async log(level: LogLevel, message: string): Promise<void> {
+  async log(level: MESSAGE_TYPES, message: string): Promise<void> {
     const timestamp = new Date().toLocaleTimeString()
     const logMessage = `[${timestamp}]: ${level.toUpperCase()} | ${message}`
 
@@ -44,21 +38,6 @@ class Logger {
         console.error('Failed to write to log file:', err)
       }
     })
-  }
-
-  // Info level logging
-  public async info(message: string): Promise<void> {
-    this.log(LogLevel.INFO, message)
-  }
-
-  // Debug level logging
-  public async debug(message: string): Promise<void> {
-    this.log(LogLevel.DEBUG, message)
-  }
-
-  // Error level logging
-  public async error(message: string): Promise<void> {
-    this.log(LogLevel.ERROR, message)
   }
 
   public async getLogs(): Promise<string[]> {

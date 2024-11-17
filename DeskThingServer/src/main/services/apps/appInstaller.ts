@@ -261,7 +261,6 @@ export async function run(appName: string): Promise<void> {
 
     const manifestResponse: Response = await DeskThing.getManifest()
 
-    // Check if all required apps are running (I know this can be better...)
     const manifest = await handleManifest(appName, manifestResponse)
 
     if (!manifest) {

@@ -1,7 +1,7 @@
 import { App, AppInstance, Manifest, AppReturnData } from '@shared/types'
 import { sendConfigData, sendSettingsData } from '../client/clientCom'
 import settingsStore from '../../stores/settingsStore'
-import dataListener from '../../utils/events'
+import dataListener, { MESSAGE_TYPES } from '../../utils/events'
 
 /**
  * TODO: Sync with the file
@@ -303,19 +303,19 @@ export class AppHandler {
     addAppManifest(manifest, appName)
     this.saveAppToFile(appName)
 
-    // Check if there is an audiosource set
-    if (manifest.isAudioSource) {
+    const checkForSettings = async (): Promise<void> => {
       const settings = await settingsStore.getSettings()
-      const audiosource = settings.audioSource
-      if (audiosource === 'none') {
-        settings.audioSource = appName
+      const playbackLocation = settings.playbackLocation
+      if (playbackLocation === 'none' || !playbackLocation) {
+        settingsStore.updateSetting('playbackLocation', appName)
         dataListener.asyncEmit(
-          'log',
-          '[apps] [appendManifest] [audiosource]: Setting audiosource to ' + appName
+          MESSAGE_TYPES.LOGGING,
+          '[appState][addAppManifest]: Setting playbackLocation to ' + appName
         )
-        settingsStore.saveSettings(settings)
       }
     }
+
+    checkForSettings()
   }
 }
 

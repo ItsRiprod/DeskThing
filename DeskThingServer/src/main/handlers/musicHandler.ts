@@ -35,7 +35,7 @@ export class MusicHandler {
 
     dataListener.asyncEmit(
       MESSAGE_TYPES.LOGGING,
-      `[MusicHandler]: Received settings update - checking for changes | Playback location: ${settings.playbackLocation}`
+      `[MusicHandler]: Received settings update - checking for changes | Playback location: ${this.currentApp} -> ${settings.playbackLocation}`
     )
     if (settings.playbackLocation) {
       dataListener.asyncEmit(
@@ -63,10 +63,10 @@ export class MusicHandler {
   }
 
   private async refreshMusicData(): Promise<void> {
-    if (!this.currentApp || this.currentApp.length == 0) {
-      // Attempt to get music data
+    if (!this.currentApp || this.currentApp.length == 0 || this.currentApp == 'none') {
+      // Attempt to get audiosource from settings
       const currentApp = (await settingsStore.getSettings()).playbackLocation
-      if (!currentApp || currentApp.length == 0) {
+      if (!currentApp || currentApp.length == 0 || currentApp == 'none') {
         dataListener.asyncEmit(
           MESSAGE_TYPES.ERROR,
           `[MusicHandler]: No playback location set! Go to settings -> Music to set the playback location!`
@@ -86,7 +86,7 @@ export class MusicHandler {
     if (!app || app.running == false) {
       dataListener.asyncEmit(
         MESSAGE_TYPES.ERROR,
-        `[MusicHandler]: App ${this.currentApp} not found or not running!!`
+        `[MusicHandler]: App ${this.currentApp} is not found or not running!`
       )
     }
 
@@ -117,6 +117,7 @@ export class MusicHandler {
     if (!this.currentApp) {
       const settings = await settingsStore.getSettings()
       if (settings.playbackLocation) {
+        dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, `[MusicHandler]: No playback location set!`)
         this.currentApp = settings.playbackLocation
       } else {
         dataListener.asyncEmit(MESSAGE_TYPES.ERROR, `[MusicHandler]: No playback location set!`)

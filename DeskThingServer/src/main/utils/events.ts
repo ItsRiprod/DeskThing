@@ -5,13 +5,16 @@ import { ReplyData, ReplyFn, SocketData } from '@shared/types'
 /**
  * The MESSAGE_TYPES object defines a set of constants that represent the different types of messages that can be sent or received in the application.
  */
-export const MESSAGE_TYPES = {
-  ERROR: 'error',
-  LOGGING: 'log',
-  MESSAGE: 'message',
-  CONFIG: 'config',
-  SETTINGS: 'settings',
-  MAPPINGS: 'mapping'
+export enum MESSAGE_TYPES {
+  ERROR = 'error',
+  LOGGING = 'log',
+  MESSAGE = 'message',
+  WARNING = 'warning',
+  FATAL = 'fatal',
+  DEBUG = 'debugging',
+  CONFIG = 'config',
+  SETTINGS = 'settings',
+  MAPPINGS = 'mapping'
 }
 
 /**
@@ -39,7 +42,7 @@ class Events extends EventEmitter {
    *
    * events.emit(MESSAGE_TYPES.MESSAGE, { content: 'Hello, world!' })
    */
-  async asyncEmit(event: string, ...data: (string | SocketData | unknown)[]): Promise<void> {
+  async asyncEmit(event: MESSAGE_TYPES, ...data: (string | SocketData | unknown)[]): Promise<void> {
     console.log(`[${event}] `, data)
     return new Promise((resolve) => {
       setImmediate(() => {
@@ -50,13 +53,8 @@ class Events extends EventEmitter {
           this.emit(event, data[0])
         }
 
-        if (event === MESSAGE_TYPES.ERROR) {
-          Logger.error(`[${event}]: ${JSON.stringify(data)}`)
-        } else if (event === MESSAGE_TYPES.LOGGING) {
-          Logger.info(`[${event}]: ${JSON.stringify(data)}`)
-        } else {
-          Logger.debug(`[${event}]: ${JSON.stringify(data)}`)
-        }
+        Logger.log(event, `[${event}]: ${JSON.stringify(data, null, 2)}`)
+
         resolve()
       })
     })

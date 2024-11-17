@@ -41,6 +41,11 @@ class SettingsStore {
     }
   }
 
+  /**
+   * Updates a specific setting and saves it to file
+   * @param key - The key of the setting to update
+   * @param value - The new value for the setting
+   */
   public updateSetting(key: string, value: boolean | undefined | string | number | string[]): void {
     if (key === 'autoStart' && typeof value === 'boolean') {
       this.updateAutoLaunch(value)
@@ -89,12 +94,17 @@ class SettingsStore {
     }
   }
 
+  /**
+   * Saves the current settings to file. Emits an update if settings are passed
+   * @param settings - Overrides the current settings with the passed settings if passed
+   */
   public async saveSettings(settings?: Settings): Promise<void> {
     try {
       if (settings) {
         this.settings = settings as Settings
         await writeToFile(this.settings, this.settingsFilePath)
         dataListener.asyncEmit(MESSAGE_TYPES.SETTINGS, this.settings)
+        console.log('SETTINGS: Updated settings!', this.settings)
         dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'SETTINGS: Updated settings!')
       } else {
         dataListener.asyncEmit(MESSAGE_TYPES.LOGGING, 'SETTINGS: Invalid setting format!')
@@ -104,6 +114,10 @@ class SettingsStore {
     }
   }
 
+  /**
+   *
+   * @returns Returns the default settings for the application
+   */
   private getDefaultSettings(): Settings {
     return {
       version: settingsVersion,

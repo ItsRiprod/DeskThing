@@ -6,7 +6,6 @@ import { readFromFile, writeToFile } from '../utils/fileHandler'
 const defaultData: AppData = {
   apps: [],
   config: {
-    audiosources: ['local'],
     testData: 'thisisastring'
   }
 }
@@ -74,11 +73,6 @@ const addAppManifest = (manifest: Manifest, appName: string): void => {
   // Find existing app by name
   const existingAppIndex = data.apps.findIndex((app: App) => app.name === appName)
 
-  if (manifest.isAudioSource) {
-    addConfig('audiosources', appName, data)
-    console.log(appName, 'added to audiosources')
-  }
-
   if (existingAppIndex !== -1) {
     // Update existing app
     data.apps[existingAppIndex].manifest = manifest
@@ -91,9 +85,7 @@ const addAppManifest = (manifest: Manifest, appName: string): void => {
 
 const addConfig = (configName: string, config: string | Array<string>, data = readData()): void => {
   if (!data.config) {
-    const val = {
-      audiosources: ['local']
-    }
+    const val = {}
     val[configName] = config
     data.config = val
   } else if (Array.isArray(data.config[configName])) {
@@ -126,9 +118,7 @@ const getConfig = (
   const data = readData()
 
   if (!data.config) {
-    const val = {
-      audiosources: ['local']
-    }
+    const val = {}
     data.config = val
     writeData(data)
   }
@@ -166,11 +156,6 @@ const purgeAppConfig = async (appName: string): Promise<void> => {
   // Filter out the app to be purged
   const filteredApps = data.apps.filter((app: App) => app.name !== appName)
   data.apps = filteredApps
-
-  if (Array.isArray(data.config.audiosources)) {
-    const updatedAudiosources = data.config.audiosources.filter((source) => source !== appName)
-    data.config.audiosources = updatedAudiosources
-  }
 
   writeData(data)
   dataListener.asyncEmit(MESSAGE_TYPES.CONFIG, {
