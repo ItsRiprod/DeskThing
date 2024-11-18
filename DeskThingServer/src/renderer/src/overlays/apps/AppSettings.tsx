@@ -7,6 +7,7 @@ import { IconLoading, IconSave, IconToggle } from '@renderer/assets/icons'
 import Select from '@renderer/components/Select'
 import { MultiValue, SingleValue } from 'react-select'
 import RankableList from '@renderer/components/RankableList'
+import TagList from '@renderer/components/TagList'
 
 const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
   const getAppData = useAppStore((state) => state.getAppData)
@@ -66,7 +67,7 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
                   value={setting.value as string}
                   maxLength={(setting as SettingsString).maxLength}
                   onChange={(e) => handleSettingChange(key, e.target.value)}
-                  className={commonClasses + ' w-full'}
+                  className={commonClasses + ' w-96 max-w-s'}
                 />
               </div>
             </SettingComponent>
@@ -153,6 +154,23 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
                       const currentValues = selectedValues.map((value) => value.value)
                       handleSettingChange(key, currentValues)
                     }}
+                  />
+                </div>
+              )}
+            </SettingComponent>
+          )
+        case 'list':
+          return (
+            <SettingComponent key={key} setting={setting}>
+              {setting.type == 'list' && (
+                <div className="w-96 max-w-s">
+                  <TagList
+                    value={setting.value}
+                    onChange={(values) => handleSettingChange(key, values)}
+                    orderable={setting.orderable}
+                    unique={setting.unique}
+                    maxValues={setting.maxValues}
+                    placeholder={setting.placeholder}
                   />
                 </div>
               )}
