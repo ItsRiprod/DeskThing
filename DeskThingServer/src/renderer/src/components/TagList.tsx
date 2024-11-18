@@ -68,7 +68,7 @@ const TagList: React.FC<TagListProps> = ({
       handleDrag={handleDrag}
       handleTagClick={handleTagClick}
       onTagUpdate={onTagUpdate}
-      placeholder={placeholder ?? 'Press enter to add new stock code (e.g. AAPL)'}
+      placeholder={placeholder ?? 'Press enter to add new item'}
       inputFieldPosition="bottom"
       classNames={{
         tags: '',
