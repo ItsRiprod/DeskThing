@@ -66,7 +66,7 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
                   value={setting.value as string}
                   maxLength={(setting as SettingsString).maxLength}
                   onChange={(e) => handleSettingChange(key, e.target.value)}
-                  className={commonClasses + ' w-full'}
+                  className={commonClasses + ' w-96 max-w-s'}
                 />
               </div>
             </SettingComponent>
