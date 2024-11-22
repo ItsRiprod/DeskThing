@@ -16,6 +16,10 @@ class ConnectionStore {
   private clearTimeout: NodeJS.Timeout | null = null
 
   constructor() {
+    this.setupConnectionListeners()
+  }
+
+  private setupConnectionListeners = async (): Promise<void> => {
     settingsStore.getSettings().then((settings) => {
       this.autoDetectADB = settings.autoDetectADB
     })
@@ -33,7 +37,6 @@ class ConnectionStore {
             this.checkAutoDetectADB()
             loggingStore.log(MESSAGE_TYPES.LOGGING, '[ADB]: Auto-Detect is Enabled')
           } else {
-            loggingStore.log(MESSAGE_TYPES.LOGGING, 'Auto-detect ADB disabled')
             loggingStore.log(MESSAGE_TYPES.LOGGING, '[ADB]: Auto-Detect is Disabled')
           }
         }
@@ -57,7 +60,7 @@ class ConnectionStore {
     return ConnectionStore.instance
   }
 
-  on(listener: ClientListener): () => void {
+  async on(listener: ClientListener): Promise<() => void> {
     this.clientListeners.push(listener)
 
     return () => {
@@ -65,7 +68,7 @@ class ConnectionStore {
     }
   }
 
-  onDevice(listener: DeviceListener): () => void {
+  async onDevice(listener: DeviceListener): Promise<() => void> {
     this.deviceListeners.push(listener)
 
     return () => {
@@ -92,12 +95,12 @@ class ConnectionStore {
     return this.devices
   }
 
-  addClient(client: Client): void {
+  async addClient(client: Client): Promise<void> {
     this.clients.push(client)
     this.notifyListeners()
   }
 
-  updateClient(connectionId: string, updates: Partial<Client>): void {
+  async updateClient(connectionId: string, updates: Partial<Client>): Promise<void> {
     loggingStore.log(MESSAGE_TYPES.LOGGING, 'Updating client:' + connectionId + updates)
     const clientIndex = this.clients.findIndex((c) => c.connectionId === connectionId)
 
@@ -109,23 +112,23 @@ class ConnectionStore {
     }
   }
 
-  removeClient(connectionId: string): void {
+  async removeClient(connectionId: string): Promise<void> {
     loggingStore.log(MESSAGE_TYPES.LOGGING, 'Removing client:' + connectionId)
     this.clients = this.clients.filter((c) => c.connectionId !== connectionId)
     this.notifyListeners()
   }
 
-  removeAllClients(): void {
+  async removeAllClients(): Promise<void> {
     loggingStore.log(MESSAGE_TYPES.LOGGING, 'Removing all clients')
     this.clients = []
     this.notifyListeners()
   }
 
-  notifyListeners(): void {
+  async notifyListeners(): Promise<void> {
     this.clientListeners.forEach((listener) => listener(this.clients))
   }
 
-  notifyDeviceListeners(): void {
+  async notifyDeviceListeners(): Promise<void> {
     this.deviceListeners.forEach((listener) => listener(this.devices))
   }
 

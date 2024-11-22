@@ -16,6 +16,10 @@ class SettingsStore {
 
   constructor() {
     this.settings = this.getDefaultSettings()
+    this.setupSettings()
+  }
+
+  private setupSettings = async (): Promise<void> => {
     this.loadSettings()
       .then((settings) => {
         if (settings) {
@@ -28,6 +32,7 @@ class SettingsStore {
         console.error('SETTINGS: Error initializing settings:', err)
       })
   }
+
   static getInstance(): SettingsStore {
     if (!SettingsStore.instance) {
       SettingsStore.instance = new SettingsStore()
@@ -59,7 +64,10 @@ class SettingsStore {
    * @param key - The key of the setting to update
    * @param value - The new value for the setting
    */
-  public updateSetting(key: string, value: boolean | undefined | string | number | string[]): void {
+  public async updateSetting(
+    key: string,
+    value: boolean | undefined | string | number | string[]
+  ): Promise<void> {
     if (key === 'autoStart' && typeof value === 'boolean') {
       this.updateAutoLaunch(value)
     }

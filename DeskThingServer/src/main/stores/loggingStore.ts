@@ -92,7 +92,7 @@ class LoggingStore {
     })
   }
 
-  notifyListeners(data: Log): void {
+  async notifyListeners(data: Log): Promise<void> {
     this.listeners.forEach((listener) => listener(data))
   }
 

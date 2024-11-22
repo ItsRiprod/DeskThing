@@ -76,7 +76,7 @@ export class MappingState {
     return parsedData
   }
 
-  private saveMappings(mapping: MappingStructure): void {
+  private async saveMappings(mapping: MappingStructure): Promise<void> {
     if (this.isValidFileStructure(mapping)) {
       writeToFile(mapping, 'mappings.json')
     } else {
@@ -199,7 +199,12 @@ export class MappingState {
    * @param Mode - default is 'onPress'
    * @param profile - default is 'default'
    */
-  addButton = (action: Action, key: string, Mode: EventMode, profile: string = 'default'): void => {
+  addButton = async (
+    action: Action,
+    key: string,
+    Mode: EventMode,
+    profile: string = 'default'
+  ): Promise<void> => {
     const mappings = this.mappings
     if (!mappings[profile]) {
       loggingStore.log(
@@ -233,7 +238,11 @@ export class MappingState {
    * @param Mode - The Mode of the button to remove. Default removes all Modes
    * @param profile - default is 'default'
    */
-  removeButton = (key: string, Mode: EventMode | null, profile: string = 'default'): void => {
+  removeButton = async (
+    key: string,
+    Mode: EventMode | null,
+    profile: string = 'default'
+  ): Promise<void> => {
     const mappings = this.mappings
     if (!mappings[profile]) {
       loggingStore.log(
@@ -279,7 +288,7 @@ export class MappingState {
     )
   }
 
-  addKey = (key: Key): void => {
+  addKey = async (key: Key): Promise<void> => {
     const mappings = this.mappings
     // Validate key structure
     if (!this.isValidKey(key)) {
@@ -301,7 +310,7 @@ export class MappingState {
     this.mappings = mappings
   }
 
-  removeKey = (keyId: string): void => {
+  removeKey = async (keyId: string): Promise<void> => {
     const mappings = this.mappings
     // Find the index of the key to remove
     const keyIndex = mappings.keys.findIndex((key) => key.id === keyId)
@@ -321,7 +330,7 @@ export class MappingState {
     return mappings.keys.some((key) => key.id === keyId)
   }
 
-  addAction = (action: Action): void => {
+  addAction = async (action: Action): Promise<void> => {
     const mappings = this.mappings
     // Validate action structure
     if (!this.isValidAction(action)) {
@@ -343,7 +352,7 @@ export class MappingState {
     this.mappings = mappings
   }
 
-  removeAction = (actionId: string): void => {
+  removeAction = async (actionId: string): Promise<void> => {
     const mappings = this.mappings
     // Find the index of the action to remove
     const actionIndex = mappings.actions.findIndex((action) => action.id === actionId)
@@ -487,7 +496,7 @@ export class MappingState {
     return this.mappings.profiles[this.mappings.selected_profile]
   }
 
-  setCurrentProfile = (profile: string): void => {
+  setCurrentProfile = async (profile: string): Promise<void> => {
     if (this.mappings.profiles[profile]) {
       this.mappings.selected_profile = profile
     } else {
@@ -507,7 +516,7 @@ export class MappingState {
    * @param profileName - The unique name of the new profile.
    * @param baseProfile - Optional. The name of an existing profile to clone as the base for the new profile.
    */
-  addProfile = (profileName: string, baseProfile: string = 'default'): void => {
+  addProfile = async (profileName: string, baseProfile: string = 'default'): Promise<void> => {
     const mappings = this.mappings
 
     // Check if the profile name already exists
@@ -531,6 +540,7 @@ export class MappingState {
       version: baseButtonMapping.version,
       id: `${baseButtonMapping.id}_${profileName}`, // Ensure a unique ID
       name: `${profileName}`,
+      version_code: baseButtonMapping.version_code,
       description: baseButtonMapping.description,
       trigger_app: baseButtonMapping.trigger_app,
       mapping: JSON.parse(JSON.stringify(baseButtonMapping.mapping)) // Deep clone
@@ -555,7 +565,7 @@ export class MappingState {
    * Removes an existing profile from the mappings.
    * @param profileName - The name of the profile to remove.
    */
-  removeProfile = (profileName: string): void => {
+  removeProfile = async (profileName: string): Promise<void> => {
     const mappings = this.mappings
 
     // Prevent removal of the default profile
@@ -596,7 +606,7 @@ export class MappingState {
    * @param profile - The name of the profile to export.
    * @param filePath - The path where the profile should be saved.
    */
-  exportProfile = (profile: string, filePath: string): void => {
+  exportProfile = async (profile: string, filePath: string): Promise<void> => {
     const mappings = this.mappings
 
     if (!mappings.profiles[profile]) {
@@ -621,7 +631,7 @@ export class MappingState {
    * @param filePath - The path to the file containing the profile data.
    * @param profileName - The name to assign to the imported profile.
    */
-  importProfile = (filePath: string, profileName: string): void => {
+  importProfile = async (filePath: string, profileName: string): Promise<void> => {
     const mappings = this.mappings
 
     // Load profile data from the file
@@ -650,7 +660,10 @@ export class MappingState {
     )
   }
 
-  updateProfile = (profileName: string, updatedProfile: Partial<ButtonMapping>): void => {
+  updateProfile = async (
+    profileName: string,
+    updatedProfile: Partial<ButtonMapping>
+  ): Promise<void> => {
     const mappings = this.mappings
     const profile = mappings.profiles[profileName]
     if (!profile) {

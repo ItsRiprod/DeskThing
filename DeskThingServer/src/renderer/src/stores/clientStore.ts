@@ -40,7 +40,7 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
   clientManifest: null,
 
   // Setters
-  setADBDevices: (devices: string[]): void => {
+  setADBDevices: async (devices: string[]): Promise<void> => {
     if (devices.includes('offline')) {
       window.electron.handleClientADB('reconnect offline')
     }
@@ -89,7 +89,7 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
   },
 
   setConnections: async (connections: number): Promise<void> => set({ connections }),
-  setClients: (clients: Client[]): void => {
+  setClients: async (clients: Client[]): Promise<void> => {
     set({ clients })
     get().requestADBDevices() // update adb mapping
 
@@ -98,7 +98,8 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
       resolveTask('adbdevices-configure')
     }
   },
-  setClientManifest: (client: ClientManifest): void => set({ clientManifest: client }),
+  setClientManifest: async (client: ClientManifest): Promise<void> =>
+    set({ clientManifest: client }),
 
   requestClientManifest: async (): Promise<Partial<ClientManifest>> => {
     const clientManifest = await window.electron.getClientManifest()
@@ -130,7 +131,7 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
     return clientManifest
   },
 
-  updateClientManifest: (client: Partial<ClientManifest>): void => {
+  updateClientManifest: async (client: Partial<ClientManifest>): Promise<void> => {
     set((state) => ({
       clientManifest: state.clientManifest
         ? { ...state.clientManifest, ...client }

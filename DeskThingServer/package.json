@@ -1,6 +1,6 @@
 {
   "name": "deskthing",
-  "version": "0.9.3",
+  "version": "0.9.4",
   "description": "A DeskThing server UI to interface with the DeskThing car thing app",
   "main": "./out/main/index.js",
   "author": "Riprod",
@@ -13,6 +13,7 @@
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "start": "electron-vite preview",
     "dev": "electron-vite dev",
+    "debug": "electron-vite dev --inspect=8893",
     "build": "npm run typecheck && electron-vite build && electron-builder",
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir"

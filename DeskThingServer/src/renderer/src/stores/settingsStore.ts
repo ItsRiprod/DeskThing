@@ -49,19 +49,19 @@ const useSettingsStore = create<SettingsStoreState>((set, get) => ({
     return get().settings[key]
   },
 
-  saveSettings: (settings: Settings): void => {
+  saveSettings: async (settings: Settings): Promise<void> => {
     set({ settings })
     window.electron.saveSettings(settings)
   },
 
-  savePartialSettings: (settings: Partial<Settings>): void => {
+  savePartialSettings: async (settings: Partial<Settings>): Promise<void> => {
     const currentSettings = get().settings
     const updatedSettings = { ...currentSettings, ...settings }
     set({ settings: updatedSettings })
     window.electron.saveSettings(updatedSettings)
   },
 
-  setSettings: (settings: Settings): void => {
+  setSettings: async (settings: Settings): Promise<void> => {
     set({ settings })
   }
 }))

@@ -7,6 +7,11 @@ import cors from 'cors'
 import express from 'express'
 import * as fs from 'fs'
 
+const isDevelopment = process.env.NODE_ENV === 'development'
+const staticPath = isDevelopment
+  ? join(__dirname, '..', '..', 'resources', 'static')
+  : join(process.resourcesPath, 'static')
+
 export const setupExpressServer = async (expressApp: express.Application): Promise<void> => {
   expressApp.use(cors())
 
@@ -65,12 +70,33 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
   }
 
   expressApp.use(['/', '/client/'], (req, res, next) => {
-    handleClientConnection('client', req, res, next)
+    if (req.path === '/' || req.path.startsWith('/client/')) {
+      handleClientConnection('client', req, res, next)
+    } else {
+      next()
+    }
   })
 
+  expressApp.use(['/:root'], (req, res, next) => {
+    const root = req.params.root
+
+    if (root != 'client' && root != 'fetch' && root != 'icon' && root != 'image' && root != 'app') {
+      loggingStore.log(
+        MESSAGE_TYPES.WARNING,
+        `WEBSOCKET: Client is not updated! Please update to v0.9.1 or later`
+      )
+      const ErrorPage = fs.readFileSync(join(staticPath, 'Error.html'), 'utf-8')
+
+      res.send(ErrorPage)
+    } else {
+      next()
+    }
+  })
   // Serve web apps dynamically based on the URL
-  expressApp.use(['/app/:appName', '/:appName'], (req, res, next) => {
+  expressApp.use(['/app/:appName'], (req, res, next) => {
+    console.log('Got an app request', req.path)
     const appName = req.params.appName
+
     if (appName === 'client' || appName == null) {
       handleClientConnection(appName, req, res, next)
     } else {
@@ -80,6 +106,13 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
       if (fs.existsSync(appPath)) {
         express.static(appPath)(req, res, next)
       } else {
+        loggingStore.log(
+          MESSAGE_TYPES.WARNING,
+          `WEBSOCKET: Client is not updated! Please update to v0.9.1 or later`
+        )
+        const ErrorPage = fs.readFileSync(join(staticPath, 'Error.html'), 'utf-8')
+
+        res.send(ErrorPage)
         res.status(404).send('App not found')
       }
     }
@@ -87,14 +120,16 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
 
   // Serve icons dynamically based on the URL
   expressApp.use('/icon/:appName/:iconName', (req, res, next) => {
+    console.log('Got an icon request', req.path, req.params)
     const iconName = req.params.iconName
     const appName = req.params.appName
     if (iconName != null) {
       const appPath = getAppFilePath(appName)
-      loggingStore.log(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Serving ${appName} from ${appPath}`)
+      const iconPath = join(appPath, iconName)
+      loggingStore.log(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Serving icon ${iconPath} to ${appName}`)
 
-      if (fs.existsSync(join(appPath, 'icons', iconName))) {
-        express.static(join(appPath, 'icons'))(req, res, next)
+      if (fs.existsSync(iconPath)) {
+        express.static(iconPath)(req, res, next)
       } else {
         res.status(404).send('Icon not found')
       }
@@ -109,9 +144,11 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
       const appPath = getAppFilePath(appName)
       loggingStore.log(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Serving ${appName} from ${appPath}`)
 
-      if (fs.existsSync(join(appPath, 'images', imageName))) {
-        express.static(join(appPath, 'icons'))(req, res, next)
+      if (fs.existsSync(join(appPath, imageName))) {
+        console.log('Serving image:', join(appPath, 'images', imageName))
+        express.static(join(appPath, 'images', imageName))(req, res, next)
       } else {
+        console.log('image not found:', imageName)
         res.status(404).send('Icon not found')
       }
     }

@@ -73,7 +73,7 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
 
   // Tasks
 
-  calculateTotalTasks: (): void => {
+  calculateTotalTasks: async (): Promise<void> => {
     set((state) => ({
       totalTasks: state.issues.length + state.logs.length + state.requestQueue.length
     }))
@@ -81,7 +81,7 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
 
   // Logs
 
-  readLog: (index?: number): void => {
+  readLog: async (index?: number): Promise<void> => {
     set((state) => {
       if (index !== undefined) {
         return { logs: state.logs.filter((_, i) => i !== index) }
@@ -92,7 +92,7 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
     get().calculateTotalTasks()
   },
 
-  addLog: (log: Log): void => {
+  addLog: async (log: Log): Promise<void> => {
     if (log.type === MESSAGE_TYPES.LOGGING) return
 
     set((state) => ({
@@ -104,7 +104,7 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
 
   // Tasks
 
-  resolveTask: (taskId: string): void => {
+  resolveTask: async (taskId: string): Promise<void> => {
     set((state) => ({
       tasks: state.tasks.map((task) => {
         if (task.id === taskId) {
@@ -116,7 +116,7 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
     }))
   },
 
-  updateStep: (taskId: string, stepId: string, updatedStep: Partial<Step>): void => {
+  updateStep: async (taskId: string, stepId: string, updatedStep: Partial<Step>): Promise<void> => {
     set((state) => ({
       tasks: state.tasks.map((task) => {
         if (task.id === taskId) {
@@ -132,13 +132,13 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
     }))
   },
 
-  addTask: (task: Task): void => {
+  addTask: async (task: Task): Promise<void> => {
     set((state) => ({
       tasks: state.tasks.some((t) => t.id === task.id) ? state.tasks : [task, ...state.tasks]
     }))
   },
 
-  updateTask: (taskId: string, task: Partial<Task>): void => {
+  updateTask: async (taskId: string, task: Partial<Task>): Promise<void> => {
     set((state) => ({
       tasks: state.tasks.map((t) => {
         if (t.id === taskId) {
@@ -149,13 +149,13 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
     }))
   },
 
-  removeTask: (taskId: string): void => {
+  removeTask: async (taskId: string): Promise<void> => {
     set((state) => ({
       tasks: state.tasks.filter((task) => task.id !== taskId)
     }))
   },
 
-  addIssue: (task: Task): void => {
+  addIssue: async (task: Task): Promise<void> => {
     set((state) => ({
       issues: state.issues.some((t) => t.id === task.id) ? state.issues : [task, ...state.issues]
     }))
@@ -163,7 +163,7 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
     get().calculateTotalTasks()
   },
 
-  updateIssue: (task: Task): void => {
+  updateIssue: async (task: Task): Promise<void> => {
     set((state) => ({
       issues: state.issues.map((t) => {
         if (t.id === task.id) {
@@ -175,7 +175,7 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
     get().calculateTotalTasks()
   },
 
-  removeIssue: (taskId: string): void => {
+  removeIssue: async (taskId: string): Promise<void> => {
     set((state) => ({
       issues: state.issues.filter((task) => task.id !== taskId)
     }))
@@ -209,7 +209,7 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
     }
   },
 
-  addRequest: (appName: string, scopes: AuthScopes): void => {
+  addRequest: async (appName: string, scopes: AuthScopes): Promise<void> => {
     const existingRequest = get().getRequestByAppName(appName)
     if (!existingRequest) {
       const newRequest: Request = { appName, scopes }
@@ -221,7 +221,7 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
     }
   },
 
-  triggerRequestDisplay: (appName: string): void => {
+  triggerRequestDisplay: async (appName: string): Promise<void> => {
     const request = get().getRequestByAppName(appName)
     if (request) {
       // Emit event or handle display logic here

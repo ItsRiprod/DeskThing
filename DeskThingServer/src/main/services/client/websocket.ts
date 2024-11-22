@@ -265,6 +265,16 @@ const handleServerMessage = (socket, client: Client, messageData: SocketData): v
             loggingStore.log(MESSAGE_TYPES.LOGGING, 'Received pong from ', client.connectionId)
             sendIpcData(`pong-${client.connectionId}`, messageData.payload)
             break
+          case 'ping':
+            loggingStore.log(MESSAGE_TYPES.LOGGING, 'Received ping from ', client.connectionId)
+            socket.send(
+              JSON.stringify({
+                type: 'pong',
+                app: 'client',
+                payload: new Date().toISOString()
+              })
+            )
+            break
           case 'set':
             switch (messageData.request) {
               case 'update_pref_index':

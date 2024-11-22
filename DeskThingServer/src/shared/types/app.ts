@@ -148,6 +148,9 @@ export interface SettingsRanked {
   options: SettingOption[]
 }
 
+/**
+ * Not fully implemented yet!
+ */
 export interface SettingsList {
   value: string[]
   placeholder?: string

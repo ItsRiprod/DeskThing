@@ -27,7 +27,7 @@ const useLogStore = create<LogStoreState>((set, get) => ({
     }
   },
 
-  addLog: (log: Log): void => {
+  addLog: async (log: Log): Promise<void> => {
     if (typeof log.log !== 'string') {
       try {
         if (log.log === null) {
@@ -61,7 +61,7 @@ const useLogStore = create<LogStoreState>((set, get) => ({
       console.log(newLog)
     }
   },
-  addLogsFromFile: (logs: Log[]): void => {
+  addLogsFromFile: async (logs: Log[]): Promise<void> => {
     const { maxNumLogs } = get()
     console.log('adding logs from file', logs)
     set((state) => ({

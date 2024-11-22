@@ -2,10 +2,47 @@ import { Key, EventMode, Action, MappingStructure, ButtonMapping } from '@shared
 
 const keys: Key[] = [
   {
+    id: 'Wheel1',
+    source: 'server',
+    description: 'A wheel button',
+    version: '0.9.1',
+    version_code: 9.1,
+    enabled: true,
+    Modes: [EventMode.KeyDown]
+  },
+  {
+    id: 'Wheel2',
+    source: 'server',
+    description: 'A wheel button',
+    version: '0.9.1',
+    version_code: 9.1,
+    enabled: true,
+    Modes: [EventMode.KeyDown]
+  },
+  {
+    id: 'Wheel3',
+    source: 'server',
+    description: 'A wheel button',
+    version: '0.9.1',
+    version_code: 9.1,
+    enabled: true,
+    Modes: [EventMode.KeyDown]
+  },
+  {
+    id: 'Wheel4',
+    source: 'server',
+    description: 'A wheel button',
+    version: '0.9.1',
+    version_code: 9.1,
+    enabled: true,
+    Modes: [EventMode.KeyDown]
+  },
+  {
     id: 'DynamicAction1',
     source: 'server',
     description: 'First dynamic action button on the miniplayer',
     version: '0.9.0',
+    version_code: 9,
     enabled: true,
     Modes: [EventMode.KeyDown]
   },
@@ -14,6 +51,7 @@ const keys: Key[] = [
     source: 'server',
     description: 'Second dynamic action button on the miniplayer',
     version: '0.9.0',
+    version_code: 9,
     enabled: true,
     Modes: [EventMode.KeyDown]
   },
@@ -22,6 +60,7 @@ const keys: Key[] = [
     source: 'server',
     description: 'Third dynamic action button on the miniplayer',
     version: '0.9.0',
+    version_code: 9,
     enabled: true,
     Modes: [EventMode.KeyDown]
   },
@@ -30,6 +69,7 @@ const keys: Key[] = [
     source: 'server',
     description: 'Fourth dynamic action button on the miniplayer',
     version: '0.9.0',
+    version_code: 9,
     enabled: true,
     Modes: [EventMode.KeyDown]
   },
@@ -38,6 +78,7 @@ const keys: Key[] = [
     source: 'server',
     description: 'Fifth action button, always visible on the miniplayer',
     version: '0.9.0',
+    version_code: 9,
     enabled: true,
     Modes: [EventMode.KeyDown]
   },
@@ -46,6 +87,7 @@ const keys: Key[] = [
     source: 'server',
     description: 'Sixth action button, always visible on the miniplayer',
     version: '0.9.0',
+    version_code: 9,
     enabled: true,
     Modes: [EventMode.KeyDown]
   },
@@ -54,6 +96,7 @@ const keys: Key[] = [
     source: 'server',
     description: 'Seventh action button, always visible on the miniplayer',
     version: '0.9.0',
+    version_code: 9,
     enabled: true,
     Modes: [EventMode.KeyDown]
   },
@@ -62,6 +105,7 @@ const keys: Key[] = [
     source: 'server',
     description: 'Physical Button Digit1',
     version: '0.9.0',
+    version_code: 9,
     enabled: true,
     Modes: [EventMode.PressShort, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
   },
@@ -70,6 +114,7 @@ const keys: Key[] = [
     source: 'server',
     description: 'Physical Button Digit2',
     version: '0.9.0',
+    version_code: 9,
     enabled: true,
     Modes: [EventMode.PressShort, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
   },
@@ -78,6 +123,7 @@ const keys: Key[] = [
     source: 'server',
     description: 'Physical Button Digit3',
     version: '0.9.0',
+    version_code: 9,
     enabled: true,
     Modes: [EventMode.PressShort, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
   },
@@ -86,6 +132,7 @@ const keys: Key[] = [
     source: 'server',
     description: 'Physical Button Digit4',
     version: '0.9.0',
+    version_code: 9,
     enabled: true,
     Modes: [EventMode.PressShort, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
   },
@@ -94,6 +141,7 @@ const keys: Key[] = [
     source: 'server',
     description: 'Physical Button M',
     version: '0.9.0',
+    version_code: 9,
     enabled: true,
     Modes: [EventMode.PressShort, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
   },
@@ -102,6 +150,7 @@ const keys: Key[] = [
     source: 'server',
     description: 'Physical Button Scroll',
     version: '0.9.0',
+    version_code: 9,
     enabled: true,
     Modes: [EventMode.ScrollUp, EventMode.ScrollDown, EventMode.ScrollLeft, EventMode.ScrollRight]
   },
@@ -110,6 +159,7 @@ const keys: Key[] = [
     source: 'server',
     description: 'Physical Button Enter',
     version: '0.9.0',
+    version_code: 9,
     enabled: true,
     Modes: [EventMode.KeyDown, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
   },
@@ -118,6 +168,7 @@ const keys: Key[] = [
     source: 'server',
     description: 'Physical Button Escape',
     version: '0.9.0',
+    version_code: 9,
     enabled: true,
     Modes: [EventMode.PressShort, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
   },
@@ -126,6 +177,7 @@ const keys: Key[] = [
     source: 'server',
     description: 'Touchpad Swipe Button',
     version: '0.9.0',
+    version_code: 9,
     enabled: true,
     Modes: [EventMode.ScrollUp, EventMode.ScrollDown, EventMode.ScrollLeft, EventMode.ScrollRight]
   },
@@ -134,6 +186,7 @@ const keys: Key[] = [
     source: 'server',
     description: 'Touch Pad 1 on the fullscreen miniplayer view',
     version: '0.9.0',
+    version_code: 9,
     enabled: true,
     Modes: [EventMode.KeyDown]
   },
@@ -142,6 +195,7 @@ const keys: Key[] = [
     source: 'server',
     description: 'Touch Pad 2 on the fullscreen miniplayer view',
     version: '0.9.0',
+    version_code: 9,
     enabled: true,
     Modes: [EventMode.KeyDown]
   },
@@ -150,6 +204,7 @@ const keys: Key[] = [
     source: 'server',
     description: 'Touch Pad 3 on the fullscreen miniplayer view',
     version: '0.9.0',
+    version_code: 9,
     enabled: true,
     Modes: [EventMode.KeyDown]
   },
@@ -158,6 +213,7 @@ const keys: Key[] = [
     source: 'server',
     description: 'Touch Pad 4 on the fullscreen miniplayer view',
     version: '0.9.0',
+    version_code: 9,
     enabled: true,
     Modes: [EventMode.KeyDown]
   },
@@ -166,6 +222,7 @@ const keys: Key[] = [
     source: 'server',
     description: 'Touch Pad 5 on the fullscreen miniplayer view',
     version: '0.9.0',
+    version_code: 9,
     enabled: true,
     Modes: [EventMode.KeyDown]
   },
@@ -174,6 +231,7 @@ const keys: Key[] = [
     source: 'server',
     description: 'Touch Pad 6 on the fullscreen miniplayer view',
     version: '0.9.0',
+    version_code: 9,
     enabled: true,
     Modes: [EventMode.KeyDown]
   },
@@ -182,6 +240,7 @@ const keys: Key[] = [
     source: 'server',
     description: 'Touch Pad 7 on the fullscreen miniplayer view',
     version: '0.9.0',
+    version_code: 9,
     enabled: true,
     Modes: [EventMode.KeyDown]
   },
@@ -190,6 +249,7 @@ const keys: Key[] = [
     source: 'server',
     description: 'Touch Pad 8 on the fullscreen miniplayer view',
     version: '0.9.0',
+    version_code: 9,
     enabled: true,
     Modes: [EventMode.KeyDown]
   },
@@ -198,12 +258,23 @@ const keys: Key[] = [
     source: 'server',
     description: 'Touch Pad 9 on the fullscreen miniplayer view',
     version: '0.9.0',
+    version_code: 9,
     enabled: true,
     Modes: [EventMode.KeyDown]
   }
 ]
 
 const actions: Action[] = [
+  {
+    name: 'WheelSelect',
+    id: 'wheel',
+    icon: 'wheel',
+    description: 'Opens the selection wheel',
+    source: 'server',
+    version: '0.9.1',
+    version_code: 9.1,
+    enabled: true
+  },
   {
     name: 'Shuffle',
     id: 'shuffle',
@@ -213,6 +284,7 @@ const actions: Action[] = [
     description: 'Shuffles the song',
     source: 'server',
     version: '0.9.0',
+    version_code: 9,
     enabled: true
   },
   {
@@ -225,6 +297,7 @@ const actions: Action[] = [
     description: 'Rewinds the song',
     source: 'server',
     version: '0.9.0',
+    version_code: 9,
     enabled: true
   },
   {
@@ -234,6 +307,7 @@ const actions: Action[] = [
     description: 'Plays or Pauses the song',
     source: 'server',
     version: '0.9.0',
+    version_code: 9,
     enabled: true
   },
   {
@@ -242,6 +316,7 @@ const actions: Action[] = [
     description: 'Skips the song',
     source: 'server',
     version: '0.9.0',
+    version_code: 9,
     enabled: true
   },
   {
@@ -250,6 +325,7 @@ const actions: Action[] = [
     description: 'Toggles repeat',
     source: 'server',
     version: '0.9.0',
+    version_code: 9,
     enabled: true
   },
   {
@@ -260,6 +336,7 @@ const actions: Action[] = [
     description: 'Opens the app at the index in the value',
     source: 'server',
     version: '0.9.0',
+    version_code: 9,
     enabled: true
   },
   {
@@ -270,6 +347,7 @@ const actions: Action[] = [
     description: 'Swaps the current app with the selected one',
     source: 'server',
     version: '0.9.0',
+    version_code: 9,
     enabled: true
   },
   {
@@ -280,6 +358,7 @@ const actions: Action[] = [
     description: 'Turns the volume down',
     source: 'server',
     version: '0.9.0',
+    version_code: 9,
     enabled: true
   },
   {
@@ -290,6 +369,7 @@ const actions: Action[] = [
     description: 'Turns the volume up',
     source: 'server',
     version: '0.9.0',
+    version_code: 9,
     enabled: true
   },
   {
@@ -300,6 +380,7 @@ const actions: Action[] = [
     description: 'Opens the app defined in the value',
     source: 'server',
     version: '0.9.0',
+    version_code: 9,
     enabled: true
   },
   {
@@ -311,6 +392,7 @@ const actions: Action[] = [
     description: 'Toggles the apps list.',
     source: 'server',
     version: '0.9.0',
+    version_code: 9,
     enabled: true
   },
   {
@@ -319,6 +401,7 @@ const actions: Action[] = [
     description: 'Opens the app at the previous index',
     source: 'server',
     version: '0.9.0',
+    version_code: 9,
     enabled: true
   },
   {
@@ -327,6 +410,7 @@ const actions: Action[] = [
     description: 'Opens the app at the next index',
     source: 'server',
     version: '0.9.0',
+    version_code: 9,
     enabled: true
   },
   {
@@ -335,6 +419,7 @@ const actions: Action[] = [
     description: 'Hides the button. Has no action',
     source: 'server',
     version: '0.9.0',
+    version_code: 9,
     enabled: true
   },
   {
@@ -343,6 +428,7 @@ const actions: Action[] = [
     description: 'Toggles Fullscreen on most devices',
     source: 'server',
     version: '0.9.0',
+    version_code: 9,
     enabled: true
   }
 ]
@@ -352,7 +438,60 @@ const defaults: ButtonMapping = {
   name: 'The Default Mapping',
   description: 'The default mapping for the DeskThing',
   version: '0.9.0',
+  version_code: 9,
   mapping: {
+    Wheel1: {
+      [EventMode.KeyDown]: {
+        version: '0.9.1',
+        version_code: 9.1,
+        enabled: true,
+        icon: '',
+        name: 'Pref',
+        id: 'pref',
+        description: 'Changed Pref',
+        source: 'server',
+        value: '0'
+      }
+    },
+    Wheel2: {
+      [EventMode.KeyDown]: {
+        version: '0.9.1',
+        version_code: 9.1,
+        enabled: true,
+        icon: '',
+        name: 'Pref',
+        id: 'pref',
+        description: 'Changed Pref',
+        source: 'server',
+        value: '1'
+      }
+    },
+    Wheel3: {
+      [EventMode.KeyDown]: {
+        version: '0.9.1',
+        version_code: 9.1,
+        enabled: true,
+        icon: '',
+        name: 'Pref',
+        id: 'pref',
+        description: 'Changed Pref',
+        source: 'server',
+        value: '2'
+      }
+    },
+    Wheel4: {
+      [EventMode.KeyDown]: {
+        version: '0.9.1',
+        version_code: 9.1,
+        enabled: true,
+        icon: '',
+        name: 'Pref',
+        id: 'pref',
+        description: 'Changed Pref',
+        source: 'server',
+        value: '3'
+      }
+    },
     Pad1: {
       [EventMode.KeyDown]: {
         name: 'Volume Up',
@@ -362,6 +501,7 @@ const defaults: ButtonMapping = {
         description: 'Turns the volume up',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       }
     },
@@ -372,6 +512,7 @@ const defaults: ButtonMapping = {
         description: 'Opens the app at the previous index',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       }
     },
@@ -382,6 +523,7 @@ const defaults: ButtonMapping = {
         description: 'Opens the app at the next index',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       }
     },
@@ -394,6 +536,7 @@ const defaults: ButtonMapping = {
         description: 'Turns the volume down',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       }
     },
@@ -407,6 +550,7 @@ const defaults: ButtonMapping = {
         description: 'Toggles the apps list.',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       }
     },
@@ -420,6 +564,7 @@ const defaults: ButtonMapping = {
         description: 'Toggles the apps list.',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       }
     },
@@ -430,6 +575,7 @@ const defaults: ButtonMapping = {
         description: 'Toggles repeat',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       }
     },
@@ -441,6 +587,7 @@ const defaults: ButtonMapping = {
         description: 'Plays or Pauses the song',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       }
     },
@@ -451,6 +598,7 @@ const defaults: ButtonMapping = {
         description: 'Toggles Fullscreen on most devices',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       }
     },
@@ -464,6 +612,7 @@ const defaults: ButtonMapping = {
         description: 'Shuffles the song',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       }
     },
@@ -474,6 +623,7 @@ const defaults: ButtonMapping = {
         description: 'Repeats the song',
         source: 'server',
         enabled: true,
+        version_code: 9,
         version: '0.9.0'
       }
     },
@@ -488,6 +638,7 @@ const defaults: ButtonMapping = {
         description: 'Rewinds the song',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       }
     },
@@ -498,6 +649,7 @@ const defaults: ButtonMapping = {
         description: 'Hides the button. Has no action',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       }
     },
@@ -508,6 +660,7 @@ const defaults: ButtonMapping = {
         description: 'Hides the button. Has no action',
         source: 'server',
         enabled: true,
+        version_code: 9,
         version: '0.9.0'
       }
     },
@@ -519,6 +672,7 @@ const defaults: ButtonMapping = {
         description: 'Plays or Pauses the song',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       }
     },
@@ -529,6 +683,7 @@ const defaults: ButtonMapping = {
         description: 'Skips the song',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       }
     },
@@ -541,6 +696,7 @@ const defaults: ButtonMapping = {
         description: 'Opens the app at the index in the value',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       },
       [EventMode.PressLong]: {
@@ -551,6 +707,7 @@ const defaults: ButtonMapping = {
         description: 'Swaps the current app with the selected one',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       }
     },
@@ -563,6 +720,7 @@ const defaults: ButtonMapping = {
         description: 'Opens the app at the index in the value',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       },
       [EventMode.PressLong]: {
@@ -573,6 +731,7 @@ const defaults: ButtonMapping = {
         description: 'Swaps the current app with the selected one',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       }
     },
@@ -585,6 +744,7 @@ const defaults: ButtonMapping = {
         description: 'Opens the app at the index in the value',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       },
       [EventMode.PressLong]: {
@@ -595,6 +755,7 @@ const defaults: ButtonMapping = {
         description: 'Swaps the current app with the selected one',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       }
     },
@@ -607,6 +768,7 @@ const defaults: ButtonMapping = {
         description: 'Opens the app at the index in the value',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       },
       [EventMode.PressLong]: {
@@ -617,6 +779,7 @@ const defaults: ButtonMapping = {
         description: 'Swaps the current app with the selected one',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       }
     },
@@ -629,6 +792,7 @@ const defaults: ButtonMapping = {
         description: 'Opens the app defined in the value',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       },
       [EventMode.PressLong]: {
@@ -639,6 +803,7 @@ const defaults: ButtonMapping = {
         description: 'Opens the app defined in the value',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       }
     },
@@ -651,6 +816,7 @@ const defaults: ButtonMapping = {
         description: 'Turns the volume up',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       },
       [EventMode.ScrollUp]: {
@@ -661,6 +827,7 @@ const defaults: ButtonMapping = {
         description: 'Turns the volume up',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       },
       [EventMode.ScrollLeft]: {
@@ -671,6 +838,7 @@ const defaults: ButtonMapping = {
         description: 'Turns the volume down',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       },
       [EventMode.ScrollDown]: {
@@ -681,17 +849,19 @@ const defaults: ButtonMapping = {
         description: 'Turns the volume down',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       }
     },
     Enter: {
       [EventMode.KeyDown]: {
-        name: 'PlayPause',
-        id: 'play',
-        icon: 'play',
-        description: 'Plays or Pauses the song',
+        name: 'WheelSelect',
+        id: 'wheel',
+        icon: 'wheel',
+        description: 'Opens the selection wheel',
         source: 'server',
-        version: '0.9.0',
+        version: '0.9.1',
+        version_code: 9.1,
         enabled: true
       },
       [EventMode.PressLong]: {
@@ -700,6 +870,7 @@ const defaults: ButtonMapping = {
         description: 'Skips the song',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       }
     },
@@ -713,6 +884,7 @@ const defaults: ButtonMapping = {
         description: 'Toggles the apps list.',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       },
       [EventMode.PressLong]: {
@@ -724,6 +896,7 @@ const defaults: ButtonMapping = {
         description: 'Toggles the apps list.',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       }
     },
@@ -736,6 +909,7 @@ const defaults: ButtonMapping = {
         description: 'Toggles the apps list.',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       },
       [EventMode.SwipeDown]: {
@@ -746,6 +920,7 @@ const defaults: ButtonMapping = {
         description: 'Toggles the apps list.',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       },
       [EventMode.SwipeLeft]: {
@@ -754,6 +929,7 @@ const defaults: ButtonMapping = {
         description: 'Opens the app at the previous index',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       },
       [EventMode.SwipeRight]: {
@@ -762,6 +938,7 @@ const defaults: ButtonMapping = {
         description: 'Opens the app at the next index',
         source: 'server',
         version: '0.9.0',
+        version_code: 9,
         enabled: true
       }
     }
@@ -769,7 +946,8 @@ const defaults: ButtonMapping = {
 }
 
 export const defaultData: MappingStructure = {
-  version: '0.9.0',
+  version: '0.9.1',
+  version_code: 9.1,
   selected_profile: 'default',
   profiles: {
     default: defaults

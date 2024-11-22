@@ -297,7 +297,10 @@ export const HandlePushWebApp = async (
 
     reply &&
       reply('logging', { status: true, data: response || 'Restarting Chromium', final: false })
-    response = handleAdbCommands(`-s ${deviceId} shell supervisorctl restart chromium`)
+    response = await handleAdbCommands(`-s ${deviceId} shell supervisorctl restart chromium`)
+
+    reply && reply('logging', { status: true, data: response || 'Syncing Files', final: false })
+    response = await handleAdbCommands(`-s ${deviceId} shell sync`)
 
     reply &&
       reply('logging', { status: true, data: response || 'Cleaning up device ID...', final: false })
