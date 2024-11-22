@@ -15,19 +15,12 @@ const staticPath = isDevelopment
 export const setupExpressServer = async (expressApp: express.Application): Promise<void> => {
   expressApp.use(cors())
 
-  expressApp.use((req, res, next) => {
-    if (req.path.endsWith('.svg')) {
-      res.setHeader('Content-Type', 'image/svg+xml')
-    }
-    next()
-  })
-
-  const handleClientConnection = (
+  const handleClientConnection = async (
     appName: string,
     req: express.Request,
     res: express.Response,
     next: express.NextFunction
-  ): void => {
+  ): Promise<void> => {
     const userDataPath = electronApp.getPath('userData')
     const webAppDir = join(userDataPath, 'webapp')
     loggingStore.log(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Serving ${appName} from ${webAppDir}`)
@@ -69,15 +62,13 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
     }
   }
 
-  expressApp.use(['/', '/client/'], (req, res, next) => {
-    if (req.path === '/' || req.path.startsWith('/client/')) {
-      handleClientConnection('client', req, res, next)
-    } else {
-      next()
-    }
+  expressApp.use(['/', '/client/'], async (req, res, next) => {
+    console.log('WEBSOCKET: Serving client', req.path)
+    handleClientConnection('client', req, res, next)
+    next()
   })
 
-  expressApp.use(['/:root'], (req, res, next) => {
+  expressApp.use(['/:root'], async (req, res, next) => {
     const root = req.params.root
 
     if (root != 'client' && root != 'fetch' && root != 'icon' && root != 'image' && root != 'app') {
@@ -93,7 +84,7 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
     }
   })
   // Serve web apps dynamically based on the URL
-  expressApp.use(['/app/:appName'], (req, res, next) => {
+  expressApp.use(['/app/:appName'], async (req, res, next) => {
     console.log('Got an app request', req.path)
     const appName = req.params.appName
 
@@ -119,13 +110,13 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
   })
 
   // Serve icons dynamically based on the URL
-  expressApp.use('/icon/:appName/:iconName', (req, res, next) => {
+  expressApp.use('/icon/:appName/:iconName', async (req, res, next) => {
     console.log('Got an icon request', req.path, req.params)
     const iconName = req.params.iconName
     const appName = req.params.appName
     if (iconName != null) {
       const appPath = getAppFilePath(appName)
-      const iconPath = join(appPath, iconName)
+      const iconPath = join(appPath, 'icons', iconName)
       loggingStore.log(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Serving icon ${iconPath} to ${appName}`)
 
       if (fs.existsSync(iconPath)) {
@@ -137,7 +128,7 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
   })
 
   // Serve icons dynamically based on the URL
-  expressApp.use('/image/:appName/:imageName', (req, res, next) => {
+  expressApp.use('/image/:appName/:imageName', async (req, res, next) => {
     const imageName = req.params.imageName
     const appName = req.params.appName
     if (imageName != null) {
