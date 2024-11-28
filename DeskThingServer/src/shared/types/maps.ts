@@ -38,6 +38,13 @@ export enum EventMode {
   PressLong
 }
 
+export type ActionReference = {
+  id: string
+  value?: string
+  enabled: boolean
+  source: string
+}
+
 // The button mapping profile stored in the file system
 export type ButtonMapping = {
   // The ID of the key
@@ -49,7 +56,7 @@ export type ButtonMapping = {
   trigger_app?: string
   mapping: {
     [key: string]: {
-      [Mode in EventMode]?: Action
+      [Mode in EventMode]?: ActionReference
     }
   }
 }

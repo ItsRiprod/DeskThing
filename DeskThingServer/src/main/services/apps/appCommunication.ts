@@ -12,9 +12,11 @@ import { ipcMain } from 'electron'
  */
 export async function handleDataFromApp(app: string, appData: IncomingData): Promise<void> {
   const keyMapStore = (await import('../../stores/keyMapStore')).default
-  const { sendMessageToClients } = await import('../client/clientCom')
+  const { sendMessageToClients, handleClientMessage } = await import('../client/clientCom')
   const { getData, setData, addData } = await import('../../handlers/dataHandler')
   const { getConfig } = await import('../../handlers/configHandler')
+
+  console.log(`SERVER: Received data from ${app}`, appData)
 
   switch (appData.type) {
     case 'message':
@@ -55,12 +57,17 @@ export async function handleDataFromApp(app: string, appData: IncomingData): Pro
       break
     case 'data':
       if (app && appData.payload) {
-        sendMessageToClients({
-          app: appData.payload.app || app,
-          type: appData.payload.type || '',
-          payload: appData.payload.payload || '',
-          request: appData.payload.request || ''
-        })
+
+        if (appData.payload.app == 'client') {
+           handleClientMessage(appData.payload)
+        } else {
+          sendMessageToClients({
+            app: appData.payload.app || app,
+            type: appData.payload.type || '',
+            payload: appData.payload.payload || '',
+            request: appData.payload.request || ''
+          })
+        }
       }
       break
     case 'toApp':
@@ -118,6 +125,7 @@ export async function handleDataFromApp(app: string, appData: IncomingData): Pro
                 value_options: appData.payload.value_options || [],
                 icon: appData.payload.icon || undefined,
                 version: appData.payload.version || '0.0.0',
+                version_code: appData.payload.version_code || 0,
                 enabled: true,
                 source: app
               }

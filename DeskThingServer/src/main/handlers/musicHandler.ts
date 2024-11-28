@@ -1,9 +1,10 @@
 import loggingStore from '../stores/loggingStore'
 import settingsStore from '../stores/settingsStore'
-import { Settings, SocketData, MESSAGE_TYPES } from '@shared/types'
+import { Settings, SocketData, MESSAGE_TYPES, SongData } from '@shared/types'
 import { sendMessageToApp } from '../services/apps'
 import { getAppByName } from './configHandler'
 import appState from '../services/apps/appState'
+import { sendMessageToClients } from '../services/client/clientCom'
 
 export class MusicHandler {
   private static instance: MusicHandler
@@ -204,6 +205,39 @@ export class MusicHandler {
       request: request.request,
       payload: request.payload
     })
+  }
+
+  public async handleMusicMessage(songData: SongData): Promise<void> {
+    if (!songData || typeof songData !== 'object') {
+      loggingStore.log(MESSAGE_TYPES.ERROR, '[MusicHandler]: Invalid song data received')
+      return
+    }
+
+    try {
+      if (songData.thumbnail) {
+        const { getAverageColor } = await import('fast-average-color-node')
+        const color = await getAverageColor(songData.thumbnail)
+        const songDataWithColor = {
+          ...songData,
+          color: color
+        }
+        await sendMessageToClients({
+          type: 'song',
+          app: 'client',
+          payload: songDataWithColor
+        })
+      } else {
+        await sendMessageToClients({
+          type: 'song',
+          app: 'client',
+          payload: songData
+        })
+      }
+
+      loggingStore.log(MESSAGE_TYPES.LOGGING, '[MusicHandler]: Song data sent to clients')
+    } catch (error) {
+      loggingStore.log(MESSAGE_TYPES.ERROR, `[MusicHandler]: Failed to send song data: ${error}`)
+    }
   }
 }
 

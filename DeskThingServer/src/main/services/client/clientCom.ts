@@ -1,10 +1,22 @@
-import { SocketData, MESSAGE_TYPES } from '@shared/types'
+import { SocketData, MESSAGE_TYPES, SongData } from '@shared/types'
 import { server, Clients } from './websocket'
 import loggingStore from '../../stores/loggingStore'
 import connectionsStore from '../../stores/connectionsStore'
 import appState from '../apps/appState'
 import { readData } from '../../handlers/dataHandler'
 import keyMapStore from '../../stores/keyMapStore'
+
+export const handleClientMessage = async (data: SocketData): Promise<void> => {
+  const { type, payload } = data
+  const musicHandler = await import('../../handlers/musicHandler')
+  switch (type) {
+    case 'song':
+      musicHandler.default.handleMusicMessage(payload as SongData)
+      break
+    default:
+      sendMessageToClients(data)
+  }
+}
 
 export const sendMessageToClients = async (data: SocketData): Promise<void> => {
   loggingStore.log(MESSAGE_TYPES.LOGGING, `Sending message to clients: ${JSON.stringify(data)}`)
@@ -78,7 +90,7 @@ export const sendSettingsData = async (clientId?: string): Promise<void> => {
 
     const settings = {}
 
-    if (appData && appData) {
+    if (appData && config) {
       appData.map((app) => {
         if (app && app.manifest) {
           const appConfig = config[app.manifest.id]
@@ -102,8 +114,18 @@ export const sendSettingsData = async (clientId?: string): Promise<void> => {
 export const sendMappings = async (clientId?: string): Promise<void> => {
   try {
     const mappings = keyMapStore.getMapping()
+    const actions = keyMapStore.getActions()
 
-    sendMessageToClient(clientId, { app: 'client', type: 'button_mappings', payload: mappings })
+    const combinedActions = {
+      ...mappings,
+      actions: actions
+    }
+
+    sendMessageToClient(clientId, {
+      app: 'client',
+      type: 'button_mappings',
+      payload: combinedActions
+    })
 
     loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Button mappings sent!')
     loggingStore.log(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Client has been sent button maps!`)

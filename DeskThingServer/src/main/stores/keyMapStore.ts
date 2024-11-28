@@ -129,14 +129,7 @@ export class MappingState {
           if (!Object.values(EventMode).includes(Number(Mode))) {
             return false
           }
-          if (
-            !action ||
-            typeof action !== 'object' ||
-            !action.name ||
-            !action.id ||
-            !action.description ||
-            !action.source
-          ) {
+          if (!action || typeof action !== 'object' || !action.id || !action.source) {
             return false
           }
         }
@@ -459,19 +452,6 @@ export class MappingState {
       loggingStore.log(MESSAGE_TYPES.ERROR, `MAPHANDLER: Action ${actionId} not found`)
     }
 
-    // Update the icon for all actions inside the current profile
-    const currentMap = mappings.selected_profile
-    if (currentMap) {
-      const currentMapActions = mappings.profiles[currentMap].mapping
-      Object.values(currentMapActions).forEach((buttonModes) => {
-        Object.values(buttonModes).forEach((action) => {
-          if (action && action.id === actionId) {
-            action.icon = icon
-          }
-        })
-      })
-    }
-
     // Save the mappings
     this.mappings = mappings
   }
@@ -487,6 +467,11 @@ export class MappingState {
       loggingStore.log(MESSAGE_TYPES.ERROR, `MAPHANDLER: Action ${actionId} not found`)
       return null
     }
+  }
+
+  getActions = (): Action[] | null => {
+    const mappings = this.mappings
+    return mappings.actions
   }
 
   getMapping = (): ButtonMapping => {
