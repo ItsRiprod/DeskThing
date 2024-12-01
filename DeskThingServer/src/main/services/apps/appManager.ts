@@ -70,7 +70,7 @@ export async function purgeApp(appName: string): Promise<void> {
 
     const { purgeAppData } = await import('../../handlers/dataHandler')
     const { purgeAppConfig } = await import('../../handlers/configHandler')
-    const keyMapStore = (await import('../../stores/keyMapStore')).default
+    const keyMapStore = (await import('../mappings/mappingStore')).default
 
     // Purge App Data
     await purgeAppData(appName)

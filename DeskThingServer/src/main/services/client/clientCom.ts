@@ -4,7 +4,7 @@ import loggingStore from '../../stores/loggingStore'
 import connectionsStore from '../../stores/connectionsStore'
 import appState from '../apps/appState'
 import { readData } from '../../handlers/dataHandler'
-import keyMapStore from '../../stores/keyMapStore'
+import keyMapStore from '../mappings/mappingStore'
 
 export const handleClientMessage = async (data: SocketData): Promise<void> => {
   const { type, payload } = data

@@ -24,6 +24,11 @@ export type UTILITY_TYPES =
   | 'refresh-firewall'
   | 'restart-server'
   | 'zip'
+  | 'actions'
+  | 'buttons'
+  | 'keys'
+  | 'profiles'
+  | 'run'
 
 export type APP_TYPES =
   | 'app'

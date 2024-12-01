@@ -61,6 +61,15 @@ export type ButtonMapping = {
   }
 }
 
+export type MappingFileStructure = {
+  selected_profile: string
+  version: string
+  version_code: number
+  profiles: string[] // array of profile ids
+  actions: Action[]
+  keys: Key[]
+}
+
 export type MappingStructure = {
   selected_profile: string
   version: string

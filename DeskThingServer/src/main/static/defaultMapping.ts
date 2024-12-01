@@ -38,6 +38,60 @@ const keys: Key[] = [
     Modes: [EventMode.KeyDown]
   },
   {
+    id: 'Tray6',
+    source: 'server',
+    description: 'The app tray button',
+    version: '0.9.1',
+    version_code: 9.1,
+    enabled: true,
+    Modes: [EventMode.KeyDown]
+  },
+  {
+    id: 'Tray1',
+    source: 'server',
+    description: 'The app tray button',
+    version: '0.9.1',
+    version_code: 9.1,
+    enabled: true,
+    Modes: [EventMode.KeyDown]
+  },
+  {
+    id: 'Tray2',
+    source: 'server',
+    description: 'The app tray button',
+    version: '0.9.1',
+    version_code: 9.1,
+    enabled: true,
+    Modes: [EventMode.KeyDown]
+  },
+  {
+    id: 'Tray3',
+    source: 'server',
+    description: 'The app tray button',
+    version: '0.9.1',
+    version_code: 9.1,
+    enabled: true,
+    Modes: [EventMode.KeyDown]
+  },
+  {
+    id: 'Tray4',
+    source: 'server',
+    description: 'The app tray button',
+    version: '0.9.1',
+    version_code: 9.1,
+    enabled: true,
+    Modes: [EventMode.KeyDown]
+  },
+  {
+    id: 'Tray5',
+    source: 'server',
+    description: 'The app tray button',
+    version: '0.9.1',
+    version_code: 9.1,
+    enabled: true,
+    Modes: [EventMode.KeyDown]
+  },
+  {
     id: 'DynamicAction1',
     source: 'server',
     description: 'First dynamic action button on the miniplayer',
@@ -180,87 +234,6 @@ const keys: Key[] = [
     version_code: 9,
     enabled: true,
     Modes: [EventMode.ScrollUp, EventMode.ScrollDown, EventMode.ScrollLeft, EventMode.ScrollRight]
-  },
-  {
-    id: 'Pad1',
-    source: 'server',
-    description: 'Touch Pad 1 on the fullscreen miniplayer view',
-    version: '0.9.0',
-    version_code: 9,
-    enabled: true,
-    Modes: [EventMode.KeyDown]
-  },
-  {
-    id: 'Pad2',
-    source: 'server',
-    description: 'Touch Pad 2 on the fullscreen miniplayer view',
-    version: '0.9.0',
-    version_code: 9,
-    enabled: true,
-    Modes: [EventMode.KeyDown]
-  },
-  {
-    id: 'Pad3',
-    source: 'server',
-    description: 'Touch Pad 3 on the fullscreen miniplayer view',
-    version: '0.9.0',
-    version_code: 9,
-    enabled: true,
-    Modes: [EventMode.KeyDown]
-  },
-  {
-    id: 'Pad4',
-    source: 'server',
-    description: 'Touch Pad 4 on the fullscreen miniplayer view',
-    version: '0.9.0',
-    version_code: 9,
-    enabled: true,
-    Modes: [EventMode.KeyDown]
-  },
-  {
-    id: 'Pad5',
-    source: 'server',
-    description: 'Touch Pad 5 on the fullscreen miniplayer view',
-    version: '0.9.0',
-    version_code: 9,
-    enabled: true,
-    Modes: [EventMode.KeyDown]
-  },
-  {
-    id: 'Pad6',
-    source: 'server',
-    description: 'Touch Pad 6 on the fullscreen miniplayer view',
-    version: '0.9.0',
-    version_code: 9,
-    enabled: true,
-    Modes: [EventMode.KeyDown]
-  },
-  {
-    id: 'Pad7',
-    source: 'server',
-    description: 'Touch Pad 7 on the fullscreen miniplayer view',
-    version: '0.9.0',
-    version_code: 9,
-    enabled: true,
-    Modes: [EventMode.KeyDown]
-  },
-  {
-    id: 'Pad8',
-    source: 'server',
-    description: 'Touch Pad 8 on the fullscreen miniplayer view',
-    version: '0.9.0',
-    version_code: 9,
-    enabled: true,
-    Modes: [EventMode.KeyDown]
-  },
-  {
-    id: 'Pad9',
-    source: 'server',
-    description: 'Touch Pad 9 on the fullscreen miniplayer view',
-    version: '0.9.0',
-    version_code: 9,
-    enabled: true,
-    Modes: [EventMode.KeyDown]
   }
 ]
 
@@ -433,12 +406,12 @@ const actions: Action[] = [
   }
 ]
 
-const defaults: ButtonMapping = {
+export const defaults: ButtonMapping = {
   id: 'default',
   name: 'The Default Mapping',
   description: 'The default mapping for the DeskThing',
-  version: '0.9.0',
-  version_code: 9,
+  version: '0.9.2',
+  version_code: 9.2,
   mapping: {
     Wheel1: {
       [EventMode.KeyDown]: {
@@ -472,71 +445,52 @@ const defaults: ButtonMapping = {
         value: '3'
       }
     },
-    Pad1: {
+    Tray1: {
       [EventMode.KeyDown]: {
-        id: 'volUp',
-        value: '15',
+        enabled: true,
+        id: 'pref',
         source: 'server',
-        enabled: true
+        value: '0'
       }
     },
-    Pad2: {
+    Tray2: {
       [EventMode.KeyDown]: {
-        id: 'swipeL',
+        enabled: true,
+        id: 'pref',
         source: 'server',
-        enabled: true
+        value: '1'
       }
     },
-    Pad3: {
+    Tray3: {
       [EventMode.KeyDown]: {
-        id: 'swipeR',
+        enabled: true,
+        id: 'pref',
         source: 'server',
-        enabled: true
+        value: '2'
       }
     },
-    Pad4: {
+    Tray4: {
       [EventMode.KeyDown]: {
-        id: 'volDown',
+        enabled: true,
+        id: 'pref',
         source: 'server',
-        value: '15',
-        enabled: true
+        value: '3'
       }
     },
-    Pad5: {
+    Tray5: {
       [EventMode.KeyDown]: {
-        id: 'appsList',
+        enabled: true,
+        id: 'pref',
         source: 'server',
-        value: 'hide',
-        enabled: true
+        value: '4'
       }
     },
-    Pad6: {
+    Tray6: {
       [EventMode.KeyDown]: {
-        id: 'appsList',
-        value: 'show',
+        enabled: true,
+        id: 'pref',
         source: 'server',
-        enabled: true
-      }
-    },
-    Pad7: {
-      [EventMode.KeyDown]: {
-        id: 'repeat',
-        source: 'server',
-        enabled: true
-      }
-    },
-    Pad8: {
-      [EventMode.KeyDown]: {
-        id: 'play',
-        source: 'server',
-        enabled: true
-      }
-    },
-    Pad9: {
-      [EventMode.KeyDown]: {
-        id: 'fullscreen',
-        source: 'server',
-        enabled: true
+        value: '5'
       }
     },
     DynamicAction1: {
@@ -740,8 +694,8 @@ const defaults: ButtonMapping = {
 }
 
 export const defaultData: MappingStructure = {
-  version: '0.9.2',
-  version_code: 9.2,
+  version: '0.9.3',
+  version_code: 9.3,
   selected_profile: 'default',
   profiles: {
     default: defaults

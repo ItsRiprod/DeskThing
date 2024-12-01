@@ -7,7 +7,8 @@ import {
   Client,
   ClientManifest,
   Settings,
-  SocketData
+  SocketData,
+  Action
 } from '@shared/types'
 import { addData } from '../../handlers/dataHandler'
 import { HandleDeviceData } from '../../handlers/deviceHandler'
@@ -29,6 +30,7 @@ import {
   sendSettingsData
 } from './clientCom'
 import { sendIpcData } from '../..'
+import keyMapStore from '../mappings/mappingStore'
 
 export let server: WebSocketServer | null = null
 export let httpServer: HttpServer
@@ -333,6 +335,9 @@ const handleServerMessage = (socket, client: Client, messageData: SocketData): v
               // Update the client
               ConnectionStore.updateClient(client.connectionId, client)
             }
+            break
+          case 'action':
+            keyMapStore.runAction(messageData.payload as Action)
             break
           default:
             break

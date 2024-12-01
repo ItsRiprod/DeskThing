@@ -6,7 +6,10 @@ import {
   MESSAGE_TYPES,
   GithubRelease,
   Log,
-  Settings
+  Settings,
+  Action,
+  Key,
+  MappingStructure
 } from '@shared/types'
 import ConnectionStore from '../stores/connectionsStore'
 import settingsStore from '../stores/settingsStore'
@@ -14,7 +17,7 @@ import { getReleases } from './githubHandler'
 import loggingStore from '../stores/loggingStore'
 import path from 'path'
 import { shell, app, dialog } from 'electron'
-import keyMapStore from '../stores/keyMapStore'
+import keyMapStore from '../services/mappings/mappingStore'
 import { setupFirewall } from './firewallHandler'
 import { disconnectClient } from '../services/client/clientCom'
 import { restartServer } from '../services/client/websocket'
@@ -34,6 +37,14 @@ export const utilityHandler: Record<
     | GithubRelease[]
     | ButtonMapping
     | Log[]
+    | Action
+    | Action[]
+    | Key
+    | Key[]
+    | ButtonMapping[]
+    | ButtonMapping
+    | MappingStructure
+    | null
   >
 > = {
   ping: async () => {
@@ -121,6 +132,89 @@ export const utilityHandler: Record<
     replyFn('logging', { status: true, data: 'Restarting server...', final: false })
     await restartServer()
     replyFn('logging', { status: true, data: 'Server Restarted', final: true })
+  },
+  actions: async (data) => {
+    switch (data.request) {
+      case 'get':
+        return await keyMapStore.getActions()
+      case 'set':
+        return await keyMapStore.addAction(data.payload as Action)
+      default:
+        return
+    }
+  },
+  buttons: async (data) => {
+    switch (data.request) {
+      case 'set': {
+        const { id, key, mode, profile } = data.payload
+        if (!id || !key || !mode) {
+          loggingStore.log(
+            MESSAGE_TYPES.ERROR,
+            `Missing required button data: ${JSON.stringify({
+              id: !!id,
+              key: !!key,
+              mode: !!mode
+            })}`
+          )
+          return
+        }
+        try {
+          return await keyMapStore.addButton(id, key, mode, profile)
+        } catch (error) {
+          if (error instanceof Error) {
+            loggingStore.log(
+              MESSAGE_TYPES.ERROR,
+              `UtilityHandler: Failed to add button ${error.message}`
+            )
+          } else {
+            loggingStore.log(
+              MESSAGE_TYPES.ERROR,
+              `UtilityHandler: Failed to add button ${String(error)}`
+            )
+          }
+          return
+        }
+      }
+      default:
+        return
+    }
+  },
+  keys: async (data) => {
+    switch (data.request) {
+      case 'get':
+        return await keyMapStore.getKeys()
+      case 'set':
+        return await keyMapStore.addKey(data.payload)
+      default:
+        return
+    }
+  },
+  profiles: async (data) => {
+    switch (data.request) {
+      case 'get':
+        if (typeof data.payload === 'string') {
+          return await keyMapStore.getProfile(data.payload)
+        } else {
+          return await keyMapStore.getProfiles()
+        }
+      case 'set':
+        if (data.payload.name) {
+          return await keyMapStore.addProfile(data.payload.name, data.payload.base)
+        } else {
+          loggingStore.log(MESSAGE_TYPES.ERROR, 'UtilityHandler: Missing profile name!')
+          return
+        }
+      default:
+        return
+    }
+  },
+  run: async (data) => {
+    const action = data.payload as Action
+    if (action.source !== 'server' && action.enabled) {
+      return await keyMapStore.runAction(action)
+    } else {
+      loggingStore.log(MESSAGE_TYPES.ERROR, 'UtilityHandler: Action not enabled or does not exist!')
+    }
   }
 }
 

@@ -11,7 +11,7 @@ import { ipcMain } from 'electron'
  * @param {...any[]} args - Additional arguments related to the data or action.
  */
 export async function handleDataFromApp(app: string, appData: IncomingData): Promise<void> {
-  const keyMapStore = (await import('../../stores/keyMapStore')).default
+  const keyMapStore = (await import('../mappings/mappingStore')).default
   const { sendMessageToClients, handleClientMessage } = await import('../client/clientCom')
   const { getData, setData, addData } = await import('../../handlers/dataHandler')
   const { getConfig } = await import('../../handlers/configHandler')
@@ -57,9 +57,8 @@ export async function handleDataFromApp(app: string, appData: IncomingData): Pro
       break
     case 'data':
       if (app && appData.payload) {
-
         if (appData.payload.app == 'client') {
-           handleClientMessage(appData.payload)
+          handleClientMessage(appData.payload)
         } else {
           sendMessageToClients({
             app: appData.payload.app || app,
@@ -88,6 +87,7 @@ export async function handleDataFromApp(app: string, appData: IncomingData): Pro
       loggingStore.log(MESSAGE_TYPES.LOGGING, `${appData.payload}`, app.toUpperCase())
       break
     case 'button':
+    case 'key':
       if (appData.request == 'add') {
         try {
           if (appData.payload) {
@@ -146,6 +146,13 @@ export async function handleDataFromApp(app: string, appData: IncomingData): Pro
           if (appData.payload) {
             keyMapStore.updateIcon(appData.payload.id, appData.payload.icon)
           }
+          break
+        case 'run':
+          if (appData.payload) {
+            keyMapStore.runAction(appData.payload.id)
+          }
+          break
+        default:
           break
       }
       break
