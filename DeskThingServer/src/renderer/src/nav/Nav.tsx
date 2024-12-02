@@ -33,7 +33,7 @@ const Nav: React.FC = () => {
             location="Clients"
             currentPage={currentPage}
             handleNavigation={handleNavigation}
-            subDirectories={['Connections', 'Settings']}
+            subDirectories={['Connections', 'Mapping', 'Theming']}
           >
             <IconCarThingSmall iconSize={30} />
             <span className="hidden lg:inline group-hover:inline">Clients</span>

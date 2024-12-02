@@ -1,3 +1,4 @@
+console.log('[AppMangr Service] Starting')
 import { rmSync, readdirSync, statSync, existsSync } from 'node:fs'
 import loggingStore from '../../stores/loggingStore'
 import { MESSAGE_TYPES } from '@shared/types'

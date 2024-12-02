@@ -1,10 +1,10 @@
+console.log('[ClientCom Service] Starting')
 import { SocketData, MESSAGE_TYPES, SongData } from '@shared/types'
 import { server, Clients } from './websocket'
 import loggingStore from '../../stores/loggingStore'
 import connectionsStore from '../../stores/connectionsStore'
 import appState from '../apps/appState'
 import { readData } from '../../handlers/dataHandler'
-import keyMapStore from '../mappings/mappingStore'
 
 export const handleClientMessage = async (data: SocketData): Promise<void> => {
   const { type, payload } = data
@@ -113,6 +113,7 @@ export const sendSettingsData = async (clientId?: string): Promise<void> => {
 
 export const sendMappings = async (clientId?: string): Promise<void> => {
   try {
+    const { default: keyMapStore } = await import('../mappings/mappingStore')
     const mappings = keyMapStore.getMapping()
     const actions = keyMapStore.getActions()
 

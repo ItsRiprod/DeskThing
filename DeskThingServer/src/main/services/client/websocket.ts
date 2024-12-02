@@ -1,3 +1,4 @@
+console.log('[ClientSocket Service] Starting')
 import WebSocket, { WebSocketServer } from 'ws'
 import { createServer, Server as HttpServer, IncomingMessage } from 'http'
 import loggingStore from '../../stores/loggingStore'
@@ -27,10 +28,11 @@ import {
   sendError,
   sendMappings,
   sendMessageToClient,
+  sendMessageToClients,
   sendSettingsData
 } from './clientCom'
 import { sendIpcData } from '../..'
-import keyMapStore from '../mappings/mappingStore'
+import mappingStore from '../mappings/mappingStore'
 
 export let server: WebSocketServer | null = null
 export let httpServer: HttpServer
@@ -268,7 +270,7 @@ const handleServerMessage = (socket, client: Client, messageData: SocketData): v
             sendIpcData(`pong-${client.connectionId}`, messageData.payload)
             break
           case 'ping':
-            loggingStore.log(MESSAGE_TYPES.LOGGING, 'Received ping from ', client.connectionId)
+            loggingStore.log(MESSAGE_TYPES.LOGGING, 'Sent Ping', client.connectionId)
             socket.send(
               JSON.stringify({
                 type: 'pong',
@@ -337,7 +339,7 @@ const handleServerMessage = (socket, client: Client, messageData: SocketData): v
             }
             break
           case 'action':
-            keyMapStore.runAction(messageData.payload as Action)
+            mappingStore.runAction(messageData.payload as Action)
             break
           default:
             break
@@ -352,10 +354,38 @@ const handleServerMessage = (socket, client: Client, messageData: SocketData): v
   }
 }
 
-settingsStore.addListener((newSettings: Settings) => {
-  if (currentPort !== newSettings.devicePort || currentAddress !== newSettings.address) {
-    restartServer()
-  } else {
-    loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: No settings changed!')
-  }
-})
+const setupListeners = async (): Promise<void> => {
+  setTimeout(() => {
+    settingsStore.addListener((newSettings: Settings) => {
+      if (currentPort !== newSettings.devicePort || currentAddress !== newSettings.address) {
+        restartServer()
+      } else {
+        loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: No settings changed!')
+      }
+    })
+
+    mappingStore.addListener('profile', (profile) => {
+      const actions = mappingStore.getActions()
+      const SocketData = {
+        type: 'button_mappings',
+        app: 'client',
+        payload: { ...profile, actions }
+      }
+
+      sendMessageToClients(SocketData)
+    })
+
+    mappingStore.addListener('action', (action) => {
+      const profile = mappingStore.getMapping()
+      const SocketData = {
+        type: 'button_mappings',
+        app: 'client',
+        payload: { ...profile, action }
+      }
+
+      sendMessageToClients(SocketData)
+    })
+  }, 500)
+}
+
+setupListeners()

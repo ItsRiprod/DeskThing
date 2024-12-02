@@ -1,3 +1,4 @@
+console.log('[Auth Handler] Starting')
 import { ClientIPCData, ClientManifest, SocketData, ReplyFn, MESSAGE_TYPES } from '@shared/types'
 import loggingStore from '../stores/loggingStore'
 import { handleAdbCommands } from './adbHandler'

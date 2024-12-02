@@ -1,3 +1,4 @@
+console.log('[Firewall Handler] Starting')
 import { exec } from 'child_process'
 import os from 'os'
 import loggingStore from '../stores/loggingStore'

@@ -1,8 +1,8 @@
+console.log('[Logging Store] Starting')
 import fs from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
 import { MESSAGE_TYPES, Log, LOGGING_LEVEL, Settings, ReplyData, ReplyFn } from '@shared/types'
-import settingsStore from './settingsStore'
 
 // LoggingStore configuration
 const logFile = join(app.getPath('userData'), 'application.log.json')
@@ -23,8 +23,9 @@ class LoggingStore {
   private constructor() {
     fs.writeFileSync(logFile, '[]')
     fs.writeFileSync(readableLogFile, '')
-
-    settingsStore.addListener(this.settingsStoreListener.bind(this))
+    import('./settingsStore').then(({ default: settingsStore }) => {
+      settingsStore.addListener(this.settingsStoreListener.bind(this))
+    })
   }
 
   private settingsStoreListener(settings: Settings): void {
@@ -70,8 +71,21 @@ class LoggingStore {
     const readableTimestamp = new Date(timestamp).toLocaleString()
     const readableMessage = `[${readableTimestamp}] [${source}] ${level.toUpperCase()}: ${message}\n`
 
-    console.log(readableMessage)
-
+    if (level === MESSAGE_TYPES.ERROR) {
+      console.log('\x1b[31m%s\x1b[0m', readableMessage) // Red for error
+    } else if (level === MESSAGE_TYPES.WARNING) {
+      console.log('\x1b[33m%s\x1b[0m', readableMessage) // Yellow for warning
+    } else if (level === MESSAGE_TYPES.MESSAGE) {
+      console.log('\x1b[32m%s\x1b[0m', readableMessage) // Green for messages
+    } else if (level === MESSAGE_TYPES.LOGGING) {
+      console.log('\x1b[90m%s\x1b[0m', readableMessage) // Dark gray for info
+    } else if (level === MESSAGE_TYPES.FATAL) {
+      console.log('\x1b[35m%s\x1b[0m', readableMessage) // Magenta for fatal
+    } else if (level === MESSAGE_TYPES.DEBUG) {
+      console.log('\x1b[34m%s\x1b[0m', readableMessage) // Blue for debug
+    } else {
+      console.log('\x1b[0m%s', readableMessage) // Default color for other types
+    }
     // Write to log file as JSON array
     return new Promise((resolve, reject) => {
       fs.writeFile(logFile, JSON.stringify(this.logs, null, 2), (err) => {

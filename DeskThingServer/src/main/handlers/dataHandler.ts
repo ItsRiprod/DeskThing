@@ -1,3 +1,4 @@
+console.log('[Data Handler] Starting')
 import { AppDataInterface } from '@shared/types'
 import { readFromFile, writeToFile } from '../utils/fileHandler'
 import { sendMessageToApp } from '../services/apps'

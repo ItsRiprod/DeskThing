@@ -22,6 +22,13 @@ export type Key = {
   Modes: EventMode[] // The Modes of the key
 }
 
+export type Button = {
+  mode: EventMode // The mode of the button
+  action: string // The action to be triggered
+  key: string // The key to be triggered
+  profile?: string // The profile to be used
+}
+
 // The different possible modes of an event
 export enum EventMode {
   KeyUp,

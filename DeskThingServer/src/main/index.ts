@@ -1,9 +1,8 @@
+console.log('[Index] Starting')
 import { AppIPCData, AuthScopes, Client, UtilityIPCData, MESSAGE_TYPES } from '@shared/types'
 import { app, shell, BrowserWindow, ipcMain, Tray, Menu, nativeImage } from 'electron'
 import { join, resolve } from 'path'
 import icon from '../../resources/icon.png?asset'
-import ConnectionStore from './stores/connectionsStore'
-import settingsStore from './stores/settingsStore'
 
 let mainWindow: BrowserWindow | null = null
 let clientWindow: BrowserWindow | null = null
@@ -124,8 +123,6 @@ function createClientWindow(port: number): BrowserWindow {
 }
 
 async function initializeTray(): Promise<void> {
-  const settingsStore = await import('./stores/settingsStore')
-
   const trayIcon = nativeImage.createFromPath(join(__dirname, '../../resources/icon2.png'))
 
   tray = new Tray(trayIcon)
@@ -156,6 +153,7 @@ async function initializeTray(): Promise<void> {
         if (clientWindow && !clientWindow.isDestroyed()) {
           clientWindow.focus()
         } else {
+          const settingsStore = await import('./stores/settingsStore')
           const data = await settingsStore.default.getSettings()
           if (data) {
             clientWindow = createClientWindow(data.devicePort)
@@ -175,8 +173,6 @@ async function initializeTray(): Promise<void> {
 }
 
 async function initializeDoc(): Promise<void> {
-  const settingsStore = await import('./stores/settingsStore')
-
   const contextMenu = Menu.buildFromTemplate([
     {
       label: 'Open Server',
@@ -194,6 +190,7 @@ async function initializeDoc(): Promise<void> {
         if (clientWindow && !clientWindow.isDestroyed()) {
           clientWindow.focus()
         } else {
+          const settingsStore = await import('./stores/settingsStore')
           const data = await settingsStore.default.getSettings()
           if (data) {
             clientWindow = createClientWindow(data.devicePort)
@@ -213,12 +210,9 @@ async function initializeDoc(): Promise<void> {
 }
 
 async function setupIpcHandlers(): Promise<void> {
-  const loggingStore = (await import('./stores/loggingStore')).default
-
-  const { appHandler } = await import('./handlers/appHandler')
-  const { clientHandler } = await import('./handlers/clientHandler')
-  const { utilityHandler } = await import('./handlers/utilityHandler')
-  const { ResponseLogger } = await import('./stores/loggingStore')
+  const [{ default: settingsStore }, { default: loggingStore, ResponseLogger }] = await Promise.all(
+    [import('./stores/settingsStore'), import('./stores/loggingStore')]
+  )
 
   const defaultHandler = async (data: AppIPCData): Promise<void> => {
     console.error(`No handler implemented for type: ${data.type} ${data}`)
@@ -226,6 +220,7 @@ async function setupIpcHandlers(): Promise<void> {
   }
 
   ipcMain.handle('APPS', async (event, data: AppIPCData) => {
+    const { appHandler } = await import('./handlers/appHandler')
     const handler = appHandler[data.type] || defaultHandler
     const replyFn = ResponseLogger(event.sender.send.bind(event.sender))
     try {
@@ -242,6 +237,7 @@ async function setupIpcHandlers(): Promise<void> {
   })
 
   ipcMain.handle('CLIENT', async (event, data: AppIPCData) => {
+    const { clientHandler } = await import('./handlers/clientHandler')
     const handler = clientHandler[data.type] || defaultHandler
     const replyFn = ResponseLogger(event.sender.send.bind(event.sender))
     try {
@@ -258,6 +254,7 @@ async function setupIpcHandlers(): Promise<void> {
   })
 
   ipcMain.handle('UTILITY', async (event, data: UtilityIPCData) => {
+    const { utilityHandler } = await import('./handlers/utilityHandler')
     const handler = utilityHandler[data.type] || defaultHandler
     const replyFn = ResponseLogger(event.sender.send.bind(event.sender))
 
@@ -274,18 +271,34 @@ async function setupIpcHandlers(): Promise<void> {
     }
   })
 
+  import('./services/mappings/mappingStore').then(({ default: mappingStore }) => {
+    mappingStore.addListener('action', (action) => {
+      sendIpcData('action', action)
+    })
+    mappingStore.addListener('key', (key) => {
+      sendIpcData('key', key)
+    })
+    mappingStore.addListener('profile', (profile) => {
+      sendIpcData('profile', profile)
+    })
+  })
+
   loggingStore.addListener((errorData) => {
     sendIpcData('log', errorData)
   })
-  ConnectionStore.on((clients: Client[]) => {
-    sendIpcData('connections', { status: true, data: clients.length, final: true })
-    sendIpcData('clients', { status: true, data: clients, final: true })
-  })
-  ConnectionStore.onDevice((devices: string[]) => {
-    sendIpcData('adbdevices', { status: true, data: devices, final: true })
-  })
+
   settingsStore.addListener((newSettings) => {
     sendIpcData('settings-updated', newSettings)
+  })
+
+  import('./stores/connectionsStore').then(({ default: ConnectionStore }) => {
+    ConnectionStore.on((clients: Client[]) => {
+      sendIpcData('connections', { status: true, data: clients.length, final: true })
+      sendIpcData('clients', { status: true, data: clients, final: true })
+    })
+    ConnectionStore.onDevice((devices: string[]) => {
+      sendIpcData('adbdevices', { status: true, data: devices, final: true })
+    })
   })
 }
 
@@ -305,10 +318,9 @@ if (!app.requestSingleInstanceLock()) {
       if (mainWindow.isMinimized()) mainWindow.restore()
       mainWindow.focus()
     } else {
-      // mainWindow = createMainWindow()
+      mainWindow = createMainWindow()
     }
   })
-  app.on('ready', () => setupIpcHandlers())
   app.whenReady().then(async () => {
     // Set app user model id for windows
 
@@ -333,6 +345,7 @@ if (!app.requestSingleInstanceLock()) {
 
     mainWindow.once('ready-to-show', () => {
       loadModules()
+      setupIpcHandlers()
     })
 
     app.on('activate', function () {
@@ -346,6 +359,8 @@ if (!app.requestSingleInstanceLock()) {
 
   app.on('window-all-closed', async (e) => {
     // Prevent the app from quitting
+    const { default: settingsStore } = await import('./stores/settingsStore')
+
     const settings = await settingsStore.getSettings()
     if (settings.minimizeApp) {
       e.preventDefault()
@@ -369,14 +384,15 @@ async function openAuthWindow(url: string): Promise<void> {
 }
 async function loadModules(): Promise<void> {
   try {
-    await import('./handlers/authHandler')
+    import('./handlers/authHandler')
 
-    await import('./services/client/websocket').then(({ restartServer }) => {
+    import('./services/client/websocket').then(({ restartServer }) => {
       restartServer()
     })
 
-    const { loadAndRunEnabledApps } = await import('./services/apps')
-    loadAndRunEnabledApps()
+    import('./services/apps').then(({ loadAndRunEnabledApps }) => {
+      loadAndRunEnabledApps()
+    })
 
     import('./handlers/musicHandler')
   } catch (error) {

@@ -1,3 +1,4 @@
+console.log('[AppState Service] Starting')
 import { App, AppInstance, Manifest, AppReturnData, MESSAGE_TYPES } from '@shared/types'
 import { sendConfigData, sendSettingsData } from '../client/clientCom'
 import loggingStore from '../../stores/loggingStore'

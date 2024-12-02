@@ -1,5 +1,5 @@
+console.log('[Connection Store] Starting')
 import { Client, MESSAGE_TYPES } from '@shared/types'
-import { handleAdbCommands } from '../handlers/adbHandler'
 import loggingStore from '../stores/loggingStore'
 import settingsStore from './settingsStore'
 
@@ -133,6 +133,7 @@ class ConnectionStore {
   }
 
   async getAdbDevices(): Promise<string[]> {
+    const { handleAdbCommands } = await import('../handlers/adbHandler')
     return handleAdbCommands('devices')
       .then((result) => {
         const parseADBDevices = (response: string): string[] => {

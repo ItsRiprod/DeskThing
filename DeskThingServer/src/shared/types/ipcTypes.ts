@@ -18,7 +18,6 @@ export type UTILITY_TYPES =
   | 'settings'
   | 'github'
   | 'logs'
-  | 'maps'
   | 'shutdown'
   | 'open-log-folder'
   | 'refresh-firewall'
@@ -29,6 +28,7 @@ export type UTILITY_TYPES =
   | 'keys'
   | 'profiles'
   | 'run'
+  | 'map'
 
 export type APP_TYPES =
   | 'app'

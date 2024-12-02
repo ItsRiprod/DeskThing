@@ -1,3 +1,4 @@
+console.log('[Device Handler] Starting')
 import { sendIpcData } from '..'
 import loggingStore from '../stores/loggingStore'
 import { join } from 'path'

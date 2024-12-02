@@ -1,3 +1,4 @@
+console.log('[ClientUtils Service] Starting')
 import { sendMessageToClients } from './clientCom'
 
 const getDelayToNextMinute = async (): Promise<number> => {

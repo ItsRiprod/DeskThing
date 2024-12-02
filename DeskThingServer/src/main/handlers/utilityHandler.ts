@@ -1,3 +1,4 @@
+console.log('[Utility Handler] Starting')
 import {
   ReplyFn,
   UtilityIPCData,
@@ -21,6 +22,7 @@ import keyMapStore from '../services/mappings/mappingStore'
 import { setupFirewall } from './firewallHandler'
 import { disconnectClient } from '../services/client/clientCom'
 import { restartServer } from '../services/client/websocket'
+import { isValidButtonMapping } from '@server/services/mappings/utilsMaps'
 
 export const utilityHandler: Record<
   UtilityIPCData['type'],
@@ -105,18 +107,6 @@ export const utilityHandler: Record<
         return
     }
   },
-  maps: async (data) => {
-    switch (data.request) {
-      case 'get':
-        return await keyMapStore.getMapping()
-      case 'set':
-        return await keyMapStore.addProfile(data.payload.profile, data.payload.baseProfile)
-      case 'delete':
-        return await keyMapStore.removeProfile(data.payload)
-      default:
-        return
-    }
-  },
   shutdown: async () => {
     app.quit()
   },
@@ -139,6 +129,8 @@ export const utilityHandler: Record<
         return await keyMapStore.getActions()
       case 'set':
         return await keyMapStore.addAction(data.payload as Action)
+      case 'delete':
+        return await keyMapStore.removeAction(data.payload)
       default:
         return
     }
@@ -146,12 +138,12 @@ export const utilityHandler: Record<
   buttons: async (data) => {
     switch (data.request) {
       case 'set': {
-        const { id, key, mode, profile } = data.payload
-        if (!id || !key || !mode) {
+        const { action, key, mode, profile } = data.payload
+        if (!action || !key || !mode) {
           loggingStore.log(
             MESSAGE_TYPES.ERROR,
             `Missing required button data: ${JSON.stringify({
-              id: !!id,
+              action: !!action,
               key: !!key,
               mode: !!mode
             })}`
@@ -159,7 +151,7 @@ export const utilityHandler: Record<
           return
         }
         try {
-          return await keyMapStore.addButton(id, key, mode, profile)
+          return await keyMapStore.addButton({ action, key, mode, profile })
         } catch (error) {
           if (error instanceof Error) {
             loggingStore.log(
@@ -175,6 +167,20 @@ export const utilityHandler: Record<
           return
         }
       }
+      case 'delete': {
+        const { action, key, mode, profile } = data.payload
+        if (!key || !mode) {
+          loggingStore.log(
+            MESSAGE_TYPES.ERROR,
+            `Missing required button data: ${JSON.stringify({
+              key: !!key,
+              mode: !!mode
+            })}`
+          )
+          return
+        }
+        return await keyMapStore.removeButton({ action, key, mode, profile })
+      }
       default:
         return
     }
@@ -185,6 +191,8 @@ export const utilityHandler: Record<
         return await keyMapStore.getKeys()
       case 'set':
         return await keyMapStore.addKey(data.payload)
+      case 'delete':
+        return await keyMapStore.removeKey(data.payload)
       default:
         return
     }
@@ -200,10 +208,24 @@ export const utilityHandler: Record<
       case 'set':
         if (data.payload.name) {
           return await keyMapStore.addProfile(data.payload.name, data.payload.base)
+        } else if (isValidButtonMapping(data.payload)) {
+          return await keyMapStore.updateProfile(data.payload.id, data.payload)
         } else {
           loggingStore.log(MESSAGE_TYPES.ERROR, 'UtilityHandler: Missing profile name!')
           return
         }
+      case 'delete':
+        return await keyMapStore.removeProfile(data.payload)
+      default:
+        return
+    }
+  },
+  map: async (data) => {
+    switch (data.request) {
+      case 'get':
+        return await keyMapStore.getCurrentProfile()
+      case 'set':
+        return await keyMapStore.setCurrentProfile(data.payload)
       default:
         return
     }

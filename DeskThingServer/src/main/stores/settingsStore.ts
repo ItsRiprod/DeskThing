@@ -1,3 +1,4 @@
+console.log('[Settings Store] Starting')
 import { readFromFile, writeToFile } from '../utils/fileHandler'
 import loggingStore from './loggingStore'
 import os from 'os'

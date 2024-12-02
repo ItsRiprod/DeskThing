@@ -1,3 +1,4 @@
+console.log('[MapStore Service] Starting')
 import {
   Action,
   ButtonMapping,
@@ -5,7 +6,8 @@ import {
   EventMode,
   Key,
   MappingStructure,
-  ActionReference
+  ActionReference,
+  Button
 } from '@shared/types'
 import loggingStore from '@server/stores/loggingStore'
 import { writeToGlobalFile } from '@server/utils/fileHandler'
@@ -19,9 +21,18 @@ import {
 } from './utilsMaps'
 import { sendMessageToApp } from '../apps'
 
+type ListeningTypes = 'key' | 'profile' | 'action'
+
+type Listener = (data: Key[] | ButtonMapping | Action[]) => void
+
 export class MappingState {
   private _mappings: MappingStructure
   private static instance: MappingState
+  private listeners: Record<ListeningTypes, Set<Listener>> = {
+    key: new Set(),
+    profile: new Set(),
+    action: new Set()
+  }
 
   constructor() {
     this._mappings = this.mappings
@@ -50,8 +61,40 @@ export class MappingState {
    * Sets the mappings and saves them to the file
    */
   set mappings(value: MappingStructure) {
+    loggingStore.log(MESSAGE_TYPES.DEBUG, `MAPHANDLER: Saving mappings to file`)
+    if (value.keys != this._mappings.keys) {
+      this.notifyListeners('key', value.keys)
+    }
+    if (
+      value.profiles[value.selected_profile] !=
+      this._mappings.profiles[this._mappings.selected_profile]
+    ) {
+      this.notifyListeners('profile', value.profiles[value.selected_profile])
+    }
+    if (value.actions != this._mappings.actions) {
+      this.notifyListeners('action', value.actions)
+    }
+
     this._mappings = value
     saveMappings(value)
+  }
+
+  addListener(type: ListeningTypes, listener: Listener): () => void {
+    this.listeners[type].add(listener)
+    return () => {
+      this.listeners[type].delete(listener)
+    }
+  }
+
+  removeListener(type: ListeningTypes, listener: Listener): void {
+    this.listeners[type].delete(listener)
+  }
+
+  private async notifyListeners(
+    type: ListeningTypes,
+    data: Key[] | ButtonMapping | Action[]
+  ): Promise<void> {
+    this.listeners[type].forEach((listener) => listener(data))
   }
 
   /**
@@ -67,41 +110,38 @@ export class MappingState {
    * @param Mode - default is 'onPress'
    * @param profile - default is 'default'
    */
-  addButton = async (
-    actionId: string,
-    key: string,
-    Mode: EventMode,
-    profile: string = 'default'
-  ): Promise<void> => {
-    const mappingProfile = this.mappings.profiles[profile]
+  addButton = async (button: Button): Promise<void> => {
+    const mappingProfile = this.mappings.profiles[button.profile || 'default']
     if (!mappingProfile) {
       loggingStore.log(
         MESSAGE_TYPES.ERROR,
-        `MAPHANDLER: Profile ${profile} does not exist! Create a new profile with the name ${profile} and try again`
+        `MAPHANDLER: Profile ${button.profile || 'default'} does not exist! Create a new profile with the name ${button.profile || 'default'} and try again`
       )
       return
     }
 
-    const mappingKey = this.mappings.keys.find((searchKey) => searchKey.id === key)
+    const mappingKey = this.mappings.keys.find((searchKey) => searchKey.id === button.key)
 
-    if (!mappingKey?.Modes?.includes(Mode)) {
+    if (!mappingKey?.Modes?.includes(button.mode)) {
       loggingStore.log(
         MESSAGE_TYPES.ERROR,
-        `MAPHANDLER: Key ${key} does not have ${EventMode[Mode]}!`
+        `MAPHANDLER: Key ${button.key} does not have ${EventMode[button.mode]}!`
       )
       return
     }
 
-    const mappingAction = this.mappings.actions.find((searchAction) => searchAction.id == actionId)
+    const mappingAction = this.mappings.actions.find(
+      (searchAction) => searchAction.id == button.action
+    )
 
     if (!mappingAction) {
-      loggingStore.log(MESSAGE_TYPES.ERROR, `MAPHANDLER: Action ${actionId} does not exist!`)
+      loggingStore.log(MESSAGE_TYPES.ERROR, `MAPHANDLER: Action ${button.action} does not exist!`)
       return
     }
 
     // Ensuring the key exists in the mapping
-    if (!mappingProfile[key]) {
-      mappingProfile[key] = {}
+    if (!mappingProfile[button.key]) {
+      mappingProfile[button.key] = {}
     }
 
     const action = ConstructActionReference(mappingAction)
@@ -116,10 +156,13 @@ export class MappingState {
     }
 
     // Adding the button to the mapping
-    mappingProfile[key][Mode] = action
+    mappingProfile[button.key][button.mode] = action
 
     // Save the mappings to file
-    this.mappings.profiles[profile] = mappingProfile
+    this.mappings.profiles[button.profile || 'default'] = mappingProfile
+
+    this.notifyListeners('profile', mappingProfile)
+    saveMappings(this.mappings)
   }
 
   /**
@@ -128,53 +171,49 @@ export class MappingState {
    * @param Mode - The Mode of the button to remove. Default removes all Modes
    * @param profile - default is 'default'
    */
-  removeButton = async (
-    key: string,
-    Mode: EventMode | null,
-    profile: string = 'default'
-  ): Promise<void> => {
-    const mappingsProfile = this.mappings.profiles[profile]
+  removeButton = async (button: Button): Promise<void> => {
+    const mappingsProfile = this.mappings.profiles[button.profile || 'default']
     if (!mappingsProfile) {
       loggingStore.log(
         MESSAGE_TYPES.ERROR,
-        `MAPHANDLER: Profile ${profile} does not exist! Create a new profile with the name ${profile} and try again`
+        `MAPHANDLER: Profile ${button.profile || 'default'} does not exist! Create a new profile with the name ${button.profile || 'default'} and try again`
       )
       return
     }
     // Ensuring the key exists in the mapping
-    if (!mappingsProfile[key]) {
+    if (!mappingsProfile[button.key]) {
       loggingStore.log(
         MESSAGE_TYPES.ERROR,
-        `MAPHANDLER: Key ${key} does not exist in profile ${profile}!`
+        `MAPHANDLER: Key ${button.key} does not exist in profile ${button.profile || 'default'}!`
       )
       return
     }
 
-    if (Mode === null) {
+    if (button.mode === null) {
       // Remove the entire key
-      delete mappingsProfile[key]
+      delete mappingsProfile[button.key]
       loggingStore.log(
         MESSAGE_TYPES.LOGGING,
-        `MAPHANDLER: Key ${key} removed from profile ${profile}`
+        `MAPHANDLER: Key ${button.key} removed from profile ${button.profile || 'default'}`
       )
     } else {
       // Ensure that the Mode exists in the mapping
-      if (!mappingsProfile[key][Mode]) {
+      if (!mappingsProfile[button.key][button.mode]) {
         loggingStore.log(
           MESSAGE_TYPES.ERROR,
-          `MAPHANDLER: Mode ${Mode} does not exist in key ${key} in profile ${profile}!`
+          `MAPHANDLER: Mode ${button.mode} does not exist in key ${button.key} in profile ${button.profile || 'default'}!`
         )
       } else {
         // Removing the button from the mapping
-        delete mappingsProfile[key][Mode]
+        delete mappingsProfile[button.key][button.mode]
       }
     }
 
     // Save the mappings to file
-    this.mappings.profiles[profile] = mappingsProfile
+    this.mappings.profiles[button.profile || 'default'] = mappingsProfile
     loggingStore.log(
       MESSAGE_TYPES.LOGGING,
-      `MAPHANDLER: Button ${key} removed from profile ${profile}`
+      `MAPHANDLER: Button ${button.key} removed from profile ${button.profile || 'default'}`
     )
   }
 
@@ -243,22 +282,32 @@ export class MappingState {
       mappings.actions.push(action)
       loggingStore.log(MESSAGE_TYPES.LOGGING, `MAPHANDLER: Action ${action.id} added`)
     }
-    // Save the mappings
-    this.mappings = mappings
   }
 
   removeAction = async (actionId: string): Promise<void> => {
     const mappings = this.mappings
-    // Find the index of the action to remove
+
+    // Remove the action from global actions
     const actionIndex = mappings.actions.findIndex((action) => action.id === actionId)
     if (actionIndex !== -1) {
-      // Remove the action
       mappings.actions.splice(actionIndex, 1)
       loggingStore.log(MESSAGE_TYPES.LOGGING, `MAPHANDLER: Action ${actionId} removed`)
+
+      // Remove this action from all profile mappings
+      Object.values(mappings.profiles).forEach((profile) => {
+        Object.keys(profile.mapping).forEach((key) => {
+          Object.keys(profile.mapping[key]).forEach((mode) => {
+            if (profile.mapping[key][mode]?.id === actionId) {
+              profile.mapping[key][mode].enabled = false
+            }
+          })
+        })
+      })
     } else {
       loggingStore.log(MESSAGE_TYPES.ERROR, `MAPHANDLER: Action ${actionId} not found`)
     }
-    // Save the mappings
+
+    // Save the updated mappings
     this.mappings = mappings
   }
 
@@ -270,15 +319,29 @@ export class MappingState {
     const mappings = this.mappings
 
     // Update all profiles
-    Object.values(mappings.profiles).forEach((profile) => {
-      // Update nested actions
-      Object.values(profile.mapping).forEach((buttonMappings) => {
-        Object.values(buttonMappings).forEach((action) => {
-          if (action && action.source === sourceId) {
-            action.enabled = false
+    const disableSourceActions = (actionContainer: {
+      [key: string]: {
+        [Mode in EventMode]?: ActionReference
+      }
+    }): {
+      [key: string]: {
+        [Mode in EventMode]?: ActionReference
+      }
+    } => {
+      Object.values(actionContainer).forEach((buttonMappings) => {
+        Object.keys(buttonMappings).forEach((mode) => {
+          if (buttonMappings[mode]?.source === sourceId) {
+            buttonMappings[mode].enabled = false
           }
         })
       })
+
+      return actionContainer
+    }
+
+    // Disable actions in all profiles
+    Object.values(mappings.profiles).forEach((profile) => {
+      profile.mapping = disableSourceActions(profile.mapping)
     })
     // Remove global actions with the specified source
     mappings.actions = mappings.actions.filter((action) => action.source !== sourceId)
@@ -290,9 +353,6 @@ export class MappingState {
       MESSAGE_TYPES.LOGGING,
       `MAPHANDLER: Actions for source ${sourceId} disabled in all profiles, global actions, and keys`
     )
-
-    // Save the mappings
-    this.mappings = mappings
   }
 
   /**
@@ -332,25 +392,16 @@ export class MappingState {
       MESSAGE_TYPES.LOGGING,
       `MAPHANDLER: Actions for source ${sourceId} disabled in all profiles, global actions, and keys`
     )
-
-    // Save the mappings
-    this.mappings = mappings
   }
 
   updateIcon = (actionId: string, icon: string): void => {
-    const mappings = this.mappings
+    const action = this.mappings.actions.find((action) => action.id === actionId)
     // Find the index of the action to update
-    const actionIndex = mappings.actions.findIndex((action) => action.id === actionId)
-    if (actionIndex !== -1) {
+    if (action && action.icon != icon) {
       // Update the icon
-      mappings.actions[actionIndex].icon = icon
+      action.icon = icon
       loggingStore.log(MESSAGE_TYPES.LOGGING, `MAPHANDLER: Icon for action ${actionId} updated`)
-    } else {
-      loggingStore.log(MESSAGE_TYPES.ERROR, `MAPHANDLER: Action ${actionId} not found`)
     }
-
-    // Save the mappings
-    this.mappings = mappings
   }
 
   getAction = (actionId: string): Action | null => {
@@ -388,6 +439,10 @@ export class MappingState {
 
   getProfile(profile: string): ButtonMapping | null {
     return this.mappings.profiles[profile]
+  }
+
+  getCurrentProfile = (): string => {
+    return this.mappings.selected_profile
   }
 
   setCurrentProfile = async (profile: string): Promise<void> => {

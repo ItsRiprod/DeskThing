@@ -1,3 +1,4 @@
+console.log('[Music Handler] Starting')
 import loggingStore from '../stores/loggingStore'
 import settingsStore from '../stores/settingsStore'
 import { Settings, SocketData, MESSAGE_TYPES, SongData } from '@shared/types'

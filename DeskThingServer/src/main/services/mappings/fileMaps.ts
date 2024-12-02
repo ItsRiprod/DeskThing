@@ -1,3 +1,4 @@
+console.log('[MapFile Service] Starting')
 import { ButtonMapping, MappingFileStructure, MappingStructure, MESSAGE_TYPES } from '@shared/types'
 import loggingStore from '@server/stores/loggingStore'
 import {
@@ -7,7 +8,7 @@ import {
   writeToGlobalFile
 } from '@server/utils/fileHandler'
 import { defaultData } from '@server/static/defaultMapping'
-import { isValidButtonMapping, isValidFileStructure } from './utilsMaps'
+import { isValidButtonMapping, isValidFileStructure, isValidMappingStructure } from './utilsMaps'
 import path from 'path'
 
 // Loads the mapping from the file
@@ -18,18 +19,27 @@ export const loadMappings = async (): Promise<MappingStructure> => {
       MESSAGE_TYPES.ERROR,
       `MAPHANDLER: Mappings file is corrupt or does not exist, using default`
     )
-    writeToFile(defaultData, 'mappings.json')
+    saveMappings(defaultData)
+    return defaultData
+  }
+
+  if (!isValidFileStructure(data)) {
+    loggingStore.log(
+      MESSAGE_TYPES.ERROR,
+      `MAPHANDLER: Mappings file is corrupt or does not exist, using default`
+    )
+    saveMappings(defaultData)
     return defaultData
   }
 
   const parsedData = await fetchProfiles(data)
 
-  if (!isValidFileStructure(parsedData)) {
+  if (!(await isValidMappingStructure(parsedData))) {
     loggingStore.log(
       MESSAGE_TYPES.ERROR,
       `MAPHANDLER: Mappings file is corrupt, resetting to default`
     )
-    writeToFile(defaultData, 'mappings.json')
+    saveMappings(defaultData)
     return defaultData
   }
   return parsedData
@@ -39,10 +49,10 @@ export const loadMappings = async (): Promise<MappingStructure> => {
 const fetchProfiles = async (fileData: MappingFileStructure): Promise<MappingStructure> => {
   // Map through each profile file and load its data
   const profiles = await Promise.all(
-    Object.keys(fileData.profiles).map(async (profile) => {
+    fileData.profiles.map(async (profile) => {
       // Read the profile data from the mappings directory
       const data = await readFromFile<ButtonMapping>(path.join('mappings', `${profile}.json`))
-      if (data) {
+      if (data && isValidButtonMapping(data)) {
         // Return profile data in key-value format
         return { [profile]: data }
       } else {
@@ -65,26 +75,33 @@ const fetchProfiles = async (fileData: MappingFileStructure): Promise<MappingStr
   return mappingStructure
 }
 
-const saveProfiles = async (mappingData: MappingStructure): Promise<void> => {
-  await Promise.all(
+const saveProfiles = async (mappingData: MappingStructure): Promise<MappingFileStructure> => {
+  const profiles = await Promise.all(
     Object.values(mappingData.profiles).map(async (profile) => {
       // Save each profile to a .json file named after its id (e.g. 'default' -> 'default.json')
+      console.log('Writing map: ', profile.id, ' to file')
       await writeToFile<ButtonMapping>(profile, path.join('mappings', `${profile.id}.json`))
+      return profile.id
     })
   )
+
+  return { ...mappingData, profiles }
 }
 
 // Saves the mapping
 export const saveMappings = async (mapping: MappingStructure): Promise<void> => {
-  if (!isValidFileStructure(mapping)) {
-    saveProfiles(mapping)
-    writeToFile(mapping, 'mappings.json')
+  const isValidMapping = await isValidMappingStructure(mapping)
+  if (isValidMapping) {
+    loggingStore.log(MESSAGE_TYPES.LOGGING, `MAPHANDLER: Saving button mapping`)
+    const saveData = await saveProfiles(mapping)
+    writeToFile(saveData, path.join('mappings', 'mappings.json'))
   } else {
     loggingStore.log(
       MESSAGE_TYPES.ERROR,
-      `MAPHANDLER: New Mappings file is corrupt, resetting to default`
+      `MAPHANDLER: Unable to save mappings. Something is corrupted. Resetting to default`
     )
-    writeToFile(defaultData, 'mappings.json')
+    const saveData = await saveProfiles(defaultData)
+    writeToFile(saveData, path.join('mappings', 'mappings.json'))
   }
 }
 

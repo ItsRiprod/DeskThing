@@ -1,3 +1,4 @@
+console.log('[ADB Handler] Starting')
 import path from 'path'
 import { execFile } from 'child_process'
 import getPlatform from '../utils/get-platform'

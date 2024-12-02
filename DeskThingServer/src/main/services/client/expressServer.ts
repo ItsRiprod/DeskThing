@@ -1,3 +1,4 @@
+console.log('[ClientExpress Service] Starting')
 import loggingStore from '../../stores/loggingStore'
 import { MESSAGE_TYPES } from '@shared/types'
 import { app as electronApp } from 'electron'

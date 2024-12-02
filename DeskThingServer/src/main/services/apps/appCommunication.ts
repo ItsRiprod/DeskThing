@@ -1,3 +1,4 @@
+console.log('[AppCom Service] Starting')
 import { openAuthWindow, sendIpcAuthMessage } from '../..'
 import { AuthScopes, MESSAGE_TYPES, IncomingData, Key, Action, ToClientType } from '@shared/types'
 import loggingStore from '../../stores/loggingStore'
@@ -15,8 +16,6 @@ export async function handleDataFromApp(app: string, appData: IncomingData): Pro
   const { sendMessageToClients, handleClientMessage } = await import('../client/clientCom')
   const { getData, setData, addData } = await import('../../handlers/dataHandler')
   const { getConfig } = await import('../../handlers/configHandler')
-
-  console.log(`SERVER: Received data from ${app}`, appData)
 
   switch (appData.type) {
     case 'message':
@@ -57,6 +56,11 @@ export async function handleDataFromApp(app: string, appData: IncomingData): Pro
       break
     case 'data':
       if (app && appData.payload) {
+        loggingStore.log(
+          MESSAGE_TYPES.LOGGING,
+          `[handleDataFromApp] App ${app} is sending data to the client with ${appData.payload ? (JSON.stringify(appData.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(appData.payload)) : 'undefined'}`,
+          app.toUpperCase()
+        )
         if (appData.payload.app == 'client') {
           handleClientMessage(appData.payload)
         } else {
@@ -72,6 +76,11 @@ export async function handleDataFromApp(app: string, appData: IncomingData): Pro
     case 'toApp':
       if (appData.payload && appData.request) {
         sendMessageToApp(appData.request, appData.payload)
+        loggingStore.log(
+          MESSAGE_TYPES.LOGGING,
+          `[handleDataFromApp] App ${app} is sending data to ${appData.request} with ${appData.payload ? (JSON.stringify(appData.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(appData.payload)) : 'undefined'}`,
+          app.toUpperCase()
+        )
       } else {
         loggingStore.log(
           MESSAGE_TYPES.ERROR,
@@ -91,6 +100,11 @@ export async function handleDataFromApp(app: string, appData: IncomingData): Pro
       if (appData.request == 'add') {
         try {
           if (appData.payload) {
+            loggingStore.log(
+              MESSAGE_TYPES.LOGGING,
+              `[handleDataFromApp] App ${app} is adding key ${appData.payload.id}`,
+              app.toUpperCase()
+            )
             const Key: Key = {
               id: appData.payload.id || 'unsetid',
               description: appData.payload.description || 'Default Description',
@@ -110,6 +124,11 @@ export async function handleDataFromApp(app: string, appData: IncomingData): Pro
         }
       } else if (appData.request == 'remove') {
         keyMapStore.removeKey(appData.payload.id)
+        loggingStore.log(
+          MESSAGE_TYPES.LOGGING,
+          `[handleDataFromApp] App ${app} is removing key ${appData.payload.id}`,
+          app.toUpperCase()
+        )
       }
       break
     case 'action':
@@ -132,7 +151,8 @@ export async function handleDataFromApp(app: string, appData: IncomingData): Pro
               keyMapStore.addAction(Action)
               loggingStore.log(
                 MESSAGE_TYPES.LOGGING,
-                `${app.toUpperCase()}: Added Action Successfully`
+                `[handleDataFromApp] App ${app} is adding Action ${appData.payload.id}`,
+                app.toUpperCase()
               )
             }
           } catch (Error) {
@@ -145,11 +165,21 @@ export async function handleDataFromApp(app: string, appData: IncomingData): Pro
         case 'update':
           if (appData.payload) {
             keyMapStore.updateIcon(appData.payload.id, appData.payload.icon)
+            loggingStore.log(
+              MESSAGE_TYPES.LOGGING,
+              `[handleDataFromApp] App ${app} is updating ${appData.payload.id}'s icon ${appData.payload.icon}`,
+              app.toUpperCase()
+            )
           }
           break
         case 'run':
           if (appData.payload) {
             keyMapStore.runAction(appData.payload.id)
+            loggingStore.log(
+              MESSAGE_TYPES.LOGGING,
+              `[handleDataFromApp] App ${app} is running action ${appData.payload.id}`,
+              app.toUpperCase()
+            )
           }
           break
         default:
@@ -157,7 +187,11 @@ export async function handleDataFromApp(app: string, appData: IncomingData): Pro
       }
       break
     default:
-      console.error(`Unknown data type from ${app}: ${appData.type}`)
+      loggingStore.log(
+        MESSAGE_TYPES.ERROR,
+        `[handleDataFromApp] App ${app} sent an unknown object with type: ${appData.type} and request: ${appData.request}`,
+        app.toUpperCase()
+      )
       break
   }
 }

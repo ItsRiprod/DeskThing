@@ -1,3 +1,4 @@
+console.log('[App Handler] Starting')
 import path from 'path'
 import {
   App,
