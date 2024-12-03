@@ -128,8 +128,10 @@ export const sendMappings = async (clientId?: string): Promise<void> => {
       payload: combinedActions
     })
 
-    loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Button mappings sent!')
-    loggingStore.log(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Client has been sent button maps!`)
+    loggingStore.log(
+      MESSAGE_TYPES.LOGGING,
+      `WEBSOCKET: Client has been sent button map ${mappings.id}!`
+    )
   } catch (error) {
     console.error('WSOCKET: Error getting button mappings:', error)
     sendError(clientId, 'WSOCKET: Error getting button mappings')

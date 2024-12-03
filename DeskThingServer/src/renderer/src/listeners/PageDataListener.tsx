@@ -7,7 +7,7 @@ const PageDataListener = (): null => {
   const navigator = useNavigate()
 
   useEffect(() => {
-    const handlePageChange = (): void => {
+    const handlePageChange = async (): Promise<void> => {
       navigator(currentPage)
     }
 

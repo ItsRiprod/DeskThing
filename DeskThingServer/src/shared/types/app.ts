@@ -92,6 +92,21 @@ export interface AppDataInterface {
   settings?: AppSettings
 }
 
+interface SettingsBase {
+  type:
+    | 'boolean'
+    | 'list'
+    | 'multiselect'
+    | 'number'
+    | 'range'
+    | 'ranked'
+    | 'select'
+    | 'string'
+    | 'color'
+  label: string
+  description?: string
+}
+
 export interface SettingsNumber {
   value: number
   type: 'number'
@@ -172,6 +187,14 @@ export interface SettingsMultiSelect {
   options: SettingOption[]
 }
 
+export interface SettingsColor extends SettingsBase {
+  type: 'color'
+  value: string
+  label: string
+  description?: string
+  placeholder?: string
+}
+
 export type SettingsType =
   | SettingsNumber
   | SettingsBoolean
@@ -181,6 +204,7 @@ export type SettingsType =
   | SettingsRange
   | SettingsRanked
   | SettingsList
+  | SettingsColor
 
 export interface AppSettings {
   [key: string]: SettingsType

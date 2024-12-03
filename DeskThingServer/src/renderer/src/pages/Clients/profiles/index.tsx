@@ -1,31 +1,14 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import Sidebar from '@renderer/nav/Sidebar'
 import Button from '@renderer/components/Button'
-import { IconPlus } from '@renderer/assets/icons'
+import { IconDownload, IconPlus, IconUpload } from '@renderer/assets/icons'
 import MainElement from '@renderer/nav/MainElement'
-import useMappingStore from '@renderer/stores/mappingStore'
-import { ButtonMapping } from '@shared/types'
+import SponsorButton from '@renderer/components/SponsorButton'
 
 const ProfilesPage: React.FC = () => {
-  const [disabled, _setDisabled] = useState(true)
-  const profile = useMappingStore((state) => state.currentProfile)
-  const mapping = useMappingStore((state) => state.currentMapping)
-  const getProfiles = useMappingStore((state) => state.getProfiles)
-  const actions = useMappingStore((state) => state.actions)
-  const keys = useMappingStore((state) => state.keys)
-  const setCurrentProfile = useMappingStore((state) => state.setCurrentProfile)
-
-  const [currentMapping, setCurrentMapping] = useState<ButtonMapping>(mapping)
-  const [selectedProfile, setSelectedProfile] = useState(profile)
-
-  useEffect(() => {
-    setCurrentMapping(mapping)
-    console.log(mapping)
-  }, [mapping])
-
   return (
     <div className="flex h-full w-full">
-      <Sidebar>
+      <Sidebar className=" justify-between ">
         <div className="w-full justify-between h-full flex-col flex">
           <div className="w-full gap-2 flex flex-col">
             <p className="w-full text-center border-b-2">Profiles</p>
@@ -38,15 +21,14 @@ const ProfilesPage: React.FC = () => {
           </Button>
         </div>
 
-        <div className="w-full justify-between h-full flex-col flex">
-          <div className="w-full gap-2 flex flex-col">
-            <p className="w-full text-center border-b-2">Actions</p>
-            <Button className="border border-gray-500 hover:bg-gray-600 justify-center">
-              Server
-            </Button>
-          </div>
-          <Button className=" border-gray-500 justify-center hover:bg-gray-600">
-            <IconPlus iconSize={24} />
+        <div className="w-full justify-between flex-col flex">
+          <Button className=" border-gray-500  gap-2 justify-center hover:bg-gray-600">
+            <IconUpload iconSize={24} />
+            <p className="hidden md:block">Export</p>
+          </Button>
+          <Button className=" border-gray-500 gap-2 justify-center hover:bg-gray-600">
+            <IconDownload iconSize={24} />
+            <p className="hidden md:block">Import</p>
           </Button>
         </div>
       </Sidebar>
@@ -56,7 +38,12 @@ const ProfilesPage: React.FC = () => {
             <div className="p-4 w-full h-full col-span-1 row-span-2">
               <div className="border-gray-500 border-r w-full h-full"></div>
             </div>
-            <div className="w-full h-full col-span-2 row-span-2"></div>
+            <div className="w-full flex-col flex items-center justify-center h-full col-span-2 row-span-2">
+              <p>Profiles will be added in a later version</p>
+              <p>While you are here, consider helping support deskthing!</p>
+              <SponsorButton />
+              <p>A little coffee can go a long way</p>
+            </div>
             <div className="border-gray-500 border-t w-full h-full col-span-1"></div>
             <div className="border-gray-500 border-t w-full h-full col-span-2"></div>
           </div>

@@ -11,6 +11,7 @@ import {
   SetupProxy
 } from './deviceHandler'
 import { sendMessageToClient, sendMessageToClients } from '../services/client/clientCom'
+import mappingStore from '@server/services/mappings/mappingStore'
 
 export const clientHandler: Record<
   ClientIPCData['type'],
@@ -124,6 +125,16 @@ export const clientHandler: Record<
     }
     replyFn('logging', { status: true, data: 'Finished', final: true })
     return await sendMessageToClients(message)
+  },
+  icon: async (data) => {
+    switch (data.request) {
+      case 'get':
+        return await mappingStore.fetchActionIcon(data.payload)
+        break
+      case 'set':
+        // mappingStore.setActionIcon(data.payload)
+        break
+    }
   }
 }
 

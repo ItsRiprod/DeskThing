@@ -8,6 +8,7 @@ import Select from '@renderer/components/Select'
 import { MultiValue, SingleValue } from 'react-select'
 import RankableList from '@renderer/components/RankableList'
 import TagList from '@renderer/components/TagList'
+import Settings from '@renderer/components/settings'
 
 const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
   const getAppData = useAppStore((state) => state.getAppData)
@@ -233,7 +234,13 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
 
   return (
     <div className="w-full h-full p-6 flex flex-col">
-      {settingsEntries.map(([key, setting]) => renderSettingInput(setting, key))}
+      {settingsEntries.map(([key, setting]) => (
+        <Settings
+          setting={setting}
+          handleSettingChange={(value) => handleSettingChange(key, value)}
+          key={key}
+        />
+      ))}
       <div className="border-t mt-4 py-5 border-gray-900 w-full flex justify-end">
         <Button
           className={`border-green-500 border group gap-2 ${loading ? 'text-gray-100 bg-green-600' : 'hover:bg-green-500'}`}

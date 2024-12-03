@@ -10,7 +10,8 @@ import {
   Settings,
   Action,
   Key,
-  MappingStructure
+  MappingStructure,
+  Profile
 } from '@shared/types'
 import ConnectionStore from '../stores/connectionsStore'
 import settingsStore from '../stores/settingsStore'
@@ -22,7 +23,6 @@ import keyMapStore from '../services/mappings/mappingStore'
 import { setupFirewall } from './firewallHandler'
 import { disconnectClient } from '../services/client/clientCom'
 import { restartServer } from '../services/client/websocket'
-import { isValidButtonMapping } from '@server/services/mappings/utilsMaps'
 
 export const utilityHandler: Record<
   UtilityIPCData['type'],
@@ -47,6 +47,8 @@ export const utilityHandler: Record<
     | ButtonMapping
     | MappingStructure
     | null
+    | Profile[]
+    | Profile
   >
 > = {
   ping: async () => {
@@ -206,12 +208,11 @@ export const utilityHandler: Record<
           return await keyMapStore.getProfiles()
         }
       case 'set':
-        if (data.payload.name) {
-          return await keyMapStore.addProfile(data.payload.name, data.payload.base)
-        } else if (isValidButtonMapping(data.payload)) {
-          return await keyMapStore.updateProfile(data.payload.id, data.payload)
+        if (data.payload) {
+          return await keyMapStore.addProfile(data.payload)
         } else {
           loggingStore.log(MESSAGE_TYPES.ERROR, 'UtilityHandler: Missing profile name!')
+          console.log(data)
           return
         }
       case 'delete':
@@ -225,6 +226,7 @@ export const utilityHandler: Record<
       case 'get':
         return await keyMapStore.getCurrentProfile()
       case 'set':
+        console.log('Setting current profile to', data.payload)
         return await keyMapStore.setCurrentProfile(data.payload)
       default:
         return

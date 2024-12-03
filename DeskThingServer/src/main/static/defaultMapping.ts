@@ -1,4 +1,4 @@
-import { Key, EventMode, Action, MappingStructure, ButtonMapping } from '@shared/types'
+import { Key, EventMode, Action, MappingStructure, ButtonMapping, Profile } from '@shared/types'
 
 const keys: Key[] = [
   {
@@ -32,15 +32,6 @@ const keys: Key[] = [
     id: 'Wheel4',
     source: 'server',
     description: 'A wheel button',
-    version: '0.9.1',
-    version_code: 9.1,
-    enabled: true,
-    Modes: [EventMode.KeyDown]
-  },
-  {
-    id: 'Tray6',
-    source: 'server',
-    description: 'The app tray button',
     version: '0.9.1',
     version_code: 9.1,
     enabled: true,
@@ -84,6 +75,15 @@ const keys: Key[] = [
   },
   {
     id: 'Tray5',
+    source: 'server',
+    description: 'The app tray button',
+    version: '0.9.1',
+    version_code: 9.1,
+    enabled: true,
+    Modes: [EventMode.KeyDown]
+  },
+  {
+    id: 'Tray6',
     source: 'server',
     description: 'The app tray button',
     version: '0.9.1',
@@ -215,7 +215,7 @@ const keys: Key[] = [
     version: '0.9.0',
     version_code: 9,
     enabled: true,
-    Modes: [EventMode.KeyDown, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
+    Modes: [EventMode.PressShort, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
   },
   {
     id: 'Escape',
@@ -233,20 +233,21 @@ const keys: Key[] = [
     version: '0.9.0',
     version_code: 9,
     enabled: true,
-    Modes: [EventMode.ScrollUp, EventMode.ScrollDown, EventMode.ScrollLeft, EventMode.ScrollRight]
+    Modes: [EventMode.SwipeUp, EventMode.SwipeDown, EventMode.SwipeLeft, EventMode.SwipeRight]
   }
 ]
 
 const actions: Action[] = [
   {
-    name: 'WheelSelect',
+    name: 'Toggle Wheel',
     id: 'wheel',
     icon: 'wheel',
     description: 'Opens the selection wheel',
     source: 'server',
     version: '0.9.1',
     version_code: 9.1,
-    enabled: true
+    enabled: true,
+    tag: 'nav'
   },
   {
     name: 'Shuffle',
@@ -258,7 +259,8 @@ const actions: Action[] = [
     source: 'server',
     version: '0.9.0',
     version_code: 9,
-    enabled: true
+    enabled: true,
+    tag: 'media'
   },
   {
     name: 'Rewind',
@@ -271,7 +273,8 @@ const actions: Action[] = [
     source: 'server',
     version: '0.9.0',
     version_code: 9,
-    enabled: true
+    enabled: true,
+    tag: 'media'
   },
   {
     name: 'PlayPause',
@@ -281,7 +284,8 @@ const actions: Action[] = [
     source: 'server',
     version: '0.9.0',
     version_code: 9,
-    enabled: true
+    enabled: true,
+    tag: 'media'
   },
   {
     name: 'Skip',
@@ -290,7 +294,8 @@ const actions: Action[] = [
     source: 'server',
     version: '0.9.0',
     version_code: 9,
-    enabled: true
+    enabled: true,
+    tag: 'media'
   },
   {
     name: 'Repeat',
@@ -299,10 +304,11 @@ const actions: Action[] = [
     source: 'server',
     version: '0.9.0',
     version_code: 9,
-    enabled: true
+    enabled: true,
+    tag: 'media'
   },
   {
-    name: 'Open Preference App',
+    name: 'Open Tray App',
     id: 'pref',
     value: '0',
     value_instructions: 'The index of the app to open',
@@ -310,7 +316,8 @@ const actions: Action[] = [
     source: 'server',
     version: '0.9.0',
     version_code: 9,
-    enabled: true
+    enabled: true,
+    tag: 'nav'
   },
   {
     name: 'Swap Apps',
@@ -321,29 +328,32 @@ const actions: Action[] = [
     source: 'server',
     version: '0.9.0',
     version_code: 9,
-    enabled: true
+    enabled: true,
+    tag: 'nav'
   },
   {
     name: 'Volume Down',
-    id: 'volDown',
+    id: 'voldown',
     value: '15',
     value_instructions: 'The amount of volume to change by',
     description: 'Turns the volume down',
     source: 'server',
     version: '0.9.0',
     version_code: 9,
-    enabled: true
+    enabled: true,
+    tag: 'media'
   },
   {
     name: 'Volume Up',
-    id: 'volUp',
+    id: 'volup',
     value: '15',
     value_instructions: 'The amount of volume to change by',
     description: 'Turns the volume up',
     source: 'server',
     version: '0.9.0',
     version_code: 9,
-    enabled: true
+    enabled: true,
+    tag: 'media'
   },
   {
     name: 'Open App',
@@ -354,11 +364,12 @@ const actions: Action[] = [
     source: 'server',
     version: '0.9.0',
     version_code: 9,
-    enabled: true
+    enabled: true,
+    tag: 'nav'
   },
   {
     name: 'Toggle AppsList',
-    id: 'appsList',
+    id: 'appslist',
     value: 'toggle',
     value_options: ['hide', 'toggle', 'show'],
     value_instructions: 'How the button behaves',
@@ -366,25 +377,28 @@ const actions: Action[] = [
     source: 'server',
     version: '0.9.0',
     version_code: 9,
-    enabled: true
+    enabled: true,
+    tag: 'nav'
   },
   {
     name: 'Open Previous',
-    id: 'swipeL',
+    id: 'swipel',
     description: 'Opens the app at the previous index',
     source: 'server',
     version: '0.9.0',
     version_code: 9,
-    enabled: true
+    enabled: true,
+    tag: 'nav'
   },
   {
     name: 'Open Next',
-    id: 'swipeR',
+    id: 'swiper',
     description: 'Opens the app at the next index',
     source: 'server',
     version: '0.9.0',
     version_code: 9,
-    enabled: true
+    enabled: true,
+    tag: 'nav'
   },
   {
     name: 'Hidden Button',
@@ -393,7 +407,8 @@ const actions: Action[] = [
     source: 'server',
     version: '0.9.0',
     version_code: 9,
-    enabled: true
+    enabled: true,
+    tag: 'basic'
   },
   {
     name: 'Fullscreen',
@@ -402,16 +417,21 @@ const actions: Action[] = [
     source: 'server',
     version: '0.9.0',
     version_code: 9,
-    enabled: true
+    enabled: true,
+    tag: 'nav'
   }
 ]
 
-export const defaults: ButtonMapping = {
+export const defaultProfile: Profile = {
   id: 'default',
-  name: 'The Default Mapping',
+  name: 'Default',
   description: 'The default mapping for the DeskThing',
-  version: '0.9.2',
-  version_code: 9.2,
+  version: '0.9.4',
+  version_code: 9.4
+}
+
+export const defaults: ButtonMapping = {
+  ...defaultProfile,
   mapping: {
     Wheel1: {
       [EventMode.KeyDown]: {
@@ -616,25 +636,25 @@ export const defaults: ButtonMapping = {
     },
     Scroll: {
       [EventMode.ScrollRight]: {
-        id: 'volUp',
+        id: 'volup',
         value: '15',
         source: 'server',
         enabled: true
       },
       [EventMode.ScrollUp]: {
-        id: 'volUp',
+        id: 'volup',
         value: '15',
         source: 'server',
         enabled: true
       },
       [EventMode.ScrollLeft]: {
-        id: 'volDown',
+        id: 'voldown',
         value: '15',
         source: 'server',
         enabled: true
       },
       [EventMode.ScrollDown]: {
-        id: 'volDown',
+        id: 'voldown',
         value: '15',
         source: 'server',
         enabled: true
@@ -654,13 +674,13 @@ export const defaults: ButtonMapping = {
     },
     Escape: {
       [EventMode.PressShort]: {
-        id: 'appsList',
+        id: 'appslist',
         value: 'show',
         source: 'server',
         enabled: true
       },
       [EventMode.PressLong]: {
-        id: 'appsList',
+        id: 'appslist',
         value: 'hide',
         source: 'server',
         enabled: true
@@ -668,24 +688,24 @@ export const defaults: ButtonMapping = {
     },
     Swipe: {
       [EventMode.SwipeUp]: {
-        id: 'appsList',
+        id: 'appslist',
         value: 'hide',
         source: 'server',
         enabled: true
       },
       [EventMode.SwipeDown]: {
-        id: 'appsList',
+        id: 'appslist',
         value: 'show',
         source: 'server',
         enabled: true
       },
       [EventMode.SwipeLeft]: {
-        id: 'swipeL',
+        id: 'swipel',
         source: 'server',
         enabled: true
       },
       [EventMode.SwipeRight]: {
-        id: 'swipeR',
+        id: 'swiper',
         source: 'server',
         enabled: true
       }
@@ -694,9 +714,9 @@ export const defaults: ButtonMapping = {
 }
 
 export const defaultData: MappingStructure = {
-  version: '0.9.3',
-  version_code: 9.3,
-  selected_profile: 'default',
+  version: '0.9.5',
+  version_code: 9.5,
+  selected_profile: defaultProfile,
   profiles: {
     default: defaults
   },

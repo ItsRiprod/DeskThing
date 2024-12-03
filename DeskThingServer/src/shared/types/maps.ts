@@ -10,6 +10,7 @@ export type Action = {
   version: string // The version of the action
   version_code: number // The version of the server the action is compatible with
   enabled: boolean // Whether or not the app associated with the action is enabled
+  tag?: 'nav' | 'media' | 'basic' // Tags associated with the action
 }
 
 export type Key = {
@@ -53,14 +54,17 @@ export type ActionReference = {
 }
 
 // The button mapping profile stored in the file system
-export type ButtonMapping = {
-  // The ID of the key
+export type Profile = {
   version: string
   version_code: number
   id: string
   name: string
   description?: string
   trigger_app?: string
+  extends?: string
+}
+
+export interface ButtonMapping extends Profile {
   mapping: {
     [key: string]: {
       [Mode in EventMode]?: ActionReference
@@ -69,16 +73,16 @@ export type ButtonMapping = {
 }
 
 export type MappingFileStructure = {
-  selected_profile: string
+  selected_profile: Profile
   version: string
   version_code: number
-  profiles: string[] // array of profile ids
+  profiles: Profile[] // array of profile ids
   actions: Action[]
   keys: Key[]
 }
 
 export type MappingStructure = {
-  selected_profile: string
+  selected_profile: Profile
   version: string
   version_code: number
   profiles: {

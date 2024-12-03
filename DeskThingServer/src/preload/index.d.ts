@@ -6,7 +6,8 @@ import {
   ButtonMapping,
   Client,
   ClientManifest,
-  Log
+  Log,
+  Profile
 } from '@shared/types'
 
 type AppData = { [key: string]: string }
@@ -64,11 +65,13 @@ declare global {
       addKey: (key: Key) => Promise<void>
       deleteKey: (keyId: string) => Promise<void>
 
-      getProfiles: () => Promise<ButtonMapping[]>
+      getIcon: (action: Action | ActionReference) => Promise<string>
+
+      getProfiles: () => Promise<Profile[]>
       getProfile: (profileName: string) => Promise<ButtonMapping>
-      getCurrentProfile: () => Promise<string>
-      setCurrentProfile: (profile: string) => Promise<void>
-      addProfile: (profile: { name: string; base?: string }) => Promise<void>
+      getCurrentProfile: () => Promise<Profile>
+      setCurrentProfile: (profile: Profile) => Promise<void>
+      addProfile: (profile: Profile) => Promise<void>
       saveProfile: (profile: ButtonMapping) => Promise<void>
       deleteProfile: (profile: string) => Promise<void>
 

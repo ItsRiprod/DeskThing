@@ -375,12 +375,24 @@ const setupListeners = async (): Promise<void> => {
       sendMessageToClients(SocketData)
     })
 
-    mappingStore.addListener('action', (action) => {
+    mappingStore.addListener('action', (actions) => {
       const profile = mappingStore.getMapping()
       const SocketData = {
         type: 'button_mappings',
         app: 'client',
-        payload: { ...profile, action }
+        payload: { ...profile, actions }
+      }
+
+      sendMessageToClients(SocketData)
+    })
+
+    mappingStore.addListener('update', () => {
+      const profile = mappingStore.getMapping()
+      const actions = mappingStore.getActions()
+      const SocketData = {
+        type: 'button_mappings',
+        app: 'client',
+        payload: { ...profile, actions }
       }
 
       sendMessageToClients(SocketData)

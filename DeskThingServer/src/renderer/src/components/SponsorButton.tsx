@@ -13,7 +13,7 @@ const SponsorButton: React.FC = () => {
 
   return (
     <Button
-      href="https://buymeacoffee.com/riprod"
+      href="https://deskthing.app/support"
       target="_blank"
       rel="noreferrer"
       className="group fill-fuchsia-600 hover:bg-fuchsia-600 hover:text-black text-fuchsia-600"

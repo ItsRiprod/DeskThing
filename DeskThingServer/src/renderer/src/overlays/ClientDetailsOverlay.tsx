@@ -156,6 +156,10 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
   const handleBrightnessChange = (value: number): void => {
     setBrightness(value)
 
+    if (supervisorData['backlight'] === 'RUNNING') {
+      handleToggleSupervisor('backlight', false)
+    }
+
     // Clear the previous timeout if the brightness changes again
     if (debounceTimeout.current) {
       clearTimeout(debounceTimeout.current)
@@ -287,7 +291,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
     })
   }
 
-  const handleToggleSupervisor = async (key, value: boolean): Promise<void> => {
+  const handleToggleSupervisor = async (key: string, value: boolean): Promise<void> => {
     const action = value ? 'start' : 'stop'
     setAnimatingIcons((prev) => ({ ...prev, [key]: true }))
 
@@ -333,25 +337,25 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
       <div className="w-full px-1 gap-1 flex items-center justify-evenly">
         {client.connected && (
           <Button
-            className="group hover:bg-zinc-950 gap-2 w-full justify-center"
+            className="bg-black group hover:bg-zinc-950 gap-2 w-full justify-center"
             onClick={handleChangeView}
           >
             <IconHome />
-            <p className="group-hover:block hidden text-nowrap">Set View</p>
+            <p className="bg-black group-hover:block hidden text-nowrap">Set View</p>
           </Button>
         )}
         {client.adbId && (
           <>
             <Button
-              className="group hover:bg-zinc-950 gap-2 w-full justify-center"
+              className="bg-black group hover:bg-zinc-950 gap-2 w-full justify-center"
               onClick={handlePushStaged}
               disabled={loading}
             >
               {loading ? <IconLoading /> : <IconUpload />}
-              <p className="group-hover:block hidden text-nowrap">Push Staged</p>
+              <p className="bg-black group-hover:block hidden text-nowrap">Push Staged</p>
             </Button>
             <Button
-              className="group hover:bg-zinc-950 gap-2 w-full justify-center"
+              className="bg-black group hover:bg-zinc-950 gap-2 w-full justify-center"
               onClick={restartChromium}
               disabled={loading}
             >
@@ -362,18 +366,18 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
                     : ''
                 }
               />
-              <p className="group-hover:block hidden text-nowrap">Reload Chromium</p>
+              <p className="bg-black group-hover:block hidden text-nowrap">Reload Chromium</p>
             </Button>
             <Button
-              className="group hover:bg-zinc-950 gap-2 w-full justify-center"
+              className="bg-black group hover:bg-zinc-950 gap-2 w-full justify-center"
               onClick={openPort}
               disabled={loading}
             >
               <IconDisconnect />
-              <p className="group-hover:block hidden text-nowrap">Setup Port</p>
+              <p className="bg-black group-hover:block hidden text-nowrap">Setup Port</p>
             </Button>
             <Button
-              className="group border-red-500 border hover:bg-zinc-950 gap-2 w-full justify-center"
+              className="bg-black group border-red-500 border hover:bg-zinc-950 gap-2 w-full justify-center"
               onClick={handleRestart}
               disabled={loading}
             >
@@ -382,26 +386,26 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
                   animatingIcons.restart && '-rotate-[360deg] transition-transform duration-500'
                 }
               />
-              <p className="group-hover:block hidden text-nowrap">Restart</p>
+              <p className="bg-black group-hover:block hidden text-nowrap">Restart</p>
             </Button>
             <Button
-              className="group border-red-500 border hover:bg-zinc-950 gap-2 w-full justify-center"
+              className="bg-black group border-red-500 border hover:bg-zinc-950 gap-2 w-full justify-center"
               onClick={handleShutdown}
               disabled={loading}
             >
               {loading ? <IconLoading /> : <IconPower />}
-              <p className="group-hover:block hidden text-nowrap">Power Off</p>
+              <p className="bg-black group-hover:block hidden text-nowrap">Power Off</p>
             </Button>
           </>
         )}
         {client.connected && (
           <>
             <Button
-              className="group hover:bg-zinc-950 gap-2 w-full justify-center"
+              className="bg-black group hover:bg-zinc-950 gap-2 w-full justify-center"
               onClick={handlePing}
             >
               <IconPing className={animatingIcons.ping ? 'animate-ping' : ''} />
-              <p className="group-hover:block hidden text-nowrap">Ping</p>
+              <p className="bg-black group-hover:block hidden text-nowrap">Ping</p>
             </Button>
             <Button
               className="group bg-red-700 gap-2 w-full justify-center"
@@ -441,7 +445,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
               <p className="text-xs font-geistMono text-gray-500">MAC BT</p>
               <h3 className="text-xl">{deviceData.mac_bt || 'Unknown'}</h3>
             </div>
-            <div className="my-4">
+            <div className="my-4 flex flex-col gap-1">
               <p className="text-xs font-geistMono text-gray-500">Supervisor Status</p>
               {Object.entries(supervisorData).map(([key, value]) => (
                 <div key={key} className="flex items-center justify-between">
@@ -449,11 +453,11 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
                     {key}: {value}
                   </h3>
                   <Button
-                    className="group hover:bg-zinc-950 gap-2"
+                    className="bg-black group hover:bg-zinc-950 gap-2"
                     onClick={() => handleToggleSupervisor(key, value != 'RUNNING')}
                     disabled={animatingIcons[key]}
                   >
-                    <p className="group-hover:block hidden text-nowrap">
+                    <p className="bg-black group-hover:block hidden text-nowrap">
                       {animatingIcons[key] ? 'Loading' : value == 'RUNNING' ? 'Disable' : 'Enable'}
                     </p>
                     {animatingIcons[key] ? (

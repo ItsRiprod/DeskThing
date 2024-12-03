@@ -20,7 +20,7 @@ const Button: React.FC<ButtonProps> = ({
   disabled,
   onMouseEnter
 }) => {
-  const baseClasses = 'flex-row flex p-3 bg-black hover:font-semibold rounded-md'
+  const baseClasses = 'relative group flex-row flex p-3 hover:font-semibold rounded-md'
   const combinedClasses = `${baseClasses} ${className}`
 
   if (href) {

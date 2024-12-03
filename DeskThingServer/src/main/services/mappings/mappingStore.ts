@@ -7,7 +7,8 @@ import {
   Key,
   MappingStructure,
   ActionReference,
-  Button
+  Button,
+  Profile
 } from '@shared/types'
 import loggingStore from '@server/stores/loggingStore'
 import { writeToGlobalFile } from '@server/utils/fileHandler'
@@ -15,15 +16,17 @@ import { deepMerge } from '@server/utils/objectUtils'
 import { importProfile, loadMappings, saveMappings } from './fileMaps'
 import {
   ConstructActionReference,
+  FetchIcon,
   isValidAction,
   isValidActionReference,
   isValidKey
 } from './utilsMaps'
 import { sendMessageToApp } from '../apps'
+import { defaultProfile } from '@server/static/defaultMapping'
 
-type ListeningTypes = 'key' | 'profile' | 'action'
+type ListeningTypes = 'key' | 'profile' | 'action' | 'update'
 
-type Listener = (data: Key[] | ButtonMapping | Action[]) => void
+type Listener = (data?: Key[] | ButtonMapping | Action[]) => void
 
 export class MappingState {
   private _mappings: MappingStructure
@@ -31,7 +34,8 @@ export class MappingState {
   private listeners: Record<ListeningTypes, Set<Listener>> = {
     key: new Set(),
     profile: new Set(),
-    action: new Set()
+    action: new Set(),
+    update: new Set()
   }
 
   constructor() {
@@ -66,10 +70,10 @@ export class MappingState {
       this.notifyListeners('key', value.keys)
     }
     if (
-      value.profiles[value.selected_profile] !=
-      this._mappings.profiles[this._mappings.selected_profile]
+      value.profiles[value.selected_profile.id] !=
+      this._mappings.profiles[this._mappings.selected_profile.id]
     ) {
-      this.notifyListeners('profile', value.profiles[value.selected_profile])
+      this.notifyListeners('profile', value.profiles[value.selected_profile.id])
     }
     if (value.actions != this._mappings.actions) {
       this.notifyListeners('action', value.actions)
@@ -92,7 +96,7 @@ export class MappingState {
 
   private async notifyListeners(
     type: ListeningTypes,
-    data: Key[] | ButtonMapping | Action[]
+    data?: Key[] | ButtonMapping | Action[]
   ): Promise<void> {
     this.listeners[type].forEach((listener) => listener(data))
   }
@@ -423,31 +427,39 @@ export class MappingState {
   }
 
   getMapping = (): ButtonMapping => {
+    console.log('Getting map from the profile: ', this.mappings.selected_profile)
     if (!this.mappings.selected_profile) {
       return this.mappings.profiles.default
     }
-    return this.mappings.profiles[this.mappings.selected_profile]
+    return this.mappings.profiles[this.mappings.selected_profile.id]
   }
 
   getKeys = (): Key[] | null => {
     return this.mappings.keys
   }
 
-  getProfiles(): string[] {
-    return Object.keys(this.mappings.profiles)
+  getProfiles(): Profile[] {
+    const profiles = Object.values(this.mappings.profiles).map((profile) => ({
+      ...profile,
+      mapping: null
+    }))
+    return profiles
   }
 
-  getProfile(profile: string): ButtonMapping | null {
-    return this.mappings.profiles[profile]
+  getProfile(profileName: string): ButtonMapping | null {
+    return this.mappings.profiles[profileName]
   }
 
-  getCurrentProfile = (): string => {
+  getCurrentProfile = (): Profile => {
     return this.mappings.selected_profile
   }
 
-  setCurrentProfile = async (profile: string): Promise<void> => {
-    if (this.mappings.profiles[profile]) {
+  setCurrentProfile = async (profile: Profile): Promise<void> => {
+    console.log('Setting profile to: ', profile)
+    if (this.mappings.profiles[profile.id]) {
       this.mappings.selected_profile = profile
+      this.notifyListeners('update')
+      saveMappings(this.mappings)
     } else {
       loggingStore.log(
         MESSAGE_TYPES.ERROR,
@@ -461,30 +473,39 @@ export class MappingState {
    * @param profileName - The unique name of the new profile.
    * @param baseProfile - Optional. The name of an existing profile to clone as the base for the new profile.
    */
-  addProfile = async (profileName: string, baseProfile: string = 'default'): Promise<void> => {
+  addProfile = async (profile: Profile): Promise<void> => {
+    if (profile.id == 'default') {
+      loggingStore.log(MESSAGE_TYPES.WARNING, `MAPHANDLER: Cannot edit the default profile`)
+      return
+    }
+
     const mappings = this.mappings
 
     // Check if the profile name already exists
-    if (mappings.profiles[profileName]) {
-      loggingStore.log(MESSAGE_TYPES.ERROR, `MAPHANDLER: Profile "${profileName}" already exists!`)
+    if (mappings.profiles[profile.id]) {
+      loggingStore.log(
+        MESSAGE_TYPES.WARNING,
+        `MAPHANDLER: Profile "${profile.id}" already exists! Updating`
+      )
+      this.updateProfile(profile.id, profile)
       return
     }
 
     // Ensure the base profile exists
-    if (!mappings.profiles[baseProfile]) {
+    if (!mappings.profiles[profile.extends || 'default']) {
       loggingStore.log(
         MESSAGE_TYPES.ERROR,
-        `MAPHANDLER: Base profile "${baseProfile}" does not exist!`
+        `MAPHANDLER: Base profile "${profile.extends}" does not exist!`
       )
       return
     }
 
     // Clone the base profile to create the new profile
-    const baseButtonMapping = mappings.profiles[baseProfile]
+    const baseButtonMapping = mappings.profiles[profile.extends || 'default']
     const newButtonMapping: ButtonMapping = {
       version: baseButtonMapping.version,
-      id: `${baseButtonMapping.id}_${profileName}`, // Ensure a unique ID
-      name: `${profileName}`,
+      id: `${profile.id}`, // Ensure a unique ID
+      name: `${profile.name || profile.id || 'NewProfile'}`,
       version_code: baseButtonMapping.version_code,
       description: baseButtonMapping.description,
       trigger_app: baseButtonMapping.trigger_app,
@@ -492,7 +513,7 @@ export class MappingState {
     }
 
     // Add the new profile to the mappings
-    mappings.profiles[profileName] = newButtonMapping
+    mappings.profiles[profile.id] = newButtonMapping
 
     // Optionally, set the new profile as the selected profile
     // mappings.selected_profile = profileName
@@ -502,7 +523,7 @@ export class MappingState {
 
     loggingStore.log(
       MESSAGE_TYPES.LOGGING,
-      `MAPHANDLER: Profile "${profileName}" added successfully.`
+      `MAPHANDLER: Profile "${profile.name}" added successfully.`
     )
   }
 
@@ -529,8 +550,8 @@ export class MappingState {
     delete mappings.profiles[profileName]
 
     // If the removed profile was the selected profile, revert to default
-    if (mappings.selected_profile === profileName) {
-      mappings.selected_profile = 'default'
+    if (mappings.selected_profile.id === profileName) {
+      mappings.selected_profile = defaultProfile
       loggingStore.log(
         MESSAGE_TYPES.LOGGING,
         `MAPHANDLER: Selected profile was removed. Reverted to "default" profile.`
@@ -606,6 +627,26 @@ export class MappingState {
     }
   }
 
+  fetchActionIcon = async (action: Action | ActionReference): Promise<string | null> => {
+    if (!isValidAction(action)) {
+      const actualAction = this.getAction(action.id)
+      return actualAction ? await FetchIcon(actualAction) : null
+    } else {
+      return await FetchIcon(action as Action)
+    }
+  }
+
+  fetchKeyIcon = async (key: Key, mode: EventMode): Promise<string | null> => {
+    const mapping = this.getMapping()
+    const action = mapping.mapping[key.id][mode]
+
+    if (action) {
+      return await this.fetchActionIcon(action)
+    } else {
+      return null
+    }
+  }
+
   updateProfile = async (
     profileName: string,
     updatedProfile: Partial<ButtonMapping>
@@ -624,6 +665,7 @@ export class MappingState {
       MESSAGE_TYPES.LOGGING,
       `MAPHANDLER: Profile ${profileName} updated successfully.`
     )
+    this.notifyListeners('profile', profile)
   }
 }
 

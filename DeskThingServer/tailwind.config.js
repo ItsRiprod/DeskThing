@@ -8,6 +8,10 @@ module.exports = {
         geistMono: ['GeistMono', 'monospace'],
         theBoldFont: ['TheBoldFont', 'sand-serif']
       },
+      screens: {
+        xs: '500px'
+      },
+
       keyframes: {
         fade: {
           '0%': { opacity: 0, transform: 'translateY(-10px)' },

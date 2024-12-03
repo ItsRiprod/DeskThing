@@ -1,6 +1,6 @@
 import { App } from './app'
 
-export interface Profile {
+export interface Pending_Profile {
   version: string
   version_code: number
   id: string

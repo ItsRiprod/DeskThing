@@ -18,6 +18,7 @@ import WelcomeWidget from '@renderer/pages/Dashboard/WelcomeWidget'
 import DevApp from '@renderer/pages/Dev/DevApp'
 import ADBSettings from '@renderer/pages/Dev/ADBSettings'
 import ClientTheming from '@renderer/pages/Clients/Theming'
+import ProfilesPage from '@renderer/pages/Clients/profiles'
 
 const AppRouter = (): JSX.Element => {
   return (
@@ -40,6 +41,7 @@ const AppRouter = (): JSX.Element => {
               <Route path="mapping" element={<ClientMappingPage />} />
               <Route path="theming" element={<ClientTheming />} />
               <Route path="connections" element={<ClientConnections />} />
+              <Route path="Profiles" element={<ProfilesPage />} />
             </Route>
             <Route path="/apps" element={<Apps />}>
               <Route path="list" element={<AppsList />} />

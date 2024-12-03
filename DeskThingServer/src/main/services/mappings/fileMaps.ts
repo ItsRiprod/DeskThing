@@ -1,5 +1,11 @@
 console.log('[MapFile Service] Starting')
-import { ButtonMapping, MappingFileStructure, MappingStructure, MESSAGE_TYPES } from '@shared/types'
+import {
+  ButtonMapping,
+  MappingFileStructure,
+  MappingStructure,
+  MESSAGE_TYPES,
+  Profile
+} from '@shared/types'
 import loggingStore from '@server/stores/loggingStore'
 import {
   readFromFile,
@@ -51,12 +57,15 @@ const fetchProfiles = async (fileData: MappingFileStructure): Promise<MappingStr
   const profiles = await Promise.all(
     fileData.profiles.map(async (profile) => {
       // Read the profile data from the mappings directory
-      const data = await readFromFile<ButtonMapping>(path.join('mappings', `${profile}.json`))
+      const data = await readFromFile<ButtonMapping>(path.join('mappings', `${profile.id}.json`))
       if (data && isValidButtonMapping(data)) {
         // Return profile data in key-value format
-        return { [profile]: data }
+        return { [profile.id]: data }
       } else {
-        loggingStore.log(MESSAGE_TYPES.WARNING, `FILEMAPS: Unable to fetch profile of ${profile}!`)
+        loggingStore.log(
+          MESSAGE_TYPES.WARNING,
+          `FILEMAPS: Unable to fetch profile of ${profile.id}!`
+        )
         // Return null for failed profile loads
         return null
       }
@@ -76,12 +85,12 @@ const fetchProfiles = async (fileData: MappingFileStructure): Promise<MappingStr
 }
 
 const saveProfiles = async (mappingData: MappingStructure): Promise<MappingFileStructure> => {
-  const profiles = await Promise.all(
+  const profiles: Profile[] = await Promise.all(
     Object.values(mappingData.profiles).map(async (profile) => {
       // Save each profile to a .json file named after its id (e.g. 'default' -> 'default.json')
       console.log('Writing map: ', profile.id, ' to file')
       await writeToFile<ButtonMapping>(profile, path.join('mappings', `${profile.id}.json`))
-      return profile.id
+      return { ...profile, mapping: undefined }
     })
   )
 

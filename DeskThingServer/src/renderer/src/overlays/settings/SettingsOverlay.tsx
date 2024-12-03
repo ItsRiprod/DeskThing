@@ -28,7 +28,6 @@ const SettingsOverlay: React.FC = () => {
 
   const onClose = (): void => {
     searchParams.delete('settings')
-    searchParams.delete('page')
     setSearchParams(searchParams)
   }
 

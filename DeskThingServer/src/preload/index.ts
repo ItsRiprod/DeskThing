@@ -16,6 +16,7 @@ import {
   IPCData,
   Key,
   Log,
+  Profile,
   Settings,
   SocketData
 } from '@shared/types'
@@ -305,7 +306,7 @@ const api = {
       payload: keyId
     }),
 
-  getProfiles: async (): Promise<ButtonMapping[]> =>
+  getProfiles: async (): Promise<Profile[]> =>
     await sendCommand('UTILITY', {
       type: 'profiles',
       request: 'get',
@@ -319,6 +320,13 @@ const api = {
       payload: profileName
     }),
 
+  getIcon: async (action: Action | ActionReference): Promise<string> =>
+    await sendCommand('CLIENT', {
+      type: 'icon',
+      request: 'get',
+      payload: action
+    }),
+
   saveProfile: async (profile: ButtonMapping): Promise<void> =>
     await sendCommand('UTILITY', {
       type: 'profiles',
@@ -326,7 +334,7 @@ const api = {
       payload: profile
     }),
 
-  addProfile: async (profile: { name: string; base?: string }): Promise<void> =>
+  addProfile: async (profile: Profile): Promise<void> =>
     await sendCommand('UTILITY', {
       type: 'profiles',
       request: 'set',
@@ -340,14 +348,14 @@ const api = {
       payload: profileName
     }),
 
-  getCurrentProfile: async (): Promise<string> =>
+  getCurrentProfile: async (): Promise<Profile> =>
     await sendCommand('UTILITY', {
       type: 'map',
       request: 'get',
       payload: undefined
     }),
 
-  setCurrentProfile: async (profile: string): Promise<void> =>
+  setCurrentProfile: async (profile: Profile): Promise<void> =>
     await sendCommand('UTILITY', {
       type: 'map',
       request: 'set',

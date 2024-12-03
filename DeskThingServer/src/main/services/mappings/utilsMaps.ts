@@ -10,6 +10,7 @@ import {
   MappingStructure,
   MESSAGE_TYPES
 } from '@shared/types'
+import { getAppFilePath } from '../apps'
 
 export const isValidMappingStructure = async (structure: MappingStructure): Promise<boolean> => {
   try {
@@ -187,24 +188,24 @@ export const isValidButtonMapping = (mapping: ButtonMapping): boolean => {
  * @param action - The action to validate
  * @throws Error if any required field is missing or invalid
  */
-export const isValidAction = (action: Action): boolean => {
-  if (typeof action !== 'object') return false
-  if (typeof action.id !== 'string') return false
-  if (typeof action.source !== 'string') return false
+export const isValidAction = (action: unknown): boolean => {
+  if (!action || typeof action !== 'object') return false
+  const actionObj = action as Action
+  if (typeof actionObj.id !== 'string') return false
+  if (typeof actionObj.source !== 'string') return false
 
-  if (typeof action.version !== 'string') {
-    action.version = '0.0.0' // Default version
+  if (typeof actionObj.version !== 'string') {
+    actionObj.version = '0.0.0' // Default version
     console.warn('WARNING_MISSING_ACTION_VERSION')
   }
 
-  if (typeof action.enabled !== 'boolean') {
-    action.enabled = true // Default to enabled
+  if (typeof actionObj.enabled !== 'boolean') {
+    actionObj.enabled = true // Default to enabled
     console.warn('WARNING_MISSING_ACTION_ENABLED')
   }
 
   return true
 }
-
 /**
  * Validates the required fields of an action
  * @param action - The action to validate
@@ -249,6 +250,24 @@ export const isValidKey = (key: Key): boolean => {
     Array.isArray(key.Modes) &&
     key.Modes.every((Mode) => Object.values(EventMode).includes(Mode))
   )
+}
+
+export const FetchIcon = async (action: Action): Promise<string | null> => {
+  if (!action) return null
+  const { app } = require('electron')
+  const fs = require('fs').promises
+  const path = require('path')
+
+  try {
+    const iconPath =
+      action.source === 'server'
+        ? path.join(app.getPath('userData'), 'webapp', 'icons', `${action.icon || action.id}.svg`)
+        : path.join(getAppFilePath(action.source), 'icons', `${action.id}.svg`)
+
+    return await fs.readFile(iconPath, 'utf8')
+  } catch (error) {
+    return null
+  }
 }
 
 export const ConstructActionReference = ({

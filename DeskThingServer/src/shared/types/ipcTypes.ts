@@ -56,6 +56,7 @@ export type CLIENT_TYPES =
   | 'push-proxy-script'
   | 'adb'
   | 'run-device-command'
+  | 'icon'
 
 export interface AppIPCData {
   type: APP_TYPES

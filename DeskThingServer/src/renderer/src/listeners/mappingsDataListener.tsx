@@ -10,10 +10,10 @@ const MappingsDataListener = (): null => {
   const requestMappings = useMappingStore((state) => state.requestMappings)
 
   useEffect(() => {
-    const handleKeyUpdate = (_event, key: Key[]): void => {
+    const handleKeyUpdate = async (_event, key: Key[]): Promise<void> => {
       setKeys(key)
     }
-    const handleActionUpdate = (_event, action: Action[]): void => {
+    const handleActionUpdate = async (_event, action: Action[]): Promise<void> => {
       setActions(action)
     }
     const handleProfileUpdate = async (_event, profile: ButtonMapping): Promise<void> => {

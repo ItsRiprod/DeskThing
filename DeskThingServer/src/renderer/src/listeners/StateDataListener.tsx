@@ -5,7 +5,7 @@ const StateDataListener = (): null => {
   const { setPage } = usePageStore()
 
   useEffect(() => {
-    window.electron.ipcRenderer.on('page-change', (_event, newPage) => {
+    window.electron.ipcRenderer.on('page-change', async (_event, newPage) => {
       setPage(newPage)
     })
 

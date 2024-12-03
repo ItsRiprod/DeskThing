@@ -5,20 +5,30 @@
  * @version 0.9.4
  */
 import { create } from 'zustand'
-import { Action, Key, ButtonMapping, ActionReference } from '@shared/types'
+import { Action, Key, ButtonMapping, ActionReference, Profile } from '@shared/types'
+
+const DefaultProfile: Profile = {
+  id: 'default',
+  name: 'Default',
+  version: '0.9.4',
+  version_code: 9.4
+}
 
 interface MappingStoreState {
   currentMapping: ButtonMapping
-  currentProfile: string
+  currentProfile: Profile
   actions: Action[]
   keys: Key[]
 
-  getProfiles: () => Promise<ButtonMapping[]>
+  getProfiles: () => Promise<Profile[]>
   getProfile: (profileName: string) => Promise<ButtonMapping>
   saveProfile: (profile: ButtonMapping) => Promise<void>
-  addProfile: (profile: { name: string; base?: string }) => Promise<void>
+  addProfile: (profile: Profile) => Promise<void>
+  deleteProfile: (profileName: string) => Promise<void>
 
-  setCurrentProfile: (profile: string) => Promise<void>
+  getIcon: (action: Action | ActionReference) => Promise<string | null>
+
+  setCurrentProfile: (profile: Profile) => Promise<void>
 
   setProfile: (mapping: ButtonMapping) => Promise<void>
 
@@ -36,14 +46,14 @@ interface MappingStoreState {
 }
 
 const useMappingStore = create<MappingStoreState>(
-  (set): MappingStoreState => ({
+  (set, get): MappingStoreState => ({
     currentMapping: {} as ButtonMapping,
-    currentProfile: 'default',
+    currentProfile: DefaultProfile,
     actions: [],
     keys: [],
 
-    getProfiles: async (): Promise<ButtonMapping[]> => {
-      return (await window.electron.getProfiles()) as ButtonMapping[]
+    getProfiles: async (): Promise<Profile[]> => {
+      return await window.electron.getProfiles()
     },
 
     getProfile: async (profileName): Promise<ButtonMapping> => {
@@ -59,11 +69,16 @@ const useMappingStore = create<MappingStoreState>(
       await window.electron.addProfile(profile)
     },
 
+    deleteProfile: async (profile): Promise<void> => {
+      await window.electron.deleteProfile(profile)
+    },
+
     setProfile: async (mapping): Promise<void> => {
       set({ currentMapping: mapping })
     },
 
-    setCurrentProfile: async (profile: string): Promise<void> => {
+    setCurrentProfile: async (profile: Profile): Promise<void> => {
+      window.electron.setCurrentProfile(profile)
       set({ currentProfile: profile })
     },
 
@@ -71,7 +86,7 @@ const useMappingStore = create<MappingStoreState>(
       const actions = await window.electron.getActions()
       const keys = await window.electron.getKeys()
       const currentProfile = (await window.electron.getCurrentProfile()) || 'default'
-      const profile = await window.electron.getProfile(currentProfile)
+      const profile = await window.electron.getProfile(currentProfile.id)
       set({ actions, keys, currentMapping: profile, currentProfile })
     },
 
@@ -85,6 +100,12 @@ const useMappingStore = create<MappingStoreState>(
 
     getActions: async (): Promise<Action[]> => {
       return await window.electron.getActions()
+    },
+
+    getIcon: async (actionRef: Action | ActionReference): Promise<string | null> => {
+      const action = get().actions.find((a) => a.id === actionRef.id)
+
+      return window.electron.getIcon(action)
     },
 
     setActions: async (actions): Promise<void> => {

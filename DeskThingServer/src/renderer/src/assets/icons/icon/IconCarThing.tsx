@@ -5,12 +5,15 @@ interface CarThingProps extends IconProps {
   highlightColor?: string
   fontSize?: number
   text?: string
+  onPress?: (key: string) => void
 }
 
-function IconCarThing(props: CarThingProps): JSX.Element {
-  const highlighted = props.highlighted || []
-  const highlightColor = props.highlightColor || ''
-
+function IconCarThing({
+  highlighted = [],
+  highlightColor = '',
+  onPress,
+  ...props
+}: CarThingProps): JSX.Element {
   return (
     <Icon {...props}>
       <svg viewBox="15.55 10.22 1174.89 624.25">
@@ -21,26 +24,36 @@ function IconCarThing(props: CarThingProps): JSX.Element {
             fill="currentColor"
           />
           <path
+            onClick={() => onPress?.('Digit4')}
+            className={`${onPress && 'cursor-pointer'}`}
             d="M847.616,14.189l-0,4.664c-0,1.287 -1.045,2.332 -2.332,2.332l-83.434,-0c-1.287,-0 -2.332,-1.045 -2.332,-2.332l-0,-4.664c-0,-1.287 1.045,-2.332 2.332,-2.332l83.434,-0c1.287,-0 2.332,1.045 2.332,2.332Z"
             fill={highlighted.includes('Digit4') ? highlightColor : 'currentColor'}
             stroke={highlighted.includes('Digit4') ? highlightColor : 'currentColor'}
           />
           <path
+            onClick={() => onPress?.('Digit3')}
+            className={`${onPress && 'cursor-pointer'}`}
             d="M637.217,14.189l0,4.664c0,1.287 -1.045,2.332 -2.332,2.332l-83.434,-0c-1.287,-0 -2.332,-1.045 -2.332,-2.332l0,-4.664c0,-1.287 1.045,-2.332 2.332,-2.332l83.434,-0c1.287,-0 2.332,1.045 2.332,2.332Z"
             fill={highlighted.includes('Digit3') ? highlightColor : 'currentColor'}
             stroke={highlighted.includes('Digit3') ? highlightColor : 'currentColor'}
           />
           <path
+            onClick={() => onPress?.('Digit2')}
+            className={`${onPress && 'cursor-pointer'}`}
             d="M429.928,14.189l-0,4.664c-0,1.287 -1.045,2.332 -2.332,2.332l-83.434,-0c-1.287,-0 -2.332,-1.045 -2.332,-2.332l-0,-4.664c-0,-1.287 1.045,-2.332 2.332,-2.332l83.434,-0c1.287,-0 2.332,1.045 2.332,2.332Z"
             fill={highlighted.includes('Digit2') ? highlightColor : 'currentColor'}
             stroke={highlighted.includes('Digit2') ? highlightColor : 'currentColor'}
           />
           <path
+            onClick={() => onPress?.('Digit1')}
+            className={`${onPress && 'cursor-pointer'}`}
             d="M223.675,14.189l-0,4.664c-0,1.287 -1.045,2.332 -2.332,2.332l-83.434,-0c-1.287,-0 -2.332,-1.045 -2.332,-2.332l-0,-4.664c-0,-1.287 1.045,-2.332 2.332,-2.332l83.434,-0c1.287,-0 2.332,1.045 2.332,2.332Z"
             fill={highlighted.includes('Digit1') ? highlightColor : 'currentColor'}
             stroke={highlighted.includes('Digit1') ? highlightColor : 'currentColor'}
           />
           <path
+            onClick={() => onPress?.('Enter')}
+            className={`${onPress && 'cursor-pointer'}`}
             d="M1015.48,90.38c-84.947,0 -153.913,68.966 -153.913,153.913c0,84.946 68.966,153.912 153.913,153.912c84.946,0 153.912,-68.966 153.912,-153.912c0,-84.947 -68.966,-153.913 -153.912,-153.913Z"
             fill={highlighted.includes('Enter') ? highlightColor : 'none'}
             stroke={
@@ -49,8 +62,12 @@ function IconCarThing(props: CarThingProps): JSX.Element {
                 : 'currentColor'
             }
           />
-          <path
-            d="M1015.48,455.137 29.745,-0 53.895,24.15 53.895,53.895c-0,29.746 -24.15,53.895 -53.895,53.895c-29.746,0 -53.896,-24.149 -53.896,-53.895c0,-29.745 24.15,-53.895 53.896,-53.895Zm-0,12.437c-22.882,0 -41.458,18.577 -41.458,41.458c-0,22.881 18.576,41.458 41.458,41.458c22.881,0 41.458,-18.577 41.458,-41.458c-0,-22.881 -18.577,-41.458 -41.458,-41.458Z"
+          <circle
+            onClick={() => onPress?.('Escape')}
+            className={`${onPress && 'cursor-pointer'}`}
+            cx="1015.48"
+            cy="500.137"
+            r="41.458"
             fill={highlighted.includes('Escape') ? highlightColor : 'currentColor'}
             stroke={highlighted.includes('Escape') ? highlightColor : 'currentColor'}
           />

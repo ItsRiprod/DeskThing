@@ -5,7 +5,7 @@ const AppStoreDataListener = (): null => {
   const setAppList = useAppStore((state) => state.setAppList)
 
   useEffect(() => {
-    const handleAppData = (_event, response): void => {
+    const handleAppData = async (_event, response): Promise<void> => {
       setAppList(response.apps)
     }
 
