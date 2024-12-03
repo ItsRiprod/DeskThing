@@ -33,12 +33,11 @@ const Sidebar: React.FC<SidebarProps> = ({ children, className }) => {
           </div>
         </div>
       </nav>
-      <Button
-        onClick={() => setSidebarVisible((state) => !state)}
-        className="bg-zinc-900/75 absolute top-0 right-0 translate-x-12 xs:hidden"
-      >
-        <IconArrowLeft className={`${!sidebarVisible && 'rotate-180'}`} />
-      </Button>
+      <div className="absolute top-0 right-0 translate-x-12 xs:hidden">
+        <Button onClick={() => setSidebarVisible((state) => !state)} className="bg-zinc-900/75 ">
+          <IconArrowLeft className={`${!sidebarVisible && 'rotate-180'}`} />
+        </Button>
+      </div>
     </div>
   )
 }

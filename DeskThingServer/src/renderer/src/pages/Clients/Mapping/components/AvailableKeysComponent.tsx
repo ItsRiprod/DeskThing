@@ -52,12 +52,11 @@ const AvailableKeys: React.FC<AvailableKeysProps> = ({
             ))}
           </div>
         </div>
-        <Button
-          onClick={() => setActionsExpanded((state) => !state)}
-          className="md:hidden absolute top-0 -translate-x-12"
-        >
-          <IconLayoutgrid />
-        </Button>
+        <div className="absolute md:hidden top-0 -translate-x-12">
+          <Button onClick={() => setActionsExpanded((state) => !state)} className="md:hidden">
+            <IconLayoutgrid />
+          </Button>
+        </div>
       </div>
     </div>
   )

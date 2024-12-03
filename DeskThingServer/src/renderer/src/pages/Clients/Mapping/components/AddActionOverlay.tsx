@@ -1,9 +1,11 @@
 import Button from '@renderer/components/Button'
 import Overlay from '@renderer/overlays/Overlay'
-import { Action, EventMode, Key } from '@shared/types'
+import { Action, EventMode, Key, SettingOption } from '@shared/types'
 import { useState } from 'react'
 import { ActionIcon } from './ActionIcon'
 import { IconArrowRight } from '@renderer/assets/icons'
+import Select from '@renderer/components/Select'
+import { SingleValue } from 'react-select'
 
 interface AddActionOverlayProps {
   pendingAction: Action
@@ -54,35 +56,34 @@ const AddActionOverlay = ({
                 {pendingAction?.icon && <p className="text-gray-500">Icon: {pendingAction.icon}</p>}
               </div>
             </div>
-            <div></div>
           </div>
           <div className="flex gap-3 items-center justify-center flex-col border-l">
             {pendingAction?.value_instructions && (
               <p className="text-sm">{pendingAction.value_instructions}</p>
             )}
             {pendingAction?.value_options ? (
-              <select
-                className="p-2 border rounded text-black"
-                onChange={(e) => handleValueChange(e.target.value)}
-                defaultValue={pendingAction.value}
-              >
-                <option value="" disabled>
-                  Select a value
-                </option>
-                {pendingAction.value_options.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                type="text"
-                className="p-2 border rounded text-black"
-                placeholder="Enter value"
-                value={value}
-                onChange={(e) => handleValueChange(e.target.value)}
+              <Select
+                options={pendingAction.value_options.map((option) => ({
+                  label: option,
+                  value: option
+                }))}
+                placeholder={pendingAction.value ?? ''}
+                value={value || pendingAction.value || ''}
+                onChange={(selected) => {
+                  const selectedValue = selected as SingleValue<SettingOption>
+                  handleValueChange(selectedValue?.value || '')
+                }}
               />
+            ) : (
+              pendingAction?.value_instructions && (
+                <input
+                  type="text"
+                  className="p-2 border rounded text-black"
+                  placeholder="Enter value"
+                  value={value}
+                  onChange={(e) => handleValueChange(e.target.value)}
+                />
+              )
             )}
             <Button className="bg-cyan-700 hover:bg-cyan-500" onClick={() => saveAction(value)}>
               <p>Set Map</p>
