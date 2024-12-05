@@ -126,7 +126,7 @@ export class MappingState {
 
     const mappingKey = this.mappings.keys.find((searchKey) => searchKey.id === button.key)
 
-    if (!mappingKey?.Modes?.includes(button.mode)) {
+    if (!mappingKey?.modes?.includes(button.mode)) {
       loggingStore.log(
         MESSAGE_TYPES.ERROR,
         `MAPHANDLER: Key ${button.key} does not have ${EventMode[button.mode]}!`
@@ -172,7 +172,7 @@ export class MappingState {
   /**
    * Removes a button mapping from the mapping structure.
    * @param key - The key to remove the button from
-   * @param Mode - The Mode of the button to remove. Default removes all Modes
+   * @param Mode - The Mode of the button to remove. Default removes all modes
    * @param profile - default is 'default'
    */
   removeButton = async (button: Button): Promise<void> => {

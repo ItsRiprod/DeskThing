@@ -20,7 +20,7 @@ export type Key = {
   version: string //  The version of the key
   enabled: boolean // Whether or not the app associated with the key is enabled
   version_code?: number // The version of the server the action is compatible with
-  Modes: EventMode[] // The Modes of the key
+  modes: EventMode[] // The Modes of the key
 }
 
 export type Button = {

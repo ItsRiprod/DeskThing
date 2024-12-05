@@ -50,7 +50,7 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
         }
       } else {
         if (fs.existsSync(webAppDir)) {
-          const indexPath = join(webAppDir, 'index.html')
+          const indexPath = join(webAppDir)
           console.log('Sending Manifest:', indexPath)
           express.static(indexPath)(req, res, next)
         } else {
@@ -67,7 +67,11 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
     }
   }
 
-  expressApp.use('/client/', async (req: Request, res: Response, next: NextFunction) => {
+  expressApp.use(['/', '/client/'], async (req: Request, res: Response, next: NextFunction) => {
+    if (req.path.startsWith('/icon') || req.path.startsWith('/app')) {
+      next()
+      return
+    }
     console.log('WEBSOCKET: Serving client', req.path)
     handleClientConnection('client', req, res, next)
   })

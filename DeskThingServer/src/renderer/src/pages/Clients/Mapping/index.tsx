@@ -64,8 +64,7 @@ const pages: PagesInterface = {
       'DynamicAction4',
       'Action5',
       'Action6',
-      'Action7',
-      'Swipe'
+      'Action7'
     ],
     id: 'miniplayer',
     icon: IconMusic,
@@ -189,7 +188,7 @@ const ClientMappingPage: React.FC = () => {
                   onClick={() => handleProfileChange(profile)}
                 >
                   {activeProfile.id == profile.id && (
-                    <IconCheckCircle className="hidden md:block" strokeWidth={4} />
+                    <IconCheckCircle className="xs:hidden md:block" strokeWidth={4} />
                   )}
                   <p className="text-ellipsis overflow-hidden whitespace-nowrap">{profile.name}</p>
                 </Button>
@@ -200,38 +199,43 @@ const ClientMappingPage: React.FC = () => {
                 <>
                   <Button
                     onClick={() => handleDeleteProfile(selectedProfile)}
-                    className="relative border-gray-900 border justify-center hover:bg-zinc-900"
+                    className="relative border-gray-900 border gap-2 justify-center hover:bg-zinc-900"
                   >
                     <IconTrash iconSize={24} />
                     <Tooltip text="Delete Profile" bottom={true} />
+                    <p className="xs:hidden">Delete</p>
                   </Button>
                   <Button
                     onClick={() => setCurrentProfile(selectedProfile)}
-                    className="relative border-gray-900 border justify-center hover:bg-zinc-900"
+                    className="relative border-gray-900 border gap-2 justify-center hover:bg-zinc-900"
                   >
                     <IconCheckCircle strokeWidth={4} iconSize={24} />
                     <Tooltip text="Switch To Profile" bottom={true} />
+                    <p className="xs:hidden">Set</p>
                   </Button>
                 </>
               ) : (
                 <>
-                  <Button className="relative border-gray-900 border justify-center hover:bg-zinc-900">
+                  <Button className="relative border-gray-900 border gap-2 justify-center hover:bg-zinc-900">
                     <IconUpload iconSize={24} />
                     <Tooltip text="Export Profile" bottom={true} />
+                    <p className="xs:hidden">Export</p>
                   </Button>
-                  <Button className="relative border-gray-900 border justify-center hover:bg-zinc-900">
+                  <Button className="relative border-gray-900 border gap-2 justify-center hover:bg-zinc-900">
                     <IconDownload iconSize={24} />
                     <Tooltip text="Import Profile" bottom={true} />
+                    <p className="xs:hidden">Import</p>
                   </Button>
                 </>
               )}
               {activeChanges ? (
                 <Button
                   onClick={handleSaveMapping}
-                  className="relative text-red-500 border-gray-900 border justify-center hover:bg-zinc-900"
+                  className="relative text-red-500 border-gray-900 border gap-2 justify-center hover:bg-zinc-900"
                 >
                   <IconSave strokeWidth={2} iconSize={24} />
                   <Tooltip text="Save Profile" bottom={true} />
+                  <p className="xs:hidden">Save</p>
                 </Button>
               ) : (
                 <Button
@@ -240,11 +244,14 @@ const ClientMappingPage: React.FC = () => {
                 >
                   <IconPlus iconSize={24} />
                   <Tooltip text="Create Profile" bottom={true} />
+                  <p className="xs:hidden">Create</p>
                 </Button>
               )}
             </div>
             {activeChanges && (
-              <p className="text-red-500 italic text-xs w-full text-right">Unsaved Changes!</p>
+              <p className="text-red-500 xs:hidden md:block italic text-xs w-full text-right">
+                Unsaved Changes!
+              </p>
             )}
           </div>
         </div>
@@ -257,7 +264,7 @@ const ClientMappingPage: React.FC = () => {
               onClick={() => handlePageChange(page.id)}
             >
               <page.icon strokeWidth={2} iconSize={24} />
-              <p className="hidden md:block">{page.label}</p>
+              <p className="xs:hidden md:block">{page.label}</p>
             </Button>
           ))}
         </div>

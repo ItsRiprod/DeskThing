@@ -69,11 +69,11 @@ const AppsList: React.FC = () => {
 
   return (
     <div className="flex h-full w-full">
-      <Sidebar className="flex justify-end flex-col h-full max-h-full md:items-stretch items-center">
+      <Sidebar className="justify-end md:items-stretch xs:items-center">
         <div className="flex flex-col gap-2">
           <Button onClick={handleDownloadsNav}>
             <IconDownload strokeWidth={1.5} />
-            <p className="md:block hidden text-center flex-grow">Download</p>
+            <p className="xs:hidden md:block block text-center flex-grow">Download</p>
           </Button>
         </div>
       </Sidebar>

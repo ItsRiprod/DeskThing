@@ -111,7 +111,7 @@ export async function handleDataFromApp(app: string, appData: IncomingData): Pro
               source: app,
               version: appData.payload.version || '0.0.0',
               enabled: true,
-              Modes: appData.payload.Modes || []
+              modes: appData.payload.modes || []
             }
             keyMapStore.addKey(Key)
             loggingStore.log(

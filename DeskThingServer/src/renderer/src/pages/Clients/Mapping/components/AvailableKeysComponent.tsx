@@ -33,7 +33,7 @@ const AvailableKeys: React.FC<AvailableKeysProps> = ({
   }, [KeyList, keys])
 
   return (
-    <div className="absolute h-full w-fit right-0 md:relative">
+    <div className="absolute flex-shrink-0 h-full w-fit right-0 md:relative">
       <div
         className={`${actionsExpanded ? 'w-48 ' : 'w-0'} transition-[width] md:w-64 border-l border-gray-700 relative h-full`}
       >
@@ -83,8 +83,8 @@ const KeyButton: FC<KeyButtonInterface> = ({
       <h1>{Key.id}</h1>
       {action && (
         <div className="flex flex-col justify-start items-start">
-          <p className="text-gray-500 text-xs">ID: {action?.id}</p>
-          <p className="text-gray-500 text-xs">Value: {action?.value}</p>
+          <p className="text-gray-500 text-xs">Action: {action?.id}</p>
+          {action?.value && <p className="text-gray-500 text-xs">Value: {action.value}</p>}
         </div>
       )}
     </Button>

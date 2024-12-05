@@ -153,17 +153,17 @@ export const isValidFileStructure = (structure: MappingFileStructure): boolean =
 
 export const isValidButtonMapping = (mapping: ButtonMapping): boolean => {
   try {
-    for (const [key, Modes] of Object.entries(mapping.mapping)) {
+    for (const [key, modes] of Object.entries(mapping.mapping)) {
       if (typeof key !== 'string') {
         loggingStore.log(MESSAGE_TYPES.ERROR, 'validateProfile: Key is not a string!')
         return false
       }
-      if (typeof Modes !== 'object') {
-        loggingStore.log(MESSAGE_TYPES.ERROR, 'validateProfile: Modes is not an object!')
+      if (typeof modes !== 'object') {
+        loggingStore.log(MESSAGE_TYPES.ERROR, 'validateProfile: modes is not an object!')
         return false
       }
 
-      for (const [Mode, action] of Object.entries(Modes)) {
+      for (const [Mode, action] of Object.entries(modes)) {
         if (!Object.values(EventMode).includes(Number(Mode))) {
           loggingStore.log(MESSAGE_TYPES.ERROR, `validateProfile: ${Mode} is not a valid mode`)
           return false
@@ -247,8 +247,8 @@ export const isValidKey = (key: Key): boolean => {
     typeof key.source === 'string' &&
     typeof key.version === 'string' &&
     typeof key.enabled === 'boolean' &&
-    Array.isArray(key.Modes) &&
-    key.Modes.every((Mode) => Object.values(EventMode).includes(Mode))
+    Array.isArray(key.modes) &&
+    key.modes.every((Mode) => Object.values(EventMode).includes(Mode))
   )
 }
 

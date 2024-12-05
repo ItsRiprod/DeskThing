@@ -4,7 +4,7 @@ import { Key, EventMode, ButtonMapping, Action } from '@shared/types'
 import AvailableKeys from './components/AvailableKeysComponent'
 import { PageProps } from '.'
 import AllActionsComponent from './components/AllActionsComponent'
-import AddActionOverlay from './components/AddActionOverlay'
+import AddActionOverlay from './components/AddActionPopup'
 
 interface MappingPageProps {
   Component: React.FC<PageProps>
@@ -27,13 +27,17 @@ const MappingPage: React.FC<MappingPageProps> = ({
   const [pendingAction, setPendingAction] = useState<Action | null>(null)
 
   const setAction = (action: Action): void => {
+    if (!mode || !key) return
     setPendingAction(action)
+    saveAction(action.value || '', action)
   }
 
-  const saveAction = (value: string): void => {
-    if (!key || !mode || currentMapping.id == 'default') return
+  const saveAction = (value: string, action?: Action): void => {
+    console.log('Saving Action ', value)
+    if (!key || !mode || currentMapping.id == 'default' || (!pendingAction && !action)) return
     setActiveChanges(true)
-    setPendingAction(null)
+
+    const newAction = action || pendingAction
 
     setCurrentMapping({
       ...currentMapping,
@@ -41,37 +45,36 @@ const MappingPage: React.FC<MappingPageProps> = ({
         ...currentMapping.mapping,
         [key?.id || '']: {
           ...currentMapping.mapping[key?.id || ''],
-          [mode]: { ...pendingAction, value }
+          [mode]: { ...newAction, value }
         }
       }
     })
   }
 
+  const updateAction = (value: string): void => {
+    if (!pendingAction) return
+    saveAction(value)
+    setPendingAction(null)
+  }
+
   return (
     <div className="h-full flex flex-col w-full">
-      {pendingAction && key != undefined && key && (
-        <AddActionOverlay
-          pendingAction={pendingAction}
-          setPendingAction={setPendingAction}
-          Key={key}
-          saveAction={saveAction}
-          mode={mode}
-        />
-      )}
       <AvailableModes
         currentMode={mode}
         setSelectedMode={setCurrentMode}
-        modes={key?.Modes || [EventMode.KeyDown]}
+        modes={key?.modes || [EventMode.KeyDown]}
       />
-      <div className="h-full flex relative">
-        <div className="w-full overflow-x-auto">
-          <Component
-            selectedKey={key}
-            setSelectedKey={setCurrentKey}
-            currentMapping={currentMapping}
-            mode={mode}
-            setCurrentMode={setCurrentMode}
-          />
+      <div className="h-full max-h-full flex relative">
+        <div className="w-full max-h-full relative overflow-auto">
+          <div className="absolute inset-0 w-full h-full">
+            <Component
+              selectedKey={key}
+              setSelectedKey={setCurrentKey}
+              currentMapping={currentMapping}
+              mode={mode}
+              setCurrentMode={setCurrentMode}
+            />
+          </div>
         </div>
         <AvailableKeys
           mode={mode}
@@ -81,12 +84,22 @@ const MappingPage: React.FC<MappingPageProps> = ({
           setSelectedKey={setCurrentKey}
         />
       </div>
-      <AllActionsComponent
-        currentMapping={currentMapping}
-        mode={mode}
-        selectedKey={key}
-        setAction={setAction}
-      />
+      <div className="flex flex-col">
+        <AllActionsComponent
+          currentMapping={currentMapping}
+          mode={mode}
+          selectedKey={key}
+          setAction={setAction}
+        />
+        {pendingAction && key != undefined && key && (
+          <AddActionOverlay
+            pendingAction={pendingAction}
+            Key={key}
+            updateAction={updateAction}
+            mode={mode}
+          />
+        )}
+      </div>
     </div>
   )
 }

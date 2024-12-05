@@ -182,16 +182,16 @@ const ClientDownloads: React.FC = () => {
           </div>
         </Overlay>
       )}
-      <Sidebar className="flex justify-between flex-col h-full max-h-full md:items-stretch items-center">
+      <Sidebar className="flex justify-between flex-col h-full max-h-full md:items-stretch xs:items-center">
         <div className="flex flex-col gap-2 items-center justify-center">
           {installedClient ? (
             <div>
               <h1 className="font-semibold">Loaded Client:</h1>
-              <div className="md:block hidden border p-2 rounded-lg bg-zinc-900 border-zinc-800">
+              <div className="md:block xs:hidden border p-2 rounded-lg bg-zinc-900 border-zinc-800">
                 <p>{installedClient.name}</p>
                 <p>{installedClient.version}</p>
               </div>
-              <div className="md:hidden flex flex-col items-center">
+              <div className="md:hidden xs:flex hidden flex-col items-center">
                 <p>{installedClient.short_name}</p>
                 <p>{installedClient.version_code}</p>
               </div>
@@ -205,14 +205,14 @@ const ClientDownloads: React.FC = () => {
             disabled={clientRefreshing}
           >
             <IconRefresh className={`stroke-2 ${clientRefreshing ? 'animate-spin' : ''}`} />
-            <p className="md:block hidden text-center flex-grow">Refresh Client</p>
+            <p className="md:block xs:hidden text-center flex-grow">Refresh Client</p>
           </Button>
         </div>
         <div>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col md:items-stretch xs:items-center gap-2">
             <Button className="hover:bg-zinc-900" onClick={openClientSettings}>
               <IconGear strokeWidth={1.5} />
-              <p className="md:block hidden text-center flex-grow">Client Settings</p>
+              <p className="md:block xs:hidden text-center flex-grow">Client Settings</p>
             </Button>
             <Button
               onClick={handleUploadClick}
@@ -220,11 +220,11 @@ const ClientDownloads: React.FC = () => {
               disabled={selectingFile}
             >
               {selectingFile ? <IconLoading /> : <IconUpload strokeWidth={1.5} />}
-              <p className="md:block hidden text-center flex-grow">Upload Client</p>
+              <p className="md:block xs:hidden text-center flex-grow">Upload Client</p>
             </Button>
             <Button onClick={gotoAppDownloads} className="hover:bg-zinc-900">
               <IconLink strokeWidth={1.5} />
-              <p className="md:block hidden text-center flex-grow">Apps</p>
+              <p className="md:block xs:hidden text-center flex-grow">Apps</p>
             </Button>
           </div>
         </div>

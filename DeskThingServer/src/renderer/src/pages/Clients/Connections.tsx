@@ -90,9 +90,9 @@ const ClientConnections: React.FC = () => {
 
   return (
     <div className="flex h-full w-full">
-      <Sidebar className="flex justify-between flex-col h-full md:items-stretch items-center">
+      <Sidebar className="flex justify-between flex-col h-full md:items-stretch xs:items-center">
         <div>
-          <div className="md:block hidden">
+          <div className="md:block xs:hidden block">
             {settings.localIp &&
               settings.localIp.map((ip, index) => (
                 <div key={index} className="text-gray-500">
@@ -115,7 +115,7 @@ const ClientConnections: React.FC = () => {
         <div className="flex flex-col gap-2">
           <Button onClick={handleDownloadsNav} className="hover:bg-zinc-900">
             <IconDownload strokeWidth={1.5} />
-            <p className="md:block hidden text-center flex-grow">Downloads</p>
+            <p className="md:block xs:hidden text-center flex-grow">Downloads</p>
           </Button>
           <Button
             className={`hover:bg-zinc-900 ${isRestarting ? 'cursor-not-allowed opacity-50' : ''}`}
@@ -125,7 +125,7 @@ const ClientConnections: React.FC = () => {
               strokeWidth={1.5}
               className={isRestarting ? '-rotate-[360deg] transition-transform duration-1000' : ''}
             />
-            <p className="md:block hidden text-center flex-grow">Restart Server</p>
+            <p className="md:block xs:hidden text-center flex-grow">Restart Server</p>
           </Button>
         </div>
       </Sidebar>

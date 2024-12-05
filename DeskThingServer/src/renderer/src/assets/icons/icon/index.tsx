@@ -23,7 +23,7 @@ export const Icon = ({
   stroke = 'currentColor',
   fill = 'none',
   descId,
-  strokeWidth = 1,
+  strokeWidth = 2,
   className,
   width = iconSize,
   height = iconSize,

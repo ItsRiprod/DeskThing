@@ -60,14 +60,14 @@ const ADBSettings: React.FC = () => {
 
   return (
     <div className="w-full h-full flex">
-      <Sidebar className="flex justify-end flex-col h-full gap-2 max-h-full md:items-stretch items-center">
+      <Sidebar className="flex justify-end flex-col h-full gap-2 max-h-full md:items-stretch xs:items-center">
         <Button onClick={handleToggleAdb} className="hover:bg-zinc-900 items-center gap-2">
           <IconToggle
             checked={adbSetting}
             className={adbSetting ? `text-green-500` : 'text-gray-500'}
             iconSize={34}
           />
-          <p className="md:block hidden text-center flex-grow">
+          <p className="md:block xs:hidden text-center flex-grow">
             {adbSetting ? 'Global' : 'Local'} ADB
           </p>
         </Button>
@@ -79,7 +79,7 @@ const ADBSettings: React.FC = () => {
           <IconReload
             className={restarting && `-rotate-[360deg] transition-transform duration-1000`}
           />
-          <p className="md:block hidden text-center flex-grow">Restart ADB</p>
+          <p className="md:block xs:hidden text-center flex-grow">Restart ADB</p>
         </Button>
         <Button
           disabled={loading}
@@ -87,7 +87,7 @@ const ADBSettings: React.FC = () => {
           onClick={handleRefreshDevices}
         >
           <IconRefresh className={refreshing && `animate-spin`} />
-          <p className="md:block hidden text-center flex-grow">Find Devices</p>
+          <p className="md:block xs:hidden text-center flex-grow">Find Devices</p>
         </Button>
       </Sidebar>
       <MainElement>

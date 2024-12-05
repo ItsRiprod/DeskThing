@@ -7,6 +7,7 @@ interface ButtonProps {
   href?: string
   target?: string
   rel?: string
+  style?: React.CSSProperties
   disabled?: boolean
   onMouseEnter?: () => void
 }
@@ -17,6 +18,7 @@ const Button: React.FC<ButtonProps> = ({
   href,
   target,
   rel,
+  style,
   disabled,
   onMouseEnter
 }) => {
@@ -27,6 +29,7 @@ const Button: React.FC<ButtonProps> = ({
     return (
       <a
         href={href}
+        style={style}
         target={target}
         rel={rel}
         className={combinedClasses}
@@ -40,6 +43,7 @@ const Button: React.FC<ButtonProps> = ({
 
   return (
     <button
+      style={style}
       className={combinedClasses}
       onClick={onClick}
       onMouseEnter={onMouseEnter}

@@ -8,7 +8,7 @@ const keys: Key[] = [
     version: '0.9.1',
     version_code: 9.1,
     enabled: true,
-    Modes: [EventMode.KeyDown]
+    modes: [EventMode.KeyDown]
   },
   {
     id: 'Wheel2',
@@ -17,7 +17,7 @@ const keys: Key[] = [
     version: '0.9.1',
     version_code: 9.1,
     enabled: true,
-    Modes: [EventMode.KeyDown]
+    modes: [EventMode.KeyDown]
   },
   {
     id: 'Wheel3',
@@ -26,7 +26,7 @@ const keys: Key[] = [
     version: '0.9.1',
     version_code: 9.1,
     enabled: true,
-    Modes: [EventMode.KeyDown]
+    modes: [EventMode.KeyDown]
   },
   {
     id: 'Wheel4',
@@ -35,7 +35,7 @@ const keys: Key[] = [
     version: '0.9.1',
     version_code: 9.1,
     enabled: true,
-    Modes: [EventMode.KeyDown]
+    modes: [EventMode.KeyDown]
   },
   {
     id: 'Tray1',
@@ -44,7 +44,7 @@ const keys: Key[] = [
     version: '0.9.1',
     version_code: 9.1,
     enabled: true,
-    Modes: [EventMode.KeyDown]
+    modes: [EventMode.KeyDown]
   },
   {
     id: 'Tray2',
@@ -53,7 +53,7 @@ const keys: Key[] = [
     version: '0.9.1',
     version_code: 9.1,
     enabled: true,
-    Modes: [EventMode.KeyDown]
+    modes: [EventMode.KeyDown]
   },
   {
     id: 'Tray3',
@@ -62,7 +62,7 @@ const keys: Key[] = [
     version: '0.9.1',
     version_code: 9.1,
     enabled: true,
-    Modes: [EventMode.KeyDown]
+    modes: [EventMode.KeyDown]
   },
   {
     id: 'Tray4',
@@ -71,7 +71,7 @@ const keys: Key[] = [
     version: '0.9.1',
     version_code: 9.1,
     enabled: true,
-    Modes: [EventMode.KeyDown]
+    modes: [EventMode.KeyDown]
   },
   {
     id: 'Tray5',
@@ -80,7 +80,7 @@ const keys: Key[] = [
     version: '0.9.1',
     version_code: 9.1,
     enabled: true,
-    Modes: [EventMode.KeyDown]
+    modes: [EventMode.KeyDown]
   },
   {
     id: 'Tray6',
@@ -89,7 +89,7 @@ const keys: Key[] = [
     version: '0.9.1',
     version_code: 9.1,
     enabled: true,
-    Modes: [EventMode.KeyDown]
+    modes: [EventMode.KeyDown]
   },
   {
     id: 'DynamicAction1',
@@ -98,7 +98,7 @@ const keys: Key[] = [
     version: '0.9.0',
     version_code: 9,
     enabled: true,
-    Modes: [EventMode.KeyDown]
+    modes: [EventMode.KeyDown]
   },
   {
     id: 'DynamicAction2',
@@ -107,7 +107,7 @@ const keys: Key[] = [
     version: '0.9.0',
     version_code: 9,
     enabled: true,
-    Modes: [EventMode.KeyDown]
+    modes: [EventMode.KeyDown]
   },
   {
     id: 'DynamicAction3',
@@ -116,7 +116,7 @@ const keys: Key[] = [
     version: '0.9.0',
     version_code: 9,
     enabled: true,
-    Modes: [EventMode.KeyDown]
+    modes: [EventMode.KeyDown]
   },
   {
     id: 'DynamicAction4',
@@ -125,7 +125,7 @@ const keys: Key[] = [
     version: '0.9.0',
     version_code: 9,
     enabled: true,
-    Modes: [EventMode.KeyDown]
+    modes: [EventMode.KeyDown]
   },
   {
     id: 'Action5',
@@ -134,7 +134,7 @@ const keys: Key[] = [
     version: '0.9.0',
     version_code: 9,
     enabled: true,
-    Modes: [EventMode.KeyDown]
+    modes: [EventMode.KeyDown]
   },
   {
     id: 'Action6',
@@ -143,7 +143,7 @@ const keys: Key[] = [
     version: '0.9.0',
     version_code: 9,
     enabled: true,
-    Modes: [EventMode.KeyDown]
+    modes: [EventMode.KeyDown]
   },
   {
     id: 'Action7',
@@ -152,7 +152,7 @@ const keys: Key[] = [
     version: '0.9.0',
     version_code: 9,
     enabled: true,
-    Modes: [EventMode.KeyDown]
+    modes: [EventMode.KeyDown]
   },
   {
     id: 'Digit1',
@@ -161,7 +161,7 @@ const keys: Key[] = [
     version: '0.9.0',
     version_code: 9,
     enabled: true,
-    Modes: [EventMode.PressShort, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
+    modes: [EventMode.PressShort, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
   },
   {
     id: 'Digit2',
@@ -170,7 +170,7 @@ const keys: Key[] = [
     version: '0.9.0',
     version_code: 9,
     enabled: true,
-    Modes: [EventMode.PressShort, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
+    modes: [EventMode.PressShort, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
   },
   {
     id: 'Digit3',
@@ -179,7 +179,7 @@ const keys: Key[] = [
     version: '0.9.0',
     version_code: 9,
     enabled: true,
-    Modes: [EventMode.PressShort, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
+    modes: [EventMode.PressShort, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
   },
   {
     id: 'Digit4',
@@ -188,7 +188,7 @@ const keys: Key[] = [
     version: '0.9.0',
     version_code: 9,
     enabled: true,
-    Modes: [EventMode.PressShort, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
+    modes: [EventMode.PressShort, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
   },
   {
     id: 'KeyM',
@@ -197,7 +197,7 @@ const keys: Key[] = [
     version: '0.9.0',
     version_code: 9,
     enabled: true,
-    Modes: [EventMode.PressShort, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
+    modes: [EventMode.PressShort, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
   },
   {
     id: 'Scroll',
@@ -206,7 +206,7 @@ const keys: Key[] = [
     version: '0.9.0',
     version_code: 9,
     enabled: true,
-    Modes: [EventMode.ScrollUp, EventMode.ScrollDown, EventMode.ScrollLeft, EventMode.ScrollRight]
+    modes: [EventMode.ScrollUp, EventMode.ScrollDown, EventMode.ScrollLeft, EventMode.ScrollRight]
   },
   {
     id: 'Enter',
@@ -215,7 +215,7 @@ const keys: Key[] = [
     version: '0.9.0',
     version_code: 9,
     enabled: true,
-    Modes: [EventMode.PressShort, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
+    modes: [EventMode.PressShort, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
   },
   {
     id: 'Escape',
@@ -224,7 +224,7 @@ const keys: Key[] = [
     version: '0.9.0',
     version_code: 9,
     enabled: true,
-    Modes: [EventMode.PressShort, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
+    modes: [EventMode.PressShort, EventMode.PressLong, EventMode.KeyDown, EventMode.KeyUp]
   },
   {
     id: 'Swipe',
@@ -233,7 +233,7 @@ const keys: Key[] = [
     version: '0.9.0',
     version_code: 9,
     enabled: true,
-    Modes: [EventMode.SwipeUp, EventMode.SwipeDown, EventMode.SwipeLeft, EventMode.SwipeRight]
+    modes: [EventMode.SwipeUp, EventMode.SwipeDown, EventMode.SwipeLeft, EventMode.SwipeRight]
   }
 ]
 

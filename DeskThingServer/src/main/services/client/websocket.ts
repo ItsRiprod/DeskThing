@@ -42,7 +42,7 @@ let currentPort
 let currentAddress
 
 const messageThrottles = new Map()
-const THROTTLE_DELAY = 100 // milliseconds
+const THROTTLE_DELAY = 300 // milliseconds
 
 export const restartServer = async (): Promise<void> => {
   try {
@@ -181,7 +181,7 @@ export const setupServer = async (): Promise<void> => {
     sendMappings(client.connectionId)
     sendMessageToClient(client.connectionId, { app: 'client', type: 'get', request: 'manifest' })
 
-    socket.on('message', async (message) => {
+    socket.on('message', async (message: string) => {
       const messageData = JSON.parse(message) as SocketData
       loggingStore.log(
         MESSAGE_TYPES.LOGGING,
@@ -190,7 +190,13 @@ export const setupServer = async (): Promise<void> => {
       const messageKey = `${messageData.app}-${messageData.type}-${messageData.request}`
       const now = Date.now()
 
-      // Check throttle
+      /**
+       *
+       * Check throttle
+       * The purpose of the throttle is so when multiple clients are connected,
+       * they often send the same request at the same time (i.e. song at its end).
+       * As most, if not all, of these requests are burst to every client, they can be grouped together.
+       */
       if (
         !messageThrottles.has(messageKey) ||
         now - messageThrottles.get(messageKey) > THROTTLE_DELAY
@@ -225,6 +231,11 @@ export const setupServer = async (): Promise<void> => {
             messageThrottles.delete(key)
           }
         })
+      } else {
+        loggingStore.log(
+          MESSAGE_TYPES.DEBUG,
+          `WSOCKET: Throttling message for ${messageKey} for ${THROTTLE_DELAY}ms`
+        )
       }
     })
 
@@ -242,7 +253,11 @@ export const setupServer = async (): Promise<void> => {
   })
 }
 
-const handleServerMessage = (socket, client: Client, messageData: SocketData): void => {
+const handleServerMessage = async (
+  socket,
+  client: Client,
+  messageData: SocketData
+): Promise<void> => {
   try {
     if (messageData.app === 'server') {
       loggingStore.log(

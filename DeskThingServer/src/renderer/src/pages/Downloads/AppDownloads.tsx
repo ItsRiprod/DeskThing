@@ -162,16 +162,16 @@ const AppDownloads: React.FC = () => {
           appReturnData={appReturnData}
         />
       )}
-      <Sidebar className="flex justify-end flex-col h-full max-h-full md:items-stretch items-center">
+      <Sidebar className="flex justify-end flex-col h-full max-h-full md:items-stretch xs:items-center">
         <div>
           <div className="flex flex-col gap-2">
             <Button onClick={handleUploadClick} className="hover:bg-zinc-900">
               {selectingFile ? <IconLoading strokeWidth={1.5} /> : <IconUpload strokeWidth={1.5} />}
-              <p className="md:block hidden text-center flex-grow">Upload App</p>
+              <p className="md:block xs:hidden xs:text-center flex-grow">Upload App</p>
             </Button>
             <Button onClick={gotoClientDownloads} className="hover:bg-zinc-900">
               <IconLink strokeWidth={1.5} />
-              <p className="md:block hidden text-center flex-grow">Clients</p>
+              <p className="md:block xs:hidden xs:text-center flex-grow">Clients</p>
             </Button>
           </div>
         </div>

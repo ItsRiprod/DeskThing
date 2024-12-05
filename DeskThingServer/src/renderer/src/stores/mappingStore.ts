@@ -67,6 +67,8 @@ const useMappingStore = create<MappingStoreState>(
 
     addProfile: async (profile): Promise<void> => {
       await window.electron.addProfile(profile)
+      await get().setCurrentProfile(profile)
+      await get().requestMappings()
     },
 
     deleteProfile: async (profile): Promise<void> => {
