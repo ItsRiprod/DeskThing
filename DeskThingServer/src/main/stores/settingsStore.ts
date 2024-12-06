@@ -83,6 +83,7 @@ class SettingsStore {
 
       if (!data || !data.version_code || data.version_code < version_code) {
         // File does not exist, create it with default settings
+        console.log('Unable to find settings. ', data)
         const defaultSettings = this.getDefaultSettings()
         await writeToFile(defaultSettings, this.settingsFilePath)
         console.log('SETTINGS: Returning default settings')
@@ -91,8 +92,6 @@ class SettingsStore {
       if (data.autoStart !== undefined) {
         await this.updateAutoLaunch(data.autoStart)
       }
-
-      this.notifyListeners()
 
       return data
     } catch (err) {
@@ -125,12 +124,13 @@ class SettingsStore {
     try {
       if (settings) {
         this.settings = settings as Settings
-        await writeToFile(this.settings, this.settingsFilePath)
-        console.log('SETTINGS: Updated settings!', this.settings)
-        loggingStore.log(MESSAGE_TYPES.LOGGING, 'SETTINGS: Updated settings!')
-      } else {
-        loggingStore.log(MESSAGE_TYPES.LOGGING, 'SETTINGS: Invalid setting format!')
       }
+
+      await writeToFile(this.settings, this.settingsFilePath)
+      loggingStore.log(
+        MESSAGE_TYPES.LOGGING,
+        'SETTINGS: Updated settings!' + JSON.stringify(this.settings)
+      )
 
       this.notifyListeners()
     } catch (err) {

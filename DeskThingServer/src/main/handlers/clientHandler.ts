@@ -130,10 +130,8 @@ export const clientHandler: Record<
     switch (data.request) {
       case 'get':
         return await mappingStore.fetchActionIcon(data.payload)
-        break
       case 'set':
-        // mappingStore.setActionIcon(data.payload)
-        break
+        return await mappingStore.updateIcon(data.payload.id, data.payload.icon)
     }
   }
 }

@@ -36,7 +36,7 @@ export class MusicHandler {
     }, 5000) // Delay to ensure settings are loaded
   }
 
-  private handleSettingsUpdate = (settings: Settings): void => {
+  private handleSettingsUpdate = async (settings: Settings): Promise<void> => {
     this.updateRefreshInterval(settings.refreshInterval)
 
     loggingStore.log(
@@ -53,7 +53,7 @@ export class MusicHandler {
     }
   }
 
-  public updateRefreshInterval(refreshRate: number): void {
+  public updateRefreshInterval = async (refreshRate: number): Promise<void> => {
     if (this.refreshInterval) {
       clearInterval(this.refreshInterval)
     }
@@ -75,6 +75,30 @@ export class MusicHandler {
   }
 
   private async findCurrentPlaybackSource(): Promise<string | null> {
+    if (this.currentApp && this.currentApp != 'none') {
+      return this.currentApp
+    } else {
+      loggingStore.log(
+        MESSAGE_TYPES.LOGGING,
+        `[MusicHandler]: Current app is not set! Attempting to find one...`
+      )
+    }
+
+    const settings = await settingsStore.getSettings()
+
+    if (settings.playbackLocation && settings.playbackLocation != 'none') {
+      loggingStore.log(
+        MESSAGE_TYPES.LOGGING,
+        `[MusicHandler]: Fount ${settings.playbackLocation} in settings. Setting playback location to i!`
+      )
+      return settings.playbackLocation
+    } else {
+      loggingStore.log(
+        MESSAGE_TYPES.LOGGING,
+        `[MusicHandler]: Unable to find a playback from settings! ${settings.playbackLocation}`
+      )
+    }
+
     const Apps = appState.getAllBase()
 
     const audioSource = Apps.find((app) => app.manifest?.isAudioSource)
@@ -180,6 +204,7 @@ export class MusicHandler {
       MESSAGE_TYPES.LOGGING,
       `[MusicHandler]: Setting Playback Location to ${source}`
     )
+    settingsStore.updateSetting('playbackLocation', source)
     this.currentApp = source
   }
 

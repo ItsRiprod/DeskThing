@@ -51,9 +51,11 @@ export const sendMessageToClient = (clientId: string | undefined, data: SocketDa
   const client = Clients.find((client) => client.client.connectionId === clientId)
   if (client) {
     client.socket.send(JSON.stringify(data))
-  } else {
+  } else if (server && server.clients.size > 0) {
     // Burst the message if there is no client provided
     sendMessageToClients(data)
+  } else {
+    loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: No clients connected or server running')
   }
 }
 

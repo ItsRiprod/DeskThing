@@ -139,11 +139,12 @@ export const setupServer = async (): Promise<void> => {
   })
 
   // Handle incoming messages from the client
-  server.on('connection', async (socket: WebSocket, req: IncomingMessage) => {
+  server.on('connection', async (socket: WebSocket.WebSocket, req: IncomingMessage) => {
     // Handle the incoming connection and add it to the ConnectionStore
 
     // This is a bad way of handling and syncing clients
-    const clientIp = socket._socket.remoteAddress
+    const clientIp =
+      req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.connection.remoteAddress
 
     // Setup the initial client data
     loggingStore.log(
@@ -155,7 +156,7 @@ export const setupServer = async (): Promise<void> => {
     const client: Client = {
       ip: clientIp as string,
       connected: true,
-      port: socket._socket.remotePort,
+      port: req.socket.remotePort,
       timestamp: Date.now(),
       connectionId: crypto.randomUUID(), // The first and only time this is run
       userAgent: req.headers['user-agent'] || '',
