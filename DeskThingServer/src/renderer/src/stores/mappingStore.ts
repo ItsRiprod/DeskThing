@@ -17,6 +17,7 @@ const DefaultProfile: Profile = {
 interface MappingStoreState {
   currentMapping: ButtonMapping
   currentProfile: Profile
+  profiles: Profile[]
   actions: Action[]
   keys: Key[]
 
@@ -36,6 +37,7 @@ interface MappingStoreState {
 
   getKeys: () => Promise<Key[]>
   setKeys: (keys: Key[]) => Promise<void>
+  getKeyById: (keyId: string) => Promise<Key | undefined>
   setActions: (actions: Action[]) => Promise<void>
   getActions: () => Promise<Action[]>
 
@@ -51,9 +53,12 @@ const useMappingStore = create<MappingStoreState>(
     currentProfile: DefaultProfile,
     actions: [],
     keys: [],
+    profiles: [],
 
     getProfiles: async (): Promise<Profile[]> => {
-      return await window.electron.getProfiles()
+      const profileList = await window.electron.getProfiles()
+      set({ profiles: profileList })
+      return profileList
     },
 
     getProfile: async (profileName): Promise<ButtonMapping> => {
@@ -69,6 +74,7 @@ const useMappingStore = create<MappingStoreState>(
       await window.electron.addProfile(profile)
       await get().setCurrentProfile(profile)
       await get().requestMappings()
+      set({ profiles: [...get().profiles, profile] })
     },
 
     deleteProfile: async (profile): Promise<void> => {
@@ -93,7 +99,14 @@ const useMappingStore = create<MappingStoreState>(
     },
 
     getKeys: async (): Promise<Key[]> => {
-      return await window.electron.getKeys()
+      const keys = await window.electron.getKeys()
+      set({ keys })
+      return keys
+    },
+
+    getKeyById: async (keyId: string): Promise<Key | undefined> => {
+      const key = get().keys.find((k) => k.id === keyId)
+      return key
     },
 
     setKeys: async (keys): Promise<void> => {
@@ -101,7 +114,9 @@ const useMappingStore = create<MappingStoreState>(
     },
 
     getActions: async (): Promise<Action[]> => {
-      return await window.electron.getActions()
+      const actions = await window.electron.getActions()
+      set({ actions })
+      return actions
     },
 
     getIcon: async (actionRef: Action | ActionReference): Promise<string | null> => {

@@ -78,19 +78,19 @@ const pages: PagesInterface = {
     component: TrayPage,
     label: 'Tray'
   },
-  apps: {
-    keyList: [],
-    id: 'apps',
-    icon: IconLayoutgrid,
-    component: AppMappingsPage,
-    label: 'Apps'
-  },
   wheel: {
     keyList: ['Wheel1', 'Wheel2', 'Wheel3', 'Wheel4', 'Scroll', 'Enter'],
     id: 'wheel',
     icon: IconAlbum,
     component: WheelPage,
     label: 'Wheel'
+  },
+  apps: {
+    keyList: [],
+    id: 'apps',
+    icon: IconLayoutgrid,
+    component: AppMappingsPage,
+    label: 'Apps'
   }
 }
 

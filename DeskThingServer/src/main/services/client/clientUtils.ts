@@ -24,13 +24,14 @@ export const getDeviceType = (userAgent: string | undefined): { id: number; name
 
 export const sendTime = async (): Promise<void> => {
   const now = new Date()
-  const hours = now.getHours()
-  const minutes = now.getMinutes()
-  const ampm = hours >= 12 ? 'PM' : 'AM'
-  const formattedHours = hours % 12 || 12
-  const formattedMinutes = minutes < 10 ? '0' + minutes : minutes
-  const time = `${formattedHours}:${formattedMinutes} ${ampm}`
-  sendMessageToClients({ app: 'client', type: 'time', payload: time })
+  const utcTime = now.getTime() // UTC time in milliseconds
+  const timezoneOffset = now.getTimezoneOffset() * -1 // Offset in minutes (server's timezone)
+
+  const data = {
+    utcTime, // UTC timestamp
+    timezoneOffset // Timezone offset in minutes
+  }
+  sendMessageToClients({ app: 'client', type: 'set', request: 'time', payload: data })
 }
 
 const initializeTimer = async (): Promise<void> => {

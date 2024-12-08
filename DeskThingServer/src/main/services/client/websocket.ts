@@ -198,9 +198,11 @@ export const setupServer = async (): Promise<void> => {
        * they often send the same request at the same time (i.e. song at its end).
        * As most, if not all, of these requests are burst to every client, they can be grouped together.
        */
+      const alwaysAllow = ['get', 'set', 'update', 'delete']
       if (
         !messageThrottles.has(messageKey) ||
-        now - messageThrottles.get(messageKey) > THROTTLE_DELAY
+        now - messageThrottles.get(messageKey) > THROTTLE_DELAY ||
+        alwaysAllow.includes(messageData.type)
       ) {
         // Add the current request to the throttle map
         messageThrottles.set(messageKey, now)

@@ -1,7 +1,7 @@
 console.log('[ClientExpress Service] Starting')
 import loggingStore from '../../stores/loggingStore'
 import { MESSAGE_TYPES } from '@shared/types'
-import { app as electronApp } from 'electron'
+import { app, app as electronApp } from 'electron'
 import { join } from 'path'
 import { getAppFilePath } from '../apps'
 import cors from 'cors'
@@ -79,10 +79,16 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
   expressApp.use('/:root', async (req: Request, res: Response, next: NextFunction) => {
     const root = req.params.root
 
-    if (root != 'client' && root != 'fetch' && root != 'icon' && root != 'image' && root != 'app') {
+    if (
+      root != 'client' &&
+      root != 'fetch' &&
+      root != 'icons' &&
+      root != 'image' &&
+      root != 'app'
+    ) {
       loggingStore.log(
         MESSAGE_TYPES.WARNING,
-        `WEBSOCKET: Client is not updated! Please update to v0.9.1 or later`
+        `WEBSOCKET: Client is not updated! Please update to v0.9.1 or later ${root}`
       )
       const ErrorPage = fs.readFileSync(join(staticPath, 'Error.html'), 'utf-8')
 
@@ -117,25 +123,17 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
     }
   })
 
+  const baseAppPath = join(app.getPath('userData'), 'apps')
+
   // Serve icons dynamically based on the URL
   expressApp.use(
-    '/icon/:appName/:iconName',
-    async (req: Request, res: Response, next: NextFunction) => {
-      console.log('Got an icon request', req.path, req.params)
-      const iconName = req.params.iconName
-      const appName = req.params.appName
-      if (iconName != null) {
-        const appPath = getAppFilePath(appName)
-        const iconPath = join(appPath, 'icons', iconName)
-        loggingStore.log(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Serving icon ${iconPath} to ${appName}`)
-
-        if (fs.existsSync(iconPath)) {
-          express.static(iconPath)(req, res, next)
-        } else {
-          res.status(404).send('Icon not found')
-        }
-      }
-    }
+    '/icons',
+    express.static(baseAppPath, {
+      maxAge: '1d',
+      immutable: true,
+      etag: true,
+      lastModified: true
+    })
   )
 
   // Serve icons dynamically based on the URL

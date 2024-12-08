@@ -20,7 +20,7 @@ const AvailableKeys: React.FC<AvailableKeysProps> = ({
   mode
 }: AvailableKeysProps) => {
   const keys = useMappingStore((state) => state.keys)
-  const [availableKeys, setAvailableKeys] = useState<Key[]>([])
+  const [availableKeys, setAvailableKeys] = useState<Key[]>(keys)
   const [actionsExpanded, setActionsExpanded] = useState(false)
 
   const handleModeClick = (key: Key): void => {
@@ -28,7 +28,9 @@ const AvailableKeys: React.FC<AvailableKeysProps> = ({
   }
 
   useEffect(() => {
-    const availableKeys = keys.filter((key) => KeyList && KeyList.includes(key.id))
+    const availableKeys = keys.filter(
+      (key) => (KeyList && KeyList.includes(key.id)) || KeyList.length == 0
+    )
     setAvailableKeys(availableKeys)
   }, [KeyList, keys])
 

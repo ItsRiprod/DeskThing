@@ -19,7 +19,10 @@ export const handleClientMessage = async (data: SocketData): Promise<void> => {
 }
 
 export const sendMessageToClients = async (data: SocketData): Promise<void> => {
-  loggingStore.log(MESSAGE_TYPES.LOGGING, `Sending message to clients: ${JSON.stringify(data)}`)
+  loggingStore.log(
+    MESSAGE_TYPES.LOGGING,
+    `Sending message to clients: ${data.payload ? (JSON.stringify(data.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(data.payload)) : 'undefined'}`
+  )
   if (server) {
     server.clients.forEach((client) => {
       if (client.readyState === 1) {
