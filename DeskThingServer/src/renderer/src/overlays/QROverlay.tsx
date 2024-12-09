@@ -48,9 +48,16 @@ const QROverlay: React.FC = () => {
           <h2 className="text-xl font-semibold">QR Code</h2>
         </div>
         <div className=" w-full max-w-2xl flex justify-center p-2 ">
-          <QRCode value={`http://${ip}/client`} size={256} />
+          <QRCode value={`http://${ip}`} size={256} />
         </div>
-        <p className="italic text-gray-400 font-geistMono">{ip + '/client'}</p>
+        <a
+          href={`http://${ip}`}
+          target="_blank"
+          className="italic text-gray-400 font-geistMono"
+          rel="noreferrer"
+        >
+          {ip}
+        </a>
       </div>
     </Overlay>
   )
