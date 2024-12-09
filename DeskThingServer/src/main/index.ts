@@ -154,7 +154,7 @@ function createClientWindow(port: number): BrowserWindow {
   })
 
   // Load client URL
-  window.loadURL(`http://localhost:${port}/client`, {})
+  window.loadURL(`http://localhost:${port}/`, {})
   return window
 }
 
