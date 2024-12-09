@@ -4,7 +4,6 @@ import useMappingStore from '@renderer/stores/mappingStore'
 import { Key } from '@shared/types'
 import { ActionIcon } from '../components/ActionIcon'
 import Button from '@renderer/components/Button'
-import { IconArrowDown, IconLink, IconMusic } from '@renderer/assets/icons'
 
 const keyList: string[] = ['Tray1', 'Tray2', 'Tray3', 'Tray4', 'Tray5', 'Tray6']
 
