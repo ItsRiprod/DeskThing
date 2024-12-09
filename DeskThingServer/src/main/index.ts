@@ -1,15 +1,29 @@
+/**
+ * Main entry point for the Electron application.
+ * Handles window creation, IPC communication, tray/dock setup, and application lifecycle.
+ *
+ * Features:
+ * - Creates and manages main application window and client windows
+ * - Sets up system tray and dock menu integration
+ * - Handles custom protocol (deskthing://) for deep linking
+ * - Manages IPC communication between main and renderer processes
+ * - Implements single instance locking
+ * - Handles application lifecycle events
+ * - Manages module loading and initialization
+ */
+
+console.log('[Index] Starting')
 import { AppIPCData, AuthScopes, Client, UtilityIPCData, MESSAGE_TYPES } from '@shared/types'
 import { app, shell, BrowserWindow, ipcMain, Tray, Menu, nativeImage } from 'electron'
 import { join, resolve } from 'path'
 import icon from '../../resources/icon.png?asset'
-import ConnectionStore from './stores/connectionsStore'
-import settingsStore from './stores/settingsStore'
 
+// Global window and tray references to prevent garbage collection
 let mainWindow: BrowserWindow | null = null
 let clientWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 
-// Setup the scheme handler
+// Setup the custom protocol handler for deep linking
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
     app.setAsDefaultProtocolClient('deskthing', process.execPath, [resolve(process.argv[1])])
@@ -18,7 +32,12 @@ if (process.defaultApp) {
   app.setAsDefaultProtocolClient('deskthing')
 }
 
+/**
+ * Creates and configures the main application window
+ * @returns {BrowserWindow} The configured main window instance
+ */
 function createMainWindow(): BrowserWindow {
+  // Create window with specific dimensions and settings
   const window = new BrowserWindow({
     width: 1130,
     height: 730,
@@ -33,6 +52,8 @@ function createMainWindow(): BrowserWindow {
       sandbox: false
     }
   })
+
+  // Set up Content Security Policy
   window.webContents.session.webRequest.onHeadersReceived((details, callback) => {
     callback({
       responseHeaders: {
@@ -44,26 +65,30 @@ function createMainWindow(): BrowserWindow {
     })
   })
 
+  // Show window when ready
   window.on('ready-to-show', () => {
     window.show()
   })
 
+  // Clean up reference when window is closed
   window.on('closed', () => {
     mainWindow = null
   })
 
+  // Handle new window creation attempts
   window.webContents.setWindowOpenHandler((details) => {
-    // Prevent opening new windows for internal URLs
+    // Handle internal protocol links
     if (details.url.startsWith('deskthing://')) {
       handleUrl(details.url)
-      return { action: 'deny' } // Deny new window creation
+      return { action: 'deny' }
     } else {
-      shell.openExternal(details.url) // Open external URLs in the browser
+      // Open external links in default browser
+      shell.openExternal(details.url)
       return { action: 'deny' }
     }
   })
 
-  // Load the remote URL for development or the local HTML file for production.
+  // Load appropriate content based on environment
   if (process.env.ELECTRON_RENDERER_URL) {
     window.loadURL(process.env.ELECTRON_RENDERER_URL)
   } else {
@@ -73,7 +98,13 @@ function createMainWindow(): BrowserWindow {
   return window
 }
 
+/**
+ * Creates a new client window for the application.
+ * @param port - The port number to use for the client window.
+ * @returns {BrowserWindow} The created client window instance
+ */
 function createClientWindow(port: number): BrowserWindow {
+  // Create window with specific dimensions and settings for client
   const window = new BrowserWindow({
     width: 800,
     height: 480,
@@ -90,11 +121,12 @@ function createClientWindow(port: number): BrowserWindow {
     },
     webPreferences: {
       sandbox: false,
-      contextIsolation: true, // For security
-      nodeIntegration: false // For security
+      contextIsolation: true,
+      nodeIntegration: false
     }
   })
 
+  // Add custom draggable title bar
   window.webContents.on('did-finish-load', () => {
     window.webContents.executeJavaScript(`
       const topBar = document.createElement('div');
@@ -102,34 +134,39 @@ function createClientWindow(port: number): BrowserWindow {
       topBar.style.top = '0';
       topBar.style.left = '0';
       topBar.style.width = '100%';
-      topBar.style.height = '30px'; // Height of the top bar
-      topBar.style.backgroundColor = 'rgba(100, 100, 100, 0.1)'; // Invisible background
-      topBar.style.zIndex = '9999'; // Ensure it appears on top
-      topBar.style.cursor = 'pointer'; // Cursor indicates interaction
+      topBar.style.height = '30px';
+      topBar.style.backgroundColor = 'rgba(100, 100, 100, 0.1)';
+      topBar.style.zIndex = '9999';
+      topBar.style.cursor = 'pointer';
       topBar.style.webkitAppRegion = 'drag';
       document.body.appendChild(topBar);
     `)
   })
 
+  // Show window when ready
   window.on('ready-to-show', () => {
     window.show()
   })
 
+  // Clean up reference when window is closed
   window.on('closed', () => {
     clientWindow = null
   })
 
+  // Load client URL
   window.loadURL(`http://localhost:${port}/client`, {})
   return window
 }
 
+/**
+ * Initializes the system tray icon and menu
+ */
 async function initializeTray(): Promise<void> {
-  const settingsStore = await import('./stores/settingsStore')
-
   const trayIcon = nativeImage.createFromPath(join(__dirname, '../../resources/icon2.png'))
 
   tray = new Tray(trayIcon)
 
+  // Handle tray icon click
   tray.on('click', () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       if (mainWindow.isMinimized()) mainWindow.restore()
@@ -139,6 +176,7 @@ async function initializeTray(): Promise<void> {
     }
   })
 
+  // Create tray context menu
   const contextMenu = Menu.buildFromTemplate([
     {
       label: 'Open Server',
@@ -156,6 +194,7 @@ async function initializeTray(): Promise<void> {
         if (clientWindow && !clientWindow.isDestroyed()) {
           clientWindow.focus()
         } else {
+          const settingsStore = await import('./stores/settingsStore')
           const data = await settingsStore.default.getSettings()
           if (data) {
             clientWindow = createClientWindow(data.devicePort)
@@ -174,9 +213,11 @@ async function initializeTray(): Promise<void> {
   tray.setContextMenu(contextMenu)
 }
 
+/**
+ * Initializes the dock menu (macOS only)
+ */
 async function initializeDoc(): Promise<void> {
-  const settingsStore = await import('./stores/settingsStore')
-
+  // Create dock context menu
   const contextMenu = Menu.buildFromTemplate([
     {
       label: 'Open Server',
@@ -194,6 +235,7 @@ async function initializeDoc(): Promise<void> {
         if (clientWindow && !clientWindow.isDestroyed()) {
           clientWindow.focus()
         } else {
+          const settingsStore = await import('./stores/settingsStore')
           const data = await settingsStore.default.getSettings()
           if (data) {
             clientWindow = createClientWindow(data.devicePort)
@@ -212,25 +254,29 @@ async function initializeDoc(): Promise<void> {
   app.dock.setMenu(contextMenu)
 }
 
+/**
+ * Sets up IPC handlers for communication between main and renderer processes
+ */
 async function setupIpcHandlers(): Promise<void> {
-  const loggingStore = (await import('./stores/loggingStore')).default
+  // Import required stores
+  const [{ default: settingsStore }, { default: loggingStore, ResponseLogger }] = await Promise.all(
+    [import('./stores/settingsStore'), import('./stores/loggingStore')]
+  )
 
-  const { appHandler } = await import('./handlers/appHandler')
-  const { clientHandler } = await import('./handlers/clientHandler')
-  const { utilityHandler } = await import('./handlers/utilityHandler')
-  const { ResponseLogger } = await import('./stores/loggingStore')
-
+  // Default handler for unimplemented IPC messages
   const defaultHandler = async (data: AppIPCData): Promise<void> => {
     console.error(`No handler implemented for type: ${data.type} ${data}`)
     loggingStore.log(MESSAGE_TYPES.ERROR, `No handler implemented for type: ${data.type}`)
   }
 
+  // Handle app-related IPC messages
   ipcMain.handle('APPS', async (event, data: AppIPCData) => {
+    const { appHandler } = await import('./handlers/appHandler')
     const handler = appHandler[data.type] || defaultHandler
     const replyFn = ResponseLogger(event.sender.send.bind(event.sender))
     try {
       if (handler) {
-        return await handler(data, replyFn) // Execute the corresponding handler function
+        return await handler(data, replyFn)
       } else {
         console.error(`No handler found for type: ${data.type}`)
         throw new Error(`Unhandled type: ${data.type}`)
@@ -241,12 +287,14 @@ async function setupIpcHandlers(): Promise<void> {
     }
   })
 
+  // Handle client-related IPC messages
   ipcMain.handle('CLIENT', async (event, data: AppIPCData) => {
+    const { clientHandler } = await import('./handlers/clientHandler')
     const handler = clientHandler[data.type] || defaultHandler
     const replyFn = ResponseLogger(event.sender.send.bind(event.sender))
     try {
       if (handler) {
-        return await handler(data, replyFn) // Execute the corresponding handler function
+        return await handler(data, replyFn)
       } else {
         console.error(`No handler found for type: ${data.type}`)
         throw new Error(`Unhandled type: ${data.type}`)
@@ -257,13 +305,15 @@ async function setupIpcHandlers(): Promise<void> {
     }
   })
 
+  // Handle utility-related IPC messages
   ipcMain.handle('UTILITY', async (event, data: UtilityIPCData) => {
+    const { utilityHandler } = await import('./handlers/utilityHandler')
     const handler = utilityHandler[data.type] || defaultHandler
     const replyFn = ResponseLogger(event.sender.send.bind(event.sender))
 
     try {
       if (handler) {
-        return await handler(data, replyFn) // Execute the corresponding handler function
+        return await handler(data, replyFn)
       } else {
         console.error(`No handler found for type: ${data.type}`)
         throw new Error(`Unhandled type: ${data.type}`)
@@ -274,27 +324,46 @@ async function setupIpcHandlers(): Promise<void> {
     }
   })
 
+  // Set up mapping store listeners
+  import('./services/mappings/mappingStore').then(({ default: mappingStore }) => {
+    mappingStore.addListener('action', (action) => {
+      sendIpcData('action', action)
+    })
+    mappingStore.addListener('key', (key) => {
+      sendIpcData('key', key)
+    })
+    mappingStore.addListener('profile', (profile) => {
+      sendIpcData('profile', profile)
+    })
+  })
+
+  // Set up logging store listener
   loggingStore.addListener((errorData) => {
     sendIpcData('log', errorData)
   })
-  ConnectionStore.on((clients: Client[]) => {
-    sendIpcData('connections', { status: true, data: clients.length, final: true })
-    sendIpcData('clients', { status: true, data: clients, final: true })
-  })
-  ConnectionStore.onDevice((devices: string[]) => {
-    sendIpcData('adbdevices', { status: true, data: devices, final: true })
-  })
+
+  // Set up settings store listener
   settingsStore.addListener((newSettings) => {
     sendIpcData('settings-updated', newSettings)
   })
+
+  // Set up connections store listeners
+  import('./stores/connectionsStore').then(({ default: ConnectionStore }) => {
+    ConnectionStore.on((clients: Client[]) => {
+      sendIpcData('connections', { status: true, data: clients.length, final: true })
+      sendIpcData('clients', { status: true, data: clients, final: true })
+    })
+    ConnectionStore.onDevice((devices: string[]) => {
+      sendIpcData('adbdevices', { status: true, data: devices, final: true })
+    })
+  })
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
+// Ensure single instance of the application
 if (!app.requestSingleInstanceLock()) {
   app.quit()
 } else {
+  // Handle second instance launch
   app.on('second-instance', (_event, commandLine) => {
     const url = commandLine.find((arg) => arg.startsWith('deskthing://'))
     if (url) {
@@ -305,18 +374,19 @@ if (!app.requestSingleInstanceLock()) {
       if (mainWindow.isMinimized()) mainWindow.restore()
       mainWindow.focus()
     } else {
-      // mainWindow = createMainWindow()
+      mainWindow = createMainWindow()
     }
   })
-  app.on('ready', () => setupIpcHandlers())
-  app.whenReady().then(async () => {
-    // Set app user model id for windows
 
+  // Initialize application when ready
+  app.whenReady().then(async () => {
+    // Handle custom protocol URLs
     app.on('open-url', (event, url) => {
       event.preventDefault()
       handleUrl(url)
     })
 
+    // Initialize dock or tray based on platform
     if (process.platform == 'darwin') {
       initializeDoc()
     } else {
@@ -324,28 +394,32 @@ if (!app.requestSingleInstanceLock()) {
     }
     app.setAppUserModelId('com.deskthing')
 
+    // Set up window optimization
     app.on('browser-window-created', (_, window) => {
       const { optimizer } = require('@electron-toolkit/utils')
       optimizer.watchWindowShortcuts(window)
     })
 
+    // Create main window and set up handlers
     mainWindow = createMainWindow()
 
     mainWindow.once('ready-to-show', () => {
       loadModules()
+      setupIpcHandlers()
     })
 
+    // Handle window recreation on macOS
     app.on('activate', function () {
-      // On macOS it's common to re-create a window in the app when the
-      // dock icon is clicked and there are no other windows open.
       if (BrowserWindow.getAllWindows().length === 0) {
         mainWindow = createMainWindow()
       }
     })
   })
 
+  // Handle window closure
   app.on('window-all-closed', async (e) => {
-    // Prevent the app from quitting
+    const { default: settingsStore } = await import('./stores/settingsStore')
+
     const settings = await settingsStore.getSettings()
     if (settings.minimizeApp) {
       e.preventDefault()
@@ -355,6 +429,10 @@ if (!app.requestSingleInstanceLock()) {
   })
 }
 
+/**
+ * Handles custom protocol URLs
+ * @param url - The URL to handle
+ */
 function handleUrl(url: string | undefined): void {
   if (url && url.startsWith('deskthing://')) {
     const path = url.replace('deskthing://', '')
@@ -364,19 +442,25 @@ function handleUrl(url: string | undefined): void {
     }
   }
 }
+
+/**
+ * Opens authentication window in default browser
+ * @param url - The authentication URL
+ */
 async function openAuthWindow(url: string): Promise<void> {
   await shell.openExternal(url)
 }
 async function loadModules(): Promise<void> {
   try {
-    await import('./handlers/authHandler')
+    import('./handlers/authHandler')
 
-    await import('./services/client/websocket').then(({ restartServer }) => {
+    import('./services/client/websocket').then(({ restartServer }) => {
       restartServer()
     })
 
-    const { loadAndRunEnabledApps } = await import('./services/apps')
-    loadAndRunEnabledApps()
+    import('./services/apps').then(({ loadAndRunEnabledApps }) => {
+      loadAndRunEnabledApps()
+    })
 
     import('./handlers/musicHandler')
   } catch (error) {

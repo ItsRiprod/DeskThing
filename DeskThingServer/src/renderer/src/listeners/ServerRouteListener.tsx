@@ -7,7 +7,7 @@ const ServerRoutingListener = (): null => {
   const [_searchParams, setSearchParams] = useSearchParams()
 
   useEffect(() => {
-    const handleServerRouting = (_event: Electron.Event, url: string): void => {
+    const handleServerRouting = async (_event: Electron.Event, url: string): Promise<void> => {
       console.log('ServerRoutingListener', url)
       const [path, query] = url.split('?')
       setPage(path)

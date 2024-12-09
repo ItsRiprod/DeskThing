@@ -101,7 +101,7 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
     try {
       setLogging({ status: true, final: false, data: 'Configuring Device' })
       setLoading(true)
-      window.electron.configureDevice(client.adbId)
+      window.electron.configureDevice(client.adbId.split(' ')[0])
       const unsubscribe = window.electron.ipcRenderer.on('logging', (_event, reply) => {
         console.log(reply)
         setLogging(reply)
@@ -120,7 +120,7 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
     if (!client.adbId) return
 
     setAnimatingIcons((prev) => ({ ...prev, chromium: true }))
-    await handleAdbCommand(`-s ${client.adbId} shell supervisorctl restart chromium`)
+    await handleAdbCommand(`-s ${client.adbId.split(' ')[0]} shell supervisorctl restart chromium`)
     setAnimatingIcons((prev) => ({ ...prev, chromium: false }))
   }
 
@@ -169,7 +169,7 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
     await setTimeout(() => refreshADbClients, 5000)
     if (client.adbId) {
       await window.electron.handleClientADB(
-        `-s ${client.adbId} reverse tcp:${devicePort} tcp:${devicePort}`
+        `-s ${client.adbId.split(' ')[0]} reverse tcp:${devicePort} tcp:${devicePort}`
       )
     }
     setLoading(false)

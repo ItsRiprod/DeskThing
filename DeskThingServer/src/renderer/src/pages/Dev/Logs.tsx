@@ -59,7 +59,7 @@ const Logs: React.FC = () => {
 
   return (
     <div className="w-full h-full flex">
-      <Sidebar className="flex justify-between flex-col h-full max-h-full md:items-stretch items-center">
+      <Sidebar className="flex justify-between flex-col h-full max-h-full md:items-stretch xs:items-center">
         <div className="relative h-full overflow-auto">
           <p>
             {hoveredLog && (
@@ -70,13 +70,13 @@ const Logs: React.FC = () => {
         <div className="flex flex-col gap-2">
           <Button onClick={handleLogsOpen} className="hover:bg-zinc-900">
             <IconFolderOpen strokeWidth={1.5} />
-            <p className="md:block hidden text-center flex-grow">Open Logs</p>
+            <p className="md:block xs:hidden text-center flex-grow">Open Logs</p>
           </Button>
 
           <Button onClick={handleCopyLogs} className="hover:bg-zinc-900" disabled={isAnimating}>
             <span id="rewardId" />
             {isAnimating ? <IconCheck strokeWidth={1.5} /> : <IconCopy strokeWidth={1.5} />}
-            <p className="md:block hidden text-center flex-grow">Copy Logs</p>
+            <p className="md:block xs:hidden text-center flex-grow">Copy Logs</p>
           </Button>
         </div>
       </Sidebar>

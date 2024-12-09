@@ -1,3 +1,4 @@
+console.log('[AppRnr Service] Starting')
 import loggingStore from '../../stores/loggingStore'
 import { MESSAGE_TYPES } from '@shared/types'
 

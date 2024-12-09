@@ -1,3 +1,4 @@
+console.log('[Auth Handler] Starting')
 import { ClientIPCData, ClientManifest, SocketData, ReplyFn, MESSAGE_TYPES } from '@shared/types'
 import loggingStore from '../stores/loggingStore'
 import { handleAdbCommands } from './adbHandler'
@@ -10,6 +11,7 @@ import {
   SetupProxy
 } from './deviceHandler'
 import { sendMessageToClient, sendMessageToClients } from '../services/client/clientCom'
+import mappingStore from '@server/services/mappings/mappingStore'
 
 export const clientHandler: Record<
   ClientIPCData['type'],
@@ -123,6 +125,14 @@ export const clientHandler: Record<
     }
     replyFn('logging', { status: true, data: 'Finished', final: true })
     return await sendMessageToClients(message)
+  },
+  icon: async (data) => {
+    switch (data.request) {
+      case 'get':
+        return await mappingStore.fetchActionIcon(data.payload)
+      case 'set':
+        return await mappingStore.updateIcon(data.payload.id, data.payload.icon)
+    }
   }
 }
 

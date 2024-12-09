@@ -1,9 +1,11 @@
+console.log('[Music Handler] Starting')
 import loggingStore from '../stores/loggingStore'
 import settingsStore from '../stores/settingsStore'
-import { Settings, SocketData, MESSAGE_TYPES } from '@shared/types'
+import { Settings, SocketData, MESSAGE_TYPES, SongData } from '@shared/types'
 import { sendMessageToApp } from '../services/apps'
 import { getAppByName } from './configHandler'
 import appState from '../services/apps/appState'
+import { sendMessageToClients } from '../services/client/clientCom'
 
 export class MusicHandler {
   private static instance: MusicHandler
@@ -34,7 +36,7 @@ export class MusicHandler {
     }, 5000) // Delay to ensure settings are loaded
   }
 
-  private handleSettingsUpdate = (settings: Settings): void => {
+  private handleSettingsUpdate = async (settings: Settings): Promise<void> => {
     this.updateRefreshInterval(settings.refreshInterval)
 
     loggingStore.log(
@@ -51,7 +53,7 @@ export class MusicHandler {
     }
   }
 
-  public updateRefreshInterval(refreshRate: number): void {
+  public updateRefreshInterval = async (refreshRate: number): Promise<void> => {
     if (this.refreshInterval) {
       clearInterval(this.refreshInterval)
     }
@@ -73,6 +75,30 @@ export class MusicHandler {
   }
 
   private async findCurrentPlaybackSource(): Promise<string | null> {
+    if (this.currentApp && this.currentApp != 'none') {
+      return this.currentApp
+    } else {
+      loggingStore.log(
+        MESSAGE_TYPES.LOGGING,
+        `[MusicHandler]: Current app is not set! Attempting to find one...`
+      )
+    }
+
+    const settings = await settingsStore.getSettings()
+
+    if (settings.playbackLocation && settings.playbackLocation != 'none') {
+      loggingStore.log(
+        MESSAGE_TYPES.LOGGING,
+        `[MusicHandler]: Fount ${settings.playbackLocation} in settings. Setting playback location to i!`
+      )
+      return settings.playbackLocation
+    } else {
+      loggingStore.log(
+        MESSAGE_TYPES.LOGGING,
+        `[MusicHandler]: Unable to find a playback from settings! ${settings.playbackLocation}`
+      )
+    }
+
     const Apps = appState.getAllBase()
 
     const audioSource = Apps.find((app) => app.manifest?.isAudioSource)
@@ -178,6 +204,7 @@ export class MusicHandler {
       MESSAGE_TYPES.LOGGING,
       `[MusicHandler]: Setting Playback Location to ${source}`
     )
+    settingsStore.updateSetting('playbackLocation', source)
     this.currentApp = source
   }
 
@@ -204,6 +231,39 @@ export class MusicHandler {
       request: request.request,
       payload: request.payload
     })
+  }
+
+  public async handleMusicMessage(songData: SongData): Promise<void> {
+    if (!songData || typeof songData !== 'object') {
+      loggingStore.log(MESSAGE_TYPES.ERROR, '[MusicHandler]: Invalid song data received')
+      return
+    }
+
+    try {
+      if (songData.thumbnail) {
+        const { getAverageColor } = await import('fast-average-color-node')
+        const color = await getAverageColor(songData.thumbnail)
+        const songDataWithColor = {
+          ...songData,
+          color: color
+        }
+        await sendMessageToClients({
+          type: 'song',
+          app: 'client',
+          payload: songDataWithColor
+        })
+      } else {
+        await sendMessageToClients({
+          type: 'song',
+          app: 'client',
+          payload: songData
+        })
+      }
+
+      loggingStore.log(MESSAGE_TYPES.LOGGING, '[MusicHandler]: Song data sent to clients')
+    } catch (error) {
+      loggingStore.log(MESSAGE_TYPES.ERROR, `[MusicHandler]: Failed to send song data: ${error}`)
+    }
   }
 }
 

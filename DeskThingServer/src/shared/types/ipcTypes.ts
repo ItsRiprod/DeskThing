@@ -18,12 +18,17 @@ export type UTILITY_TYPES =
   | 'settings'
   | 'github'
   | 'logs'
-  | 'maps'
   | 'shutdown'
   | 'open-log-folder'
   | 'refresh-firewall'
   | 'restart-server'
   | 'zip'
+  | 'actions'
+  | 'buttons'
+  | 'keys'
+  | 'profiles'
+  | 'run'
+  | 'map'
 
 export type APP_TYPES =
   | 'app'
@@ -51,6 +56,7 @@ export type CLIENT_TYPES =
   | 'push-proxy-script'
   | 'adb'
   | 'run-device-command'
+  | 'icon'
 
 export interface AppIPCData {
   type: APP_TYPES

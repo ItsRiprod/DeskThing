@@ -7,7 +7,7 @@ const LogDataListener = (): null => {
   const addLogs = useNotificationStore((state) => state.addLog)
 
   useEffect(() => {
-    const handleLog = (_event, log: Log): void => {
+    const handleLog = async (_event, log: Log): Promise<void> => {
       addLog(log)
       addLogs(log)
     }

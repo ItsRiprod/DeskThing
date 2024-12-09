@@ -1,3 +1,4 @@
+console.log('[Settings Store] Starting')
 import { readFromFile, writeToFile } from '../utils/fileHandler'
 import loggingStore from './loggingStore'
 import os from 'os'
@@ -16,6 +17,10 @@ class SettingsStore {
 
   constructor() {
     this.settings = this.getDefaultSettings()
+    this.setupSettings()
+  }
+
+  private setupSettings = async (): Promise<void> => {
     this.loadSettings()
       .then((settings) => {
         if (settings) {
@@ -28,6 +33,7 @@ class SettingsStore {
         console.error('SETTINGS: Error initializing settings:', err)
       })
   }
+
   static getInstance(): SettingsStore {
     if (!SettingsStore.instance) {
       SettingsStore.instance = new SettingsStore()
@@ -59,7 +65,10 @@ class SettingsStore {
    * @param key - The key of the setting to update
    * @param value - The new value for the setting
    */
-  public updateSetting(key: string, value: boolean | undefined | string | number | string[]): void {
+  public async updateSetting(
+    key: string,
+    value: boolean | undefined | string | number | string[]
+  ): Promise<void> {
     if (key === 'autoStart' && typeof value === 'boolean') {
       this.updateAutoLaunch(value)
     }
@@ -74,6 +83,7 @@ class SettingsStore {
 
       if (!data || !data.version_code || data.version_code < version_code) {
         // File does not exist, create it with default settings
+        console.log('Unable to find settings. ', data)
         const defaultSettings = this.getDefaultSettings()
         await writeToFile(defaultSettings, this.settingsFilePath)
         console.log('SETTINGS: Returning default settings')
@@ -82,8 +92,6 @@ class SettingsStore {
       if (data.autoStart !== undefined) {
         await this.updateAutoLaunch(data.autoStart)
       }
-
-      this.notifyListeners()
 
       return data
     } catch (err) {
@@ -116,12 +124,13 @@ class SettingsStore {
     try {
       if (settings) {
         this.settings = settings as Settings
-        await writeToFile(this.settings, this.settingsFilePath)
-        console.log('SETTINGS: Updated settings!', this.settings)
-        loggingStore.log(MESSAGE_TYPES.LOGGING, 'SETTINGS: Updated settings!')
-      } else {
-        loggingStore.log(MESSAGE_TYPES.LOGGING, 'SETTINGS: Invalid setting format!')
       }
+
+      await writeToFile(this.settings, this.settingsFilePath)
+      loggingStore.log(
+        MESSAGE_TYPES.LOGGING,
+        'SETTINGS: Updated settings!' + JSON.stringify(this.settings)
+      )
 
       this.notifyListeners()
     } catch (err) {

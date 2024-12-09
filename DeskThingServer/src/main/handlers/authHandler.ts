@@ -1,3 +1,4 @@
+console.log('[Auth Handler] Starting')
 import { getAppData } from './configHandler' // Assuming you have a config handler for active apps
 import { sendMessageToApp } from '../services/apps' // Assuming you have an app handler for sending messages
 import http from 'http'

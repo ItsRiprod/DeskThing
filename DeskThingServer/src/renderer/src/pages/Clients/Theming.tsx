@@ -4,7 +4,7 @@ import Button from '@renderer/components/Button'
 import { IconPlus } from '@renderer/assets/icons'
 import MainElement from '@renderer/nav/MainElement'
 
-const ClientSettings: React.FC = () => {
+const ClientTheming: React.FC = () => {
   const [disabled, _setDisabled] = useState(true)
 
   return (
@@ -48,11 +48,11 @@ const ClientSettings: React.FC = () => {
       </MainElement>
       {disabled && (
         <div className="w-screen h-full absolute bg-black/60 flex items-center justify-center">
-          <p className="font-semibold text-4xl">Development In Progress</p>
+          <p className="font-semibold text-4xl">Development Is In Progress</p>
         </div>
       )}
     </div>
   )
 }
 
-export default ClientSettings
+export default ClientTheming

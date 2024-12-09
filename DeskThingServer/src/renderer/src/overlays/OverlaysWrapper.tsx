@@ -4,12 +4,14 @@ import QROverlay from '@renderer/overlays/QROverlay'
 import SettingsOverlay from './settings/SettingsOverlay'
 import NotificationOverlay from './notifications/NotificationOverlay'
 import AppsOverlay from './apps/AppsOverlay'
+import AddProfileOverlay from './AddProfile.'
 
 const overlays = {
   qr: QROverlay,
   settings: SettingsOverlay,
   notifications: NotificationOverlay,
-  app: AppsOverlay
+  app: AppsOverlay,
+  addProfile: AddProfileOverlay
 }
 
 const OverlayWrapper: React.FC<React.PropsWithChildren> = ({

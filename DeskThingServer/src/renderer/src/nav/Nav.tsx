@@ -33,7 +33,7 @@ const Nav: React.FC = () => {
             location="Clients"
             currentPage={currentPage}
             handleNavigation={handleNavigation}
-            subDirectories={['Connections', 'Settings']}
+            subDirectories={['Connections', 'Mapping', 'Profiles']}
           >
             <IconCarThingSmall iconSize={30} />
             <span className="hidden lg:inline group-hover:inline">Clients</span>
@@ -95,6 +95,11 @@ const NavButton = ({
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const handleClick = (): void => {
+    if (currentPage.includes(location)) {
+      setIsOpen(!isOpen)
+      return
+    }
+
     if (subDirectories && subDirectories.length > 0) {
       setIsOpen(!isOpen)
       handleNavigation('/' + location + '/' + subDirectories[0])
@@ -133,19 +138,23 @@ const NavButton = ({
       >
         {children}
       </button>
-      {subDirectories && subDirectories.length > 0 && isOpen && (
-        <div className="absolute top-full left-0 w-full bg-zinc-900 z-10">
-          {subDirectories.map((subDir) => (
-            <button
-              key={subDir}
-              onClick={() => handleNavigation(`/${location}/${subDir}`)}
-              className="p-2 w-full text-left text-gray-400 hover:bg-zinc-950 hover:text-white"
-            >
-              {subDir}
-            </button>
-          ))}
-        </div>
-      )}
+      <div
+        className={`${isOpen ? 'max-h-[500px]' : 'max-h-0'} w-full absolute transition-[max-height] duration-300 ease-in-out z-10 overflow-hidden`}
+      >
+        {subDirectories && subDirectories.length > 0 && isOpen && (
+          <div className=" border border-black top-full left-0 w-full bg-zinc-900 ">
+            {subDirectories.map((subDir) => (
+              <button
+                key={subDir}
+                onClick={() => handleNavigation(`/${location}/${subDir}`)}
+                className={`p-2 w-full text-left text-gray-400 hover:bg-zinc-950 hover:text-white ${currentPage.includes(subDir) ? 'bg-zinc-800' : ''}`}
+              >
+                {subDir}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

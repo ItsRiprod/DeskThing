@@ -10,7 +10,7 @@ const RequestDataListener = (): null => {
   const clientManifest = useClientStore((state) => state.clientManifest)
 
   useEffect(() => {
-    if (devices.length > 0) {
+    const checkDevices = async (): Promise<void> => {
       resolveTask('adbdevices-setup')
       addTask({
         id: 'adbdevices-configure',
@@ -34,10 +34,18 @@ const RequestDataListener = (): null => {
         ]
       })
     }
+
+    if (devices.length > 0) {
+      checkDevices()
+    }
   }, [devices])
 
   useEffect(() => {
-    const handleDisplayUserForm = (_event, requestId: string, fields: AuthScopes): void => {
+    const handleDisplayUserForm = async (
+      _event,
+      requestId: string,
+      fields: AuthScopes
+    ): Promise<void> => {
       addRequest(requestId, fields)
     }
 

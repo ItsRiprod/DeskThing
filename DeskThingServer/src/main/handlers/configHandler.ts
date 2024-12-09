@@ -1,3 +1,4 @@
+console.log('[Config Handler] Starting')
 import { sendIpcData } from '..'
 import { AppData, App, MESSAGE_TYPES, Manifest, ButtonMapping } from '@shared/types'
 import loggingStore from '../stores/loggingStore'

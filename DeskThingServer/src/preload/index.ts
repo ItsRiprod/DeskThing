@@ -1,9 +1,12 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import {
+  Action,
+  ActionReference,
   App,
   AppDataInterface,
   AppReturnData,
+  Button,
   ButtonMapping,
   Client,
   ClientManifest,
@@ -11,7 +14,9 @@ import {
   IncomingData,
   IPC_HANDLERS,
   IPCData,
+  Key,
   Log,
+  Profile,
   Settings,
   SocketData
 } from '@shared/types'
@@ -22,63 +27,63 @@ const api = {
 
   // Apps
 
-  getApps: (): Promise<App[]> =>
-    sendCommand('APPS', { type: 'app', request: 'get', payload: null }),
+  getApps: async (): Promise<App[]> =>
+    await sendCommand('APPS', { type: 'app', request: 'get', payload: null }),
 
   getAppData: async (appId: string): Promise<AppDataInterface | null> =>
-    sendCommand<AppDataInterface | null>('APPS', {
+    await sendCommand<AppDataInterface | null>('APPS', {
       type: 'data',
       request: 'get',
       payload: appId
     }),
 
   setAppData: async (appId: string, data: AppDataInterface): Promise<void> =>
-    sendCommand('APPS', { type: 'data', request: 'set', payload: { appId, data } }),
+    await sendCommand('APPS', { type: 'data', request: 'set', payload: { appId, data } }),
 
   stopApp: async (appId: string): Promise<void> =>
-    sendCommand('APPS', { type: 'stop', request: 'set', payload: appId }),
+    await sendCommand('APPS', { type: 'stop', request: 'set', payload: appId }),
 
   disableApp: async (appId: string): Promise<void> =>
-    sendCommand('APPS', { type: 'disable', request: 'set', payload: appId }),
+    await sendCommand('APPS', { type: 'disable', request: 'set', payload: appId }),
 
   enableApp: async (appId: string): Promise<void> =>
-    sendCommand('APPS', { type: 'enable', request: 'set', payload: appId }),
+    await sendCommand('APPS', { type: 'enable', request: 'set', payload: appId }),
 
   runApp: async (appId: string): Promise<void> =>
-    sendCommand('APPS', { type: 'run', request: 'set', payload: appId }),
+    await sendCommand('APPS', { type: 'run', request: 'set', payload: appId }),
 
   purgeApp: async (appId: string): Promise<void> =>
-    sendCommand('APPS', { type: 'purge', request: 'set', payload: appId }),
+    await sendCommand('APPS', { type: 'purge', request: 'set', payload: appId }),
 
   handleAppZip: async (path: string): Promise<AppReturnData | null> =>
-    sendCommand('APPS', { type: 'zip', request: 'set', payload: path }),
+    await sendCommand('APPS', { type: 'zip', request: 'set', payload: path }),
 
   handleAppUrl: async (url: string): Promise<AppReturnData | null> =>
-    sendCommand('APPS', { type: 'url', request: 'set', payload: url }),
+    await sendCommand('APPS', { type: 'url', request: 'set', payload: url }),
 
   handleResponseToUserData: async (requestId: string, payload: IncomingData): Promise<void> =>
-    sendCommand('APPS', {
+    await sendCommand('APPS', {
       type: 'user-data-response',
       request: 'set',
       payload: { requestId, response: payload }
     }),
 
   handleDeAppZip: async (path: string): Promise<void> =>
-    sendCommand('APPS', {
+    await sendCommand('APPS', {
       type: 'dev-add-app',
       request: 'set',
       payload: { appPath: path }
     }),
 
   sendDataToApp: async (data: SocketData): Promise<void> =>
-    sendCommand('APPS', {
+    await sendCommand('APPS', {
       type: 'send-to-app',
       request: 'set',
       payload: data
     }),
 
   orderApps: async (data: string[]): Promise<void> =>
-    sendCommand('APPS', {
+    await sendCommand('APPS', {
       type: 'app-order',
       request: 'set',
       payload: data
@@ -86,201 +91,283 @@ const api = {
 
   // Clients
 
-  pingClient: (clientId: string): Promise<string | null> =>
-    sendCommand('CLIENT', { type: 'pingClient', request: 'set', payload: clientId }),
+  pingClient: async (clientId: string): Promise<string | null> =>
+    await sendCommand('CLIENT', { type: 'pingClient', request: 'set', payload: clientId }),
 
   handleClientZip: async (path: string): Promise<void> =>
-    sendCommand('CLIENT', {
+    await sendCommand('CLIENT', {
       type: 'zip',
       request: 'set',
       payload: path
     }),
 
   handleClientURL: async (url: string): Promise<void> =>
-    sendCommand('CLIENT', {
+    await sendCommand('CLIENT', {
       type: 'url',
       request: 'set',
       payload: url
     }),
 
-  handleClientADB: (command: string): Promise<string> =>
-    sendCommand('CLIENT', {
+  handleClientADB: async (command: string): Promise<string> =>
+    await sendCommand('CLIENT', {
       type: 'adb',
       request: 'set',
       payload: command
     }),
 
-  configureDevice: (deviceId: string): Promise<void> =>
-    sendCommand('CLIENT', {
+  configureDevice: async (deviceId: string): Promise<void> =>
+    await sendCommand('CLIENT', {
       type: 'configure',
       request: 'set',
       payload: deviceId
     }),
 
-  getClientManifest: (): Promise<ClientManifest> =>
-    sendCommand<ClientManifest>('CLIENT', {
+  getClientManifest: async (): Promise<ClientManifest> =>
+    await sendCommand<ClientManifest>('CLIENT', {
       type: 'client-manifest',
       request: 'get',
       payload: undefined
     }),
-  updateClientManifest: (client: Partial<ClientManifest>): Promise<void> =>
-    sendCommand<void>('CLIENT', {
+
+  updateClientManifest: async (client: Partial<ClientManifest>): Promise<void> =>
+    await sendCommand<void>('CLIENT', {
       type: 'client-manifest',
       request: 'set',
       payload: client
     }),
 
-  pushStagedApp: (clientId: string): Promise<void> =>
-    sendCommand('CLIENT', {
+  pushStagedApp: async (clientId: string): Promise<void> =>
+    await sendCommand('CLIENT', {
       type: 'push-staged',
       request: 'get',
       payload: clientId
     }),
 
-  pushProxyScript: (clientId: string): Promise<void> =>
-    sendCommand('CLIENT', {
+  pushProxyScript: async (clientId: string): Promise<void> =>
+    await sendCommand('CLIENT', {
       type: 'push-proxy-script',
       request: 'set',
       payload: clientId
     }),
 
-  handleClientCommand: (command: SocketData): Promise<void> => {
-    return sendCommand('CLIENT', {
+  handleClientCommand: async (command: SocketData): Promise<void> =>
+    await sendCommand('CLIENT', {
       type: 'run-device-command',
       request: 'set',
       payload: command
-    })
-  },
+    }),
 
   // Utility
 
-  ping: (): Promise<void> => {
-    return sendCommand('UTILITY', {
+  ping: async (): Promise<void> =>
+    await sendCommand('UTILITY', {
       type: 'ping',
       request: 'set',
       payload: undefined
-    })
-  },
+    }),
 
-  getConnections: (): Promise<Client[]> => {
-    return sendCommand<Client[]>('UTILITY', {
+  getConnections: async (): Promise<Client[]> =>
+    await sendCommand<Client[]>('UTILITY', {
       type: 'connections',
       request: 'get',
       payload: undefined
-    })
-  },
+    }),
 
-  getDevices: (): Promise<string[]> => {
-    return sendCommand<string[]>('UTILITY', {
+  getDevices: async (): Promise<string[]> =>
+    await sendCommand<string[]>('UTILITY', {
       type: 'devices',
       request: 'get',
       payload: undefined
-    })
-  },
+    }),
 
-  disconnectClient: (connectionId: string): Promise<void> => {
-    return sendCommand('UTILITY', {
+  disconnectClient: async (connectionId: string): Promise<void> =>
+    await sendCommand('UTILITY', {
       type: 'connections',
       request: 'delete',
       payload: connectionId
-    })
-  },
+    }),
 
-  saveSettings: (settings: Settings): Promise<void> => {
-    return sendCommand('UTILITY', {
+  saveSettings: async (settings: Settings): Promise<void> =>
+    await sendCommand('UTILITY', {
       type: 'settings',
       request: 'set',
       payload: settings
-    })
-  },
+    }),
 
-  getSettings: (): Promise<Settings> => {
-    return sendCommand('UTILITY', {
+  getSettings: async (): Promise<Settings> =>
+    await sendCommand('UTILITY', {
       type: 'settings',
       request: 'get',
       payload: undefined
-    })
-  },
+    }),
 
-  fetchGithub: (url: string): Promise<GithubRelease[]> => {
-    return sendCommand('UTILITY', {
+  fetchGithub: async (url: string): Promise<GithubRelease[]> =>
+    await sendCommand('UTILITY', {
       type: 'github',
       request: 'get',
       payload: url
-    })
-  },
+    }),
 
-  getLogs: (): Promise<Log[]> => {
-    return sendCommand('UTILITY', {
+  getLogs: async (): Promise<Log[]> =>
+    await sendCommand('UTILITY', {
       type: 'logs',
       request: 'get',
       payload: undefined
-    })
-  },
+    }),
 
-  getMappings: (): Promise<ButtonMapping> => {
-    return sendCommand('UTILITY', {
-      type: 'maps',
-      request: 'get',
-      payload: undefined
-    })
-  },
-
-  addProfile: (profile: string, baseProfile: string | undefined): Promise<ButtonMapping> => {
-    return sendCommand('UTILITY', {
-      type: 'maps',
-      request: 'get',
-      payload: { profile, baseProfile }
-    })
-  },
-
-  deleteProfile: (profile: string): Promise<ButtonMapping> => {
-    return sendCommand('UTILITY', {
-      type: 'maps',
-      request: 'delete',
-      payload: profile
-    })
-  },
-
-  shutdown: (): Promise<void> => {
-    return sendCommand('UTILITY', {
+  shutdown: async (): Promise<void> =>
+    await sendCommand('UTILITY', {
       type: 'shutdown',
       request: 'set',
       payload: undefined
-    })
-  },
+    }),
 
-  openLogsFolder: (): Promise<void> => {
-    return sendCommand('UTILITY', {
+  openLogsFolder: async (): Promise<void> =>
+    await sendCommand('UTILITY', {
       type: 'open-log-folder',
       request: 'set',
       payload: undefined
-    })
-  },
+    }),
 
-  selectZipFile: (): Promise<string | undefined> => {
-    return sendCommand('UTILITY', {
+  selectZipFile: async (): Promise<string | undefined> =>
+    await sendCommand('UTILITY', {
       type: 'zip',
       request: 'get',
       payload: undefined
-    })
-  },
+    }),
 
-  refreshFirewall: (): Promise<void> => {
-    return sendCommand('UTILITY', {
+  refreshFirewall: async (): Promise<void> =>
+    await sendCommand('UTILITY', {
       type: 'refresh-firewall',
       request: 'set',
       payload: undefined
-    })
-  },
+    }),
 
-  restartServer: (): Promise<void> => {
-    return sendCommand('UTILITY', {
+  restartServer: async (): Promise<void> =>
+    await sendCommand('UTILITY', {
       type: 'restart-server',
       request: 'set',
       payload: undefined
+    }),
+
+  getActions: async (): Promise<Action[]> =>
+    await sendCommand('UTILITY', {
+      type: 'actions',
+      request: 'get',
+      payload: undefined
+    }),
+
+  addAction: async (action: Action): Promise<void> =>
+    await sendCommand('UTILITY', {
+      type: 'actions',
+      request: 'set',
+      payload: action
+    }),
+
+  deleteAction: async (actionId: string): Promise<void> =>
+    await sendCommand('UTILITY', {
+      type: 'actions',
+      request: 'delete',
+      payload: actionId
+    }),
+
+  addButton: async (button: Button): Promise<void> =>
+    await sendCommand('UTILITY', {
+      type: 'buttons',
+      request: 'set',
+      payload: button
+    }),
+
+  deleteButton: async (button: Exclude<'action', Button>): Promise<void> =>
+    await sendCommand('UTILITY', {
+      type: 'buttons',
+      request: 'delete',
+      payload: button
+    }),
+
+  getKeys: async (): Promise<Key[]> =>
+    await sendCommand('UTILITY', {
+      type: 'keys',
+      request: 'get',
+      payload: undefined
+    }),
+
+  addKey: async (key: Key): Promise<void> =>
+    await sendCommand('UTILITY', {
+      type: 'keys',
+      request: 'set',
+      payload: key
+    }),
+
+  deleteKey: async (keyId: string): Promise<void> =>
+    await sendCommand('UTILITY', {
+      type: 'keys',
+      request: 'delete',
+      payload: keyId
+    }),
+
+  getProfiles: async (): Promise<Profile[]> =>
+    await sendCommand('UTILITY', {
+      type: 'profiles',
+      request: 'get',
+      payload: undefined
+    }),
+
+  getProfile: async (profileName: string): Promise<ButtonMapping> =>
+    await sendCommand('UTILITY', {
+      type: 'profiles',
+      request: 'get',
+      payload: profileName
+    }),
+
+  getIcon: async (action: Action | ActionReference): Promise<string> =>
+    await sendCommand('CLIENT', {
+      type: 'icon',
+      request: 'get',
+      payload: action
+    }),
+
+  saveProfile: async (profile: ButtonMapping): Promise<void> =>
+    await sendCommand('UTILITY', {
+      type: 'profiles',
+      request: 'set',
+      payload: profile
+    }),
+
+  addProfile: async (profile: Profile): Promise<void> =>
+    await sendCommand('UTILITY', {
+      type: 'profiles',
+      request: 'set',
+      payload: profile
+    }),
+
+  deleteProfile: async (profileName: string): Promise<void> =>
+    await sendCommand('UTILITY', {
+      type: 'profiles',
+      request: 'delete',
+      payload: profileName
+    }),
+
+  getCurrentProfile: async (): Promise<Profile> =>
+    await sendCommand('UTILITY', {
+      type: 'map',
+      request: 'get',
+      payload: undefined
+    }),
+
+  setCurrentProfile: async (profile: Profile): Promise<void> =>
+    await sendCommand('UTILITY', {
+      type: 'map',
+      request: 'set',
+      payload: profile
+    }),
+
+  runAction: async (action: Action | ActionReference): Promise<void> =>
+    await sendCommand('UTILITY', {
+      type: 'run',
+      request: 'set',
+      payload: action
     })
-  }
 }
 
 const sendCommand = <T>(handler: keyof typeof IPC_HANDLERS, payload: IPCData): Promise<T> =>

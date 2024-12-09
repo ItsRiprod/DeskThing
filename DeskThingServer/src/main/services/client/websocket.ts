@@ -1,3 +1,4 @@
+console.log('[ClientSocket Service] Starting')
 import WebSocket, { WebSocketServer } from 'ws'
 import { createServer, Server as HttpServer, IncomingMessage } from 'http'
 import loggingStore from '../../stores/loggingStore'
@@ -7,7 +8,8 @@ import {
   Client,
   ClientManifest,
   Settings,
-  SocketData
+  SocketData,
+  Action
 } from '@shared/types'
 import { addData } from '../../handlers/dataHandler'
 import { HandleDeviceData } from '../../handlers/deviceHandler'
@@ -26,9 +28,11 @@ import {
   sendError,
   sendMappings,
   sendMessageToClient,
+  sendMessageToClients,
   sendSettingsData
 } from './clientCom'
 import { sendIpcData } from '../..'
+import mappingStore from '../mappings/mappingStore'
 
 export let server: WebSocketServer | null = null
 export let httpServer: HttpServer
@@ -38,7 +42,7 @@ let currentPort
 let currentAddress
 
 const messageThrottles = new Map()
-const THROTTLE_DELAY = 100 // milliseconds
+const THROTTLE_DELAY = 300 // milliseconds
 
 export const restartServer = async (): Promise<void> => {
   try {
@@ -135,11 +139,12 @@ export const setupServer = async (): Promise<void> => {
   })
 
   // Handle incoming messages from the client
-  server.on('connection', async (socket: WebSocket, req: IncomingMessage) => {
+  server.on('connection', async (socket: WebSocket.WebSocket, req: IncomingMessage) => {
     // Handle the incoming connection and add it to the ConnectionStore
 
     // This is a bad way of handling and syncing clients
-    const clientIp = socket._socket.remoteAddress
+    const clientIp =
+      req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.connection.remoteAddress
 
     // Setup the initial client data
     loggingStore.log(
@@ -151,7 +156,7 @@ export const setupServer = async (): Promise<void> => {
     const client: Client = {
       ip: clientIp as string,
       connected: true,
-      port: socket._socket.remotePort,
+      port: req.socket.remotePort,
       timestamp: Date.now(),
       connectionId: crypto.randomUUID(), // The first and only time this is run
       userAgent: req.headers['user-agent'] || '',
@@ -177,7 +182,7 @@ export const setupServer = async (): Promise<void> => {
     sendMappings(client.connectionId)
     sendMessageToClient(client.connectionId, { app: 'client', type: 'get', request: 'manifest' })
 
-    socket.on('message', async (message) => {
+    socket.on('message', async (message: string) => {
       const messageData = JSON.parse(message) as SocketData
       loggingStore.log(
         MESSAGE_TYPES.LOGGING,
@@ -186,10 +191,18 @@ export const setupServer = async (): Promise<void> => {
       const messageKey = `${messageData.app}-${messageData.type}-${messageData.request}`
       const now = Date.now()
 
-      // Check throttle
+      /**
+       *
+       * Check throttle
+       * The purpose of the throttle is so when multiple clients are connected,
+       * they often send the same request at the same time (i.e. song at its end).
+       * As most, if not all, of these requests are burst to every client, they can be grouped together.
+       */
+      const alwaysAllow = ['get', 'set', 'update', 'delete']
       if (
         !messageThrottles.has(messageKey) ||
-        now - messageThrottles.get(messageKey) > THROTTLE_DELAY
+        now - messageThrottles.get(messageKey) > THROTTLE_DELAY ||
+        alwaysAllow.includes(messageData.type)
       ) {
         // Add the current request to the throttle map
         messageThrottles.set(messageKey, now)
@@ -221,6 +234,11 @@ export const setupServer = async (): Promise<void> => {
             messageThrottles.delete(key)
           }
         })
+      } else {
+        loggingStore.log(
+          MESSAGE_TYPES.DEBUG,
+          `WSOCKET: Throttling message for ${messageKey} for ${THROTTLE_DELAY}ms`
+        )
       }
     })
 
@@ -238,7 +256,11 @@ export const setupServer = async (): Promise<void> => {
   })
 }
 
-const handleServerMessage = (socket, client: Client, messageData: SocketData): void => {
+const handleServerMessage = async (
+  socket,
+  client: Client,
+  messageData: SocketData
+): Promise<void> => {
   try {
     if (messageData.app === 'server') {
       loggingStore.log(
@@ -264,6 +286,16 @@ const handleServerMessage = (socket, client: Client, messageData: SocketData): v
           case 'pong':
             loggingStore.log(MESSAGE_TYPES.LOGGING, 'Received pong from ', client.connectionId)
             sendIpcData(`pong-${client.connectionId}`, messageData.payload)
+            break
+          case 'ping':
+            loggingStore.log(MESSAGE_TYPES.LOGGING, 'Sent Ping', client.connectionId)
+            socket.send(
+              JSON.stringify({
+                type: 'pong',
+                app: 'client',
+                payload: new Date().toISOString()
+              })
+            )
             break
           case 'set':
             switch (messageData.request) {
@@ -324,6 +356,9 @@ const handleServerMessage = (socket, client: Client, messageData: SocketData): v
               ConnectionStore.updateClient(client.connectionId, client)
             }
             break
+          case 'action':
+            mappingStore.runAction(messageData.payload as Action)
+            break
           default:
             break
         }
@@ -337,10 +372,50 @@ const handleServerMessage = (socket, client: Client, messageData: SocketData): v
   }
 }
 
-settingsStore.addListener((newSettings: Settings) => {
-  if (currentPort !== newSettings.devicePort || currentAddress !== newSettings.address) {
-    restartServer()
-  } else {
-    loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: No settings changed!')
-  }
-})
+const setupListeners = async (): Promise<void> => {
+  setTimeout(() => {
+    settingsStore.addListener((newSettings: Settings) => {
+      if (currentPort !== newSettings.devicePort || currentAddress !== newSettings.address) {
+        restartServer()
+      } else {
+        loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: No settings changed!')
+      }
+    })
+
+    mappingStore.addListener('profile', (profile) => {
+      const actions = mappingStore.getActions()
+      const SocketData = {
+        type: 'button_mappings',
+        app: 'client',
+        payload: { ...profile, actions }
+      }
+
+      sendMessageToClients(SocketData)
+    })
+
+    mappingStore.addListener('action', (actions) => {
+      const profile = mappingStore.getMapping()
+      const SocketData = {
+        type: 'button_mappings',
+        app: 'client',
+        payload: { ...profile, actions }
+      }
+
+      sendMessageToClients(SocketData)
+    })
+
+    mappingStore.addListener('update', () => {
+      const profile = mappingStore.getMapping()
+      const actions = mappingStore.getActions()
+      const SocketData = {
+        type: 'button_mappings',
+        app: 'client',
+        payload: { ...profile, actions }
+      }
+
+      sendMessageToClients(SocketData)
+    })
+  }, 500)
+}
+
+setupListeners()

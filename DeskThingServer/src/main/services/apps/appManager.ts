@@ -1,3 +1,4 @@
+console.log('[AppMangr Service] Starting')
 import { rmSync, readdirSync, statSync, existsSync } from 'node:fs'
 import loggingStore from '../../stores/loggingStore'
 import { MESSAGE_TYPES } from '@shared/types'
@@ -70,7 +71,7 @@ export async function purgeApp(appName: string): Promise<void> {
 
     const { purgeAppData } = await import('../../handlers/dataHandler')
     const { purgeAppConfig } = await import('../../handlers/configHandler')
-    const keyMapStore = (await import('../../stores/keyMapStore')).default
+    const keyMapStore = (await import('../mappings/mappingStore')).default
 
     // Purge App Data
     await purgeAppData(appName)

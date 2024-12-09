@@ -1,12 +1,13 @@
 import { SettingOption } from '@shared/types'
 import React from 'react'
-import ReactSelect, { MultiValue, SingleValue } from 'react-select'
+import ReactSelect, { MenuPlacement, MultiValue, SingleValue } from 'react-select'
 
 interface SelectProps {
   options: SettingOption[]
   value: string[] | string
   isMulti?: boolean
   placeholder: string
+  menuPlacement?: MenuPlacement
   className?: string
   onChange: (value: SingleValue<SettingOption> | MultiValue<SettingOption>) => void
 }
@@ -14,6 +15,7 @@ const Select: React.FC<SelectProps> = ({
   options,
   isMulti,
   onChange,
+  menuPlacement,
   value,
   placeholder,
   className
@@ -90,6 +92,7 @@ const Select: React.FC<SelectProps> = ({
         options={options}
         className={className}
         isMulti={isMulti}
+        menuPlacement={menuPlacement}
         closeMenuOnSelect={!isMulti}
         styles={customStyles}
         placeholder={placeholder}

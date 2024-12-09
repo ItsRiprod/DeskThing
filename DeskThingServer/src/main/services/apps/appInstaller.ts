@@ -1,3 +1,4 @@
+console.log('[AppInst Service] Starting')
 import { join, resolve } from 'path'
 import { app } from 'electron'
 import loggingStore from '../../stores/loggingStore'

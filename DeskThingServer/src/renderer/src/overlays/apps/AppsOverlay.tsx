@@ -39,7 +39,6 @@ const AppsOverlay: React.FC = () => {
   const onClose = (): void => {
     searchParams.delete('app')
     searchParams.delete('appId')
-    searchParams.delete('page')
     setSearchParams(searchParams)
   }
 

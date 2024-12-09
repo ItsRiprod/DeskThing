@@ -12,15 +12,15 @@ const ClientDataListener = (): null => {
   const addTask = useNotificationStore((state) => state.addTask)
 
   useEffect(() => {
-    window.electron.ipcRenderer.on('clients', (_event, data) => {
+    window.electron.ipcRenderer.on('clients', async (_event, data) => {
       setClients(data.data)
     })
 
-    window.electron.ipcRenderer.on('connections', (_event, data) => {
+    window.electron.ipcRenderer.on('connections', async (_event, data) => {
       setConnections(data.data)
     })
 
-    window.electron.ipcRenderer.on('adbdevices', (_event, data) => {
+    window.electron.ipcRenderer.on('adbdevices', async (_event, data) => {
       setAdbDevices(data.data)
     })
 

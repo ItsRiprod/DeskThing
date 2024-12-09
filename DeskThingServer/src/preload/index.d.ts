@@ -1,5 +1,14 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
-import { AppDataInterface, AppReturnData, Client, ClientManifest, Log } from '@shared/types'
+import {
+  ActionReference,
+  AppDataInterface,
+  AppReturnData,
+  ButtonMapping,
+  Client,
+  ClientManifest,
+  Log,
+  Profile
+} from '@shared/types'
 
 type AppData = { [key: string]: string }
 
@@ -39,14 +48,34 @@ declare global {
       getSettings: () => Promise<Settings>
       fetchGithub: (url: string) => Promise<GithubRelease[]>
       getLogs: () => Promise<Log[]>
-      getMappings: () => Promise<ButtonMapping>
-      addProfile: (profile: string, baseProfile?: string) => Promise<ButtonMapping>
-      deleteProfile: (profile: string) => Promise<ButtonMapping>
       shutdown: () => Promise<void>
       openLogsFolder: () => Promise<void>
       selectZipFile: () => Promise<string | undefined>
       refreshFirewall: () => Promise<void>
       restartServer: () => Promise<void>
+
+      getActions: () => Promise<Action[]>
+      addAction: (action: Action) => Promise<void>
+      deleteAction: (actionId: string) => Promise<void>
+
+      addButton: (button: Button) => Promise<void>
+      deleteButton: (button: Exclude<'action', Button>) => Promise<void>
+
+      getKeys: () => Promise<Key[]>
+      addKey: (key: Key) => Promise<void>
+      deleteKey: (keyId: string) => Promise<void>
+
+      getIcon: (action: Action | ActionReference) => Promise<string>
+
+      getProfiles: () => Promise<Profile[]>
+      getProfile: (profileName: string) => Promise<ButtonMapping>
+      getCurrentProfile: () => Promise<Profile>
+      setCurrentProfile: (profile: Profile) => Promise<void>
+      addProfile: (profile: Profile) => Promise<void>
+      saveProfile: (profile: ButtonMapping) => Promise<void>
+      deleteProfile: (profile: string) => Promise<void>
+
+      runAction: (action: Action | ActionReference) => Promise<void>
     }
     api: unknown // Or define `api` more specifically if you have a shape for it
   }
