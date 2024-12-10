@@ -72,6 +72,7 @@ export interface Manifest {
   isLocalApp: boolean
   platforms: Array<string>
   homepage?: string
+  iconUrl: string
   repository?: string
 }
 
