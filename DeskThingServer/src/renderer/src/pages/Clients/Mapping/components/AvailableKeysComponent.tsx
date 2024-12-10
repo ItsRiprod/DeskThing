@@ -49,7 +49,7 @@ const AvailableKeys: React.FC<AvailableKeysProps> = ({
                 handleKeyPress={handleModeClick}
                 Key={key}
                 currentKey={currentKey}
-                action={currentMapping.mapping[key.id][mode]}
+                action={currentMapping.mapping[key.id]?.[mode || EventMode.KeyDown] || undefined}
               />
             ))}
           </div>
