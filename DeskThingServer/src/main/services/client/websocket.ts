@@ -41,6 +41,8 @@ export const Clients: { client: Client; socket }[] = []
 let currentPort
 let currentAddress
 
+const alwaysAllow = ['preferences', 'ping', 'pong', 'manifest']
+
 const messageThrottles = new Map()
 const THROTTLE_DELAY = 300 // milliseconds
 
@@ -198,7 +200,7 @@ export const setupServer = async (): Promise<void> => {
        * they often send the same request at the same time (i.e. song at its end).
        * As most, if not all, of these requests are burst to every client, they can be grouped together.
        */
-      const alwaysAllow = ['get', 'set', 'update', 'delete']
+
       if (
         !messageThrottles.has(messageKey) ||
         now - messageThrottles.get(messageKey) > THROTTLE_DELAY ||

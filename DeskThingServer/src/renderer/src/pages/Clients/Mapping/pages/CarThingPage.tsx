@@ -44,14 +44,14 @@ const CarThingPage: React.FC<PageProps> = ({
       <div className="flex -translate-x-12 flex-col h-1/3 items-center justify-center aspect-square">
         <div className="flex w-full h-full items-center justify-center">
           <Button
-            className={`flex hover:bg-zinc-700 items-center justify-center rounded-lg p-3 ${mode == EventMode.SwipeUp ? 'bg-zinc-800' : 'bg-zinc-900'}`}
-            onClick={() => onPress('Swipe', EventMode.SwipeUp)}
+            className={`flex hover:bg-zinc-700 items-center justify-center rounded-lg p-3 ${mode == EventMode.SwipeDown ? 'bg-zinc-800' : 'bg-zinc-900'}`}
+            onClick={() => onPress('Swipe', EventMode.SwipeDown)}
           >
             <ActionIcon
               className="w-fit h-fit"
               action={
                 currentMapping && miniplayerKeys.length > 0
-                  ? currentMapping.mapping['Swipe'][EventMode.SwipeUp]
+                  ? currentMapping.mapping['Swipe'][EventMode.SwipeDown]
                   : undefined
               }
             />
@@ -87,14 +87,14 @@ const CarThingPage: React.FC<PageProps> = ({
         </div>
         <div className="flex w-full h-full items-center justify-center">
           <Button
-            className={`flex hover:bg-zinc-700 items-center justify-center rounded-lg p-3 ${mode == EventMode.SwipeDown ? 'bg-zinc-800' : 'bg-zinc-900'}`}
-            onClick={() => onPress('Swipe', EventMode.SwipeDown)}
+            className={`flex hover:bg-zinc-700 items-center justify-center rounded-lg p-3 ${mode == EventMode.SwipeUp ? 'bg-zinc-800' : 'bg-zinc-900'}`}
+            onClick={() => onPress('Swipe', EventMode.SwipeUp)}
           >
             <ActionIcon
               className="w-fit h-fit"
               action={
                 currentMapping && miniplayerKeys.length > 0
-                  ? currentMapping.mapping['Swipe'][EventMode.SwipeDown]
+                  ? currentMapping.mapping['Swipe'][EventMode.SwipeUp]
                   : undefined
               }
             />
