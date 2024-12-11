@@ -1,5 +1,7 @@
 console.log('[ClientUtils Service] Starting')
+import loggingStore from '@server/stores/loggingStore'
 import { sendMessageToClients } from './clientCom'
+import { MESSAGE_TYPES } from '@shared/types'
 
 const getDelayToNextMinute = async (): Promise<number> => {
   const now = new Date()
@@ -24,13 +26,16 @@ export const getDeviceType = (userAgent: string | undefined): { id: number; name
 
 export const sendTime = async (): Promise<void> => {
   const now = new Date()
-  const utcTime = now.getTime() // UTC time in milliseconds
+  const utcTime = Date.now() // UTC time in milliseconds
   const timezoneOffset = now.getTimezoneOffset() * -1 // Offset in minutes (server's timezone)
 
   const data = {
     utcTime, // UTC timestamp
     timezoneOffset // Timezone offset in minutes
   }
+
+  loggingStore.log(MESSAGE_TYPES.DEBUG, 'Sending time:' + JSON.stringify(data))
+
   sendMessageToClients({ app: 'client', type: 'set', request: 'time', payload: data })
 }
 
