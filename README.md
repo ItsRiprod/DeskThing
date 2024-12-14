@@ -4,7 +4,6 @@
 ![image](https://github.com/user-attachments/assets/4f4ee062-14df-49df-968a-d196746ef80f)
 ![image](https://github.com/user-attachments/assets/5fbf8e30-e468-424e-bad4-b6a4b656feb4)
 
-
  > ❔[Reddit Link](https://reddit.com/r/DeskThing)
 
  > 📃[Trello Board](https://trello.com/b/6v0paxqV/deskthing)
@@ -268,3 +267,9 @@ Good luck!
 
 
 </details>
+
+*DeskThing wouldn't be possible without our sponsors*
+
+![helium-badge](https://github.com/user-attachments/assets/f0256b3a-0a96-4ba9-ba8d-7c0a45aa0d68)
+
+*Want to support deskthing? You can [here!](https://deskthing.app/support)*
