@@ -9,6 +9,7 @@ import { SettingsRankedComponent } from './SettingsRanked'
 import { SettingsSelectComponent } from './SettingsSelect'
 import { SettingsStringComponent } from './SettingsString'
 import { SettingsColorComponent } from './SettingsColor'
+import { SettingsDynamicComponent } from './SettingDynamic'
 
 export interface SettingsProps {
   setting: SettingsType
@@ -16,7 +17,7 @@ export interface SettingsProps {
   className?: string
 }
 
-const SETTINGS_COMPONENTS: {
+export const SETTINGS_COMPONENTS: {
   [K in SettingsType['type']]: React.ComponentType<{
     setting: SettingsType & { type: K }
     handleSettingChange: (value: SettingsOutputValue) => void
@@ -31,7 +32,8 @@ const SETTINGS_COMPONENTS: {
   ranked: SettingsRankedComponent,
   select: SettingsSelectComponent,
   string: SettingsStringComponent,
-  color: SettingsColorComponent
+  color: SettingsColorComponent,
+  dynamic: SettingsDynamicComponent
 } as const
 
 export const Settings: React.FC<SettingsProps> = ({ setting, className, handleSettingChange }) => {
