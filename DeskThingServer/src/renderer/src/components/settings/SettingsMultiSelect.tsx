@@ -1,12 +1,12 @@
 import React from 'react'
 import SettingComponent from './SettingComponent'
-import { SettingOption, SettingsMultiSelect } from '@shared/types'
+import { SettingOption, SettingsMultiSelect, SettingsOutputValue } from '@shared/types'
 import Select from '../Select'
 import { MultiValue } from 'react-select'
 
 interface SettingsMultiSelectProps {
   setting: SettingsMultiSelect
-  handleSettingChange: (value: number | boolean | string | string[]) => void
+  handleSettingChange: (value: SettingsOutputValue) => void
   className?: string
 }
 

@@ -224,6 +224,8 @@ export type SettingsType =
   | SettingsColor
   | SettingsDynamic
 
+export type SettingsOutputValue = number | boolean | string | string[] | DynamicSettingsValue
+
 export interface AppSettings {
   [key: string]: SettingsType
 }

@@ -1,10 +1,10 @@
 import React from 'react'
 import SettingComponent from './SettingComponent'
-import { SettingsNumber } from '@shared/types'
+import { SettingsNumber, SettingsOutputValue } from '@shared/types'
 
 interface SettingsNumberProps {
   setting: SettingsNumber
-  handleSettingChange: (value: number | boolean | string | string[]) => void
+  handleSettingChange: (value: SettingsOutputValue) => void
   className?: string
 }
 

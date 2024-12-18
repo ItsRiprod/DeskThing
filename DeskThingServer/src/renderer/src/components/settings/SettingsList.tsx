@@ -1,11 +1,11 @@
 import React from 'react'
 import SettingComponent from './SettingComponent'
-import { SettingsList } from '@shared/types'
+import { SettingsList, SettingsOutputValue } from '@shared/types'
 import TagList from '../TagList'
 
 interface SettingsListProps {
   setting: SettingsList
-  handleSettingChange: (value: number | boolean | string | string[]) => void
+  handleSettingChange: (value: SettingsOutputValue) => void
   className?: string
 }
 

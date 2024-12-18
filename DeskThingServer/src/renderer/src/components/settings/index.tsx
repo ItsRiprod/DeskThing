@@ -1,5 +1,5 @@
 import React from 'react'
-import { SettingsType } from '@shared/types'
+import { SettingsOutputValue, SettingsType } from '@shared/types'
 import { SettingsBooleanComponent } from './SettingsBoolean'
 import { SettingsListComponent } from './SettingsList'
 import { SettingsMultiSelectComponent } from './SettingsMultiSelect'
@@ -12,14 +12,14 @@ import { SettingsColorComponent } from './SettingsColor'
 
 export interface SettingsProps {
   setting: SettingsType
-  handleSettingChange: (value: number | boolean | string | string[]) => void
+  handleSettingChange: (value: SettingsOutputValue) => void
   className?: string
 }
 
 const SETTINGS_COMPONENTS: {
   [K in SettingsType['type']]: React.ComponentType<{
     setting: SettingsType & { type: K }
-    handleSettingChange: (value: number | boolean | string | string[]) => void
+    handleSettingChange: (value: SettingsOutputValue) => void
     className?: string
   }>
 } = {
@@ -37,7 +37,7 @@ const SETTINGS_COMPONENTS: {
 export const Settings: React.FC<SettingsProps> = ({ setting, className, handleSettingChange }) => {
   const SettingComponent = SETTINGS_COMPONENTS[setting.type] as React.ComponentType<{
     setting: SettingsType
-    handleSettingChange: (value: number | boolean | string | string[]) => void
+    handleSettingChange: (value: SettingsOutputValue) => void
     className?: string
   }>
   return SettingComponent ? (
