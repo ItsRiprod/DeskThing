@@ -103,6 +103,7 @@ interface SettingsBase {
     | 'select'
     | 'string'
     | 'color'
+    | 'dynamic'
   label: string
   description?: string
 }
@@ -195,6 +196,22 @@ export interface SettingsColor extends SettingsBase {
   placeholder?: string
 }
 
+export interface SettingsDynamic extends SettingsBase {
+  type: 'dynamic'
+  value: DynamicSettingsValue
+  options: SettingsTypeWithoutDynamic[]
+  label: string
+  description?: string
+}
+
+export type DynamicSettingsValue = Record<
+  SettingsTypeWithoutDynamic['label'],
+  SettingsTypeWithoutDynamic['value']
+>[]
+
+// NOTE: Exclude dynamic setting as option as we don't want nested dynamic settings
+export type SettingsTypeWithoutDynamic = Exclude<SettingsType, SettingsDynamic>
+
 export type SettingsType =
   | SettingsNumber
   | SettingsBoolean
@@ -205,6 +222,9 @@ export type SettingsType =
   | SettingsRanked
   | SettingsList
   | SettingsColor
+  | SettingsDynamic
+
+export type SettingsOutputValue = number | boolean | string | string[] | DynamicSettingsValue
 
 export interface AppSettings {
   [key: string]: SettingsType

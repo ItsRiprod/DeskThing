@@ -1,66 +1,102 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react'
+import React, { useEffect, useReducer, useCallback } from 'react'
 import { useAppStore } from '@renderer/stores'
-import { AppDataInterface } from '@shared/types'
+import { AppDataInterface, SettingsOutputValue, SettingsType } from '@shared/types'
 import { AppSettingProps } from './AppsOverlay'
 import Button from '@renderer/components/Button'
 import { IconLoading, IconSave } from '@renderer/assets/icons'
 import Settings from '@renderer/components/settings'
 
+type SettingsState = {
+  settings: Map<string, SettingsType>
+  loaded: boolean
+  loading: boolean
+}
+
+type SettingsAction =
+  | { type: 'INIT_SETTINGS'; payload: AppDataInterface | null }
+  | { type: 'UPDATE_SETTING'; payload: { key: string; value: SettingsOutputValue } }
+  | { type: 'SET_LOADING'; payload: boolean }
+
+function settingsReducer(state: SettingsState, action: SettingsAction): SettingsState {
+  switch (action.type) {
+    case 'INIT_SETTINGS': {
+      if (!action.payload) {
+        return {
+          ...state
+        }
+      }
+
+      const settingsMap = new Map(Object.entries(action.payload.settings || {}))
+      return {
+        ...state,
+        settings: settingsMap,
+        loaded: true
+      }
+    }
+    case 'UPDATE_SETTING': {
+      const newSettings = new Map(state.settings)
+      const currentSetting = newSettings.get(action.payload.key)
+      if (currentSetting) {
+        newSettings.set(action.payload.key, {
+          ...currentSetting,
+          value: action.payload.value
+        } as Extract<SettingsType, { type: typeof currentSetting.type }>)
+      }
+      return {
+        ...state,
+        settings: newSettings
+      }
+    }
+    case 'SET_LOADING':
+      return {
+        ...state,
+        loading: action.payload
+      }
+    default:
+      return state
+  }
+}
+
 const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
   const getAppData = useAppStore((state) => state.getAppData)
   const saveAppData = useAppStore((state) => state.setAppData)
-  const [appData, setAppData] = useState<AppDataInterface | null>(null)
-  const [loading, setLoading] = useState(false)
+
+  const [state, dispatch] = useReducer(settingsReducer, {
+    settings: new Map(),
+    loaded: false,
+    loading: false
+  })
 
   useEffect(() => {
     const fetchAppData = async (): Promise<void> => {
       const data = await getAppData(app.name)
-      setAppData(data)
+      dispatch({ type: 'INIT_SETTINGS', payload: data })
     }
     fetchAppData()
   }, [app.name, getAppData])
 
-  const handleSettingChange = useCallback(
-    (key: string, value: string | number | boolean | string[] | boolean[]) => {
-      console.log('Setting changed:', key, value)
-      setAppData((prev) =>
-        prev && prev.settings
-          ? {
-              ...prev,
-              settings: {
-                ...prev.settings,
-                [key]: {
-                  ...prev.settings[key],
-                  // It had to be this way... The way that the type expects a specific value for each type of object means that this can only be every type of value but only one at a time. We have no way of knowing which type of setting it is.
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  value: value as any
-                }
-              }
-            }
-          : prev
-      )
-    },
-    []
-  )
-
-  const settingsEntries = useMemo(
-    () => (appData?.settings ? Object.entries(appData.settings) : []),
-    [appData]
-  )
+  const handleSettingChange = useCallback((key: string, value: SettingsOutputValue) => {
+    dispatch({ type: 'UPDATE_SETTING', payload: { key, value } })
+  }, [])
 
   const onSaveClick = async (): Promise<void> => {
-    if (!appData) return
-    setLoading(true)
+    dispatch({ type: 'SET_LOADING', payload: true })
     try {
-      await saveAppData(app.name, appData)
+      const appData: AppDataInterface = {
+        ...(await getAppData(app.name)),
+        settings: Object.fromEntries(state.settings)
+      }
+
+      saveAppData(app.name, appData)
     } catch (error) {
       console.error('Error saving app data:', error)
     }
-
-    await setTimeout(() => {
-      setLoading(false)
+    setTimeout(() => {
+      dispatch({ type: 'SET_LOADING', payload: false })
     }, 500)
   }
+
+  const settingsEntries = Array.from(state.settings.entries())
 
   return (
     <div className="w-full h-full p-6 flex flex-col">
@@ -73,15 +109,16 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
       ))}
       <div className="border-t mt-4 py-5 border-gray-900 w-full flex justify-end">
         <Button
-          className={`border-green-500 border group gap-2 ${loading ? 'text-gray-100 bg-green-600' : 'hover:bg-green-500'}`}
+          className={`border-green-500 border group gap-2 ${state.loading ? 'text-gray-100 bg-green-600' : 'hover:bg-green-500'}`}
           onClick={onSaveClick}
-          disabled={loading}
+          disabled={state.loading}
         >
-          {loading ? <IconLoading /> : <IconSave className="stroke-2" />}
-          <p>{loading ? 'Saving' : 'Save'}</p>
+          {state.loading ? <IconLoading /> : <IconSave className="stroke-2" />}
+          <p>{state.loading ? 'Saving' : 'Save'}</p>
         </Button>
       </div>
     </div>
   )
 }
+
 export default AppSettings

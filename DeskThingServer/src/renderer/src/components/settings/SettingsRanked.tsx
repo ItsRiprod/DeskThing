@@ -1,11 +1,11 @@
 import React from 'react'
 import SettingComponent from './SettingComponent'
-import { SettingsRanked } from '@shared/types'
+import { SettingsOutputValue, SettingsRanked } from '@shared/types'
 import RankableList from '../RankableList'
 
 interface SettingsRankedProps {
   setting: SettingsRanked
-  handleSettingChange: (value: number | boolean | string | string[]) => void
+  handleSettingChange: (value: SettingsOutputValue) => void
   className?: string
 }
 

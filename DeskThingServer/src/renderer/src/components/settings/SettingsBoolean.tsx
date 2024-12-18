@@ -1,12 +1,12 @@
 import React from 'react'
 import SettingComponent from './SettingComponent'
-import { SettingsBoolean } from '@shared/types'
+import { SettingsBoolean, SettingsOutputValue } from '@shared/types'
 import Button from '../Button'
 import { IconToggle } from '@renderer/assets/icons'
 
 interface SettingsBooleanProps {
   setting: SettingsBoolean
-  handleSettingChange: (value: number | boolean | string | string[]) => void
+  handleSettingChange: (value: SettingsOutputValue) => void
   className?: string
 }
 

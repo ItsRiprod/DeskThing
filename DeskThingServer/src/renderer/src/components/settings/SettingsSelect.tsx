@@ -1,12 +1,12 @@
 import React from 'react'
 import SettingComponent from './SettingComponent'
-import { SettingOption, SettingsSelect } from '@shared/types'
+import { SettingOption, SettingsOutputValue, SettingsSelect } from '@shared/types'
 import { SingleValue } from 'react-select'
 import Select from '../Select'
 
 interface SettingsSelectProps {
   setting: SettingsSelect
-  handleSettingChange: (value: number | boolean | string | string[]) => void
+  handleSettingChange: (value: SettingsOutputValue) => void
   className?: string
 }
 

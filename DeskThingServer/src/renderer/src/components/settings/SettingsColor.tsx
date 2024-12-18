@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import SettingComponent from './SettingComponent'
-import { SettingsColor } from '@shared/types'
+import { SettingsColor, SettingsOutputValue } from '@shared/types'
 
 interface SettingsColorProps {
   setting: SettingsColor
-  handleSettingChange: (value: number | boolean | string | string[]) => void
+  handleSettingChange: (value: SettingsOutputValue) => void
   className?: string
 }
 
