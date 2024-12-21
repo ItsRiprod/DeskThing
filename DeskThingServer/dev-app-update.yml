@@ -1,3 +1,5 @@
-provider: generic
-url: https://example.com/auto-updates
-updaterCacheDirName: deskthing-updater
+provider: github
+owner: ItsRiprod
+repo: DeskThing
+updaterCacheDirName: deskthing
+disableWebInstaller: true
