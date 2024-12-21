@@ -71,5 +71,103 @@
     "typescript": "^5.3.3",
     "vite": "^5.0.12",
     "vitest": "^2.1.8"
+  },
+  "build": {
+    "appId": "com.deskthing.app",
+    "productName": "DeskThing",
+    "directories": {
+      "buildResources": "build"
+    },
+    "afterSign": "build/notarize.js",
+    "files": [
+      "!**/.vscode/*",
+      "!src/*",
+      "!electron.vite.config.{js,ts,mjs,cjs}",
+      "!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}",
+      "!{.env,.env.*,.npmrc,pnpm-lock.yaml}",
+      "!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}"
+    ],
+    "asarUnpack": [
+      "resources/**",
+      "bin/**",
+      "!resources/{,/**/}*.{h,hpp,cpp,cc,cxx}"
+    ],
+    "protocols": [
+      {
+        "name": "DeskThing Protocol",
+        "schemes": [
+          "deskthing"
+        ]
+      }
+    ],
+    "win": {
+      "verifyUpdateCodeSignature": false,
+      "executableName": "DeskThing",
+      "artifactName": "${name}-${os}-${version}-setup.${ext}",
+      "publisherName": "Riprod",
+      "extraFiles": [
+        {
+          "from": "adb_source/win",
+          "to": "resources/win"
+        }
+      ]
+    },
+    "nsis": {
+      "artifactName": "${name}-${os}-${version}-setup.${ext}",
+      "shortcutName": "${productName}",
+      "uninstallDisplayName": "${productName}",
+      "createDesktopShortcut": "always",
+      "oneClick": true,
+      "perMachine": false
+    },
+    "mac": {
+      "gatekeeperAssess": false,
+      "hardenedRuntime": true,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "extendInfo": {
+        "NSAppleEventsUsageDescription": "This app requires access to send Apple Events to communicate with other applications.",
+        "NSMicrophoneUsageDescription": "This app requires microphone access to record audio."
+      },
+      "notarize": false,
+      "category": "public.app-category.developer-tools",
+      "extraFiles": [
+        {
+          "from": "adb_source/mac",
+          "to": "resources/mac"
+        }
+      ]
+    },
+    "dmg": {
+      "sign": false,
+      "artifactName": "${name}-${os}-${arch}-${version}-setup.${ext}"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "maintainer": "Riprod",
+      "category": "Utility",
+      "extraFiles": [
+        {
+          "from": "adb_source/linux",
+          "to": "resources/linux"
+        }
+      ]
+    },
+    "appImage": {
+      "artifactName": "${name}-${os}-${version}-setup.${ext}"
+    },
+    "npmRebuild": false,
+    "publish": {
+      "provider": "github",
+      "owner": "ItsRiprod",
+      "repo": "DeskThing",
+      "releaseType": "release"
+    }
+  },
+  "electronDownload": {
+    "mirror": "https://npmmirror.com/mirrors/electron/"
   }
 }
