@@ -24,8 +24,7 @@ type RequestHandler = {
  * Handles data received from an app.
  *
  * @param {string} app - The name of the app sending the data.
- * @param {string} type - The type of data or action requested.
- * @param {...any[]} args - Additional arguments related to the data or action.
+ * @param {IncomingData} appData - The type of data or action requested.
  */
 export async function handleDataFromApp(app: string, appData: IncomingData): Promise<void> {
   if (appData.type in IncomingAppDataTypes) {
@@ -40,6 +39,12 @@ export async function handleDataFromApp(app: string, appData: IncomingData): Pro
   }
 }
 
+/**
+ * Logs a warning message when an app sends an unknown data type or request.
+ *
+ * @param {string} app - The name of the app that sent the unknown data.
+ * @param {IncomingData} appData - The data received from the app.
+ */
 const handleRequestMissing: HandlerFuncton = (app, appData) => {
   loggingStore.log(
     MESSAGE_TYPES.WARNING,
@@ -48,16 +53,36 @@ const handleRequestMissing: HandlerFuncton = (app, appData) => {
   )
 }
 
+/**
+ * Handles a request to set data for an app.
+ *
+ * @param {string} app - The name of the app requesting the data set.
+ * @param {any} appData - The payload data to be set.
+ * @returns {Promise<void>} - A Promise that resolves when the data has been set.
+ */
 const handleRequestSet: HandlerFuncton = async (app, appData) => {
   const { setData } = await import('@server/services/files/dataService')
   setData(app, appData.payload)
 }
 
+/**
+ * Handles a request to open an authentication window.
+ *
+ * @param {any} appData - The payload data containing information for the authentication window.
+ * @returns {Promise<void>} - A Promise that resolves when the authentication window has been opened.
+ */
 const handleRequestOpen: HandlerFuncton = async (_app, appData) => {
   const { openAuthWindow } = await import('@server/index')
   openAuthWindow(appData.payload)
 }
 
+/**
+ * Handles a request to log data from an app.
+ *
+ * @param {string} app - The name of the app that sent the log request.
+ * @param {IncomingData} appData - The data received from the app, including the log type and payload.
+ * @returns {void}
+ */
 const handleRequestLog: HandlerFuncton = (app, appData) => {
   if (appData.request && Object.values(MESSAGE_TYPES).includes(appData.request as MESSAGE_TYPES)) {
     loggingStore.log(appData.request as MESSAGE_TYPES, appData.payload, app)
@@ -69,6 +94,13 @@ const handleRequestLog: HandlerFuncton = (app, appData) => {
     )
   }
 }
+/**
+ * Handles a request to add a new key to the key map store.
+ *
+ * @param {string} app - The name of the app requesting the key addition.
+ * @param {any} appData - The payload data containing the key information to be added.
+ * @returns {Promise<void>} - A Promise that resolves when the key has been added.
+ */
 const handleRequestKeyAdd: HandlerFuncton = async (app, appData): Promise<void> => {
   const { default: keyMapStore } = await import('@server/services/mappings/mappingStore')
   try {
@@ -93,6 +125,13 @@ const handleRequestKeyAdd: HandlerFuncton = async (app, appData): Promise<void> 
     loggingStore.log(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: ${Error}`)
   }
 }
+/**
+ * Handles a request to remove a key from the key map store.
+ *
+ * @param {string} app - The name of the app requesting the key removal.
+ * @param {any} appData - The payload data containing the ID of the key to be removed.
+ * @returns {Promise<void>} - A Promise that resolves when the key has been removed.
+ */
 const handleRequestKeyRemove: HandlerFuncton = async (app, appData): Promise<void> => {
   const { default: keyMapStore } = await import('@server/services/mappings/mappingStore')
   keyMapStore.removeKey(appData.payload.id)
@@ -102,6 +141,13 @@ const handleRequestKeyRemove: HandlerFuncton = async (app, appData): Promise<voi
     app.toUpperCase()
   )
 }
+/**
+ * Handles a request to trigger a key in the key map store.
+ *
+ * @param {string} app - The name of the app requesting the key trigger.
+ * @param {any} appData - The payload data containing the ID and mode of the key to be triggered.
+ * @returns {Promise<void>} - A Promise that resolves when the key has been triggered.
+ */
 const handleRequestKeyTrigger: HandlerFuncton = async (app, appData): Promise<void> => {
   const { default: keyMapStore } = await import('@server/services/mappings/mappingStore')
   if (appData.payload.id && appData.payload.mode) {
@@ -114,6 +160,13 @@ const handleRequestKeyTrigger: HandlerFuncton = async (app, appData): Promise<vo
     )
   }
 }
+/**
+ * Handles a request to run an action in the key map store.
+ *
+ * @param {string} app - The name of the app requesting the action run.
+ * @param {any} appData - The payload data containing the ID of the action to be run.
+ * @returns {Promise<void>} - A Promise that resolves when the action has been run.
+ */
 const handleRequestActionRun: HandlerFuncton = async (app, appData): Promise<void> => {
   const { default: keyMapStore } = await import('@server/services/mappings/mappingStore')
   if (appData.payload.id) {
@@ -126,6 +179,13 @@ const handleRequestActionRun: HandlerFuncton = async (app, appData): Promise<voi
     )
   }
 }
+/**
+ * Handles a request to update the icon of an action in the key map store.
+ *
+ * @param {string} app - The name of the app requesting the action icon update.
+ * @param {any} appData - The payload data containing the ID of the action and the new icon.
+ * @returns {Promise<void>} - A Promise that resolves when the action icon has been updated.
+ */
 const handleRequestActionUpdate: HandlerFuncton = async (app, appData): Promise<void> => {
   const { default: keyMapStore } = await import('@server/services/mappings/mappingStore')
   if (appData.payload.id) {
@@ -138,6 +198,13 @@ const handleRequestActionUpdate: HandlerFuncton = async (app, appData): Promise<
     )
   }
 }
+/**
+ * Handles a request to remove an action from the key map store.
+ *
+ * @param {string} app - The name of the app requesting the action removal.
+ * @param {any} appData - The payload data containing the ID of the action to be removed.
+ * @returns {Promise<void>} - A Promise that resolves when the action has been removed.
+ */
 const handleRequestActionRemove: HandlerFuncton = async (app, appData): Promise<void> => {
   const { default: keyMapStore } = await import('@server/services/mappings/mappingStore')
   keyMapStore.removeAction(appData.payload.id)
@@ -147,6 +214,13 @@ const handleRequestActionRemove: HandlerFuncton = async (app, appData): Promise<
     app.toUpperCase()
   )
 }
+/**
+ * Handles a request to add a new action to the key map store.
+ *
+ * @param {string} app - The name of the app requesting the action addition.
+ * @param {any} appData - The payload data containing the details of the action to be added.
+ * @returns {Promise<void>} - A Promise that resolves when the action has been added.
+ */
 const handleRequestActionAdd: HandlerFuncton = async (app, appData): Promise<void> => {
   const { default: keyMapStore } = await import('@server/services/mappings/mappingStore')
   try {
@@ -176,11 +250,64 @@ const handleRequestActionAdd: HandlerFuncton = async (app, appData): Promise<voi
     loggingStore.log(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: ${Error}`)
   }
 }
+
+/**
+ * Handles a request to retrieve data for a specific app.
+ *
+ * @param {string} app - The name of the app requesting the data.
+ * @returns {Promise<void>} - A Promise that resolves when the data has been sent to the app.
+ */
+const handleRequestGetData: HandlerFuncton = async (app): Promise<void> => {
+  const { getData } = await import('../files/dataService')
+
+  const data = await getData(app)
+
+  sendMessageToApp(app, { type: 'data', payload: data })
+}
+
+const handleRequestGetConfig: HandlerFuncton = async (app): Promise<void> => {
+  sendMessageToApp(app, { type: 'config', payload: {} })
+  loggingStore.log(
+    MESSAGE_TYPES.ERROR,
+    `[handleAppData]: ${app} tried accessing "Config" data type which is depreciated and no longer in use!`
+  )
+}
+
+/**
+ * Handles a request to retrieve the settings for a specific app.
+ *
+ * @param {string} app - The name of the app requesting the settings.
+ * @returns {Promise<void>} - A Promise that resolves when the settings have been sent to the app.
+ */
+const handleRequestGetSettings: HandlerFuncton = async (app): Promise<void> => {
+  const { default: settingsStore } = await import('@server/stores/settingsStore')
+  const settings = await settingsStore.getSettings()
+  sendMessageToApp(app, { type: 'settings', payload: settings })
+}
+
+/**
+ * Handles a request to retrieve input data for a specific app.
+ *
+ * This function sends an IPC message to the renderer process to display a form and request user data. Once the user data is received, it is sent back to the app via a message.
+ *
+ * @param {string} app - The name of the app requesting the input data.
+ * @param {object} appData - Additional data associated with the request.
+ * @returns {Promise<void>} - A Promise that resolves when the input data has been sent to the app.
+ */
+const handleRequestGetInput: HandlerFuncton = async (app, appData) => {
+  // Send IPC message to renderer to display the form
+  sendIpcAuthMessage('request-user-data', app, appData.payload)
+
+  ipcMain.once(`user-data-response-${app}`, async (_event, formData) => {
+    sendMessageToApp(app, { type: 'input', payload: formData })
+  })
+}
+
 const handleGet = {
-  data: (): void => {},
-  config: (): void => {},
-  settings: (): void => {},
-  input: (): void => {}
+  data: handleRequestGetData,
+  config: handleRequestGetConfig,
+  settings: handleRequestGetSettings,
+  input: handleRequestGetInput
 }
 const handleSet: RequestHandler = {
   default: handleRequestSet
@@ -189,10 +316,44 @@ const handleOpen: RequestHandler = {
   default: handleRequestOpen
 }
 const handleSendToClient: RequestHandler = {
-  default: (): void => {}
+  default: async (app, appData): Promise<void> => {
+    const { sendMessageToClients, handleClientMessage } = await import('../client/clientCom')
+    if (app && appData.payload) {
+      loggingStore.log(
+        MESSAGE_TYPES.LOGGING,
+        `[handleDataFromApp] App ${app} is sending data to the client with ${appData.payload ? (JSON.stringify(appData.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(appData.payload)) : 'undefined'}`,
+        app.toUpperCase()
+      )
+      if (appData.payload.app == 'client') {
+        handleClientMessage(appData.payload)
+      } else {
+        sendMessageToClients({
+          app: appData.payload.app || app,
+          type: appData.payload.type || '',
+          payload: appData.payload.payload || '',
+          request: appData.payload.request || ''
+        })
+      }
+    }
+  }
 }
 const handleSendToApp: RequestHandler = {
-  default: (): void => {}
+  default: async (app, appData): Promise<void> => {
+    if (appData.payload && appData.request) {
+      sendMessageToApp(appData.request, appData.payload)
+      loggingStore.log(
+        MESSAGE_TYPES.LOGGING,
+        `[handleDataFromApp] App ${app} is sending data to ${appData.request} with ${appData.payload ? (JSON.stringify(appData.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(appData.payload)) : 'undefined'}`,
+        app.toUpperCase()
+      )
+    } else {
+      loggingStore.log(
+        MESSAGE_TYPES.ERROR,
+        `${app.toUpperCase()}: App data malformed`,
+        appData.payload
+      )
+    }
+  }
 }
 
 const handleLog: RequestHandler = {
@@ -231,6 +392,12 @@ const handleData: TypeHandler = {
   action: handleAction,
   default: handleDefault
 }
+
+/**
+ * ---------------------------------------------------------------------------
+ * Legacy Communication
+ * None of the following functions should be used
+ */
 
 /**
  * @depreciated - DO not use. Use handleDataFromApp() instead!
@@ -424,6 +591,7 @@ const handleLegacyCommunication = async (app: string, appData: IncomingData): Pr
 /**
  * Handles a request for authentication data from an app.
  *
+ * @deprecated - This function is deprecated and will be removed in a future version.
  * @param {string} appName - The name of the app requesting authentication data.
  * @param {string[]} scope - The scope of the authentication request (This is also what the user will be prompted with and how it will be saved in the file).
  */
