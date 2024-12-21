@@ -4,7 +4,8 @@
     "electron.vite.config.*",
     "src/main/**/*",
     "src/preload/**/*",
-    "src/shared/**/*.ts"
+    "src/shared/**/*.ts",
+    "test/**/*.ts"
   ],
   "compilerOptions": {
     "target": "ESNext",
@@ -26,6 +27,6 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "composite": true,
-    "types": ["electron-vite/node"]
+    "types": ["electron-vite/node", "vitest/globals"]
   }
 }

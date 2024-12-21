@@ -1,6 +1,13 @@
 console.log('[Github Handler] Starting')
 import { GithubRelease } from '@shared/types'
 
+/**
+ * Fetches the latest release information for the specified GitHub repository.
+ *
+ * @param repoUrl - The URL of the GitHub repository.
+ * @returns A Promise that resolves to the latest release information for the repository.
+ * @throws {Error} If the GitHub repository URL is invalid or there is an error fetching the release information.
+ */
 export async function getLatestRelease(repoUrl: string): Promise<GithubRelease> {
   try {
     // Extract the owner and repo from the URL
@@ -27,6 +34,13 @@ export async function getLatestRelease(repoUrl: string): Promise<GithubRelease> 
   }
 }
 
+/**
+ * Fetches the latest releases for the specified GitHub repository.
+ *
+ * @param repoUrl - The URL of the GitHub repository.
+ * @returns A Promise that resolves to an array of the latest releases for the repository.
+ * @throws {Error} If the GitHub repository URL is invalid or there is an error fetching the release information.
+ */
 export async function getReleases(repoUrl: string): Promise<GithubRelease[]> {
   try {
     // Extract the owner and repo from the URL

@@ -5,8 +5,6 @@ import { existsSync, promises } from 'node:fs'
 import loggingStore from '../../stores/loggingStore'
 import { app } from 'electron'
 
-let devAppPath: string
-
 /**
  * Retrieves and parses the manifest file for an app.
  * This function should be used when loading or updating app information.
@@ -58,11 +56,7 @@ export async function getManifest(fileLocation: string): Promise<Manifest | unde
 export function getAppFilePath(appName: string, fileName: string = '/'): string {
   let path
   if (appName == 'developer-app') {
-    if (devAppPath) {
-      path = join(devAppPath, fileName)
-    } else {
-      loggingStore.log(MESSAGE_TYPES.ERROR, 'Developer app path not set! (Expected if on startup)')
-    }
+    loggingStore.log(MESSAGE_TYPES.ERROR, 'Developer app does not exist!')
   } else {
     path = join(app.getPath('userData'), 'apps', appName, fileName)
   }

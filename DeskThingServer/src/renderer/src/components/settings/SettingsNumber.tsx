@@ -12,6 +12,14 @@ const commonClasses =
   'px-3 py-2 text-black bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
 const buttonClasses = 'px-3 py-2 rounded-md mx-1'
 
+/**
+ * A React component that renders a settings number input with increment and decrement buttons.
+ *
+ * @param props - The component props.
+ * @param props.setting - The settings number object, containing the value, min, and max properties.
+ * @param props.handleSettingChange - A function to handle changes to the settings number value.
+ * @param props.className - An optional CSS class name to apply to the component.
+ */
 export const SettingsNumberComponent: React.FC<SettingsNumberProps> = ({
   className,
   setting,

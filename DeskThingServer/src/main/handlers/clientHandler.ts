@@ -13,6 +13,13 @@ import {
 import { sendMessageToClient, sendMessageToClients } from '../services/client/clientCom'
 import mappingStore from '@server/services/mappings/mappingStore'
 
+/**
+ * The `clientHandler` object is a mapping of client IPC (Inter-Process Communication) data types to handler functions. These handlers are responsible for processing various client-related requests, such as pinging clients, handling URL-based web app downloads, configuring devices, managing client manifests, and more.
+ *
+ * Each handler function takes two arguments: `data` (the client IPC data) and `replyFn` (a function to send a response back to the client). The handler functions return a Promise that resolves to a value that depends on the specific handler (e.g., a string, a `ClientManifest`, or `void`).
+ *
+ * The handlers are responsible for logging relevant information, handling errors, and interacting with other parts of the application (e.g., the `deviceHandler`, `mappingStore`, etc.) to fulfill the client's requests.
+ */
 export const clientHandler: Record<
   ClientIPCData['type'],
   (data: ClientIPCData, replyFn: ReplyFn) => Promise<void | string | ClientManifest | null>
@@ -136,6 +143,15 @@ export const clientHandler: Record<
   }
 }
 
+/**
+ * Handles the processing of a web app from a URL.
+ *
+ * This function is responsible for downloading and processing a web app from a URL. It logs the progress of the operation and handles any errors that may occur during the process.
+ *
+ * @param data - The data object containing the URL of the web app.
+ * @param replyFn - The reply function to be used for logging the progress and errors.
+ * @returns A Promise that resolves when the web app has been successfully downloaded and processed.
+ */
 const handleUrl = async (data, replyFn: ReplyFn): Promise<void> => {
   try {
     replyFn('logging', {

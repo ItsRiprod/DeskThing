@@ -21,6 +21,26 @@ interface AppStoreState {
   setAppList: (apps: App[]) => void
 }
 
+/**
+ * The AppStore is a Zustand store that manages the state of the application, including the list of apps, their order, and logging data.
+ *
+ * The store provides the following functionality:
+ * - Requesting the list of apps from the Electron app
+ * - Setting the entire list of apps
+ * - Removing an app from the list
+ * - Setting the order of the apps
+ * - Adding a new app to the list
+ * - Disabling an app
+ * - Stopping an app
+ * - Enabling an app
+ * - Running an app
+ * - Getting the data for a specific app
+ * - Setting the data for a specific app
+ * - Loading an app from a URL
+ * - Loading an app from a ZIP file
+ *
+ * The store uses the Zustand library to manage the state and provide the necessary actions.
+ */
 const useAppStore = create<AppStoreState>((set) => ({
   appsList: [],
   order: [],

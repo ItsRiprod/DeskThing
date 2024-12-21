@@ -11,6 +11,13 @@ interface SettingsStringProps {
 const commonClasses =
   'px-3 py-2 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
 
+/**
+ * A React component that renders a string setting with a text input field.
+ *
+ * @param setting - The settings string object containing the value and max length.
+ * @param handleSettingChange - A function to handle changes to the setting value.
+ * @param className - An optional CSS class name to apply to the component.
+ */
 export const SettingsStringComponent: React.FC<SettingsStringProps> = ({
   className,
   setting,

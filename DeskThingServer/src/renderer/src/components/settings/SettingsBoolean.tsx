@@ -9,7 +9,13 @@ interface SettingsBooleanProps {
   handleSettingChange: (value: number | boolean | string | string[]) => void
   className?: string
 }
-
+/**
+ * A React component that renders a boolean setting with a toggle button.
+ *
+ * @param className - An optional CSS class name to apply to the component.
+ * @param setting - The boolean setting to be rendered.
+ * @param handleSettingChange - A function to be called when the setting is changed, with the new value as a parameter.
+ */
 export const SettingsBooleanComponent: React.FC<SettingsBooleanProps> = ({
   className,
   setting,

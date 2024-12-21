@@ -13,6 +13,8 @@ asarUnpack:
   - resources/**
   - bin/**
   - "!resources/{,/**/}*.{h,hpp,cpp,cc,cxx}"
+  - '**/node_modules/sharp/**/*'
+  - '**/node_modules/@img/**/*'
 protocols:
   - name: "DeskThing Protocol"
     schemes:

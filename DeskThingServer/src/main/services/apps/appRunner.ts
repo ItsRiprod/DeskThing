@@ -15,7 +15,9 @@ export async function loadAndRunEnabledApps(): Promise<void> {
   try {
     const appInstances = appHandler.getAll()
     loggingStore.log(MESSAGE_TYPES.LOGGING, 'SERVER: Loaded apps config. Running apps...')
-    const enabledApps = appInstances.filter((appConfig) => appConfig.enabled === true)
+    const enabledApps = appInstances.filter(
+      (appConfig) => appConfig.enabled === true && appConfig.running !== true
+    )
 
     await Promise.all(
       enabledApps.map(async (appConfig) => {
@@ -23,7 +25,9 @@ export async function loadAndRunEnabledApps(): Promise<void> {
           MESSAGE_TYPES.LOGGING,
           `SERVER: Automatically running app ${appConfig.name}`
         )
+        console.log('Running ', appConfig.name)
         await appHandler.run(appConfig.name)
+        console.log('Done running ', appConfig.name)
       })
     )
     const failedApps = enabledApps.filter((enabledApps) => enabledApps.running === false)
@@ -32,13 +36,11 @@ export async function loadAndRunEnabledApps(): Promise<void> {
     await Promise.all(
       failedApps.map(async (failedApp) => {
         loggingStore.log(MESSAGE_TYPES.LOGGING, `SERVER: Attempting to run ${failedApp.name} again`)
+        console.log('Running again ', failedApp.name)
         await appHandler.run(failedApp.name)
       })
     )
   } catch (error) {
-    loggingStore.log(
-      MESSAGE_TYPES.ERROR,
-      `SERVER: Error loading and running enabled apps: ${error}`
-    )
+    loggingStore.log(MESSAGE_TYPES.ERROR, `SERVER: Error loading and running enabled apps`)
   }
 }

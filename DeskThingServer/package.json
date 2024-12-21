@@ -1,6 +1,6 @@
 {
   "name": "deskthing",
-  "version": "0.10.3",
+  "version": "0.10.4",
   "description": "A DeskThing server UI to interface with the DeskThing car thing app",
   "main": "./out/main/index.js",
   "author": "Riprod",
@@ -15,8 +15,9 @@
     "dev": "electron-vite dev",
     "debug": "electron-vite dev --inspect=8893",
     "build": "npm run typecheck && electron-vite build && electron-builder",
-    "postinstall": "electron-builder install-app-deps",
-    "build:unpack": "npm run build && electron-builder --dir"
+    "postinstall": "electron-builder install-app-deps && electron-rebuild",
+    "build:unpack": "npm run build && electron-builder --dir",
+    "test": "vitest"
   },
   "repository": {
     "type": "git",
@@ -33,13 +34,14 @@
     "cross-unzip": "^0.2.1",
     "electron-updater": "^6.1.7",
     "express": "^4.21.0",
-    "fast-average-color-node": "^3.1.0",
     "lottie-react": "^2.4.0",
     "react-qr-code": "^2.0.15",
     "react-rewards": "^2.0.4",
     "react-router-dom": "^6.26.2",
     "react-select": "^5.8.3",
     "react-tag-input": "^6.10.3",
+    "sharp": "^0.33.5",
+    "update-electron-app": "^3.1.0",
     "uuid": "^10.0.0",
     "ws": "^8.17.1",
     "zustand": "^5.0.0-rc.2"
@@ -55,6 +57,7 @@
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.19",
     "electron-builder": "^24.9.1",
+    "electron-rebuild": "^3.2.9",
     "electron-vite": "^2.0.0",
     "eslint": "^8.56.0",
     "eslint-plugin-react": "^7.33.2",
@@ -66,6 +69,7 @@
     "tailwindcss": "^3.4.4",
     "typedoc": "^0.26.10",
     "typescript": "^5.3.3",
-    "vite": "^5.0.12"
+    "vite": "^5.0.12",
+    "vitest": "^2.1.8"
   }
 }

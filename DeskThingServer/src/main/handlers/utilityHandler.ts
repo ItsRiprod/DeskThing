@@ -24,6 +24,30 @@ import { setupFirewall } from './firewallHandler'
 import { disconnectClient } from '../services/client/clientCom'
 import { restartServer } from '../services/client/websocket'
 
+/**
+ * The `utilityHandler` object is an exported module that provides a set of utility functions for handling various tasks in the application. It is structured as a record type, where the keys correspond to the `UtilityIPCData['type']` union type, and the values are asynchronous functions that handle the corresponding request.
+ *
+ * The functions in the `utilityHandler` object handle a wide range of tasks, including:
+ * - Pinging the server and returning a 'pong' response
+ * - Selecting a zip file
+ * - Managing connections (getting, deleting)
+ * - Getting devices
+ * - Managing settings (getting, setting)
+ * - Fetching GitHub releases
+ * - Getting logs
+ * - Shutting down the application
+ * - Opening the log folder
+ * - Refreshing the firewall
+ * - Restarting the server
+ * - Managing actions (getting, setting, deleting)
+ * - Managing buttons (setting, deleting)
+ * - Managing keys (getting, setting, deleting)
+ * - Managing profiles (getting, setting, deleting)
+ * - Setting and getting the current profile
+ * - Running actions
+ *
+ * Each function is responsible for handling a specific request type and returning the appropriate data or performing the requested action.
+ */
 export const utilityHandler: Record<
   UtilityIPCData['type'],
   (

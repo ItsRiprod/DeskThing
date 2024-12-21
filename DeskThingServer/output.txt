@@ -1,0 +1,406 @@
+C:\USERS\LEGOM\ONEDRIVE\DESKTOP\CODING\WEBSITE DEVELOPMENT\CARTHING LAPTOP\CARTHING\DESKTHINGSERVER
+|   .editorconfig
+|   .eslintignore
+|   .eslintrc.cjs
+|   .gitignore
+|   .npmrc
+|   .prettierignore
+|   .prettierrc.yaml
+|   dev-app-update.yml
+|   electron-builder.yml
+|   electron.vite.config.ts
+|   output.txt
+|   package-lock.json
+|   package.json
+|   postcss.config.js
+|   tailwind.config.js
+|   tsconfig.json
+|   tsconfig.node.json
+|   tsconfig.web.json
+|   vitest.config.ts
+|
++---.vscode
+|       extensions.json
+|       launch.json
+|       settings.json
+|
++---adb_source
+|   +---linux
+|   |       adb
+|   |
+|   +---mac
+|   |       adb
+|   |
+|   \---win
+|           adb.exe
+|           AdbWinApi.dll
+|           AdbWinUsbApi.dll
+|
++---build
+|       entitlements.mac.plist
+|       icon.icns
+|       icon.png
+|       icon2.png
+|
++---fake
+|   \---path
+|           application.log.json
+|           readable.log
+|           settings.json
++---out
+|   +---main
+|   |       adbHandler-Bk-iavjT.js
+|   |       appHandler-Bh8JFs8K.js
+|   |       authHandler-Dl-woLWr.js
+|   |       clientHandler-Cy44WzYr.js
+|   |       configHandler-DH0nu8Du.js
+|   |       connectionsStore-CYuZdKGe.js
+|   |       dataHandler-Bf2RgkaI.js
+|   |       index-BTbaSoz1.js
+|   |       index.js
+|   |       loggingStore-BHFwpJWY.js
+|   |       musicHandler-D2Jok5fy.js
+|   |       settingsStore-BhSYpYV7.js
+|   |       utilityHandler-DQzWnbLW.js
+|   |
+|   +---preload
+|   |       index.js
+|   |
+|   \---renderer
+|       |   index.html
+|       |
+|       \---assets
+|               GeistMonoVF-DyWWVF8b.ttf
+|               GeistVF-Bpq0OARI.ttf
+|               index-CcPsy63U.js
+|               index-K7SywpJw.css
+|               THEBOLDFONT-DycTYaZz.ttf
+|
++---resources
+|   |   deskthing.desktop
+|   |   icon.png
+|   |   icon2.png
+|   |
+|   +---scripts
+|   |       setup-proxy.sh
+|   |
+|   \---static
+|           Error.html
+|
++---src
+|   +---main
+|   |   |   index.ts
+|   |   |
+|   |   +---handlers
+|   |   |       adbHandler.ts
+|   |   |       appHandler.ts
+|   |   |       authHandler.ts
+|   |   |       clientHandler.ts
+|   |   |       configHandler.ts
+|   |   |       dataHandler.ts
+|   |   |       deviceHandler.ts
+|   |   |       firewallHandler.ts
+|   |   |       githubHandler.ts
+|   |   |       musicHandler.ts
+|   |   |       utilityHandler.ts
+|   |   |
+|   |   +---services
+|   |   |   +---apps
+|   |   |   |       appCommunication.ts
+|   |   |   |       appInstaller.ts
+|   |   |   |       appManager.ts
+|   |   |   |       appRunner.ts
+|   |   |   |       appState.ts
+|   |   |   |       appUtils.ts
+|   |   |   |       index.ts
+|   |   |   |
+|   |   |   +---client
+|   |   |   |       clientCom.ts
+|   |   |   |       clientUtils.ts
+|   |   |   |       expressServer.ts
+|   |   |   |       websocket.ts
+|   |   |   |
+|   |   |   \---mappings
+|   |   |           fileMaps.ts
+|   |   |           mappingStore.ts
+|   |   |           utilsMaps.ts
+|   |   |
+|   |   +---static
+|   |   |       defaultMapping.ts
+|   |   |
+|   |   +---stores
+|   |   |       connectionsStore.ts
+|   |   |       loggingStore.ts
+|   |   |       settingsStore.ts
+|   |   |
+|   |   \---utils
+|   |           fileHandler.ts
+|   |           get-platform.js
+|   |           objectUtils.ts
+|   |
+|   +---preload
+|   |       index.d.ts
+|   |       index.ts
+|   |
+|   +---renderer
+|   |   |   index.html
+|   |   |
+|   |   \---src
+|   |       |   App.tsx
+|   |       |   env.d.ts
+|   |       |   Layout.tsx
+|   |       |   main.tsx
+|   |       |
+|   |       +---assets
+|   |       |   |   base.css
+|   |       |   |   main.css
+|   |       |   |   refreshMessages.ts
+|   |       |   |
+|   |       |   +---animations
+|   |       |   |       Landing Animation-v2.json
+|   |       |   |       LandingAnimation.lottie
+|   |       |   |
+|   |       |   +---fonts
+|   |       |   |       GeistMonoVF.ttf
+|   |       |   |       GeistVF.ttf
+|   |       |   |       THEBOLDFONT.ttf
+|   |       |   |
+|   |       |   \---icons
+|   |       |       |   index.ts
+|   |       |       |
+|   |       |       \---icon
+|   |       |               IconAlbum.tsx
+|   |       |               IconArrowDown.tsx
+|   |       |               IconArrowLeft.tsx
+|   |       |               IconArrowRight.tsx
+|   |       |               IconArrowUp.tsx
+|   |       |               IconBell.tsx
+|   |       |               IconCarThing.tsx
+|   |       |               IconCarThingSmall.tsx
+|   |       |               IconCheck.tsx
+|   |       |               IconCheckCircle.tsx
+|   |       |               IconCoffee.tsx
+|   |       |               IconComputer.tsx
+|   |       |               IconConfig.tsx
+|   |       |               IconConnected.tsx
+|   |       |               IconConnecting.tsx
+|   |       |               IconCopy.tsx
+|   |       |               IconDetails.tsx
+|   |       |               IconDisconnect.tsx
+|   |       |               IconDiscord.tsx
+|   |       |               IconDownload.tsx
+|   |       |               IconEye.tsx
+|   |       |               IconFolderOpen.tsx
+|   |       |               IconGear.tsx
+|   |       |               IconGlobe.tsx
+|   |       |               IconHeart.tsx
+|   |       |               IconHeartActive.tsx
+|   |       |               IconHome.tsx
+|   |       |               IconLayoutgrid.tsx
+|   |       |               IconLightbulbOff.tsx
+|   |       |               IconLightbulbOn.tsx
+|   |       |               IconLink.tsx
+|   |       |               IconLoading.tsx
+|   |       |               IconLogo.tsx
+|   |       |               IconLogoGear.tsx
+|   |       |               IconLogoGearLoading.tsx
+|   |       |               IconLogoLoading.tsx
+|   |       |               IconLogs.tsx
+|   |       |               IconMobile.tsx
+|   |       |               IconMusic.tsx
+|   |       |               IconPause.tsx
+|   |       |               IconPing.tsx
+|   |       |               IconPlay.tsx
+|   |       |               IconPlus.tsx
+|   |       |               IconPower.tsx
+|   |       |               IconPulsing.tsx
+|   |       |               IconQR.tsx
+|   |       |               IconRefresh.tsx
+|   |       |               IconRefreshDisabled.tsx
+|   |       |               IconReload.tsx
+|   |       |               IconSave.tsx
+|   |       |               IconServer.tsx
+|   |       |               IconStop.tsx
+|   |       |               IconToggle.tsx
+|   |       |               IconTransfer.tsx
+|   |       |               IconTrash.tsx
+|   |       |               IconUpload.tsx
+|   |       |               IconWarning.tsx
+|   |       |               IconWifi.tsx
+|   |       |               IconWifiDisconnect.tsx
+|   |       |               IconWrench.tsx
+|   |       |               IconX.tsx
+|   |       |               IconYoutube.tsx
+|   |       |               index.tsx
+|   |       |
+|   |       +---components
+|   |       |   |   App.tsx
+|   |       |   |   Button.tsx
+|   |       |   |   Connection.tsx
+|   |       |   |   ErrorBoundary.tsx
+|   |       |   |   Loading.tsx
+|   |       |   |   NotificationButton.tsx
+|   |       |   |   RankableList.tsx
+|   |       |   |   ReleaseComponent.tsx
+|   |       |   |   Select.tsx
+|   |       |   |   SettingsButton.tsx
+|   |       |   |   SponsorButton.tsx
+|   |       |   |   TagList.tsx
+|   |       |   |   Tooltip.tsx
+|   |       |   |
+|   |       |   \---settings
+|   |       |           index.tsx
+|   |       |           SettingComponent.tsx
+|   |       |           SettingsBoolean.tsx
+|   |       |           SettingsColor.tsx
+|   |       |           SettingsList.tsx
+|   |       |           SettingsMultiSelect.tsx
+|   |       |           SettingsNumber.tsx
+|   |       |           SettingsRange.tsx
+|   |       |           SettingsRanked.tsx
+|   |       |           SettingsSelect.tsx
+|   |       |           SettingsString.tsx
+|   |       |
+|   |       +---listeners
+|   |       |       AppStoreDataListener.tsx
+|   |       |       ClientDataListener.tsx
+|   |       |       GithubDataListener.tsx
+|   |       |       LogDataListener.tsx
+|   |       |       mappingsDataListener.tsx
+|   |       |       PageDataListener.tsx
+|   |       |       RequestDataListener.tsx
+|   |       |       ServerRouteListener.tsx
+|   |       |       SettingsDataListener.tsx
+|   |       |       StateDataListener.tsx
+|   |       |
+|   |       +---nav
+|   |       |       MainElement.tsx
+|   |       |       Nav.tsx
+|   |       |       Papertrail.tsx
+|   |       |       Router.tsx
+|   |       |       Sidebar.tsx
+|   |       |       TopBar.tsx
+|   |       |
+|   |       +---overlays
+|   |       |   |   AddProfile..tsx
+|   |       |   |   AppSettingsOverlay.tsx
+|   |       |   |   ClientDetailsOverlay.tsx
+|   |       |   |   ClientSettingsOverlay.tsx
+|   |       |   |   DownloadNotification.tsx
+|   |       |   |   Overlay.tsx
+|   |       |   |   OverlaysWrapper.tsx
+|   |       |   |   QROverlay.tsx
+|   |       |   |   SuccessNotification.tsx
+|   |       |   |
+|   |       |   +---apps
+|   |       |   |       AppActions.tsx
+|   |       |   |       AppDetails.tsx
+|   |       |   |       AppSettings.tsx
+|   |       |   |       AppsOverlay.tsx
+|   |       |   |
+|   |       |   +---notifications
+|   |       |   |       EventsPage.tsx
+|   |       |   |       IssuesPage.tsx
+|   |       |   |       NotificationOverlay.tsx
+|   |       |   |       RequestsPage.tsx
+|   |       |   |       TasksPage.tsx
+|   |       |   |
+|   |       |   \---settings
+|   |       |           ClientSettings.tsx
+|   |       |           DeviceSettings.tsx
+|   |       |           MusicSettings.tsx
+|   |       |           ServerSettings.tsx
+|   |       |           SettingsOverlay.tsx
+|   |       |
+|   |       +---pages
+|   |       |   +---Apps
+|   |       |   |       AppsList.tsx
+|   |       |   |       index.tsx
+|   |       |   |
+|   |       |   +---Clients
+|   |       |   |   |   Connections.tsx
+|   |       |   |   |   index.tsx
+|   |       |   |   |   Theming.tsx
+|   |       |   |   |
+|   |       |   |   +---Mapping
+|   |       |   |   |   |   index.tsx
+|   |       |   |   |   |   MappingPage.tsx
+|   |       |   |   |   |
+|   |       |   |   |   +---components
+|   |       |   |   |   |       ActionButton.tsx
+|   |       |   |   |   |       ActionIcon.tsx
+|   |       |   |   |   |       AddActionPopup.tsx
+|   |       |   |   |   |       AllActionsComponent.tsx
+|   |       |   |   |   |       AvailableKeysComponent.tsx
+|   |       |   |   |   |       AvailableModesComponent.tsx
+|   |       |   |   |   |
+|   |       |   |   |   \---pages
+|   |       |   |   |           AppMappingsPage.tsx
+|   |       |   |   |           CarThingPage.tsx
+|   |       |   |   |           MiniplayerPage.tsx
+|   |       |   |   |           TrayPage.tsx
+|   |       |   |   |           WeaponWheelPage.tsx
+|   |       |   |   |
+|   |       |   |   \---profiles
+|   |       |   |           index.tsx
+|   |       |   |
+|   |       |   +---Dashboard
+|   |       |   |       ClientsWidget.tsx
+|   |       |   |       Dashboard.tsx
+|   |       |   |       index.tsx
+|   |       |   |       InfoWidget.tsx.tsx
+|   |       |   |       LogsWidget.tsx
+|   |       |   |       WelcomeWidget.tsx
+|   |       |   |
+|   |       |   +---Dev
+|   |       |   |       ADBSettings.tsx
+|   |       |   |       DevApp.tsx
+|   |       |   |       index.tsx
+|   |       |   |       Logs.tsx
+|   |       |   |
+|   |       |   \---Downloads
+|   |       |           AppDownloads.tsx
+|   |       |           ClientDownloads.tsx
+|   |       |           index.tsx
+|   |       |
+|   |       \---stores
+|   |               appStore.ts
+|   |               clientStore.ts
+|   |               githubStore.ts
+|   |               index.ts
+|   |               logStore.ts
+|   |               mappingStore.ts
+|   |               notificationStore.ts
+|   |               pageStore.ts
+|   |               settingsStore.ts
+|   |               Store.tsx
+|   |
+|   \---shared
+|       \---types
+|               app.ts
+|               index.ts
+|               ipcTypes.ts
+|               maps.ts
+|               profiles.ts
+|               types.ts
+|
+\---test
+    \---main
+        |   index.test.ts
+        |
+        +---services
+        |   \---apps
+        |           appCommunication.test.ts
+        |           appManager.test.ts
+        |           appRunner.test.ts
+        |           appState.test.ts
+        |
+        +---stores
+        |       connectionsStore.test.ts
+        |       loggingStore.test.ts
+        |       settingsStore.test.ts
+        |
+        \---utils
+                fileHandler.test.ts
+                objectUtils.test.ts
+

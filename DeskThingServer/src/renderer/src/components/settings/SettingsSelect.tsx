@@ -10,6 +10,13 @@ interface SettingsSelectProps {
   className?: string
 }
 
+/**
+ * A React component that renders a settings select input.
+ *
+ * @param setting - The settings select configuration object.
+ * @param handleSettingChange - A function to handle changes to the setting value.
+ * @param className - An optional CSS class name to apply to the component.
+ */
 export const SettingsSelectComponent: React.FC<SettingsSelectProps> = ({
   handleSettingChange,
   className,

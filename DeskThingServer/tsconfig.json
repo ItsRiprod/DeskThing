@@ -6,7 +6,8 @@
       "src/main/**/*.ts",
       "src/preload/**/*.ts",
       "src/renderer/src/**/*.tsx",
-      "src/renderer/src/**/*.ts"
+      "src/renderer/src/**/*.ts",
+      "test/**/*.ts"
     ],
     "entryPointStrategy": "expand",
     "out": "docs",
@@ -15,6 +16,6 @@
     "excludeExternals": true,
     "includeVersion": true,
     "categorizeByGroup": true,
-    "categoryOrder": ["Main", "Preload", "Renderer", "*"]
+    "categoryOrder": ["Main", "Preload", "Renderer", "Test", "*"]
   }
 }

@@ -1,3 +1,10 @@
+/**
+ * Renders an App component that displays information about an application, including its name, version, and whether it is running or stopped. The component also provides buttons to start, stop, or view the details of the application.
+ *
+ * @param app - An object containing information about the application, including its name, manifest, and running state.
+ * @param activeRequest - A boolean indicating whether the application has an active request.
+ * @returns A React component that renders the App UI.
+ */
 import React from 'react'
 import { App as AppType } from '@shared/types/app'
 import { IconPause, IconPlay, IconWrench } from '@renderer/assets/icons'

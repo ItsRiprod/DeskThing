@@ -1,3 +1,8 @@
+/**
+ * The main entry point of the application. Renders the ErrorBoundary, Store, and AppRouter components.
+ *
+ * @returns {JSX.Element} The root component of the application.
+ */
 import ErrorBoundary from './components/ErrorBoundary'
 import AppRouter from './nav/Router'
 import Store from './stores/Store'

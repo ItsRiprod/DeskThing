@@ -2,10 +2,8 @@ console.log('[AppState Service] Starting')
 import { App, AppInstance, Manifest, AppReturnData, MESSAGE_TYPES } from '@shared/types'
 import { sendConfigData, sendSettingsData } from '../client/clientCom'
 import loggingStore from '../../stores/loggingStore'
+import { sendIpcData } from '@server/index'
 
-/**
- * TODO: Sync with the file
- */
 export class AppHandler {
   public static instance: AppHandler
   private apps: { [key: string]: AppInstance } = {}
@@ -28,6 +26,10 @@ export class AppHandler {
   async notify(): Promise<void> {
     sendConfigData()
     sendSettingsData()
+    sendIpcData({
+      type: 'app-data',
+      payload: this.getAllBase()
+    })
   }
 
   /**
@@ -35,14 +37,14 @@ export class AppHandler {
    */
   async loadApps(): Promise<void> {
     loggingStore.log(MESSAGE_TYPES.LOGGING, '[appState] [loadApps]: Loading apps...')
-    const { getAppData } = await import('../../handlers/configHandler')
+    const { getAppData } = await import('../files/appService')
 
     const data = await getAppData()
 
-    data.apps.forEach((app) => {
+    Object.values(data).map((app) => {
       if (this.apps[app.name]) {
         // Update existing app instance with stored data
-        Object.assign(this.apps[app.name], app)
+        this.apps[app.name] = { ...this.apps[app.name], ...app }
       } else {
         // Create new AppInstance
         this.apps[app.name] = {
@@ -59,14 +61,14 @@ export class AppHandler {
   }
 
   private async saveAppsToFile(): Promise<void> {
-    const { setAppsData } = await import('../../handlers/configHandler')
+    const { setAppsData } = await import('../files/appService')
     const apps = this.getAllBase()
     await setAppsData(apps)
     this.notify()
   }
 
   private async saveAppToFile(name: string): Promise<void> {
-    const { setAppData } = await import('../../handlers/configHandler')
+    const { setAppData } = await import('../files/appService')
     const { func: _func, ...app } = this.apps[name]
     await setAppData(app)
   }
@@ -298,7 +300,7 @@ export class AppHandler {
     if (this.apps[appName]) {
       this.apps[appName].manifest = manifest
     }
-    const { addAppManifest } = await import('../../handlers/configHandler')
+    const { addAppManifest } = await import('../files/appService')
     // Add the manifest to the config file
     addAppManifest(manifest, appName)
     this.saveAppToFile(appName)

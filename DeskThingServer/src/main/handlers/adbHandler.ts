@@ -14,6 +14,11 @@ const execPath = isDevelopment
 const adbExecutableName = process.platform === 'win32' ? 'adb.exe' : 'adb'
 const adbPath = path.join(execPath, adbExecutableName)
 
+/**
+ * Splits a string into an array of arguments, handling quoted strings.
+ * @param str - The input string to split.
+ * @returns An array of arguments extracted from the input string.
+ */
 const splitArgs = (str: string): string[] => {
   const regex: RegExp = /(".*?"|[^"\s]+)(?=\s*|\s*$)/g
   const matches: string[] = []
@@ -26,6 +31,12 @@ const splitArgs = (str: string): string[] => {
   return matches
 }
 
+/**
+ * Executes an ADB command and returns the output.
+ * @param command - The ADB command to execute.
+ * @param replyFn - An optional callback function to handle logging.
+ * @returns A Promise that resolves with the output of the ADB command.
+ */
 export const handleAdbCommands = async (command: string, replyFn?: ReplyFn): Promise<string> => {
   const settings = await settingsStore.getSettings()
   const useGlobalADB = settings.globalADB === true

@@ -1,5 +1,5 @@
 console.log('[Auth Handler] Starting')
-import { getAppData } from './configHandler' // Assuming you have a config handler for active apps
+import { getAppData } from '../services/files/appService' // Assuming you have a config handler for active apps
 import { sendMessageToApp } from '../services/apps' // Assuming you have an app handler for sending messages
 import http from 'http'
 import url from 'url'
@@ -12,6 +12,16 @@ const successView = '<h1>Success</h1><p>You can now close this window.</p>'
 let server: http.Server | null = null
 let callBackPort: number
 
+/**
+ * Handles the callback request for an app authentication flow.
+ *
+ * This function is responsible for processing the callback request from an app's authentication flow.
+ * It extracts the app name from the URL, checks if the app is active, and then sends the callback data
+ * to the app. Finally, it responds with a success view.
+ *
+ * @param req - The incoming HTTP request object.
+ * @param res - The HTTP response object to send the response.
+ */
 function handleCallback(req: http.IncomingMessage, res: http.ServerResponse): void {
   const parsedUrl = url.parse(req.url || '', true)
 
@@ -43,6 +53,16 @@ function handleCallback(req: http.IncomingMessage, res: http.ServerResponse): vo
   res.end(successView)
 }
 
+/**
+ * Starts the HTTP server that handles callback requests for app authentication flows.
+ *
+ * This function creates an HTTP server that listens on the configured callback port. It handles
+ * incoming requests to the `/callback/` endpoint by passing them to the `handleCallback` function.
+ * If the request does not match the `/callback/` path, it responds with a 404 Not Found error.
+ *
+ * The server is started asynchronously, and any existing server instance is first closed before
+ * the new one is created.
+ */
 const startServer = async (): Promise<void> => {
   if (server) {
     await server.close(() => {
@@ -69,6 +89,13 @@ const startServer = async (): Promise<void> => {
   })
 }
 
+/**
+ * Initializes the HTTP server that handles callback requests for app authentication flows.
+ *
+ * This function retrieves the callback port from the settings store, and then starts the server
+ * by calling the `startServer` function. If there is an error retrieving the settings or starting
+ * the server, it logs the error to the console.
+ */
 const initializeServer = async (): Promise<void> => {
   try {
     const settings = (await settingsStore.getSettings()) as Settings
@@ -79,6 +106,12 @@ const initializeServer = async (): Promise<void> => {
   }
 }
 
+/**
+ * Listens for changes to the callback port setting and updates the server configuration accordingly.
+ * If the callback port changes, it stops the existing server and starts a new one with the updated port.
+ * If the callback port does not change, it logs a message indicating that the server is not being restarted.
+ * If there is an error updating the server configuration, it logs an error message.
+ */
 settingsStore.addListener((newSettings) => {
   try {
     if (newSettings.callbackPort != callBackPort) {

@@ -1,11 +1,18 @@
+/**
+ * The MusicHandler class is responsible for managing the music playback functionality in the application.
+ * It handles the initialization of the refresh interval, updates to the settings, finding the current playback source,
+ * refreshing the music data, setting the audio source, and handling client requests and music messages.
+ */
 console.log('[Music Handler] Starting')
-import loggingStore from '../stores/loggingStore'
-import settingsStore from '../stores/settingsStore'
+import loggingStore from '../../stores/loggingStore'
+import settingsStore from '../../stores/settingsStore'
 import { Settings, SocketData, MESSAGE_TYPES, SongData } from '@shared/types'
-import { sendMessageToApp } from '../services/apps'
-import { getAppByName } from './configHandler'
-import appState from '../services/apps/appState'
-import { sendMessageToClients } from '../services/client/clientCom'
+import { sendMessageToApp } from '../apps'
+import { getAppByName } from '../files/appService'
+import appState from '../apps/appState'
+import { sendMessageToClients } from '../client/clientCom'
+import { getColorFromImage } from './musicUtils'
+import { getNowPlaying } from './musicController'
 
 export class MusicHandler {
   private static instance: MusicHandler
@@ -241,8 +248,8 @@ export class MusicHandler {
 
     try {
       if (songData.thumbnail) {
-        const { getAverageColor } = await import('fast-average-color-node')
-        const color = await getAverageColor(songData.thumbnail)
+        console.log(songData.thumbnail)
+        const color = await getColorFromImage(songData.thumbnail)
         const songDataWithColor = {
           ...songData,
           color: color

@@ -1,6 +1,14 @@
 import { useEffect } from 'react'
 import { useClientStore, useNotificationStore } from '../stores'
 
+/**
+ * Listens for client data events and updates the client store accordingly.
+ * This component is responsible for fetching and updating the following data:
+ * - Clients
+ * - Connections
+ * - ADB Devices
+ * It also sets up an initial task to help the user connect their ADB device.
+ */
 const ClientDataListener = (): null => {
   const setClients = useClientStore((state) => state.setClients)
   const setConnections = useClientStore((state) => state.setConnections)

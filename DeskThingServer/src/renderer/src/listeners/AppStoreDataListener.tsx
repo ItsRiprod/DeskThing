@@ -1,6 +1,14 @@
 import { useEffect } from 'react'
 import { useAppStore } from '../stores'
 
+/**
+ * Listens for app data events and updates the app list in the application store.
+ *
+ * This component is responsible for fetching the initial list of apps from the
+ * Electron main process and subscribing to 'app-data' events to update the app
+ * list in the application store. When the component unmounts, it removes the
+ * 'app-data' event listener to avoid memory leaks.
+ */
 const AppStoreDataListener = (): null => {
   const setAppList = useAppStore((state) => state.setAppList)
 

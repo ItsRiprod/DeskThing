@@ -169,7 +169,7 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
     await setTimeout(() => refreshADbClients, 5000)
     if (client.adbId) {
       await window.electron.handleClientADB(
-        `-s ${client.adbId.split(' ')[0]} reverse tcp:${devicePort} tcp:${devicePort}`
+        `-s ${client.adbId.replace('offline', '').split(' ')[0]} reverse tcp:${devicePort} tcp:${devicePort}`
       )
     }
     setLoading(false)

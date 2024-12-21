@@ -41,10 +41,18 @@ class SettingsStore {
     return SettingsStore.instance
   }
 
+  /**
+   * Adds a listener function that will be called whenever the settings are updated.
+   * @param listener - A function that will be called with the updated settings.
+   */
   public addListener(listener: SettingsStoreListener): void {
     this.listeners.push(listener)
   }
 
+  /**
+   * Notifies all registered listeners of the updated settings.
+   * This method is called internally whenever the settings are updated.
+   */
   private async notifyListeners(): Promise<void> {
     this.listeners.forEach((listener) => {
       listener(this.settings)
@@ -76,6 +84,15 @@ class SettingsStore {
     this.saveSettings()
   }
 
+  /**
+   * Loads the application settings from a file. If the file does not exist or the
+   * version code is outdated, it creates a new file with the default settings.
+   * If the `autoStart` setting is defined, it also updates the auto-launch
+   * configuration.
+   *
+   * @returns The loaded settings, or the default settings if the file could not be
+   * loaded.
+   */
   public async loadSettings(): Promise<Settings> {
     try {
       const data = await readFromFile<Settings>(this.settingsFilePath)
@@ -164,9 +181,17 @@ class SettingsStore {
   }
 }
 
+/**
+ * Retrieves the local IP addresses of the system, excluding internal and certain reserved IP addresses.
+ * @returns An array of local IP addresses as strings.
+ */
 const getLocalIpAddress = (): string[] => {
   const interfaces = os.networkInterfaces()
   const localIps: string[] = []
+
+  if (!interfaces) {
+    return ['127.0.0.1']
+  }
 
   for (const name of Object.keys(interfaces)) {
     const ifaceGroup = interfaces[name]
@@ -174,12 +199,11 @@ const getLocalIpAddress = (): string[] => {
       for (const iface of ifaceGroup) {
         if (iface.family === 'IPv4' && !iface.internal) {
           if (
-            (iface.address.startsWith('10.') ||
-              iface.address.startsWith('172.') ||
-              iface.address.startsWith('169.') ||
-              iface.address.startsWith('100.') ||
-              iface.address.startsWith('192.')) &&
-            iface.address !== '192.168.7.1'
+            iface.address.startsWith('10.') ||
+            (iface.address.startsWith('172.') &&
+              parseInt(iface.address.split('.')[1]) >= 16 &&
+              parseInt(iface.address.split('.')[1]) <= 31) ||
+            iface.address.startsWith('192.168.')
           ) {
             localIps.push(iface.address)
           }

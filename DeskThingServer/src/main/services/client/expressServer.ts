@@ -13,9 +13,32 @@ const staticPath = isDevelopment
   ? join(__dirname, '..', '..', 'resources', 'static')
   : join(process.resourcesPath, 'static')
 
+/**
+ * Sets up an Express server to handle client connections and serve web applications.
+ *
+ * This function configures an Express application to handle various routes and serve web applications.
+ * It sets up middleware to handle client connections, serve web app manifests, serve web app content,
+ * serve icons, and proxy external resources.
+ *
+ * @param expressApp - The Express application to set up.
+ * @returns A Promise that resolves when the server is set up.
+ */
 export const setupExpressServer = async (expressApp: express.Application): Promise<void> => {
   expressApp.use(cors())
 
+  /**
+   * Handles the connection and serving of a client web application.
+   *
+   * This function is responsible for serving the client web application, including the manifest file and the
+   * web app content. It checks the request path to determine if it's for the manifest file or the web app
+   * content, and serves the appropriate response.
+   *
+   * @param appName - The name of the web application being served.
+   * @param req - The Express request object.
+   * @param res - The Express response object.
+   * @param next - The Express next middleware function.
+   * @returns A Promise that resolves when the client connection has been handled.
+   */
   const handleClientConnection = async (
     appName: string,
     req: Request,
@@ -114,7 +137,7 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
       } else {
         loggingStore.log(
           MESSAGE_TYPES.WARNING,
-          `WEBSOCKET: Client is not updated! Please update to v0.9.1 or later`
+          `WEBSOCKET: Client may not updated! Ensure it is on version v0.10.0 or later`
         )
         const ErrorPage = fs.readFileSync(join(staticPath, 'Error.html'), 'utf-8')
 
@@ -157,7 +180,11 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
     }
   )
 
-  // Proxy external resources
+  /**
+   * Proxy external resources
+   * Example usage: GET /fetch/https%3A%2F%2Ffastly.picsum.photos%2Fid%2F1004%2F200%2F300.jpg%3Fhmac%3DU8xLjv1wDsnhRH90oqnEvk2hvspq7UPzpU8Z9TtIxZM
+   * Decoded URL: http://localhost:8891/fetch/https://fastly.picsum.photos/id/1004/200/300.jpg?hmac=U8xLjv1wDsnhRH90oqnEvk2hvspq7UPzpU8Z9TtIxZM
+   */
   expressApp.use('/fetch/:url(*)', async (req: Request, res: Response) => {
     try {
       const url = decodeURIComponent(req.params.url)

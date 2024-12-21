@@ -1,3 +1,8 @@
+/**
+ * The ConnectionStore class is a singleton that manages the state of connected clients and devices.
+ * It provides methods to add, update, and remove clients, as well as to get the list of connected clients and devices.
+ * The class also handles the auto-detection of ADB devices and notifies listeners of changes to the client and device lists.
+ */
 console.log('[Connection Store] Starting')
 import { Client, MESSAGE_TYPES } from '@shared/types'
 import loggingStore from '../stores/loggingStore'

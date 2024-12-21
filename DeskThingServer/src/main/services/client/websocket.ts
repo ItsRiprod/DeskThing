@@ -9,9 +9,10 @@ import {
   ClientManifest,
   Settings,
   SocketData,
-  Action
+  Action,
+  ServerIPCData
 } from '@shared/types'
-import { addData } from '../../handlers/dataHandler'
+import { addData } from '../files/dataService'
 import { HandleDeviceData } from '../../handlers/deviceHandler'
 import settingsStore from '../../stores/settingsStore'
 import AppState from '../../services/apps/appState'
@@ -46,6 +47,11 @@ const alwaysAllow = ['preferences', 'ping', 'pong', 'manifest']
 const messageThrottles = new Map()
 const THROTTLE_DELAY = 300 // milliseconds
 
+/**
+ * Restarts the WebSocket server by shutting down the existing server, removing all connected clients, and setting up a new server.
+ * This function is called when the WebSocket server needs to be restarted, for example, when the server configuration changes.
+ * It logs the server shutdown and startup process, and handles any errors that may occur during the process.
+ */
 export const restartServer = async (): Promise<void> => {
   try {
     if (server) {
@@ -113,6 +119,14 @@ export const restartServer = async (): Promise<void> => {
   }
 }
 
+/**
+ * Asynchronously sets up the WebSocket server for the application.
+ * This function initializes the Express app, creates the HTTP server,
+ * and sets up the WebSocket server to handle incoming client connections.
+ * It also sets up event listeners to handle client messages and disconnections.
+ *
+ * @returns {Promise<void>} A Promise that resolves when the server is set up.
+ */
 export const setupServer = async (): Promise<void> => {
   loggingStore.log(MESSAGE_TYPES.MESSAGE, 'WSOCKET: Attempting to setup the server')
 
@@ -226,7 +240,7 @@ export const setupServer = async (): Promise<void> => {
           handleServerMessage(socket, client, messageData)
         } else if (messageData.app === 'utility' || messageData.app === 'music') {
           // Handle music requests
-          const MusicHandler = (await import('../../handlers/musicHandler')).default
+          const MusicHandler = (await import('../music/musicHandler')).default
           MusicHandler.handleClientRequest(messageData)
         }
 
@@ -258,6 +272,19 @@ export const setupServer = async (): Promise<void> => {
   })
 }
 
+/**
+ * Handles server messages received through the WebSocket connection.
+ *
+ * This function is responsible for processing different types of server messages,
+ * such as preferences, heartbeat, ping/pong, settings updates, and more. It
+ * performs the necessary actions based on the message type and updates the
+ * application state accordingly.
+ *
+ * @param socket The WebSocket connection object.
+ * @param client The client object associated with the WebSocket connection.
+ * @param messageData The data received from the server, containing the message type and payload.
+ * @returns A Promise that resolves when the message has been handled.
+ */
 const handleServerMessage = async (
   socket,
   client: Client,
@@ -287,7 +314,10 @@ const handleServerMessage = async (
             break
           case 'pong':
             loggingStore.log(MESSAGE_TYPES.LOGGING, 'Received pong from ', client.connectionId)
-            sendIpcData(`pong-${client.connectionId}`, messageData.payload)
+            sendIpcData({
+              type: `pong-${client.connectionId}`,
+              payload: messageData.payload
+            } as unknown as ServerIPCData) // so it doesnt mess with other types
             break
           case 'ping':
             loggingStore.log(MESSAGE_TYPES.LOGGING, 'Sent Ping', client.connectionId)
@@ -374,6 +404,17 @@ const handleServerMessage = async (
   }
 }
 
+/**
+ * Sets up event listeners for various stores and sends updates to connected clients.
+ *
+ * This function is called to initialize the event listeners for the `settingsStore`,
+ * `mappingStore`, and other relevant stores. It sets up callbacks that are triggered
+ * when the settings or mapping data changes, and then sends the updated information
+ * to all connected clients using the `sendMessageToClients` function.
+ *
+ * The function is wrapped in a `setTimeout` to ensure that the stores have been
+ * properly initialized before the listeners are added.
+ */
 const setupListeners = async (): Promise<void> => {
   setTimeout(() => {
     settingsStore.addListener((newSettings: Settings) => {

@@ -83,6 +83,12 @@ export class MappingState {
     saveMappings(value)
   }
 
+  /**
+   * Adds a listener for the specified listening type and returns a function to remove the listener.
+   * @param type - The type of listening event to add the listener for.
+   * @param listener - The listener function to add.
+   * @returns A function that can be called to remove the listener.
+   */
   addListener(type: ListeningTypes, listener: Listener): () => void {
     this.listeners[type].add(listener)
     return () => {
@@ -90,10 +96,20 @@ export class MappingState {
     }
   }
 
+  /**
+   * Removes a listener from the specified listening type.
+   * @param type - The type of listening event to remove the listener from.
+   * @param listener - The listener function to remove.
+   */
   removeListener(type: ListeningTypes, listener: Listener): void {
     this.listeners[type].delete(listener)
   }
 
+  /**
+   * Notifies all registered listeners of the specified type with the provided data.
+   * @param type - The type of listening event to notify listeners for.
+   * @param data - The data to pass to the listener functions.
+   */
   private async notifyListeners(
     type: ListeningTypes,
     data?: Key[] | ButtonMapping | Action[]
@@ -221,6 +237,12 @@ export class MappingState {
     )
   }
 
+  /**
+   * Adds a new key to the mappings or updates an existing key.
+   *
+   * @param key - The key to add or update.
+   * @returns A Promise that resolves when the key has been added or updated.
+   */
   addKey = async (key: Key): Promise<void> => {
     const keys = this.mappings.keys
     // Validate key structure
@@ -258,16 +280,34 @@ export class MappingState {
     this.mappings.keys = keys
   }
 
+  /**
+   * Checks if a key with the specified ID exists in the mappings.
+   *
+   * @param keyId - The ID of the key to check.
+   * @returns `true` if the key exists, `false` otherwise.
+   */
   keyExists = (keyId: string): boolean => {
     const mappings = this.mappings
     return mappings.keys.some((key) => key.id === keyId)
   }
 
+  /**
+   * Checks if an action with the specified ID exists in the mappings.
+   *
+   * @param actionId - The ID of the action to check.
+   * @returns `true` if the action exists, `false` otherwise.
+   */
   actionExists = (actionId: string): boolean => {
     const mappings = this.mappings
     return mappings.actions.some((action) => action.id === actionId)
   }
 
+  /**
+   * Adds a new action to the mappings, or updates an existing action if it already exists.
+   *
+   * @param action - The action to add or update.
+   * @returns A Promise that resolves when the action has been added or updated.
+   */
   addAction = async (action: Action): Promise<void> => {
     const mappings = this.mappings
     // Validate action structure
@@ -288,6 +328,12 @@ export class MappingState {
     }
   }
 
+  /**
+   * Removes an action from the mappings, and disables the action in all profile mappings.
+   *
+   * @param actionId - The ID of the action to remove.
+   * @returns A Promise that resolves when the action has been removed.
+   */
   removeAction = async (actionId: string): Promise<void> => {
     const mappings = this.mappings
 
@@ -398,6 +444,11 @@ export class MappingState {
     )
   }
 
+  /**
+   * Updates the icon for an action with the specified ID.
+   * @param actionId - The ID of the action to update.
+   * @param icon - The new icon to set for the action.
+   */
   updateIcon = (actionId: string, icon: string): void => {
     const action = this.mappings.actions.find((action) => action.id === actionId)
     // Find the index of the action to update
@@ -408,6 +459,11 @@ export class MappingState {
     }
   }
 
+  /**
+   * Retrieves an action by its ID from the mappings.
+   * @param actionId - The ID of the action to retrieve.
+   * @returns The action with the specified ID, or null if not found.
+   */
   getAction = (actionId: string): Action | null => {
     const mappings = this.mappings
     // Find the index of the action to update
@@ -421,11 +477,19 @@ export class MappingState {
     }
   }
 
+  /**
+   * Retrieves the current actions from the mappings.
+   * @returns The current actions, or null if not found.
+   */
   getActions = (): Action[] | null => {
     const mappings = this.mappings
     return mappings.actions
   }
 
+  /**
+   * Retrieves the current button mapping from the selected profile, or the default profile if no profile is selected.
+   * @returns The current button mapping.
+   */
   getMapping = (): ButtonMapping => {
     console.log('Getting map from the profile: ', this.mappings.selected_profile)
     if (!this.mappings.selected_profile) {
@@ -438,6 +502,10 @@ export class MappingState {
     return this.mappings.keys
   }
 
+  /**
+   * Retrieves an array of all the profiles defined in the mappings.
+   * @returns An array of Profile objects, with the `mapping` property set to `null`.
+   */
   getProfiles(): Profile[] {
     const profiles = Object.values(this.mappings.profiles).map((profile) => ({
       ...profile,
@@ -446,14 +514,28 @@ export class MappingState {
     return profiles
   }
 
+  /**
+   * Retrieves the button mapping for the specified profile.
+   * @param profileName - The name of the profile to retrieve the mapping for.
+   * @returns The button mapping for the specified profile, or `null` if the profile is not found.
+   */
   getProfile(profileName: string): ButtonMapping | null {
     return this.mappings.profiles[profileName]
   }
 
+  /**
+   * Retrieves the currently selected profile.
+   * @returns The currently selected profile.
+   */
   getCurrentProfile = (): Profile => {
     return this.mappings.selected_profile
   }
 
+  /**
+   * Sets the currently selected profile.
+   * @param profile - The profile to set as the current profile.
+   * @returns A Promise that resolves when the profile has been set.
+   */
   setCurrentProfile = async (profile: Profile): Promise<void> => {
     console.log('Setting profile to: ', profile)
     if (this.mappings.profiles[profile.id]) {
@@ -614,6 +696,11 @@ export class MappingState {
     }
   }
 
+  /**
+   * Runs the specified action, if it is valid and enabled.
+   * @param action - The action to be run, either an `Action` or an `ActionReference`.
+   * @returns void
+   */
   runAction(action: Action | ActionReference): void {
     if (isValidActionReference(action) && action.enabled) {
       const SocketData = {
@@ -627,6 +714,24 @@ export class MappingState {
     }
   }
 
+  triggerKey(keyId: string, mode: EventMode): void {
+    const profile = this.getMapping()
+    const action = profile.mapping[keyId][mode]
+    if (action) {
+      this.runAction(action)
+    } else {
+      loggingStore.log(
+        MESSAGE_TYPES.WARNING,
+        `MAPHANDLER: Key does not have an action! KeyID: ${keyId}`
+      )
+    }
+  }
+
+  /**
+   * Fetches the icon for the specified action.
+   * @param action - The action for which to fetch the icon, either an `Action` or an `ActionReference`.
+   * @returns The URL of the icon, or `null` if the icon could not be fetched.
+   */
   fetchActionIcon = async (action: Action | ActionReference): Promise<string | null> => {
     if (!isValidAction(action)) {
       const actualAction = this.getAction(action.id)
@@ -636,6 +741,12 @@ export class MappingState {
     }
   }
 
+  /**
+   * Fetches the icon for the specified key and event mode.
+   * @param key - The key for which to fetch the icon.
+   * @param mode - The event mode for which to fetch the icon.
+   * @returns The URL of the icon, or `null` if the icon could not be fetched.
+   */
   fetchKeyIcon = async (key: Key, mode: EventMode): Promise<string | null> => {
     const mapping = this.getMapping()
     const action = mapping.mapping[key.id][mode]
@@ -647,6 +758,12 @@ export class MappingState {
     }
   }
 
+  /**
+   * Updates the specified profile with the provided data.
+   * @param profileName - The name of the profile to update.
+   * @param updatedProfile - The partial profile data to merge with the existing profile.
+   * @returns A Promise that resolves when the profile has been updated.
+   */
   updateProfile = async (
     profileName: string,
     updatedProfile: Partial<ButtonMapping>

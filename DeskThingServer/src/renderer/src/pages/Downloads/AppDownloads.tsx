@@ -9,6 +9,18 @@ import DownloadNotification from '@renderer/overlays/DownloadNotification'
 import Overlay from '@renderer/overlays/Overlay'
 import { SuccessNotification } from '@renderer/overlays/SuccessNotification'
 
+/**
+ * The `AppDownloads` component is responsible for rendering the downloads page of the application. It displays a list of available app downloads, allows users to upload their own app, and provides a link to the client downloads page.
+ *
+ * The component uses various hooks from the `useAppStore`, `useGithubStore`, and `usePageStore` stores to manage the state and functionality of the page. It also uses several custom components, such as `Sidebar`, `Button`, and various overlay components.
+ *
+ * The main features of the `AppDownloads` component include:
+ * - Displaying a list of available app downloads, with the ability to download the latest version of each app
+ * - Allowing users to upload their own app by selecting a ZIP file
+ * - Providing a link to the client downloads page
+ * - Displaying download progress and success notifications
+ * - Handling errors and edge cases, such as when the GitHub API limit is reached
+ */
 const AppDownloads: React.FC = () => {
   // Getting releases to show
   const appReleases = useGithubStore((githubStore) => githubStore.appReleases)

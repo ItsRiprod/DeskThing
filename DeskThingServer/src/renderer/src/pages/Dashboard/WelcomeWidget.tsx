@@ -47,6 +47,14 @@ const WelcomeWidget: React.FC = () => {
             <p className="group-hover:hidden">Youtube</p>
             <p className="group-hover:inline hidden">Youtube</p>
           </Button>
+          <Button
+            onClick={() => window.open('https://deskthing.app/youtube', '_blank')}
+            className={`delay-300 text-sm items-center border-cyan-500 border gap-1 hover:bg-cyan-500 group hover:text-white transition-[transform,opacity] duration-500 overflow-hidden text-nowrap ${showText ? 'opacity-100' : '-translate-y-10 opacity-0'}`}
+          >
+            <IconYoutube className="fill-cyan-500 group-hover:fill-white" />
+            <p className="group-hover:hidden">Whats New</p>
+            <p className="group-hover:inline hidden">Broken Link</p>
+          </Button>
         </div>
       </div>
     </div>

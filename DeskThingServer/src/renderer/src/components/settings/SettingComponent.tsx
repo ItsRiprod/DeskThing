@@ -6,6 +6,18 @@ interface SettingComponentProps {
   className?: string
 }
 
+/**
+ * Renders a setting component with a label, description, and optional children.
+ * The component is styled with a hover effect and displays additional information
+ * about the setting, such as the type and min/max values for number settings.
+ *
+ * @param setting - An object containing information about the setting, including
+ * its type, label, description, min/max values (for number settings), and value.
+ * @param children - Optional React nodes to be rendered alongside the setting
+ * information.
+ * @param className - An optional CSS class name to be applied to the component.
+ * @returns A JSX.Element representing the rendered setting component.
+ */
 const SettingComponent = ({ setting, children, className }: SettingComponentProps): JSX.Element => {
   return (
     <div

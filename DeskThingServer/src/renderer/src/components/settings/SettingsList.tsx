@@ -9,6 +9,15 @@ interface SettingsListProps {
   className?: string
 }
 
+/**
+ * A React component that renders a list of settings with a TagList component.
+ *
+ * @param {SettingsListProps} props - The props for the SettingsListComponent.
+ * @param {SettingsList} props.setting - The setting object to be rendered.
+ * @param {(value: number | boolean | string | string[]) => void} props.handleSettingChange - A function to handle changes to the setting value.
+ * @param {string} [props.className] - An optional CSS class name to apply to the component.
+ * @returns {React.ReactElement} - The rendered SettingsListComponent.
+ */
 export const SettingsListComponent: React.FC<SettingsListProps> = ({
   handleSettingChange,
   className,

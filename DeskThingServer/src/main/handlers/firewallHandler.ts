@@ -7,7 +7,12 @@ import { join } from 'path'
 import { app } from 'electron'
 import { ReplyFn, MESSAGE_TYPES } from '@shared/types'
 
-// Function to execute shell commands
+/**
+ * Executes a shell command and returns the stdout output as a Promise.
+ *
+ * @param command - The shell command to execute.
+ * @returns A Promise that resolves with the stdout output of the command, or rejects with an error message if the command fails.
+ */
 function runCommand(command: string): Promise<string> {
   return new Promise((resolve, reject) => {
     exec(command, (error, stdout, stderr) => {
@@ -24,6 +29,12 @@ function runCommand(command: string): Promise<string> {
   })
 }
 
+/**
+ * Checks if a firewall rule for the specified port exists on the current platform.
+ *
+ * @param port - The port number to check for a firewall rule.
+ * @returns `true` if the firewall rule exists, `false` otherwise.
+ */
 async function checkFirewallRuleExists(port: number): Promise<boolean> {
   const platform = os.platform()
   let checkCommand: string
@@ -56,7 +67,15 @@ async function checkFirewallRuleExists(port: number): Promise<boolean> {
   }
 }
 
-// Firewall setup function
+/**
+ * Sets up the firewall rules for the specified port on the current platform.
+ *
+ * This function checks if the firewall rule for the specified port already exists, and if not, it creates the necessary rules for both inbound and outbound traffic. The function handles the setup process for different operating systems (Windows, Linux, macOS) using platform-specific commands.
+ *
+ * @param port - The port number to set up the firewall rules for.
+ * @param reply - An optional callback function to provide logging information during the setup process.
+ * @returns A Promise that resolves when the firewall setup is complete.
+ */
 async function setupFirewall(port: number, reply?: ReplyFn): Promise<void> {
   const platform = os.platform()
   const inboundRuleName = 'Deskthing Server Inbound'

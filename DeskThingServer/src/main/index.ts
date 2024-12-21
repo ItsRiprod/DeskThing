@@ -13,10 +13,21 @@
  */
 
 console.log('[Index] Starting')
-import { AppIPCData, AuthScopes, Client, UtilityIPCData, MESSAGE_TYPES } from '@shared/types'
+import {
+  AppIPCData,
+  AuthScopes,
+  Client,
+  UtilityIPCData,
+  MESSAGE_TYPES,
+  App,
+  ServerIPCData
+} from '@shared/types'
 import { app, shell, BrowserWindow, ipcMain, Tray, Menu, nativeImage } from 'electron'
 import { join, resolve } from 'path'
 import icon from '../../resources/icon.png?asset'
+import * as electron from 'update-electron-app'
+
+console.log('Startup Electron ', electron)
 
 // Global window and tray references to prevent garbage collection
 let mainWindow: BrowserWindow | null = null
@@ -327,34 +338,61 @@ async function setupIpcHandlers(): Promise<void> {
   // Set up mapping store listeners
   import('./services/mappings/mappingStore').then(({ default: mappingStore }) => {
     mappingStore.addListener('action', (action) => {
-      sendIpcData('action', action)
+      action &&
+        sendIpcData({
+          type: 'action',
+          payload: action
+        })
     })
     mappingStore.addListener('key', (key) => {
-      sendIpcData('key', key)
+      key &&
+        sendIpcData({
+          type: 'key',
+          payload: key
+        })
     })
     mappingStore.addListener('profile', (profile) => {
-      sendIpcData('profile', profile)
+      profile &&
+        sendIpcData({
+          type: 'profile',
+          payload: profile
+        })
     })
   })
 
   // Set up logging store listener
   loggingStore.addListener((errorData) => {
-    sendIpcData('log', errorData)
+    sendIpcData({
+      type: 'log',
+      payload: errorData
+    })
   })
 
   // Set up settings store listener
   settingsStore.addListener((newSettings) => {
-    sendIpcData('settings-updated', newSettings)
+    sendIpcData({
+      type: 'settings-updated',
+      payload: newSettings
+    })
   })
 
   // Set up connections store listeners
   import('./stores/connectionsStore').then(({ default: ConnectionStore }) => {
     ConnectionStore.on((clients: Client[]) => {
-      sendIpcData('connections', { status: true, data: clients.length, final: true })
-      sendIpcData('clients', { status: true, data: clients, final: true })
+      sendIpcData({
+        type: 'connections',
+        payload: { status: true, data: clients.length, final: true }
+      })
+      sendIpcData({
+        type: 'clients',
+        payload: { status: true, data: clients, final: true }
+      })
     })
     ConnectionStore.onDevice((devices: string[]) => {
-      sendIpcData('adbdevices', { status: true, data: devices, final: true })
+      sendIpcData({
+        type: 'adbdevices',
+        payload: { status: true, data: devices, final: true }
+      })
     })
   })
 }
@@ -433,12 +471,14 @@ if (!app.requestSingleInstanceLock()) {
  * Handles custom protocol URLs
  * @param url - The URL to handle
  */
-function handleUrl(url: string | undefined): void {
+function handleUrl(url: string | undefined, window: BrowserWindow | null = mainWindow): void {
   if (url && url.startsWith('deskthing://')) {
     const path = url.replace('deskthing://', '')
 
-    if (mainWindow) {
-      mainWindow.webContents.send('handle-protocol-url', path)
+    if (window) {
+      window.webContents.send('handle-protocol-url', path)
+    } else {
+      console.log('No main window found')
     }
   }
 }
@@ -462,7 +502,7 @@ async function loadModules(): Promise<void> {
       loadAndRunEnabledApps()
     })
 
-    import('./handlers/musicHandler')
+    import('./services/music/musicHandler')
   } catch (error) {
     console.error('Error loading modules:', error)
   }
@@ -475,8 +515,25 @@ async function sendIpcAuthMessage(
 ): Promise<void> {
   mainWindow?.webContents.send('display-user-form', requestId, scope)
 }
-async function sendIpcData(dataType: string, data: unknown): Promise<void> {
-  mainWindow?.webContents.send(dataType, data)
+
+export type IpcDataTypes = {
+  dataType: ''
+  data: App[]
 }
 
-export { sendIpcAuthMessage, openAuthWindow, sendIpcData }
+async function sendIpcData({ type, payload, window = mainWindow }: ServerIPCData): Promise<void> {
+  if (window instanceof BrowserWindow) {
+    window.webContents.send(type, payload)
+  } else {
+    mainWindow?.webContents.send(type, payload)
+  }
+}
+
+export {
+  sendIpcAuthMessage,
+  openAuthWindow,
+  sendIpcData,
+  createMainWindow,
+  createClientWindow,
+  handleUrl
+}

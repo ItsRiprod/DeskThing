@@ -6,6 +6,13 @@ import { useAppStore, useNotificationStore, usePageStore } from '@renderer/store
 import App from '@renderer/components/App'
 import MainElement from '@renderer/nav/MainElement'
 
+/**
+ * The `AppsList` component is the main component that renders the list of installed apps in the application.
+ * It fetches the list of apps from the app store, displays them in a scrollable list, and allows the user to
+ * reorder the apps by dragging and dropping them.
+ *
+ * The component also includes a sidebar with a button to navigate to the downloads page.
+ */
 const AppsList: React.FC = () => {
   const appsList = useAppStore((appStore) => appStore.appsList)
   const order = useAppStore((appStore) => appStore.order)

@@ -2,6 +2,14 @@ import { useEffect } from 'react'
 import { useGithubStore } from '../stores'
 import { Settings } from '@shared/types'
 
+/**
+ * A React component that listens for updates to the application's settings and fetches and caches GitHub repository data accordingly.
+ *
+ * This component is responsible for:
+ * - Fetching and caching GitHub repository data for the application's configured app and client repositories.
+ * - Listening for updates to the application's settings and fetching and caching new repository data as needed.
+ * - Handling errors that occur during the fetching of repository data.
+ */
 const GithubDataListener = (): null => {
   const fetchAppRepo = useGithubStore((state) => state.fetchAppRepo)
   const fetchClientRepo = useGithubStore((state) => state.fetchClientRepo)

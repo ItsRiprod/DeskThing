@@ -1,7 +1,18 @@
+/**
+ * Provides functions to read, write, and manage application data stored in a JSON file.
+ *
+ * The `readData` function reads the data from the JSON file, creating a default data structure if the file does not exist.
+ * The `writeData` function writes the provided data to the JSON file.
+ * The `setData` function updates the data for a specific application, notifying the application of the change.
+ * The `addData` function adds or merges data for a specific application.
+ * The `getData` function retrieves the data for a specific application.
+ * The `purgeAppData` function removes the data for a specific application.
+ */
+
 console.log('[Data Handler] Starting')
 import { AppDataInterface } from '@shared/types'
-import { readFromFile, writeToFile } from '../utils/fileHandler'
-import { sendMessageToApp } from '../services/apps'
+import { readFromFile, writeToFile } from '../../utils/fileHandler'
+import { sendMessageToApp } from '../apps'
 
 interface Data {
   [appName: string]: AppDataInterface
@@ -45,7 +56,12 @@ const setData = (key: string, value: AppDataInterface): void => {
   sendMessageToApp(key, { type: 'data', payload: value })
   writeData(data)
 }
-// Set data function
+
+/**
+ * @deprecated
+ * @param key
+ * @param value
+ */
 const addData = (key: string, value: AppDataInterface): void => {
   const data = readData()
   if (!data[key]) {

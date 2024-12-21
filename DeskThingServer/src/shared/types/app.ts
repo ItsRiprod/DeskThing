@@ -210,9 +210,15 @@ export interface AppSettings {
   [key: string]: SettingsType
 }
 
-export interface AppData {
+export type LegacyAppData = {
   apps: App[]
-  config: Config
+  config: {
+    [key: string]: string | string[]
+  }
+}
+
+export type AppData = {
+  [appName: string]: App
 }
 
 export interface DeskThing {
@@ -239,4 +245,52 @@ export interface SortedReleases {
 export interface ReleaseDetails {
   name: string
   version: string
+}
+
+/**
+ * App Communications
+ */
+
+// Events that can be sent back to the server
+export enum IncomingAppDataTypes {
+  DEFAULT = 'default',
+  GET = 'get',
+  /**
+   * Sets data inside the server for your app that can be retrieved with DeskThing.getData()
+   *
+   * @example
+   * DeskThing.send(SEND_TYPES.SET, { payload: { key: 'value' }})
+   */
+  SET = 'set',
+  /**
+   * Opens a URL to a specific address on the server.
+   *
+   * This gets around any CORS issues that may occur.
+   * @example
+   * DeskThing.send(SEND_TYPES.OPEN, { payload: 'https://someurl.com' })
+   */
+  OPEN = 'open',
+  /**
+   * Sends data to the front end.
+   *
+   * @example
+   * DeskThing.send(SEND_TYPES.SEND, { type: 'someData', payload: 'value' })
+   */
+  SEND = 'send',
+  /**
+   * Sends data to another app.
+   *
+   * @example
+   * DeskThing.send(SEND_TYPES.TOAPP, { app: 'spotify', type: 'get', payload: 'music' })
+   */
+  TOAPP = 'toApp',
+  /**
+   * Sends data to another app.
+   *
+   * @example
+   * DeskThing.send(SEND_TYPES.TOAPP, { app: 'spotify', type: 'get', payload: 'music' })
+   */
+  LOG = 'log',
+  KEY = 'key',
+  ACTION = 'action'
 }

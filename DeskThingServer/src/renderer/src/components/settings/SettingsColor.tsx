@@ -8,6 +8,15 @@ interface SettingsColorProps {
   className?: string
 }
 
+/**
+ * A React component that renders a color setting with a color picker input.
+ *
+ * @param {SettingsColorProps} props - The component props.
+ * @param {SettingsColor} props.setting - The color setting object.
+ * @param {(value: number | boolean | string | string[]) => void} props.handleSettingChange - A function to handle changes to the setting value.
+ * @param {string} [props.className] - An optional CSS class name to apply to the component.
+ * @returns {React.ReactElement} - The rendered SettingsColorComponent.
+ */
 export const SettingsColorComponent: React.FC<SettingsColorProps> = ({
   handleSettingChange,
   className,
