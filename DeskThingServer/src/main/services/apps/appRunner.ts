@@ -1,5 +1,5 @@
 console.log('[AppRnr Service] Starting')
-import loggingStore from '../../stores/loggingStore'
+import { loggingStore } from '@server/stores/'
 import { MESSAGE_TYPES } from '@shared/types'
 
 /**
@@ -9,15 +9,12 @@ import { MESSAGE_TYPES } from '@shared/types'
  * @returns {Promise<void>}
  */
 export async function loadAndRunEnabledApps(): Promise<void> {
-  const { AppHandler } = await import('./appState')
-  const appHandler = AppHandler.getInstance()
+  const { appStore } = await import('@server/stores')
 
   try {
-    const appInstances = appHandler.getAll()
+    const appInstances = appStore.getAll()
     loggingStore.log(MESSAGE_TYPES.LOGGING, 'SERVER: Loaded apps config. Running apps...')
-    const enabledApps = appInstances.filter(
-      (appConfig) => appConfig.enabled === true && appConfig.running !== true
-    )
+    const enabledApps = appInstances.filter((appConfig) => appConfig.enabled === true)
 
     await Promise.all(
       enabledApps.map(async (appConfig) => {
@@ -25,9 +22,7 @@ export async function loadAndRunEnabledApps(): Promise<void> {
           MESSAGE_TYPES.LOGGING,
           `SERVER: Automatically running app ${appConfig.name}`
         )
-        console.log('Running ', appConfig.name)
-        await appHandler.run(appConfig.name)
-        console.log('Done running ', appConfig.name)
+        await appStore.run(appConfig.name)
       })
     )
     const failedApps = enabledApps.filter((enabledApps) => enabledApps.running === false)
@@ -36,8 +31,7 @@ export async function loadAndRunEnabledApps(): Promise<void> {
     await Promise.all(
       failedApps.map(async (failedApp) => {
         loggingStore.log(MESSAGE_TYPES.LOGGING, `SERVER: Attempting to run ${failedApp.name} again`)
-        console.log('Running again ', failedApp.name)
-        await appHandler.run(failedApp.name)
+        await appStore.run(failedApp.name)
       })
     )
   } catch (error) {

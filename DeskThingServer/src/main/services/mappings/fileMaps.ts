@@ -6,7 +6,7 @@ import {
   MESSAGE_TYPES,
   Profile
 } from '@shared/types'
-import loggingStore from '@server/stores/loggingStore'
+import { loggingStore } from '@server/stores/'
 import {
   readFromFile,
   readFromGlobalFile,

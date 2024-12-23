@@ -1,6 +1,6 @@
 console.log('[AppMangr Service] Starting')
 import { rmSync, readdirSync, statSync, existsSync } from 'node:fs'
-import loggingStore from '../../stores/loggingStore'
+import { loggingStore } from '@server/stores/'
 import { MESSAGE_TYPES } from '@shared/types'
 export async function clearCache(appName: string): Promise<void> {
   try {
@@ -75,7 +75,7 @@ export async function purgeApp(appName: string): Promise<void> {
 
     const { purgeAppData } = await import('../files/dataService')
     const { purgeAppConfig } = await import('../files/appService')
-    const keyMapStore = (await import('../mappings/mappingStore')).default
+    const keyMapStore = (await import('@server/stores/mappingStore')).default
 
     // Purge App Data
     await purgeAppData(appName)

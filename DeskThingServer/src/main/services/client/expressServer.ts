@@ -1,5 +1,5 @@
 console.log('[ClientExpress Service] Starting')
-import loggingStore from '../../stores/loggingStore'
+import { loggingStore } from '@server/stores'
 import { MESSAGE_TYPES } from '@shared/types'
 import { app, app as electronApp } from 'electron'
 import { join } from 'path'

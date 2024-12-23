@@ -14,13 +14,11 @@ import {
   AppReturnData,
   AppIPCData,
   ReplyFn,
-  MESSAGE_TYPES
+  MESSAGE_TYPES,
+  AppSettings
 } from '@shared/types'
-import loggingStore from '../stores/loggingStore'
-import { getData, setData } from '../services/files/dataService'
+import { loggingStore, appStore } from '@server/stores'
 import { dialog, BrowserWindow } from 'electron'
-import { sendMessageToApp, AppHandler } from '../services/apps'
-const appStore = AppHandler.getInstance()
 
 /**
  * The `appHandler` object contains functions for handling different types of app-related IPC (Inter-Process Communication) data.
@@ -42,7 +40,16 @@ export const appHandler: Record<
     data: AppIPCData,
     replyFn: ReplyFn
   ) => Promise<
-    AppDataInterface | boolean | App[] | undefined | void | null | App | string | AppReturnData
+    | AppDataInterface
+    | boolean
+    | App[]
+    | undefined
+    | void
+    | null
+    | App
+    | string
+    | AppReturnData
+    | { path: string; name: string }
   >
 > = {
   /**
@@ -76,7 +83,7 @@ export const appHandler: Record<
       case 'get':
         return await getAppData(replyFn, data.payload)
       case 'set':
-        return await setAppData(replyFn, data.payload.appId, data.payload.data)
+        return await setAppData(replyFn, data.payload.appId, data.payload.settings)
       default:
         return
     }
@@ -203,7 +210,8 @@ export const appHandler: Record<
   },
 
   'user-data-response': async (data) => {
-    sendMessageToApp(data.payload.requestId, data.payload.response)
+    const { appStore } = await import('@server/stores')
+    appStore.sendDataToApp(data.payload.requestId, data.payload.response)
   },
   'select-zip-file': async () => {
     const mainWindow = BrowserWindow.getFocusedWindow()
@@ -228,7 +236,8 @@ export const appHandler: Record<
     replyFn('logging', { status: true, data: 'Finished', final: true })
   },
   'send-to-app': async (data, replyFn) => {
-    await sendMessageToApp(data.payload.app, data.payload)
+    const { appStore } = await import('@server/stores')
+    await appStore.sendDataToApp(data.payload.app, data.payload)
     replyFn('logging', { status: true, data: 'Finished', final: true })
   },
   'app-order': async (data, replyFn) => {
@@ -256,12 +265,17 @@ const getApps = (replyFn: ReplyFn): App[] => {
  *
  * @param replyFn - A function to send a response back to the client.
  * @param id - The ID of the app whose data is being saved.
- * @param data - The app data to be saved.
+ * @param settings - The app settings.
  * @returns A Promise that resolves when the data has been saved.
  */
-const setAppData = async (replyFn: ReplyFn, id, data: AppDataInterface): Promise<void> => {
-  loggingStore.log(MESSAGE_TYPES.LOGGING, 'SERVER: Saving ' + id + "'s data " + data)
-  await setData(id, data)
+const setAppData = async (
+  replyFn: ReplyFn,
+  appId: string,
+  settings: AppSettings
+): Promise<void> => {
+  const { appStore } = await import('@server/stores')
+  loggingStore.log(MESSAGE_TYPES.LOGGING, 'SERVER: Saving ' + appId + "'s data " + settings)
+  appStore.addSettings(appId, settings)
   replyFn('logging', { status: true, data: 'Finished', final: true })
 }
 
@@ -274,9 +288,10 @@ const setAppData = async (replyFn: ReplyFn, id, data: AppDataInterface): Promise
  */
 const getAppData = async (replyFn, payload): Promise<AppDataInterface | null> => {
   try {
-    const data = await getData(payload)
+    const { appStore } = await import('@server/stores')
+    const data = await appStore.getData(payload)
     replyFn('logging', { status: true, data: 'Finished', final: true })
-    return data
+    return data || null
   } catch (error) {
     loggingStore.log(MESSAGE_TYPES.ERROR, 'SERVER: Error saving manifest' + error)
     console.error('Error setting client manifest:', error)

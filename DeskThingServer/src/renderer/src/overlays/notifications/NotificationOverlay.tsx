@@ -8,16 +8,16 @@ import RequestsPage from './RequestsPage'
 import TasksPage from './TasksPage'
 import IssuesPage from './IssuesPage'
 import { useSearchParams } from 'react-router-dom'
+import useTaskStore from '@renderer/stores/taskStore'
 
 const NotificationOverlay: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const notifState = useNotificationStore((state) => state)
+  const taskList = useTaskStore((state) => state.taskList.tasks)
   const page = searchParams.get('page') || 'event'
 
-  const activeTasks = notifState.tasks.filter(
-    (task) => task.status !== 'complete' && task.status !== 'rejected'
-  )
+  const activeTasks = Object.values(taskList).filter((task) => task.completed == false)
 
   const setPage = (page: string): void => {
     searchParams.set('page', page)

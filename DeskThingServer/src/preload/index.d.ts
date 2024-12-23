@@ -19,7 +19,7 @@ declare global {
       pingClient: (clientId: string) => Promise<string | null>
       getApps: () => Promise<App[]>
       getAppData: (appId: string) => Promise<AppDataInterface | null>
-      setAppData: (appId: string, data: AppDataInterface) => Promise<void>
+      setAppData: (appId: string, data: AppSettings) => Promise<void>
       stopApp: (appId: string) => Promise<void>
       disableApp: (appId: string) => Promise<void>
       runApp: (appId: string) => Promise<void>
@@ -27,7 +27,7 @@ declare global {
       purgeApp: (appId: string) => Promise<void>
       handleAppZip: (path: string) => Promise<AppReturnData | null>
       handleAppUrl: (url: string) => Promise<AppReturnData | null>
-      handleResponseToUserData: (requestId: string, payload: IncomingData) => Promise<void>
+      handleResponseToUserData: (requestId: string, payload: ToAppData) => Promise<void>
       handleDevAppZip: (path: string) => Promise<void>
       sendDataToApp: (data: SocketData) => Promise<void>
       orderApps: (data: string[]) => Promise<void>
@@ -76,6 +76,12 @@ declare global {
       deleteProfile: (profile: string) => Promise<void>
 
       runAction: (action: Action | ActionReference) => Promise<void>
+
+      getTaskList: () => Promise<TaskList>
+      stopTask: (taskId: string) => Promise<void>
+      startTask: (taskId: string) => Promise<void>
+      completeStep: (taskId: string, stepId: string) => Promise<void>
+      completeTask: (taskId: string) => Promise<void>
     }
     api: unknown // Or define `api` more specifically if you have a shape for it
   }

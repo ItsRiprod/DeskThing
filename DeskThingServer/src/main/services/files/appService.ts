@@ -14,8 +14,8 @@
  */
 
 console.log('[Config Handler] Starting')
-import { AppData, App, MESSAGE_TYPES, Manifest, ButtonMapping } from '@shared/types'
-import loggingStore from '../../stores/loggingStore'
+import { AppData, App, MESSAGE_TYPES, Manifest } from '@shared/types'
+import { loggingStore } from '@server/stores'
 import { readFromFile, writeToFile } from '../../utils/fileHandler'
 import { verifyAppDataStructure, verifyAppStructure } from './appServiceUtils'
 
@@ -57,10 +57,11 @@ const readData = (): AppData => {
  */
 const writeData = (data: AppData): void => {
   try {
+    console.log('[Config Handler] Writing data')
     const apps = verifyAppDataStructure(data)
     writeToFile<AppData>(apps, 'apps.json')
   } catch (err) {
-    loggingStore.log(MESSAGE_TYPES.ERROR, 'Error writing data' + err)
+    loggingStore.error('[writeData] Error writing data' + err)
     console.error('Error writing data:', err)
   }
 }
@@ -71,7 +72,7 @@ const writeData = (data: AppData): void => {
  * @param {App} newApp - The new app to be added or updated.
  * @returns {Promise<void>} - A Promise that resolves when the data has been written to the file.
  */
-const setAppData = async (newApp: Partial<App>): Promise<void> => {
+export const setAppData = async (newApp: Partial<App>): Promise<void> => {
   const data = readData()
 
   if (!newApp.name) {
@@ -99,7 +100,7 @@ const setAppData = async (newApp: Partial<App>): Promise<void> => {
  * @param {App[]} appsList - The new list of apps to be set in the `AppData` object.
  * @returns {Promise<void>} - A Promise that resolves when the data has been written to the file.
  */
-const setAppsData = async (appsList: App[]): Promise<void> => {
+export const setAppsData = async (appsList: App[]): Promise<void> => {
   const newAppData: AppData = {}
 
   appsList.map((app) => {
@@ -116,11 +117,10 @@ const setAppsData = async (appsList: App[]): Promise<void> => {
  * @param {string} appName - The name of the application to update.
  * @returns {void}
  */
-const addAppManifest = (manifest: Manifest, appName: string): void => {
+export const addAppManifest = (manifest: Manifest, appName: string): void => {
   const data = readData()
 
   // Find existing app by name
-
   if (data[appName]) {
     // Update existing app
     data[appName].manifest = manifest
@@ -131,25 +131,12 @@ const addAppManifest = (manifest: Manifest, appName: string): void => {
   writeData(data)
 }
 
-const getConfig = (
-  configName: string
-): { [app: string]: string | Array<string> | ButtonMapping | undefined } => {
-  const data = readData()
-
-  if (!data.config) {
-    const val = {}
-    data.config = val
-    writeData(data)
-  }
-  return { [configName]: data.config[configName] }
-}
-
 /**
  * Retrieves the application data.
  *
  * @returns {AppData} The application data.
  */
-const getAppData = (): AppData => {
+export const getAppData = (): AppData => {
   const data = readData()
   return data
 }
@@ -160,60 +147,34 @@ const getAppData = (): AppData => {
  * @param appName - The name of the application to retrieve.
  * @returns The application if found, or `undefined` if not found.
  */
-const getAppByName = (appName: string): App | undefined => {
-  const data = readData()
+export const getAppByName = (appName: string): App | undefined => {
+  const data = getAppData()
 
   // Find the app by name in the apps array
-  const foundApp = data.apps.find((app: App) => app.name === appName)
+  const foundApp = data[appName]
 
   return foundApp
 }
 
 /**
- * Retrieves an application by its index.
- *
- * @param index - The index of the application to retrieve.
- * @returns The application if found, or `undefined` if not found.
- */
-const getAppByIndex = (index: number): App | undefined => {
-  const data = readData()
-
-  // Find the app by name in the apps array
-  const foundApp = data.apps.find((app: App) => app.prefIndex === index)
-
-  return foundApp
-}
-
-/**
- * Purges the configuration for the specified application.
+ * Purges the app data from file.
  *
  * @param appName - The name of the application to purge the configuration for.
  * @returns A Promise that resolves when the configuration has been purged.
  */
-const purgeAppConfig = async (appName: string): Promise<void> => {
-  loggingStore.log(MESSAGE_TYPES.LOGGING, `Purging app: ${appName}`)
-  const data = readData()
+export const purgeAppConfig = async (appName: string): Promise<void> => {
+  try {
+    loggingStore.log(MESSAGE_TYPES.LOGGING, `Purging app: ${appName}`)
+    const data = readData()
 
-  // Filter out the app to be purged
-  const filteredApps = data.apps.filter((app: App) => app.name !== appName)
-  data.apps = filteredApps
+    if (!data[appName]) {
+      throw new Error(`App ${appName} not found`)
+    }
 
-  writeData(data)
-  // loggingStore.log(MESSAGE_TYPES.CONFIG, {
-  //   app: 'server',
-  //   type: 'config',
-  //   payload: data.config
-  // })
-}
-
-export {
-  setAppData,
-  setAppsData,
-  getAppData,
-  getAppByName,
-  getAppByIndex,
-  addAppManifest,
-  addConfig,
-  getConfig,
-  purgeAppConfig
+    delete data[appName]
+    writeData(data)
+  } catch (error) {
+    loggingStore.log(MESSAGE_TYPES.ERROR, `Failed to purge app ${appName}: ${error}`)
+    throw error
+  }
 }

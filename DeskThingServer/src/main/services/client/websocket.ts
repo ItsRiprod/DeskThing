@@ -1,26 +1,27 @@
 console.log('[ClientSocket Service] Starting')
 import WebSocket, { WebSocketServer } from 'ws'
 import { createServer, Server as HttpServer, IncomingMessage } from 'http'
-import loggingStore from '../../stores/loggingStore'
 import {
-  AppDataInterface,
+  loggingStore,
+  connectionStore,
+  settingsStore,
+  appStore,
+  mappingStore
+} from '@server/stores'
+import {
   MESSAGE_TYPES,
   Client,
   ClientManifest,
   Settings,
   SocketData,
   Action,
-  ServerIPCData
+  ServerIPCData,
+  SettingsType,
+  AppSettings,
+  OutgoingEvent
 } from '@shared/types'
-import { addData } from '../files/dataService'
 import { HandleDeviceData } from '../../handlers/deviceHandler'
-import settingsStore from '../../stores/settingsStore'
-import AppState from '../../services/apps/appState'
 import crypto from 'crypto'
-
-import { sendMessageToApp } from '../apps'
-import ConnectionStore from '../../stores/connectionsStore'
-
 import { getDeviceType, sendTime } from './clientUtils'
 import express from 'express'
 import { setupExpressServer } from './expressServer'
@@ -30,10 +31,10 @@ import {
   sendMappings,
   sendMessageToClient,
   sendMessageToClients,
+  sendSettingData,
   sendSettingsData
 } from './clientCom'
 import { sendIpcData } from '../..'
-import mappingStore from '../mappings/mappingStore'
 
 export let server: WebSocketServer | null = null
 export let httpServer: HttpServer
@@ -57,7 +58,7 @@ export const restartServer = async (): Promise<void> => {
     if (server) {
       loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Shutting down the WebSocket server...')
       loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Shutting down the WebSocket server...')
-      ConnectionStore.removeAllClients()
+      connectionStore.removeAllClients()
 
       server.clients.forEach((client) => {
         client.terminate()
@@ -156,7 +157,7 @@ export const setupServer = async (): Promise<void> => {
 
   // Handle incoming messages from the client
   server.on('connection', async (socket: WebSocket.WebSocket, req: IncomingMessage) => {
-    // Handle the incoming connection and add it to the ConnectionStore
+    // Handle the incoming connection and add it to the connectionStore
 
     // This is a bad way of handling and syncing clients
     const clientIp =
@@ -185,7 +186,7 @@ export const setupServer = async (): Promise<void> => {
       MESSAGE_TYPES.LOGGING,
       `WSOCKET: Client with id: ${client.connectionId} connected!\nWSOCKET: Sending preferences...`
     )
-    ConnectionStore.addClient(client)
+    connectionStore.addClient(client)
 
     loggingStore.log(
       MESSAGE_TYPES.LOGGING,
@@ -230,8 +231,9 @@ export const setupServer = async (): Promise<void> => {
           messageData.app !== 'utility' &&
           messageData.app !== 'music'
         ) {
-          sendMessageToApp(messageData.app.toLowerCase(), {
-            type: messageData.type,
+          const { appStore } = await import('@server/stores')
+          appStore.sendDataToApp(messageData.app.toLowerCase(), {
+            type: messageData.type as OutgoingEvent,
             request: messageData.request,
             payload: messageData.payload
           })
@@ -240,7 +242,7 @@ export const setupServer = async (): Promise<void> => {
           handleServerMessage(socket, client, messageData)
         } else if (messageData.app === 'utility' || messageData.app === 'music') {
           // Handle music requests
-          const MusicHandler = (await import('../music/musicHandler')).default
+          const MusicHandler = (await import('../../stores/musicStore')).default
           MusicHandler.handleClientRequest(messageData)
         }
 
@@ -267,7 +269,7 @@ export const setupServer = async (): Promise<void> => {
         Clients.findIndex((client) => client.client.connectionId === client.client.connectionId),
         1
       )
-      ConnectionStore.removeClient(client.connectionId)
+      connectionStore.removeClient(client.connectionId)
     })
   })
 }
@@ -298,11 +300,6 @@ const handleServerMessage = async (
       )
       try {
         switch (messageData.type) {
-          case 'preferences':
-            if (messageData.request && messageData.payload) {
-              addData(messageData.request, messageData.payload as AppDataInterface)
-            }
-            break
           case 'heartbeat':
             socket.send(
               JSON.stringify({
@@ -337,7 +334,17 @@ const handleServerMessage = async (
                     app: string
                     index: number
                   }
-                  AppState.setItemOrder(appName, newIndex)
+                  appStore.setItemOrder(appName, newIndex)
+                }
+                break
+              case 'settings':
+                if (messageData.payload) {
+                  const { app, id, setting } = messageData.payload as {
+                    app: string
+                    id: string
+                    setting: SettingsType
+                  }
+                  appStore.addSetting(app, id, setting)
                 }
                 break
               default:
@@ -385,7 +392,7 @@ const handleServerMessage = async (
                 client.device_type = manifest.device_type
               }
               // Update the client
-              ConnectionStore.updateClient(client.connectionId, client)
+              connectionStore.updateClient(client.connectionId, client)
             }
             break
           case 'action':
@@ -457,6 +464,15 @@ const setupListeners = async (): Promise<void> => {
       }
 
       sendMessageToClients(SocketData)
+    })
+
+    appStore.on('apps', (updatedApps) => {
+      const filteredAppData = updatedApps.filter((app) => app.manifest?.isWebApp !== false)
+      sendMessageToClient(undefined, { app: 'client', type: 'config', payload: filteredAppData })
+    })
+
+    appStore.on('settings', async (app: string, settings: AppSettings) => {
+      sendSettingData(app, settings)
     })
   }, 500)
 }

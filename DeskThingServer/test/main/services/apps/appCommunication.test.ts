@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach, Mock } from 'vitest'
 
-vi.mock('@server/stores/loggingStore', () => ({
-  default: {
+vi.mock('@server/stores', () => ({
+  loggingStore: {
     log: vi.fn(),
     getInstance: (): { log: Mock } => ({
       log: vi.fn()
@@ -9,7 +9,7 @@ vi.mock('@server/stores/loggingStore', () => ({
   }
 }))
 
-vi.mock('@server/services/apps/appState', () => ({
+vi.mock('@server/stores/appStore', () => ({
   default: {
     get: vi.fn().mockImplementation((appId): AppInstance | undefined => {
       if (appId === 'testApp') {
@@ -105,8 +105,8 @@ vi.mock('@server/handlers/dataHandler', () => ({
   addData: vi.fn()
 }))
 
-import { handleDataFromApp, sendMessageToApp } from '@server/services/apps/appCommunication'
-import { MESSAGE_TYPES, IncomingData, AppInstance } from '@shared/types'
+import { handleDataFromApp } from '@server/services/apps/appCommunication'
+import { MESSAGE_TYPES, ToAppData, AppInstance } from '@shared/types'
 
 describe('App Communication Service', () => {
   beforeEach(() => {
@@ -118,56 +118,14 @@ describe('App Communication Service', () => {
   })
 
   describe('handleDataFromApp', () => {
-    it('should handle get data request', async () => {
-      const appData: IncomingData = {
-        type: 'get',
-        request: 'data'
-      }
-      const { getData } = await import('@server/services/files/dataService')
-      await handleDataFromApp('testApp', appData)
-      expect(getData).toHaveBeenCalledWith('testApp')
-    })
-
     it('should handle error type', async () => {
-      const appData: IncomingData = {
+      const appData: ToAppData = {
         type: 'error',
         payload: 'test error'
       }
-      const loggingStore = await import('@server/stores/loggingStore')
+      const { loggingStore } = await import('@server/stores')
       await handleDataFromApp('testApp', appData)
-      expect(loggingStore.default.log).toHaveBeenCalledWith(
-        MESSAGE_TYPES.ERROR,
-        'test error',
-        'TESTAPP'
-      )
-    })
-  })
-
-  describe('sendMessageToApp', () => {
-    it('should handle missing app gracefully', async () => {
-      const data: IncomingData = {
-        type: 'test',
-        payload: 'test'
-      }
-      const loggingStore = await import('@server/stores/loggingStore')
-      await sendMessageToApp('nonexistentApp', data)
-      expect(loggingStore.default.log).toHaveBeenCalledWith(
-        MESSAGE_TYPES.ERROR,
-        'SERVER: App nonexistentApp not found or does not have toClient function. (is it running?)'
-      )
-    })
-
-    it('should log message sending attempt', async () => {
-      const data: IncomingData = {
-        type: 'test',
-        payload: 'test'
-      }
-      const loggingStore = await import('@server/stores/loggingStore')
-      await sendMessageToApp('testApp', data)
-      expect(loggingStore.default.log).toHaveBeenCalledWith(
-        MESSAGE_TYPES.LOGGING,
-        '[sendMessageToApp] Sending message to testApp with test'
-      )
+      expect(loggingStore.log).toHaveBeenCalledWith(MESSAGE_TYPES.ERROR, 'test error', 'TESTAPP')
     })
   })
 })

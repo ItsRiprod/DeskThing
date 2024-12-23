@@ -3,36 +3,48 @@ import { openAuthWindow, sendIpcAuthMessage } from '../..'
 import {
   AuthScopes,
   MESSAGE_TYPES,
-  IncomingData,
+  FromAppData,
   Key,
   Action,
-  ToClientType,
   IncomingAppDataTypes
 } from '@shared/types'
-import loggingStore from '../../stores/loggingStore'
+import { loggingStore } from '@server/stores/'
 import { ipcMain } from 'electron'
 
-type HandlerFuncton = (app: string, appData: IncomingData) => void
+type HandlerFunction = (app: string, appData: FromAppData) => void
 type TypeHandler = {
   [key in IncomingAppDataTypes]: RequestHandler
 }
 type RequestHandler = {
-  [key: string]: HandlerFuncton
+  [key: string]: HandlerFunction
 }
 
 /**
  * Handles data received from an app.
  *
  * @param {string} app - The name of the app sending the data.
- * @param {IncomingData} appData - The type of data or action requested.
+ * @param {FromAppData} appData - The type of data or action requested.
  */
-export async function handleDataFromApp(app: string, appData: IncomingData): Promise<void> {
-  if (appData.type in IncomingAppDataTypes) {
-    handleData[appData.type || 'default'][appData.request || 'default'](app, appData)
+export async function handleDataFromApp(app: string, appData: FromAppData): Promise<void> {
+  if (Object.values(IncomingAppDataTypes).includes(appData.type)) {
+    loggingStore.debug(
+      `[handleDataFromApp] Handling data from ${app} with type "${appData.type}" and request "${appData.request}"`,
+      app
+    )
+    try {
+      handleData[appData.type || 'default'][appData.request || 'default'](app, appData)
+    } catch (error) {
+      loggingStore.log(
+        MESSAGE_TYPES.WARNING,
+        `[handleDataFromApp]: Function not found. Defaulting to legacy`,
+        app
+      )
+      await handleLegacyCommunication(app, appData)
+    }
   } else {
     loggingStore.log(
       MESSAGE_TYPES.WARNING,
-      `[appComm]: Type ${appData.type} used by ${app} is depreciated and will be removed in a future version!`,
+      `[appComm]: Type ${appData.type}${appData.request && ' and request ' + appData.request} used by ${app} is depreciated and will be removed in a future version!`,
       app
     )
     await handleLegacyCommunication(app, appData)
@@ -43,14 +55,24 @@ export async function handleDataFromApp(app: string, appData: IncomingData): Pro
  * Logs a warning message when an app sends an unknown data type or request.
  *
  * @param {string} app - The name of the app that sent the unknown data.
- * @param {IncomingData} appData - The data received from the app.
+ * @param {FromAppData} appData - The data received from the app.
  */
-const handleRequestMissing: HandlerFuncton = (app, appData) => {
+const handleRequestMissing: HandlerFunction = (app: string, appData: FromAppData) => {
   loggingStore.log(
     MESSAGE_TYPES.WARNING,
     `[handleComs]: App ${app} sent unknown data type: ${appData.type} and request: ${appData.request}`,
     app
   )
+}
+
+const handleRequestSetSettings: HandlerFunction = async (app, appData) => {
+  const { appStore } = await import('@server/stores')
+  appStore.addSettings(app, appData.payload)
+}
+
+const handleRequestSetData: HandlerFunction = async (app, appData) => {
+  const { appStore } = await import('@server/stores')
+  appStore.addData(app, appData.payload)
 }
 
 /**
@@ -60,9 +82,12 @@ const handleRequestMissing: HandlerFuncton = (app, appData) => {
  * @param {any} appData - The payload data to be set.
  * @returns {Promise<void>} - A Promise that resolves when the data has been set.
  */
-const handleRequestSet: HandlerFuncton = async (app, appData) => {
-  const { setData } = await import('@server/services/files/dataService')
-  setData(app, appData.payload)
+const handleRequestSet: HandlerFunction = async (app: string, appData): Promise<void> => {
+  const { appStore } = await import('@server/stores')
+  if (!appData.payload) return
+  const { settings, ...data } = appData.payload
+  data && appStore.addData(app, data)
+  settings && appStore.addSettings(app, settings)
 }
 
 /**
@@ -71,7 +96,7 @@ const handleRequestSet: HandlerFuncton = async (app, appData) => {
  * @param {any} appData - The payload data containing information for the authentication window.
  * @returns {Promise<void>} - A Promise that resolves when the authentication window has been opened.
  */
-const handleRequestOpen: HandlerFuncton = async (_app, appData) => {
+const handleRequestOpen: HandlerFunction = async (_app, appData) => {
   const { openAuthWindow } = await import('@server/index')
   openAuthWindow(appData.payload)
 }
@@ -80,10 +105,10 @@ const handleRequestOpen: HandlerFuncton = async (_app, appData) => {
  * Handles a request to log data from an app.
  *
  * @param {string} app - The name of the app that sent the log request.
- * @param {IncomingData} appData - The data received from the app, including the log type and payload.
+ * @param {FromAppData} appData - The data received from the app, including the log type and payload.
  * @returns {void}
  */
-const handleRequestLog: HandlerFuncton = (app, appData) => {
+const handleRequestLog: HandlerFunction = (app, appData) => {
   if (appData.request && Object.values(MESSAGE_TYPES).includes(appData.request as MESSAGE_TYPES)) {
     loggingStore.log(appData.request as MESSAGE_TYPES, appData.payload, app)
   } else {
@@ -101,8 +126,8 @@ const handleRequestLog: HandlerFuncton = (app, appData) => {
  * @param {any} appData - The payload data containing the key information to be added.
  * @returns {Promise<void>} - A Promise that resolves when the key has been added.
  */
-const handleRequestKeyAdd: HandlerFuncton = async (app, appData): Promise<void> => {
-  const { default: keyMapStore } = await import('@server/services/mappings/mappingStore')
+const handleRequestKeyAdd: HandlerFunction = async (app, appData): Promise<void> => {
+  const { default: keyMapStore } = await import('@server/stores/mappingStore')
   try {
     if (appData.payload) {
       loggingStore.log(
@@ -132,8 +157,8 @@ const handleRequestKeyAdd: HandlerFuncton = async (app, appData): Promise<void> 
  * @param {any} appData - The payload data containing the ID of the key to be removed.
  * @returns {Promise<void>} - A Promise that resolves when the key has been removed.
  */
-const handleRequestKeyRemove: HandlerFuncton = async (app, appData): Promise<void> => {
-  const { default: keyMapStore } = await import('@server/services/mappings/mappingStore')
+const handleRequestKeyRemove: HandlerFunction = async (app, appData): Promise<void> => {
+  const { default: keyMapStore } = await import('@server/stores/mappingStore')
   keyMapStore.removeKey(appData.payload.id)
   loggingStore.log(
     MESSAGE_TYPES.LOGGING,
@@ -148,8 +173,8 @@ const handleRequestKeyRemove: HandlerFuncton = async (app, appData): Promise<voi
  * @param {any} appData - The payload data containing the ID and mode of the key to be triggered.
  * @returns {Promise<void>} - A Promise that resolves when the key has been triggered.
  */
-const handleRequestKeyTrigger: HandlerFuncton = async (app, appData): Promise<void> => {
-  const { default: keyMapStore } = await import('@server/services/mappings/mappingStore')
+const handleRequestKeyTrigger: HandlerFunction = async (app, appData): Promise<void> => {
+  const { default: keyMapStore } = await import('@server/stores/mappingStore')
   if (appData.payload.id && appData.payload.mode) {
     keyMapStore.triggerKey(appData.payload.id, appData.payload.mode)
   } else {
@@ -167,8 +192,8 @@ const handleRequestKeyTrigger: HandlerFuncton = async (app, appData): Promise<vo
  * @param {any} appData - The payload data containing the ID of the action to be run.
  * @returns {Promise<void>} - A Promise that resolves when the action has been run.
  */
-const handleRequestActionRun: HandlerFuncton = async (app, appData): Promise<void> => {
-  const { default: keyMapStore } = await import('@server/services/mappings/mappingStore')
+const handleRequestActionRun: HandlerFunction = async (app, appData): Promise<void> => {
+  const { default: keyMapStore } = await import('@server/stores/mappingStore')
   if (appData.payload.id) {
     keyMapStore.runAction(appData.payload.id)
   } else {
@@ -186,8 +211,8 @@ const handleRequestActionRun: HandlerFuncton = async (app, appData): Promise<voi
  * @param {any} appData - The payload data containing the ID of the action and the new icon.
  * @returns {Promise<void>} - A Promise that resolves when the action icon has been updated.
  */
-const handleRequestActionUpdate: HandlerFuncton = async (app, appData): Promise<void> => {
-  const { default: keyMapStore } = await import('@server/services/mappings/mappingStore')
+const handleRequestActionUpdate: HandlerFunction = async (app, appData): Promise<void> => {
+  const { default: keyMapStore } = await import('@server/stores/mappingStore')
   if (appData.payload.id) {
     keyMapStore.updateIcon(appData.payload.id, appData.payload.icon)
   } else {
@@ -205,8 +230,8 @@ const handleRequestActionUpdate: HandlerFuncton = async (app, appData): Promise<
  * @param {any} appData - The payload data containing the ID of the action to be removed.
  * @returns {Promise<void>} - A Promise that resolves when the action has been removed.
  */
-const handleRequestActionRemove: HandlerFuncton = async (app, appData): Promise<void> => {
-  const { default: keyMapStore } = await import('@server/services/mappings/mappingStore')
+const handleRequestActionRemove: HandlerFunction = async (app, appData): Promise<void> => {
+  const { default: keyMapStore } = await import('@server/stores/mappingStore')
   keyMapStore.removeAction(appData.payload.id)
   loggingStore.log(
     MESSAGE_TYPES.LOGGING,
@@ -221,8 +246,8 @@ const handleRequestActionRemove: HandlerFuncton = async (app, appData): Promise<
  * @param {any} appData - The payload data containing the details of the action to be added.
  * @returns {Promise<void>} - A Promise that resolves when the action has been added.
  */
-const handleRequestActionAdd: HandlerFuncton = async (app, appData): Promise<void> => {
-  const { default: keyMapStore } = await import('@server/services/mappings/mappingStore')
+const handleRequestActionAdd: HandlerFunction = async (app, appData): Promise<void> => {
+  const { default: keyMapStore } = await import('@server/stores/mappingStore')
   try {
     if (appData.payload) {
       const Action: Action = {
@@ -257,16 +282,17 @@ const handleRequestActionAdd: HandlerFuncton = async (app, appData): Promise<voi
  * @param {string} app - The name of the app requesting the data.
  * @returns {Promise<void>} - A Promise that resolves when the data has been sent to the app.
  */
-const handleRequestGetData: HandlerFuncton = async (app): Promise<void> => {
-  const { getData } = await import('../files/dataService')
+const handleRequestGetData: HandlerFunction = async (app): Promise<void> => {
+  const { appStore } = await import('@server/stores')
 
-  const data = await getData(app)
+  const data = await appStore.getData(app)
 
-  sendMessageToApp(app, { type: 'data', payload: data })
+  appStore.sendDataToApp(app, { type: 'data', payload: data })
 }
 
-const handleRequestGetConfig: HandlerFuncton = async (app): Promise<void> => {
-  sendMessageToApp(app, { type: 'config', payload: {} })
+const handleRequestGetConfig: HandlerFunction = async (app): Promise<void> => {
+  const { appStore } = await import('@server/stores')
+  appStore.sendDataToApp(app, { type: 'config', payload: {} })
   loggingStore.log(
     MESSAGE_TYPES.ERROR,
     `[handleAppData]: ${app} tried accessing "Config" data type which is depreciated and no longer in use!`
@@ -279,10 +305,11 @@ const handleRequestGetConfig: HandlerFuncton = async (app): Promise<void> => {
  * @param {string} app - The name of the app requesting the settings.
  * @returns {Promise<void>} - A Promise that resolves when the settings have been sent to the app.
  */
-const handleRequestGetSettings: HandlerFuncton = async (app): Promise<void> => {
+const handleRequestGetSettings: HandlerFunction = async (app): Promise<void> => {
   const { default: settingsStore } = await import('@server/stores/settingsStore')
   const settings = await settingsStore.getSettings()
-  sendMessageToApp(app, { type: 'settings', payload: settings })
+  const { appStore } = await import('@server/stores')
+  appStore.sendDataToApp(app, { type: 'settings', payload: settings })
 }
 
 /**
@@ -294,12 +321,13 @@ const handleRequestGetSettings: HandlerFuncton = async (app): Promise<void> => {
  * @param {object} appData - Additional data associated with the request.
  * @returns {Promise<void>} - A Promise that resolves when the input data has been sent to the app.
  */
-const handleRequestGetInput: HandlerFuncton = async (app, appData) => {
+const handleRequestGetInput: HandlerFunction = async (app, appData) => {
   // Send IPC message to renderer to display the form
   sendIpcAuthMessage('request-user-data', app, appData.payload)
 
   ipcMain.once(`user-data-response-${app}`, async (_event, formData) => {
-    sendMessageToApp(app, { type: 'input', payload: formData })
+    const { appStore } = await import('@server/stores')
+    appStore.sendDataToApp(app, { type: 'input', payload: formData })
   })
 }
 
@@ -310,6 +338,8 @@ const handleGet = {
   input: handleRequestGetInput
 }
 const handleSet: RequestHandler = {
+  settings: handleRequestSetSettings,
+  data: handleRequestSetData,
   default: handleRequestSet
 }
 const handleOpen: RequestHandler = {
@@ -340,7 +370,8 @@ const handleSendToClient: RequestHandler = {
 const handleSendToApp: RequestHandler = {
   default: async (app, appData): Promise<void> => {
     if (appData.payload && appData.request) {
-      sendMessageToApp(appData.request, appData.payload)
+      const { appStore } = await import('@server/stores')
+      appStore.sendDataToApp(appData.request, appData.payload)
       loggingStore.log(
         MESSAGE_TYPES.LOGGING,
         `[handleDataFromApp] App ${app} is sending data to ${appData.request} with ${appData.payload ? (JSON.stringify(appData.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(appData.payload)) : 'undefined'}`,
@@ -390,7 +421,9 @@ const handleData: TypeHandler = {
   log: handleLog,
   key: handleKey,
   action: handleAction,
-  default: handleDefault
+  default: handleDefault,
+  step: { default: () => {} },
+  task: { default: () => {} }
 }
 
 /**
@@ -404,26 +437,30 @@ const handleData: TypeHandler = {
  * @param app
  * @param appData
  */
-const handleLegacyCommunication = async (app: string, appData: IncomingData): Promise<void> => {
-  const keyMapStore = (await import('../mappings/mappingStore')).default
+const handleLegacyCommunication = async (app: string, appData: FromAppData): Promise<void> => {
+  const keyMapStore = (await import('@server/stores/mappingStore')).default
   const { sendMessageToClients, handleClientMessage } = await import('../client/clientCom')
-  const { getData, setData, addData } = await import('../files/dataService')
+  const { appStore } = await import('@server/stores')
 
-  switch (appData.type) {
+  switch (appData.type as string) {
     case 'message':
       loggingStore.log(MESSAGE_TYPES.MESSAGE, appData.payload, app.toUpperCase())
       break
     case 'get':
       switch (appData.request) {
         case 'data':
-          sendMessageToApp(app, { type: 'data', payload: getData(app) })
+          {
+            appStore.sendDataToApp(app, { type: 'data', payload: await appStore.getData(app) })
+          }
           break
         case 'config':
-          sendMessageToApp(app, { type: 'config', payload: {} })
-          loggingStore.log(
-            MESSAGE_TYPES.ERROR,
-            `[handleAppData]: ${app} tried accessing "Config" data type which is depreciated and no longer in use!`
-          )
+          {
+            appStore.sendDataToApp(app, { type: 'config', payload: {} })
+            loggingStore.log(
+              MESSAGE_TYPES.ERROR,
+              `[handleAppData]: ${app} tried accessing "Config" data type which is depreciated and no longer in use!`
+            )
+          }
           break
         case 'settings':
           sendSettings(app)
@@ -436,10 +473,10 @@ const handleLegacyCommunication = async (app: string, appData: IncomingData): Pr
       }
       break
     case 'set':
-      setData(app, appData.payload)
+      handleRequestSet(app, appData)
       break
     case 'add': // depreciated
-      addData(app, appData.payload)
+      handleRequestSet(app, appData)
       break
     case 'open':
       openAuthWindow(appData.payload)
@@ -465,7 +502,7 @@ const handleLegacyCommunication = async (app: string, appData: IncomingData): Pr
       break
     case 'toApp':
       if (appData.payload && appData.request) {
-        sendMessageToApp(appData.request, appData.payload)
+        appStore.sendDataToApp(appData.request, appData.payload)
         loggingStore.log(
           MESSAGE_TYPES.LOGGING,
           `[handleDataFromApp] App ${app} is sending data to ${appData.request} with ${appData.payload ? (JSON.stringify(appData.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(appData.payload)) : 'undefined'}`,
@@ -600,42 +637,9 @@ export async function requestUserInput(appName: string, scope: AuthScopes): Prom
   sendIpcAuthMessage('request-user-data', appName, scope)
 
   ipcMain.once(`user-data-response-${appName}`, async (_event, formData) => {
-    sendMessageToApp(appName, { type: 'input', payload: formData })
+    const { appStore } = await import('@server/stores')
+    appStore.sendDataToApp(appName, { type: 'input', payload: formData })
   })
-}
-
-/**
- * Sends a message to an app.
- *
- * @param {string} appName - The name of the app to send the message to.
- * @param {string} type - The type of message being sent.
- * @param {...any[]} args - Additional arguments for the message.
- */
-export async function sendMessageToApp(appName: string, data: IncomingData): Promise<void> {
-  const { AppHandler } = await import('./appState')
-  const appHandler = AppHandler.getInstance()
-
-  try {
-    const app = appHandler.get(appName)
-    if (app && typeof app.func.toClient === 'function') {
-      loggingStore.log(
-        MESSAGE_TYPES.LOGGING,
-        `[sendMessageToApp] Sending message to ${appName} with ${data.type}`
-      )
-      ;(app.func.toClient as ToClientType)(data)
-    } else {
-      loggingStore.log(
-        MESSAGE_TYPES.ERROR,
-        `SERVER: App ${appName} not found or does not have toClient function. (is it running?)`
-      )
-    }
-  } catch (e) {
-    console.error(
-      `Error attempting to send message to app ${appName} with ${data.type} and data: `,
-      data,
-      e
-    )
-  }
 }
 
 /**
@@ -645,5 +649,6 @@ export async function sendMessageToApp(appName: string, data: IncomingData): Pro
 const sendSettings = async (appName: string): Promise<void> => {
   const { default: settingsStore } = await import('@server/stores/settingsStore')
   const settings = await settingsStore.getSettings()
-  sendMessageToApp(appName, { type: 'settings', payload: settings })
+  const { appStore } = await import('@server/stores')
+  appStore.sendDataToApp(appName, { type: 'settings', payload: settings })
 }

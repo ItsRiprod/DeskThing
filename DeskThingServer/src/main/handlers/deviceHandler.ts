@@ -1,6 +1,6 @@
 console.log('[Device Handler] Starting')
 import { sendIpcData } from '..'
-import loggingStore from '../stores/loggingStore'
+import { loggingStore } from '@server/stores'
 import { join } from 'path'
 import * as fs from 'fs'
 import { app, net } from 'electron'

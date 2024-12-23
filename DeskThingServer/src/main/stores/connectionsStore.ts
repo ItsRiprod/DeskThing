@@ -5,8 +5,7 @@
  */
 console.log('[Connection Store] Starting')
 import { Client, MESSAGE_TYPES } from '@shared/types'
-import loggingStore from '../stores/loggingStore'
-import settingsStore from './settingsStore'
+import { settingsStore, loggingStore } from '.'
 
 type ClientListener = (client: Client[]) => void
 type DeviceListener = (device: string[]) => void

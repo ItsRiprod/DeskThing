@@ -24,7 +24,7 @@ const TagList: React.FC<TagListProps> = ({
   // Synchronize changes in the tag state with the onChange callback
   useEffect(() => {
     onChange(tags.map((tag) => tag.text))
-  }, [tags, onChange])
+  }, [tags])
 
   const handleDelete = (index: number): void => {
     setTags(tags.filter((_, i) => i !== index))
@@ -67,6 +67,7 @@ const TagList: React.FC<TagListProps> = ({
       handleAddition={handleAddition}
       handleDrag={handleDrag}
       handleTagClick={handleTagClick}
+      autofocus={false}
       onTagUpdate={onTagUpdate}
       placeholder={placeholder ?? 'Press enter to add new item'}
       inputFieldPosition="bottom"

@@ -1,8 +1,8 @@
 console.log('[ADB Handler] Starting')
 import path from 'path'
 import { execFile } from 'child_process'
-import getPlatform from '../utils/get-platform'
-import loggingStore from '../stores/loggingStore'
+import getPlatform from '@server/utils/get-platform'
+import { loggingStore } from '@server/stores'
 import settingsStore from '../stores/settingsStore'
 import { ReplyFn, MESSAGE_TYPES } from '@shared/types'
 

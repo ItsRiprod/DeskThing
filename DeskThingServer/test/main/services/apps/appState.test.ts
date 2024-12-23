@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach, Mock } from 'vitest'
-import { AppHandler } from '@server/services/apps/appState'
+import { AppStore } from '@server/stores/appStore'
 
 vi.mock('@server/utils/fileHandler', () => ({
   readFromFile: vi.fn(),
@@ -51,10 +51,10 @@ vi.mock('@server/stores/loggingStore', () => ({
 }))
 
 describe('AppState', () => {
-  let appState: AppHandler
+  let appState: AppStore
 
   beforeEach(() => {
-    appState = new AppHandler()
+    appState = new AppStore()
   })
 
   afterEach(() => {

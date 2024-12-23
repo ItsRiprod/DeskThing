@@ -1,6 +1,6 @@
 console.log('[Settings Store] Starting')
 import { readFromFile, writeToFile } from '../utils/fileHandler'
-import loggingStore from './loggingStore'
+import { loggingStore } from '.'
 import os from 'os'
 import { LOGGING_LEVEL, Settings, MESSAGE_TYPES } from '@shared/types'
 
@@ -143,7 +143,7 @@ class SettingsStore {
         this.settings = settings as Settings
       }
 
-      await writeToFile(this.settings, this.settingsFilePath)
+      writeToFile(this.settings, this.settingsFilePath)
       loggingStore.log(
         MESSAGE_TYPES.LOGGING,
         'SETTINGS: Updated settings!' + JSON.stringify(this.settings)

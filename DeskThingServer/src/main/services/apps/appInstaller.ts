@@ -1,9 +1,9 @@
 console.log('[AppInst Service] Starting')
 import { join, resolve } from 'path'
 import { app } from 'electron'
-import loggingStore from '../../stores/loggingStore'
+import { loggingStore } from '@server/stores/'
 import {
-  IncomingData,
+  ToAppData,
   ToClientType,
   Response,
   Manifest,
@@ -122,8 +122,7 @@ export async function handleZip(zipFilePath: string, reply?): Promise<AppReturnD
     const appDirectory = join(appPath, returnData.appId)
     if (existsSync(appDirectory)) {
       loggingStore.log(MESSAGE_TYPES.LOGGING, `[handleZip] Old app detected, purging...`)
-      const { AppHandler } = await import('./appState')
-      const appHandler = AppHandler.getInstance()
+      const { default: appHandler } = await import('@server/stores/appStore')
 
       await appHandler.disable(returnData.appId)
 
@@ -252,7 +251,7 @@ export async function handleZipFromUrl(zipUrlPath: string, reply): Promise<AppRe
  */
 export async function run(appName: string): Promise<void> {
   try {
-    const AppState = await import('./appState')
+    const AppState = await import('../../stores/appStore')
     const appState = AppState.default
 
     const app = appState.get(appName)
@@ -302,7 +301,7 @@ export async function run(appName: string): Promise<void> {
  * @returns
  */
 export const start = async (appName: string): Promise<boolean> => {
-  const AppState = await import('./appState')
+  const AppState = await import('../../stores/appStore')
   const appState = AppState.default
   const appInstance = appState.get(appName)
 
@@ -361,7 +360,7 @@ export const start = async (appName: string): Promise<boolean> => {
  * @returns
  */
 const setupFunctions = async (appName: string, DeskThing: DeskThing): Promise<void> => {
-  const AppState = await import('./appState')
+  const AppState = await import('../../stores/appStore')
   const appState = AppState.default
   const appInstance = appState.get(appName)
   // Currently does nothing
@@ -389,7 +388,7 @@ const setupFunctions = async (appName: string, DeskThing: DeskThing): Promise<vo
 
     appInstance.func.stop = async (): Promise<Response> => DeskThing.stop()
 
-    appInstance.func.toClient = async (data: IncomingData): Promise<void> => {
+    appInstance.func.toClient = async (data: ToAppData): Promise<void> => {
       listeners.forEach((listener) => listener(data))
       DeskThing.toClient(data)
     }

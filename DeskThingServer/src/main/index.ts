@@ -25,9 +25,6 @@ import {
 import { app, shell, BrowserWindow, ipcMain, Tray, Menu, nativeImage } from 'electron'
 import { join, resolve } from 'path'
 import icon from '../../resources/icon.png?asset'
-import * as electron from 'update-electron-app'
-
-console.log('Startup Electron ', electron)
 
 // Global window and tray references to prevent garbage collection
 let mainWindow: BrowserWindow | null = null
@@ -336,7 +333,7 @@ async function setupIpcHandlers(): Promise<void> {
   })
 
   // Set up mapping store listeners
-  import('./services/mappings/mappingStore').then(({ default: mappingStore }) => {
+  import('./stores').then(({ mappingStore, appStore, connectionStore, taskStore }) => {
     mappingStore.addListener('action', (action) => {
       action &&
         sendIpcData({
@@ -358,6 +355,37 @@ async function setupIpcHandlers(): Promise<void> {
           payload: profile
         })
     })
+
+    connectionStore.on((clients: Client[]) => {
+      sendIpcData({
+        type: 'connections',
+        payload: { status: true, data: clients.length, final: true }
+      })
+      sendIpcData({
+        type: 'clients',
+        payload: { status: true, data: clients, final: true }
+      })
+    })
+    connectionStore.onDevice((devices: string[]) => {
+      sendIpcData({
+        type: 'adbdevices',
+        payload: { status: true, data: devices, final: true }
+      })
+    })
+
+    appStore.on('apps', (apps: App[]) => {
+      sendIpcData({
+        type: 'app-data',
+        payload: apps
+      })
+    })
+
+    taskStore.on((taskList) => {
+      sendIpcData({
+        type: 'taskList',
+        payload: taskList
+      })
+    })
   })
 
   // Set up logging store listener
@@ -376,24 +404,9 @@ async function setupIpcHandlers(): Promise<void> {
     })
   })
 
-  // Set up connections store listeners
-  import('./stores/connectionsStore').then(({ default: ConnectionStore }) => {
-    ConnectionStore.on((clients: Client[]) => {
-      sendIpcData({
-        type: 'connections',
-        payload: { status: true, data: clients.length, final: true }
-      })
-      sendIpcData({
-        type: 'clients',
-        payload: { status: true, data: clients, final: true }
-      })
-    })
-    ConnectionStore.onDevice((devices: string[]) => {
-      sendIpcData({
-        type: 'adbdevices',
-        payload: { status: true, data: devices, final: true }
-      })
-    })
+  import('./services/updater/autoUpdater').then(({ checkForUpdates }) => {
+    loggingStore.log(MESSAGE_TYPES.LOGGING, '[INDEX] Checking for updates...')
+    checkForUpdates()
   })
 }
 
@@ -502,7 +515,7 @@ async function loadModules(): Promise<void> {
       loadAndRunEnabledApps()
     })
 
-    import('./services/music/musicHandler')
+    import('./stores/musicStore')
   } catch (error) {
     console.error('Error loading modules:', error)
   }
@@ -521,7 +534,7 @@ export type IpcDataTypes = {
   data: App[]
 }
 
-async function sendIpcData({ type, payload, window = mainWindow }: ServerIPCData): Promise<void> {
+async function sendIpcData({ type, payload, window }: ServerIPCData): Promise<void> {
   if (window instanceof BrowserWindow) {
     window.webContents.send(type, payload)
   } else {

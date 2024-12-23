@@ -1,6 +1,6 @@
 import { platform } from 'os'
 
-export default () => {
+export default (): string => {
   switch (platform()) {
     case 'aix':
     case 'freebsd':

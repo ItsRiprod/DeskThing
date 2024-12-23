@@ -1,21 +1,18 @@
 /**
- * The MusicHandler class is responsible for managing the music playback functionality in the application.
+ * The MusicStore class is responsible for managing the music playback functionality in the application.
  * It handles the initialization of the refresh interval, updates to the settings, finding the current playback source,
  * refreshing the music data, setting the audio source, and handling client requests and music messages.
  */
 console.log('[Music Handler] Starting')
-import loggingStore from '../../stores/loggingStore'
-import settingsStore from '../../stores/settingsStore'
+import { settingsStore, loggingStore, appStore } from '.'
 import { Settings, SocketData, MESSAGE_TYPES, SongData } from '@shared/types'
-import { sendMessageToApp } from '../apps'
-import { getAppByName } from '../files/appService'
-import appState from '../apps/appState'
-import { sendMessageToClients } from '../client/clientCom'
-import { getColorFromImage } from './musicUtils'
-import { getNowPlaying } from './musicController'
+import { getAppByName } from '../services/files/appService'
+import { sendMessageToClients } from '../services/client/clientCom'
+import { getColorFromImage } from '../services/music/musicUtils'
+// import { getNowPlaying } from '../services/music/musicController'
 
-export class MusicHandler {
-  private static instance: MusicHandler
+export class MusicStore {
+  private static instance: MusicStore
   private refreshInterval: NodeJS.Timeout | null = null
   private currentApp: string | null = null
 
@@ -23,11 +20,11 @@ export class MusicHandler {
     this.initializeRefreshInterval()
   }
 
-  public static getInstance(): MusicHandler {
-    if (!MusicHandler.instance) {
-      MusicHandler.instance = new MusicHandler()
+  public static getInstance(): MusicStore {
+    if (!MusicStore.instance) {
+      MusicStore.instance = new MusicStore()
     }
-    return MusicHandler.instance
+    return MusicStore.instance
   }
 
   private async initializeRefreshInterval(): Promise<void> {
@@ -38,7 +35,7 @@ export class MusicHandler {
     settingsStore.addListener(this.handleSettingsUpdate.bind(this))
 
     setTimeout(() => {
-      loggingStore.log(MESSAGE_TYPES.DEBUG, '[MusicHandler]: Initialized')
+      loggingStore.log(MESSAGE_TYPES.DEBUG, '[MusicStore]: Initialized')
       this.refreshMusicData()
     }, 5000) // Delay to ensure settings are loaded
   }
@@ -48,12 +45,12 @@ export class MusicHandler {
 
     loggingStore.log(
       MESSAGE_TYPES.LOGGING,
-      `[MusicHandler]: Received settings update - checking for changes | Playback location: ${this.currentApp} -> ${settings.playbackLocation}`
+      `[MusicStore]: Received settings update - checking for changes | Playback location: ${this.currentApp} -> ${settings.playbackLocation}`
     )
     if (settings.playbackLocation) {
       loggingStore.log(
         MESSAGE_TYPES.LOGGING,
-        `[MusicHandler]: Setting restarting to use ${settings.playbackLocation}`
+        `[MusicStore]: Setting restarting to use ${settings.playbackLocation}`
       )
       this.currentApp = settings.playbackLocation
       this.refreshMusicData()
@@ -66,12 +63,12 @@ export class MusicHandler {
     }
 
     if (refreshRate < 0) {
-      loggingStore.log(MESSAGE_TYPES.LOGGING, `[MusicHandler]: Cancelling Refresh Interval!`)
+      loggingStore.log(MESSAGE_TYPES.LOGGING, `[MusicStore]: Cancelling Refresh Interval!`)
       return
     } else if (refreshRate < 5) {
       loggingStore.log(
         MESSAGE_TYPES.WARNING,
-        `[MusicHandler]: Refresh Interval is ${refreshRate}! Performance may be impacted`
+        `[MusicStore]: Refresh Interval is ${refreshRate}! Performance may be impacted`
       )
       return
     }
@@ -87,7 +84,7 @@ export class MusicHandler {
     } else {
       loggingStore.log(
         MESSAGE_TYPES.LOGGING,
-        `[MusicHandler]: Current app is not set! Attempting to find one...`
+        `[MusicStore]: Current app is not set! Attempting to find one...`
       )
     }
 
@@ -96,30 +93,30 @@ export class MusicHandler {
     if (settings.playbackLocation && settings.playbackLocation != 'none') {
       loggingStore.log(
         MESSAGE_TYPES.LOGGING,
-        `[MusicHandler]: Fount ${settings.playbackLocation} in settings. Setting playback location to i!`
+        `[MusicStore]: Fount ${settings.playbackLocation} in settings. Setting playback location to i!`
       )
       return settings.playbackLocation
     } else {
       loggingStore.log(
         MESSAGE_TYPES.LOGGING,
-        `[MusicHandler]: Unable to find a playback from settings! ${settings.playbackLocation}`
+        `[MusicStore]: Unable to find a playback from settings! ${settings.playbackLocation}`
       )
     }
 
-    const Apps = appState.getAllBase()
+    const Apps = appStore.getAllBase()
 
     const audioSource = Apps.find((app) => app.manifest?.isAudioSource)
 
     if (audioSource) {
       loggingStore.log(
         MESSAGE_TYPES.WARNING,
-        `[MusicHandler]: Found ${audioSource.name} as an audio source automatically. Applying.`
+        `[MusicStore]: Found ${audioSource.name} as an audio source automatically. Applying.`
       )
       return audioSource.name
     } else {
       loggingStore.log(
         MESSAGE_TYPES.LOGGING,
-        `[MusicHandler]: Unable to automatically set an audio source. No app found!`
+        `[MusicStore]: Unable to automatically set an audio source. No app found!`
       )
       return null
     }
@@ -127,10 +124,7 @@ export class MusicHandler {
 
   private async getPlaybackSource(): Promise<string | null> {
     if (this.currentApp == 'disabled') {
-      loggingStore.log(
-        MESSAGE_TYPES.LOGGING,
-        `[MusicHandler]: Music is disabled! Cancelling refresh`
-      )
+      loggingStore.log(MESSAGE_TYPES.LOGGING, `[MusicStore]: Music is disabled! Cancelling refresh`)
       const settings = await settingsStore.getSettings()
       if (settings.refreshInterval > 0) {
         settingsStore.updateSetting('refreshInterval', -1)
@@ -147,7 +141,7 @@ export class MusicHandler {
       } else {
         loggingStore.log(
           MESSAGE_TYPES.ERROR,
-          `[MusicHandler]: No Audiosource Found! Go to Downloads -> Apps and download an audio source! (Spotify, MediaWin, GMP, etc)`
+          `[MusicStore]: No Audiosource Found! Go to Downloads -> Apps and download an audio source! (Spotify, MediaWin, GMP, etc)`
         )
         return null
       }
@@ -159,13 +153,13 @@ export class MusicHandler {
       if (!currentApp || currentApp.length == 0) {
         loggingStore.log(
           MESSAGE_TYPES.ERROR,
-          `[MusicHandler]: No playback location set! Go to settings -> Music to set the playback location!`
+          `[MusicStore]: No playback location set! Go to settings -> Music to set the playback location!`
         )
         return null
       } else {
         loggingStore.log(
           MESSAGE_TYPES.WARNING,
-          `[MusicHandler]: Playback location was not set! Setting to ${currentApp}`
+          `[MusicStore]: Playback location was not set! Setting to ${currentApp}`
         )
         this.currentApp = currentApp
       }
@@ -176,7 +170,7 @@ export class MusicHandler {
     if (!app || app.running == false) {
       loggingStore.log(
         MESSAGE_TYPES.ERROR,
-        `[MusicHandler]: App ${this.currentApp} is not found or not running!`
+        `[MusicStore]: App ${this.currentApp} is not found or not running!`
       )
       return null
     }
@@ -192,10 +186,11 @@ export class MusicHandler {
     }
 
     try {
-      await sendMessageToApp(currentApp, { type: 'get', request: 'refresh', payload: '' })
-      loggingStore.log(MESSAGE_TYPES.LOGGING, `[MusicHandler]: Refreshing Music Data!`)
+      const { appStore } = await import('@server/stores')
+      appStore.sendDataToApp(currentApp, { type: 'get', request: 'refresh', payload: '' })
+      loggingStore.log(MESSAGE_TYPES.LOGGING, `[MusicStore]: Refreshing Music Data!`)
     } catch (error) {
-      loggingStore.log(MESSAGE_TYPES.ERROR, `[MusicHandler]: Music refresh failed: ${error}`)
+      loggingStore.log(MESSAGE_TYPES.ERROR, `[MusicStore]: Music refresh failed: ${error}`)
     }
   }
 
@@ -203,14 +198,11 @@ export class MusicHandler {
     if (source.length == 0) {
       loggingStore.log(
         MESSAGE_TYPES.ERROR,
-        `[MusicHandler]: Unable to update playback location. No playback location passed!`
+        `[MusicStore]: Unable to update playback location. No playback location passed!`
       )
       return
     }
-    loggingStore.log(
-      MESSAGE_TYPES.LOGGING,
-      `[MusicHandler]: Setting Playback Location to ${source}`
-    )
+    loggingStore.log(MESSAGE_TYPES.LOGGING, `[MusicStore]: Setting Playback Location to ${source}`)
     settingsStore.updateSetting('playbackLocation', source)
     this.currentApp = source
   }
@@ -227,13 +219,14 @@ export class MusicHandler {
     if (request.app == 'utility') {
       loggingStore.log(
         MESSAGE_TYPES.LOGGING,
-        `[MusicHandler]: Legacy Name called! Support for this will be dropped in future updates. Migrate your app to use 'music' instead!`
+        `[MusicStore]: Legacy Name called! Support for this will be dropped in future updates. Migrate your app to use 'music' instead!`
       )
     }
 
-    loggingStore.log(MESSAGE_TYPES.LOGGING, `[MusicHandler]: ${request.type} ${request.request}`)
+    loggingStore.log(MESSAGE_TYPES.LOGGING, `[MusicStore]: ${request.type} ${request.request}`)
 
-    sendMessageToApp(currentApp, {
+    const { appStore } = await import('@server/stores')
+    appStore.sendDataToApp(currentApp, {
       type: request.type,
       request: request.request,
       payload: request.payload
@@ -242,7 +235,7 @@ export class MusicHandler {
 
   public async handleMusicMessage(songData: SongData): Promise<void> {
     if (!songData || typeof songData !== 'object') {
-      loggingStore.log(MESSAGE_TYPES.ERROR, '[MusicHandler]: Invalid song data received')
+      loggingStore.log(MESSAGE_TYPES.ERROR, '[MusicStore]: Invalid song data received')
       return
     }
 
@@ -267,11 +260,11 @@ export class MusicHandler {
         })
       }
 
-      loggingStore.log(MESSAGE_TYPES.LOGGING, '[MusicHandler]: Song data sent to clients')
+      loggingStore.log(MESSAGE_TYPES.LOGGING, '[MusicStore]: Song data sent to clients')
     } catch (error) {
-      loggingStore.log(MESSAGE_TYPES.ERROR, `[MusicHandler]: Failed to send song data: ${error}`)
+      loggingStore.log(MESSAGE_TYPES.ERROR, `[MusicStore]: Failed to send song data: ${error}`)
     }
   }
 }
 
-export default MusicHandler.getInstance()
+export default MusicStore.getInstance()

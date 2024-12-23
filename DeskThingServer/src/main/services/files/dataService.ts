@@ -11,77 +11,64 @@
 
 console.log('[Data Handler] Starting')
 import { AppDataInterface } from '@shared/types'
-import { readFromFile, writeToFile } from '../../utils/fileHandler'
-import { sendMessageToApp } from '../apps'
+import { deleteFile, readFromFile, writeToFile } from '../../utils/fileHandler'
+import { join } from 'path'
 
-interface Data {
-  [appName: string]: AppDataInterface
-}
-
-// Default data structure
-const defaultData: Data = {}
 // Updated function to read Data using the new fileHandler
-const readData = (): Data => {
-  const dataFilePath = 'data.json'
+const readAppData = async (name: string): Promise<AppDataInterface | undefined> => {
+  const dataFilePath = join('data', `${name}.json`)
   try {
-    const data = readFromFile<Data>(dataFilePath)
-    if (!data) {
-      // File does not exist, create it with default data
-      writeToFile(defaultData, dataFilePath)
-      return defaultData
-    }
-
-    // If data is of type Data, return it
-    return data as Data
+    const data = readFromFile<AppDataInterface>(dataFilePath)
+    return data || undefined
   } catch (err) {
     console.error('Error reading data:', err)
-    return defaultData
+    return
   }
 }
 
 // Updated function to write Data using the new fileHandler
-const writeData = (data: Data): void => {
-  try {
-    const dataFilePath = 'data.json'
-    writeToFile<Data>(data, dataFilePath)
-  } catch (err) {
-    console.error('Error writing data:', err)
-  }
-}
-// Set data function
-const setData = (key: string, value: AppDataInterface): void => {
-  const data = readData()
-  data[key] = value
-  // Notify the app
-  sendMessageToApp(key, { type: 'data', payload: value })
-  writeData(data)
+const writeAppData = async (name: string, data: AppDataInterface): Promise<void> => {
+  const dataFilePath = join('data', `${name}.json`)
+  writeToFile<AppDataInterface>(data, dataFilePath)
 }
 
-/**
- * @deprecated
- * @param key
- * @param value
- */
-const addData = (key: string, value: AppDataInterface): void => {
-  const data = readData()
-  if (!data[key]) {
-    data[key] = value
+// Set data function
+export const setData = async (
+  appName: string,
+  value: Partial<AppDataInterface>
+): Promise<AppDataInterface | undefined> => {
+  const data = await readAppData(appName)
+  if (data) {
+    // Merge the new data with the existing data
+    const mergedData: AppDataInterface = {
+      version: value.version ?? data.version,
+      data: { ...data.data, ...value.data },
+      settings: { ...data.settings, ...value.settings }
+    }
+
+    writeAppData(appName, mergedData)
+    // return merged data
+    return mergedData
   } else {
-    data[key] = { ...data[key], ...value }
+    if (value?.version != undefined) {
+      const appData: AppDataInterface = {
+        data: value.data,
+        settings: value.settings,
+        version: value.version
+      }
+
+      writeAppData(appName, appData)
+      return appData
+    }
+    return
   }
-  writeData(data)
 }
 
 // Get data function
-const getData = (app: string): AppDataInterface => {
-  const data = readData()
-  return data[app]
+export const getData = async (app: string): Promise<AppDataInterface | undefined> => {
+  return await readAppData(app)
 }
 
-const purgeAppData = async (appName: string): Promise<void> => {
-  const data = readData()
-  delete data[appName]
-  writeData(data)
+export const purgeAppData = async (appName: string): Promise<void> => {
+  await deleteFile(join('data', `${appName}.json`))
 }
-
-export { setData, getData, addData, readData, purgeAppData }

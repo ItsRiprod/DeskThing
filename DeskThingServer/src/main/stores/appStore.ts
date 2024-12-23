@@ -1,35 +1,72 @@
 console.log('[AppState Service] Starting')
-import { App, AppInstance, Manifest, AppReturnData, MESSAGE_TYPES } from '@shared/types'
-import { sendConfigData, sendSettingsData } from '../client/clientCom'
-import loggingStore from '../../stores/loggingStore'
-import { sendIpcData } from '@server/index'
+import {
+  App,
+  AppInstance,
+  Manifest,
+  AppReturnData,
+  MESSAGE_TYPES,
+  AppDataInterface,
+  ToAppData,
+  SettingsType,
+  AppSettings
+} from '@shared/types'
+import { loggingStore } from '@server/stores'
+import { getData, setData } from '@server/services/files/dataService'
 
-export class AppHandler {
-  public static instance: AppHandler
+type AppsListener = (data: App[]) => void
+type AppSettingsListener = (appId: string, data: AppSettings) => void
+
+type AppStoreListeners = {
+  apps?: AppsListener[]
+  settings?: AppSettingsListener[]
+}
+
+type ListenerEvents = 'settings' | 'apps'
+
+export class AppStore {
+  public static instance: AppStore
   private apps: { [key: string]: AppInstance } = {}
   private order: string[] = []
+  private listeners: AppStoreListeners = {}
 
-  public static getInstance(): AppHandler {
-    if (!AppHandler.instance) {
-      AppHandler.instance = new AppHandler()
+  public static getInstance(): AppStore {
+    if (!AppStore.instance) {
+      AppStore.instance = new AppStore()
     }
-    return AppHandler.instance
+    return AppStore.instance
   }
 
   constructor() {
     this.loadApps()
   }
 
-  /**
-   * Notifies the client that there were changes
-   */
-  async notify(): Promise<void> {
-    sendConfigData()
-    sendSettingsData()
-    sendIpcData({
-      type: 'app-data',
-      payload: this.getAllBase()
-    })
+  async notifySettings(appId: string, settings: AppSettings): Promise<void> {
+    if (this.listeners.settings) {
+      await Promise.all(this.listeners.settings.map((listener) => listener(appId, settings)))
+    }
+  }
+
+  async notifyApps(apps?: App[]): Promise<void> {
+    if (!apps) {
+      apps = this.getAllBase()
+    }
+    if (this.listeners.apps) {
+      await Promise.all(this.listeners.apps.map((listener) => listener(apps)))
+    }
+  }
+
+  on(event: ListenerEvents, listener: AppsListener | AppSettingsListener): void {
+    if (!this.listeners[event]) {
+      this.listeners[event] = []
+    }
+    ;(this.listeners[event] as (AppsListener | AppSettingsListener)[]).push(listener)
+  }
+  off(event: ListenerEvents, listener: AppsListener | AppSettingsListener): void {
+    if (this.listeners[event]) {
+      this.listeners[event] = (
+        this.listeners[event] as (AppsListener | AppSettingsListener)[]
+      ).filter((l) => l !== listener) as AppSettingsListener[] & AppsListener[]
+    }
   }
 
   /**
@@ -37,7 +74,7 @@ export class AppHandler {
    */
   async loadApps(): Promise<void> {
     loggingStore.log(MESSAGE_TYPES.LOGGING, '[appState] [loadApps]: Loading apps...')
-    const { getAppData } = await import('../files/appService')
+    const { getAppData } = await import('../services/files/appService')
 
     const data = await getAppData()
 
@@ -61,14 +98,14 @@ export class AppHandler {
   }
 
   private async saveAppsToFile(): Promise<void> {
-    const { setAppsData } = await import('../files/appService')
+    const { setAppsData } = await import('../services/files/appService')
     const apps = this.getAllBase()
     await setAppsData(apps)
-    this.notify()
+    this.notifyApps(apps)
   }
 
   private async saveAppToFile(name: string): Promise<void> {
-    const { setAppData } = await import('../files/appService')
+    const { setAppData } = await import('../services/files/appService')
     const { func: _func, ...app } = this.apps[name]
     await setAppData(app)
   }
@@ -137,7 +174,7 @@ export class AppHandler {
     }
     this.remove(name)
 
-    import('./appManager').then(({ purgeApp }) => {
+    import('../services/apps/appManager').then(({ purgeApp }) => {
       purgeApp(name)
     })
 
@@ -161,6 +198,119 @@ export class AppHandler {
   }
   getOrder(): string[] {
     return this.order
+  }
+
+  async getData(name: string): Promise<AppDataInterface | undefined> {
+    if (!(name in this.apps)) {
+      return
+    }
+    console.log('Getting Data for ', name)
+    return await getData(name)
+  }
+
+  async addData(app: string, data: { [key: string]: string }): Promise<void> {
+    if (!this.apps[app]) return
+
+    const result = await setData(app, { data: data })
+
+    if (!result) {
+      const version = this.apps[app].manifest?.version
+      const appData = {
+        settings: {},
+        data: data,
+        version: version || 'v0.0.0'
+      } as AppDataInterface
+
+      await setData(app, appData)
+    } else {
+      // set the cache with the data
+    }
+  }
+
+  // merge with existing settings
+  async addSettings(app: string, settings: AppSettings): Promise<void> {
+    console.log('[AppStore] Adding settings to app:', app)
+    if (!this.apps[app]) return
+
+    const result = await setData(app, { settings })
+
+    if (!result) {
+      console.log('There is no file, so making one with settings added')
+      const version = this.apps[app].manifest?.version
+
+      const appData = {
+        settings: settings,
+        data: {},
+        version: version || 'v0.0.0'
+      } as AppDataInterface
+      await setData(app, appData)
+    }
+  }
+
+  async addSetting(app: string, id: string, setting: SettingsType): Promise<void> {
+    let appData = await this.getData(app)
+
+    if (!this.apps[app]) return
+
+    if (!appData) {
+      const version = this.apps[app].manifest?.version
+
+      appData = {
+        settings: {},
+        data: {},
+        version: version || 'v0.0.0'
+      } as AppDataInterface
+    }
+
+    if (appData.settings && appData?.settings[id]) {
+      appData.settings[id] = setting
+    } else {
+      appData.settings = {
+        [id]: setting
+      }
+    }
+
+    const result = await setData(app, appData)
+
+    if (!result) {
+      loggingStore.warn(`[addSettings]: Something went wrong updating settings for ${app}!`)
+    }
+  }
+
+  async sendDataToApp(name: string, data: ToAppData): Promise<void> {
+    try {
+      const app = this.apps[name]
+
+      if (!app) {
+        loggingStore.log(MESSAGE_TYPES.ERROR, `[sendDataToApp]: App ${name} not found.`)
+        return
+      }
+
+      if (app && typeof app.func.toClient === 'function') {
+        loggingStore.log(
+          MESSAGE_TYPES.LOGGING,
+          `[sendDataToApp] Sending message to ${name} with ${data.type}`
+        )
+        app.func.toClient(data)
+      } else {
+        loggingStore.log(
+          MESSAGE_TYPES.ERROR,
+          `[sendDataToApp]: App ${name} does not have toClient function. (try restarted it?)`
+        )
+      }
+    } catch (e) {
+      console.error(
+        `[sendDataToApp]: Error attempting to send message to app ${name} with ${data.type} and data: `,
+        data,
+        e
+      )
+
+      if (e instanceof Error) {
+        loggingStore.log(MESSAGE_TYPES.ERROR, `[sendDataToApp]: ${e.message}`)
+      } else {
+        loggingStore.log(MESSAGE_TYPES.ERROR, `[sendDataToApp]: Unknown error ` + String(e))
+      }
+    }
   }
 
   /**
@@ -195,7 +345,7 @@ export class AppHandler {
       await this.apps[name].func.purge()
     }
 
-    import('./appManager').then(({ clearCache }) => {
+    import('../services/apps/appManager').then(({ clearCache }) => {
       clearCache(name)
     })
 
@@ -239,7 +389,7 @@ export class AppHandler {
     this.apps[name].running = true
     this.enable(name)
 
-    const { run } = await import('./appInstaller')
+    const { run } = await import('../services/apps/appInstaller')
     await run(name)
     this.saveAppToFile(name)
     return true
@@ -252,12 +402,12 @@ export class AppHandler {
 
     this.apps[name].running = true
     this.enable(name)
-    const { start } = await import('./appInstaller')
+    const { start } = await import('../services/apps/appInstaller')
     return await start(name)
   }
 
   async addURL(url: string, reply): Promise<AppReturnData | void> {
-    const { handleZipFromUrl } = await import('./appInstaller')
+    const { handleZipFromUrl } = await import('../services/apps/appInstaller')
     const returnData = await handleZipFromUrl(url, reply)
     if (returnData) {
       const App: AppInstance = {
@@ -274,7 +424,7 @@ export class AppHandler {
     }
   }
   async addZIP(zip: string, event): Promise<AppReturnData | void> {
-    const { handleZip } = await import('./appInstaller')
+    const { handleZip } = await import('../services/apps/appInstaller')
     const returnData = await handleZip(zip, event)
     if (returnData) {
       const App: AppInstance = {
@@ -300,11 +450,11 @@ export class AppHandler {
     if (this.apps[appName]) {
       this.apps[appName].manifest = manifest
     }
-    const { addAppManifest } = await import('../files/appService')
+    const { addAppManifest } = await import('../services/files/appService')
     // Add the manifest to the config file
     addAppManifest(manifest, appName)
     this.saveAppToFile(appName)
   }
 }
 
-export default AppHandler.getInstance()
+export default AppStore.getInstance()

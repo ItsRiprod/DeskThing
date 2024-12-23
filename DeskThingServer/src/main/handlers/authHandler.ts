@@ -1,10 +1,9 @@
 console.log('[Auth Handler] Starting')
-import { getAppData } from '../services/files/appService' // Assuming you have a config handler for active apps
-import { sendMessageToApp } from '../services/apps' // Assuming you have an app handler for sending messages
+import { getAppData } from '../services/files/appService'
 import http from 'http'
 import url from 'url'
 import settingsStore from '../stores/settingsStore'
-import loggingStore from '../stores/loggingStore'
+import { loggingStore } from '@server/stores'
 import { Settings, MESSAGE_TYPES } from '@shared/types'
 
 const successView = '<h1>Success</h1><p>You can now close this window.</p>'
@@ -39,15 +38,17 @@ function handleCallback(req: http.IncomingMessage, res: http.ServerResponse): vo
   }
 
   const appName = urlParts[1] // The app name should be the third part after '/callback/'
-  const config = getAppData() // Assuming getConfig() returns an object with active apps
-  if (!config.apps || !config.apps.some((app) => app.name === appName && app.enabled)) {
+  const appData = getAppData()
+  if (!appData || !appData[appName] || !appData[appName].enabled) {
     res.writeHead(404, { 'Content-Type': 'text/html' })
     res.end(`<h1>App Not Found</h1><p>App '${appName}' not found or not active.</p>`)
     return
   }
 
   const code = parsedUrl.query.code as string
-  sendMessageToApp(appName, { type: 'callback-data', payload: code })
+  import('@server/stores').then(({ appStore }) => {
+    appStore.sendDataToApp(appName, { type: 'callback-data', payload: code })
+  })
 
   res.writeHead(200, { 'Content-Type': 'text/html' })
   res.end(successView)

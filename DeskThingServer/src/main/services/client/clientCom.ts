@@ -1,10 +1,7 @@
 console.log('[ClientCom Service] Starting')
-import { SocketData, MESSAGE_TYPES, SongData } from '@shared/types'
+import { SocketData, MESSAGE_TYPES, SongData, AppSettings } from '@shared/types'
 import { server, Clients } from './websocket'
-import loggingStore from '../../stores/loggingStore'
-import connectionsStore from '../../stores/connectionsStore'
-import appState from '../apps/appState'
-import { readData } from '../files/dataService'
+import { loggingStore, connectionStore, appStore } from '@server/stores/'
 
 /**
  * Handles a client message by dispatching the message to the appropriate handler based on the message type.
@@ -16,7 +13,7 @@ import { readData } from '../files/dataService'
  */
 export const handleClientMessage = async (data: SocketData): Promise<void> => {
   const { type, payload } = data
-  const musicHandler = await import('../music/musicHandler')
+  const musicHandler = await import('../../stores/musicStore')
   switch (type) {
     case 'song':
       musicHandler.default.handleMusicMessage(payload as SongData)
@@ -61,7 +58,7 @@ export const disconnectClient = (connectionId: string): void => {
     client.socket.terminate()
     Clients.splice(Clients.indexOf(client), 1)
     loggingStore.log(MESSAGE_TYPES.LOGGING, `Forcibly disconnected client: ${connectionId}`)
-    connectionsStore.removeClient(connectionId)
+    connectionStore.removeClient(connectionId)
   } else {
     loggingStore.log(
       MESSAGE_TYPES.LOGGING,
@@ -113,7 +110,7 @@ export const sendError = async (clientId: string | undefined, error: string): Pr
  */
 export const sendConfigData = async (clientId?: string): Promise<void> => {
   try {
-    const appData = await appState.getAllBase()
+    const appData = await appStore.getAllBase()
 
     const filteredAppData = appData.filter((app) => app.manifest?.isWebApp !== false)
 
@@ -134,23 +131,24 @@ export const sendConfigData = async (clientId?: string): Promise<void> => {
  */
 export const sendSettingsData = async (clientId?: string): Promise<void> => {
   try {
-    const appData = await appState.getAllBase()
-    const config = await readData()
+    const appData = appStore.getAllBase()
+
     if (!appData) {
       throw new Error('Invalid configuration format')
     }
-
     const settings = {}
 
-    if (appData && config) {
-      appData.map((app) => {
-        if (app && app.manifest) {
-          const appConfig = config[app.manifest.id]
-          if (appConfig?.settings) {
-            settings[app.manifest.id] = appConfig.settings
+    if (appData) {
+      await Promise.all(
+        appData.map(async (app) => {
+          if (app) {
+            const appConfig = await appStore.getData(app.name)
+            if (appConfig?.settings) {
+              settings[app.name] = appConfig.settings
+            }
           }
-        }
-      })
+        })
+      )
     } else {
       console.error('appData or appData.apps is undefined or null', appData)
     }
@@ -164,6 +162,22 @@ export const sendSettingsData = async (clientId?: string): Promise<void> => {
 }
 
 /**
+ * Sends the setting data to the specified client or all connected clients.
+ *
+ * @param clientId - The connection ID of the client to send the settings data to. If not provided, the data will be sent to all connected clients.
+ * @returns - A Promise that resolves when the settings data has been sent.
+ */
+export const sendSettingData = async (app: string, setting: AppSettings): Promise<void> => {
+  try {
+    sendMessageToClient(undefined, { app: 'client', type: 'setting', payload: { app, setting } })
+    loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Preferences sent!')
+  } catch (error) {
+    console.error('WSOCKET: Error getting config data:', error)
+    sendError(undefined, 'WSOCKET: Error getting config data')
+  }
+}
+
+/**
  * Sends the button mappings data to the specified client or all connected clients.
  *
  * @param clientId - The connection ID of the client to send the button mappings data to. If not provided, the data will be sent to all connected clients.
@@ -171,7 +185,7 @@ export const sendSettingsData = async (clientId?: string): Promise<void> => {
  */
 export const sendMappings = async (clientId?: string): Promise<void> => {
   try {
-    const { default: keyMapStore } = await import('../mappings/mappingStore')
+    const { default: keyMapStore } = await import('@server/stores/mappingStore')
     const mappings = keyMapStore.getMapping()
     const actions = keyMapStore.getActions()
 

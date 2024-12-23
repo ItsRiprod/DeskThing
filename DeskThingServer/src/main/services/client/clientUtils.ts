@@ -1,7 +1,5 @@
 console.log('[ClientUtils Service] Starting')
-import loggingStore from '@server/stores/loggingStore'
 import { sendMessageToClients } from './clientCom'
-import { MESSAGE_TYPES } from '@shared/types'
 
 /**
  * Calculates the delay in milliseconds until the next full minute.
@@ -48,8 +46,6 @@ export const sendTime = async (): Promise<void> => {
     utcTime, // UTC timestamp
     timezoneOffset // Timezone offset in minutes
   }
-
-  loggingStore.log(MESSAGE_TYPES.DEBUG, 'Sending time:' + JSON.stringify(data))
 
   sendMessageToClients({ app: 'client', type: 'set', request: 'time', payload: data })
 }

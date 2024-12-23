@@ -62,7 +62,22 @@ class LoggingStore {
     this.logLevel = level
   }
 
-  // Log a message
+  info = async (message: string, source: string = 'server'): Promise<void> => {
+    this.log(MESSAGE_TYPES.LOGGING, message, source)
+  }
+
+  warn = async (message: string, source: string = 'server'): Promise<void> => {
+    this.log(MESSAGE_TYPES.WARNING, message, source)
+  }
+
+  error = async (message: string, source: string = 'server'): Promise<void> => {
+    this.log(MESSAGE_TYPES.ERROR, message, source)
+  }
+
+  debug = async (message: string, source: string = 'server'): Promise<void> => {
+    this.log(MESSAGE_TYPES.DEBUG, message, source)
+  }
+
   /**
    * Logs a message with the specified level and source.
    * @param level - The message type (e.g. ERROR, WARNING, MESSAGE, LOGGING, FATAL, DEBUG).

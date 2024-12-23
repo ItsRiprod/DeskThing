@@ -34,7 +34,7 @@ export const readFromFile = <T>(filename: string): T | false => {
  *
  * @param data - The data to be written to the file.
  * @param filepath - The path of the file relative to the user's application data directory.
- * @returns `true` if the write operation was successful, `false` otherwise.
+ * @throws - error when it fails
  */
 export const writeToFile = <T>(data: T, filepath: string): void => {
   try {
@@ -92,6 +92,26 @@ export const readFromGlobalFile = <T>(filename: string): T | false => {
     return JSON.parse(rawData.toString())
   } catch (err) {
     // console.error('Error reading data:', err)
+    return false
+  }
+}
+
+/**
+ * Deletes a file from the user's application data directory.
+ *
+ * @param filename - The name of the file to delete.
+ * @returns `true` if the deletion was successful, `false` if the file doesn't exist or an error occurs.
+ */
+export const deleteFile = async (filename: string): Promise<boolean> => {
+  const filePath = join(app.getPath('userData'), filename)
+  try {
+    if (!fs.existsSync(filePath)) {
+      return false
+    }
+    await fs.promises.unlink(filePath)
+    return true
+  } catch (err) {
+    console.error('Error deleting file:', err)
     return false
   }
 }

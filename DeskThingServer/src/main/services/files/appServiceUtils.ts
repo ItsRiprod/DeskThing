@@ -1,4 +1,4 @@
-import loggingStore from '@server/stores/loggingStore'
+import { loggingStore } from '@server/stores'
 import { App, AppData, LegacyAppData, MESSAGE_TYPES } from '@shared/types'
 
 /**

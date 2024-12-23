@@ -1,7 +1,7 @@
 console.log('[Firewall Handler] Starting')
 import { exec } from 'child_process'
 import os from 'os'
-import loggingStore from '../stores/loggingStore'
+import { loggingStore } from '@server/stores'
 import fs from 'fs'
 import { join } from 'path'
 import { app } from 'electron'

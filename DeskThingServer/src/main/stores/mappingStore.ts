@@ -8,20 +8,20 @@ import {
   MappingStructure,
   ActionReference,
   Button,
-  Profile
+  Profile,
+  ToAppData
 } from '@shared/types'
-import loggingStore from '@server/stores/loggingStore'
+import { loggingStore } from '.'
 import { writeToGlobalFile } from '@server/utils/fileHandler'
 import { deepMerge } from '@server/utils/objectUtils'
-import { importProfile, loadMappings, saveMappings } from './fileMaps'
+import { importProfile, loadMappings, saveMappings } from '@server/services/mappings/fileMaps'
 import {
   ConstructActionReference,
   FetchIcon,
   isValidAction,
   isValidActionReference,
   isValidKey
-} from './utilsMaps'
-import { sendMessageToApp } from '../apps'
+} from '@server/services/mappings/utilsMaps'
 import { defaultProfile } from '@server/static/defaultMapping'
 
 type ListeningTypes = 'key' | 'profile' | 'action' | 'update'
@@ -703,12 +703,13 @@ export class MappingState {
    */
   runAction(action: Action | ActionReference): void {
     if (isValidActionReference(action) && action.enabled) {
-      const SocketData = {
+      const SocketData: ToAppData = {
         payload: action,
-        app: action.source,
         type: 'action'
       }
-      sendMessageToApp(action.source, SocketData)
+      import('@server/stores').then(({ appStore }) => {
+        appStore.sendDataToApp(action.source, SocketData)
+      })
     } else {
       loggingStore.log(MESSAGE_TYPES.ERROR, `MAPHANDLER: Action not found or not enabled!`)
     }

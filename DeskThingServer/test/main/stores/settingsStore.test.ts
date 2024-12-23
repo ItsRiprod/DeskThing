@@ -1,9 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import fs from 'fs'
 import os from 'os'
-import SettingsStore from '@server/stores/settingsStore'
 import { LOGGING_LEVEL } from '@shared/types'
-
 vi.mock('fs')
 vi.mock('os')
 vi.mock('auto-launch', () => ({
@@ -13,13 +11,18 @@ vi.mock('auto-launch', () => ({
   }))
 }))
 
-vi.mock('@server/stores/loggingStore', () => ({
-  default: {
+import settingsStore from '@server/stores/settingsStore'
+vi.mock('@server/utils/fileHandler', () => ({
+  writeToFile: vi.fn(),
+  readFromFile: vi.fn()
+}))
+
+vi.mock('@server/stores/', () => ({
+  loggingStore: {
     log: vi.fn()
   }
 }))
-
-describe('SettingsStore', () => {
+describe('settingsStore', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.spyOn(fs, 'writeFileSync').mockReturnValue(undefined)
@@ -44,7 +47,7 @@ describe('SettingsStore', () => {
 
   it('should return localhost when no valid network interfaces are found', async () => {
     vi.mocked(os.networkInterfaces).mockReturnValue({} as NodeJS.Dict<os.NetworkInterfaceInfo[]>)
-    const settings = await SettingsStore.getSettings()
+    const settings = await settingsStore.getSettings()
     expect(settings.localIp).toEqual(['127.0.0.1'])
   })
 
@@ -52,30 +55,34 @@ describe('SettingsStore', () => {
     const listener1 = vi.fn()
     const listener2 = vi.fn()
 
-    SettingsStore.addListener(listener1)
-    SettingsStore.addListener(listener2)
+    settingsStore.addListener(listener1)
+    settingsStore.addListener(listener2)
 
-    await SettingsStore.updateSetting('minimizeApp', false)
+    // Need to wait for the initial setupSettings to complete
+    await settingsStore.getSettings()
+
+    await settingsStore.updateSetting('minimizeApp', false)
+    // Need to wait for the async notifyListeners to complete
+    await new Promise(process.nextTick)
 
     expect(listener1).toHaveBeenCalled()
     expect(listener2).toHaveBeenCalled()
   })
-
   it('should handle auto-launch setting updates', async () => {
-    await SettingsStore.updateSetting('autoStart', true)
-    const settings = await SettingsStore.getSettings()
+    await settingsStore.updateSetting('autoStart', true)
+    const settings = await settingsStore.getSettings()
     expect(settings.autoStart).toBe(true)
   })
 
   it('should maintain version information in settings', async () => {
-    const settings = await SettingsStore.getSettings()
+    const settings = await settingsStore.getSettings()
     expect(settings.version).toBeDefined()
     expect(settings.version_code).toBeDefined()
   })
 
   it('should handle missing settings file gracefully', async () => {
     vi.spyOn(fs, 'existsSync').mockReturnValue(false)
-    const settings = await SettingsStore.loadSettings()
+    const settings = await settingsStore.loadSettings()
     expect(settings).toEqual(
       expect.objectContaining({
         callbackPort: 8888,

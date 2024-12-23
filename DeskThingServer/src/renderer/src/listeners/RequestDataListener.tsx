@@ -1,44 +1,13 @@
 import { useEffect } from 'react'
-import { useClientStore, useNotificationStore } from '@renderer/stores'
+import { useNotificationStore } from '@renderer/stores'
 import { AuthScopes } from '@shared/types'
+import useTaskStore from '@renderer/stores/taskStore'
+import { TaskList } from '@shared/types/tasks'
 
 const RequestDataListener = (): null => {
   const addRequest = useNotificationStore((state) => state.addRequest)
-  const resolveTask = useNotificationStore((state) => state.resolveTask)
-  const addTask = useNotificationStore((state) => state.addTask)
-  const devices = useClientStore((state) => state.ADBDevices)
-  const clientManifest = useClientStore((state) => state.clientManifest)
-
-  useEffect(() => {
-    const checkDevices = async (): Promise<void> => {
-      resolveTask('adbdevices-setup')
-      addTask({
-        id: 'adbdevices-configure',
-        title: 'Configure ADB Device',
-        description:
-          'Looks like you have some devices connected! Try configuring one of them to run DeskThing!',
-        status: 'pending',
-        complete: false,
-        steps: [
-          {
-            task: 'Ensure you have a client installed',
-            status: clientManifest !== null,
-            stepId: 'install'
-          },
-          {
-            task: 'Hit the Configure Device button to load the client',
-            status: false,
-            stepId: 'configure'
-          },
-          { task: 'Ping the device to make sure its working!', status: false, stepId: 'ping' }
-        ]
-      })
-    }
-
-    if (devices.length > 0) {
-      checkDevices()
-    }
-  }, [devices])
+  const setTasks = useTaskStore((state) => state.setTaskList)
+  const getTaskList = useTaskStore((state) => state.requestTasks)
 
   useEffect(() => {
     const handleDisplayUserForm = async (
@@ -48,13 +17,20 @@ const RequestDataListener = (): null => {
     ): Promise<void> => {
       addRequest(requestId, fields)
     }
+    const handleTask = async (_event, tasks: TaskList): Promise<void> => {
+      setTasks(tasks)
+    }
+
+    getTaskList()
 
     window.electron.ipcRenderer.on('display-user-form', handleDisplayUserForm)
+    window.electron.ipcRenderer.on('taskList', handleTask)
 
     return () => {
       window.electron.ipcRenderer.removeAllListeners('display-user-form')
+      window.electron.ipcRenderer.removeAllListeners('taskList')
     }
-  }, [addRequest])
+  }, [])
 
   return null
 }

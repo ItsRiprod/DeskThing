@@ -33,7 +33,6 @@ export interface Request {
 interface NotificationStoreState {
   requestQueue: Request[]
   logs: Log[]
-  tasks: Task[]
   issues: Task[]
   totalTasks: number
 
@@ -42,12 +41,6 @@ interface NotificationStoreState {
   readLog: (index?: number) => void
   addLog: (log: Log) => void
 
-  // Tasks
-  resolveTask: (taskId: string) => void
-  addTask: (task: Task) => void
-  updateTask: (taskId: string, task: Partial<Task>) => void
-  updateStep: (taskId: string, stepId: string, step: Partial<Step>) => void
-  removeTask: (taskId: string) => void
   addIssue: (task: Task) => void
   updateIssue: (task: Task) => void
   removeIssue: (taskId: string) => void
@@ -67,7 +60,6 @@ interface NotificationStoreState {
 const useNotificationStore = create<NotificationStoreState>((set, get) => ({
   requestQueue: [],
   logs: [],
-  tasks: [],
   issues: [],
   totalTasks: 0,
 
@@ -93,66 +85,17 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
   },
 
   addLog: async (log: Log): Promise<void> => {
-    if (log.type === MESSAGE_TYPES.LOGGING) return
+    if (
+      log.type === MESSAGE_TYPES.ERROR ||
+      log.type === MESSAGE_TYPES.FATAL ||
+      log.type === MESSAGE_TYPES.WARNING
+    ) {
+      set((state) => ({
+        logs: [log, ...state.logs].slice(0, 99)
+      }))
 
-    set((state) => ({
-      logs: [log, ...state.logs]
-    }))
-
-    get().calculateTotalTasks()
-  },
-
-  // Tasks
-
-  resolveTask: async (taskId: string): Promise<void> => {
-    set((state) => ({
-      tasks: state.tasks.map((task) => {
-        if (task.id === taskId) {
-          task.status = 'complete'
-          task.complete = true
-        }
-        return task
-      })
-    }))
-  },
-
-  updateStep: async (taskId: string, stepId: string, updatedStep: Partial<Step>): Promise<void> => {
-    set((state) => ({
-      tasks: state.tasks.map((task) => {
-        if (task.id === taskId) {
-          task.steps = task.steps?.map((step) => {
-            if (step.stepId === stepId) {
-              return { ...step, ...updatedStep }
-            }
-            return step
-          })
-        }
-        return task
-      })
-    }))
-  },
-
-  addTask: async (task: Task): Promise<void> => {
-    set((state) => ({
-      tasks: state.tasks.some((t) => t.id === task.id) ? state.tasks : [task, ...state.tasks]
-    }))
-  },
-
-  updateTask: async (taskId: string, task: Partial<Task>): Promise<void> => {
-    set((state) => ({
-      tasks: state.tasks.map((t) => {
-        if (t.id === taskId) {
-          return { ...t, ...task }
-        }
-        return t
-      })
-    }))
-  },
-
-  removeTask: async (taskId: string): Promise<void> => {
-    set((state) => ({
-      tasks: state.tasks.filter((task) => task.id !== taskId)
-    }))
+      get().calculateTotalTasks()
+    }
   },
 
   addIssue: async (task: Task): Promise<void> => {

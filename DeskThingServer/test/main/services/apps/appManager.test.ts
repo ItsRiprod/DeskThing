@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach, Mock } from 'vitest'
 import { clearCache, purgeApp } from '@server/services/apps/appManager'
 import fs from 'node:fs'
-import loggingStore from '@server/stores/loggingStore'
+import { loggingStore } from '@server/stores'
 import { MESSAGE_TYPES, AppInstance } from '@shared/types'
 
 vi.mock('node:fs', () => ({
@@ -32,8 +32,8 @@ vi.mock('node:fs', () => ({
     }
   }
 }))
-vi.mock('@server/stores/loggingStore', () => ({
-  default: {
+vi.mock('@server/stores/', () => ({
+  loggingStore: {
     log: vi.fn(),
     getInstance: (): { log: Mock } => ({
       log: vi.fn()

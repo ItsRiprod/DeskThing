@@ -1,3 +1,9 @@
+/**
+ * This is still in development and is not ready for use
+ *
+ * Intended goal: Works as a music controller for local audio for Linux, Windows, and Mac to control the local audio.
+ */
+
 import { desktopCapturer } from 'electron'
 
 export class MusicController {
@@ -14,7 +20,6 @@ export class MusicController {
 export default MusicController.getInstance()
 
 export const getNowPlaying = async (): Promise<string | null> => {
-
   try {
     const sources = await desktopCapturer.getSources({
       types: ['window'],

@@ -1,6 +1,6 @@
 console.log('[Auth Handler] Starting')
 import { ClientIPCData, ClientManifest, SocketData, ReplyFn, MESSAGE_TYPES } from '@shared/types'
-import loggingStore from '../stores/loggingStore'
+import { loggingStore } from '@server/stores'
 import { handleAdbCommands } from './adbHandler'
 import {
   configureDevice,
@@ -11,7 +11,7 @@ import {
   SetupProxy
 } from './deviceHandler'
 import { sendMessageToClient, sendMessageToClients } from '../services/client/clientCom'
-import mappingStore from '@server/services/mappings/mappingStore'
+import mappingStore from '@server/stores/mappingStore'
 
 /**
  * The `clientHandler` object is a mapping of client IPC (Inter-Process Communication) data types to handler functions. These handlers are responsible for processing various client-related requests, such as pinging clients, handling URL-based web app downloads, configuring devices, managing client manifests, and more.

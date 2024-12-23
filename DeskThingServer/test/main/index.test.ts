@@ -10,22 +10,8 @@ import {
 import { ServerIPCData } from '@shared/types'
 
 // Mock electron modules
-vi.mock('electron', () => ({
-  app: {
-    whenReady: vi.fn(),
-    on: vi.fn(),
-    quit: vi.fn(),
-    setAsDefaultProtocolClient: vi.fn(),
-    requestSingleInstanceLock: vi.fn().mockImplementation(() => {
-      app.quit()
-      return false
-    }),
-    setAppUserModelId: vi.fn(),
-    dock: {
-      setMenu: vi.fn()
-    }
-  },
-  BrowserWindow: vi.fn().mockImplementation(() => ({
+vi.mock('electron', () => {
+  const BrowserWindowMock = vi.fn().mockImplementation(() => ({
     loadURL: vi.fn(),
     loadFile: vi.fn(),
     on: vi.fn(),
@@ -45,25 +31,48 @@ vi.mock('electron', () => ({
       executeJavaScript: vi.fn(),
       send: vi.fn()
     }
-  })),
-  ipcMain: {
-    handle: vi.fn()
-  },
-  Tray: vi.fn().mockImplementation(() => ({
-    setToolTip: vi.fn(),
-    setContextMenu: vi.fn(),
-    on: vi.fn()
-  })),
-  Menu: {
-    buildFromTemplate: vi.fn()
-  },
-  shell: {
-    openExternal: vi.fn()
-  },
-  nativeImage: {
-    createFromPath: vi.fn()
+  }))
+
+  // Ensure instanceof checks work correctly
+  Object.defineProperty(BrowserWindowMock, Symbol.hasInstance, {
+    value: () => true
+  })
+
+  return {
+    app: {
+      whenReady: vi.fn(),
+      on: vi.fn(),
+      quit: vi.fn(),
+      setAsDefaultProtocolClient: vi.fn(),
+      requestSingleInstanceLock: vi.fn().mockImplementation(() => {
+        app.quit()
+        return false
+      }),
+      setAppUserModelId: vi.fn(),
+      dock: {
+        setMenu: vi.fn()
+      }
+    },
+    BrowserWindow: BrowserWindowMock,
+    ipcMain: {
+      handle: vi.fn()
+    },
+    Tray: vi.fn().mockImplementation(() => ({
+      setToolTip: vi.fn(),
+      setContextMenu: vi.fn(),
+      on: vi.fn()
+    })),
+    Menu: {
+      buildFromTemplate: vi.fn()
+    },
+    shell: {
+      openExternal: vi.fn()
+    },
+    nativeImage: {
+      createFromPath: vi.fn()
+    }
   }
-}))
+})
 
 describe('Main Process', () => {
   beforeEach(() => {
@@ -136,7 +145,7 @@ describe('Main Process', () => {
       sendIpcData({
         type: 'test-type',
         payload: testData,
-        window: mockWindow
+        window: mockWindow as BrowserWindow
       } as unknown as ServerIPCData)
       expect(mockWindow.webContents.send).toHaveBeenCalledWith('test-type', testData)
     })

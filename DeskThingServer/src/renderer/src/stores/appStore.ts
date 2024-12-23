@@ -1,4 +1,4 @@
-import { App, AppDataInterface, AppReturnData, LoggingData } from '@shared/types'
+import { App, AppDataInterface, AppReturnData, AppSettings, LoggingData } from '@shared/types'
 import { create } from 'zustand'
 
 interface AppStoreState {
@@ -17,7 +17,7 @@ interface AppStoreState {
   runApp: (appName: string) => void
   enableApp: (appName: string) => void
   getAppData: (appName: string) => Promise<AppDataInterface | null>
-  setAppData: (appName: string, data: AppDataInterface) => void
+  setAppData: (appName: string, settings: AppSettings) => void
   setAppList: (apps: App[]) => void
 }
 
@@ -131,8 +131,8 @@ const useAppStore = create<AppStoreState>((set) => ({
     return await window.electron.getAppData(appName)
   },
 
-  setAppData: (appName: string, data: AppDataInterface): void => {
-    window.electron.setAppData(appName, data)
+  setAppData: (appName: string, settings: AppSettings): void => {
+    window.electron.setAppData(appName, settings)
   },
 
   loadAppUrl: async (appName: string): Promise<AppReturnData | null> => {

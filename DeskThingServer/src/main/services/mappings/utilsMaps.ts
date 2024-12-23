@@ -1,5 +1,5 @@
 console.log('[MapUtil Service] Starting')
-import loggingStore from '@server/stores/loggingStore'
+import { loggingStore } from '@server/stores/'
 import {
   Action,
   ActionReference,

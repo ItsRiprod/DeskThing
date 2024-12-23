@@ -2,7 +2,7 @@ console.log('[AppUtils Service] Starting')
 import { Manifest, MESSAGE_TYPES } from '@shared/types'
 import { join } from 'path'
 import { existsSync, promises } from 'node:fs'
-import loggingStore from '../../stores/loggingStore'
+import { loggingStore } from '@server/stores/'
 import { app } from 'electron'
 
 /**

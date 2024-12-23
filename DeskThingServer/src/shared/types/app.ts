@@ -2,25 +2,28 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { GithubAsset, SocketData } from './types'
 
-export type OutgoingEvent =
-  | 'message'
-  | 'get'
-  | 'set'
-  | 'add'
-  | 'open'
-  | 'data'
-  | 'toApp'
-  | 'error'
-  | 'log'
-  | 'action'
-  | 'button'
-  | string
-export type toServer = (appData: IncomingData) => void
+export type toServer = (appData: FromAppData) => void
 export type SysEvents = (event: string, listener: (...args: any[]) => void) => void
 export type startData = {
   toServer: toServer
   SysEvents: SysEvents
 }
+
+export type OutgoingEvent =
+  | 'message'
+  | 'data'
+  | 'get'
+  | 'set'
+  | 'callback-data'
+  | 'start'
+  | 'stop'
+  | 'purge'
+  | 'input'
+  | 'action'
+  | 'config'
+  | 'settings'
+  | 'step'
+  | 'task'
 
 /**
  * The AppInstance interface represents an instance of an app.
@@ -29,14 +32,14 @@ export type startData = {
 export interface AppInstance extends App {
   func: {
     start?: () => Promise<Response>
-    toClient?: (data: IncomingData) => Promise<void>
+    toClient?: (data: ToAppData) => Promise<void>
     stop?: () => Promise<Response>
     purge?: () => Promise<Response>
   }
 }
 
 // Type that setups up the expected format for data sent to and from main
-export type ToClientType = (data: IncomingData) => void
+export type ToClientType = (data: ToAppData) => void
 
 export interface AuthScopes {
   [key: string]: {
@@ -53,8 +56,14 @@ export type Response = {
   request: string[]
 }
 
-export type IncomingData = {
+export type ToAppData = {
   type: OutgoingEvent
+  request?: string
+  payload?: any | SocketData
+}
+
+export type FromAppData = {
+  type: IncomingAppDataTypes
   request?: string
   payload?: any | AuthScopes | SocketData
 }
@@ -88,11 +97,12 @@ export interface Config {
 }
 
 export interface AppDataInterface {
-  [key: string]: string | AppSettings | undefined | any[]
+  version: string
   settings?: AppSettings
+  data?: { [key: string]: string }
 }
 
-interface SettingsBase {
+export type SettingsBase = {
   type:
     | 'boolean'
     | 'list'
@@ -223,7 +233,7 @@ export type AppData = {
 
 export interface DeskThing {
   start: ({ toServer, SysEvents }: startData) => Promise<Response>
-  toClient: (data: IncomingData) => Promise<void>
+  toClient: (data: ToAppData) => Promise<void>
   stop: () => Promise<Response>
   purge: () => Promise<Response>
   getManifest: () => Promise<Response>
@@ -267,7 +277,7 @@ export enum IncomingAppDataTypes {
    * - 'input': Requests user input via a form
    *
    * @example
-   * DeskThing.send(SEND_TYPES.GET, { request: 'settings' })
+   * DeskThing.sendData({ type: SEND_TYPES.GET, request: 'settings' })
    */
   GET = 'get',
 
@@ -275,8 +285,11 @@ export enum IncomingAppDataTypes {
    * Sets data inside the server for your app that can be retrieved with DeskThing.getData()
    * Data is stored persistently and can be retrieved later.
    *
+   * @request { request: 'data', payload: { key: value } } Sets app-specific stored data
+   * @request { request: 'settings', payload: AppSettings } Sets application settings
+   *
    * @example
-   * DeskThing.send(SEND_TYPES.SET, { payload: { key: 'value' }})
+   * DeskThing.sendData({ type: SEND_TYPES.SET, type: 'data', payload: { key: 'value' }})
    */
   SET = 'set',
 
@@ -286,7 +299,7 @@ export enum IncomingAppDataTypes {
    * Typically used for authentication flows.
    *
    * @example
-   * DeskThing.send(SEND_TYPES.OPEN, { payload: 'https://someurl.com' })
+   * DeskThing.sendData({ type: SEND_TYPES.OPEN, payload: 'https://someurl.com' })
    */
   OPEN = 'open',
 
@@ -296,7 +309,7 @@ export enum IncomingAppDataTypes {
    * Supports sending to both the main client and specific app clients.
    *
    * @example
-   * DeskThing.send(SEND_TYPES.SEND, { type: 'someData', payload: 'value' })
+   * DeskThing.sendData({ type: SEND_TYPES.SEND, type: 'someData', payload: 'value' })
    */
   SEND = 'send',
 
@@ -306,7 +319,7 @@ export enum IncomingAppDataTypes {
    * Messages are logged for debugging purposes.
    *
    * @example
-   * DeskThing.send(SEND_TYPES.TOAPP, { request: 'spotify', payload: { type: 'get', data: 'music' }})
+   * DeskThing.sendData({ type: SEND_TYPES.TOAPP, request: 'spotify', payload: { type: 'get', data: 'music' }})
    */
   TOAPP = 'toApp',
 
@@ -316,7 +329,7 @@ export enum IncomingAppDataTypes {
    * Messages are tagged with the source app name.
    *
    * @example
-   * DeskThing.send(SEND_TYPES.LOG, { request: 'ERROR', payload: 'Something went wrong' })
+   * DeskThing.sendData({ type: SEND_TYPES.LOG, request: 'ERROR', payload: 'Something went wrong' })
    */
   LOG = 'log',
 
@@ -326,7 +339,7 @@ export enum IncomingAppDataTypes {
    * Keys can have multiple modes and are associated with specific apps.
    *
    * @example
-   * DeskThing.send(SEND_TYPES.KEY, { request: 'add', payload: { id: 'myKey', modes: ['default'] }})
+   * DeskThing.sendData({ type: SEND_TYPES.KEY, request: 'add', payload: { id: 'myKey', modes: ['default'] }})
    */
   KEY = 'key',
 
@@ -336,7 +349,27 @@ export enum IncomingAppDataTypes {
    * Actions can have values, icons, and version information.
    *
    * @example
-   * DeskThing.send(SEND_TYPES.ACTION, { request: 'add', payload: { id: 'myAction', name: 'My Action' }})
+   * DeskThing.sendData({ type: SEND_TYPES.ACTION, request: 'add', payload: { id: 'myAction', name: 'My Action' }})
    */
-  ACTION = 'action'
+  ACTION = 'action',
+
+  /**
+   * Manages actions in the system.
+   * Supports operations: add, remove, update, run
+   * Actions can have values, icons, and version information.
+   * @deprecated
+   * @example
+   * DeskThing.sendData({ type: SEND_TYPES.ACTION, request: 'add', payload: { id: 'myAction', name: 'My Action' }})
+   */
+  STEP = 'step',
+
+  /**
+   * Manages actions in the system.
+   * Supports operations: add, remove, update, run
+   * Actions can have values, icons, and version information.
+   * @deprecated
+   * @example
+   * DeskThing.sendData({ type: SEND_TYPES.ACTION, request: 'add', payload: { id: 'myAction', name: 'My Action' }})
+   */
+  TASK = 'task'
 }

@@ -11,18 +11,20 @@ import {
   Action,
   Key,
   MappingStructure,
-  Profile
+  Profile,
+  UtilityIPCTask,
+  UtilityIPCUpdate
 } from '@shared/types'
-import ConnectionStore from '../stores/connectionsStore'
-import settingsStore from '../stores/settingsStore'
+import { connectionStore, settingsStore, loggingStore, mappingStore } from '@server/stores'
 import { getReleases } from './githubHandler'
-import loggingStore from '../stores/loggingStore'
 import path from 'path'
 import { shell, app, dialog } from 'electron'
-import keyMapStore from '../services/mappings/mappingStore'
 import { setupFirewall } from './firewallHandler'
 import { disconnectClient } from '../services/client/clientCom'
 import { restartServer } from '../services/client/websocket'
+import { checkForUpdates } from '@server/services/updater/autoUpdater'
+import { UpdateCheckResult } from 'electron-updater'
+import { TaskList } from '@shared/types/tasks'
 
 /**
  * The `utilityHandler` object is an exported module that provides a set of utility functions for handling various tasks in the application. It is structured as a record type, where the keys correspond to the `UtilityIPCData['type']` union type, and the values are asynchronous functions that handle the corresponding request.
@@ -49,9 +51,9 @@ import { restartServer } from '../services/client/websocket'
  * Each function is responsible for handling a specific request type and returning the appropriate data or performing the requested action.
  */
 export const utilityHandler: Record<
-  UtilityIPCData['type'],
+  UtilityIPCData['type'] | UtilityIPCTask['type'] | UtilityIPCUpdate['type'],
   (
-    data: UtilityIPCData,
+    data: UtilityIPCData | UtilityIPCTask | UtilityIPCUpdate,
     replyFn: ReplyFn
   ) => Promise<
     | void
@@ -73,6 +75,8 @@ export const utilityHandler: Record<
     | null
     | Profile[]
     | Profile
+    | UpdateCheckResult
+    | TaskList
   >
 > = {
   ping: async () => {
@@ -98,7 +102,7 @@ export const utilityHandler: Record<
   devices: async (data) => {
     switch (data.request) {
       case 'get':
-        return await ConnectionStore.getDevices()
+        return await connectionStore.getDevices()
       default:
         return
     }
@@ -152,11 +156,11 @@ export const utilityHandler: Record<
   actions: async (data) => {
     switch (data.request) {
       case 'get':
-        return await keyMapStore.getActions()
+        return await mappingStore.getActions()
       case 'set':
-        return await keyMapStore.addAction(data.payload as Action)
+        return await mappingStore.addAction(data.payload as Action)
       case 'delete':
-        return await keyMapStore.removeAction(data.payload)
+        return await mappingStore.removeAction(data.payload)
       default:
         return
     }
@@ -177,7 +181,7 @@ export const utilityHandler: Record<
           return
         }
         try {
-          return await keyMapStore.addButton({ action, key, mode, profile })
+          return await mappingStore.addButton({ action, key, mode, profile })
         } catch (error) {
           if (error instanceof Error) {
             loggingStore.log(
@@ -205,7 +209,7 @@ export const utilityHandler: Record<
           )
           return
         }
-        return await keyMapStore.removeButton({ action, key, mode, profile })
+        return await mappingStore.removeButton({ action, key, mode, profile })
       }
       default:
         return
@@ -214,11 +218,11 @@ export const utilityHandler: Record<
   keys: async (data) => {
     switch (data.request) {
       case 'get':
-        return await keyMapStore.getKeys()
+        return await mappingStore.getKeys()
       case 'set':
-        return await keyMapStore.addKey(data.payload)
+        return await mappingStore.addKey(data.payload)
       case 'delete':
-        return await keyMapStore.removeKey(data.payload)
+        return await mappingStore.removeKey(data.payload)
       default:
         return
     }
@@ -227,20 +231,20 @@ export const utilityHandler: Record<
     switch (data.request) {
       case 'get':
         if (typeof data.payload === 'string') {
-          return await keyMapStore.getProfile(data.payload)
+          return await mappingStore.getProfile(data.payload)
         } else {
-          return await keyMapStore.getProfiles()
+          return await mappingStore.getProfiles()
         }
       case 'set':
         if (data.payload) {
-          return await keyMapStore.addProfile(data.payload)
+          return await mappingStore.addProfile(data.payload)
         } else {
           loggingStore.log(MESSAGE_TYPES.ERROR, 'UtilityHandler: Missing profile name!')
           console.log(data)
           return
         }
       case 'delete':
-        return await keyMapStore.removeProfile(data.payload)
+        return await mappingStore.removeProfile(data.payload)
       default:
         return
     }
@@ -248,10 +252,10 @@ export const utilityHandler: Record<
   map: async (data) => {
     switch (data.request) {
       case 'get':
-        return await keyMapStore.getCurrentProfile()
+        return await mappingStore.getCurrentProfile()
       case 'set':
         console.log('Setting current profile to', data.payload)
-        return await keyMapStore.setCurrentProfile(data.payload)
+        return await mappingStore.setCurrentProfile(data.payload)
       default:
         return
     }
@@ -259,15 +263,61 @@ export const utilityHandler: Record<
   run: async (data) => {
     const action = data.payload as Action
     if (action.source !== 'server' && action.enabled) {
-      return await keyMapStore.runAction(action)
+      return await mappingStore.runAction(action)
     } else {
       loggingStore.log(MESSAGE_TYPES.ERROR, 'UtilityHandler: Action not enabled or does not exist!')
+    }
+  },
+
+  // Tasks
+  task: async (data) => {
+    if (data.type != 'task') return
+
+    const { taskStore } = await import('@server/stores')
+
+    switch (data.request) {
+      case 'get':
+        return await taskStore.getTaskList()
+      case 'stop':
+        if (typeof data.payload === 'string') return await taskStore.stopTask(data.payload)
+        return
+      case 'complete':
+        if (Array.isArray(data.payload) && data.payload.length === 2)
+          return await taskStore.completeStep(data.payload[0], data.payload[1])
+        return
+      case 'start':
+        if (typeof data.payload === 'string') return await taskStore.startTask(data.payload)
+        return
+      case 'complete_task':
+        if (typeof data.payload === 'string') return await taskStore.completeTask(data.payload)
+        return
+      default:
+        return
+    }
+  },
+  // Updates
+  update: async (data) => {
+    if (data.type != 'update') return
+    switch (data.request) {
+      case 'check': // Check for update
+        return await checkForUpdates()
+      case 'download': // Start Download
+        return // await setUpdate(data.payload)
+      case 'restart': // Start Download
+        return // await setUpdate(data.payload)
+      default:
+        return
     }
   }
 }
 
+/**
+ * Get the list of currently connected clients
+ * @param replyFn
+ * @returns
+ */
 const getConnection = async (replyFn: ReplyFn): Promise<Client[]> => {
-  const clients = await ConnectionStore.getClients()
+  const clients = await connectionStore.getClients()
   replyFn('connections', { status: true, data: clients.length, final: false })
   replyFn('clients', { status: true, data: clients, final: true })
   return clients

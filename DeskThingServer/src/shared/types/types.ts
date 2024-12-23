@@ -130,7 +130,7 @@ export interface SocketData {
     | object
     | number
     | { [key: string]: string | Array<string> }
-    | Settings
+    | { id: string; value: string | number | boolean | string[] }
 }
 
 export type SongData = {

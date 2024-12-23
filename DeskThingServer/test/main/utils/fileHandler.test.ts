@@ -74,8 +74,7 @@ describe('writeToFile', () => {
     vi.mocked(fs.existsSync).mockReturnValue(true)
     vi.mocked(fs.writeFileSync).mockImplementation(() => undefined)
 
-    const result = writeToFile(mockData, 'test.json')
-    expect(result).toBe(true)
+    expect(() => writeToFile(mockData, 'test.json')).not.toThrow()
     expect(fs.writeFileSync).toHaveBeenCalledWith(
       '\\mock\\user\\data\\test.json',
       JSON.stringify(mockData, null, 2)
@@ -88,22 +87,22 @@ describe('writeToFile', () => {
     vi.mocked(fs.mkdirSync).mockImplementation(() => undefined)
     vi.mocked(fs.writeFileSync).mockImplementation(() => undefined)
 
-    const result = writeToFile(mockData, 'nested/path/test.json')
-    expect(result).toBe(true)
+    expect(() => writeToFile(mockData, 'nested/path/test.json')).not.toThrow()
     expect(fs.mkdirSync).toHaveBeenCalledWith('\\mock\\user\\data\\nested\\path', {
       recursive: true
     })
   })
 
-  it('should return false when write operation fails', () => {
+  it('should throw error when write operation fails', () => {
     const mockData = { key: 'value' }
     vi.mocked(fs.existsSync).mockReturnValue(true)
     vi.mocked(fs.writeFileSync).mockImplementation(() => {
       throw new Error('Write error')
     })
 
-    const result = writeToFile(mockData, 'test.json')
-    expect(result).toBe(false)
+    expect(() => writeToFile(mockData, 'test.json')).toThrow(
+      '[writeToFile]: failed with Write error'
+    )
   })
 })
 
@@ -112,22 +111,22 @@ describe('writeToGlobalFile', () => {
     const mockData = { key: 'value' }
     vi.mocked(fs.writeFileSync).mockImplementation(() => undefined)
 
-    const result = writeToGlobalFile(mockData, '/global/path/test.json')
-    expect(result).toBe(true)
+    expect(() => writeToGlobalFile(mockData, '/global/path/test.json')).not.toThrow()
     expect(fs.writeFileSync).toHaveBeenCalledWith(
       '/global/path/test.json',
       JSON.stringify(mockData, null, 2)
     )
   })
 
-  it('should return false when global write operation fails', () => {
+  it('should throw error when global write operation fails', () => {
     const mockData = { key: 'value' }
     vi.mocked(fs.writeFileSync).mockImplementation(() => {
       throw new Error('Write error')
     })
 
-    const result = writeToGlobalFile(mockData, '/global/path/test.json')
-    expect(result).toBe(false)
+    expect(() => writeToGlobalFile(mockData, '/global/path/test.json')).toThrow(
+      '[writeToGlobalFile] failed with Write error'
+    )
   })
 })
 
