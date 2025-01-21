@@ -14,8 +14,11 @@ export async function loadAndRunEnabledApps(): Promise<void> {
   try {
     const appInstances = appStore.getAll()
     loggingStore.log(MESSAGE_TYPES.LOGGING, 'SERVER: Loaded apps config. Running apps...')
+
+    // Only include enabled apps
     const enabledApps = appInstances.filter((appConfig) => appConfig.enabled === true)
 
+    // Run all of the enabled apps
     await Promise.all(
       enabledApps.map(async (appConfig) => {
         loggingStore.log(

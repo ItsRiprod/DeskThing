@@ -14,7 +14,7 @@
  */
 
 console.log('[Config Handler] Starting')
-import { AppData, App, MESSAGE_TYPES, Manifest } from '@shared/types'
+import { AppData, App, MESSAGE_TYPES, AppManifest } from '@shared/types'
 import { loggingStore } from '@server/stores'
 import { readFromFile, writeToFile } from '../../utils/fileHandler'
 import { verifyAppDataStructure, verifyAppStructure } from './appServiceUtils'
@@ -113,11 +113,11 @@ export const setAppsData = async (appsList: App[]): Promise<void> => {
 /**
  * Adds or updates the manifest for an existing application.
  *
- * @param {Manifest} manifest - The new manifest to be added or updated.
+ * @param {AppManifest} manifest - The new manifest to be added or updated.
  * @param {string} appName - The name of the application to update.
  * @returns {void}
  */
-export const addAppManifest = (manifest: Manifest, appName: string): void => {
+export const addAppManifest = (manifest: AppManifest, appName: string): void => {
   const data = readData()
 
   // Find existing app by name
