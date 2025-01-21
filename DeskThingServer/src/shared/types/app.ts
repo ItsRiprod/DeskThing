@@ -68,20 +68,51 @@ export type FromAppData = {
   payload?: any | AuthScopes | SocketData
 }
 
-export interface Manifest {
-  isAudioSource: boolean
-  requires: Array<string>
-  label: string
+// v0.10.4
+
+export enum PlatformTypes {
+  WINDOWS = 'windows',
+  LINUX = 'linux',
+  MAC = 'mac',
+  MAC64 = 'mac64',
+  MACARM = 'macarm',
+  ANDROID = 'android',
+  IOS = 'ios',
+  ARM64 = 'arm64',
+  X64 = 'x64'
+}
+
+export enum TagTypes {
+  AUDIO_SOURCE = 'audiosource',
+  SCREEN_SAVER = 'screensaver',
+  UTILITY_ONLY = 'utilityOnly',
+  WEB_APP_ONLY = 'webappOnly'
+}
+
+export interface AppManifest {
+  id: string
+  label?: string
+  requires: string[]
   version: string
   description?: string
   author?: string
-  id: string
-  isWebApp: boolean
-  isScreenSaver?: boolean
-  isLocalApp: boolean
-  platforms: Array<string>
+  platforms?: PlatformTypes[]
   homepage?: string
   repository?: string
+  updateUrl?: string // Usually the same as repository
+  tags: TagTypes[]
+  requiredVersions: {
+    server: string
+    client: string
+  }
+  template?: string // Utility - only for the template to know what template was used
+  version_code?: number // deprecated
+  compatible_server?: number[] // deprecated
+  compatible_client?: number[] // deprecated
+  isAudioSource?: boolean // depreciated
+  isScreenSaver?: boolean // depreciated
+  isLocalApp?: boolean // depreciated
+  isWebApp?: boolean // depreciated
 }
 
 export interface App {
@@ -89,7 +120,7 @@ export interface App {
   enabled: boolean
   running: boolean
   prefIndex: number
-  manifest?: Manifest
+  manifest?: AppManifest
 }
 
 export interface Config {

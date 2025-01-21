@@ -1,15 +1,31 @@
-import { App, AppDataInterface, AppReturnData, AppSettings, LoggingData } from '@shared/types'
+import {
+  App,
+  AppDataInterface,
+  AppReturnData,
+  AppSettings,
+  LoggingData,
+  AppManifest
+} from '@shared/types'
 import { create } from 'zustand'
 
 interface AppStoreState {
   appsList: App[]
   order: string[]
   logging: LoggingData | null
+  stagedManifest: AppManifest | null
 
   requestApps: () => void
   removeAppFromList: (appName: string) => void
+  /**
+   * @depreciated
+   */
   loadAppUrl: (appName: string) => Promise<AppReturnData | null>
+  /**
+   * @depreciated
+   */
   loadAppZip: (appName: string) => Promise<AppReturnData | null>
+  addApp: (path: string) => Promise<AppManifest | void>
+  runStagedApp: (overwrite?: boolean) => Promise<void>
   setOrder: (order: string[]) => void
   addAppToList: (appName: string) => void
   disableApp: (appName: string) => void
@@ -41,10 +57,11 @@ interface AppStoreState {
  *
  * The store uses the Zustand library to manage the state and provide the necessary actions.
  */
-const useAppStore = create<AppStoreState>((set) => ({
+const useAppStore = create<AppStoreState>((set, get) => ({
   appsList: [],
   order: [],
   logging: null,
+  stagedManifest: null,
 
   // Requests the apps from Electron via IPC
   requestApps: async (): Promise<void> => {
@@ -160,6 +177,24 @@ const useAppStore = create<AppStoreState>((set) => ({
     const removeListener = window.electron.ipcRenderer.on('logging', loggingListener)
 
     return response
+  },
+
+  addApp: async (appPath: string): Promise<AppManifest | void> => {
+    const manifest = await window.electron.app.add(appPath)
+    if (manifest) {
+      set({ stagedManifest: manifest })
+    }
+    return manifest
+  },
+
+  runStagedApp: async (overwrite: boolean = false): Promise<void> => {
+    const manifest = get().stagedManifest
+    if (manifest?.id) {
+      await window.electron.app.runStaged(manifest.id, overwrite)
+      set({ stagedManifest: null }) // clear the staged manifest once done
+    } else {
+      console.error('No staged manifest found! Please download an app first')
+    }
   }
 }))
 

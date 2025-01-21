@@ -4,7 +4,6 @@ import Button from '@renderer/components/Button'
 import { IconDownload, IconLink, IconLoading, IconLogs, IconUpload } from '@renderer/assets/icons'
 import { useAppStore, useGithubStore, usePageStore } from '@renderer/stores'
 import MainElement from '@renderer/nav/MainElement'
-import { AppReturnData } from '@shared/types'
 import DownloadNotification from '@renderer/overlays/DownloadNotification'
 import Overlay from '@renderer/overlays/Overlay'
 import { SuccessNotification } from '@renderer/overlays/SuccessNotification'
@@ -27,14 +26,12 @@ const AppDownloads: React.FC = () => {
   const extractNameDetails = useGithubStore((githubStore) => githubStore.extractReleaseDetails)
 
   // Running apps
-  const loadAppUrl = useAppStore((appStore) => appStore.loadAppUrl)
-  const loadAppZip = useAppStore((appStore) => appStore.loadAppZip)
-  const runApp = useAppStore((appStore) => appStore.runApp)
+  const addApp = useAppStore((appStore) => appStore.addApp)
+  const stagedAppManifest = useAppStore((appStore) => appStore.stagedManifest)
   const logging = useAppStore((appStore) => appStore.logging)
 
   // Displaying overlays
   const [showLogging, setShowLogging] = useState(false)
-  const [appReturnData, setAppReturnData] = useState<AppReturnData | null>(null)
   const [selectingFile, setSelectingFile] = useState(false)
   const [loading, setLoading] = useState(false)
 
@@ -63,8 +60,7 @@ const AppDownloads: React.FC = () => {
       setShowLogging(true)
       setLoading(true)
       try {
-        const returnData = await loadAppZip(file)
-        setAppReturnData(returnData)
+        await addApp(file)
       } catch (error) {
         setShowLogging(false)
         setLoading(false)
@@ -85,8 +81,7 @@ const AppDownloads: React.FC = () => {
     setLoading(true)
     setAppDownloads(null)
     try {
-      const returnData = await loadAppUrl(url)
-      setAppReturnData(returnData)
+      await addApp(url)
     } catch (error) {
       await setTimeout(() => {
         setShowLogging(false)
@@ -167,13 +162,7 @@ const AppDownloads: React.FC = () => {
           </div>
         </Overlay>
       )}
-      {appReturnData && (
-        <SuccessNotification
-          runApp={runApp}
-          setAppReturnData={setAppReturnData}
-          appReturnData={appReturnData}
-        />
-      )}
+      {stagedAppManifest && <SuccessNotification />}
       <Sidebar className="flex justify-end flex-col h-full max-h-full md:items-stretch xs:items-center">
         <div>
           <div className="flex flex-col gap-2">

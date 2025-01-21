@@ -15,7 +15,8 @@ import {
   AppIPCData,
   ReplyFn,
   MESSAGE_TYPES,
-  AppSettings
+  AppSettings,
+  AppManifest
 } from '@shared/types'
 import { loggingStore, appStore } from '@server/stores'
 import { dialog, BrowserWindow } from 'electron'
@@ -45,6 +46,7 @@ export const appHandler: Record<
     | App[]
     | undefined
     | void
+    | AppManifest
     | null
     | App
     | string
@@ -148,6 +150,7 @@ export const appHandler: Record<
     replyFn('logging', { status: true, data: 'Finished', final: true })
     return true
   },
+
   /**
    * Handles the processing of a zipped app.
    *
@@ -157,6 +160,7 @@ export const appHandler: Record<
    * successful, it logs the completion of the process and returns the processed
    * data. If there is an error, it logs the error and returns the error data.
    *
+   * @depreciated - use add() instead
    * @param data - The payload data for the zipped app to be processed.
    * @param replyFn - The function to call to send a response back to the client.
    * @returns The processed data from the zipped app, or `null` if there was an error.
@@ -192,6 +196,7 @@ export const appHandler: Record<
    * is successful, it logs the completion of the process and returns the processed
    * data. If there is an error, it logs the error and returns the error data.
    *
+   * @depreciated - use add() instead
    * @param data - The payload data for the app to be processed from a URL.
    * @param replyFn - The function to call to send a response back to the client.
    * @returns The processed data from the app, or `null` if there was an error.
@@ -207,6 +212,21 @@ export const appHandler: Record<
     replyFn('logging', { status: true, data: 'Finished', final: true })
     replyFn('zip-name', { status: true, data: returnData, final: true })
     return returnData
+  },
+
+  add: async (data, replyFn) => {
+    replyFn('logging', { status: true, data: 'Handling app from URL...', final: false })
+
+    return await appStore.addApp(data.payload, replyFn)
+  },
+
+  staged: async (data, reply) => {
+    reply('logging', { status: true, data: `Handling staged app...`, final: false })
+    loggingStore.log(
+      MESSAGE_TYPES.LOGGING,
+      `Handling staged app with id ${data.payload.appId || 'Unknwon'} and overwrite set to ${data.payload.overwrite ? 'true' : 'false'}...`
+    )
+    return await appStore.runStagedApp({ ...data.payload, reply })
   },
 
   'user-data-response': async (data) => {

@@ -267,10 +267,8 @@ async function initializeDoc(): Promise<void> {
  */
 async function setupIpcHandlers(): Promise<void> {
   // Import required stores
-  const [{ default: settingsStore }, { default: loggingStore, ResponseLogger }] = await Promise.all(
-    [import('./stores/settingsStore'), import('./stores/loggingStore')]
-  )
-
+  const { default: settingsStore } = await import('./stores/settingsStore')
+  const { default: loggingStore, ResponseLogger } = await import('./stores/loggingStore')
   // Default handler for unimplemented IPC messages
   const defaultHandler = async (data: AppIPCData): Promise<void> => {
     console.error(`No handler implemented for type: ${data.type} ${data}`)
@@ -404,7 +402,7 @@ async function setupIpcHandlers(): Promise<void> {
     })
   })
 
-  import('./services/updater/autoUpdater').then(({ checkForUpdates }) => {
+  import('./services/updater/autoUpdater').then(async ({ checkForUpdates }) => {
     loggingStore.log(MESSAGE_TYPES.LOGGING, '[INDEX] Checking for updates...')
     checkForUpdates()
   })
@@ -468,15 +466,16 @@ if (!app.requestSingleInstanceLock()) {
   })
 
   // Handle window closure
-  app.on('window-all-closed', async (e) => {
-    const { default: settingsStore } = await import('./stores/settingsStore')
-
-    const settings = await settingsStore.getSettings()
-    if (settings.minimizeApp) {
-      e.preventDefault()
-    } else {
-      app.quit()
-    }
+  app.on('window-all-closed', () => {
+    import('./stores/settingsStore').then(({ default: settingsStore }) => {
+      settingsStore.getSettings().then((settings) => {
+        if (settings.minimizeApp) {
+          // Do nothing, prevent default behavior
+        } else {
+          app.quit()
+        }
+      })
+    })
   })
 }
 

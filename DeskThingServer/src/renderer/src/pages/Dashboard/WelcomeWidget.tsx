@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { IconDiscord, IconLink, IconYoutube } from '@renderer/assets/icons'
+import {
+  IconCarThing,
+  IconCarThingSmall,
+  IconDiscord,
+  IconLink,
+  IconYoutube
+} from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
 import { useNavigate } from 'react-router-dom'
 import Lottie from 'lottie-react'
@@ -29,15 +35,8 @@ const WelcomeWidget: React.FC = () => {
             className={`delay-100 text-sm items-center border-[#5865f2] border gap-1 hover:bg-[#5865F2] group hover:text-white transition-[transform,opacity] duration-500 overflow-hidden text-nowrap ${showText ? 'opacity-100' : '-translate-y-10 opacity-0'}`}
           >
             <IconDiscord className="as fill-[#5865f2] group-hover:fill-white" color={'red'} />
-            <p className="group-hover:hidden">Join My Crew</p>
-            <p className="group-hover:inline hidden">Discord Invite</p>
-          </Button>
-          <Button
-            onClick={() => navigate('?notifications=true&page=task')}
-            className={`delay-200 text-sm bg-zinc-900 hover:bg-zinc-800 items-center gap-2 transition-[opacity,transform] duration-500 overflow-hidden text-nowrap ${showText ? 'opacity-100' : '-translate-y-10 opacity-0'}`}
-          >
-            Get Started
-            <IconLink />
+            <p className="group-hover:hidden">Join the Community</p>
+            <p className="group-hover:inline hidden ml-2">DeskThing Discord</p>
           </Button>
           <Button
             onClick={() => window.open('https://deskthing.app/youtube', '_blank')}
@@ -48,13 +47,31 @@ const WelcomeWidget: React.FC = () => {
             <p className="group-hover:inline hidden">Youtube</p>
           </Button>
           <Button
-            onClick={() => window.open('https://deskthing.app/youtube', '_blank')}
+            onClick={() => window.open('https://deskthing.app/releases', '_blank')}
             className={`delay-300 text-sm items-center border-cyan-500 border gap-1 hover:bg-cyan-500 group hover:text-white transition-[transform,opacity] duration-500 overflow-hidden text-nowrap ${showText ? 'opacity-100' : '-translate-y-10 opacity-0'}`}
           >
-            <IconYoutube className="fill-cyan-500 group-hover:fill-white" />
-            <p className="group-hover:hidden">Whats New</p>
-            <p className="group-hover:inline hidden">Broken Link</p>
+            <IconCarThingSmall
+              className="group-hover:hidden fill-cyan-500 group-hover:fill-white"
+              strokeWidth={1.5}
+            />
+            <IconLink
+              className="group-hover:inline hidden fill-cyan-500 group-hover:fill-white"
+              strokeWidth={1.5}
+            />
+            <p className="group-hover:hidden">Whats New?</p>
+            <p className="group-hover:inline hidden">Release Notes</p>
           </Button>
+          <Button
+            onClick={() => navigate('?notifications=true&page=task')}
+            className={`delay-200 text-sm bg-zinc-900 hover:bg-zinc-800 items-center gap-2 transition-[opacity,transform] duration-500 overflow-hidden text-nowrap ${showText ? 'opacity-100' : '-translate-y-10 opacity-0'}`}
+          >
+            Get Started
+            <IconLink />
+          </Button>
+        </div>
+        <div className="text-gray-500 fixed bottom-0 px-5 w-screen flex justify-between items-between">
+          <p className="animate-fade">Built by Riprod</p>
+          <p className="animate-fade">UI design by TheBigLoud</p>
         </div>
       </div>
     </div>

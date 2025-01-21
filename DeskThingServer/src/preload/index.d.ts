@@ -25,6 +25,11 @@ declare global {
       runApp: (appId: string) => Promise<void>
       enableApp: (appId: string) => Promise<void>
       purgeApp: (appId: string) => Promise<void>
+      app: {
+        add: (appPath: string) => Promise<manifest>
+        runStaged: (appId: string, overwrite: boolean) => Promise<void>
+      }
+
       handleAppZip: (path: string) => Promise<AppReturnData | null>
       handleAppUrl: (url: string) => Promise<AppReturnData | null>
       handleResponseToUserData: (requestId: string, payload: ToAppData) => Promise<void>
@@ -82,6 +87,12 @@ declare global {
       startTask: (taskId: string) => Promise<void>
       completeStep: (taskId: string, stepId: string) => Promise<void>
       completeTask: (taskId: string) => Promise<void>
+
+      update: {
+        check: () => Promise<void>
+        download: () => Promise<void>
+        install: () => Promise<void>
+      }
     }
     api: unknown // Or define `api` more specifically if you have a shape for it
   }

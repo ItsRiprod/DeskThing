@@ -1,64 +1,128 @@
-import { loggingStore } from '@server/stores'
-import electronUpdater, { UpdateCheckResult, type AppUpdater } from 'electron-updater'
+import { MESSAGE_TYPES, UpdateInfoType, UpdateProgressType } from '@shared/types'
+import electronUpdater, { type AppUpdater } from 'electron-updater'
+import { notifyUpdateFinished, notifyUpdateStatus } from './updateUtils'
+import { sendIpcData } from '@server/index'
 
-/**
- * Retrieves the Electron auto-updater instance.
- * @returns {AppUpdater} The Electron auto-updater instance.
- */
+let configuredUpdater: AppUpdater | null = null
+
 export function getAutoUpdater(): AppUpdater {
   // Using destructuring to access autoUpdater due to the CommonJS module of 'electron-updater'.
   // It is a workaround for ESM compatibility issues, see https://github.com/electron-userland/electron-builder/issues/7976.
   const { autoUpdater } = electronUpdater
 
-  return autoUpdater
-}
-
-export const checkForUpdates = async (
-  autoUpdater?: electronUpdater.AppUpdater
-): Promise<UpdateCheckResult | null> => {
-  if (!autoUpdater) {
-    autoUpdater = getAutoUpdater()
+  if (configuredUpdater) {
+    return configuredUpdater
   }
+
+  import('@server/stores/loggingStore').then(({ default: loggingStore }) => {
+    autoUpdater.logger = {
+      info: (message): Promise<void> =>
+        loggingStore.log(MESSAGE_TYPES.LOGGING, message, 'AutoUpdater'),
+      warn: (message): Promise<void> =>
+        loggingStore.log(MESSAGE_TYPES.WARNING, message, 'AutoUpdater'),
+      error: (message): Promise<void> =>
+        loggingStore.log(MESSAGE_TYPES.ERROR, message, 'AutoUpdater'),
+      debug: (message): Promise<void> =>
+        loggingStore.log(MESSAGE_TYPES.DEBUG, message, 'AutoUpdater')
+    }
+
+    autoUpdater.on('download-progress', (progressObj) => {
+      let logMessage = `Download progress: ${progressObj.percent}%`
+      if (progressObj.bytesPerSecond) {
+        logMessage += ` - ${progressObj.bytesPerSecond} bytes/sec`
+      }
+      if (progressObj.total) {
+        logMessage += ` - ${progressObj.transferred}/${progressObj.total}`
+      }
+      loggingStore.log(MESSAGE_TYPES.LOGGING, logMessage)
+
+      const progress: UpdateProgressType = {
+        percent: progressObj.percent,
+        speed: progressObj.bytesPerSecond,
+        transferred: progressObj.transferred,
+        total: progressObj.total
+      }
+
+      sendIpcData({ type: 'update-progress', payload: progress })
+    })
+
+    autoUpdater.on('update-downloaded', (info) => {
+      // Prompt the user to quit and install the update
+      loggingStore.log(MESSAGE_TYPES.DEBUG, 'Update downloaded: ' + JSON.stringify(info))
+      notifyUpdateFinished(info)
+    })
+  })
 
   const isDev = process.env.NODE_ENV === 'development'
 
   if (isDev) {
     autoUpdater.allowPrerelease = true
     autoUpdater.forceDevUpdateConfig = true
+    autoUpdater.disableWebInstaller = true
+    autoUpdater.autoDownload = false
+    autoUpdater.autoInstallOnAppQuit = false
+    autoUpdater.updateConfigPath = 'dev-app-update.yml'
+    autoUpdater.requestHeaders = {
+      'Cache-Control': 'no-cache'
+    }
+    autoUpdater.setFeedURL({
+      provider: 'github',
+      owner: 'ItsRiprod',
+      repo: 'DeskThing',
+      private: false,
+      channel: 'dev'
+    })
+  } else {
+    autoUpdater.setFeedURL({
+      provider: 'github',
+      owner: 'ItsRiprod',
+      repo: 'DeskThing',
+      private: false
+    })
   }
 
-  autoUpdater.logger = loggingStore
+  configuredUpdater = autoUpdater
 
-  autoUpdater.autoDownload = false
-
-  autoUpdater.setFeedURL({
-    provider: 'github',
-    owner: 'ItsRiprod',
-    repo: 'DeskThing',
-    private: false
-  })
-
-  autoUpdater.on('update-downloaded', (info) => {
-    // Prompt the user to quit and install the update
-    console.log(info)
-  })
-
-  const downloadNotification = await autoUpdater.checkForUpdatesAndNotify()
-
-  return downloadNotification
+  return configuredUpdater
 }
 
-export const notifyOfUpdate = async (
-  downloadNotification?: electronUpdater.UpdateCheckResult
-): Promise<void> => {
-  if (!downloadNotification) {
-    return
-  }
-}
-
-export const startDownload = (): void => {
+export const checkForUpdates = async (): Promise<void> => {
   const autoUpdater = getAutoUpdater()
-  autoUpdater.downloadUpdate()
+
+  autoUpdater.checkForUpdatesAndNotify().then((downloadNotification) => {
+    return notifyUpdateStatus(downloadNotification)
+  })
+}
+
+export const startDownload = async (): Promise<void> => {
+  const autoUpdater = getAutoUpdater()
+  const updateCheck = await autoUpdater.checkForUpdates()
+  if (updateCheck) {
+    try {
+      const result = await autoUpdater.downloadUpdate()
+      console.log('[autoUpdater]: Downloaded update successfully with result:', result)
+    } catch (error) {
+      if (error instanceof Error) {
+        const errorStatus: UpdateInfoType = {
+          updateAvailable: true,
+          updateDownloaded: false,
+          failed: true,
+          error: error.message
+        }
+        sendIpcData({ type: 'update-status', payload: errorStatus })
+        console.log('[autoUpdater]: Encountered an error: ', error.message)
+      } else {
+        const errorStatus: UpdateInfoType = {
+          updateAvailable: true,
+          updateDownloaded: false,
+          failed: true,
+          error: 'Unknown Error'
+        }
+        sendIpcData({ type: 'update-status', payload: errorStatus })
+        console.error('[autoUpdater]: Unknown error')
+      }
+    }
+  }
 }
 
 export const quitAndInstall = (): void => {

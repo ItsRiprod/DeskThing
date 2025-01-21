@@ -6,6 +6,7 @@ import RequestDataListener from '@renderer/listeners/RequestDataListener'
 import SettingsDataListener from '@renderer/listeners/SettingsDataListener'
 import MappingsDataListener from '@renderer/listeners/mappingsDataListener'
 import GithubDataListener from '@renderer/listeners/GithubDataListener'
+import UpdateDataListener from '@renderer/listeners/UpdateListener'
 
 const Store: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
@@ -17,6 +18,7 @@ const Store: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <RequestDataListener />
       <SettingsDataListener />
       <GithubDataListener />
+      <UpdateDataListener />
       {children}
     </>
   )

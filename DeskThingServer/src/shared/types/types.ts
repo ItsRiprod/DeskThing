@@ -107,7 +107,10 @@ export interface ClientManifest {
   version: string
   port: number
   ip: string
-  compatible_server?: number[]
+  /*
+   * @deprecated
+   */
+  compatible_server?: number[] // depreciated
   uuid?: string
   version_code?: number
   adbId?: string

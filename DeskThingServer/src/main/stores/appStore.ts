@@ -2,13 +2,14 @@ console.log('[AppState Service] Starting')
 import {
   App,
   AppInstance,
-  Manifest,
+  AppManifest,
   AppReturnData,
   MESSAGE_TYPES,
   AppDataInterface,
   ToAppData,
   SettingsType,
-  AppSettings
+  AppSettings,
+  ReplyFn
 } from '@shared/types'
 import { loggingStore } from '@server/stores'
 import { getData, setData } from '@server/services/files/dataService'
@@ -382,6 +383,7 @@ export class AppStore {
    * @returns
    */
   async run(name: string): Promise<boolean> {
+    // Early break
     if (!(name in this.apps)) {
       return false
     }
@@ -406,6 +408,12 @@ export class AppStore {
     return await start(name)
   }
 
+  /**
+   * @deprecated - use addApp instead
+   * @param url
+   * @param reply
+   * @returns
+   */
   async addURL(url: string, reply): Promise<AppReturnData | void> {
     const { handleZipFromUrl } = await import('../services/apps/appInstaller')
     const returnData = await handleZipFromUrl(url, reply)
@@ -423,6 +431,13 @@ export class AppStore {
       return returnData
     }
   }
+
+  /**
+   * @depreciated - use addApp instead
+   * @param zip
+   * @param event
+   * @returns
+   */
   async addZIP(zip: string, event): Promise<AppReturnData | void> {
     const { handleZip } = await import('../services/apps/appInstaller')
     const returnData = await handleZip(zip, event)
@@ -441,12 +456,79 @@ export class AppStore {
     }
   }
 
+  async runStagedApp({
+    reply,
+    overwrite,
+    appId,
+    run = true
+  }: {
+    reply?: ReplyFn
+    overwrite?: boolean
+    appId?: string
+    run?: boolean
+  }): Promise<void> {
+    const { executeStagedFile } = await import('../services/apps/appInstaller')
+    return await executeStagedFile({ reply, overwrite, appId, run })
+  }
+
+  async addApp(appPath: string, reply: ReplyFn): Promise<AppManifest | void> {
+    const { stageAppFile } = await import('../services/apps/appInstaller')
+
+    try {
+      reply &&
+        reply('logging', {
+          status: true,
+          data: 'Staging file...',
+          final: false
+        })
+      const newAppManifest = await stageAppFile(appPath, reply)
+
+      if (!newAppManifest) {
+        reply &&
+          reply('logging', {
+            status: false,
+            data: 'Unable to stage app',
+            final: true
+          })
+        return
+      }
+
+      reply &&
+        reply('logging', {
+          status: true,
+          data: 'Finalizing...',
+          final: true
+        })
+      return newAppManifest
+    } catch (e) {
+      if (e instanceof Error) {
+        loggingStore.log(MESSAGE_TYPES.ERROR, `[addApp]: ${e.message}`)
+        reply &&
+          reply('logging', {
+            status: false,
+            data: 'Unable to stage app',
+            error: e.message,
+            final: true
+          })
+      } else {
+        loggingStore.log(MESSAGE_TYPES.ERROR, `[addApp]: Unknown error ` + String(e))
+        reply &&
+          reply('logging', {
+            status: false,
+            data: 'Unable to stage app',
+            error: String(e),
+            final: true
+          })
+      }
+    }
+  }
+
   /**
    * Appends a manifest to the app
    * @param manifest
    * @param appName
    */
-  async appendManifest(manifest: Manifest, appName: string): Promise<void> {
+  async appendManifest(manifest: AppManifest, appName: string): Promise<void> {
     if (this.apps[appName]) {
       this.apps[appName].manifest = manifest
     }

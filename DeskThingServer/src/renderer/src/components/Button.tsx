@@ -11,7 +11,7 @@
  * @param disabled - An optional boolean to disable the button.
  * @param onMouseEnter - An optional mouse enter event handler for the button or link.
  */
-import React from 'react'
+import React, { Ref } from 'react'
 
 interface ButtonProps {
   children: React.ReactNode
@@ -20,6 +20,7 @@ interface ButtonProps {
   href?: string
   target?: string
   rel?: string
+  ref?: Ref<HTMLButtonElement>
   style?: React.CSSProperties
   disabled?: boolean
   onMouseEnter?: () => void
@@ -31,6 +32,7 @@ const Button: React.FC<ButtonProps> = ({
   href,
   target,
   rel,
+  ref,
   style,
   disabled,
   onMouseEnter
@@ -59,6 +61,7 @@ const Button: React.FC<ButtonProps> = ({
       style={style}
       className={combinedClasses}
       onClick={onClick}
+      ref={ref}
       onMouseEnter={onMouseEnter}
       disabled={disabled}
     >

@@ -5,6 +5,8 @@ import SettingsOverlay from './settings/SettingsOverlay'
 import NotificationOverlay from './notifications/NotificationOverlay'
 import AppsOverlay from './apps/AppsOverlay'
 import AddProfileOverlay from './AddProfile.'
+import UpdateOverlay from './UpdateOverlay'
+import useUpdateStore from '@renderer/stores/updateStore'
 
 const overlays = {
   qr: QROverlay,
@@ -19,6 +21,7 @@ const OverlayWrapper: React.FC<React.PropsWithChildren> = ({
 }: React.PropsWithChildren) => {
   const [searchParams] = useSearchParams()
   const [activeOverlays, setActiveOverlays] = useState<string[]>([])
+  const update = useUpdateStore((state) => state.update)
 
   useEffect(() => {
     const newActiveOverlays = Object.keys(overlays).filter(
@@ -29,6 +32,7 @@ const OverlayWrapper: React.FC<React.PropsWithChildren> = ({
 
   return (
     <>
+      {(update.updateAvailable || update.updateDownloaded) && <UpdateOverlay />}
       {activeOverlays.map((key) => {
         const OverlayComponent = overlays[key]
         return <OverlayComponent key={key} />

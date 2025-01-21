@@ -1,5 +1,5 @@
 console.log('[AppUtils Service] Starting')
-import { Manifest, MESSAGE_TYPES } from '@shared/types'
+import { AppManifest, MESSAGE_TYPES, TagTypes } from '@shared/types'
 import { join } from 'path'
 import { existsSync, promises } from 'node:fs'
 import { loggingStore } from '@server/stores/'
@@ -13,7 +13,7 @@ import { app } from 'electron'
  * @param fileLocation The file path of the manifest file to be read and parsed
  * @returns The parsed manifest data as a JavaScript object
  */
-export async function getManifest(fileLocation: string): Promise<Manifest | undefined> {
+export async function getManifest(fileLocation: string): Promise<AppManifest | undefined> {
   try {
     loggingStore.log(MESSAGE_TYPES.LOGGING, '[getManifest] Getting manifest for app')
     const manifestPath = join(fileLocation, 'manifest.json')
@@ -24,19 +24,32 @@ export async function getManifest(fileLocation: string): Promise<Manifest | unde
     const manifest = await promises.readFile(manifestPath, 'utf8')
     const parsedManifest = JSON.parse(manifest)
 
-    const returnData = {
-      isAudioSource: parsedManifest.isAudioSource,
+    const returnData: AppManifest = {
+      id: parsedManifest.id,
       requires: parsedManifest.requires,
       label: parsedManifest.label,
       version: parsedManifest.version,
-      description: parsedManifest.description || undefined,
-      author: parsedManifest.author || undefined,
-      id: parsedManifest.id,
-      isWebApp: parsedManifest.isWebApp,
-      isLocalApp: parsedManifest.isLocalApp,
+      description: parsedManifest.description,
+      author: parsedManifest.author,
       platforms: parsedManifest.platforms,
-      homepage: parsedManifest.homepage || undefined,
-      repository: parsedManifest.repository || undefined
+      tags: parsedManifest.tags || [
+        parsedManifest.isAudioSource && TagTypes.AUDIO_SOURCE,
+        parsedManifest.isScreenSaver && TagTypes.SCREEN_SAVER
+      ],
+      requiredVersions: {
+        client: parsedManifest.requiredVersions.client || '>=0.0.0',
+        server: parsedManifest.requiredVersions.server || '>=0.0.0'
+      },
+      homepage: parsedManifest.homepage,
+      repository: parsedManifest.repository,
+      updateUrl: parsedManifest.updateUrl || parsedManifest.repository || undefined,
+      version_code: parsedManifest.version_code || undefined,
+      compatible_server: parsedManifest.compatible_server || undefined,
+      compatible_client: parsedManifest.compatible_client || undefined,
+      isWebApp: parsedManifest.isWebApp || undefined,
+      isAudioSource: parsedManifest.isAudioSource || undefined,
+      isScreenSaver: parsedManifest.isScreenSaver || undefined,
+      isLocalApp: parsedManifest.isLocalApp || undefined
     }
     loggingStore.log(MESSAGE_TYPES.LOGGING, '[getManifest] Successfully got manifest for app')
     return returnData

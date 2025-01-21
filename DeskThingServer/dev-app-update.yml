@@ -1,5 +1,4 @@
 provider: github
 owner: ItsRiprod
 repo: DeskThing
-updaterCacheDirName: deskthing
-disableWebInstaller: true
+updaterCacheDirName: deskthing-dev-updater

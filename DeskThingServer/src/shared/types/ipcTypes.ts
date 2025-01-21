@@ -43,6 +43,8 @@ export type APP_TYPES =
   | 'purge'
   | 'zip'
   | 'url'
+  | 'add'
+  | 'staged'
   | 'user-data-response'
   | 'select-zip-file'
   | 'dev-add-app'
@@ -130,8 +132,10 @@ export type ServerIPCData =
   | ConnectionsIPC
   | AdbDevicesIPC
   | ClientsIPC
+  | VersionStatusIPC
   | ProfileIPC
-  | DeviceVersionStatusIPC
+  | UpdateStatusIPC
+  | UpdateProgressIPC
   | AppDataIPC
   | TasksIPC
 
@@ -145,10 +149,37 @@ export interface AppDataIPC extends OutgoingIPCBase {
   type: 'app-data'
   payload: App[]
 }
-
-export interface DeviceVersionStatusIPC extends OutgoingIPCBase {
+export interface VersionStatusIPC extends OutgoingIPCBase {
   type: 'version-status'
   payload: any
+}
+
+export interface UpdateInfoType {
+  updateAvailable: boolean
+  updateDownloaded: boolean
+  failed?: boolean
+  error?: string
+  version?: string
+  releaseNotes?: string
+  releaseName?: string | null
+  releaseDate?: string
+}
+
+export interface UpdateStatusIPC extends OutgoingIPCBase {
+  type: 'update-status'
+  payload: UpdateInfoType
+}
+
+export interface UpdateProgressType {
+  speed: number
+  percent: number
+  total: number
+  transferred: number
+}
+
+export interface UpdateProgressIPC extends OutgoingIPCBase {
+  type: 'update-progress'
+  payload: UpdateProgressType
 }
 
 export interface ProfileIPC extends OutgoingIPCBase {

@@ -1,16 +1,19 @@
 import React, { useState } from 'react'
 import useSettingsStore from '../../stores/settingsStore'
 import Button from '@renderer/components/Button'
-import { IconLoading, IconSave, IconToggle } from '@renderer/assets/icons'
+import { IconLoading, IconPlay, IconSave, IconToggle } from '@renderer/assets/icons'
 import Select from '@renderer/components/Select'
 import { SingleValue } from 'react-select'
 import { LOGGING_LEVEL, SettingOption } from '@shared/types'
+import useUpdateStore from '@renderer/stores/updateStore'
 
 const ServerSettings: React.FC = () => {
   const initialSettings = useSettingsStore((settings) => settings.settings)
   const saveSettings = useSettingsStore((settings) => settings.saveSettings)
   const [settings, setSettings] = useState(initialSettings)
   const [loading, setLoading] = useState(false)
+  const [downloadLoading, setDownloadLoading] = useState(false)
+  const checkForUpdateFn = useUpdateStore((state) => state.checkForUpdates)
 
   const logLevelOptions = [
     { value: LOGGING_LEVEL.SYSTEM, label: 'SYSTEM' },
@@ -30,8 +33,26 @@ const ServerSettings: React.FC = () => {
     }, 500)
   }
 
+  const checkForUpdate = (): void => {
+    setDownloadLoading(true)
+    checkForUpdateFn()
+    setTimeout(() => {
+      setDownloadLoading(false)
+    }, 1000)
+  }
+
   return (
     <div className="w-full absolute inset h-full p-4 flex flex-col divide-y-2 divide-gray-500">
+      <div className="w-full px-4 p-3 flex justify-between items-center">
+        <h2 className="text-xl">Check for updates</h2>
+        <Button
+          className={`bg-zinc-900 ${!downloadLoading && 'hover:bg-green-500'}`}
+          onClick={checkForUpdate}
+          disabled={downloadLoading}
+        >
+          {downloadLoading ? <IconLoading /> : <IconPlay />}
+        </Button>
+      </div>
       <div className="w-full p-4 flex justify-between items-center">
         <h2 className="text-xl">Callback Port</h2>
         <input

@@ -22,7 +22,11 @@ import { shell, app, dialog } from 'electron'
 import { setupFirewall } from './firewallHandler'
 import { disconnectClient } from '../services/client/clientCom'
 import { restartServer } from '../services/client/websocket'
-import { checkForUpdates } from '@server/services/updater/autoUpdater'
+import {
+  checkForUpdates,
+  quitAndInstall,
+  startDownload
+} from '@server/services/updater/autoUpdater'
 import { UpdateCheckResult } from 'electron-updater'
 import { TaskList } from '@shared/types/tasks'
 
@@ -302,9 +306,9 @@ export const utilityHandler: Record<
       case 'check': // Check for update
         return await checkForUpdates()
       case 'download': // Start Download
-        return // await setUpdate(data.payload)
+        return startDownload()
       case 'restart': // Start Download
-        return // await setUpdate(data.payload)
+        return quitAndInstall()
       default:
         return
     }

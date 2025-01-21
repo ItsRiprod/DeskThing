@@ -1,47 +1,106 @@
-import { AppReturnData } from '@shared/types'
 import Overlay from './Overlay'
+import semverSatisfies from 'semver/functions/satisfies'
 import Button from '@renderer/components/Button'
-import { IconPlay } from '@renderer/assets/icons'
-import { useState } from 'react'
+import { IconPlay, IconToggle } from '@renderer/assets/icons'
+import { useEffect, useState } from 'react'
+import { useAppStore } from '@renderer/stores'
+import { AppManifest, PlatformTypes } from '@shared/types'
 
-interface SuccessNotificationProps {
-  appReturnData: AppReturnData
-  setAppReturnData: (data: null) => void
-  runApp: (appId: string) => void
+interface CompatibilityResult {
+  isCompatible: boolean
+  errors: string[]
 }
 
-export function SuccessNotification({
-  appReturnData,
-  setAppReturnData,
-  runApp
-}: SuccessNotificationProps): JSX.Element {
-  const [loading, setLoading] = useState(false)
+const checkCompatibility = (manifest: AppManifest): CompatibilityResult => {
+  const errors: string[] = []
 
-  if (!appReturnData) return <></>
+  const currentPlatform =
+    process.platform === 'win32'
+      ? PlatformTypes.WINDOWS
+      : process.platform === 'darwin'
+        ? PlatformTypes.MAC
+        : PlatformTypes.LINUX
+
+  if (!manifest.platforms?.includes(currentPlatform)) {
+    errors.push(`App not compatible with ${currentPlatform} platform`)
+  }
+
+  if (manifest.requiredVersions) {
+    const { server: requiredServer, client: requiredClient } = manifest.requiredVersions
+
+    // Get current versions from your environment/config
+    const currentServerVersion = '1.0.0' // Replace with actual version
+    const currentClientVersion = '1.0.0' // Replace with actual version
+
+    if (!semverSatisfies(currentServerVersion, requiredServer)) {
+      errors.push(`Server version ${currentServerVersion} incompatible. Requires ${requiredServer}`)
+    }
+
+    if (!semverSatisfies(currentClientVersion, requiredClient)) {
+      errors.push(`Client version ${currentClientVersion} incompatible. Requires ${requiredClient}`)
+    }
+  }
+
+  return {
+    isCompatible: errors.length === 0,
+    errors
+  }
+}
+
+export function SuccessNotification(): JSX.Element {
+  const [loading, setLoading] = useState(false)
+  const stagedManifest = useAppStore((appStore) => appStore.stagedManifest)
+  const runStagedApp = useAppStore((appStore) => appStore.runStagedApp)
+  const [overwrite, setOverwrite] = useState(false)
+  const [compatibility, setCompatibility] = useState<CompatibilityResult>({
+    isCompatible: true,
+    errors: []
+  })
+
+  useEffect(() => {
+    if (stagedManifest) {
+      const result = checkCompatibility(stagedManifest)
+      setCompatibility(result)
+    }
+  }, [stagedManifest])
+
+  if (!stagedManifest) return <></>
 
   const onRunClick = async (): Promise<void> => {
     setLoading(true)
-    setTimeout(() => {
-      setAppReturnData(null)
-      runApp(appReturnData.appId)
-    }, 500)
+    runStagedApp(overwrite)
+    // setTimeout(() => {
+    //   setAppReturnData(null)
+    // }, 500)
   }
 
   const onClose = (): void => {
-    runApp(appReturnData.appId)
-    setAppReturnData(null)
+    runStagedApp(overwrite)
+  }
+
+  const toggleOverwrite = (): void => {
+    setOverwrite(!overwrite)
   }
 
   return (
     <Overlay onClose={onClose} className="border bg-zinc-950 border-zinc-800 flex flex-col">
       <div className="w-full py-4 bg-zinc-900 px-5 border-b border-gray-500">
-        <h1 className="text-2xl text-green-500 pr-24">Successfully Downloaded</h1>
+        <h1 className="text-2xl text-green-500 pr-24">
+          Successfully Downloaded {stagedManifest.label}
+        </h1>
       </div>
       <div className="p-5 flex flex-col gap-2">
         <div>
-          <p>{appReturnData.appName} is installed</p>
-          <p>v{appReturnData.appVersion}</p>
+          <p>{stagedManifest.label} is installed</p>
+          <p>v{stagedManifest.version}</p>
         </div>
+        <Button
+          onClick={toggleOverwrite}
+          className={`${overwrite ? 'text-green-500' : 'text-red-500'} justify-between items-center gap-2`}
+        >
+          <p>Overwrite Existing App?</p>
+          <IconToggle checked={overwrite} iconSize={48} />
+        </Button>
         <Button
           className="hover:bg-zinc-700 relative flex gap-2 w-full bg-black border border-zinc-900"
           onClick={onRunClick}

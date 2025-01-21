@@ -19,7 +19,8 @@ import {
   Log,
   Profile,
   Settings,
-  SocketData
+  SocketData,
+  AppManifest
 } from '@shared/types'
 import { TaskList } from '@shared/types/tasks'
 
@@ -108,6 +109,23 @@ const api = {
       request: 'set',
       payload: url
     }),
+
+  app: {
+    add: async (appPath: string): Promise<AppManifest | void> =>
+      await sendCommand('APPS', {
+        kind: 'app',
+        type: 'add',
+        request: 'set',
+        payload: appPath
+      }),
+    runStaged: async (appId: string, overwrite: boolean): Promise<void> =>
+      await sendCommand('APPS', {
+        kind: 'app',
+        type: 'staged',
+        request: 'set',
+        payload: { appId, overwrite }
+      })
+  },
 
   handleResponseToUserData: async (requestId: string, payload: ToAppData): Promise<void> =>
     await sendCommand('APPS', {
@@ -504,7 +522,33 @@ const api = {
       type: 'task',
       request: 'complete_task',
       payload: taskId
-    })
+    }),
+
+  update: {
+    check: async (): Promise<void> =>
+      await sendCommand('UTILITY', {
+        kind: 'utility',
+        type: 'update',
+        request: 'check',
+        payload: ''
+      }),
+
+    download: async (): Promise<void> =>
+      await sendCommand('UTILITY', {
+        kind: 'utility',
+        type: 'update',
+        request: 'download',
+        payload: ''
+      }),
+
+    install: async (): Promise<void> =>
+      await sendCommand('UTILITY', {
+        kind: 'utility',
+        type: 'update',
+        request: 'restart',
+        payload: ''
+      })
+  }
 }
 
 const sendCommand = <T>(handler: keyof typeof IPC_HANDLERS, payload: IPCData): Promise<T> =>
