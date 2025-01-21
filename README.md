@@ -4,7 +4,6 @@
 ![image](https://github.com/user-attachments/assets/4f4ee062-14df-49df-968a-d196746ef80f)
 ![image](https://github.com/user-attachments/assets/5fbf8e30-e468-424e-bad4-b6a4b656feb4)
 
-
  > ❔[Reddit Link](https://reddit.com/r/DeskThing)
 
  > 📃[Trello Board](https://trello.com/b/6v0paxqV/deskthing)
@@ -21,7 +20,7 @@
 
 *Let's begin, shall we?*
 
-This is the DeskThing project. Using Spotify's existing Car Thing, the DeskThing makes the perfect desk assistant. In short, the DeskThing serves as an alternative OS for the Spotify Car Thing. It allows you to load up community-made apps to it to do anything from control your local audio to seeing who is in your discord call! This is an open source project made by me, Riprod, an independant developer who's not even out of college! If you waant to help contribute to this endeveavor and attetmpt to revive the car thing, you can do so through my buymeacoffee link or through Github Sponsors.
+This is the DeskThing project. Using Spotify's existing Car Thing, the DeskThing makes the perfect desk assistant. In short, the DeskThing serves as an alternative OS for the Spotify Car Thing. It allows you to load up community-made apps to it to do anything from control your local audio to seeing who is in your discord call! This is an open source project made by me, Riprod, an independent developer who's not even out of college! If you want to help contribute to this endeavor and attempt to revive the car thing, you can do so through my buymeacoffee link or through Github Sponsors.
 
 Cheers!
 
@@ -174,7 +173,7 @@ chmod +x /Applications/DeskThing.app/Contents/Resources/mac/adb
 Finally, the image linked above won't always work for MacOS. So instead, use the following image (it is a discord download for now) as it fixes ADB for MacOS
 
 **Go to Releases -> MACOS LISTEN UP to find the updated link**
-*Discord will cycle the url for the link so this one will expire after a given amnt of time*
+*Discord will cycle the url for the link so this one will expire after a given amount of time*
 [The new location is on thingify.tools. Use v8.9.2](thingify.tools)
 
 Thanks! Have a good day
@@ -268,3 +267,9 @@ Good luck!
 
 
 </details>
+
+*DeskThing wouldn't be possible without our sponsors*
+
+![helium-badge](https://github.com/user-attachments/assets/f0256b3a-0a96-4ba9-ba8d-7c0a45aa0d68)
+
+*Want to support deskthing? You can [here!](https://deskthing.app/support)*
