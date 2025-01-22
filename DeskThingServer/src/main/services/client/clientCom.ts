@@ -142,9 +142,9 @@ export const sendSettingsData = async (clientId?: string): Promise<void> => {
       await Promise.all(
         appData.map(async (app) => {
           if (app) {
-            const appConfig = await appStore.getData(app.name)
-            if (appConfig?.settings) {
-              settings[app.name] = appConfig.settings
+            const appSettings = await appStore.getSettings(app.name)
+            if (appSettings) {
+              settings[app.name] = appSettings
             }
           }
         })

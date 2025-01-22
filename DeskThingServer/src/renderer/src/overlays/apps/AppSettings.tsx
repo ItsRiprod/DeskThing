@@ -7,18 +7,18 @@ import { IconLoading, IconSave } from '@renderer/assets/icons'
 import Settings from '@renderer/components/settings'
 
 const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
-  const getAppData = useAppStore((state) => state.getAppData)
-  const saveAppData = useAppStore((state) => state.setAppData)
+  const getAppSettings = useAppStore((state) => state.getAppSettings)
+  const setAppSettings = useAppStore((state) => state.setAppSettings)
   const [appSettings, setAppData] = useState<AppSettingsType | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     const fetchAppData = async (): Promise<void> => {
-      const data = await getAppData(app.name)
-      data?.settings && setAppData(data.settings)
+      const data = await getAppSettings(app.name)
+      data && setAppData(data)
     }
     fetchAppData()
-  }, [app.name, getAppData])
+  }, [app.name, getAppSettings])
 
   const handleSettingChange = useCallback(
     (key: string, value: string | number | boolean | string[] | boolean[]) => {
@@ -48,7 +48,7 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
     if (!appSettings) return
     setLoading(true)
     try {
-      saveAppData(app.name, appSettings)
+      setAppSettings(app.name, appSettings)
     } catch (error) {
       console.error('Error saving app data:', error)
     }

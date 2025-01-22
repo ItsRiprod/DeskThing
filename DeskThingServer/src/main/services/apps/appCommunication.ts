@@ -36,7 +36,7 @@ export async function handleDataFromApp(app: string, appData: FromAppData): Prom
     } catch (error) {
       loggingStore.log(
         MESSAGE_TYPES.WARNING,
-        `[handleDataFromApp]: Function not found. Defaulting to legacy`,
+        `[handleDataFromApp]: Function "${appData.type}" and "${appData.request}" not found. Defaulting to legacy`,
         app
       )
       await handleLegacyCommunication(app, appData)
@@ -60,7 +60,7 @@ export async function handleDataFromApp(app: string, appData: FromAppData): Prom
 const handleRequestMissing: HandlerFunction = (app: string, appData: FromAppData) => {
   loggingStore.log(
     MESSAGE_TYPES.WARNING,
-    `[handleComs]: App ${app} sent unknown data type: ${appData.type} and request: ${appData.request}`,
+    `[handleComs]: App ${app} sent unknown data type: ${appData.type} and request: ${appData.request}, with payload ${appData.payload ? (JSON.stringify(appData.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(appData.payload)) : 'undefined'}`,
     app
   )
 }
@@ -290,6 +290,32 @@ const handleRequestGetData: HandlerFunction = async (app): Promise<void> => {
   appStore.sendDataToApp(app, { type: 'data', payload: data })
 }
 
+/**
+ * Handles a request to delete data for a specific app.
+ *
+ * @param {string} app - The name of the app requesting the settings.
+ * @returns {Promise<void>} - A Promise that resolves when the settings have been sent to the app.
+ */
+const handleRequestDelData: HandlerFunction = async (app, appData): Promise<void> => {
+  loggingStore.log(
+    MESSAGE_TYPES.LOGGING,
+    `[handleAppData]: ${app} is deleting data: ${appData.payload.toString()}`
+  )
+  if (
+    !appData.payload ||
+    (typeof appData.payload !== 'string' && !Array.isArray(appData.payload))
+  ) {
+    loggingStore.log(
+      MESSAGE_TYPES.ERROR,
+      `[handleAppData]: Cannot delete data because ${appData.payload.toString()} is not a string or string[]`
+    )
+    return
+  }
+
+  const { appStore } = await import('@server/stores')
+  await appStore.delData(app, appData.payload)
+}
+
 const handleRequestGetConfig: HandlerFunction = async (app): Promise<void> => {
   const { appStore } = await import('@server/stores')
   appStore.sendDataToApp(app, { type: 'config', payload: {} })
@@ -306,10 +332,35 @@ const handleRequestGetConfig: HandlerFunction = async (app): Promise<void> => {
  * @returns {Promise<void>} - A Promise that resolves when the settings have been sent to the app.
  */
 const handleRequestGetSettings: HandlerFunction = async (app): Promise<void> => {
-  const { default: settingsStore } = await import('@server/stores/settingsStore')
-  const settings = await settingsStore.getSettings()
   const { appStore } = await import('@server/stores')
+  const settings = await appStore.getSettings(app)
   appStore.sendDataToApp(app, { type: 'settings', payload: settings })
+}
+
+/**
+ * Handles a request to delete settings for a specific app.
+ *
+ * @param {string} app - The name of the app requesting the settings.
+ * @returns {Promise<void>} - A Promise that resolves when the settings have been sent to the app.
+ */
+const handleRequestDelSettings: HandlerFunction = async (app, appData): Promise<void> => {
+  loggingStore.log(
+    MESSAGE_TYPES.LOGGING,
+    `[handleAppData]: ${app} is deleting settings: ${appData.payload.toString()}`
+  )
+  if (
+    !appData.payload ||
+    (typeof appData.payload !== 'string' && !Array.isArray(appData.payload))
+  ) {
+    loggingStore.log(
+      MESSAGE_TYPES.ERROR,
+      `[handleAppData]: Cannot delete settings because ${appData.payload.toString()} is not a string or string[]`
+    )
+    return
+  }
+
+  const { appStore } = await import('@server/stores')
+  await appStore.delSettings(app, appData.payload)
 }
 
 /**
@@ -341,6 +392,10 @@ const handleSet: RequestHandler = {
   settings: handleRequestSetSettings,
   data: handleRequestSetData,
   default: handleRequestSet
+}
+const handleDelete: RequestHandler = {
+  settings: handleRequestDelSettings,
+  data: handleRequestDelData
 }
 const handleOpen: RequestHandler = {
   default: handleRequestOpen
@@ -393,7 +448,8 @@ const handleLog: RequestHandler = {
   [MESSAGE_TYPES.FATAL]: handleRequestLog,
   [MESSAGE_TYPES.LOGGING]: handleRequestLog,
   [MESSAGE_TYPES.MESSAGE]: handleRequestLog,
-  [MESSAGE_TYPES.WARNING]: handleRequestLog
+  [MESSAGE_TYPES.WARNING]: handleRequestLog,
+  default: handleRequestMissing
 }
 const handleKey: RequestHandler = {
   add: handleRequestKeyAdd,
@@ -415,15 +471,16 @@ const handleDefault: RequestHandler = {
 const handleData: TypeHandler = {
   get: handleGet,
   set: handleSet,
+  delete: handleDelete,
   open: handleOpen,
   send: handleSendToClient,
   toApp: handleSendToApp,
   log: handleLog,
   key: handleKey,
   action: handleAction,
-  default: handleDefault,
-  step: { default: () => {} },
-  task: { default: () => {} }
+  default: handleDefault
+  // step: { default: () => {} },
+  // task: { default: () => {} }
 }
 
 /**

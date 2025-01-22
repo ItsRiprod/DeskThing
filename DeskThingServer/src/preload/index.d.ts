@@ -1,8 +1,8 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 import {
   ActionReference,
-  AppDataInterface,
   AppReturnData,
+  AppSettings,
   ButtonMapping,
   Client,
   ClientManifest,
@@ -18,8 +18,10 @@ declare global {
       ping: () => Promise<string>
       pingClient: (clientId: string) => Promise<string | null>
       getApps: () => Promise<App[]>
-      getAppData: (appId: string) => Promise<AppDataInterface | null>
-      setAppData: (appId: string, data: AppSettings) => Promise<void>
+      getAppData: (appId: string) => Promise<{ [key: string]: string } | null>
+      setAppData: (appId: string, data: { [key: string]: string }) => Promise<void>
+      getAppSettings: (appId: string) => Promise<AppSettings | null>
+      setAppSettings: (appId: string, settings: AppSettings) => Promise<void>
       stopApp: (appId: string) => Promise<void>
       disableApp: (appId: string) => Promise<void>
       runApp: (appId: string) => Promise<void>

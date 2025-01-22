@@ -12,7 +12,7 @@ import {
   ReplyFn
 } from '@shared/types'
 import { loggingStore } from '@server/stores'
-import { getData, setData } from '@server/services/files/dataService'
+import { getData, overwriteData, setData } from '@server/services/files/dataService'
 
 type AppsListener = (data: App[]) => void
 type AppSettingsListener = (appId: string, data: AppSettings) => void
@@ -29,6 +29,7 @@ export class AppStore {
   private apps: { [key: string]: AppInstance } = {}
   private order: string[] = []
   private listeners: AppStoreListeners = {}
+  private functionTimeouts: { [key: string]: NodeJS.Timeout } = {}
 
   public static getInstance(): AppStore {
     if (!AppStore.instance) {
@@ -51,9 +52,23 @@ export class AppStore {
     if (!apps) {
       apps = this.getAllBase()
     }
-    if (this.listeners.apps) {
-      await Promise.all(this.listeners.apps.map((listener) => listener(apps)))
+
+    if (this.functionTimeouts['server-notifyApps']) {
+      loggingStore.log(
+        MESSAGE_TYPES.LOGGING,
+        `[AppStore] Cancelling previous notifyApps timeout and starting a new one`
+      )
+      clearTimeout(this.functionTimeouts['server-notifyApps'])
     }
+    this.functionTimeouts['server-notifyApps'] = setTimeout(async () => {
+      loggingStore.log(
+        MESSAGE_TYPES.DEBUG,
+        `[AppStore] Notifying apps listeners with ${apps.length} apps`
+      )
+      if (this.listeners.apps) {
+        await Promise.all(this.listeners.apps.map((listener) => listener(apps)))
+      }
+    }, 500)
   }
 
   on(event: ListenerEvents, listener: AppsListener | AppSettingsListener): void {
@@ -100,15 +115,46 @@ export class AppStore {
 
   private async saveAppsToFile(): Promise<void> {
     const { setAppsData } = await import('../services/files/appService')
-    const apps = this.getAllBase()
-    await setAppsData(apps)
-    this.notifyApps(apps)
+
+    if (this.functionTimeouts['server-saveApps']) {
+      loggingStore.log(
+        MESSAGE_TYPES.LOGGING,
+        `[saveAppsToFile]: Cancelling previous saveApps timeout and starting a new one`
+      )
+      clearTimeout(this.functionTimeouts['server-saveApps'])
+    }
+
+    this.functionTimeouts['server-saveApps'] = setTimeout(async () => {
+      loggingStore.log(MESSAGE_TYPES.LOGGING, `[saveAppsToFile]: Saving apps to file`)
+      const apps = this.getAllBase()
+      await setAppsData(apps)
+      this.notifyApps(apps)
+    }, 500)
   }
 
   private async saveAppToFile(name: string): Promise<void> {
     const { setAppData } = await import('../services/files/appService')
     const { func: _func, ...app } = this.apps[name]
-    await setAppData(app)
+
+    // Clear any existing timeout for this app
+    if (this.functionTimeouts[name]) {
+      loggingStore.log(
+        MESSAGE_TYPES.LOGGING,
+        `[saveAppsToFile]: Cancelling previous ${name} request and starting a new one`
+      )
+      clearTimeout(this.functionTimeouts[name])
+    }
+
+    // Set new timeout
+    this.functionTimeouts[name] = setTimeout(async () => {
+      loggingStore.log(
+        MESSAGE_TYPES.LOGGING,
+        `[saveAppsToFile]: Saving ${name} to file and notifying apps listeners`
+      )
+      await setAppData(app)
+      this.notifyApps()
+      delete this.functionTimeouts[name]
+    }, 500)
   }
 
   add(app: AppInstance): void {
@@ -175,9 +221,9 @@ export class AppStore {
     }
     this.remove(name)
 
-    import('../services/apps/appManager').then(({ purgeApp }) => {
-      purgeApp(name)
-    })
+    const { purgeApp } = await import('../services/apps/appManager')
+
+    await purgeApp(name)
 
     // Saves all apps
     this.remove(name)
@@ -185,10 +231,19 @@ export class AppStore {
   }
 
   reorder(order: string[]): void {
-    this.order = order
+    // Keep existing items and add any new ones from the provided order
+    const newOrder = [...this.order]
+    order.forEach((item) => {
+      if (!newOrder.includes(item)) {
+        newOrder.push(item)
+      }
+    })
+    // Reorder according to new order while keeping items that weren't in the new order
+    this.order = order.concat(newOrder.filter((item) => !order.includes(item)))
     // Save new order
     this.saveAppsToFile()
   }
+
   setItemOrder(name: string, newIndex: number): void {
     const index = this.order.indexOf(name)
     if (index !== -1) {
@@ -201,12 +256,22 @@ export class AppStore {
     return this.order
   }
 
-  async getData(name: string): Promise<AppDataInterface | undefined> {
+  async getData(name: string): Promise<{ [key: string]: string } | undefined> {
     if (!(name in this.apps)) {
       return
     }
-    console.log('Getting Data for ', name)
-    return await getData(name)
+    loggingStore.log(MESSAGE_TYPES.LOGGING, '[AppStore.getData] Getting Data for ', name)
+    const data = await getData(name)
+    return data?.data
+  }
+
+  async getSettings(name: string): Promise<AppSettings | undefined> {
+    if (!(name in this.apps)) {
+      loggingStore.log(MESSAGE_TYPES.WARNING, `[AppStore.getSettings] App ${name} not found`)
+      return
+    }
+    const data = await getData(name)
+    return data?.settings
   }
 
   async addData(app: string, data: { [key: string]: string }): Promise<void> {
@@ -248,8 +313,60 @@ export class AppStore {
     }
   }
 
+  /**
+   * Deletes a provided setting
+   */
+  async delSettings(app: string, settings: string[] | string): Promise<void> {
+    loggingStore.log(
+      MESSAGE_TYPES.LOGGING,
+      '[AppStore.delSettings] Deleting settings from app:',
+      app
+    )
+    if (!this.apps[app]) return
+
+    const data = await getData(app)
+
+    if (!data || !data.settings || data.settings == undefined) return
+
+    const settingsToDelete = Array.isArray(settings) ? settings : [settings]
+
+    const newSettings = { ...data.settings }
+    settingsToDelete.forEach((key) => {
+      delete newSettings[key]
+    })
+
+    data.settings = newSettings
+
+    await overwriteData(app, data)
+
+    this.notifySettings(app, newSettings)
+  }
+
+  /**
+   * Deletes provided data
+   */
+  async delData(app: string, dataIds: string[] | string): Promise<void> {
+    loggingStore.log(MESSAGE_TYPES.LOGGING, '[AppStore.delData] Deleting data from app:', app)
+    if (!this.apps[app]) return
+
+    const data = await getData(app)
+
+    if (!data || !data.data || data.data == undefined) return
+
+    const dataToDelete = Array.isArray(dataIds) ? dataIds : [dataIds]
+
+    const newData = { ...data.data }
+    dataToDelete.forEach((key) => {
+      delete newData[key]
+    })
+
+    data.data = newData
+
+    await overwriteData(app, data)
+  }
+
   async addSetting(app: string, id: string, setting: SettingsType): Promise<void> {
-    let appData = await this.getData(app)
+    let appData = await getData(app)
 
     if (!this.apps[app]) return
 
@@ -385,6 +502,7 @@ export class AppStore {
   async run(name: string): Promise<boolean> {
     // Early break
     if (!(name in this.apps)) {
+      loggingStore.log(MESSAGE_TYPES.ERROR, `[run]: App ${name} not found.`)
       return false
     }
 
@@ -409,12 +527,16 @@ export class AppStore {
   }
 
   /**
-   * @deprecated - use addApp instead
+   * @depreciated - use addApp instead
    * @param url
    * @param reply
    * @returns
    */
   async addURL(url: string, reply): Promise<AppReturnData | void> {
+    loggingStore.log(
+      MESSAGE_TYPES.FATAL,
+      'addURL is deprecated and will be removed in a future version'
+    )
     const { handleZipFromUrl } = await import('../services/apps/appInstaller')
     const returnData = await handleZipFromUrl(url, reply)
     if (returnData) {
@@ -439,6 +561,10 @@ export class AppStore {
    * @returns
    */
   async addZIP(zip: string, event): Promise<AppReturnData | void> {
+    loggingStore.log(
+      MESSAGE_TYPES.FATAL,
+      'addZIP is deprecated and will be removed in a future version'
+    )
     const { handleZip } = await import('../services/apps/appInstaller')
     const returnData = await handleZip(zip, event)
     if (returnData) {
@@ -471,7 +597,13 @@ export class AppStore {
     return await executeStagedFile({ reply, overwrite, appId, run })
   }
 
-  async addApp(appPath: string, reply: ReplyFn): Promise<AppManifest | void> {
+  /**
+   * Adds an app to the app store
+   * @param appPath The app path (url or local path) to add
+   * @returns The app manifest that was added
+   */
+  async addApp(appPath: string, reply: ReplyFn): Promise<AppManifest | undefined> {
+    loggingStore.log(MESSAGE_TYPES.LOGGING, `[store.addApp]: Running addApp for ${appPath}`)
     const { stageAppFile } = await import('../services/apps/appInstaller')
 
     try {
@@ -499,10 +631,11 @@ export class AppStore {
           data: 'Finalizing...',
           final: true
         })
+
       return newAppManifest
     } catch (e) {
       if (e instanceof Error) {
-        loggingStore.log(MESSAGE_TYPES.ERROR, `[addApp]: ${e.message}`)
+        loggingStore.log(MESSAGE_TYPES.ERROR, `[store.addApp]: ${e.message}`)
         reply &&
           reply('logging', {
             status: false,
@@ -511,7 +644,7 @@ export class AppStore {
             final: true
           })
       } else {
-        loggingStore.log(MESSAGE_TYPES.ERROR, `[addApp]: Unknown error ` + String(e))
+        loggingStore.log(MESSAGE_TYPES.ERROR, `[store.addApp]: Unknown error ` + String(e))
         reply &&
           reply('logging', {
             status: false,
@@ -520,6 +653,7 @@ export class AppStore {
             final: true
           })
       }
+      return
     }
   }
 
@@ -529,12 +663,10 @@ export class AppStore {
    * @param appName
    */
   async appendManifest(manifest: AppManifest, appName: string): Promise<void> {
+    loggingStore.log(MESSAGE_TYPES.LOGGING, `Appending manifest to ${appName}`)
     if (this.apps[appName]) {
       this.apps[appName].manifest = manifest
     }
-    const { addAppManifest } = await import('../services/files/appService')
-    // Add the manifest to the config file
-    addAppManifest(manifest, appName)
     this.saveAppToFile(appName)
   }
 }

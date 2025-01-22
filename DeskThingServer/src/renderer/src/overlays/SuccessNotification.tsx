@@ -4,14 +4,14 @@ import Button from '@renderer/components/Button'
 import { IconPlay, IconToggle } from '@renderer/assets/icons'
 import { useEffect, useState } from 'react'
 import { useAppStore } from '@renderer/stores'
-import { AppManifest, PlatformTypes } from '@shared/types'
+import { App, AppManifest, PlatformTypes } from '@shared/types'
 
 interface CompatibilityResult {
   isCompatible: boolean
   errors: string[]
 }
 
-const checkCompatibility = (manifest: AppManifest): CompatibilityResult => {
+const checkCompatibility = (manifest: AppManifest, existingApps: App[]): CompatibilityResult => {
   const errors: string[] = []
 
   const currentPlatform =
@@ -25,12 +25,28 @@ const checkCompatibility = (manifest: AppManifest): CompatibilityResult => {
     errors.push(`App not compatible with ${currentPlatform} platform`)
   }
 
+  const existingApp = existingApps.find((app) => app.name === manifest.id)
+
+  if (existingApp) {
+    if (!existingApp.manifest) {
+      errors.push(`App with name ${manifest.label} already exists but has no manifest`)
+    } else {
+      const existingVersion = existingApp.manifest.version
+      const incomingVersion = manifest.version
+      if (semverSatisfies(incomingVersion, `<=${existingVersion}`)) {
+        errors.push(`${manifest.label}v${existingVersion} is already installed`)
+      } else {
+        errors.push(`An older version of ${manifest.label} exists. (${existingVersion})`)
+      }
+    }
+  }
+
   if (manifest.requiredVersions) {
     const { server: requiredServer, client: requiredClient } = manifest.requiredVersions
 
     // Get current versions from your environment/config
-    const currentServerVersion = '1.0.0' // Replace with actual version
-    const currentClientVersion = '1.0.0' // Replace with actual version
+    const currentServerVersion = '0.0.0' // Replace with actual version
+    const currentClientVersion = '0.0.0' // Replace with actual version
 
     if (!semverSatisfies(currentServerVersion, requiredServer)) {
       errors.push(`Server version ${currentServerVersion} incompatible. Requires ${requiredServer}`)
@@ -41,6 +57,8 @@ const checkCompatibility = (manifest: AppManifest): CompatibilityResult => {
     }
   }
 
+  console.log(errors)
+
   return {
     isCompatible: errors.length === 0,
     errors
@@ -50,6 +68,7 @@ const checkCompatibility = (manifest: AppManifest): CompatibilityResult => {
 export function SuccessNotification(): JSX.Element {
   const [loading, setLoading] = useState(false)
   const stagedManifest = useAppStore((appStore) => appStore.stagedManifest)
+  const apps = useAppStore((appStore) => appStore.appsList)
   const runStagedApp = useAppStore((appStore) => appStore.runStagedApp)
   const [overwrite, setOverwrite] = useState(false)
   const [compatibility, setCompatibility] = useState<CompatibilityResult>({
@@ -59,10 +78,11 @@ export function SuccessNotification(): JSX.Element {
 
   useEffect(() => {
     if (stagedManifest) {
-      const result = checkCompatibility(stagedManifest)
+      console.log('Staged Manifest: ', stagedManifest)
+      const result = checkCompatibility(stagedManifest, apps)
       setCompatibility(result)
     }
-  }, [stagedManifest])
+  }, [stagedManifest, apps])
 
   if (!stagedManifest) return <></>
 
@@ -96,11 +116,19 @@ export function SuccessNotification(): JSX.Element {
         </div>
         <Button
           onClick={toggleOverwrite}
-          className={`${overwrite ? 'text-green-500' : 'text-red-500'} justify-between items-center gap-2`}
+          className={`${overwrite ? 'text-red-500' : 'text-green-500'} justify-between items-center gap-2`}
         >
           <p>Overwrite Existing App?</p>
           <IconToggle checked={overwrite} iconSize={48} />
         </Button>
+        {!compatibility.isCompatible && (
+          <div>
+            Errors Found:
+            {compatibility.errors.map((error, index) => (
+              <div key={index}>{error}</div>
+            ))}
+          </div>
+        )}
         <Button
           className="hover:bg-zinc-700 relative flex gap-2 w-full bg-black border border-zinc-900"
           onClick={onRunClick}

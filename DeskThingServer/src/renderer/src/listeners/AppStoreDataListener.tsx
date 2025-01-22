@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useAppStore } from '../stores'
+import { App } from '@shared/types'
 
 /**
  * Listens for app data events and updates the app list in the application store.
@@ -13,8 +14,8 @@ const AppStoreDataListener = (): null => {
   const setAppList = useAppStore((state) => state.setAppList)
 
   useEffect(() => {
-    const handleAppData = async (_event, response): Promise<void> => {
-      setAppList(response.apps)
+    const handleAppData = async (_event, response: App[]): Promise<void> => {
+      setAppList(response)
     }
 
     const initialRequest = async (): Promise<void> => {

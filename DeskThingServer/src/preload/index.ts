@@ -46,10 +46,26 @@ const api = {
       payload: appId
     }),
 
-  setAppData: async (appId: string, settings: AppSettings): Promise<void> =>
+  setAppData: async (appId: string, data: { [key: string]: string }): Promise<void> =>
     await sendCommand('APPS', {
       kind: 'app',
       type: 'data',
+      request: 'set',
+      payload: { appId, data }
+    }),
+
+  getAppSettings: async (appId: string): Promise<AppSettings | null> =>
+    await sendCommand<AppSettings | null>('APPS', {
+      kind: 'app',
+      type: 'settings',
+      request: 'get',
+      payload: appId
+    }),
+
+  setAppSettings: async (appId: string, settings: AppSettings): Promise<void> =>
+    await sendCommand('APPS', {
+      kind: 'app',
+      type: 'settings',
       request: 'set',
       payload: { appId, settings }
     }),

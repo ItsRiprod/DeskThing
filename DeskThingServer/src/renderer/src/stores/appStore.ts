@@ -1,11 +1,4 @@
-import {
-  App,
-  AppDataInterface,
-  AppReturnData,
-  AppSettings,
-  LoggingData,
-  AppManifest
-} from '@shared/types'
+import { App, AppReturnData, AppSettings, LoggingData, AppManifest } from '@shared/types'
 import { create } from 'zustand'
 
 interface AppStoreState {
@@ -32,8 +25,10 @@ interface AppStoreState {
   stopApp: (appName: string) => void
   runApp: (appName: string) => void
   enableApp: (appName: string) => void
-  getAppData: (appName: string) => Promise<AppDataInterface | null>
-  setAppData: (appName: string, settings: AppSettings) => void
+  getAppData: (appName: string) => Promise<{ [key: string]: string } | null>
+  setAppData: (appName: string, data: { [key: string]: string }) => void
+  getAppSettings: (appName: string) => Promise<AppSettings | null>
+  setAppSettings: (appName: string, settings: AppSettings) => void
   setAppList: (apps: App[]) => void
 }
 
@@ -70,14 +65,22 @@ const useAppStore = create<AppStoreState>((set, get) => ({
   },
 
   // Sets the entire list of apps
-  setAppList: (apps: App[]): void => {
-    set({ appsList: apps, order: apps.map((app) => app.name) })
+  setAppList: async (apps: App[]): Promise<void> => {
+    console.log('Setting app list:', apps)
+    const { order } = get()
+    set({ appsList: apps })
+
+    const missingApps = apps.filter((app) => !order.includes(app.name))
+
+    console.log('Missing apps:', missingApps)
+    set({ order: [...order, ...missingApps.map((app) => app.name)] })
   },
 
   // moves an app from the list
   removeAppFromList: (appName: string): void => {
     set((state) => ({
-      appsList: state.appsList.filter((app) => app.name !== appName)
+      appsList: state.appsList.filter((app) => app.name !== appName),
+      order: state.order.filter((app) => app !== appName)
     }))
   },
 
@@ -101,11 +104,11 @@ const useAppStore = create<AppStoreState>((set, get) => ({
         prefIndex: 0
       }
       return {
-        appsList: [...state.appsList, appData]
+        appsList: [...state.appsList, appData],
+        order: [...state.order, newAppName]
       }
     })
   },
-
   // Disables an app (set enabled to false)
   disableApp: (appName: string): void => {
     window.electron.disableApp(appName)
@@ -144,12 +147,20 @@ const useAppStore = create<AppStoreState>((set, get) => ({
     }))
   },
 
-  getAppData: async (appName: string): Promise<AppDataInterface | null> => {
+  getAppData: async (appName: string): Promise<{ [key: string]: string } | null> => {
     return await window.electron.getAppData(appName)
   },
 
-  setAppData: (appName: string, settings: AppSettings): void => {
-    window.electron.setAppData(appName, settings)
+  setAppData: (appName: string, data: { [key: string]: string }): void => {
+    window.electron.setAppData(appName, data)
+  },
+
+  getAppSettings: async (appName: string): Promise<AppSettings | null> => {
+    return await window.electron.getAppSettings(appName)
+  },
+
+  setAppSettings: (appName: string, settings: AppSettings): void => {
+    window.electron.setAppSettings(appName, settings)
   },
 
   loadAppUrl: async (appName: string): Promise<AppReturnData | null> => {
@@ -194,6 +205,7 @@ const useAppStore = create<AppStoreState>((set, get) => ({
       set({ stagedManifest: null }) // clear the staged manifest once done
     } else {
       console.error('No staged manifest found! Please download an app first')
+      set({ stagedManifest: null })
     }
   }
 }))

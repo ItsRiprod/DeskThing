@@ -49,7 +49,6 @@ export async function clearCache(appName: string): Promise<void> {
       }
     })
   } catch (error) {
-    console.log(error)
     if (error instanceof Error) {
       loggingStore.log(
         MESSAGE_TYPES.ERROR,

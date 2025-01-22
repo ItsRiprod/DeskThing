@@ -372,6 +372,7 @@ async function setupIpcHandlers(): Promise<void> {
     })
 
     appStore.on('apps', (apps: App[]) => {
+      loggingStore.debug('[INDEX]: Sending updated app information with type app-data')
       sendIpcData({
         type: 'app-data',
         payload: apps

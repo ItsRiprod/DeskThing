@@ -120,13 +120,17 @@ export const setAppsData = async (appsList: App[]): Promise<void> => {
 export const addAppManifest = (manifest: AppManifest, appName: string): void => {
   const data = readData()
 
+  loggingStore.log(MESSAGE_TYPES.LOGGING, `Adding manifest for ${appName} in the config file`)
   // Find existing app by name
   if (data[appName]) {
     // Update existing app
     data[appName].manifest = manifest
   } else {
     // Add new app
-    console.error(`${appName} does not exist!`)
+    loggingStore.log(
+      MESSAGE_TYPES.ERROR,
+      `Adding manifest for ${appName} failed! App does not exist!`
+    )
   }
   writeData(data)
 }

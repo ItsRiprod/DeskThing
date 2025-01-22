@@ -79,7 +79,7 @@ const AppActions: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
         </h1>
         <h1>App will {app.enabled ? 'Start Automatically' : 'Not Start Automatically'}</h1>
       </div>
-      <div className="flex gap-2 mt-4 justify-start">
+      <div className="flex flex-wrap gap-2 mt-4 justify-start">
         {availableActions.map((action) => (
           <ActionElement key={action.id} action={action} />
         ))}
@@ -91,6 +91,7 @@ const AppActions: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
 const ActionElement = ({ action }: { action: Action }): JSX.Element => {
   const runAction = useMappingStore((state) => state.executeAction)
   const [value, setValue] = useState<string | undefined>(action.value)
+
   const handleValueChange = (value: string): void => {
     setValue(value)
     action.value = value
@@ -100,12 +101,15 @@ const ActionElement = ({ action }: { action: Action }): JSX.Element => {
   }
 
   return (
-    <Button
-      onClick={handleRunAction}
-      className="justify-center gap-2 border hover:bg-cyan-500 border-cyan-500"
-    >
-      <ActionIcon action={action} className="stroke-2" />
-      <p>{action.name || action.id}</p>
+    <div className="flex gap-2 border-cyan-500 border rounded-md">
+      <Button
+        disabled={!action.enabled}
+        onClick={handleRunAction}
+        className="justify-center items-center hover:bg-cyan-500"
+      >
+        <ActionIcon action={action} className="stroke-2" />
+        <p>{action.name || action.id}</p>
+      </Button>
       {action?.value_options && action.value_options.length > 0 ? (
         <Select
           options={action.value_options.map((option) => ({
@@ -129,7 +133,7 @@ const ActionElement = ({ action }: { action: Action }): JSX.Element => {
           onChange={(e) => handleValueChange(e.target.value)}
         />
       ) : null}
-    </Button>
+    </div>
   )
 }
 

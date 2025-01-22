@@ -36,6 +36,7 @@ export type UTILITY_TYPES =
 export type APP_TYPES =
   | 'app'
   | 'data'
+  | 'settings'
   | 'stop'
   | 'disable'
   | 'run'

@@ -293,7 +293,7 @@ export interface ReleaseDetails {
  */
 
 // Events that can be sent back to the server
-export enum IncomingAppDataTypes {
+export enum IncomingAppDataTypes { // v0.10.4
   /**
    * Default handler for unknown or unspecified data types.
    * Will log a warning message about the unknown data type.
@@ -307,8 +307,10 @@ export enum IncomingAppDataTypes {
    * - 'settings': Gets application settings
    * - 'input': Requests user input via a form
    *
+   * @remarks Use {@link DeskThing.getData}, {@link DeskThing.getConfig}, {@link DeskThing.getSettings}, or {@link DeskThing.getUserInput} instead
+   *
    * @example
-   * DeskThing.sendData({ type: SEND_TYPES.GET, request: 'settings' })
+   * DeskThing.sendData(SEND_TYPES.GET, { request: 'settings' })
    */
   GET = 'get',
 
@@ -316,21 +318,33 @@ export enum IncomingAppDataTypes {
    * Sets data inside the server for your app that can be retrieved with DeskThing.getData()
    * Data is stored persistently and can be retrieved later.
    *
-   * @request { request: 'data', payload: { key: value } } Sets app-specific stored data
-   * @request { request: 'settings', payload: AppSettings } Sets application settings
+   * @remarks Use {@link DeskThing.saveData} instead
    *
    * @example
-   * DeskThing.sendData({ type: SEND_TYPES.SET, type: 'data', payload: { key: 'value' }})
+   * DeskThing.sendData(SEND_TYPES.SET, { payload: { key: 'value' }})
    */
   SET = 'set',
+
+  /**
+   * Deletes data inside the server for your app that can be retrieved with DeskThing.getData()
+   *
+   * @remarks Use {@link DeskThing.deleteSettings} or {@link DeskThing.deleteData} instead
+   *
+   * @example
+   * DeskThing.sendData(SEND_TYPES.DELETE, { payload: ['key1', 'key2'] }, "settings")
+   * DeskThing.sendData(SEND_TYPES.DELETE, { payload: ['key1', 'key2'] }, "data")
+   */
+  DELETE = 'delete',
 
   /**
    * Opens a URL to a specific address on the server.
    * This gets around any CORS issues that may occur by opening in a new window.
    * Typically used for authentication flows.
    *
+   * @remarks Use {@link DeskThing.openUrl} instead
+   *
    * @example
-   * DeskThing.sendData({ type: SEND_TYPES.OPEN, payload: 'https://someurl.com' })
+   * DeskThing.sendData(SEND_TYPES.OPEN, { payload: 'https://someurl.com' })
    */
   OPEN = 'open',
 
@@ -339,8 +353,10 @@ export enum IncomingAppDataTypes {
    * Can target specific client components or send general messages.
    * Supports sending to both the main client and specific app clients.
    *
+   * @remarks Use {@link DeskThing.send} instead
+   *
    * @example
-   * DeskThing.sendData({ type: SEND_TYPES.SEND, type: 'someData', payload: 'value' })
+   * DeskThing.sendData(SEND_TYPES.SEND, { type: 'someData', payload: 'value' })
    */
   SEND = 'send',
 
@@ -349,8 +365,10 @@ export enum IncomingAppDataTypes {
    * Allows inter-app communication by specifying target app and payload.
    * Messages are logged for debugging purposes.
    *
+   * @remarks Use {@link DeskThing.sendDataToOtherApp} instead
+   *
    * @example
-   * DeskThing.sendData({ type: SEND_TYPES.TOAPP, request: 'spotify', payload: { type: 'get', data: 'music' }})
+   * DeskThing.sendData(SEND_TYPES.TOAPP, { request: 'spotify', payload: { type: 'get', data: 'music' }})
    */
   TOAPP = 'toApp',
 
@@ -359,8 +377,10 @@ export enum IncomingAppDataTypes {
    * Supports multiple log levels: DEBUG, ERROR, FATAL, LOGGING, MESSAGE, WARNING
    * Messages are tagged with the source app name.
    *
+   * @remarks Use {@link DeskThing.log} instead
+   *
    * @example
-   * DeskThing.sendData({ type: SEND_TYPES.LOG, request: 'ERROR', payload: 'Something went wrong' })
+   * DeskThing.sendData(SEND_TYPES.LOG, { request: 'ERROR', payload: 'Something went wrong' })
    */
   LOG = 'log',
 
@@ -369,8 +389,10 @@ export enum IncomingAppDataTypes {
    * Supports operations: add, remove, trigger
    * Keys can have multiple modes and are associated with specific apps.
    *
+   * @remarks Use {@link DeskThing.registerKeyObject} instead
+   *
    * @example
-   * DeskThing.sendData({ type: SEND_TYPES.KEY, request: 'add', payload: { id: 'myKey', modes: ['default'] }})
+   * DeskThing.sendData(SEND_TYPES.KEY, { request: 'add', payload: { id: 'myKey', modes: ['default'] }})
    */
   KEY = 'key',
 
@@ -379,28 +401,11 @@ export enum IncomingAppDataTypes {
    * Supports operations: add, remove, update, run
    * Actions can have values, icons, and version information.
    *
+   * @remarks
+   * It is recommended to use {@link DeskThing.registerAction} instead of sending data directly.
+   *
    * @example
-   * DeskThing.sendData({ type: SEND_TYPES.ACTION, request: 'add', payload: { id: 'myAction', name: 'My Action' }})
+   * DeskThing.sendData(SEND_TYPES.ACTION, { request: 'add', payload: { id: 'myAction', name: 'My Action' }})
    */
-  ACTION = 'action',
-
-  /**
-   * Manages actions in the system.
-   * Supports operations: add, remove, update, run
-   * Actions can have values, icons, and version information.
-   * @deprecated
-   * @example
-   * DeskThing.sendData({ type: SEND_TYPES.ACTION, request: 'add', payload: { id: 'myAction', name: 'My Action' }})
-   */
-  STEP = 'step',
-
-  /**
-   * Manages actions in the system.
-   * Supports operations: add, remove, update, run
-   * Actions can have values, icons, and version information.
-   * @deprecated
-   * @example
-   * DeskThing.sendData({ type: SEND_TYPES.ACTION, request: 'add', payload: { id: 'myAction', name: 'My Action' }})
-   */
-  TASK = 'task'
+  ACTION = 'action'
 }

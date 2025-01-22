@@ -5,7 +5,7 @@
  */
 console.log('[Music Handler] Starting')
 import { settingsStore, loggingStore, appStore } from '.'
-import { Settings, SocketData, MESSAGE_TYPES, SongData } from '@shared/types'
+import { Settings, SocketData, MESSAGE_TYPES, SongData, OutgoingEvent } from '@shared/types'
 import { getAppByName } from '../services/files/appService'
 import { sendMessageToClients } from '../services/client/clientCom'
 import { getColorFromImage } from '../services/music/musicUtils'
@@ -17,7 +17,9 @@ export class MusicStore {
   private currentApp: string | null = null
 
   private constructor() {
-    this.initializeRefreshInterval()
+    setTimeout(() => {
+      this.initializeRefreshInterval()
+    }, 3000)
   }
 
   public static getInstance(): MusicStore {
@@ -37,7 +39,7 @@ export class MusicStore {
     setTimeout(() => {
       loggingStore.log(MESSAGE_TYPES.DEBUG, '[MusicStore]: Initialized')
       this.refreshMusicData()
-    }, 5000) // Delay to ensure settings are loaded
+    }, 3000) // Delay to ensure settings are loaded
   }
 
   private handleSettingsUpdate = async (settings: Settings): Promise<void> => {
@@ -70,7 +72,12 @@ export class MusicStore {
         MESSAGE_TYPES.WARNING,
         `[MusicStore]: Refresh Interval is ${refreshRate}! Performance may be impacted`
       )
-      return
+      if (refreshRate < 1) {
+        loggingStore.log(
+          MESSAGE_TYPES.WARNING,
+          `[MusicStore]: Refresh Interval is ${refreshRate}! This could very well end your system. Highly unrecommended. Please change this ASAP!`
+        )
+      }
     }
 
     this.refreshInterval = setInterval(() => {
@@ -165,7 +172,7 @@ export class MusicStore {
       }
     }
 
-    const app = await getAppByName(this.currentApp)
+    const app = getAppByName(this.currentApp)
 
     if (!app || app.running == false) {
       loggingStore.log(
@@ -181,14 +188,17 @@ export class MusicStore {
   private async refreshMusicData(): Promise<void> {
     const currentApp = await this.getPlaybackSource()
 
+    loggingStore.log(MESSAGE_TYPES.LOGGING, `[MusicStore]: Attempting to refresh Music Data!`)
+
     if (!currentApp) {
+      loggingStore.log(MESSAGE_TYPES.LOGGING, `[MusicStore]: No playback source set or found!`)
       return
     }
 
     try {
       const { appStore } = await import('@server/stores')
       appStore.sendDataToApp(currentApp, { type: 'get', request: 'refresh', payload: '' })
-      loggingStore.log(MESSAGE_TYPES.LOGGING, `[MusicStore]: Refreshing Music Data!`)
+      loggingStore.log(MESSAGE_TYPES.LOGGING, `[MusicStore]: Refreshed with ${currentApp}!`)
     } catch (error) {
       loggingStore.log(MESSAGE_TYPES.ERROR, `[MusicStore]: Music refresh failed: ${error}`)
     }
@@ -227,7 +237,7 @@ export class MusicStore {
 
     const { appStore } = await import('@server/stores')
     appStore.sendDataToApp(currentApp, {
-      type: request.type,
+      type: request.type as OutgoingEvent,
       request: request.request,
       payload: request.payload
     })
@@ -241,7 +251,6 @@ export class MusicStore {
 
     try {
       if (songData.thumbnail) {
-        console.log(songData.thumbnail)
         const color = await getColorFromImage(songData.thumbnail)
         const songDataWithColor = {
           ...songData,

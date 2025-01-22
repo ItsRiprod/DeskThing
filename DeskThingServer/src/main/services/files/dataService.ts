@@ -32,6 +32,14 @@ const writeAppData = async (name: string, data: AppDataInterface): Promise<void>
   writeToFile<AppDataInterface>(data, dataFilePath)
 }
 
+export const overwriteData = async (name: string, data: AppDataInterface): Promise<void> => {
+  try {
+    await writeAppData(name, data)
+  } catch (err) {
+    console.error('Error overwriting data:', err)
+    throw err
+  }
+}
 // Set data function
 export const setData = async (
   appName: string,
@@ -64,7 +72,11 @@ export const setData = async (
   }
 }
 
-// Get data function
+/**
+ * Returns all of the data in relation to a specific app
+ * @param app
+ * @returns
+ */
 export const getData = async (app: string): Promise<AppDataInterface | undefined> => {
   return await readAppData(app)
 }

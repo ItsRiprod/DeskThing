@@ -151,7 +151,7 @@ export const saveMappings = async (mapping: MappingStructure): Promise<void> => 
         MESSAGE_TYPES.WARNING,
         '[saveMappings] failed with unknown error. See extended logs for details'
       )
-      console.log(error)
+      console.log('[SaveMappings]: Error saving mappings: ', error)
     }
   }
 }

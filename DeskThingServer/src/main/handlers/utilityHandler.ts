@@ -244,7 +244,6 @@ export const utilityHandler: Record<
           return await mappingStore.addProfile(data.payload)
         } else {
           loggingStore.log(MESSAGE_TYPES.ERROR, 'UtilityHandler: Missing profile name!')
-          console.log(data)
           return
         }
       case 'delete':

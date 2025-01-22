@@ -13,7 +13,7 @@ import { app } from 'electron'
  * @param fileLocation The file path of the manifest file to be read and parsed
  * @returns The parsed manifest data as a JavaScript object
  */
-export async function getManifest(fileLocation: string): Promise<AppManifest | undefined> {
+export const getManifest = async (fileLocation: string): Promise<AppManifest | undefined> => {
   try {
     loggingStore.log(MESSAGE_TYPES.LOGGING, '[getManifest] Getting manifest for app')
     const manifestPath = join(fileLocation, 'manifest.json')
@@ -25,31 +25,33 @@ export async function getManifest(fileLocation: string): Promise<AppManifest | u
     const parsedManifest = JSON.parse(manifest)
 
     const returnData: AppManifest = {
-      id: parsedManifest.id,
-      requires: parsedManifest.requires,
-      label: parsedManifest.label,
-      version: parsedManifest.version,
-      description: parsedManifest.description,
-      author: parsedManifest.author,
-      platforms: parsedManifest.platforms,
-      tags: parsedManifest.tags || [
-        parsedManifest.isAudioSource && TagTypes.AUDIO_SOURCE,
-        parsedManifest.isScreenSaver && TagTypes.SCREEN_SAVER
-      ],
+      id: parsedManifest?.id || 'unknown',
+      requires: parsedManifest?.requires || [],
+      label: parsedManifest?.label || 'Unknown App',
+      version: parsedManifest?.version || '0.0.0',
+      description: parsedManifest?.description || 'No description available',
+      author: parsedManifest?.author || 'Unknown Author',
+      platforms: parsedManifest?.platforms || [],
+      tags:
+        parsedManifest?.tags ||
+        [
+          parsedManifest?.isAudioSource && TagTypes.AUDIO_SOURCE,
+          parsedManifest?.isScreenSaver && TagTypes.SCREEN_SAVER
+        ].filter(Boolean),
       requiredVersions: {
-        client: parsedManifest.requiredVersions.client || '>=0.0.0',
-        server: parsedManifest.requiredVersions.server || '>=0.0.0'
+        client: parsedManifest?.requiredVersions?.client || '>=0.0.0',
+        server: parsedManifest?.requiredVersions?.server || '>=0.0.0'
       },
-      homepage: parsedManifest.homepage,
-      repository: parsedManifest.repository,
-      updateUrl: parsedManifest.updateUrl || parsedManifest.repository || undefined,
-      version_code: parsedManifest.version_code || undefined,
-      compatible_server: parsedManifest.compatible_server || undefined,
-      compatible_client: parsedManifest.compatible_client || undefined,
-      isWebApp: parsedManifest.isWebApp || undefined,
-      isAudioSource: parsedManifest.isAudioSource || undefined,
-      isScreenSaver: parsedManifest.isScreenSaver || undefined,
-      isLocalApp: parsedManifest.isLocalApp || undefined
+      homepage: parsedManifest?.homepage || '',
+      repository: parsedManifest?.repository || '',
+      updateUrl: parsedManifest?.updateUrl || parsedManifest?.repository || '',
+      version_code: parsedManifest?.version_code || 0,
+      compatible_server: parsedManifest?.compatible_server || '>=0.0.0',
+      compatible_client: parsedManifest?.compatible_client || '>=0.0.0',
+      isWebApp: parsedManifest?.isWebApp || false,
+      isAudioSource: parsedManifest?.isAudioSource || false,
+      isScreenSaver: parsedManifest?.isScreenSaver || false,
+      isLocalApp: parsedManifest?.isLocalApp || false
     }
     loggingStore.log(MESSAGE_TYPES.LOGGING, '[getManifest] Successfully got manifest for app')
     return returnData

@@ -48,9 +48,11 @@ export const appHandler: Record<
     | void
     | AppManifest
     | null
+    | AppSettings
     | App
     | string
     | AppReturnData
+    | { [key: string]: string }
     | { path: string; name: string }
   >
 > = {
@@ -85,7 +87,17 @@ export const appHandler: Record<
       case 'get':
         return await getAppData(replyFn, data.payload)
       case 'set':
-        return await setAppData(replyFn, data.payload.appId, data.payload.settings)
+        return await setAppData(replyFn, data.payload.appId, data.payload.data)
+      default:
+        return
+    }
+  },
+  settings: async (data, replyFn) => {
+    switch (data.request) {
+      case 'get':
+        return await getAppSettings(replyFn, data.payload)
+      case 'set':
+        return await setAppSettings(replyFn, data.payload.appId, data.payload.settings)
       default:
         return
     }
@@ -224,7 +236,7 @@ export const appHandler: Record<
     reply('logging', { status: true, data: `Handling staged app...`, final: false })
     loggingStore.log(
       MESSAGE_TYPES.LOGGING,
-      `Handling staged app with id ${data.payload.appId || 'Unknwon'} and overwrite set to ${data.payload.overwrite ? 'true' : 'false'}...`
+      `Handling staged app with id "${data.payload.appId || 'Unknwon'}" and overwrite set to ${data.payload.overwrite ? 'true' : 'false'}...`
     )
     return await appStore.runStagedApp({ ...data.payload, reply })
   },
@@ -276,7 +288,6 @@ const getApps = (replyFn: ReplyFn): App[] => {
   replyFn('logging', { status: true, data: 'Getting data', final: false })
   const data = appStore.getAllBase()
   replyFn('logging', { status: true, data: 'Finished', final: true })
-  replyFn('app-data', { status: true, data: data, final: true })
   return data
 }
 
@@ -288,14 +299,28 @@ const getApps = (replyFn: ReplyFn): App[] => {
  * @param settings - The app settings.
  * @returns A Promise that resolves when the data has been saved.
  */
-const setAppData = async (
+const setAppSettings = async (
   replyFn: ReplyFn,
   appId: string,
   settings: AppSettings
 ): Promise<void> => {
   const { appStore } = await import('@server/stores')
-  loggingStore.log(MESSAGE_TYPES.LOGGING, 'SERVER: Saving ' + appId + "'s data " + settings)
+  loggingStore.log(
+    MESSAGE_TYPES.LOGGING,
+    '[setAppSettings]: Saving ' + appId + "'s data " + settings
+  )
   appStore.addSettings(appId, settings)
+  replyFn('logging', { status: true, data: 'Finished', final: true })
+}
+
+const setAppData = async (
+  replyFn: ReplyFn,
+  appId: string,
+  appData: { [key: string]: string }
+): Promise<void> => {
+  const { appStore } = await import('@server/stores')
+  loggingStore.log(MESSAGE_TYPES.LOGGING, '[setAppData]: Saving ' + appId + "'s data " + appData)
+  appStore.addData(appId, appData)
   replyFn('logging', { status: true, data: 'Finished', final: true })
 }
 
@@ -303,18 +328,38 @@ const setAppData = async (
  * Retrieves the app data for the specified payload.
  *
  * @param replyFn - A function to send a response back to the client.
+ * @param payload - The payload containing the data needed to retrieve the app settings.
+ * @returns A Promise that resolves to the app settings, or null if an error occurs.
+ */
+const getAppSettings = async (replyFn, payload): Promise<AppSettings | null> => {
+  try {
+    const { appStore } = await import('@server/stores')
+    const data = await appStore.getSettings(payload)
+    replyFn('logging', { status: true, data: 'Finished', final: true })
+    return data || null
+  } catch (error) {
+    loggingStore.log(MESSAGE_TYPES.ERROR, '[getAppSettings]: Error getting settings' + error)
+    console.error('Error setting app settings:', error)
+    replyFn('logging', { status: false, data: 'Unfinished', error: error, final: true })
+    return null
+  }
+}
+/**
+ * Retrieves the app data for the specified payload.
+ *
+ * @param replyFn - A function to send a response back to the client.
  * @param payload - The payload containing the data needed to retrieve the app data.
  * @returns A Promise that resolves to the app data, or null if an error occurs.
  */
-const getAppData = async (replyFn, payload): Promise<AppDataInterface | null> => {
+const getAppData = async (replyFn, payload): Promise<{ [key: string]: string } | null> => {
   try {
     const { appStore } = await import('@server/stores')
     const data = await appStore.getData(payload)
     replyFn('logging', { status: true, data: 'Finished', final: true })
     return data || null
   } catch (error) {
-    loggingStore.log(MESSAGE_TYPES.ERROR, 'SERVER: Error saving manifest' + error)
-    console.error('Error setting client manifest:', error)
+    loggingStore.log(MESSAGE_TYPES.ERROR, '[getAppData]: Error getting app data' + error)
+    console.error('Error setting app settings:', error)
     replyFn('logging', { status: false, data: 'Unfinished', error: error, final: true })
     return null
   }

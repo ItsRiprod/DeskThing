@@ -37,7 +37,7 @@ export const getNowPlaying = async (): Promise<string | null> => {
         source.name.toLowerCase().includes('music')
     )
 
-    console.log(sources.map((source) => source.name))
+    // console.log(sources.map((source) => source.name))
 
     if (mediaPlayers.length > 0) {
       // Get the thumbnail of the first found media player
