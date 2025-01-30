@@ -1,4 +1,5 @@
 // Ik this is bad practice but I don't have time to fix it right now
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export interface GithubRelease {
   url: string
@@ -213,6 +214,14 @@ export enum MESSAGE_TYPES {
   DEBUG = 'debugging'
 }
 
+export type LoggingOptions = {
+  domain?: string
+  source?: string
+  function?: string
+  error?: Error
+  date?: string
+}
+
 /**
  * The LOGGING_LEVEL object defines a set of constants that represent the different levels of logging that can be used in the application.
  * These levels are used to determine which logs should be displayed in the application.
@@ -226,9 +235,66 @@ export enum LOGGING_LEVEL {
 }
 
 export interface Log {
-  source: string
+  options: LoggingOptions
   type: MESSAGE_TYPES
   log: string
-  trace?: string
-  date?: string
 }
+
+interface BaseFeedback {
+  timestamp?: string
+  title: string
+  feedback: string
+  discordId?: string
+}
+
+export interface SystemInfo {
+  serverVersion?: string
+  clientVersion?: string
+  apps?: Array<{
+    name: string
+    version: string
+    running: boolean
+    enabled: boolean
+    runningDuration: number
+  }>
+  clients?: Array<{
+    name: string
+    connectionType: string
+    deviceType: string
+    connectionDuration: string
+  }>
+  os?: string
+  cpu?: string
+  page?: string
+  uptime?: number
+}
+
+interface DetailedFeedback extends BaseFeedback {
+  reproduce?: string[]
+  expected?: string
+  actual?: string
+}
+
+interface BugFeedback extends DetailedFeedback, SystemInfo {}
+
+interface FeatureFeedback extends BaseFeedback {}
+
+interface QuestionFeedback extends BaseFeedback {}
+
+interface OtherFeedback extends DetailedFeedback, SystemInfo {}
+
+export type FeedbackType = 'bug' | 'feature' | 'question' | 'other'
+
+type FeedbackMap = {
+  bug: BugFeedback
+  feature: FeatureFeedback
+  question: QuestionFeedback
+  other: OtherFeedback
+}
+
+export type FeedbackReport = {
+  [K in FeedbackType]: {
+    type: K
+    feedback: FeedbackMap[K]
+  }
+}[FeedbackType]

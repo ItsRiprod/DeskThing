@@ -32,6 +32,7 @@ export type UTILITY_TYPES =
   | 'profiles'
   | 'run'
   | 'map'
+  | 'feedback'
 
 export type APP_TYPES =
   | 'app'
@@ -125,7 +126,6 @@ export type IPCData =
 /**
  * OUTGOING DATA TYPES FROM SERVER TO CLIENT
  */
-
 export type ServerIPCData =
   | AppsListIPC
   | LogIPC

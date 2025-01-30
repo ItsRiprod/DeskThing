@@ -1,5 +1,6 @@
 // Ik this is bad practice but I don't have time to fix it right now
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { Task } from './tasks'
 import { GithubAsset, SocketData } from './types'
 
 export type toServer = (appData: FromAppData) => void
@@ -120,7 +121,18 @@ export interface App {
   enabled: boolean
   running: boolean
   prefIndex: number
+  timeStarted: number
+  meta?: AppMeta
   manifest?: AppManifest
+}
+
+export interface AppMeta {
+  version: string
+  verified: boolean
+  verifiedManifest: boolean
+  updateAvailable: boolean
+  updateChecked: boolean
+  updateAvailableVersion?: string
 }
 
 export interface Config {
@@ -131,6 +143,7 @@ export interface AppDataInterface {
   version: string
   settings?: AppSettings
   data?: { [key: string]: string }
+  tasks?: { [key: string]: Task }
 }
 
 export type SettingsBase = {

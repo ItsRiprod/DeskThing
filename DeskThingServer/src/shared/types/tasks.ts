@@ -17,7 +17,8 @@ import { Action, ActionReference } from './maps'
  */
 export interface TaskList {
   version: string
-  tasks: { [key: string]: Task }
+  tasks: { [key: string]: TaskReference | Task }
+  currentTaskId?: string
 }
 
 /**
@@ -30,8 +31,22 @@ export type Task = {
   completed: boolean
   label: string
   started: boolean
+  currentStep?: string
   description?: string
   steps: { [key: string]: Step }
+}
+
+/**
+ * References are never and should never be considered a 'source of truth'
+ */
+export type TaskReference = {
+  id: string
+  source: string
+  version: string
+  completed: boolean
+  label: string
+  started: false
+  description?: string
 }
 
 export type Step = TaskStep | TaskAction | TaskShortcut | TaskSetting | TaskTask | TaskExternal
