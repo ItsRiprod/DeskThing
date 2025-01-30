@@ -22,7 +22,7 @@ import {
 } from '@shared/types/index.ts'
 import { app, BrowserWindow, ipcMain, Menu, nativeImage, shell, Tray } from 'electron'
 import { join, resolve } from 'node:path'
-import icon from '@resources/icon.png?asset'
+import icon from '../../resources/icon.png?asset'
 
 // Global window and tray references to prevent garbage collection
 let mainWindow: BrowserWindow | null = null

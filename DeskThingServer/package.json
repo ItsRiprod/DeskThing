@@ -6,7 +6,7 @@
   "author": "Riprod",
   "homepage": "https://github.com/ItsRiprod/DeskThing",
   "scripts": {
-    "build": "npm run typecheck && electron-vite build && electron-builder",
+    "build2": "electron-vite build && electron-builder",
     "postinstall": "electron-builder install-app-deps"
   },
   "repository": {

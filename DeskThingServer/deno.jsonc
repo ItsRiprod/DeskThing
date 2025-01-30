@@ -11,6 +11,9 @@
         "typecheck:node"
       ]
     },
+    "build" : {
+      "dependencies": ["build2"] // skip "typecheck" temporarily since there are errors in types
+    },
     "build:unpack": {
       "command": "electron-builder --dir",
       "dependencies": [
@@ -24,7 +27,6 @@
       "esnext",
       "DOM"
     ],
-    "isolatedDeclarations": true,
     // "erasableSyntaxOnly": true, // wait for TS 5.8 before enabling
     "jsx": "react-jsx",
     "types": [

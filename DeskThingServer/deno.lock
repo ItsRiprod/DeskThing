@@ -19,7 +19,6 @@
     "npm:cors@^2.8.5": "2.8.5",
     "npm:cross-unzip@~0.2.1": "0.2.1",
     "npm:electron-builder@25": "25.1.8_dmg-builder@25.1.8",
-    "npm:electron-updater@^6.3.0": "6.3.9",
     "npm:electron-vite@2": "2.3.0_vite@5.4.14__@types+node@22.10.10_@babel+core@7.26.7_@types+node@22.10.10",
     "npm:express@^4.21.0": "4.21.2",
     "npm:fast-average-color-node@^3.1.0": "3.1.0",
@@ -1896,19 +1895,6 @@
     "electron-to-chromium@1.5.88": {
       "integrity": "sha512-K3C2qf1o+bGzbilTDCTBhTQcMS9KW60yTAaTeeXsfvQuTDDwlokLam/AdqlqcSy9u4UainDgsHV23ksXAOgamw=="
     },
-    "electron-updater@6.3.9": {
-      "integrity": "sha512-2PJNONi+iBidkoC5D1nzT9XqsE8Q1X28Fn6xRQhO3YX8qRRyJ3mkV4F1aQsuRnYPqq6Hw+E51y27W75WgDoofw==",
-      "dependencies": [
-        "builder-util-runtime",
-        "fs-extra@10.1.0",
-        "js-yaml",
-        "lazy-val",
-        "lodash.escaperegexp",
-        "lodash.isequal",
-        "semver@7.6.3",
-        "tiny-typed-emitter"
-      ]
-    },
     "electron-vite@2.3.0_vite@5.4.14__@types+node@22.10.10_@babel+core@7.26.7_@types+node@22.10.10": {
       "integrity": "sha512-lsN2FymgJlp4k6MrcsphGqZQ9fKRdJKasoaiwIrAewN1tapYI/KINLdfEL7n10LuF0pPSNf/IqjzZbB5VINctg==",
       "dependencies": [
@@ -2680,14 +2666,8 @@
     "lodash.difference@4.5.0": {
       "integrity": "sha512-dS2j+W26TQ7taQBGN8Lbbq04ssV3emRw4NY58WErlTO29pIqS0HmoT5aJ9+TUQ1N3G+JOZSji4eugsWwGp9yPA=="
     },
-    "lodash.escaperegexp@4.1.2": {
-      "integrity": "sha512-TM9YBvyC84ZxE3rgfefxUWiQKLilstD6k7PTGt6wfbtXF8ixIJLOL3VYyV/z+ZiPLsVxAsKAFVwWlWeb2Y8Yyw=="
-    },
     "lodash.flatten@4.4.0": {
       "integrity": "sha512-C5N2Z3DgnnKr0LOpv/hKCgKdb7ZZwafIrsesve6lmzvZIRZRGaZ/l6Q8+2W7NaT+ZwO3fFlSCzCzrDCFdJfZ4g=="
-    },
-    "lodash.isequal@4.5.0": {
-      "integrity": "sha512-pDo3lu8Jhfjqls6GkMgpahsF9kCyayhgykjyLMNFTKWrpVdAQtYyB4muAMWozBB4ig/dtWAmsMxLEI8wuz+DYQ=="
     },
     "lodash.isplainobject@4.0.6": {
       "integrity": "sha512-oSXzaWypCMHkPC3NvBEaPHf0KsA5mvPrOPgQWDsbg8n7orZ290M0BmC/jgRZ4vcJ6DTAhjrsSYgdsW/F+MFOBA=="
@@ -3730,9 +3710,6 @@
         "async-exit-hook",
         "fs-extra@10.1.0"
       ]
-    },
-    "tiny-typed-emitter@2.1.0": {
-      "integrity": "sha512-qVtvMxeXbVej0cQWKqVSSAHmKZEHAvxdF8HEUBFWts8h+xEo5m/lEiPakuyZ3BnCBjOD8i24kzNOiOLLgsSxhA=="
     },
     "tmp-promise@3.0.3": {
       "integrity": "sha512-RwM7MoPojPxsOBYnyd2hy0bxtIlVrihNs9pj5SUvY8Zz1sQcQG2tG1hSr8PDxfgEB8RNKDhqbIlroIarSNDNsQ==",
