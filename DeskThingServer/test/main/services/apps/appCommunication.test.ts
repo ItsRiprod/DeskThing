@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach, Mock } from 'vitest'
 
 vi.mock('@server/stores', () => ({
-  loggingStore: {
+  Logger: {
     log: vi.fn(),
     getInstance: (): { log: Mock } => ({
       log: vi.fn()
@@ -17,6 +17,7 @@ vi.mock('@server/stores/appStore', () => ({
           name: 'Test App',
           enabled: true,
           running: false,
+          timeStarted: 1,
           prefIndex: 0,
           func: {
             toClient: async (): Promise<void> => {}
@@ -106,7 +107,7 @@ vi.mock('@server/handlers/dataHandler', () => ({
 }))
 
 import { handleDataFromApp } from '@server/services/apps/appCommunication'
-import { MESSAGE_TYPES, ToAppData, AppInstance } from '@shared/types'
+import { MESSAGE_TYPES, AppInstance, FromAppData, IncomingAppDataTypes } from '@shared/types'
 
 describe('App Communication Service', () => {
   beforeEach(() => {
@@ -119,13 +120,13 @@ describe('App Communication Service', () => {
 
   describe('handleDataFromApp', () => {
     it('should handle error type', async () => {
-      const appData: ToAppData = {
-        type: 'error',
+      const appData: FromAppData = {
+        type: IncomingAppDataTypes.LOG,
         payload: 'test error'
       }
-      const { loggingStore } = await import('@server/stores')
+      const { default: Logger } = await import('@server/utils/logger')
       await handleDataFromApp('testApp', appData)
-      expect(loggingStore.log).toHaveBeenCalledWith(MESSAGE_TYPES.ERROR, 'test error', 'TESTAPP')
+      expect(Logger.log).toHaveBeenCalledWith(MESSAGE_TYPES.ERROR, 'test error', 'TESTAPP')
     })
   })
 })

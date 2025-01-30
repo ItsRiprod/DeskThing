@@ -1,5 +1,5 @@
 /**
- * The `LoggingStore` class is a singleton that provides logging functionality for the application.
+ * The `Logger` class is a singleton that provides logging functionality for the application.
  * It writes log messages to a JSON file and a readable log file, and also logs messages to the console with colored output.
  * The log level can be configured through the `Settings` store.
  */
@@ -7,34 +7,50 @@ console.log('[Logging Store] Starting')
 import fs from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
-import { MESSAGE_TYPES, Log, LOGGING_LEVEL, Settings, ReplyData, ReplyFn } from '@shared/types'
+import {
+  MESSAGE_TYPES,
+  Log,
+  LOGGING_LEVEL,
+  Settings,
+  ReplyData,
+  ReplyFn,
+  LoggingOptions
+} from '@shared/types'
 
-// LoggingStore configuration
-const logFile = join(app.getPath('userData'), 'application.log.json')
-const readableLogFile = join(app.getPath('userData'), 'readable.log')
+// Logger configuration
+const logFile = join(app.getPath('userData'), 'logs', 'application.log.json')
+const readableLogFile = join(app.getPath('userData'), 'logs', 'readable.log')
 
 // Ensure log directory exists
-const logDir = app.getPath('userData')
+const logDir = join(app.getPath('userData'), 'logs')
 if (!fs.existsSync(logDir)) {
   fs.mkdirSync(logDir, { recursive: true })
 }
 
-class LoggingStore {
-  private static instance: LoggingStore
+class Logger {
+  private static instance: Logger
   private listeners: ((data: Log) => void)[] = []
   private logs: Log[] = []
   private logLevel: LOGGING_LEVEL = LOGGING_LEVEL.SYSTEM
 
   private constructor() {
+    // Rename existing log files if they exist
+    if (fs.existsSync(logFile)) {
+      fs.renameSync(logFile, `${logFile}.old`)
+    }
+    if (fs.existsSync(readableLogFile)) {
+      fs.renameSync(readableLogFile, `${readableLogFile}.old`)
+    }
+
     fs.writeFileSync(logFile, '[]')
     fs.writeFileSync(readableLogFile, '')
-    import('./settingsStore').then(({ default: settingsStore }) => {
+    import('@server/stores/settingsStore').then(({ default: settingsStore }) => {
       settingsStore.addListener(this.settingsStoreListener.bind(this))
     })
   }
 
   /**
-   * Updates the log level of the `LoggingStore` based on the settings from the `SettingsStore`.
+   * Updates the log level of the `Logger` based on the settings from the `SettingsStore`.
    * @param settings - The updated settings from the `SettingsStore`.
    */
   private settingsStoreListener(settings: Settings): void {
@@ -43,39 +59,43 @@ class LoggingStore {
 
   // Singleton instance
   /**
-   * Gets the singleton instance of the `LoggingStore` class.
+   * Gets the singleton instance of the `Logger` class.
    * If the instance doesn't exist, it creates a new instance and returns it.
-   * @returns The singleton instance of the `LoggingStore` class.
+   * @returns The singleton instance of the `Logger` class.
    */
-  public static getInstance(): LoggingStore {
-    if (!LoggingStore.instance) {
-      LoggingStore.instance = new LoggingStore()
+  public static getInstance(): Logger {
+    if (!Logger.instance) {
+      Logger.instance = new Logger()
     }
-    return LoggingStore.instance
+    return Logger.instance
   }
 
   /**
-   * Sets the log level of the `LoggingStore` instance.
+   * Sets the log level of the `Logger` instance.
    * @param level - The new log level to set.
    */
   public setLogLevel(level: LOGGING_LEVEL): void {
     this.logLevel = level
   }
 
-  info = async (message: string, source: string = 'server'): Promise<void> => {
-    this.log(MESSAGE_TYPES.LOGGING, message, source)
+  public info = async (message: string, options?: LoggingOptions): Promise<void> => {
+    this.log(MESSAGE_TYPES.LOGGING, message, options)
   }
 
-  warn = async (message: string, source: string = 'server'): Promise<void> => {
-    this.log(MESSAGE_TYPES.WARNING, message, source)
+  public warn = async (message: string, options?: LoggingOptions): Promise<void> => {
+    this.log(MESSAGE_TYPES.WARNING, message, options)
   }
 
-  error = async (message: string, source: string = 'server'): Promise<void> => {
-    this.log(MESSAGE_TYPES.ERROR, message, source)
+  public error = async (message: string, options?: LoggingOptions): Promise<void> => {
+    this.log(MESSAGE_TYPES.ERROR, message, options)
   }
 
-  debug = async (message: string, source: string = 'server'): Promise<void> => {
-    this.log(MESSAGE_TYPES.DEBUG, message, source)
+  public debug = async (message: string, options?: LoggingOptions): Promise<void> => {
+    this.log(MESSAGE_TYPES.DEBUG, message, options)
+  }
+
+  public fatal = async (message: string, options?: LoggingOptions): Promise<void> => {
+    this.log(MESSAGE_TYPES.FATAL, message, options)
   }
 
   /**
@@ -85,11 +105,17 @@ class LoggingStore {
    * @param source - The source of the message (default is 'server').
    * @returns A Promise that resolves when the message has been logged.
    */
-  async log(level: MESSAGE_TYPES, message: string, source: string = 'server'): Promise<void> {
+  async log(level: MESSAGE_TYPES, message: string, options?: LoggingOptions): Promise<void> {
+    if (!options || !options.domain) {
+      options = {
+        ...options,
+        domain: 'server'
+      }
+    }
     try {
       if (
         level === MESSAGE_TYPES.LOGGING &&
-        source === 'server' &&
+        options.domain === 'server' &&
         this.logLevel != LOGGING_LEVEL.SYSTEM
       ) {
         return
@@ -99,37 +125,52 @@ class LoggingStore {
         return
       }
 
-      const timestamp = new Date().toISOString()
-      const trace = new Error().stack || ''
+      if (options.error instanceof Error) {
+        options.error = {
+          name: options.error.name,
+          message: options.error.message,
+          stack: options.error.stack
+        }
+      } else {
+        if (options.error) {
+          options.error = new Error('Error not found', { cause: options.error })
+        }
+      }
+      options.date = options.date || new Date().toISOString()
 
       const logData: Log = {
-        source: source,
+        options: options,
         type: level,
-        log: message,
-        trace: trace,
-        date: timestamp
+        log: message
       }
 
       this.logs.push(logData)
       await this.notifyListeners(logData)
 
-      const readableTimestamp = new Date(timestamp).toLocaleString()
-      const readableMessage = `[${readableTimestamp}] [${source}] ${level.toUpperCase()}: ${message}\n`
+      const readableTimestamp = new Date(options.date).toLocaleString()
+      const readableMessage = `${options.domain || 'Unknown:'} ${readableTimestamp} ${level.toUpperCase()} [${options.source || 'server'}${options.function ? '.' + options.function : ''}]: ${message}\n${options.error ? options.error.message + '\n' : ''}`
 
-      if (level === MESSAGE_TYPES.ERROR) {
-        console.log('\x1b[31m%s\x1b[0m', readableMessage) // Red for error
-      } else if (level === MESSAGE_TYPES.WARNING) {
-        console.log('\x1b[33m%s\x1b[0m', readableMessage) // Yellow for warning
-      } else if (level === MESSAGE_TYPES.MESSAGE) {
-        console.log('\x1b[32m%s\x1b[0m', readableMessage) // Green for messages
-      } else if (level === MESSAGE_TYPES.LOGGING) {
-        console.log('\x1b[90m%s\x1b[0m', readableMessage) // Dark gray for info
-      } else if (level === MESSAGE_TYPES.FATAL) {
-        console.log('\x1b[35m%s\x1b[0m', readableMessage) // Magenta for fatal
-      } else if (level === MESSAGE_TYPES.DEBUG) {
-        console.log('\x1b[34m%s\x1b[0m', readableMessage) // Blue for debug
-      } else {
-        console.log('\x1b[0m%s', readableMessage) // Default color for other types
+      switch (level) {
+        case MESSAGE_TYPES.ERROR:
+          console.error('\x1b[31m%s\x1b[0m', readableMessage) // Red for error
+          break
+        case MESSAGE_TYPES.WARNING:
+          console.warn('\x1b[33m%s\x1b[0m', readableMessage) // Yellow for warning
+          break
+        case MESSAGE_TYPES.MESSAGE:
+          console.log('\x1b[32m%s\x1b[0m', readableMessage) // Green for messages
+          break
+        case MESSAGE_TYPES.LOGGING:
+          console.log('\x1b[90m%s\x1b[0m', readableMessage) // Dark gray for info
+          break
+        case MESSAGE_TYPES.FATAL:
+          console.log('\x1b[35m%s\x1b[0m', readableMessage) // Magenta for fatal
+          break
+        case MESSAGE_TYPES.DEBUG:
+          console.log('\x1b[34m%s\x1b[0m', readableMessage) // Blue for debug
+          break
+        default:
+          console.log('\x1b[0m%s', readableMessage) // Default color for other types
       }
 
       await new Promise<void>((resolve, reject) => {
@@ -211,12 +252,12 @@ class LoggingStore {
  */
 export const ResponseLogger = (replyFn: ReplyFn): ReplyFn => {
   return async (channel: string, reply: ReplyData): Promise<void> => {
-    await LoggingStore.getInstance().log(
-      MESSAGE_TYPES.LOGGING,
-      `[${channel}]: ${JSON.stringify(reply)}`
-    )
+    await Logger.getInstance().log(MESSAGE_TYPES.LOGGING, `${JSON.stringify(reply)}`, {
+      function: channel,
+      source: 'ResponseLogger'
+    })
     await replyFn(channel, reply)
   }
 }
 
-export default LoggingStore.getInstance()
+export default Logger.getInstance()

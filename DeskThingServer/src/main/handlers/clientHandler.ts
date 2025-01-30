@@ -1,6 +1,6 @@
 console.log('[Auth Handler] Starting')
 import { ClientIPCData, ClientManifest, SocketData, ReplyFn, MESSAGE_TYPES } from '@shared/types'
-import { loggingStore } from '@server/stores'
+import Logger from '@server/utils/logger'
 import { handleAdbCommands } from './adbHandler'
 import {
   configureDevice,
@@ -37,9 +37,9 @@ export const clientHandler: Record<
     } catch (error) {
       console.error('Error pinging client:', error)
       if (error instanceof Error) {
-        loggingStore.log(MESSAGE_TYPES.ERROR, error.message)
+        Logger.log(MESSAGE_TYPES.ERROR, error.message)
       } else {
-        loggingStore.log(MESSAGE_TYPES.ERROR, String(error))
+        Logger.log(MESSAGE_TYPES.ERROR, String(error))
       }
       return 'Error pinging' + data.payload
     }
@@ -81,7 +81,7 @@ export const clientHandler: Record<
   },
   'push-staged': async (data, replyFn) => {
     try {
-      loggingStore.log(MESSAGE_TYPES.LOGGING, 'Pushing staged app...')
+      Logger.info('Pushing staged app...')
       HandlePushWebApp(data.payload, replyFn)
     } catch (error) {
       replyFn('logging', {
@@ -91,15 +91,15 @@ export const clientHandler: Record<
         final: true
       })
       if (error instanceof Error) {
-        loggingStore.log(MESSAGE_TYPES.ERROR, error.message)
+        Logger.log(MESSAGE_TYPES.ERROR, error.message)
       } else {
-        loggingStore.log(MESSAGE_TYPES.ERROR, String(error))
+        Logger.log(MESSAGE_TYPES.ERROR, String(error))
       }
     }
   },
   'push-proxy-script': async (data, replyFn) => {
     try {
-      loggingStore.log(MESSAGE_TYPES.LOGGING, 'Pushing proxy script...')
+      Logger.info('Pushing proxy script...')
       SetupProxy(replyFn, data.payload)
       replyFn('logging', {
         status: true,
@@ -115,9 +115,9 @@ export const clientHandler: Record<
       })
       console.error('Error pushing proxy script:', error)
       if (error instanceof Error) {
-        loggingStore.log(MESSAGE_TYPES.ERROR, error.message)
+        Logger.log(MESSAGE_TYPES.ERROR, error.message)
       } else {
-        loggingStore.log(MESSAGE_TYPES.ERROR, String(error))
+        Logger.log(MESSAGE_TYPES.ERROR, String(error))
       }
     }
   },

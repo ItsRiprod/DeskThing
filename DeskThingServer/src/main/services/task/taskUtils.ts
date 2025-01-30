@@ -4,6 +4,7 @@ import {
   Task,
   TaskAction,
   TaskList,
+  TaskReference,
   TaskSetting,
   TaskShortcut,
   TaskTask
@@ -16,24 +17,66 @@ interface ValidationResult {
   error: string
 }
 
-export function isValidTaskList(taskList: unknown): ValidationResult {
+export function isValidTaskList(taskList: Partial<TaskList>): ValidationResult {
   if (!taskList || typeof taskList !== 'object')
     return { isValid: false, error: 'TaskList must be an object' }
-  const list = taskList as Partial<TaskList>
 
-  if (!list.version) {
+  if (!taskList.version) {
     return { isValid: false, error: '[ValidateTaskList] TaskList does not have an ID' }
   }
-  if (!list.tasks || typeof list.tasks !== 'object') {
+  if (!taskList.tasks || typeof taskList.tasks !== 'object') {
     return { isValid: false, error: '[ValidateTaskList] TaskList does not have any tasks' }
   }
 
-  for (const task of Object.values(list.tasks)) {
-    const taskValidation = isValidTask(task)
+  if (taskList.currentTaskId && !taskList.tasks[taskList.currentTaskId]) {
+    return {
+      isValid: false,
+      error: '[ValidateTaskList] CurrentTaskId references non-existent task'
+    }
+  }
+
+  for (const taskId of Object.keys(taskList.tasks)) {
+    const taskValidation = taskList.tasks[taskId].started
+      ? isValidTask(taskList.tasks[taskId]) // task is started thus has steps
+      : isValidTaskReference(taskList.tasks[taskId])
     if (!taskValidation.isValid) {
       return taskValidation
     }
   }
+  return { isValid: true, error: '' }
+}
+
+export function sanitizeTaskList(taskList: TaskList): TaskList {
+  const sanitized = { ...taskList }
+
+  if (sanitized.currentTaskId) {
+    if (!sanitized.tasks[sanitized.currentTaskId]) {
+      sanitized.currentTaskId = undefined
+    } else {
+      sanitized.tasks[sanitized.currentTaskId].started = true
+    }
+  }
+
+  return sanitized
+}
+
+export function isValidTaskReference(task: unknown): ValidationResult {
+  if (!task || typeof task !== 'object') return { isValid: false, error: 'Task must be an object' }
+  const t = task as Partial<TaskReference>
+
+  if (!t.id) {
+    return { isValid: false, error: '[ValidateTask] Tasks must have an ID' }
+  }
+  if (!t.source) {
+    return { isValid: false, error: `[ValidateTask] Task ${t.id} does not have a source` }
+  }
+  if (!t.version) {
+    return {
+      isValid: false,
+      error: `[ValidateTask] Task ${t.id} from ${t.source} must have a specified version`
+    }
+  }
+
   return { isValid: true, error: '' }
 }
 

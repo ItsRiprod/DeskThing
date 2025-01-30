@@ -35,7 +35,7 @@ export const getDeviceType = (userAgent: string | undefined): { id: number; name
  * Sends the current time to connected clients.
  * This function retrieves the current UTC time and the server's timezone offset,
  * then sends this information to all connected clients using the `sendMessageToClients` function.
- * The time information is logged at the DEBUG level using the `loggingStore`.
+ * The time information is logged at the DEBUG level using the `Logger`.
  */
 export const sendTime = async (): Promise<void> => {
   const now = new Date()

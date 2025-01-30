@@ -1,13 +1,8 @@
 console.log('[ClientSocket Service] Starting')
 import WebSocket, { WebSocketServer } from 'ws'
 import { createServer, Server as HttpServer, IncomingMessage } from 'http'
-import {
-  loggingStore,
-  connectionStore,
-  settingsStore,
-  appStore,
-  mappingStore
-} from '@server/stores'
+import { connectionStore, settingsStore, appStore, mappingStore } from '@server/stores'
+import Logger from '@server/utils/logger'
 import {
   MESSAGE_TYPES,
   Client,
@@ -56,8 +51,8 @@ const THROTTLE_DELAY = 300 // milliseconds
 export const restartServer = async (): Promise<void> => {
   try {
     if (server) {
-      loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Shutting down the WebSocket server...')
-      loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Shutting down the WebSocket server...')
+      Logger.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Shutting down the WebSocket server...')
+      Logger.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Shutting down the WebSocket server...')
       connectionStore.removeAllClients()
 
       server.clients.forEach((client) => {
@@ -67,28 +62,19 @@ export const restartServer = async (): Promise<void> => {
       server.close((err) => {
         if (err) {
           console.error('WSOCKET: Error shutting down WebSocket server:', err)
-          loggingStore.log(
-            MESSAGE_TYPES.ERROR,
-            'WSOCKET: Error shutting down WebSocket server:' + err
-          )
+          Logger.log(MESSAGE_TYPES.ERROR, 'WSOCKET: Error shutting down WebSocket server:' + err)
         } else {
-          loggingStore.log(
-            MESSAGE_TYPES.LOGGING,
-            'WSOCKET: WebSocket server shut down successfully.'
-          )
-          loggingStore.log(
-            MESSAGE_TYPES.LOGGING,
-            'WSOCKET: WebSocket server shut down successfully.'
-          )
+          Logger.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: WebSocket server shut down successfully.')
+          Logger.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: WebSocket server shut down successfully.')
         }
 
         if (httpServer && httpServer.listening) {
-          loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Stopping HTTP server...')
+          Logger.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Stopping HTTP server...')
           httpServer.close((err) => {
             if (err) {
               console.error('WSOCKET: Error stopping HTTP server:', err)
             } else {
-              loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: HTTP server stopped successfully.')
+              Logger.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: HTTP server stopped successfully.')
               setupServer()
             }
           })
@@ -97,17 +83,14 @@ export const restartServer = async (): Promise<void> => {
         }
       })
     } else {
-      loggingStore.log(
-        MESSAGE_TYPES.LOGGING,
-        'WSOCKET: No WebSocket server running - setting one up'
-      )
+      Logger.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: No WebSocket server running - setting one up')
       if (httpServer && httpServer.listening) {
-        loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Stopping HTTP server...')
+        Logger.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Stopping HTTP server...')
         httpServer.close((err) => {
           if (err) {
             console.error('WSOCKET: Error stopping HTTP server:', err)
           } else {
-            loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: HTTP server stopped successfully.')
+            Logger.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: HTTP server stopped successfully.')
             setupServer()
           }
         })
@@ -129,7 +112,7 @@ export const restartServer = async (): Promise<void> => {
  * @returns {Promise<void>} A Promise that resolves when the server is set up.
  */
 export const setupServer = async (): Promise<void> => {
-  loggingStore.log(MESSAGE_TYPES.MESSAGE, 'WSOCKET: Attempting to setup the server')
+  Logger.log(MESSAGE_TYPES.MESSAGE, 'WSOCKET: Attempting to setup the server')
 
   if (!currentPort || !currentAddress) {
     const settings = await settingsStore.getSettings()
@@ -146,10 +129,10 @@ export const setupServer = async (): Promise<void> => {
 
   server = new WebSocketServer({ server: httpServer })
 
-  loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: WebSocket server is running.')
+  Logger.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: WebSocket server is running.')
 
   httpServer.listen(currentPort, currentAddress, () => {
-    loggingStore.log(
+    Logger.log(
       MESSAGE_TYPES.LOGGING,
       `WEBSOCKET: Server is listening on ${currentAddress}:${currentPort}`
     )
@@ -164,7 +147,7 @@ export const setupServer = async (): Promise<void> => {
       req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.connection.remoteAddress
 
     // Setup the initial client data
-    loggingStore.log(
+    Logger.log(
       MESSAGE_TYPES.LOGGING,
       `WSOCKET: Client connected! Looking for client with IP ${clientIp}`
     )
@@ -182,17 +165,20 @@ export const setupServer = async (): Promise<void> => {
 
     Clients.push({ client, socket })
 
-    loggingStore.log(
+    Logger.log(
       MESSAGE_TYPES.LOGGING,
-      `WSOCKET: Client with id: ${client.connectionId} connected!\nWSOCKET: Sending preferences...`
+      `Client with id: ${client.connectionId} connected!\nWSOCKET: Sending preferences...`,
+      {
+        function: 'setupServer',
+        source: 'websocket'
+      }
     )
     connectionStore.addClient(client)
 
-    loggingStore.log(
-      MESSAGE_TYPES.LOGGING,
-      'WSOCKET: Client connected!\nWSOCKET: Sending preferences...'
-    )
-    loggingStore.log(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Sending client preferences...`)
+    Logger.log(MESSAGE_TYPES.LOGGING, 'Client connected!\nWSOCKET: Sending preferences...', {
+      function: 'setupServer',
+      source: 'websocket'
+    })
 
     sendConfigData(client.connectionId)
     sendSettingsData(client.connectionId)
@@ -201,10 +187,10 @@ export const setupServer = async (): Promise<void> => {
 
     socket.on('message', async (message: string) => {
       const messageData = JSON.parse(message) as SocketData
-      loggingStore.log(
-        MESSAGE_TYPES.LOGGING,
-        `WEBSOCKET: Client ${client.connectionId} has sent ${message}`
-      )
+      Logger.info(`Client ${client.connectionId} has sent ${message}`, {
+        function: 'onMessage',
+        source: 'websocket'
+      })
       const messageKey = `${messageData.app}-${messageData.type}-${messageData.request}`
       const now = Date.now()
 
@@ -253,7 +239,7 @@ export const setupServer = async (): Promise<void> => {
           }
         })
       } else {
-        loggingStore.log(
+        Logger.log(
           MESSAGE_TYPES.DEBUG,
           `WSOCKET: Throttling message for ${messageKey} for ${THROTTLE_DELAY}ms`
         )
@@ -261,10 +247,7 @@ export const setupServer = async (): Promise<void> => {
     })
 
     socket.on('close', () => {
-      loggingStore.log(
-        MESSAGE_TYPES.LOGGING,
-        `WSOCKET: Client ${client.connectionId} has disconnected!`
-      )
+      Logger.log(MESSAGE_TYPES.LOGGING, `WSOCKET: Client ${client.connectionId} has disconnected!`)
       Clients.splice(
         Clients.findIndex((client) => client.client.connectionId === client.client.connectionId),
         1
@@ -294,10 +277,11 @@ const handleServerMessage = async (
 ): Promise<void> => {
   try {
     if (messageData.app === 'server') {
-      loggingStore.log(
-        MESSAGE_TYPES.LOGGING,
-        `WSOCKET: Server message received! ${messageData.type}`
-      )
+      Logger.log(MESSAGE_TYPES.LOGGING, `Server message received! ${messageData.type}`, {
+        domain: client.connectionId,
+        source: 'websocket',
+        function: 'handleServerMessage'
+      })
       try {
         switch (messageData.type) {
           case 'heartbeat':
@@ -310,14 +294,22 @@ const handleServerMessage = async (
             )
             break
           case 'pong':
-            loggingStore.log(MESSAGE_TYPES.LOGGING, 'Received pong from ', client.connectionId)
+            Logger.log(MESSAGE_TYPES.LOGGING, 'Received pong from ', {
+              domain: client.connectionId,
+              source: 'websocket',
+              function: 'handleServerMessage'
+            })
             sendIpcData({
               type: `pong-${client.connectionId}`,
               payload: messageData.payload
             } as unknown as ServerIPCData) // so it doesnt mess with other types
             break
           case 'ping':
-            loggingStore.log(MESSAGE_TYPES.LOGGING, 'Sent Ping', client.connectionId)
+            Logger.log(MESSAGE_TYPES.LOGGING, 'Sent Ping', {
+              domain: client.connectionId,
+              source: 'websocket',
+              function: 'handleServerMessage'
+            })
             socket.send(
               JSON.stringify({
                 type: 'pong',
@@ -358,10 +350,10 @@ const handleServerMessage = async (
             sendTime()
             break
           case 'message':
-            loggingStore.log(
-              MESSAGE_TYPES.MESSAGE,
-              `${client.connectionId}: ${messageData.payload}`
-            )
+            Logger.log(MESSAGE_TYPES.MESSAGE, `${messageData.payload}`, {
+              domain: client.connectionId,
+              source: 'client'
+            })
             break
           case 'device':
             HandleDeviceData(messageData.payload as string)
@@ -371,9 +363,14 @@ const handleServerMessage = async (
               const manifest = messageData.payload as ClientManifest
               if (!manifest) return
 
-              loggingStore.log(
+              Logger.log(
                 MESSAGE_TYPES.LOGGING,
-                'WSOCKET: Received manifest from client' + JSON.stringify(manifest)
+                'WSOCKET: Received manifest from client' + JSON.stringify(manifest),
+                {
+                  domain: client.connectionId,
+                  source: 'client',
+                  function: 'handleServerMessage'
+                }
               )
 
               // Update the client to the info received from the client
@@ -428,12 +425,12 @@ const setupListeners = async (): Promise<void> => {
       if (currentPort !== newSettings.devicePort || currentAddress !== newSettings.address) {
         restartServer()
       } else {
-        loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: No settings changed!')
+        Logger.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: No settings changed!')
       }
     })
 
-    mappingStore.addListener('profile', (profile) => {
-      const actions = mappingStore.getActions()
+    mappingStore.addListener('profile', async (profile) => {
+      const actions = await mappingStore.getActions()
       const SocketData = {
         type: 'button_mappings',
         app: 'client',
@@ -443,8 +440,8 @@ const setupListeners = async (): Promise<void> => {
       sendMessageToClients(SocketData)
     })
 
-    mappingStore.addListener('action', (actions) => {
-      const profile = mappingStore.getMapping()
+    mappingStore.addListener('action', async (actions) => {
+      const profile = await mappingStore.getMapping()
       const SocketData = {
         type: 'button_mappings',
         app: 'client',
@@ -454,9 +451,9 @@ const setupListeners = async (): Promise<void> => {
       sendMessageToClients(SocketData)
     })
 
-    mappingStore.addListener('update', () => {
-      const profile = mappingStore.getMapping()
-      const actions = mappingStore.getActions()
+    mappingStore.addListener('update', async () => {
+      const profile = await mappingStore.getMapping()
+      const actions = await mappingStore.getActions()
       const SocketData = {
         type: 'button_mappings',
         app: 'client',

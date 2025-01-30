@@ -5,6 +5,7 @@
 import { app } from 'electron'
 import { join } from 'path'
 import fs from 'fs'
+import Logger from '@server/utils/logger'
 
 /**
  * Reads data from a file in the user's application data directory.
@@ -12,19 +13,23 @@ import fs from 'fs'
  * @param filename - The name of the file to read.
  * @returns The parsed data from the file, or `false` if the file does not exist or an error occurs.
  */
-export const readFromFile = <T>(filename: string): T | false => {
+export const readFromFile = async <T>(filename: string): Promise<T | false> => {
   const dataFilePath = join(app.getPath('userData'), filename)
   try {
-    if (!fs.existsSync(dataFilePath)) {
-      // File does not exist, create it with default data
-      return false
+    try {
+      await fs.promises.access(dataFilePath)
+    } catch (err) {
+      throw new Error('[readFromFile]: File does not exist or do not have access', { cause: err })
     }
 
-    const rawData = fs.readFileSync(dataFilePath)
+    const rawData = await fs.promises.readFile(dataFilePath)
     return JSON.parse(rawData.toString())
   } catch (err) {
-    // console.error('Error reading data:', err)
-    return false
+    Logger.error('Error reading data', {
+      error: err as Error,
+      source: 'readFromFile'
+    })
+    throw new Error('[readFromFile]: Error reading data', { cause: err })
   }
 }
 
@@ -37,21 +42,32 @@ export const readFromFile = <T>(filename: string): T | false => {
  * @throws - error when it fails
  */
 export const writeToFile = async <T>(data: T, filepath: string): Promise<void> => {
+  const uniqueId = `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  const tempPath = join(app.getPath('temp'), `${filepath}-${uniqueId}.tmp`)
+  const tempDir = join(app.getPath('temp'), ...filepath.split(/[/\\]/).slice(0, -1))
+  const finalPath = join(app.getPath('userData'), filepath)
+  const dirPath = join(app.getPath('userData'), ...filepath.split(/[/\\]/).slice(0, -1))
+
   try {
-    const dataFilePath = join(app.getPath('userData'), filepath)
-    const dirPath = join(app.getPath('userData'), ...filepath.split(/[/\\]/).slice(0, -1))
-    if (!fs.existsSync(dirPath)) {
-      console.log('Creating directory path')
-      fs.mkdirSync(dirPath, { recursive: true })
-    }
-    await fs.promises.writeFile(dataFilePath, JSON.stringify(data, null, 2))
+    await Promise.all([
+      fs.promises.mkdir(tempDir, { recursive: true }),
+      fs.promises.mkdir(dirPath, { recursive: true })
+    ])
+
+    await fs.promises.writeFile(tempPath, JSON.stringify(data, null, 2))
+    await fs.promises.copyFile(tempPath, finalPath)
+    await fs.promises.unlink(tempPath)
   } catch (err) {
-    if (err instanceof Error) {
-      throw new Error('[writeToFile]: failed with ' + err.message)
-    } else {
-      console.error(err)
-      throw new Error('[writeToFile]: failed unexpectedly. Please see logs for full error')
-    }
+    Logger.error('Error writing data', {
+      error: err as Error,
+      source: 'writeToFile'
+    })
+    throw new Error('[writeToFile]: failed with ' + { source: err })
+  } finally {
+    await Promise.allSettled([
+      fs.promises.rm(tempPath, { force: true }),
+      fs.promises.rm(tempDir, { force: true, recursive: true })
+    ])
   }
 }
 
@@ -60,25 +76,18 @@ export const writeToFile = async <T>(data: T, filepath: string): Promise<void> =
  *
  * @param data - The data to be written to the file.
  * @param filepath - The full path of the file to write the data to.
+ * @depreciated - use {@link writeToFile} instead
  * @throws - Error or Unknown
  */
 export const writeToGlobalFile = async <T>(data: T, filepath: string): Promise<void> => {
-  try {
-    await fs.promises.writeFile(filepath, JSON.stringify(data, null, 2))
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error('[writeToGlobalFile] failed with ' + error.message)
-    } else {
-      console.error(error)
-      throw error
-    }
-  }
+  writeToFile(data, filepath)
 }
 
 /**
  * Reads data from a file at the specified global filepath.
  *
  * @param filename - The name of the file to read from the user's application data directory.
+ * @depreciated - use {@link readFromFile} instead
  * @returns The parsed data from the file, or `false` if the file does not exist or an error occurs.
  */
 export const readFromGlobalFile = async <T>(filename: string): Promise<T | false> => {
@@ -91,7 +100,7 @@ export const readFromGlobalFile = async <T>(filename: string): Promise<T | false
     const rawData = await fs.promises.readFile(dataFilePath)
     return JSON.parse(rawData.toString())
   } catch (err) {
-    // console.error('Error reading data:', err)
+    console.error('Error reading data:', err)
     return false
   }
 }

@@ -3,7 +3,7 @@ import { getAppData } from '../services/files/appService'
 import http from 'http'
 import url from 'url'
 import settingsStore from '../stores/settingsStore'
-import { loggingStore } from '@server/stores'
+import Logger from '@server/utils/logger'
 import { Settings, MESSAGE_TYPES } from '@shared/types'
 
 const successView = '<h1>Success</h1><p>You can now close this window.</p>'
@@ -21,13 +21,10 @@ let callBackPort: number
  * @param req - The incoming HTTP request object.
  * @param res - The HTTP response object to send the response.
  */
-function handleCallback(req: http.IncomingMessage, res: http.ServerResponse): void {
+async function handleCallback(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
   const parsedUrl = url.parse(req.url || '', true)
 
-  loggingStore.log(
-    MESSAGE_TYPES.LOGGING,
-    `AUTH: Received callback request for ${parsedUrl.pathname}`
-  )
+  Logger.info(`AUTH: Received callback request for ${parsedUrl.pathname}`)
 
   const urlParts = parsedUrl.pathname?.split('/').filter(Boolean)
 
@@ -38,7 +35,7 @@ function handleCallback(req: http.IncomingMessage, res: http.ServerResponse): vo
   }
 
   const appName = urlParts[1] // The app name should be the third part after '/callback/'
-  const appData = getAppData()
+  const appData = await getAppData()
   if (!appData || !appData[appName] || !appData[appName].enabled) {
     res.writeHead(404, { 'Content-Type': 'text/html' })
     res.end(`<h1>App Not Found</h1><p>App '${appName}' not found or not active.</p>`)
@@ -67,7 +64,7 @@ function handleCallback(req: http.IncomingMessage, res: http.ServerResponse): vo
 const startServer = async (): Promise<void> => {
   if (server) {
     await server.close(() => {
-      loggingStore.log(MESSAGE_TYPES.LOGGING, 'CALLBACK: Shutting down the server...')
+      Logger.info('CALLBACK: Shutting down the server...')
     })
   }
 
@@ -83,10 +80,7 @@ const startServer = async (): Promise<void> => {
   })
 
   server.listen(callBackPort, () => {
-    loggingStore.log(
-      MESSAGE_TYPES.MESSAGE,
-      `CALLBACK: running at http://localhost:${callBackPort}/`
-    )
+    Logger.log(MESSAGE_TYPES.MESSAGE, `CALLBACK: running at http://localhost:${callBackPort}/`)
   })
 }
 
@@ -103,7 +97,11 @@ const initializeServer = async (): Promise<void> => {
     callBackPort = settings.callbackPort
     await startServer()
   } catch (error) {
-    console.error('CALLBACK: Failed to get settings or start the server:', error)
+    Logger.error('Failed to get settings or start the server', {
+      error: error as Error,
+      source: 'authHandler',
+      function: 'initializeServer'
+    })
   }
 }
 
@@ -119,11 +117,18 @@ settingsStore.addListener((newSettings) => {
       callBackPort = newSettings.callbackPort
       startServer()
     } else {
-      loggingStore.log(MESSAGE_TYPES.LOGGING, 'CALLBACK: Not starting - port is not changed')
+      Logger.info('Not starting - port is not changed', {
+        source: 'authHandler',
+        function: 'settingsListener'
+      })
     }
   } catch (error) {
     if (error instanceof Error) {
-      loggingStore.log(MESSAGE_TYPES.ERROR, 'CALLBACK: Error updating with settings' + error)
+      Logger.error('Error updating with settings', {
+        error,
+        source: 'authHandler',
+        function: 'settingsListener'
+      })
     }
   }
 })

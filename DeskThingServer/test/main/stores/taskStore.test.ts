@@ -10,7 +10,7 @@ vi.mock('@server/utils/fileHandler', () => ({
   readFromFile: vi.fn(),
   writeToFile: vi.fn()
 }))
-vi.mock('@server/stores/loggingStore', () => ({
+vi.mock('@server/stores/Logger', () => ({
   default: {
     log: vi.fn(),
     warn: vi.fn(),

@@ -4,7 +4,7 @@ const tasks: { [key: string]: Task } = {
   gettingstarted: {
     id: 'gettingstarted',
     version: '0.10.5',
-    started: true,
+    started: false,
     source: 'server',
     label: 'Welcome to DeskThing',
     description:
@@ -40,7 +40,7 @@ const tasks: { [key: string]: Task } = {
   device: {
     id: 'device',
     version: '0.10.4',
-    started: true,
+    started: false,
     source: 'server',
     label: 'Setting up a Device',
     description: 'Set up your Car Thing to work with DeskThing!',
@@ -131,7 +131,7 @@ const tasks: { [key: string]: Task } = {
   client: {
     id: 'client',
     version: '0.10.4',
-    started: true,
+    started: false,
     source: 'server',
     label: 'Setting up a Device',
     description: 'Let us go over how to download a client to DeskThing',
@@ -157,7 +157,7 @@ const tasks: { [key: string]: Task } = {
   updateClient: {
     id: 'updateClient',
     version: '0.10.4',
-    started: true,
+    started: false,
     source: 'server',
     label: 'Setting up a Device',
     description: "Looks like theres a new client! Lets ensure we're up to date.",

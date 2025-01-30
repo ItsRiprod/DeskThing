@@ -1,9 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { loadAndRunEnabledApps } from '@server/services/apps/appRunner'
 import { MESSAGE_TYPES } from '@shared/types'
-import { loggingStore } from '@server/stores'
+import Logger from '@server/utils/logger'
 
-vi.mock('@server/stores/loggingStore', () => ({
+vi.mock('@server/stores/Logger', () => ({
   default: {
     log: vi.fn(),
     info: vi.fn(),
@@ -14,7 +14,7 @@ vi.mock('@server/stores/loggingStore', () => ({
 }))
 
 vi.mock('@server/stores/', () => ({
-  loggingStore: {
+  Logger: {
     log: vi.fn(),
     getInstance: vi.fn().mockReturnValue({
       log: vi.fn(),
@@ -143,7 +143,7 @@ describe('appRunner', () => {
 
     expect(mockAppHandlerInstance.run).toHaveBeenCalledTimes(1)
     expect(mockAppHandlerInstance.run).toHaveBeenCalledWith('app1')
-    expect(vi.mocked(loggingStore.log)).toHaveBeenCalledWith(
+    expect(vi.mocked(Logger.log)).toHaveBeenCalledWith(
       MESSAGE_TYPES.LOGGING,
       'SERVER: Loaded apps config. Running apps...'
     )
@@ -155,7 +155,7 @@ describe('appRunner', () => {
 
     await loadAndRunEnabledApps()
 
-    expect(vi.mocked(loggingStore.log)).toHaveBeenCalledWith(
+    expect(vi.mocked(Logger.log)).toHaveBeenCalledWith(
       MESSAGE_TYPES.ERROR,
       'SERVER: Error loading and running enabled apps'
     )
@@ -169,7 +169,7 @@ describe('appRunner', () => {
     await loadAndRunEnabledApps()
 
     expect(mockAppHandlerInstance.run).toHaveBeenCalledWith('app1')
-    expect(vi.mocked(loggingStore.log)).toHaveBeenCalledWith(
+    expect(vi.mocked(Logger.log)).toHaveBeenCalledWith(
       MESSAGE_TYPES.ERROR,
       'SERVER: Error loading and running enabled apps'
     )
@@ -185,7 +185,7 @@ describe('appRunner', () => {
     await loadAndRunEnabledApps()
 
     expect(mockAppHandlerInstance.run).not.toHaveBeenCalled()
-    expect(vi.mocked(loggingStore.log)).toHaveBeenCalledWith(
+    expect(vi.mocked(Logger.log)).toHaveBeenCalledWith(
       MESSAGE_TYPES.LOGGING,
       'SERVER: Loaded apps config. Running apps...'
     )

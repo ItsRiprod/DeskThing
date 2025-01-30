@@ -1,6 +1,6 @@
 console.log('[Settings Store] Starting')
 import { readFromFile, writeToFile } from '../utils/fileHandler'
-import { loggingStore } from '.'
+import Logger from '@server/utils/logger'
 import os from 'os'
 import { LOGGING_LEVEL, Settings, MESSAGE_TYPES } from '@shared/types'
 
@@ -96,7 +96,7 @@ class SettingsStore {
   public async loadSettings(): Promise<Settings> {
     try {
       const data = await readFromFile<Settings>(this.settingsFilePath)
-      loggingStore.log(MESSAGE_TYPES.LOGGING, 'SETTINGS: Loaded settings!')
+      Logger.log(MESSAGE_TYPES.LOGGING, 'SETTINGS: Loaded settings!')
 
       if (!data || !data.version_code || data.version_code < version_code) {
         // File does not exist, create it with default settings
@@ -120,19 +120,26 @@ class SettingsStore {
   }
 
   private async updateAutoLaunch(enable: boolean): Promise<void> {
-    const AutoLaunch = await import('auto-launch')
-    const autoLaunch = new AutoLaunch.default({
-      name: 'DeskThing',
-      path: process.execPath
-    })
+    try {
+      const AutoLaunch = await import('auto-launch')
+      const autoLaunch = new AutoLaunch.default({
+        name: 'DeskThing',
+        path: process.execPath
+      })
 
-    if (enable) {
-      await autoLaunch.enable()
-    } else {
-      await autoLaunch.disable()
+      if (enable) {
+        await autoLaunch.enable()
+      } else {
+        await autoLaunch.disable()
+      }
+    } catch (err) {
+      Logger.log(
+        MESSAGE_TYPES.WARNING,
+        `[updateAutoLaunch]: Failed to enable auto launching ${err}`
+      )
+      console.error('Error updating auto launch:', err)
     }
   }
-
   /**
    * Saves the current settings to file. Emits an update if settings are passed
    * @param settings - Overrides the current settings with the passed settings if passed
@@ -143,8 +150,8 @@ class SettingsStore {
         this.settings = settings as Settings
       }
 
-      writeToFile(this.settings, this.settingsFilePath)
-      loggingStore.log(
+      await writeToFile(this.settings, this.settingsFilePath)
+      Logger.log(
         MESSAGE_TYPES.LOGGING,
         'SETTINGS: Updated settings!' + JSON.stringify(this.settings)
       )

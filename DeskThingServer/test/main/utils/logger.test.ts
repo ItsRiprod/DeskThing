@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import fs from 'fs'
-import LoggingStore, { ResponseLogger } from '@server/stores/loggingStore'
+import Logger, { ResponseLogger } from '@server/utils/logger'
 import { MESSAGE_TYPES, LOGGING_LEVEL } from '@shared/types'
 
 vi.mock('fs')
@@ -17,7 +17,7 @@ vi.mock('@server/stores/settingsStore', () => ({
   }
 }))
 
-describe('LoggingStore', () => {
+describe('Logger', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(fs.writeFileSync).mockImplementation(() => undefined)
@@ -30,7 +30,7 @@ describe('LoggingStore', () => {
 
   describe('Log Level Filtering', () => {
     it('should not log LOGGING messages when logLevel is PRODUCTION', async () => {
-      const store = LoggingStore
+      const store = Logger
       store.setLogLevel(LOGGING_LEVEL.PRODUCTION)
       const consoleSpy = vi.spyOn(console, 'log')
 
@@ -40,7 +40,7 @@ describe('LoggingStore', () => {
     })
 
     it('should log non-LOGGING messages in PRODUCTION mode', async () => {
-      const store = LoggingStore
+      const store = Logger
       store.setLogLevel(LOGGING_LEVEL.PRODUCTION)
       const consoleSpy = vi.spyOn(console, 'log')
 
@@ -64,16 +64,14 @@ describe('LoggingStore', () => {
       )
       const consoleSpy = vi.spyOn(console, 'error')
 
-      await expect(LoggingStore.log(MESSAGE_TYPES.ERROR, 'test error')).rejects.toThrow(
-        'Write error'
-      )
+      await expect(Logger.log(MESSAGE_TYPES.ERROR, 'test error')).rejects.toThrow('Write error')
 
       expect(consoleSpy).toHaveBeenCalledWith('Failed to write to log file:', mockError)
     })
     it('should return empty array when log file does not exist', async () => {
       vi.mocked(fs.existsSync).mockReturnValue(false)
 
-      const logs = await LoggingStore.getLogs()
+      const logs = await Logger.getLogs()
 
       expect(logs).toEqual([])
     })
@@ -83,7 +81,7 @@ describe('LoggingStore', () => {
     it('should notify multiple listeners with log data', async () => {
       const listener1 = vi.fn()
       const listener2 = vi.fn()
-      const store = LoggingStore
+      const store = Logger
 
       vi.mocked(fs.writeFile).mockImplementation((_, __, callback: any) => callback(null))
       vi.mocked(fs.appendFile).mockImplementation((_, __, callback: any) => callback(null))
@@ -101,7 +99,7 @@ describe('LoggingStore', () => {
     it('should log response data and call original reply function', async () => {
       const mockReply = vi.fn()
       const wrappedReply = ResponseLogger(mockReply)
-      const logSpy = vi.spyOn(LoggingStore, 'log')
+      const logSpy = vi.spyOn(Logger, 'log')
 
       await wrappedReply('test-channel', {
         data: { success: true },

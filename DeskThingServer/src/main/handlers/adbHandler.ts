@@ -2,7 +2,7 @@ console.log('[ADB Handler] Starting')
 import path from 'path'
 import { execFile } from 'child_process'
 import getPlatform from '@server/utils/get-platform'
-import { loggingStore } from '@server/stores'
+import Logger from '@server/utils/logger'
 import settingsStore from '../stores/settingsStore'
 import { ReplyFn, MESSAGE_TYPES } from '@shared/types'
 
@@ -40,7 +40,7 @@ const splitArgs = (str: string): string[] => {
 export const handleAdbCommands = async (command: string, replyFn?: ReplyFn): Promise<string> => {
   const settings = await settingsStore.getSettings()
   const useGlobalADB = settings.globalADB === true
-  loggingStore.log(MESSAGE_TYPES.LOGGING, useGlobalADB ? 'Using Global ADB' : 'Using Local ADB')
+  Logger.info(useGlobalADB ? 'Using Global ADB' : 'Using Local ADB')
   return new Promise((resolve, reject) => {
     execFile(
       useGlobalADB ? 'adb' : adbPath,
@@ -55,7 +55,7 @@ export const handleAdbCommands = async (command: string, replyFn?: ReplyFn): Pro
               final: false,
               error: stderr
             })
-          loggingStore.log(MESSAGE_TYPES.ERROR, `ADB Error: ${stderr}, ${command}, ${adbPath}`)
+          Logger.log(MESSAGE_TYPES.ERROR, `ADB Error: ${stderr}, ${command}, ${adbPath}`)
           reject(`ADB Error: ${stderr}, ${command}, ${adbPath}`)
         } else {
           replyFn &&

@@ -15,7 +15,7 @@
 
 console.log('[Config Handler] Starting')
 import { AppData, App, MESSAGE_TYPES, AppManifest } from '@shared/types'
-import { loggingStore } from '@server/stores'
+import Logger from '@server/utils/logger'
 import { readFromFile, writeToFile } from '../../utils/fileHandler'
 import { verifyAppDataStructure, verifyAppStructure } from './appServiceUtils'
 
@@ -28,18 +28,18 @@ const defaultData: AppData = {}
  *
  * @returns {AppData} The application data read from the file, or the default data if the file does not exist or there is an error.
  */
-const readData = (): AppData => {
+const readData = async (): Promise<AppData> => {
   const dataFilePath = 'apps.json'
   try {
-    const data = readFromFile<AppData>(dataFilePath)
-    const apps = verifyAppDataStructure(data || undefined)
+    const data = (await readFromFile<AppData>(dataFilePath)) || undefined
+    verifyAppDataStructure(data)
     // If data is of type AppData, return it
-    return apps
+    return data
   } catch (err) {
     if (err instanceof Error) {
-      loggingStore.log(MESSAGE_TYPES.WARNING, '[ReadData] Failed with ' + err.message)
+      Logger.log(MESSAGE_TYPES.WARNING, '[ReadData] Failed with ' + err.message)
     } else {
-      loggingStore.log(
+      Logger.log(
         MESSAGE_TYPES.WARNING,
         '[ReadData] Failed with unknown error. See full logs for details'
       )
@@ -50,18 +50,20 @@ const readData = (): AppData => {
 }
 
 /**
- * Writes the provided `AppData` object to a file named 'apps.json'. If the write is successful, it also sends the data to the web UI via the `sendIpcData` function. If there is an error writing the data, it logs the error to the `loggingStore`.
+ * Writes the provided `AppData` object to a file named 'apps.json'. If the write is successful, it also sends the data to the web UI via the `sendIpcData` function. If there is an error writing the data, it logs the error to the `Logger`.
  *
  * @param {AppData} data - The `AppData` object to be written to the file.
  * @returns {void}
  */
-const writeData = (data: AppData): void => {
+const writeData = async (data: AppData): Promise<void> => {
   try {
-    console.log('[Config Handler] Writing data')
-    const apps = verifyAppDataStructure(data)
-    writeToFile<AppData>(apps, 'apps.json')
+    Logger.log(MESSAGE_TYPES.LOGGING, '[Config Handler] Writing data')
+
+    verifyAppDataStructure(data)
+
+    await writeToFile<AppData>(data, 'apps.json')
   } catch (err) {
-    loggingStore.error('[writeData] Error writing data' + err)
+    Logger.error('[writeData] Error writing data' + err)
     console.error('Error writing data:', err)
   }
 }
@@ -73,10 +75,10 @@ const writeData = (data: AppData): void => {
  * @returns {Promise<void>} - A Promise that resolves when the data has been written to the file.
  */
 export const setAppData = async (newApp: Partial<App>): Promise<void> => {
-  const data = readData()
+  const data = await readData()
 
   if (!newApp.name) {
-    loggingStore.log(MESSAGE_TYPES.WARNING, 'Unable to save app. Missing name!')
+    Logger.log(MESSAGE_TYPES.WARNING, 'Unable to save app. Missing name!')
     return
   }
 
@@ -88,10 +90,21 @@ export const setAppData = async (newApp: Partial<App>): Promise<void> => {
     data[newApp.name] = { ...existingApp, ...newApp }
   } else {
     // Add new app
-    const verApp = verifyAppStructure(newApp)
-    data[verApp.name] = verApp
+    try {
+      verifyAppStructure(newApp)
+      data[newApp.name] = newApp
+    } catch (error) {
+      if (error instanceof Error) {
+        Logger.log(MESSAGE_TYPES.ERROR, `Failed to save app: ${error.message}`)
+        console.error('App save error:', error.stack)
+      } else {
+        Logger.log(MESSAGE_TYPES.ERROR, 'Failed to save app: Unknown error occurred')
+        console.error('Unexpected app save error:', error)
+      }
+      return
+    }
   }
-  writeData(data)
+  await writeData(data)
 }
 
 /**
@@ -107,7 +120,7 @@ export const setAppsData = async (appsList: App[]): Promise<void> => {
     newAppData[app.name] = app
   })
 
-  writeData(newAppData)
+  await writeData(newAppData)
 }
 
 /**
@@ -117,22 +130,19 @@ export const setAppsData = async (appsList: App[]): Promise<void> => {
  * @param {string} appName - The name of the application to update.
  * @returns {void}
  */
-export const addAppManifest = (manifest: AppManifest, appName: string): void => {
-  const data = readData()
+export const addAppManifest = async (manifest: AppManifest, appName: string): Promise<void> => {
+  const data = await readData()
 
-  loggingStore.log(MESSAGE_TYPES.LOGGING, `Adding manifest for ${appName} in the config file`)
+  Logger.log(MESSAGE_TYPES.LOGGING, `Adding manifest for ${appName} in the config file`)
   // Find existing app by name
   if (data[appName]) {
     // Update existing app
     data[appName].manifest = manifest
   } else {
     // Add new app
-    loggingStore.log(
-      MESSAGE_TYPES.ERROR,
-      `Adding manifest for ${appName} failed! App does not exist!`
-    )
+    Logger.log(MESSAGE_TYPES.ERROR, `Adding manifest for ${appName} failed! App does not exist!`)
   }
-  writeData(data)
+  await writeData(data)
 }
 
 /**
@@ -140,8 +150,8 @@ export const addAppManifest = (manifest: AppManifest, appName: string): void => 
  *
  * @returns {AppData} The application data.
  */
-export const getAppData = (): AppData => {
-  const data = readData()
+export const getAppData = async (): Promise<AppData> => {
+  const data = await readData()
   return data
 }
 
@@ -151,8 +161,8 @@ export const getAppData = (): AppData => {
  * @param appName - The name of the application to retrieve.
  * @returns The application if found, or `undefined` if not found.
  */
-export const getAppByName = (appName: string): App | undefined => {
-  const data = getAppData()
+export const getAppByName = async (appName: string): Promise<App | undefined> => {
+  const data = await getAppData()
 
   // Find the app by name in the apps array
   const foundApp = data[appName]
@@ -168,17 +178,17 @@ export const getAppByName = (appName: string): App | undefined => {
  */
 export const purgeAppConfig = async (appName: string): Promise<void> => {
   try {
-    loggingStore.log(MESSAGE_TYPES.LOGGING, `Purging app: ${appName}`)
-    const data = readData()
+    Logger.log(MESSAGE_TYPES.LOGGING, `Purging app: ${appName}`)
+    const data = await readData()
 
     if (!data[appName]) {
       throw new Error(`App ${appName} not found`)
     }
 
     delete data[appName]
-    writeData(data)
+    await writeData(data)
   } catch (error) {
-    loggingStore.log(MESSAGE_TYPES.ERROR, `Failed to purge app ${appName}: ${error}`)
+    Logger.log(MESSAGE_TYPES.ERROR, `Failed to purge app ${appName}: ${error}`)
     throw error
   }
 }

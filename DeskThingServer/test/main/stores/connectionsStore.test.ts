@@ -3,7 +3,7 @@ import { Client } from '@shared/types'
 import connectionStore from '@server/stores/connectionsStore'
 
 vi.mock('@server/stores/', () => ({
-  loggingStore: {
+  Logger: {
     log: vi.fn()
   },
   settingsStore: {

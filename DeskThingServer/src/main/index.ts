@@ -268,11 +268,11 @@ async function initializeDoc(): Promise<void> {
 async function setupIpcHandlers(): Promise<void> {
   // Import required stores
   const { default: settingsStore } = await import('./stores/settingsStore')
-  const { default: loggingStore, ResponseLogger } = await import('./stores/loggingStore')
+  const { default: Logger, ResponseLogger } = await import('./utils/logger')
   // Default handler for unimplemented IPC messages
   const defaultHandler = async (data: AppIPCData): Promise<void> => {
     console.error(`No handler implemented for type: ${data.type} ${data}`)
-    loggingStore.log(MESSAGE_TYPES.ERROR, `No handler implemented for type: ${data.type}`)
+    Logger.log(MESSAGE_TYPES.ERROR, `No handler implemented for type: ${data.type}`)
   }
 
   // Handle app-related IPC messages
@@ -289,7 +289,7 @@ async function setupIpcHandlers(): Promise<void> {
       }
     } catch (error) {
       console.error('Error in IPC handler:', error)
-      loggingStore.log(MESSAGE_TYPES.ERROR, `Error in IPC handler: ${error}`)
+      Logger.log(MESSAGE_TYPES.ERROR, `Error in IPC handler: ${error}`)
     }
   })
 
@@ -307,7 +307,7 @@ async function setupIpcHandlers(): Promise<void> {
       }
     } catch (error) {
       console.error('Error in IPC handler:', error)
-      loggingStore.log(MESSAGE_TYPES.ERROR, `Error in IPC handler: ${error}`)
+      Logger.log(MESSAGE_TYPES.ERROR, `Error in IPC handler: ${error}`)
     }
   })
 
@@ -326,7 +326,7 @@ async function setupIpcHandlers(): Promise<void> {
       }
     } catch (error) {
       console.error('Error in IPC handler:', error)
-      loggingStore.log(MESSAGE_TYPES.ERROR, `Error in IPC handler: ${error}`)
+      Logger.log(MESSAGE_TYPES.ERROR, `Error in IPC handler: ${error}`)
     }
   })
 
@@ -372,7 +372,7 @@ async function setupIpcHandlers(): Promise<void> {
     })
 
     appStore.on('apps', (apps: App[]) => {
-      loggingStore.debug('[INDEX]: Sending updated app information with type app-data')
+      Logger.debug('[INDEX]: Sending updated app information with type app-data')
       sendIpcData({
         type: 'app-data',
         payload: apps
@@ -388,7 +388,7 @@ async function setupIpcHandlers(): Promise<void> {
   })
 
   // Set up logging store listener
-  loggingStore.addListener((errorData) => {
+  Logger.addListener((errorData) => {
     sendIpcData({
       type: 'log',
       payload: errorData
@@ -404,7 +404,7 @@ async function setupIpcHandlers(): Promise<void> {
   })
 
   import('./services/updater/autoUpdater').then(async ({ checkForUpdates }) => {
-    loggingStore.log(MESSAGE_TYPES.LOGGING, '[INDEX] Checking for updates...')
+    Logger.info('[INDEX] Checking for updates...')
     checkForUpdates()
   })
 }
@@ -453,10 +453,14 @@ if (!app.requestSingleInstanceLock()) {
     // Create main window and set up handlers
     mainWindow = createMainWindow()
 
-    mainWindow.once('ready-to-show', () => {
+    mainWindow.on('ready-to-show', () => {
+      mainWindow?.show()
+    })
+
+    setTimeout(() => {
       loadModules()
       setupIpcHandlers()
-    })
+    }, 10)
 
     // Handle window recreation on macOS
     app.on('activate', function () {
@@ -509,10 +513,6 @@ async function loadModules(): Promise<void> {
 
     import('./services/client/websocket').then(({ restartServer }) => {
       restartServer()
-    })
-
-    import('./services/apps').then(({ loadAndRunEnabledApps }) => {
-      loadAndRunEnabledApps()
     })
 
     import('./stores/musicStore')

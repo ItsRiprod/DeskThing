@@ -41,7 +41,7 @@ vi.mock('@server/index', () => ({
   default: vi.fn()
 }))
 
-vi.mock('@server/stores/loggingStore', () => ({
+vi.mock('@server/stores/Logger', () => ({
   default: {
     log: vi.fn(),
     getInstance: (): { log: Mock } => ({

@@ -131,28 +131,28 @@ describe('writeToGlobalFile', () => {
 })
 
 describe('readFromGlobalFile', () => {
-  it('should successfully read and parse global file', () => {
+  it('should successfully read and parse global file', async () => {
     const mockData = { key: 'value' }
     vi.mocked(fs.existsSync).mockReturnValue(true)
     vi.mocked(fs.readFileSync).mockReturnValue(Buffer.from(JSON.stringify(mockData)))
 
-    const result = readFromGlobalFile<typeof mockData>('test.json')
+    const result = await readFromGlobalFile<typeof mockData>('test.json')
     expect(result).toEqual(mockData)
     expect(fs.readFileSync).toHaveBeenCalledWith('\\mock\\user\\data\\test.json')
   })
 
-  it('should return false when global file does not exist', () => {
+  it('should return false when global file does not exist', async () => {
     vi.mocked(fs.existsSync).mockReturnValue(false)
 
-    const result = readFromGlobalFile('test.json')
+    const result = await readFromGlobalFile('test.json')
     expect(result).toBe(false)
   })
 
-  it('should return false when global file parsing fails', () => {
+  it('should return false when global file parsing fails', async () => {
     vi.mocked(fs.existsSync).mockReturnValue(true)
     vi.mocked(fs.readFileSync).mockReturnValue(Buffer.from('invalid json'))
 
-    const result = readFromGlobalFile('test.json')
+    const result = await readFromGlobalFile('test.json')
     expect(result).toBe(false)
   })
 })

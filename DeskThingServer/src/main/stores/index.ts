@@ -1,4 +1,3 @@
-export { default as loggingStore } from './loggingStore'
 export { default as connectionStore } from './connectionsStore'
 export { default as appStore } from './appStore'
 export { default as mappingStore } from './mappingStore'

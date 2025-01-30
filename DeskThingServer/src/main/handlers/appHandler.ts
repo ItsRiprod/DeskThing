@@ -18,7 +18,8 @@ import {
   AppSettings,
   AppManifest
 } from '@shared/types'
-import { loggingStore, appStore } from '@server/stores'
+import { appStore } from '@server/stores'
+import Logger from '@server/utils/logger'
 import { dialog, BrowserWindow } from 'electron'
 
 /**
@@ -234,7 +235,7 @@ export const appHandler: Record<
 
   staged: async (data, reply) => {
     reply('logging', { status: true, data: `Handling staged app...`, final: false })
-    loggingStore.log(
+    Logger.log(
       MESSAGE_TYPES.LOGGING,
       `Handling staged app with id "${data.payload.appId || 'Unknwon'}" and overwrite set to ${data.payload.overwrite ? 'true' : 'false'}...`
     )
@@ -259,11 +260,7 @@ export const appHandler: Record<
     return { path: filePath, name: path.basename(filePath) }
   },
   'dev-add-app': async (data, replyFn) => {
-    loggingStore.log(
-      MESSAGE_TYPES.ERROR,
-      'Developer App Not implemented Yet ',
-      data.payload.appPath
-    )
+    Logger.log(MESSAGE_TYPES.ERROR, 'Developer App Not implemented Yet ', data.payload.appPath)
     // await appStore.run('developer-app', appPath)
     replyFn('logging', { status: true, data: 'Finished', final: true })
   },
@@ -305,10 +302,7 @@ const setAppSettings = async (
   settings: AppSettings
 ): Promise<void> => {
   const { appStore } = await import('@server/stores')
-  loggingStore.log(
-    MESSAGE_TYPES.LOGGING,
-    '[setAppSettings]: Saving ' + appId + "'s data " + settings
-  )
+  Logger.info('[setAppSettings]: Saving ' + appId + "'s data " + settings)
   appStore.addSettings(appId, settings)
   replyFn('logging', { status: true, data: 'Finished', final: true })
 }
@@ -319,7 +313,7 @@ const setAppData = async (
   appData: { [key: string]: string }
 ): Promise<void> => {
   const { appStore } = await import('@server/stores')
-  loggingStore.log(MESSAGE_TYPES.LOGGING, '[setAppData]: Saving ' + appId + "'s data " + appData)
+  Logger.info('[setAppData]: Saving ' + appId + "'s data " + appData)
   appStore.addData(appId, appData)
   replyFn('logging', { status: true, data: 'Finished', final: true })
 }
@@ -338,7 +332,7 @@ const getAppSettings = async (replyFn, payload): Promise<AppSettings | null> => 
     replyFn('logging', { status: true, data: 'Finished', final: true })
     return data || null
   } catch (error) {
-    loggingStore.log(MESSAGE_TYPES.ERROR, '[getAppSettings]: Error getting settings' + error)
+    Logger.log(MESSAGE_TYPES.ERROR, '[getAppSettings]: Error getting settings' + error)
     console.error('Error setting app settings:', error)
     replyFn('logging', { status: false, data: 'Unfinished', error: error, final: true })
     return null
@@ -358,7 +352,7 @@ const getAppData = async (replyFn, payload): Promise<{ [key: string]: string } |
     replyFn('logging', { status: true, data: 'Finished', final: true })
     return data || null
   } catch (error) {
-    loggingStore.log(MESSAGE_TYPES.ERROR, '[getAppData]: Error getting app data' + error)
+    Logger.log(MESSAGE_TYPES.ERROR, '[getAppData]: Error getting app data' + error)
     console.error('Error setting app settings:', error)
     replyFn('logging', { status: false, data: 'Unfinished', error: error, final: true })
     return null

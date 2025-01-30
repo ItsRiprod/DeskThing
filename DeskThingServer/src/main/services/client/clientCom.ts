@@ -1,8 +1,8 @@
 console.log('[ClientCom Service] Starting')
 import { SocketData, MESSAGE_TYPES, SongData, AppSettings } from '@shared/types'
 import { server, Clients } from './websocket'
-import { loggingStore, connectionStore, appStore } from '@server/stores/'
-
+import { connectionStore, appStore } from '@server/stores/'
+import Logger from '@server/utils/logger'
 /**
  * Handles a client message by dispatching the message to the appropriate handler based on the message type.
  * If the message type is 'song', it calls the `handleMusicMessage` function from the `musicHandler` module.
@@ -30,7 +30,7 @@ export const handleClientMessage = async (data: SocketData): Promise<void> => {
  * @returns - A Promise that resolves when the message has been sent to all clients.
  */
 export const sendMessageToClients = async (data: SocketData): Promise<void> => {
-  loggingStore.log(
+  Logger.log(
     MESSAGE_TYPES.LOGGING,
     `Sending message to clients: ${data.payload ? (JSON.stringify(data.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(data.payload)) : 'undefined'}`
   )
@@ -41,7 +41,7 @@ export const sendMessageToClients = async (data: SocketData): Promise<void> => {
       }
     })
   } else {
-    loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: No server running - setting one up')
+    Logger.info('WSOCKET: No server running - setting one up')
   }
 }
 
@@ -57,13 +57,10 @@ export const disconnectClient = (connectionId: string): void => {
   if (client && server) {
     client.socket.terminate()
     Clients.splice(Clients.indexOf(client), 1)
-    loggingStore.log(MESSAGE_TYPES.LOGGING, `Forcibly disconnected client: ${connectionId}`)
+    Logger.info(`Forcibly disconnected client: ${connectionId}`)
     connectionStore.removeClient(connectionId)
   } else {
-    loggingStore.log(
-      MESSAGE_TYPES.LOGGING,
-      `Client not found or server not running: ${connectionId}`
-    )
+    Logger.info(`Client not found or server not running: ${connectionId}`)
   }
 }
 
@@ -83,7 +80,7 @@ export const sendMessageToClient = (clientId: string | undefined, data: SocketDa
     // Burst the message if there is no client provided
     sendMessageToClients(data)
   } else {
-    loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: No clients connected or server running')
+    Logger.info('WSOCKET: No clients connected or server running')
   }
 }
 
@@ -116,7 +113,7 @@ export const sendConfigData = async (clientId?: string): Promise<void> => {
 
     sendMessageToClient(clientId, { app: 'client', type: 'config', payload: filteredAppData })
 
-    loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Preferences sent!')
+    Logger.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Preferences sent!')
   } catch (error) {
     console.error('WSOCKET: Error getting config data:', error)
     sendError(clientId, 'WSOCKET: Error getting config data')
@@ -154,7 +151,7 @@ export const sendSettingsData = async (clientId?: string): Promise<void> => {
     }
 
     sendMessageToClient(clientId, { app: 'client', type: 'settings', payload: settings })
-    loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Preferences sent!')
+    Logger.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Preferences sent!')
   } catch (error) {
     console.error('WSOCKET: Error getting config data:', error)
     sendError(clientId, 'WSOCKET: Error getting config data')
@@ -170,7 +167,7 @@ export const sendSettingsData = async (clientId?: string): Promise<void> => {
 export const sendSettingData = async (app: string, setting: AppSettings): Promise<void> => {
   try {
     sendMessageToClient(undefined, { app: 'client', type: 'setting', payload: { app, setting } })
-    loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Preferences sent!')
+    Logger.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Preferences sent!')
   } catch (error) {
     console.error('WSOCKET: Error getting config data:', error)
     sendError(undefined, 'WSOCKET: Error getting config data')
@@ -186,8 +183,13 @@ export const sendSettingData = async (app: string, setting: AppSettings): Promis
 export const sendMappings = async (clientId?: string): Promise<void> => {
   try {
     const { default: keyMapStore } = await import('@server/stores/mappingStore')
-    const mappings = keyMapStore.getMapping()
-    const actions = keyMapStore.getActions()
+    const mappings = await keyMapStore.getMapping()
+    const actions = await keyMapStore.getActions()
+
+    if (!mappings) {
+      Logger.log(MESSAGE_TYPES.WARNING, '[WSOCKET.sendMappings]: No mappings found!')
+      return
+    }
 
     const combinedActions = {
       ...mappings,
@@ -200,10 +202,7 @@ export const sendMappings = async (clientId?: string): Promise<void> => {
       payload: combinedActions
     })
 
-    loggingStore.log(
-      MESSAGE_TYPES.LOGGING,
-      `WEBSOCKET: Client has been sent button map ${mappings.id}!`
-    )
+    Logger.log(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Client has been sent button map ${mappings.id}!`)
   } catch (error) {
     console.error('WSOCKET: Error getting button mappings:', error)
     sendError(clientId, 'WSOCKET: Error getting button mappings')

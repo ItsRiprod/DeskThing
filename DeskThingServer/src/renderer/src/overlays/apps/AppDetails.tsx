@@ -4,6 +4,8 @@ import { AppSettingProps } from './AppsOverlay'
 const AppDetails: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
   if (!app.manifest) return null
 
+  console.log(app)
+
   return (
     <div className="w-full h-full p-4 flex flex-col divide-y-2 divide-gray-500">
       <div className="w-full bg-black shadow-2xl rounded-2xl p-5">
@@ -21,13 +23,14 @@ const AppDetails: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
           <AppDetail title="Version" value={app.manifest.version} />
           <AppDetail title="Author" value={app.manifest.author} />
           <AppDetail title="ID" value={app.manifest.id} />
+          <AppDetail title="Label" value={app.manifest.label} />
           <AppDetail title="Webapp" value={app.manifest.isWebApp ? 'Yes' : 'No'} />
           <AppDetail title="Screensaver" value={app.manifest.isScreenSaver ? 'Yes' : 'No'} />
           <AppDetail title="Local App" value={app.manifest.isLocalApp ? 'Yes' : 'No'} />
           <AppDetail title="Is Audio Source" value={app.manifest.isAudioSource ? 'Yes' : 'No'} />
-          <AppDetail title="Supported Platforms" value={app.manifest.platforms.join(', ')}>
+          <AppDetail title="Supported Platforms" value={app.manifest.platforms?.join(', ')}>
             <div className="flex flex-col gap-2">
-              {app.manifest.platforms.map((platform, index) => (
+              {app.manifest.platforms?.map((platform, index) => (
                 <div key={index} className="flex items-center gap-2">
                   <p>{platform}</p>
                 </div>
@@ -54,6 +57,40 @@ const AppDetails: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
               {app.manifest.repository}
             </a>
           </AppDetail>
+          <AppDetail title="Update URL" value={app.manifest.updateUrl}>
+            <a
+              href={app.manifest.updateUrl}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="text-blue-500 hover:text-blue-400"
+            >
+              {app.manifest.updateUrl}
+            </a>
+          </AppDetail>
+          <AppDetail title="Tags" value={app.manifest.tags.join(', ')}>
+            <div className="flex flex-col gap-2">
+              {app.manifest.tags.map((tag, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <p>{tag}</p>
+                </div>
+              ))}
+            </div>
+          </AppDetail>
+          <AppDetail
+            title="Required Server Version"
+            value={app.manifest.requiredVersions?.server}
+          />
+          <AppDetail
+            title="Required Client Version"
+            value={app.manifest.requiredVersions?.client}
+          />
+          <AppDetail title="Template" value={app.manifest.template} />
+          <AppDetail title="Version Code" value={app.manifest.version_code?.toString()} />
+          <AppDetail title="Compatible Server" value={app.manifest.compatible_server?.join(', ')} />
+          <AppDetail
+            title="Compatible Client"
+            value={app.manifest.compatible_client?.join(', ')}
+          />{' '}
         </div>
       </div>
     </div>

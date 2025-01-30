@@ -15,12 +15,17 @@ const AppActions: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
   const disableApp = useAppStore((state) => state.disableApp)
   const enableApp = useAppStore((state) => state.enableApp)
   const actions = useMappingStore((state) => state.actions)
+  const fetchActions = useMappingStore((state) => state.getActions)
 
   const [availableActions, setAvailableActions] = useState<Action[]>([])
 
   useEffect(() => {
     setAvailableActions(actions.filter((action) => action.source === app.name))
   }, [actions])
+
+  useEffect(() => {
+    fetchActions()
+  }, [])
 
   const handlePurge = (): void => {
     window.electron.purgeApp(app.name)

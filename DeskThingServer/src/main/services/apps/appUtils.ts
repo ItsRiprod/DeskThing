@@ -1,9 +1,10 @@
 console.log('[AppUtils Service] Starting')
-import { AppManifest, MESSAGE_TYPES, TagTypes } from '@shared/types'
+import { AppManifest, MESSAGE_TYPES } from '@shared/types'
 import { join } from 'path'
 import { existsSync, promises } from 'node:fs'
-import { loggingStore } from '@server/stores/'
+import Logger from '@server/utils/logger'
 import { app } from 'electron'
+import { constructManifest } from '../files/appServiceUtils'
 
 /**
  * Retrieves and parses the manifest file for an app.
@@ -15,7 +16,7 @@ import { app } from 'electron'
  */
 export const getManifest = async (fileLocation: string): Promise<AppManifest | undefined> => {
   try {
-    loggingStore.log(MESSAGE_TYPES.LOGGING, '[getManifest] Getting manifest for app')
+    Logger.info('[getManifest] Getting manifest for app')
     const manifestPath = join(fileLocation, 'manifest.json')
     if (!existsSync(manifestPath)) {
       throw new Error('manifest.json not found after extraction')
@@ -24,36 +25,8 @@ export const getManifest = async (fileLocation: string): Promise<AppManifest | u
     const manifest = await promises.readFile(manifestPath, 'utf8')
     const parsedManifest = JSON.parse(manifest)
 
-    const returnData: AppManifest = {
-      id: parsedManifest?.id || 'unknown',
-      requires: parsedManifest?.requires || [],
-      label: parsedManifest?.label || 'Unknown App',
-      version: parsedManifest?.version || '0.0.0',
-      description: parsedManifest?.description || 'No description available',
-      author: parsedManifest?.author || 'Unknown Author',
-      platforms: parsedManifest?.platforms || [],
-      tags:
-        parsedManifest?.tags ||
-        [
-          parsedManifest?.isAudioSource && TagTypes.AUDIO_SOURCE,
-          parsedManifest?.isScreenSaver && TagTypes.SCREEN_SAVER
-        ].filter(Boolean),
-      requiredVersions: {
-        client: parsedManifest?.requiredVersions?.client || '>=0.0.0',
-        server: parsedManifest?.requiredVersions?.server || '>=0.0.0'
-      },
-      homepage: parsedManifest?.homepage || '',
-      repository: parsedManifest?.repository || '',
-      updateUrl: parsedManifest?.updateUrl || parsedManifest?.repository || '',
-      version_code: parsedManifest?.version_code || 0,
-      compatible_server: parsedManifest?.compatible_server || '>=0.0.0',
-      compatible_client: parsedManifest?.compatible_client || '>=0.0.0',
-      isWebApp: parsedManifest?.isWebApp || false,
-      isAudioSource: parsedManifest?.isAudioSource || false,
-      isScreenSaver: parsedManifest?.isScreenSaver || false,
-      isLocalApp: parsedManifest?.isLocalApp || false
-    }
-    loggingStore.log(MESSAGE_TYPES.LOGGING, '[getManifest] Successfully got manifest for app')
+    const returnData: AppManifest = constructManifest(parsedManifest)
+    Logger.info('[getManifest] Successfully got manifest for app')
     return returnData
   } catch (error) {
     console.error('Error getting manifest:', error)
@@ -71,7 +44,7 @@ export const getManifest = async (fileLocation: string): Promise<AppManifest | u
 export function getAppFilePath(appName: string, fileName: string = '/'): string {
   let path
   if (appName == 'developer-app') {
-    loggingStore.log(MESSAGE_TYPES.ERROR, 'Developer app does not exist!')
+    Logger.log(MESSAGE_TYPES.ERROR, 'Developer app does not exist!')
   } else {
     path = join(app.getPath('userData'), 'apps', appName, fileName)
   }

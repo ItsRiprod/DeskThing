@@ -18,7 +18,7 @@ vi.mock('@server/utils/fileHandler', () => ({
 }))
 
 vi.mock('@server/stores/', () => ({
-  loggingStore: {
+  Logger: {
     log: vi.fn()
   }
 }))

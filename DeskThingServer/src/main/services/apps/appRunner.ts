@@ -1,5 +1,5 @@
 console.log('[AppRnr Service] Starting')
-import { loggingStore } from '@server/stores/'
+import Logger from '@server/utils/logger'
 import { MESSAGE_TYPES } from '@shared/types'
 
 /**
@@ -13,7 +13,9 @@ export async function loadAndRunEnabledApps(): Promise<void> {
 
   try {
     const appInstances = appStore.getAll()
-    loggingStore.log(MESSAGE_TYPES.LOGGING, 'SERVER: Loaded apps config. Running apps...')
+    Logger.info('Loaded apps config. Running apps...', {
+      source: 'loadAndRunEnabledApps'
+    })
 
     // Only include enabled apps
     const enabledApps = appInstances.filter((appConfig) => appConfig.enabled === true)
@@ -21,10 +23,9 @@ export async function loadAndRunEnabledApps(): Promise<void> {
     // Run all of the enabled apps
     await Promise.all(
       enabledApps.map(async (appConfig) => {
-        loggingStore.log(
-          MESSAGE_TYPES.LOGGING,
-          `SERVER: Automatically running app ${appConfig.name}`
-        )
+        Logger.info(`Automatically running app ${appConfig.name}`, {
+          source: 'loadAndRunEnabledApps'
+        })
         await appStore.run(appConfig.name)
       })
     )
@@ -33,11 +34,16 @@ export async function loadAndRunEnabledApps(): Promise<void> {
 
     await Promise.all(
       failedApps.map(async (failedApp) => {
-        loggingStore.log(MESSAGE_TYPES.LOGGING, `SERVER: Attempting to run ${failedApp.name} again`)
+        Logger.info(`SERVER: Attempting to run ${failedApp.name} again`, {
+          source: 'loadAndRunEnabledApps'
+        })
         await appStore.run(failedApp.name)
       })
     )
   } catch (error) {
-    loggingStore.log(MESSAGE_TYPES.ERROR, `SERVER: Error loading and running enabled apps`)
+    Logger.log(MESSAGE_TYPES.ERROR, `SERVER: Error loading and running enabled apps`, {
+      source: 'loadAndRunEnabledApps',
+      error: error as Error
+    })
   }
 }

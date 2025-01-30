@@ -6,13 +6,8 @@ import {
   MESSAGE_TYPES,
   Profile
 } from '@shared/types'
-import { loggingStore } from '@server/stores/'
-import {
-  readFromFile,
-  readFromGlobalFile,
-  writeToFile,
-  writeToGlobalFile
-} from '@server/utils/fileHandler'
+import Logger from '@server/utils/logger'
+import { readFromFile, writeToFile } from '@server/utils/fileHandler'
 import { defaultData } from '@server/static/defaultMapping'
 import { isValidButtonMapping, isValidFileStructure, isValidMappingStructure } from './utilsMaps'
 import path from 'path'
@@ -22,33 +17,30 @@ import path from 'path'
  * @returns {Promise<MappingStructure>} The validated mapping data.
  */
 export const loadMappings = async (): Promise<MappingStructure> => {
-  const data = readFromFile<MappingFileStructure>(path.join('mappings', 'mappings.json'))
+  const data = await readFromFile<MappingFileStructure>(path.join('mappings', 'mappings.json'))
   if (!data || data?.version !== defaultData.version) {
-    loggingStore.log(
+    Logger.log(
       MESSAGE_TYPES.ERROR,
       `MAPHANDLER: Mappings file is corrupt or does not exist, using default`
     )
-    saveMappings(defaultData)
+    await saveMappings(defaultData)
     return defaultData
   }
 
   if (!isValidFileStructure(data)) {
-    loggingStore.log(
+    Logger.log(
       MESSAGE_TYPES.ERROR,
       `MAPHANDLER: Mappings file is corrupt or does not exist, using default`
     )
-    saveMappings(defaultData)
+    await saveMappings(defaultData)
     return defaultData
   }
 
   const parsedData = await fetchProfiles(data)
 
   if (!(await isValidMappingStructure(parsedData))) {
-    loggingStore.log(
-      MESSAGE_TYPES.ERROR,
-      `MAPHANDLER: Mappings file is corrupt, resetting to default`
-    )
-    saveMappings(defaultData)
+    Logger.log(MESSAGE_TYPES.ERROR, `MAPHANDLER: Mappings file is corrupt, resetting to default`)
+    await saveMappings(defaultData)
     return defaultData
   }
   return parsedData
@@ -69,10 +61,7 @@ const fetchProfiles = async (fileData: MappingFileStructure): Promise<MappingStr
         // Return profile data in key-value format
         return { [profile.id]: data }
       } else {
-        loggingStore.log(
-          MESSAGE_TYPES.WARNING,
-          `FILEMAPS: Unable to fetch profile of ${profile.id}!`
-        )
+        Logger.log(MESSAGE_TYPES.WARNING, `FILEMAPS: Unable to fetch profile of ${profile.id}!`)
         // Return null for failed profile loads
         return null
       }
@@ -102,14 +91,14 @@ const saveProfiles = async (mappingData: MappingStructure): Promise<MappingFileS
       try {
         // Save each profile to a .json file named after its id (e.g. 'default' -> 'default.json')
         console.log('Writing map: ', profile.id, ' to file')
-        writeToFile<ButtonMapping>(profile, path.join('mappings', `${profile.id}.json`))
+        await writeToFile<ButtonMapping>(profile, path.join('mappings', `${profile.id}.json`))
         return { ...profile, mapping: undefined }
       } catch (error) {
         if (error instanceof Error) {
-          loggingStore.log(MESSAGE_TYPES.WARNING, '[saveProfiles] failed with ' + error.message)
+          Logger.log(MESSAGE_TYPES.WARNING, '[saveProfiles] failed with ' + error.message)
         } else {
           console.error(error)
-          loggingStore.log(
+          Logger.log(
             MESSAGE_TYPES.ERROR,
             '[saveProfiles] failed in an unknown way. Please consult the log for full error'
           )
@@ -132,22 +121,22 @@ export const saveMappings = async (mapping: MappingStructure): Promise<void> => 
   const isValidMapping = await isValidMappingStructure(mapping)
   let saveData: MappingFileStructure | undefined
   if (isValidMapping) {
-    loggingStore.log(MESSAGE_TYPES.LOGGING, `MAPHANDLER: Saving button mapping`)
+    Logger.log(MESSAGE_TYPES.LOGGING, `MAPHANDLER: Saving button mapping`)
     saveData = await saveProfiles(mapping)
   } else {
-    loggingStore.log(
+    Logger.log(
       MESSAGE_TYPES.ERROR,
       `MAPHANDLER: Unable to save mappings. Something is corrupted. Resetting to default`
     )
     saveData = await saveProfiles(defaultData)
   }
   try {
-    writeToFile(saveData, path.join('mappings', 'mappings.json'))
+    await writeToFile(saveData, path.join('mappings', 'mappings.json'))
   } catch (error) {
     if (error instanceof Error) {
-      loggingStore.log(MESSAGE_TYPES.WARNING, '[saveMappings] failed with ' + error.message)
+      Logger.log(MESSAGE_TYPES.WARNING, '[saveMappings] failed with ' + error.message)
     } else {
-      loggingStore.log(
+      Logger.log(
         MESSAGE_TYPES.WARNING,
         '[saveMappings] failed with unknown error. See extended logs for details'
       )
@@ -163,9 +152,16 @@ export const saveMappings = async (mapping: MappingStructure): Promise<void> => 
  * @returns {Promise<void>} A promise that resolves when the profile has been exported.
  */
 export const exportProfile = async (profile: ButtonMapping, filePath: string): Promise<void> => {
-  writeToGlobalFile<ButtonMapping>(profile, filePath)
-
-  loggingStore.log(MESSAGE_TYPES.LOGGING, `MAPHANDLER: Profile ${profile} exported to ${filePath}`)
+  try {
+    await writeToFile<ButtonMapping>(profile, filePath)
+    Logger.log(MESSAGE_TYPES.LOGGING, `MAPHANDLER: Profile ${profile} exported to ${filePath}`)
+  } catch (error) {
+    Logger.error('Failed to export profile', {
+      error: error as Error,
+      function: 'exportProfile',
+      source: 'FileHandler'
+    })
+  }
 }
 
 /**
@@ -179,25 +175,30 @@ export const importProfile = async (
   profileName: string
 ): Promise<ButtonMapping | void> => {
   // Load profile data from the file
-  const profileData = readFromGlobalFile<ButtonMapping>(filePath)
+  try {
+    const profileData = await readFromFile<ButtonMapping>(filePath)
 
-  if (!profileData) {
-    loggingStore.log(
-      MESSAGE_TYPES.ERROR,
-      `MAPHANDLER: Failed to load profile data from ${filePath}`
+    if (!profileData) {
+      Logger.log(MESSAGE_TYPES.ERROR, `MAPHANDLER: Failed to load profile data from ${filePath}`)
+      return
+    }
+
+    if (!isValidButtonMapping(profileData)) {
+      Logger.log(MESSAGE_TYPES.ERROR, `MAPHANDLER: Invalid profile data in file ${filePath}`)
+      return
+    }
+
+    Logger.log(
+      MESSAGE_TYPES.LOGGING,
+      `MAPHANDLER: Profile ${profileName} imported from ${filePath}`
     )
-    return
+
+    return profileData
+  } catch (error) {
+    Logger.error(`Unable to import profile from ${filePath}`, {
+      error: error as Error,
+      function: 'importProfile',
+      source: 'fileMaps'
+    })
   }
-
-  if (!isValidButtonMapping(profileData)) {
-    loggingStore.log(MESSAGE_TYPES.ERROR, `MAPHANDLER: Invalid profile data in file ${filePath}`)
-    return
-  }
-
-  loggingStore.log(
-    MESSAGE_TYPES.LOGGING,
-    `MAPHANDLER: Profile ${profileName} imported from ${filePath}`
-  )
-
-  return profileData
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach, Mock } from 'vitest'
 import { clearCache, purgeApp } from '@server/services/apps/appManager'
 import fs from 'node:fs'
-import { loggingStore } from '@server/stores'
+import Logger from '@server/utils/logger'
 import { MESSAGE_TYPES, AppInstance } from '@shared/types'
 
 vi.mock('node:fs', () => ({
@@ -32,8 +32,8 @@ vi.mock('node:fs', () => ({
     }
   }
 }))
-vi.mock('@server/stores/', () => ({
-  loggingStore: {
+vi.mock('@server/utils/logger', () => ({
+  Logger: {
     log: vi.fn(),
     getInstance: (): { log: Mock } => ({
       log: vi.fn()
@@ -61,6 +61,7 @@ vi.mock('@server/services/apps/appState', () => ({
         return {
           name: 'Test App',
           enabled: true,
+          timeStarted: 0,
           running: false,
           prefIndex: 0,
           func: {
@@ -86,7 +87,7 @@ describe('AppManager', () => {
     it('should handle empty directory', async () => {
       vi.spyOn(fs, 'readdirSync').mockReturnValue([])
       await clearCache('testApp')
-      expect(loggingStore.log).toHaveBeenCalledWith(
+      expect(Logger.log).toHaveBeenCalledWith(
         MESSAGE_TYPES.WARNING,
         'SERVER: Directory /mock/path is empty'
       )
@@ -111,7 +112,7 @@ describe('AppManager', () => {
       } as fs.Stats)
 
       await clearCache('testApp')
-      expect(loggingStore.log).toHaveBeenCalled()
+      expect(Logger.log).toHaveBeenCalled()
     })
 
     it('should handle errors when clearing cache', async () => {
@@ -120,7 +121,7 @@ describe('AppManager', () => {
       })
 
       await clearCache('testApp')
-      expect(loggingStore.log).toHaveBeenCalledWith(
+      expect(Logger.log).toHaveBeenCalledWith(
         MESSAGE_TYPES.WARNING,
         'SERVER: Directory /mock/path is empty'
       )
@@ -143,10 +144,7 @@ describe('AppManager', () => {
     it('should clean up all app resources', async () => {
       vi.spyOn(fs, 'existsSync').mockReturnValue(true)
       await purgeApp('testApp')
-      expect(loggingStore.log).toHaveBeenCalledWith(
-        MESSAGE_TYPES.LOGGING,
-        'SERVER: Purging App testApp'
-      )
+      expect(Logger.log).toHaveBeenCalledWith(MESSAGE_TYPES.LOGGING, 'SERVER: Purging App testApp')
     })
   })
 })

@@ -12,7 +12,7 @@ import {
 } from '@server/services/task/taskUtils'
 import { STEP_TYPES } from '@shared/types/tasks'
 
-vi.mock('@server/stores/loggingStore', () => ({
+vi.mock('@server/stores/Logger', () => ({
   default: {
     log: vi.fn(),
     warn: vi.fn(),

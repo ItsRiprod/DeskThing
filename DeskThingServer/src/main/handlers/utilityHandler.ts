@@ -15,8 +15,9 @@ import {
   UtilityIPCTask,
   UtilityIPCUpdate
 } from '@shared/types'
-import { connectionStore, settingsStore, loggingStore, mappingStore } from '@server/stores'
+import { connectionStore, settingsStore, mappingStore } from '@server/stores'
 import { getReleases } from './githubHandler'
+import Logger from '@server/utils/logger'
 import path from 'path'
 import { shell, app, dialog } from 'electron'
 import { setupFirewall } from './firewallHandler'
@@ -29,6 +30,7 @@ import {
 } from '@server/services/updater/autoUpdater'
 import { UpdateCheckResult } from 'electron-updater'
 import { TaskList } from '@shared/types/tasks'
+import { FeedbackService } from '@server/services/feedbackService'
 
 /**
  * The `utilityHandler` object is an exported module that provides a set of utility functions for handling various tasks in the application. It is structured as a record type, where the keys correspond to the `UtilityIPCData['type']` union type, and the values are asynchronous functions that handle the corresponding request.
@@ -84,7 +86,7 @@ export const utilityHandler: Record<
   >
 > = {
   ping: async () => {
-    loggingStore.log(MESSAGE_TYPES.LOGGING, 'Pinged! pong')
+    Logger.info('Pinged! pong')
     return 'pong'
   },
   zip: async (data): Promise<string | undefined> => {
@@ -126,9 +128,9 @@ export const utilityHandler: Record<
       return await getReleases(data.payload)
     } catch (error) {
       if (error instanceof Error) {
-        loggingStore.log(MESSAGE_TYPES.ERROR, error.message)
+        Logger.log(MESSAGE_TYPES.ERROR, error.message)
       } else {
-        loggingStore.log(MESSAGE_TYPES.ERROR, String(error))
+        Logger.log(MESSAGE_TYPES.ERROR, String(error))
       }
       return []
     }
@@ -136,7 +138,7 @@ export const utilityHandler: Record<
   logs: async (data) => {
     switch (data.request) {
       case 'get':
-        return await loggingStore.getLogs()
+        return await Logger.getLogs()
       default:
         return
     }
@@ -174,7 +176,7 @@ export const utilityHandler: Record<
       case 'set': {
         const { action, key, mode, profile } = data.payload
         if (!action || !key || !mode) {
-          loggingStore.log(
+          Logger.log(
             MESSAGE_TYPES.ERROR,
             `Missing required button data: ${JSON.stringify({
               action: !!action,
@@ -188,15 +190,9 @@ export const utilityHandler: Record<
           return await mappingStore.addButton({ action, key, mode, profile })
         } catch (error) {
           if (error instanceof Error) {
-            loggingStore.log(
-              MESSAGE_TYPES.ERROR,
-              `UtilityHandler: Failed to add button ${error.message}`
-            )
+            Logger.log(MESSAGE_TYPES.ERROR, `UtilityHandler: Failed to add button ${error.message}`)
           } else {
-            loggingStore.log(
-              MESSAGE_TYPES.ERROR,
-              `UtilityHandler: Failed to add button ${String(error)}`
-            )
+            Logger.log(MESSAGE_TYPES.ERROR, `UtilityHandler: Failed to add button ${String(error)}`)
           }
           return
         }
@@ -204,7 +200,7 @@ export const utilityHandler: Record<
       case 'delete': {
         const { action, key, mode, profile } = data.payload
         if (!key || !mode) {
-          loggingStore.log(
+          Logger.log(
             MESSAGE_TYPES.ERROR,
             `Missing required button data: ${JSON.stringify({
               key: !!key,
@@ -243,7 +239,7 @@ export const utilityHandler: Record<
         if (data.payload) {
           return await mappingStore.addProfile(data.payload)
         } else {
-          loggingStore.log(MESSAGE_TYPES.ERROR, 'UtilityHandler: Missing profile name!')
+          Logger.log(MESSAGE_TYPES.ERROR, 'UtilityHandler: Missing profile name!')
           return
         }
       case 'delete':
@@ -268,7 +264,7 @@ export const utilityHandler: Record<
     if (action.source !== 'server' && action.enabled) {
       return await mappingStore.runAction(action)
     } else {
-      loggingStore.log(MESSAGE_TYPES.ERROR, 'UtilityHandler: Action not enabled or does not exist!')
+      Logger.log(MESSAGE_TYPES.ERROR, 'UtilityHandler: Action not enabled or does not exist!')
     }
   },
 
@@ -311,6 +307,10 @@ export const utilityHandler: Record<
       default:
         return
     }
+  },
+  feedback: async (data) => {
+    if (!data.payload) return
+    return await FeedbackService.sendFeedback(data.payload)
   }
 }
 
@@ -346,13 +346,13 @@ const refreshFirewall = async (replyFn: ReplyFn): Promise<void> => {
     replyFn('logging', { status: true, data: 'Refreshing Firewall', final: false })
     const payload = (await settingsStore.getSettings()) as Settings
     if (payload) {
-      loggingStore.log(MESSAGE_TYPES.LOGGING, '[firewall] Setting up firewall')
+      Logger.info('[firewall] Setting up firewall')
       try {
         await setupFirewall(payload.devicePort, replyFn)
       } catch (firewallError) {
         if (!(firewallError instanceof Error)) return
 
-        loggingStore.log(MESSAGE_TYPES.ERROR, `FIREWALL: ${firewallError.message}`)
+        Logger.log(MESSAGE_TYPES.ERROR, `FIREWALL: ${firewallError.message}`)
         replyFn('logging', {
           status: false,
           data: 'Error in firewall',
@@ -362,7 +362,7 @@ const refreshFirewall = async (replyFn: ReplyFn): Promise<void> => {
         return
       }
     } else {
-      loggingStore.log(MESSAGE_TYPES.ERROR, '[firewall] No settings found!')
+      Logger.log(MESSAGE_TYPES.ERROR, '[firewall] No settings found!')
       replyFn('logging', {
         status: false,
         data: 'Error in firewall',
@@ -371,7 +371,7 @@ const refreshFirewall = async (replyFn: ReplyFn): Promise<void> => {
       })
     }
   } catch (error) {
-    loggingStore.log(MESSAGE_TYPES.ERROR, 'SERVER: [firewall] Error saving manifest' + error)
+    Logger.log(MESSAGE_TYPES.ERROR, 'SERVER: [firewall] Error saving manifest' + error)
     console.error('[Firewall] Error setting client manifest:', error)
     if (error instanceof Error) {
       replyFn('logging', { status: false, data: 'Unfinished', error: error.message, final: true })

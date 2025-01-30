@@ -18,7 +18,7 @@ import { join } from 'path'
 const readAppData = async (name: string): Promise<AppDataInterface | undefined> => {
   const dataFilePath = join('data', `${name}.json`)
   try {
-    const data = readFromFile<AppDataInterface>(dataFilePath)
+    const data = await readFromFile<AppDataInterface>(dataFilePath)
     return data || undefined
   } catch (err) {
     console.error('Error reading data:', err)
@@ -29,7 +29,11 @@ const readAppData = async (name: string): Promise<AppDataInterface | undefined> 
 // Updated function to write Data using the new fileHandler
 const writeAppData = async (name: string, data: AppDataInterface): Promise<void> => {
   const dataFilePath = join('data', `${name}.json`)
-  writeToFile<AppDataInterface>(data, dataFilePath)
+  try {
+    await writeToFile<AppDataInterface>(data, dataFilePath)
+  } catch (error) {
+    console.error('Error writing data:', error)
+  }
 }
 
 export const overwriteData = async (name: string, data: AppDataInterface): Promise<void> => {
@@ -51,10 +55,11 @@ export const setData = async (
     const mergedData: AppDataInterface = {
       version: value.version ?? data.version,
       data: { ...data.data, ...value.data },
-      settings: { ...data.settings, ...value.settings }
+      settings: { ...data.settings, ...value.settings },
+      tasks: { ...data.tasks, ...value.tasks }
     }
 
-    writeAppData(appName, mergedData)
+    await writeAppData(appName, mergedData)
     // return merged data
     return mergedData
   } else {
@@ -62,10 +67,11 @@ export const setData = async (
       const appData: AppDataInterface = {
         data: value.data,
         settings: value.settings,
-        version: value.version
+        version: value.version,
+        tasks: value.tasks
       }
 
-      writeAppData(appName, appData)
+      await writeAppData(appName, appData)
       return appData
     }
     return

@@ -8,7 +8,7 @@ import {
   Action,
   IncomingAppDataTypes
 } from '@shared/types'
-import { loggingStore } from '@server/stores/'
+import Logger from '@server/utils/logger'
 import { ipcMain } from 'electron'
 
 type HandlerFunction = (app: string, appData: FromAppData) => void
@@ -27,25 +27,25 @@ type RequestHandler = {
  */
 export async function handleDataFromApp(app: string, appData: FromAppData): Promise<void> {
   if (Object.values(IncomingAppDataTypes).includes(appData.type)) {
-    loggingStore.debug(
+    Logger.debug(
       `[handleDataFromApp] Handling data from ${app} with type "${appData.type}" and request "${appData.request}"`,
-      app
+      { domain: app.toUpperCase() }
     )
     try {
       handleData[appData.type || 'default'][appData.request || 'default'](app, appData)
     } catch (error) {
-      loggingStore.log(
+      Logger.log(
         MESSAGE_TYPES.WARNING,
         `[handleDataFromApp]: Function "${appData.type}" and "${appData.request}" not found. Defaulting to legacy`,
-        app
+        { domain: app.toUpperCase() }
       )
       await handleLegacyCommunication(app, appData)
     }
   } else {
-    loggingStore.log(
+    Logger.log(
       MESSAGE_TYPES.WARNING,
       `[appComm]: Type ${appData.type}${appData.request && ' and request ' + appData.request} used by ${app} is depreciated and will be removed in a future version!`,
-      app
+      { domain: app.toUpperCase() }
     )
     await handleLegacyCommunication(app, appData)
   }
@@ -58,10 +58,10 @@ export async function handleDataFromApp(app: string, appData: FromAppData): Prom
  * @param {FromAppData} appData - The data received from the app.
  */
 const handleRequestMissing: HandlerFunction = (app: string, appData: FromAppData) => {
-  loggingStore.log(
+  Logger.log(
     MESSAGE_TYPES.WARNING,
     `[handleComs]: App ${app} sent unknown data type: ${appData.type} and request: ${appData.request}, with payload ${appData.payload ? (JSON.stringify(appData.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(appData.payload)) : 'undefined'}`,
-    app
+    { domain: app.toUpperCase() }
   )
 }
 
@@ -110,12 +110,12 @@ const handleRequestOpen: HandlerFunction = async (_app, appData) => {
  */
 const handleRequestLog: HandlerFunction = (app, appData) => {
   if (appData.request && Object.values(MESSAGE_TYPES).includes(appData.request as MESSAGE_TYPES)) {
-    loggingStore.log(appData.request as MESSAGE_TYPES, appData.payload, app)
+    Logger.log(appData.request as MESSAGE_TYPES, appData.payload, { domain: app.toUpperCase() })
   } else {
-    loggingStore.log(
+    Logger.log(
       MESSAGE_TYPES.WARNING,
       `[handleComs]: App ${app} sent unknown log type: ${appData.request}. Please use LOG_TYPES.LOG or similar.`,
-      app
+      { domain: app.toUpperCase() }
     )
   }
 }
@@ -130,10 +130,10 @@ const handleRequestKeyAdd: HandlerFunction = async (app, appData): Promise<void>
   const { default: keyMapStore } = await import('@server/stores/mappingStore')
   try {
     if (appData.payload) {
-      loggingStore.log(
+      Logger.log(
         MESSAGE_TYPES.LOGGING,
         `[handleDataFromApp] App ${app} is adding key ${appData.payload.id}`,
-        app.toUpperCase()
+        { domain: app.toUpperCase() }
       )
       const Key: Key = {
         id: appData.payload.id || 'unsetid',
@@ -144,10 +144,10 @@ const handleRequestKeyAdd: HandlerFunction = async (app, appData): Promise<void>
         modes: appData.payload.modes || []
       }
       keyMapStore.addKey(Key)
-      loggingStore.log(MESSAGE_TYPES.LOGGING, `${app.toUpperCase()}: Added Button Successfully`)
+      Logger.info(`${app.toUpperCase()}: Added Button Successfully`)
     }
   } catch (Error) {
-    loggingStore.log(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: ${Error}`)
+    Logger.log(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: ${Error}`)
   }
 }
 /**
@@ -160,10 +160,10 @@ const handleRequestKeyAdd: HandlerFunction = async (app, appData): Promise<void>
 const handleRequestKeyRemove: HandlerFunction = async (app, appData): Promise<void> => {
   const { default: keyMapStore } = await import('@server/stores/mappingStore')
   keyMapStore.removeKey(appData.payload.id)
-  loggingStore.log(
+  Logger.log(
     MESSAGE_TYPES.LOGGING,
     `[handleDataFromApp] App ${app} is removing key ${appData.payload.id}`,
-    app.toUpperCase()
+    { domain: app.toUpperCase() }
   )
 }
 /**
@@ -178,10 +178,10 @@ const handleRequestKeyTrigger: HandlerFunction = async (app, appData): Promise<v
   if (appData.payload.id && appData.payload.mode) {
     keyMapStore.triggerKey(appData.payload.id, appData.payload.mode)
   } else {
-    loggingStore.log(
+    Logger.log(
       MESSAGE_TYPES.LOGGING,
       `[handleDataFromApp] App ${app} failed to trigger key ${appData.payload.id}`,
-      app.toUpperCase()
+      { domain: app.toUpperCase() }
     )
   }
 }
@@ -197,10 +197,10 @@ const handleRequestActionRun: HandlerFunction = async (app, appData): Promise<vo
   if (appData.payload.id) {
     keyMapStore.runAction(appData.payload.id)
   } else {
-    loggingStore.log(
+    Logger.log(
       MESSAGE_TYPES.LOGGING,
       `[handleDataFromApp] App ${app} failed to provide id ${appData.payload}`,
-      app.toUpperCase()
+      { domain: app.toUpperCase() }
     )
   }
 }
@@ -216,10 +216,10 @@ const handleRequestActionUpdate: HandlerFunction = async (app, appData): Promise
   if (appData.payload.id) {
     keyMapStore.updateIcon(appData.payload.id, appData.payload.icon)
   } else {
-    loggingStore.log(
+    Logger.log(
       MESSAGE_TYPES.LOGGING,
       `[handleDataFromApp] App ${app} failed to provide id ${appData.payload}`,
-      app.toUpperCase()
+      { domain: app.toUpperCase() }
     )
   }
 }
@@ -233,10 +233,10 @@ const handleRequestActionUpdate: HandlerFunction = async (app, appData): Promise
 const handleRequestActionRemove: HandlerFunction = async (app, appData): Promise<void> => {
   const { default: keyMapStore } = await import('@server/stores/mappingStore')
   keyMapStore.removeAction(appData.payload.id)
-  loggingStore.log(
+  Logger.log(
     MESSAGE_TYPES.LOGGING,
     `[handleDataFromApp] App ${app} is removing action ${appData.payload.id}`,
-    app.toUpperCase()
+    { domain: app.toUpperCase() }
   )
 }
 /**
@@ -265,14 +265,14 @@ const handleRequestActionAdd: HandlerFunction = async (app, appData): Promise<vo
         enabled: true
       }
       keyMapStore.addAction(Action)
-      loggingStore.log(
+      Logger.log(
         MESSAGE_TYPES.LOGGING,
         `[handleDataFromApp] App ${app} is adding Action ${appData.payload.id}`,
-        app.toUpperCase()
+        { domain: app.toUpperCase() }
       )
     }
   } catch (Error) {
-    loggingStore.log(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: ${Error}`)
+    Logger.log(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: ${Error}`)
   }
 }
 
@@ -297,7 +297,7 @@ const handleRequestGetData: HandlerFunction = async (app): Promise<void> => {
  * @returns {Promise<void>} - A Promise that resolves when the settings have been sent to the app.
  */
 const handleRequestDelData: HandlerFunction = async (app, appData): Promise<void> => {
-  loggingStore.log(
+  Logger.log(
     MESSAGE_TYPES.LOGGING,
     `[handleAppData]: ${app} is deleting data: ${appData.payload.toString()}`
   )
@@ -305,7 +305,7 @@ const handleRequestDelData: HandlerFunction = async (app, appData): Promise<void
     !appData.payload ||
     (typeof appData.payload !== 'string' && !Array.isArray(appData.payload))
   ) {
-    loggingStore.log(
+    Logger.log(
       MESSAGE_TYPES.ERROR,
       `[handleAppData]: Cannot delete data because ${appData.payload.toString()} is not a string or string[]`
     )
@@ -319,7 +319,7 @@ const handleRequestDelData: HandlerFunction = async (app, appData): Promise<void
 const handleRequestGetConfig: HandlerFunction = async (app): Promise<void> => {
   const { appStore } = await import('@server/stores')
   appStore.sendDataToApp(app, { type: 'config', payload: {} })
-  loggingStore.log(
+  Logger.log(
     MESSAGE_TYPES.ERROR,
     `[handleAppData]: ${app} tried accessing "Config" data type which is depreciated and no longer in use!`
   )
@@ -344,7 +344,7 @@ const handleRequestGetSettings: HandlerFunction = async (app): Promise<void> => 
  * @returns {Promise<void>} - A Promise that resolves when the settings have been sent to the app.
  */
 const handleRequestDelSettings: HandlerFunction = async (app, appData): Promise<void> => {
-  loggingStore.log(
+  Logger.log(
     MESSAGE_TYPES.LOGGING,
     `[handleAppData]: ${app} is deleting settings: ${appData.payload.toString()}`
   )
@@ -352,7 +352,7 @@ const handleRequestDelSettings: HandlerFunction = async (app, appData): Promise<
     !appData.payload ||
     (typeof appData.payload !== 'string' && !Array.isArray(appData.payload))
   ) {
-    loggingStore.log(
+    Logger.log(
       MESSAGE_TYPES.ERROR,
       `[handleAppData]: Cannot delete settings because ${appData.payload.toString()} is not a string or string[]`
     )
@@ -404,10 +404,10 @@ const handleSendToClient: RequestHandler = {
   default: async (app, appData): Promise<void> => {
     const { sendMessageToClients, handleClientMessage } = await import('../client/clientCom')
     if (app && appData.payload) {
-      loggingStore.log(
+      Logger.log(
         MESSAGE_TYPES.LOGGING,
         `[handleDataFromApp] App ${app} is sending data to the client with ${appData.payload ? (JSON.stringify(appData.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(appData.payload)) : 'undefined'}`,
-        app.toUpperCase()
+        { domain: app.toUpperCase() }
       )
       if (appData.payload.app == 'client') {
         handleClientMessage(appData.payload)
@@ -427,17 +427,13 @@ const handleSendToApp: RequestHandler = {
     if (appData.payload && appData.request) {
       const { appStore } = await import('@server/stores')
       appStore.sendDataToApp(appData.request, appData.payload)
-      loggingStore.log(
+      Logger.log(
         MESSAGE_TYPES.LOGGING,
         `[handleDataFromApp] App ${app} is sending data to ${appData.request} with ${appData.payload ? (JSON.stringify(appData.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(appData.payload)) : 'undefined'}`,
-        app.toUpperCase()
+        { domain: app.toUpperCase() }
       )
     } else {
-      loggingStore.log(
-        MESSAGE_TYPES.ERROR,
-        `${app.toUpperCase()}: App data malformed`,
-        appData.payload
-      )
+      Logger.log(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: App data malformed`, appData.payload)
     }
   }
 }
@@ -501,7 +497,7 @@ const handleLegacyCommunication = async (app: string, appData: FromAppData): Pro
 
   switch (appData.type as string) {
     case 'message':
-      loggingStore.log(MESSAGE_TYPES.MESSAGE, appData.payload, app.toUpperCase())
+      Logger.log(MESSAGE_TYPES.MESSAGE, appData.payload, { domain: app.toUpperCase() })
       break
     case 'get':
       switch (appData.request) {
@@ -513,7 +509,7 @@ const handleLegacyCommunication = async (app: string, appData: FromAppData): Pro
         case 'config':
           {
             appStore.sendDataToApp(app, { type: 'config', payload: {} })
-            loggingStore.log(
+            Logger.log(
               MESSAGE_TYPES.ERROR,
               `[handleAppData]: ${app} tried accessing "Config" data type which is depreciated and no longer in use!`
             )
@@ -540,10 +536,10 @@ const handleLegacyCommunication = async (app: string, appData: FromAppData): Pro
       break
     case 'data':
       if (app && appData.payload) {
-        loggingStore.log(
+        Logger.log(
           MESSAGE_TYPES.LOGGING,
           `[handleDataFromApp] App ${app} is sending data to the client with ${appData.payload ? (JSON.stringify(appData.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(appData.payload)) : 'undefined'}`,
-          app.toUpperCase()
+          { domain: app.toUpperCase() }
         )
         if (appData.payload.app == 'client') {
           handleClientMessage(appData.payload)
@@ -560,34 +556,30 @@ const handleLegacyCommunication = async (app: string, appData: FromAppData): Pro
     case 'toApp':
       if (appData.payload && appData.request) {
         appStore.sendDataToApp(appData.request, appData.payload)
-        loggingStore.log(
+        Logger.log(
           MESSAGE_TYPES.LOGGING,
           `[handleDataFromApp] App ${app} is sending data to ${appData.request} with ${appData.payload ? (JSON.stringify(appData.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(appData.payload)) : 'undefined'}`,
-          app.toUpperCase()
+          { domain: app.toUpperCase() }
         )
       } else {
-        loggingStore.log(
-          MESSAGE_TYPES.ERROR,
-          `${app.toUpperCase()}: App data malformed`,
-          appData.payload
-        )
+        Logger.log(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: App data malformed`, appData.payload)
       }
       break
     case 'error':
-      loggingStore.log(MESSAGE_TYPES.ERROR, `${appData.payload}`, app.toUpperCase())
+      Logger.log(MESSAGE_TYPES.ERROR, `${appData.payload}`, { domain: app.toUpperCase() })
       break
     case 'log':
-      loggingStore.log(MESSAGE_TYPES.LOGGING, `${appData.payload}`, app.toUpperCase())
+      Logger.info(`${appData.payload}`, { domain: app.toUpperCase() })
       break
     case 'button':
     case 'key':
       if (appData.request == 'add') {
         try {
           if (appData.payload) {
-            loggingStore.log(
+            Logger.log(
               MESSAGE_TYPES.LOGGING,
               `[handleDataFromApp] App ${app} is adding key ${appData.payload.id}`,
-              app.toUpperCase()
+              { domain: app.toUpperCase() }
             )
             const Key: Key = {
               id: appData.payload.id || 'unsetid',
@@ -598,20 +590,17 @@ const handleLegacyCommunication = async (app: string, appData: FromAppData): Pro
               modes: appData.payload.modes || []
             }
             keyMapStore.addKey(Key)
-            loggingStore.log(
-              MESSAGE_TYPES.LOGGING,
-              `${app.toUpperCase()}: Added Button Successfully`
-            )
+            Logger.info(`${app.toUpperCase()}: Added Button Successfully`)
           }
         } catch (Error) {
-          loggingStore.log(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: ${Error}`)
+          Logger.log(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: ${Error}`)
         }
       } else if (appData.request == 'remove') {
         keyMapStore.removeKey(appData.payload.id)
-        loggingStore.log(
+        Logger.log(
           MESSAGE_TYPES.LOGGING,
           `[handleDataFromApp] App ${app} is removing key ${appData.payload.id}`,
-          app.toUpperCase()
+          { domain: app.toUpperCase() }
         )
       }
       break
@@ -635,14 +624,14 @@ const handleLegacyCommunication = async (app: string, appData: FromAppData): Pro
                 enabled: true
               }
               keyMapStore.addAction(Action)
-              loggingStore.log(
+              Logger.log(
                 MESSAGE_TYPES.LOGGING,
                 `[handleDataFromApp] App ${app} is adding Action ${appData.payload.id}`,
-                app.toUpperCase()
+                { domain: app.toUpperCase() }
               )
             }
           } catch (Error) {
-            loggingStore.log(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: ${Error}`)
+            Logger.log(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: ${Error}`)
           }
           break
         case 'remove':
@@ -651,20 +640,20 @@ const handleLegacyCommunication = async (app: string, appData: FromAppData): Pro
         case 'update':
           if (appData.payload) {
             keyMapStore.updateIcon(appData.payload.id, appData.payload.icon)
-            loggingStore.log(
+            Logger.log(
               MESSAGE_TYPES.LOGGING,
               `[handleDataFromApp] App ${app} is updating ${appData.payload.id}'s icon ${appData.payload.icon}`,
-              app.toUpperCase()
+              { domain: app.toUpperCase() }
             )
           }
           break
         case 'run':
           if (appData.payload) {
             keyMapStore.runAction(appData.payload.id)
-            loggingStore.log(
+            Logger.log(
               MESSAGE_TYPES.LOGGING,
               `[handleDataFromApp] App ${app} is running action ${appData.payload.id}`,
-              app.toUpperCase()
+              { domain: app.toUpperCase() }
             )
           }
           break
@@ -673,10 +662,10 @@ const handleLegacyCommunication = async (app: string, appData: FromAppData): Pro
       }
       break
     default:
-      loggingStore.log(
+      Logger.log(
         MESSAGE_TYPES.ERROR,
         `[handleDataFromApp] App ${app} sent an unknown object with type: ${appData.type} and request: ${appData.request}`,
-        app.toUpperCase()
+        { domain: app.toUpperCase() }
       )
       break
   }
