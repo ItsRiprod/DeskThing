@@ -14,16 +14,12 @@ export function getAutoUpdater(): AppUpdater {
     return configuredUpdater
   }
 
-  import('@server/stores/loggingStore').then(({ default: loggingStore }) => {
+  import('@server/utils/logger').then(({ default: Logger }) => {
     autoUpdater.logger = {
-      info: (message): Promise<void> =>
-        loggingStore.log(MESSAGE_TYPES.LOGGING, message, 'AutoUpdater'),
-      warn: (message): Promise<void> =>
-        loggingStore.log(MESSAGE_TYPES.WARNING, message, 'AutoUpdater'),
-      error: (message): Promise<void> =>
-        loggingStore.log(MESSAGE_TYPES.ERROR, message, 'AutoUpdater'),
-      debug: (message): Promise<void> =>
-        loggingStore.log(MESSAGE_TYPES.DEBUG, message, 'AutoUpdater')
+      info: (message): Promise<void> => Logger.info(message, { source: 'AutoUpdater' }),
+      warn: (message): Promise<void> => Logger.warn(message, { source: 'AutoUpdater' }),
+      error: (message): Promise<void> => Logger.error(message, { source: 'AutoUpdater' }),
+      debug: (message): Promise<void> => Logger.debug(message, { source: 'AutoUpdater' })
     }
 
     autoUpdater.on('download-progress', (progressObj) => {
@@ -34,7 +30,7 @@ export function getAutoUpdater(): AppUpdater {
       if (progressObj.total) {
         logMessage += ` - ${progressObj.transferred}/${progressObj.total}`
       }
-      loggingStore.log(MESSAGE_TYPES.LOGGING, logMessage)
+      Logger.log(MESSAGE_TYPES.LOGGING, logMessage)
 
       const progress: UpdateProgressType = {
         percent: progressObj.percent,
@@ -48,7 +44,7 @@ export function getAutoUpdater(): AppUpdater {
 
     autoUpdater.on('update-downloaded', (info) => {
       // Prompt the user to quit and install the update
-      loggingStore.log(MESSAGE_TYPES.DEBUG, 'Update downloaded: ' + JSON.stringify(info))
+      Logger.log(MESSAGE_TYPES.DEBUG, 'Update downloaded: ' + JSON.stringify(info))
       notifyUpdateFinished(info)
     })
   })
@@ -56,22 +52,22 @@ export function getAutoUpdater(): AppUpdater {
   const isDev = process.env.NODE_ENV === 'development'
 
   if (isDev) {
-    autoUpdater.allowPrerelease = true
-    autoUpdater.forceDevUpdateConfig = true
-    autoUpdater.disableWebInstaller = true
-    autoUpdater.autoDownload = false
-    autoUpdater.autoInstallOnAppQuit = false
-    autoUpdater.updateConfigPath = 'dev-app-update.yml'
-    autoUpdater.requestHeaders = {
-      'Cache-Control': 'no-cache'
-    }
-    autoUpdater.setFeedURL({
-      provider: 'github',
-      owner: 'ItsRiprod',
-      repo: 'DeskThing',
-      private: false,
-      channel: 'dev'
-    })
+    // autoUpdater.allowPrerelease = true
+    // autoUpdater.forceDevUpdateConfig = true
+    // autoUpdater.disableWebInstaller = true
+    // autoUpdater.autoDownload = false
+    // autoUpdater.autoInstallOnAppQuit = false
+    // autoUpdater.updateConfigPath = 'dev-app-update.yml'
+    // autoUpdater.requestHeaders = {
+    //   'Cache-Control': 'no-cache'
+    // }
+    // autoUpdater.setFeedURL({
+    //   provider: 'github',
+    //   owner: 'ItsRiprod',
+    //   repo: 'DeskThing',
+    //   private: false,
+    //   channel: 'dev'
+    // })
   } else {
     autoUpdater.setFeedURL({
       provider: 'github',

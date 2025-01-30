@@ -1,5 +1,5 @@
 import { sendIpcData } from '@server/index'
-import { loggingStore } from '@server/stores'
+import Logger from '@server/utils/logger'
 import { MESSAGE_TYPES, UpdateInfoType } from '@shared/types'
 import { UpdateCheckResult, UpdateDownloadedEvent } from 'electron-updater'
 
@@ -16,7 +16,7 @@ export const notifyUpdateStatus = async (
       releaseName: downloadNotification.updateInfo.releaseName,
       releaseDate: downloadNotification.updateInfo.releaseDate
     }
-    loggingStore.log(MESSAGE_TYPES.DEBUG, 'Update notification: ' + downloadNotification)
+    Logger.log(MESSAGE_TYPES.DEBUG, 'Update notification: ' + downloadNotification)
     sendIpcData({ type: 'update-status', payload: updateInfo })
   } else {
     const updateInfo: UpdateInfoType = {
@@ -24,13 +24,17 @@ export const notifyUpdateStatus = async (
       updateDownloaded: false
     }
     sendIpcData({ type: 'update-status', payload: updateInfo })
-    loggingStore.log(MESSAGE_TYPES.DEBUG, 'No update available')
+    Logger.log(MESSAGE_TYPES.DEBUG, 'No update available')
   }
 }
 
 export const notifyUpdateFinished = async (
   downloadedNotification: UpdateDownloadedEvent
 ): Promise<void> => {
+  if (!downloadedNotification.version || downloadedNotification.version === '') {
+    return
+  }
+
   const updateInfo: UpdateInfoType = {
     updateAvailable: true,
     updateDownloaded: true,
@@ -39,6 +43,7 @@ export const notifyUpdateFinished = async (
     releaseName: downloadedNotification.releaseName,
     releaseDate: downloadedNotification.releaseDate
   }
+
   sendIpcData({ type: 'update-status', payload: updateInfo })
-  loggingStore.log(MESSAGE_TYPES.DEBUG, 'Update finished')
+  Logger.log(MESSAGE_TYPES.DEBUG, 'Update finished')
 }
