@@ -2,6 +2,11 @@ import { FC } from 'react'
 import { TaskProps } from './TaskBase'
 
 export const TaskStep: FC<TaskProps> = ({ step, taskId }) => {
-  return <></>
+  return (
+    <>
+      {step.label}
+      {taskId}
+    </>
+  )
 }
 export default TaskStep

@@ -8,7 +8,6 @@ import TaskTask from './TaskTask'
 import TaskExternal from './TaskExternal'
 import { IconArrowDown } from '@renderer/assets/icons'
 import Button from '../Button'
-import Tooltip from '../Tooltip'
 
 export type TaskProps = {
   step: Step
@@ -27,7 +26,7 @@ export const TaskBase: FC<TaskProps> = memo(({ step, taskId }: TaskProps) => {
   const [expanded, setIsExpanded] = useState(false)
   const Component = useMemo(() => Steps[step.type], [step.type])
 
-  const handleClick = () => {
+  const handleClick = (): void => {
     setIsExpanded(!expanded)
   }
 
