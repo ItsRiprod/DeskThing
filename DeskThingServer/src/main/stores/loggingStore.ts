@@ -1,8 +1,15 @@
 console.log('[Logging Store] Starting')
-import fs from 'fs'
-import { join } from 'path'
+import fs from 'node:fs'
+import { join } from 'node:path'
 import { app } from 'electron'
-import { MESSAGE_TYPES, Log, LOGGING_LEVEL, Settings, ReplyData, ReplyFn } from '@shared/types'
+import {
+  Log,
+  LOGGING_LEVEL,
+  MESSAGE_TYPES,
+  ReplyData,
+  ReplyFn,
+  Settings,
+} from '@shared/types/index.ts'
 
 // LoggingStore configuration
 const logFile = join(app.getPath('userData'), 'application.log.json')
@@ -23,7 +30,7 @@ class LoggingStore {
   private constructor() {
     fs.writeFileSync(logFile, '[]')
     fs.writeFileSync(readableLogFile, '')
-    import('./settingsStore').then(({ default: settingsStore }) => {
+    import('./settingsStore.ts').then(({ default: settingsStore }) => {
       settingsStore.addListener(this.settingsStoreListener.bind(this))
     })
   }

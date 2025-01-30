@@ -1,12 +1,12 @@
 console.log('[ClientExpress Service] Starting')
-import loggingStore from '../../stores/loggingStore'
-import { MESSAGE_TYPES } from '@shared/types'
+import loggingStore from '../../stores/loggingStore.ts'
+import { MESSAGE_TYPES } from '@shared/types/index.ts'
 import { app, app as electronApp } from 'electron'
-import { join } from 'path'
-import { getAppFilePath } from '../apps'
+import { join } from 'node:path'
+import { getAppFilePath } from '../apps/index.ts'
 import cors from 'cors'
-import express, { Request, NextFunction, Response } from 'express'
-import * as fs from 'fs'
+import express, { NextFunction, Request, Response } from 'express'
+import * as fs from 'node:fs'
 
 const isDevelopment = process.env.NODE_ENV === 'development'
 const staticPath = isDevelopment

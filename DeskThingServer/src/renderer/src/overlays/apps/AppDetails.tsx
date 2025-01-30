@@ -1,5 +1,5 @@
 import React from 'react'
-import { AppSettingProps } from './AppsOverlay'
+import { AppSettingProps } from './AppsOverlay.tsx'
 
 const AppDetails: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
   if (!app.manifest) return null

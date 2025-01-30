@@ -1,8 +1,8 @@
 import React from 'react'
-import SettingComponent from './SettingComponent'
-import { SettingOption, SettingsSelect } from '@shared/types'
+import SettingComponent from './SettingComponent.tsx'
+import { SettingOption, SettingsSelect } from '@shared/types/index.ts'
 import { SingleValue } from 'react-select'
-import Select from '../Select'
+import Select from '../Select.tsx'
 
 interface SettingsSelectProps {
   setting: SettingsSelect

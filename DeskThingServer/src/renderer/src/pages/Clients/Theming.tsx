@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
-import Sidebar from '@renderer/nav/Sidebar'
-import Button from '@renderer/components/Button'
-import { IconPlus } from '@renderer/assets/icons'
-import MainElement from '@renderer/nav/MainElement'
+import Sidebar from '@renderer/nav/Sidebar.tsx'
+import Button from '@renderer/components/Button.tsx'
+import { IconPlus } from '@renderer/assets/icons/index.ts'
+import MainElement from '@renderer/nav/MainElement.tsx'
 
 const ClientTheming: React.FC = () => {
   const [disabled, _setDisabled] = useState(true)

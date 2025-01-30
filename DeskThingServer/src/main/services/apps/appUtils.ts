@@ -1,8 +1,8 @@
 console.log('[AppUtils Service] Starting')
-import { Manifest, MESSAGE_TYPES } from '@shared/types'
-import { join } from 'path'
+import { Manifest, MESSAGE_TYPES } from '@shared/types/index.ts'
+import { join } from 'node:path'
 import { existsSync, promises } from 'node:fs'
-import loggingStore from '../../stores/loggingStore'
+import loggingStore from '../../stores/loggingStore.ts'
 import { app } from 'electron'
 
 let devAppPath: string
@@ -56,7 +56,7 @@ export async function getManifest(fileLocation: string): Promise<Manifest | unde
  * @returns {string} - The full file path of the specified file within the app's directory.
  */
 export function getAppFilePath(appName: string, fileName: string = '/'): string {
-  let path
+  let path: string | undefined
   if (appName == 'developer-app') {
     if (devAppPath) {
       path = join(devAppPath, fileName)
@@ -66,5 +66,5 @@ export function getAppFilePath(appName: string, fileName: string = '/'): string 
   } else {
     path = join(app.getPath('userData'), 'apps', appName, fileName)
   }
-  return path
+  return path!
 }

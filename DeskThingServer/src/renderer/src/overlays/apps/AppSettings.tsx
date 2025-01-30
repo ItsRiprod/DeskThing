@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react'
-import { useAppStore } from '@renderer/stores'
-import { AppDataInterface } from '@shared/types'
-import { AppSettingProps } from './AppsOverlay'
-import Button from '@renderer/components/Button'
-import { IconLoading, IconSave } from '@renderer/assets/icons'
-import Settings from '@renderer/components/settings'
+import { useAppStore } from '@renderer/stores/index.ts'
+import { AppDataInterface } from '@shared/types/index.ts'
+import { AppSettingProps } from './AppsOverlay.tsx'
+import Button from '@renderer/components/Button.tsx'
+import { IconLoading, IconSave } from '@renderer/assets/icons/index.ts'
+import Settings from '@renderer/components/settings/index.tsx'
 
 const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
   const getAppData = useAppStore((state) => state.getAppData)
@@ -32,7 +32,6 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
                 [key]: {
                   ...prev.settings[key],
                   // It had to be this way... The way that the type expects a specific value for each type of object means that this can only be every type of value but only one at a time. We have no way of knowing which type of setting it is.
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   value: value as any
                 }
               }

@@ -1,7 +1,7 @@
 console.log('[Data Handler] Starting')
-import { AppDataInterface } from '@shared/types'
-import { readFromFile, writeToFile } from '../utils/fileHandler'
-import { sendMessageToApp } from '../services/apps'
+import { AppDataInterface } from '@shared/types/index.ts'
+import { readFromFile, writeToFile } from '../utils/fileHandler.ts'
+import { sendMessageToApp } from '../services/apps/index.ts'
 
 interface Data {
   [appName: string]: AppDataInterface
@@ -68,4 +68,4 @@ const purgeAppData = async (appName: string): Promise<void> => {
   writeData(data)
 }
 
-export { setData, getData, addData, readData, purgeAppData }
+export { addData, getData, purgeAppData, readData, setData }

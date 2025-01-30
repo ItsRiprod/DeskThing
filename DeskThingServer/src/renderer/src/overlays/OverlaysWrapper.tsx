@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import QROverlay from '@renderer/overlays/QROverlay'
-import SettingsOverlay from './settings/SettingsOverlay'
-import NotificationOverlay from './notifications/NotificationOverlay'
-import AppsOverlay from './apps/AppsOverlay'
-import AddProfileOverlay from './AddProfile.'
+import QROverlay from '@renderer/overlays/QROverlay.tsx'
+import SettingsOverlay from './settings/SettingsOverlay.tsx'
+import NotificationOverlay from './notifications/NotificationOverlay.tsx'
+import AppsOverlay from './apps/AppsOverlay.tsx'
+import AddProfileOverlay from './AddProfile.tsx'
 
 const overlays = {
   qr: QROverlay,
@@ -12,7 +12,7 @@ const overlays = {
   notifications: NotificationOverlay,
   app: AppsOverlay,
   addProfile: AddProfileOverlay
-}
+} as const;
 
 const OverlayWrapper: React.FC<React.PropsWithChildren> = ({
   children

@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
-import Sidebar from '@renderer/nav/Sidebar'
-import MainElement from '@renderer/nav/MainElement'
-import { IconPlay, IconRefresh, IconReload, IconToggle } from '@renderer/assets/icons'
-import Button from '@renderer/components/Button'
-import { useClientStore, useSettingsStore } from '@renderer/stores'
+import Sidebar from '@renderer/nav/Sidebar.tsx'
+import MainElement from '@renderer/nav/MainElement.tsx'
+import { IconPlay, IconRefresh, IconReload, IconToggle } from '@renderer/assets/icons/index.ts'
+import Button from '@renderer/components/Button.tsx'
+import { useClientStore, useSettingsStore } from '@renderer/stores/index.ts'
 
 const ADBSettings: React.FC = () => {
   const [inputValue, setInputValue] = useState('')
@@ -67,7 +67,7 @@ const ADBSettings: React.FC = () => {
             className={adbSetting ? `text-green-500` : 'text-gray-500'}
             iconSize={34}
           />
-          <p className="md:block xs:hidden text-center flex-grow">
+          <p className="md:block xs:hidden text-center grow">
             {adbSetting ? 'Global' : 'Local'} ADB
           </p>
         </Button>
@@ -79,7 +79,7 @@ const ADBSettings: React.FC = () => {
           <IconReload
             className={restarting && `-rotate-[360deg] transition-transform duration-1000`}
           />
-          <p className="md:block xs:hidden text-center flex-grow">Restart ADB</p>
+          <p className="md:block xs:hidden text-center grow">Restart ADB</p>
         </Button>
         <Button
           disabled={loading}
@@ -87,7 +87,7 @@ const ADBSettings: React.FC = () => {
           onClick={handleRefreshDevices}
         >
           <IconRefresh className={refreshing && `animate-spin`} />
-          <p className="md:block xs:hidden text-center flex-grow">Find Devices</p>
+          <p className="md:block xs:hidden text-center grow">Find Devices</p>
         </Button>
       </Sidebar>
       <MainElement>
@@ -95,7 +95,7 @@ const ADBSettings: React.FC = () => {
         <div className="w-full items-stretch flex-col lg:flex-row gap-5 p-5 flex">
           <div className="flex gap-2">
             <select
-              className="p-2 rounded text-black"
+              className="p-2 rounded-sm text-black"
               value={commandType}
               onChange={(e) => setCommandType(e.target.value)}
             >
@@ -103,7 +103,7 @@ const ADBSettings: React.FC = () => {
               <option value="other">Other</option>
             </select>
             <select
-              className="p-2 rounded text-black"
+              className="p-2 rounded-sm text-black"
               value={adbDevice}
               onChange={(e) => setAdbDevice(e.target.value)}
             >
@@ -118,7 +118,7 @@ const ADBSettings: React.FC = () => {
           <div className="flex flex-col w-full sm:flex-row gap-2">
             <input
               type="text"
-              className="p-2 rounded text-black w-full"
+              className="p-2 rounded-sm text-black w-full"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
             />

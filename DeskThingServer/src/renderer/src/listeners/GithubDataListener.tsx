@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
-import { useGithubStore } from '../stores'
-import { Settings } from '@shared/types'
+import { useGithubStore } from '../stores/index.ts'
+import { Settings } from '@shared/types/index.ts'
+import type { IpcRendererEvent } from 'electron';
 
 const GithubDataListener = (): null => {
   const fetchAppRepo = useGithubStore((state) => state.fetchAppRepo)
@@ -14,7 +15,7 @@ const GithubDataListener = (): null => {
   }
 
   useEffect(() => {
-    const handleSettingsUpdate = async (_event, settings: Settings): Promise<void> => {
+    const handleSettingsUpdate = async (_event : IpcRendererEvent, settings: Settings): Promise<void> => {
       // Fetch and cache releases for new app repos
       if (settings.appRepos) {
         for (const repoUrl of settings.appRepos) {

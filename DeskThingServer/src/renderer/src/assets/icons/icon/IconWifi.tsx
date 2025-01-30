@@ -1,4 +1,4 @@
-import { Icon } from '.'
+import { Icon } from './index.tsx'
 
 function IconWifi(props): JSX.Element {
   return (

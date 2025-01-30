@@ -1,10 +1,10 @@
-import { IconX } from '@renderer/assets/icons'
-import Button from '@renderer/components/Button'
-import { useSettingsStore } from '@renderer/stores'
+import { IconX } from '@renderer/assets/icons/index.ts'
+import Button from '@renderer/components/Button.tsx'
+import { useSettingsStore } from '@renderer/stores/index.ts'
 import React, { useState } from 'react'
 import QRCode from 'react-qr-code'
 import { useSearchParams } from 'react-router-dom'
-import Overlay from './Overlay'
+import Overlay from './Overlay.tsx'
 
 const QROverlay: React.FC = () => {
   const settings = useSettingsStore((settings) => settings.settings)

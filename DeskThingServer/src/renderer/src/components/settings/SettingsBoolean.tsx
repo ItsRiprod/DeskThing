@@ -1,8 +1,8 @@
 import React from 'react'
-import SettingComponent from './SettingComponent'
-import { SettingsBoolean } from '@shared/types'
-import Button from '../Button'
-import { IconToggle } from '@renderer/assets/icons'
+import SettingComponent from './SettingComponent.tsx'
+import { SettingsBoolean } from '@shared/types/index.ts'
+import Button from '../Button.tsx'
+import { IconToggle } from '@renderer/assets/icons/index.ts'
 
 interface SettingsBooleanProps {
   setting: SettingsBoolean

@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import { useAppStore } from '../stores/'
-import { App, AppDataInterface } from '@shared/types'
-import Button from '@renderer/components/Button'
-import { IconX } from '@renderer/assets/icons'
-import Overlay from './Overlay'
+import { useAppStore } from '../stores/index.ts'
+import { App, AppDataInterface } from '@shared/types/index.ts'
+import Button from '@renderer/components/Button.tsx'
+import { IconX } from '@renderer/assets/icons/index.ts'
+import Overlay from './Overlay.tsx'
 
 interface AppSettingsOverlayProps {
   onClose: () => void

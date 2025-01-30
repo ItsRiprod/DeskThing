@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import AvailableModes from './components/AvailableModesComponent'
-import { Key, EventMode, ButtonMapping, Action } from '@shared/types'
-import AvailableKeys from './components/AvailableKeysComponent'
-import { PageProps } from '.'
-import AllActionsComponent from './components/AllActionsComponent'
-import AddActionOverlay from './components/AddActionPopup'
+import AvailableModes from './components/AvailableModesComponent.tsx'
+import { Key, EventMode, ButtonMapping, Action } from '@shared/types/index.ts'
+import AvailableKeys from './components/AvailableKeysComponent.tsx'
+import { PageProps } from './index.tsx'
+import AllActionsComponent from './components/AllActionsComponent.tsx'
+import AddActionOverlay from './components/AddActionPopup.tsx'
 
 interface MappingPageProps {
   Component: React.FC<PageProps>

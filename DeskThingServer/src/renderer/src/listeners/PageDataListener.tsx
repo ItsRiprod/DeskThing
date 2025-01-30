@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { usePageStore } from '../stores'
+import { usePageStore } from '../stores/index.ts'
 import { useNavigate } from 'react-router-dom'
 
 const PageDataListener = (): null => {

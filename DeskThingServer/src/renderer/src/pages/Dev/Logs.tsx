@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react'
-import useLogStore from '../../stores/logStore'
-import Sidebar from '@renderer/nav/Sidebar'
-import MainElement from '@renderer/nav/MainElement'
-import Button from '@renderer/components/Button'
+import useLogStore from '../../stores/logStore.ts'
+import Sidebar from '@renderer/nav/Sidebar.tsx'
+import MainElement from '@renderer/nav/MainElement.tsx'
+import Button from '@renderer/components/Button.tsx'
 import {
   IconBell,
   IconCheck,
@@ -10,9 +10,9 @@ import {
   IconFolderOpen,
   IconLogs,
   IconWarning
-} from '@renderer/assets/icons'
+} from '@renderer/assets/icons/index.ts'
 import { useReward } from 'react-rewards'
-import { MESSAGE_TYPES } from '@shared/types/types'
+import { MESSAGE_TYPES } from '@shared/types/index.ts'
 
 const Logs: React.FC = () => {
   const { logList, getLogs } = useLogStore()
@@ -70,13 +70,13 @@ const Logs: React.FC = () => {
         <div className="flex flex-col gap-2">
           <Button onClick={handleLogsOpen} className="hover:bg-zinc-900">
             <IconFolderOpen strokeWidth={1.5} />
-            <p className="md:block xs:hidden text-center flex-grow">Open Logs</p>
+            <p className="md:block xs:hidden text-center grow">Open Logs</p>
           </Button>
 
           <Button onClick={handleCopyLogs} className="hover:bg-zinc-900" disabled={isAnimating}>
             <span id="rewardId" />
             {isAnimating ? <IconCheck strokeWidth={1.5} /> : <IconCopy strokeWidth={1.5} />}
-            <p className="md:block xs:hidden text-center flex-grow">Copy Logs</p>
+            <p className="md:block xs:hidden text-center grow">Copy Logs</p>
           </Button>
         </div>
       </Sidebar>
@@ -87,49 +87,49 @@ const Logs: React.FC = () => {
             className={`w-full ${filter === null ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
           >
             <IconLogs strokeWidth={1.5} />
-            <p className="md:block hidden text-center flex-grow">All</p>
+            <p className="md:block hidden text-center grow">All</p>
           </Button>
           <Button
             onClick={() => setFilter(MESSAGE_TYPES.MESSAGE)}
             className={`w-full ${filter === MESSAGE_TYPES.MESSAGE ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
           >
             <IconBell strokeWidth={1.5} />
-            <p className="md:block hidden text-center flex-grow">Messages</p>
+            <p className="md:block hidden text-center grow">Messages</p>
           </Button>
           <Button
             onClick={() => setFilter(MESSAGE_TYPES.ERROR)}
             className={`w-full ${filter === MESSAGE_TYPES.ERROR ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
           >
             <IconWarning strokeWidth={1.5} />
-            <p className="md:block hidden text-center flex-grow">Errors</p>
+            <p className="md:block hidden text-center grow">Errors</p>
           </Button>
           <Button
             onClick={() => setFilter(MESSAGE_TYPES.WARNING)}
             className={`w-full ${filter === MESSAGE_TYPES.WARNING ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
           >
             <IconWarning strokeWidth={1.5} />
-            <p className="md:block hidden text-center flex-grow">Warnings</p>
+            <p className="md:block hidden text-center grow">Warnings</p>
           </Button>
           <Button
             onClick={() => setFilter(MESSAGE_TYPES.FATAL)}
             className={`w-full ${filter === MESSAGE_TYPES.FATAL ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
           >
             <IconWarning strokeWidth={1.5} />
-            <p className="md:block hidden text-center flex-grow">Fatal</p>
+            <p className="md:block hidden text-center grow">Fatal</p>
           </Button>
           <Button
             onClick={() => setFilter(MESSAGE_TYPES.DEBUG)}
             className={`w-full ${filter === MESSAGE_TYPES.DEBUG ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
           >
             <IconLogs strokeWidth={1.5} />
-            <p className="md:block hidden text-center flex-grow">Debug</p>
+            <p className="md:block hidden text-center grow">Debug</p>
           </Button>
           <Button
             onClick={() => setFilter(MESSAGE_TYPES.LOGGING)}
             className={`w-full ${filter === MESSAGE_TYPES.LOGGING ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
           >
             <IconLogs strokeWidth={1.5} />
-            <p className="md:block hidden text-center flex-grow">Logs</p>
+            <p className="md:block hidden text-center grow">Logs</p>
           </Button>
         </div>
         <div

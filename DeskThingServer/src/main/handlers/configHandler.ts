@@ -1,8 +1,8 @@
 console.log('[Config Handler] Starting')
-import { sendIpcData } from '..'
-import { AppData, App, MESSAGE_TYPES, Manifest, ButtonMapping } from '@shared/types'
-import loggingStore from '../stores/loggingStore'
-import { readFromFile, writeToFile } from '../utils/fileHandler'
+import { sendIpcData } from '@server/index.ts'
+import { App, AppData, ButtonMapping, Manifest, MESSAGE_TYPES } from '@shared/types/index.ts'
+import loggingStore from '@server/stores/loggingStore.ts'
+import { readFromFile, writeToFile } from '../utils/fileHandler.ts'
 
 const defaultData: AppData = {
   apps: [],
@@ -85,8 +85,9 @@ const addAppManifest = (manifest: Manifest, appName: string): void => {
 
 const addConfig = (configName: string, config: string | Array<string>, data = readData()): void => {
   if (!data.config) {
-    const val = {}
-    val[configName] = config
+    const val = {
+      configName: config
+    }
     data.config = val
   } else if (Array.isArray(data.config[configName])) {
     const existingArray = data.config[configName] as string[]
@@ -165,13 +166,13 @@ const purgeAppConfig = async (appName: string): Promise<void> => {
 }
 
 export {
-  setAppData,
-  setAppsData,
-  getAppData,
-  getAppByName,
-  getAppByIndex,
   addAppManifest,
   addConfig,
+  getAppByIndex,
+  getAppByName,
+  getAppData,
   getConfig,
-  purgeAppConfig
+  purgeAppConfig,
+  setAppData,
+  setAppsData,
 }

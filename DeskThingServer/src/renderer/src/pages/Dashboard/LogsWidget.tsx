@@ -1,5 +1,5 @@
 import React from 'react'
-import useLogStore from '@renderer/stores/logStore'
+import useLogStore from '@renderer/stores/logStore.ts'
 
 const LogsWidget: React.FC = () => {
   const logs = useLogStore((state) => state.logList)

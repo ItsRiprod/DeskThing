@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react'
-import usePageStore from '../stores/pageStore'
+import usePageStore from '../stores/pageStore.ts'
 import {
   IconCarThingSmall,
   IconDownload,
   IconHome,
   IconLayoutgrid,
   IconWrench
-} from '@renderer/assets/icons'
+} from '@renderer/assets/icons/index.ts'
 
 const Nav: React.FC = () => {
   const currentPage = usePageStore((pageStore) => pageStore.currentPage)

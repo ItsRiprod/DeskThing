@@ -1,24 +1,25 @@
 console.log('[App Handler] Starting')
-import path from 'path'
+import path from 'node:path'
 import {
   App,
   AppDataInterface,
-  AppReturnData,
   AppIPCData,
+  AppReturnData,
+  MESSAGE_TYPES,
+  ReplyData,
   ReplyFn,
-  MESSAGE_TYPES
-} from '@shared/types'
-import loggingStore from '../stores/loggingStore'
-import { getData, setData } from './dataHandler'
-import { dialog, BrowserWindow } from 'electron'
-import { sendMessageToApp, AppHandler } from '../services/apps'
+} from '@shared/types/index.ts'
+import loggingStore from '../stores/loggingStore.ts'
+import { getData, setData } from './dataHandler.ts'
+import { BrowserWindow, dialog } from 'electron'
+import { AppHandler, sendMessageToApp } from '../services/apps/index.ts'
 const appStore = AppHandler.getInstance()
 
 export const appHandler: Record<
   AppIPCData['type'],
   (
     data: AppIPCData,
-    replyFn: ReplyFn
+    replyFn: ReplyFn,
   ) => Promise<
     AppDataInterface | boolean | App[] | undefined | void | null | App | string | AppReturnData
   >
@@ -77,7 +78,7 @@ export const appHandler: Record<
         status: false,
         data: returnData,
         error: '[handleZip] No data returned!',
-        final: true
+        final: true,
       })
       return returnData
     }
@@ -89,7 +90,7 @@ export const appHandler: Record<
   url: async (data, replyFn) => {
     replyFn('logging', { status: true, data: 'Handling app from URL...', final: false })
 
-    const reply = async (channel: string, data): Promise<void> => {
+    const reply = async (channel: string, data: ReplyData): Promise<void> => {
       replyFn(channel, data)
     }
 
@@ -108,7 +109,7 @@ export const appHandler: Record<
 
     const result = await dialog.showOpenDialog(mainWindow, {
       properties: ['openFile'],
-      filters: [{ name: 'ZIP Files', extensions: ['zip'] }]
+      filters: [{ name: 'ZIP Files', extensions: ['zip'] }],
     })
     if (result.canceled) return null
 
@@ -119,7 +120,7 @@ export const appHandler: Record<
     loggingStore.log(
       MESSAGE_TYPES.ERROR,
       'Developer App Not implemented Yet ',
-      data.payload.appPath
+      data.payload.appPath,
     )
     // await appStore.run('developer-app', appPath)
     replyFn('logging', { status: true, data: 'Finished', final: true })
@@ -131,7 +132,7 @@ export const appHandler: Record<
   'app-order': async (data, replyFn) => {
     appStore.reorder(data.payload)
     replyFn('logging', { status: true, data: 'Finished', final: true })
-  }
+  },
 }
 
 const getApps = (replyFn: ReplyFn): App[] => {
@@ -142,21 +143,21 @@ const getApps = (replyFn: ReplyFn): App[] => {
   return data
 }
 
-const setAppData = async (replyFn: ReplyFn, id, data: AppDataInterface): Promise<void> => {
+const setAppData = async (replyFn: ReplyFn, id: string, data: AppDataInterface): Promise<void> => {
   loggingStore.log(MESSAGE_TYPES.LOGGING, 'SERVER: Saving ' + id + "'s data " + data)
   await setData(id, data)
   replyFn('logging', { status: true, data: 'Finished', final: true })
 }
 
-const getAppData = async (replyFn, payload): Promise<AppDataInterface | null> => {
+const getAppData = async (replyFn: ReplyFn, payload: string): Promise<AppDataInterface | null> => {
   try {
-    const data = await getData(payload)
+    const data = getData(payload)
     replyFn('logging', { status: true, data: 'Finished', final: true })
     return data
   } catch (error) {
     loggingStore.log(MESSAGE_TYPES.ERROR, 'SERVER: Error saving manifest' + error)
     console.error('Error setting client manifest:', error)
-    replyFn('logging', { status: false, data: 'Unfinished', error: error, final: true })
+    replyFn('logging', { status: false, data: 'Unfinished', error : error as string, final: true })
     return null
   }
 }

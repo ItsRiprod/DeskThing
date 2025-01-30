@@ -1,10 +1,10 @@
 console.log('[ADB Handler] Starting')
-import path from 'path'
-import { execFile } from 'child_process'
-import getPlatform from '../utils/get-platform'
-import loggingStore from '../stores/loggingStore'
-import settingsStore from '../stores/settingsStore'
-import { ReplyFn, MESSAGE_TYPES } from '@shared/types'
+import path from 'node:path'
+import { execFile } from 'node:child_process'
+import getPlatform from '../utils/get-platform.ts'
+import loggingStore from '../stores/loggingStore.ts'
+import settingsStore from '../stores/settingsStore.ts'
+import { MESSAGE_TYPES, ReplyFn } from '@shared/types/index.ts'
 
 const isDevelopment = process.env.NODE_ENV === 'development'
 const execPath = isDevelopment

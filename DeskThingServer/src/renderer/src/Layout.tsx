@@ -1,4 +1,4 @@
-import './assets/main.css'
+import '@renderer/assets/main.css'
 import { ReactNode } from 'react'
 
 interface RootLayoutProps {

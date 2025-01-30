@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { LOGGING_LEVEL, Settings } from '@shared/types'
+import { LOGGING_LEVEL, Settings } from '@shared/types/index.ts'
 
 interface SettingsStoreState {
   settings: Settings

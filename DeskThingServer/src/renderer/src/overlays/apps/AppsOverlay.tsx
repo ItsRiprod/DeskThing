@@ -1,13 +1,13 @@
 import React from 'react'
-import Overlay from '../Overlay'
-import { IconGear, IconLogs, IconPlay } from '@renderer/assets/icons'
-import Button from '@renderer/components/Button'
+import Overlay from '../Overlay.tsx'
+import { IconGear, IconLogs, IconPlay } from '@renderer/assets/icons/index.ts'
+import Button from '@renderer/components/Button.tsx'
 import { useSearchParams } from 'react-router-dom'
-import AppActions from './AppActions'
-import AppDetails from './AppDetails'
-import AppSettings from './AppSettings'
-import { App } from '@shared/types'
-import { useAppStore } from '@renderer/stores'
+import AppActions from './AppActions.tsx'
+import AppDetails from './AppDetails.tsx'
+import AppSettings from './AppSettings.tsx'
+import { App } from '@shared/types/index.ts'
+import { useAppStore } from '@renderer/stores/index.ts'
 
 export interface AppSettingProps {
   app: App
@@ -17,7 +17,7 @@ const settingsPages = [
   { key: 'actions', label: 'Actions', Icon: IconPlay },
   { key: 'details', label: 'Details', Icon: IconLogs },
   { key: 'settings', label: 'Settings', Icon: IconGear }
-]
+] as const
 
 /**
  * ClientSettingsOverlay component

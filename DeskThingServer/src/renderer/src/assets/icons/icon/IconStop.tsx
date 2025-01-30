@@ -1,4 +1,4 @@
-import { Icon, IconProps } from '.'
+import { Icon, IconProps } from './index.tsx'
 
 function IconStop(props: IconProps): JSX.Element {
   return (

@@ -1,4 +1,4 @@
-import { Icon } from '.'
+import { Icon } from './index.tsx'
 
 function IconTrash(props): JSX.Element {
   return (

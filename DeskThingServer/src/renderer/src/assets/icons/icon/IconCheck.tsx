@@ -1,4 +1,4 @@
-import { Icon } from '.'
+import { Icon } from './index.tsx'
 
 function IconCheck(props): JSX.Element {
   return (

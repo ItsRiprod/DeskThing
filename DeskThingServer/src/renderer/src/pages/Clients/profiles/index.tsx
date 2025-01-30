@@ -1,10 +1,15 @@
 import React, { useEffect } from 'react'
-import Sidebar from '@renderer/nav/Sidebar'
-import Button from '@renderer/components/Button'
-import { IconCheckCircle, IconDownload, IconPlus, IconUpload } from '@renderer/assets/icons'
-import MainElement from '@renderer/nav/MainElement'
-import SponsorButton from '@renderer/components/SponsorButton'
-import useMappingStore from '@renderer/stores/mappingStore'
+import Sidebar from '@renderer/nav/Sidebar.tsx'
+import Button from '@renderer/components/Button.tsx'
+import {
+  IconCheckCircle,
+  IconDownload,
+  IconPlus,
+  IconUpload,
+} from '@renderer/assets/icons/index.ts'
+import MainElement from '@renderer/nav/MainElement.tsx'
+import SponsorButton from '@renderer/components/SponsorButton.tsx'
+import useMappingStore from '@renderer/stores/mappingStore.ts'
 
 const ProfilesPage: React.FC = () => {
   const profiles = useMappingStore((state) => state.profiles)
@@ -28,7 +33,9 @@ const ProfilesPage: React.FC = () => {
               profiles.map((profile) => (
                 <Button
                   key={profile.id}
-                  className={`hover:bg-zinc-900 gap-2 ${selectedProfile.id === profile.id ? 'border border-green-500' : ''}`}
+                  className={`hover:bg-zinc-900 gap-2 ${
+                    selectedProfile.id === profile.id ? 'border border-green-500' : ''
+                  }`}
                   onClick={() => handleProfileChange(profile)}
                 >
                   {selectedProfile.id == profile.id && (

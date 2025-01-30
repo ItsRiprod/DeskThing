@@ -1,9 +1,9 @@
-import Button from '@renderer/components/Button'
-import { Action, EventMode, Key, SettingOption } from '@shared/types'
+import Button from '@renderer/components/Button.tsx'
+import { Action, EventMode, Key, SettingOption } from '@shared/types/index.ts'
 import { useEffect, useState } from 'react'
-import { ActionIcon } from './ActionIcon'
-import { IconArrowRight, IconArrowUp } from '@renderer/assets/icons'
-import Select from '@renderer/components/Select'
+import { ActionIcon } from './ActionIcon.tsx'
+import { IconArrowRight, IconArrowUp } from '@renderer/assets/icons/index.ts'
+import Select from '@renderer/components/Select.tsx'
 import { SingleValue } from 'react-select'
 
 interface AddActionPopupProps {
@@ -70,7 +70,7 @@ const AddActionPopup = ({ pendingAction, updateAction }: AddActionPopupProps): J
               pendingAction?.value_instructions && (
                 <input
                   type="text"
-                  className="p-2 border rounded text-black"
+                  className="p-2 border rounded-sm text-black"
                   placeholder="Enter value"
                   value={value}
                   onChange={(e) => handleValueChange(e.target.value)}

@@ -1,4 +1,4 @@
-import { Icon, IconProps } from '.'
+import { Icon, IconProps } from './index.tsx'
 import { useEffect, useRef } from 'react'
 
 interface ToggleProps extends IconProps {

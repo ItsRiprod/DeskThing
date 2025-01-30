@@ -1,12 +1,12 @@
 import React from 'react'
-import Overlay from '../Overlay'
-import Button from '@renderer/components/Button'
-import { IconBell, IconLayoutgrid, IconLogs, IconWarning } from '@renderer/assets/icons'
-import EvensPage from './EventsPage'
-import { useNotificationStore } from '@renderer/stores/'
-import RequestsPage from './RequestsPage'
-import TasksPage from './TasksPage'
-import IssuesPage from './IssuesPage'
+import Overlay from '../Overlay.tsx'
+import Button from '@renderer/components/Button.tsx'
+import { IconBell, IconLayoutgrid, IconLogs, IconWarning } from '@renderer/assets/icons/index.ts'
+import EvensPage from './EventsPage.tsx'
+import { useNotificationStore } from '@renderer/stores/index.ts'
+import RequestsPage from './RequestsPage.tsx'
+import TasksPage from './TasksPage.tsx'
+import IssuesPage from './IssuesPage.tsx'
 import { useSearchParams } from 'react-router-dom'
 
 const NotificationOverlay: React.FC = () => {
@@ -63,7 +63,7 @@ const NotificationOverlay: React.FC = () => {
             className="relative"
           >
             {notifState.requestQueue.length > 0 && (
-              <div className="absolute inset-0 rounded w-full h-full animate-pulse border-2 border-blue-500"></div>
+              <div className="absolute inset-0 rounded-sm w-full h-full animate-pulse border-2 border-blue-500"></div>
             )}
           </NavComponent>
           <NavComponent

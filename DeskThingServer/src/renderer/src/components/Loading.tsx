@@ -1,5 +1,5 @@
 import React from 'react'
-import { IconLogoLoading } from '../assets/icons'
+import { IconLogoLoading } from '../assets/icons/index.ts'
 
 interface LoadingProps {
   message?: string

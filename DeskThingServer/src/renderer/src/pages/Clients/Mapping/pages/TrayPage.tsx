@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { PageProps } from '..'
-import useMappingStore from '@renderer/stores/mappingStore'
-import { Key } from '@shared/types'
-import { ActionIcon } from '../components/ActionIcon'
-import Button from '@renderer/components/Button'
+import { PageProps } from '../index.tsx'
+import useMappingStore from '@renderer/stores/mappingStore.ts'
+import { Key } from '@shared/types/index.ts'
+import { ActionIcon } from '../components/ActionIcon.tsx'
+import Button from '@renderer/components/Button.tsx'
 
 const keyList: string[] = ['Tray1', 'Tray2', 'Tray3', 'Tray4', 'Tray5', 'Tray6']
 
@@ -28,11 +28,15 @@ const TrayPage: React.FC<PageProps> = ({
           miniplayerKeys.map((key, index) => (
             <Button
               key={key?.id || index}
-              className={`relative flex hover:bg-zinc-700 h-full w-full items-center justify-center rounded-lg p-3 ${selectedKey?.id == key.id ? 'bg-zinc-800' : 'bg-zinc-900'}`}
+              className={`relative flex hover:bg-zinc-700 h-full w-full items-center justify-center rounded-lg p-3 ${
+                selectedKey?.id == key.id ? 'bg-zinc-800' : 'bg-zinc-900'
+              }`}
               onClick={() => setSelectedKey(key)}
             >
               <div
-                className={`text-xs w-full md:text-xl h-full flex items-center justify-center inset-0 absolute ${index % 2 == 0 ? '-translate-y-full' : 'translate-y-full'}`}
+                className={`text-xs w-full md:text-xl h-full flex items-center justify-center inset-0 absolute ${
+                  index % 2 == 0 ? '-translate-y-full' : 'translate-y-full'
+                }`}
               >
                 {key.id}
               </div>

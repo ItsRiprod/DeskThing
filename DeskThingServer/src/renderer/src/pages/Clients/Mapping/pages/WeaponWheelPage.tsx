@@ -1,9 +1,9 @@
-import { PageProps } from '..'
-import useMappingStore from '@renderer/stores/mappingStore'
-import { ActionReference } from '@shared/types'
-import { ActionIcon } from '../components/ActionIcon'
-import Button from '@renderer/components/Button'
-import { IconCarThing } from '@renderer/assets/icons'
+import { PageProps } from '../index.tsx'
+import useMappingStore from '@renderer/stores/mappingStore.ts'
+import { ActionReference } from '@shared/types/index.ts'
+import { ActionIcon } from '../components/ActionIcon.tsx'
+import Button from '@renderer/components/Button.tsx'
+import { IconCarThing } from '@renderer/assets/icons/index.ts'
 
 const WheelPage: React.FC<PageProps> = ({
   selectedKey,
@@ -95,7 +95,9 @@ const WheelButton: React.FC<WheelButtonProps> = ({
   return (
     <div className={`${className}`}>
       <Button
-        className={`flex hover:bg-zinc-700 items-center justify-center rounded-lg p-3 ${selectedKeyId == keyId ? 'bg-zinc-800' : 'bg-zinc-900'}`}
+        className={`flex hover:bg-zinc-700 items-center justify-center rounded-lg p-3 ${
+          selectedKeyId == keyId ? 'bg-zinc-800' : 'bg-zinc-900'
+        }`}
         onClick={handleClick}
       >
         <div className={`text-xs -translate-y-10 absolute `}>{keyId}</div>

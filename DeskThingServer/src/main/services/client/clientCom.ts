@@ -1,14 +1,14 @@
 console.log('[ClientCom Service] Starting')
-import { SocketData, MESSAGE_TYPES, SongData } from '@shared/types'
-import { server, Clients } from './websocket'
-import loggingStore from '../../stores/loggingStore'
-import connectionsStore from '../../stores/connectionsStore'
-import appState from '../apps/appState'
-import { readData } from '../../handlers/dataHandler'
+import { AppSettings, MESSAGE_TYPES, SocketData, SongData } from '@shared/types/index.ts'
+import { Clients, server } from './websocket.ts'
+import loggingStore from '../../stores/loggingStore.ts'
+import connectionsStore from '../../stores/connectionsStore.ts'
+import appState from '../apps/appState.ts'
+import { readData } from '../../handlers/dataHandler.ts'
 
 export const handleClientMessage = async (data: SocketData): Promise<void> => {
   const { type, payload } = data
-  const musicHandler = await import('../../handlers/musicHandler')
+  const musicHandler = await import('../../handlers/musicHandler.ts')
   switch (type) {
     case 'song':
       musicHandler.default.handleMusicMessage(payload as SongData)
@@ -21,7 +21,13 @@ export const handleClientMessage = async (data: SocketData): Promise<void> => {
 export const sendMessageToClients = async (data: SocketData): Promise<void> => {
   loggingStore.log(
     MESSAGE_TYPES.LOGGING,
-    `Sending message to clients: ${data.payload ? (JSON.stringify(data.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(data.payload)) : 'undefined'}`
+    `Sending message to clients: ${
+      data.payload
+        ? (JSON.stringify(data.payload).length > 1000
+          ? '[Large Payload]'
+          : JSON.stringify(data.payload))
+        : 'undefined'
+    }`,
   )
   if (server) {
     server.clients.forEach((client) => {
@@ -93,7 +99,7 @@ export const sendSettingsData = async (clientId?: string): Promise<void> => {
       throw new Error('Invalid configuration format')
     }
 
-    const settings = {}
+    const settings: Record<string, AppSettings> = {}
 
     if (appData && config) {
       appData.map((app) => {
@@ -118,7 +124,7 @@ export const sendSettingsData = async (clientId?: string): Promise<void> => {
 
 export const sendMappings = async (clientId?: string): Promise<void> => {
   try {
-    const { default: keyMapStore } = await import('../mappings/mappingStore')
+    const { default: keyMapStore } = await import('../mappings/mappingStore.ts')
     const mappings = keyMapStore.getMapping()
     const actions = keyMapStore.getActions()
 

@@ -1,4 +1,4 @@
-import { App } from './app'
+import type { App } from './app.ts'
 
 export interface Pending_Profile {
   version: string

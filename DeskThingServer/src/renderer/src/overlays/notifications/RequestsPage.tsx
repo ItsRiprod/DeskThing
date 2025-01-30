@@ -1,7 +1,7 @@
-import { IconArrowDown, IconCheck, IconX } from '@renderer/assets/icons'
-import Button from '@renderer/components/Button'
-import { useNotificationStore } from '@renderer/stores'
-import { Request } from '@renderer/stores/notificationStore'
+import { IconArrowDown, IconCheck, IconX } from '@renderer/assets/icons/index.ts'
+import Button from '@renderer/components/Button.tsx'
+import { useNotificationStore } from '@renderer/stores/index.ts'
+import { Request } from '@renderer/stores/notificationStore.ts'
 import React, { useState, useEffect } from 'react'
 
 const RequestsPage: React.FC = () => {
@@ -84,7 +84,7 @@ const RequestComponent = ({ request }: RequestProps): React.ReactElement => {
   }, [formData, request.scopes])
 
   return (
-    <div className="rounded bg-zinc-900 p-2 flex flex-col">
+    <div className="rounded-sm bg-zinc-900 p-2 flex flex-col">
       <div className="flex w-full justify-between items-center p-2">
         <p className="text-2xl font-semibold">
           {request.appName.charAt(0).toUpperCase() + request.appName.slice(1)} Request
@@ -111,7 +111,7 @@ const RequestComponent = ({ request }: RequestProps): React.ReactElement => {
                   id={key}
                   value={formData[key] || scope.value || ''}
                   onChange={(e) => handleInputChange(key, e.target.value)}
-                  className="w-full group border rounded px-2 py-1 focus:text-black text-gray-500"
+                  className="w-full group border rounded-sm px-2 py-1 focus:text-black text-gray-500"
                   onFocus={() => setFocusedIndex(index)}
                 />
               </div>

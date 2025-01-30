@@ -1,21 +1,27 @@
-import { ElectronAPI } from '@electron-toolkit/preload'
-import {
+import type { ElectronAPI } from '@electron-toolkit/preload'
+import type {
+  Action,
   ActionReference,
+  App,
   AppDataInterface,
   AppReturnData,
+  Button,
   ButtonMapping,
   Client,
   ClientManifest,
+  GithubRelease,
+  IncomingData,
+  Key,
   Log,
-  Profile
-} from '@shared/types'
-
-type AppData = { [key: string]: string }
+  Profile,
+  Settings,
+  SocketData
+} from '@shared/types/index.ts'
 
 declare global {
   interface Window {
     electron: ElectronAPI & {
-      ping: () => Promise<string>
+      ping: () => Promise<void>
       pingClient: (clientId: string) => Promise<string | null>
       getApps: () => Promise<App[]>
       getAppData: (appId: string) => Promise<AppDataInterface | null>
@@ -28,7 +34,7 @@ declare global {
       handleAppZip: (path: string) => Promise<AppReturnData | null>
       handleAppUrl: (url: string) => Promise<AppReturnData | null>
       handleResponseToUserData: (requestId: string, payload: IncomingData) => Promise<void>
-      handleDevAppZip: (path: string) => Promise<void>
+      handleDevAppZip?: (path: string) => Promise<void>
       sendDataToApp: (data: SocketData) => Promise<void>
       orderApps: (data: string[]) => Promise<void>
       handleClientZip: (path: string) => Promise<void>
@@ -40,7 +46,6 @@ declare global {
       pushStagedApp: (clientId: string) => Promise<void>
       pushProxyScript: (clientId: string) => Promise<void>
       handleClientCommand: (command: SocketData) => Promise<void>
-      ping: () => Promise<void>
       getConnections: () => Promise<Client[]>
       getDevices: () => Promise<string[]>
       disconnectClient: (connectionId: string) => Promise<void>

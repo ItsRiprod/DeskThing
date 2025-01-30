@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
-import LogsWidget from './LogsWidget'
-import ClientsWidget from './ClientsWidget'
+import LogsWidget from './LogsWidget.tsx'
+import ClientsWidget from './ClientsWidget.tsx'
 import InfoWidget from './InfoWidget.tsx'
-import Sidebar from '@renderer/nav/Sidebar'
-import MainElement from '@renderer/nav/MainElement'
-import WelcomeWidget from './WelcomeWidget'
+import Sidebar from '@renderer/nav/Sidebar.tsx'
+import MainElement from '@renderer/nav/MainElement.tsx'
+import WelcomeWidget from './WelcomeWidget.tsx'
 
 interface WidgetProps {
   size: 'small' | 'horizontal' | 'vertical'
@@ -52,10 +52,8 @@ const Dashboard: React.FC = () => {
         <p></p>
       </Sidebar>
       <MainElement>
-        <div className="grid overflow-auto grid-cols-4 grid-rows-2 gap-4 p-4 w-full h-full">
-          {items.map((item, index) => (
-            <DashboardItem key={index} {...item} />
-          ))}
+        <div className='grid overflow-auto grid-cols-4 grid-rows-2 gap-4 p-4 w-full h-full'>
+          {items.map((item, index) => <DashboardItem key={index} {...item} />)}
         </div>
       </MainElement>
     </div>

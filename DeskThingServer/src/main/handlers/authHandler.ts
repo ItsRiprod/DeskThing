@@ -1,11 +1,11 @@
 console.log('[Auth Handler] Starting')
-import { getAppData } from './configHandler' // Assuming you have a config handler for active apps
-import { sendMessageToApp } from '../services/apps' // Assuming you have an app handler for sending messages
-import http from 'http'
-import url from 'url'
-import settingsStore from '../stores/settingsStore'
-import loggingStore from '../stores/loggingStore'
-import { Settings, MESSAGE_TYPES } from '@shared/types'
+import { getAppData } from './configHandler.ts' // Assuming you have a config handler for active apps
+import { sendMessageToApp } from '../services/apps/index.ts' // Assuming you have an app handler for sending messages
+import http from 'node:http'
+import url from 'node:url'
+import settingsStore from '../stores/settingsStore.ts'
+import loggingStore from '../stores/loggingStore.ts'
+import { MESSAGE_TYPES, Settings } from '@shared/types/index.ts'
 
 const successView = '<h1>Success</h1><p>You can now close this window.</p>'
 
@@ -17,7 +17,7 @@ function handleCallback(req: http.IncomingMessage, res: http.ServerResponse): vo
 
   loggingStore.log(
     MESSAGE_TYPES.LOGGING,
-    `AUTH: Received callback request for ${parsedUrl.pathname}`
+    `AUTH: Received callback request for ${parsedUrl.pathname}`,
   )
 
   const urlParts = parsedUrl.pathname?.split('/').filter(Boolean)
@@ -64,7 +64,7 @@ const startServer = async (): Promise<void> => {
   server.listen(callBackPort, () => {
     loggingStore.log(
       MESSAGE_TYPES.MESSAGE,
-      `CALLBACK: running at http://localhost:${callBackPort}/`
+      `CALLBACK: running at http://localhost:${callBackPort}/`,
     )
   })
 }

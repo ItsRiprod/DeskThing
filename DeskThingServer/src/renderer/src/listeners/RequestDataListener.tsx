@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
-import { useClientStore, useNotificationStore } from '@renderer/stores'
-import { AuthScopes } from '@shared/types'
+import { useClientStore, useNotificationStore } from '@renderer/stores/index.ts'
+import { AuthScopes } from '@shared/types/index.ts'
 
 const RequestDataListener = (): null => {
   const addRequest = useNotificationStore((state) => state.addRequest)

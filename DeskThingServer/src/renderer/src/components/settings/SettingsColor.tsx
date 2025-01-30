@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import SettingComponent from './SettingComponent'
-import { SettingsColor } from '@shared/types'
+import SettingComponent from './SettingComponent.tsx'
+import { SettingsColor } from '@shared/types/index.ts'
 
 interface SettingsColorProps {
   setting: SettingsColor
@@ -33,7 +33,7 @@ export const SettingsColorComponent: React.FC<SettingsColorProps> = ({
   }, [setting])
 
   useEffect(() => {
-    let promptTimer: NodeJS.Timeout
+    let promptTimer: number
     if (showPrompt) {
       promptTimer = setTimeout(() => {
         setShowPrompt(false)
@@ -51,7 +51,7 @@ export const SettingsColorComponent: React.FC<SettingsColorProps> = ({
             type="color"
             value={localValue}
             onChange={(e) => setLocalValue(e.target.value)}
-            className="w-12 h-8 rounded cursor-pointer"
+            className="w-12 h-8 rounded-sm cursor-pointer"
             onClick={() => setShowPrompt(true)}
           />
           {showPrompt && (

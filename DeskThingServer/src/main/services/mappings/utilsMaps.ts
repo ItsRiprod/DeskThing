@@ -1,5 +1,5 @@
 console.log('[MapUtil Service] Starting')
-import loggingStore from '@server/stores/loggingStore'
+import loggingStore from '@server/stores/loggingStore.ts'
 import {
   Action,
   ActionReference,
@@ -9,8 +9,8 @@ import {
   MappingFileStructure,
   MappingStructure,
   MESSAGE_TYPES
-} from '@shared/types'
-import { getAppFilePath } from '../apps'
+} from '@shared/types/index.ts'
+import { getAppFilePath } from '../apps/index.ts'
 
 export const isValidMappingStructure = async (structure: MappingStructure): Promise<boolean> => {
   try {
@@ -178,7 +178,7 @@ export const isValidButtonMapping = (mapping: ButtonMapping): boolean => {
       }
     }
     return true
-  } catch (error) {
+  } catch (_error) {
     return false
   }
 }
@@ -255,17 +255,16 @@ export const isValidKey = (key: Key): boolean => {
 export const FetchIcon = async (action: Action): Promise<string | null> => {
   if (!action) return null
   const { app } = require('electron')
-  const fs = require('fs').promises
-  const path = require('path')
+  const fs = require('node:fs').promises
+  const path = require('node:path')
 
   try {
-    const iconPath =
-      action.source === 'server'
-        ? path.join(app.getPath('userData'), 'webapp', 'icons', `${action.icon || action.id}.svg`)
-        : path.join(getAppFilePath(action.source), 'icons', `${action.id}.svg`)
+    const iconPath = action.source === 'server'
+      ? path.join(app.getPath('userData'), 'webapp', 'icons', `${action.icon || action.id}.svg`)
+      : path.join(getAppFilePath(action.source), 'icons', `${action.id}.svg`)
 
     return await fs.readFile(iconPath, 'utf8')
-  } catch (error) {
+  } catch (_error) {
     return null
   }
 }

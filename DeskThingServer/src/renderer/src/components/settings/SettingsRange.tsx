@@ -1,6 +1,6 @@
 import React from 'react'
-import SettingComponent from './SettingComponent'
-import { SettingsRange } from '@shared/types'
+import SettingComponent from './SettingComponent.tsx'
+import { SettingsRange } from '@shared/types/index.ts'
 
 interface SettingsRangeProps {
   setting: SettingsRange

@@ -5,7 +5,7 @@
  * @version 0.9.0
  */
 import { create } from 'zustand'
-import { ReleaseDetails, SortedReleases, GithubRelease } from '@shared/types'
+import { GithubRelease, ReleaseDetails, SortedReleases } from '@shared/types/index.ts'
 
 interface CacheEntry {
   timestamp: number

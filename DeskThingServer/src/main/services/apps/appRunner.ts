@@ -1,15 +1,13 @@
 console.log('[AppRnr Service] Starting')
-import loggingStore from '../../stores/loggingStore'
-import { MESSAGE_TYPES } from '@shared/types'
+import loggingStore from '@server/stores/loggingStore.ts'
+import { MESSAGE_TYPES } from '@shared/types/index.ts'
 
 /**
  * Loads and runs all enabled apps from appData.json
  * This will also get the manifest data of each app and update that in case of there being any changes
- *
- * @returns {Promise<void>}
  */
 export async function loadAndRunEnabledApps(): Promise<void> {
-  const { AppHandler } = await import('./appState')
+  const { AppHandler } = await import('./appState.ts')
   const appHandler = AppHandler.getInstance()
 
   try {

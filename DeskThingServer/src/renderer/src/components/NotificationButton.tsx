@@ -1,7 +1,7 @@
-import { IconBell } from '@renderer/assets/icons'
+import { IconBell } from '@renderer/assets/icons/index.ts'
 import React, { useEffect, useState } from 'react'
-import Button from './Button'
-import { useNotificationStore } from '@renderer/stores'
+import Button from './Button.tsx'
+import { useNotificationStore } from '@renderer/stores/index.ts'
 import { useSearchParams } from 'react-router-dom'
 
 const NotificationButton: React.FC = () => {
@@ -29,19 +29,22 @@ const NotificationButton: React.FC = () => {
   return (
     <>
       <Button onClick={handleOpenNotifications} className={`gap-2 hover:bg-zinc-900`}>
-        {taskNum > 0 ? (
-          <p
-            className={`${errors > 0 || issues > 0 ? 'bg-red-500' : 'bg-green-500'} relative p-1 w-full rounded text-xs`}
-          >
-            {requests.length > 0 && (
-              <div className="absolute inset-0 rounded w-full h-full animate-ping border-2 border-blue-500"></div>
-            )}
-            {taskNum}
-          </p>
-        ) : (
-          <IconBell iconSize={24} strokeWidth={2} />
-        )}
-        <p className="flex-grow text-center text-lg md:block hidden">Notifications</p>
+        {taskNum > 0
+          ? (
+            <p
+              className={`${
+                errors > 0 || issues > 0 ? 'bg-red-500' : 'bg-green-500'
+              } relative p-1 w-full rounded-sm text-xs`}
+            >
+              {requests.length > 0 && (
+                <div className='absolute inset-0 rounded-sm w-full h-full animate-ping border-2 border-blue-500'>
+                </div>
+              )}
+              {taskNum}
+            </p>
+          )
+          : <IconBell iconSize={24} strokeWidth={2} />}
+        <p className='grow text-center text-lg md:block hidden'>Notifications</p>
       </Button>
     </>
   )

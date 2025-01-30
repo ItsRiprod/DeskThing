@@ -1,13 +1,14 @@
 console.log('[Device Handler] Starting')
-import { sendIpcData } from '..'
-import loggingStore from '../stores/loggingStore'
-import { join } from 'path'
-import * as fs from 'fs'
+import { sendIpcData } from '../index.ts'
+import loggingStore from '../stores/loggingStore.ts'
+import { join } from 'node:path'
+import * as fs from 'node:fs'
 import { app, net } from 'electron'
-import { handleAdbCommands } from './adbHandler'
-import { Client, ClientManifest, MESSAGE_TYPES, ReplyData, ReplyFn } from '@shared/types'
-import settingsStore from '../stores/settingsStore'
-import { getLatestRelease } from './githubHandler'
+import { handleAdbCommands } from './adbHandler.ts'
+import { Client, ClientManifest, MESSAGE_TYPES, ReplyData, ReplyFn } from '@shared/types/index.ts'
+import settingsStore from '../stores/settingsStore.ts'
+import { getLatestRelease } from './githubHandler.ts'
+import { Buffer } from 'node:buffer'
 
 export const HandleDeviceData = async (data: string): Promise<void> => {
   try {

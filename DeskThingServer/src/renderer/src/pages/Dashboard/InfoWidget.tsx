@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useAppStore, useClientStore, useSettingsStore } from '@renderer/stores'
+import { useAppStore, useClientStore, useSettingsStore } from '@renderer/stores/index.ts'
 
 const InfoWidget: React.FC = () => {
   const connections = useClientStore((state) => state.connections)

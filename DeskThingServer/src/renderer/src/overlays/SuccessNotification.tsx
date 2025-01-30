@@ -1,7 +1,7 @@
-import { AppReturnData } from '@shared/types'
-import Overlay from './Overlay'
-import Button from '@renderer/components/Button'
-import { IconPlay } from '@renderer/assets/icons'
+import { AppReturnData } from '@shared/types/index.ts'
+import Overlay from './Overlay.tsx'
+import Button from '@renderer/components/Button.tsx'
+import { IconPlay } from '@renderer/assets/icons/index.ts'
 import { useState } from 'react'
 
 interface SuccessNotificationProps {

@@ -1,11 +1,11 @@
 console.log('[AppMangr Service] Starting')
-import { rmSync, readdirSync, statSync, existsSync } from 'node:fs'
-import loggingStore from '../../stores/loggingStore'
-import { MESSAGE_TYPES } from '@shared/types'
+import { existsSync, readdirSync, rmSync, statSync } from 'node:fs'
+import loggingStore from '../../stores/loggingStore.ts'
+import { MESSAGE_TYPES } from '@shared/types/index.ts'
 export async function clearCache(appName: string): Promise<void> {
   try {
-    const { join } = await import('path')
-    const { getAppFilePath } = await import('./appUtils')
+    const { join } = await import('node:path')
+    const { getAppFilePath } = await import('./appUtils.ts')
     const dir = getAppFilePath(appName)
 
     const items = readdirSync(dir)
@@ -69,9 +69,9 @@ export async function purgeApp(appName: string): Promise<void> {
   try {
     loggingStore.log(MESSAGE_TYPES.LOGGING, `SERVER: Purging App ${appName}`)
 
-    const { purgeAppData } = await import('../../handlers/dataHandler')
-    const { purgeAppConfig } = await import('../../handlers/configHandler')
-    const keyMapStore = (await import('../mappings/mappingStore')).default
+    const { purgeAppData } = await import('../../handlers/dataHandler.ts')
+    const { purgeAppConfig } = await import('../../handlers/configHandler.ts')
+    const keyMapStore = (await import('../mappings/mappingStore.ts')).default
 
     // Purge App Data
     await purgeAppData(appName)
@@ -85,7 +85,7 @@ export async function purgeApp(appName: string): Promise<void> {
     // Get path to file
     await clearCache(appName)
 
-    const { getAppFilePath } = await import('./appUtils')
+    const { getAppFilePath } = await import('./appUtils.ts')
     const dir = getAppFilePath(appName)
 
     if (appName == 'developer-app') return // Cancel here if it is a developer app

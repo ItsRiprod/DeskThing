@@ -1,0 +1,49 @@
+{
+  "tasks": {
+    "start": "electron-vite preview",
+    "dev": "electron-vite dev",
+    "debug": "electron-vite dev --inspect=8893",
+    "typecheck:web": "deno check src/renderer/** src/preload/index.ts src/shared/**",
+    "typecheck:node": "deno check electron.vite.config.* src/main/** src/preload/index.ts src/shared/**",
+    "typecheck": {
+      "dependencies": [
+        "typecheck:web",
+        "typecheck:node"
+      ]
+    },
+    "build:unpack": {
+      "command": "electron-builder --dir",
+      "dependencies": [
+        "build"
+      ]
+    }
+  },
+  "compilerOptions": {
+    "lib": [
+      "deno.window",
+      "esnext",
+      "DOM"
+    ],
+    "isolatedDeclarations": true,
+    // "erasableSyntaxOnly": true, // wait for TS 5.8 before enabling
+    "jsx": "react-jsx",
+    "types": [
+      "electron-vite/node"
+    ]
+  },
+  "fmt": {
+    "useTabs": false,
+    "singleQuote": true,
+    "semiColons": false,
+    "lineWidth": 100,
+    "exclude": [
+      "./src/renderer/**/*.tsx" // exclude react files to avoid huge diff with quotes
+    ]
+  },
+  "imports": {
+    "@server/": "./src/main/",
+    "@shared/": "./src/shared/",
+    "@renderer/": "./src/renderer/src/",
+    "@resources/": "./resources/"
+  }
+}

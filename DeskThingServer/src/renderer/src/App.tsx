@@ -1,10 +1,10 @@
-import ErrorBoundary from './components/ErrorBoundary'
-import AppRouter from './nav/Router'
-import Store from './stores/Store'
+import ErrorBoundary from '@renderer/components/ErrorBoundary.tsx'
+import AppRouter from '@renderer/nav/Router.tsx'
+import Store from '@renderer/stores/Store.tsx'
 
 export type SidebarView = 'home' | 'apps' | 'client' | 'dev'
 
-function App(): JSX.Element {
+export default function App(): JSX.Element {
   return (
     <div className="bg-black">
       <div className="h-screen w-screen text-white">
@@ -17,5 +17,3 @@ function App(): JSX.Element {
     </div>
   )
 }
-
-export default App
