@@ -1,13 +1,13 @@
 import React, { useState } from 'react'
-import Sidebar from '@renderer/nav/Sidebar'
-import Button from '@renderer/components/Button'
-import { IconDownload, IconLink, IconLoading, IconLogs, IconUpload } from '@renderer/assets/icons'
-import { useAppStore, useGithubStore, usePageStore } from '@renderer/stores'
-import MainElement from '@renderer/nav/MainElement'
-import { AppReturnData } from '@shared/types'
-import DownloadNotification from '@renderer/overlays/DownloadNotification'
-import Overlay from '@renderer/overlays/Overlay'
-import { SuccessNotification } from '@renderer/overlays/SuccessNotification'
+import Sidebar from '@renderer/nav/Sidebar.tsx'
+import Button from '@renderer/components/Button.tsx'
+import { IconDownload, IconLink, IconLoading, IconLogs, IconUpload } from '@renderer/assets/icons/index.ts'
+import { useAppStore, useGithubStore, usePageStore } from '@renderer/stores/index.ts'
+import MainElement from '@renderer/nav/MainElement.tsx'
+import { AppReturnData } from '@shared/types/index.ts'
+import DownloadNotification from '@renderer/overlays/DownloadNotification.tsx'
+import Overlay from '@renderer/overlays/Overlay.tsx'
+import { SuccessNotification } from '@renderer/overlays/SuccessNotification.tsx'
 
 const AppDownloads: React.FC = () => {
   // Getting releases to show
@@ -118,7 +118,7 @@ const AppDownloads: React.FC = () => {
 
                   return (
                     <div
-                      className="flex flex-row justify-between items-center bg-zinc-900 px-3 p-2 rounded"
+                      className="flex flex-row justify-between items-center bg-zinc-900 px-3 p-2 rounded-sm"
                       key={index}
                     >
                       <div className="">
@@ -142,7 +142,7 @@ const AppDownloads: React.FC = () => {
                           onClick={() => handleDownloadClick(release.browser_download_url)}
                           disabled={loading}
                         >
-                          <p className="group-hover:block hidden text-center flex-grow">
+                          <p className="group-hover:block hidden text-center grow">
                             Download {fileSize}
                           </p>
                           <IconDownload className="group-hover:stroke-2 stroke-1" />
@@ -167,11 +167,11 @@ const AppDownloads: React.FC = () => {
           <div className="flex flex-col gap-2">
             <Button onClick={handleUploadClick} className="hover:bg-zinc-900">
               {selectingFile ? <IconLoading strokeWidth={1.5} /> : <IconUpload strokeWidth={1.5} />}
-              <p className="md:block xs:hidden xs:text-center flex-grow">Upload App</p>
+              <p className="md:block xs:hidden xs:text-center grow">Upload App</p>
             </Button>
             <Button onClick={gotoClientDownloads} className="hover:bg-zinc-900">
               <IconLink strokeWidth={1.5} />
-              <p className="md:block xs:hidden xs:text-center flex-grow">Clients</p>
+              <p className="md:block xs:hidden xs:text-center grow">Clients</p>
             </Button>
           </div>
         </div>
@@ -199,13 +199,13 @@ const AppDownloads: React.FC = () => {
                       disabled={loading}
                       onClick={() => handleDownloadLatestClick(name)}
                     >
-                      <p className="group-hover:block hidden text-center flex-grow">
+                      <p className="group-hover:block hidden text-center grow">
                         Download Latest
                       </p>
                       <IconDownload className="group-hover:stroke-2 stroke-1" />
                     </Button>
                     <Button className="group gap-2" onClick={() => handleMoreDownloadsClick(name)}>
-                      <p className="group-hover:block hidden text-center flex-grow">
+                      <p className="group-hover:block hidden text-center grow">
                         More Downloads
                       </p>
                       <IconLogs className="group-hover:stroke-2 stroke-1" />

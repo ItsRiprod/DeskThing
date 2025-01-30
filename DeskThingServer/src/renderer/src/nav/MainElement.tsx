@@ -1,5 +1,5 @@
 import React from 'react'
-import Papertrail from './Papertrail'
+import Papertrail from './Papertrail.tsx'
 
 interface SidebarProps {
   children: React.ReactNode

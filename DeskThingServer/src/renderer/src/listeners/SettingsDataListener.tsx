@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
-import { useSettingsStore } from '../stores/'
-import { Settings } from '@shared/types'
+import { useSettingsStore } from '../stores/index.ts'
+import { Settings } from '@shared/types/index.ts'
 
 const SettingsDataListener = (): null => {
   const setSettings = useSettingsStore((state) => state.setSettings)

@@ -1,4 +1,4 @@
-import { App, AppDataInterface, AppReturnData, LoggingData } from '@shared/types'
+import { App, AppDataInterface, AppReturnData, LoggingData } from '@shared/types/index.ts'
 import { create } from 'zustand'
 
 interface AppStoreState {
@@ -92,18 +92,14 @@ const useAppStore = create<AppStoreState>((set) => ({
   enableApp: (appName: string): void => {
     window.electron.enableApp(appName)
     set((state) => ({
-      appsList: state.appsList.map((app) =>
-        app.name === appName ? { ...app, enabled: true } : app
-      )
+      appsList: state.appsList.map((app) => app.name === appName ? { ...app, enabled: true } : app),
     }))
   },
 
   runApp: (appName: string): void => {
     window.electron.runApp(appName)
     set((state) => ({
-      appsList: state.appsList.map((app) =>
-        app.name === appName ? { ...app, running: true } : app
-      )
+      appsList: state.appsList.map((app) => app.name === appName ? { ...app, running: true } : app),
     }))
   },
 

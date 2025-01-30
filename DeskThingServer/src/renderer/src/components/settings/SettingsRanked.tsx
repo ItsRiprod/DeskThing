@@ -1,7 +1,7 @@
 import React from 'react'
-import SettingComponent from './SettingComponent'
-import { SettingsRanked } from '@shared/types'
-import RankableList from '../RankableList'
+import SettingComponent from './SettingComponent.tsx'
+import { SettingsRanked } from '@shared/types/index.ts'
+import RankableList from '../RankableList.tsx'
 
 interface SettingsRankedProps {
   setting: SettingsRanked

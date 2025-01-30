@@ -1,7 +1,7 @@
 import React from 'react'
-import SettingComponent from './SettingComponent'
-import { SettingsList } from '@shared/types'
-import TagList from '../TagList'
+import SettingComponent from './SettingComponent.tsx'
+import { SettingsList } from '@shared/types/index.ts'
+import TagList from '../TagList.tsx'
 
 interface SettingsListProps {
   setting: SettingsList

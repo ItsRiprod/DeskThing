@@ -1,7 +1,4 @@
-// Ik this is bad practice but I don't have time to fix it right now
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-import { AppReturnData } from './app'
+import type { AppReturnData } from './app.ts'
 
 export const IPC_HANDLERS = {
   UTILITY: 'utility',

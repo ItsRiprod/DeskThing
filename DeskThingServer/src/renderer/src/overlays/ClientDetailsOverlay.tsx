@@ -10,13 +10,13 @@ import {
   IconReload,
   IconUpload,
   IconX
-} from '@renderer/assets/icons'
-import Button from '@renderer/components/Button'
-import { useSettingsStore } from '@renderer/stores'
-import { Client, LoggingData } from '@shared/types'
+} from '@renderer/assets/icons/index.ts'
+import Button from '@renderer/components/Button.tsx'
+import { useSettingsStore } from '@renderer/stores/index.ts'
+import { Client, LoggingData } from '@shared/types/index.ts'
 import React, { useState, useRef, useEffect } from 'react'
-import Overlay from './Overlay'
-import DownloadNotification from './DownloadNotification'
+import Overlay from './Overlay.tsx'
+import DownloadNotification from './DownloadNotification.tsx'
 
 interface ClientDetailsOverlayProps {
   onClose: () => void
@@ -35,7 +35,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
   const [logging, setLogging] = useState<LoggingData | null>()
   const [showLogging, setShowLogging] = useState(false)
   const [brightness, setBrightness] = useState(50)
-  const debounceTimeout = useRef<NodeJS.Timeout | null>(null)
+  const debounceTimeout = useRef<number | null>(null)
   const [deviceData, setDeviceData] = useState<{
     app_version?: string
     usid?: string
@@ -496,7 +496,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
                 value={command}
                 type="text"
                 placeholder="Enter ADB command..."
-                className="flex-1 px-3 py-2 bg-zinc-900 rounded-md text-white border border-zinc-700 focus:outline-none focus:border-zinc-500"
+                className="flex-1 px-3 py-2 bg-zinc-900 rounded-md text-white border border-zinc-700 focus:outline-hidden focus:border-zinc-500"
               />
               <Button
                 className="group bg-black group  hover:bg-zinc-950"

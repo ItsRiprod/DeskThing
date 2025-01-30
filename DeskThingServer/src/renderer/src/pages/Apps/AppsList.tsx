@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react'
-import Sidebar from '@renderer/nav/Sidebar'
-import Button from '@renderer/components/Button'
-import { IconDownload, IconLink } from '@renderer/assets/icons'
-import { useAppStore, useNotificationStore, usePageStore } from '@renderer/stores'
-import App from '@renderer/components/App'
-import MainElement from '@renderer/nav/MainElement'
+import Sidebar from '@renderer/nav/Sidebar.tsx'
+import Button from '@renderer/components/Button.tsx'
+import { IconDownload, IconLink } from '@renderer/assets/icons/index.ts'
+import { useAppStore, useNotificationStore, usePageStore } from '@renderer/stores/index.ts'
+import App from '@renderer/components/App.tsx'
+import MainElement from '@renderer/nav/MainElement.tsx'
 
 const AppsList: React.FC = () => {
   const appsList = useAppStore((appStore) => appStore.appsList)
@@ -25,7 +25,7 @@ const AppsList: React.FC = () => {
     setActiveRequests(requests.map((request) => request.appName))
   }, [requests])
 
-  const handleDragStart = (e, appName: string): void => {
+  const handleDragStart = (e: React.DragEvent, appName: string): void => {
     setDraggedApp(appName)
 
     // Create a custom drag image
@@ -73,7 +73,7 @@ const AppsList: React.FC = () => {
         <div className="flex flex-col gap-2">
           <Button onClick={handleDownloadsNav}>
             <IconDownload strokeWidth={1.5} />
-            <p className="xs:hidden md:block block text-center flex-grow">Download</p>
+            <p className="xs:hidden md:block block text-center grow">Download</p>
           </Button>
         </div>
       </Sidebar>
@@ -113,7 +113,7 @@ const AppsList: React.FC = () => {
                   onClick={handleDownloadsNav}
                   className="bg-zinc-900 gap-2 hover:bg-zinc-800"
                 >
-                  <p className="md:block hidden text-center flex-grow">Downloads Page</p>
+                  <p className="md:block hidden text-center grow">Downloads Page</p>
                   <IconLink strokeWidth={1.5} />
                 </Button>
               </div>

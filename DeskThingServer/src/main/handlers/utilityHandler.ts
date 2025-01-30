@@ -1,28 +1,28 @@
 console.log('[Utility Handler] Starting')
 import {
-  ReplyFn,
-  UtilityIPCData,
+  Action,
   ButtonMapping,
   Client,
-  MESSAGE_TYPES,
   GithubRelease,
-  Log,
-  Settings,
-  Action,
   Key,
+  Log,
   MappingStructure,
-  Profile
-} from '@shared/types'
-import ConnectionStore from '../stores/connectionsStore'
-import settingsStore from '../stores/settingsStore'
-import { getReleases } from './githubHandler'
-import loggingStore from '../stores/loggingStore'
-import path from 'path'
-import { shell, app, dialog } from 'electron'
-import keyMapStore from '../services/mappings/mappingStore'
-import { setupFirewall } from './firewallHandler'
-import { disconnectClient } from '../services/client/clientCom'
-import { restartServer } from '../services/client/websocket'
+  MESSAGE_TYPES,
+  Profile,
+  ReplyFn,
+  Settings,
+  UtilityIPCData,
+} from '@shared/types/index.ts'
+import ConnectionStore from '../stores/connectionsStore.ts'
+import settingsStore from '../stores/settingsStore.ts'
+import { getReleases } from './githubHandler.ts'
+import loggingStore from '../stores/loggingStore.ts'
+import path from 'node:path'
+import { app, dialog, shell } from 'electron'
+import keyMapStore from '../services/mappings/mappingStore.ts'
+import { setupFirewall } from './firewallHandler.ts'
+import { disconnectClient } from '../services/client/clientCom.ts'
+import { restartServer } from '../services/client/websocket.ts'
 
 export const utilityHandler: Record<
   UtilityIPCData['type'],
@@ -144,11 +144,13 @@ export const utilityHandler: Record<
         if (!action || !key || !mode) {
           loggingStore.log(
             MESSAGE_TYPES.ERROR,
-            `Missing required button data: ${JSON.stringify({
-              action: !!action,
-              key: !!key,
-              mode: !!mode
-            })}`
+            `Missing required button data: ${
+              JSON.stringify({
+                action: !!action,
+                key: !!key,
+                mode: !!mode,
+              })
+            }`,
           )
           return
         }
@@ -174,10 +176,12 @@ export const utilityHandler: Record<
         if (!key || !mode) {
           loggingStore.log(
             MESSAGE_TYPES.ERROR,
-            `Missing required button data: ${JSON.stringify({
-              key: !!key,
-              mode: !!mode
-            })}`
+            `Missing required button data: ${
+              JSON.stringify({
+                key: !!key,
+                mode: !!mode,
+              })
+            }`,
           )
           return
         }

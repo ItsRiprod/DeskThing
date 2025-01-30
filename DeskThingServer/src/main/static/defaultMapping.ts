@@ -1,6 +1,13 @@
-import { Key, EventMode, Action, MappingStructure, ButtonMapping, Profile } from '@shared/types'
+import {
+  Action,
+  ButtonMapping,
+  EventMode,
+  Key,
+  MappingStructure,
+  Profile,
+} from '@shared/types/index.ts'
 
-const keys: Key[] = [
+const keys = [
   {
     id: 'Wheel1',
     source: 'server',
@@ -235,9 +242,9 @@ const keys: Key[] = [
     enabled: true,
     modes: [EventMode.SwipeUp, EventMode.SwipeDown, EventMode.SwipeLeft, EventMode.SwipeRight]
   }
-]
+] as const satisfies Key[];
 
-const actions: Action[] = [
+const actions = [
   {
     name: 'Toggle Wheel',
     id: 'wheel',
@@ -420,17 +427,17 @@ const actions: Action[] = [
     enabled: true,
     tag: 'nav'
   }
-]
+] as const satisfies Action[]
 
-export const defaultProfile: Profile = {
+export const defaultProfile = {
   id: 'default',
   name: 'Default',
   description: 'The default mapping for the DeskThing',
   version: '0.9.4',
   version_code: 9.4
-}
+} as const satisfies Profile
 
-export const defaults: ButtonMapping = {
+export const defaults = {
   ...defaultProfile,
   mapping: {
     Wheel1: {
@@ -711,9 +718,9 @@ export const defaults: ButtonMapping = {
       }
     }
   }
-}
+} as const satisfies ButtonMapping
 
-export const defaultData: MappingStructure = {
+export const defaultData = {
   version: '0.9.5',
   version_code: 9.5,
   selected_profile: defaultProfile,
@@ -722,4 +729,4 @@ export const defaultData: MappingStructure = {
   },
   keys: keys,
   actions: actions
-}
+} as const satisfies MappingStructure

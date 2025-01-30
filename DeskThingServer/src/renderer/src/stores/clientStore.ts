@@ -1,7 +1,7 @@
 import { create } from 'zustand'
-import { Client, ClientManifest, LoggingData } from '@shared/types'
-import useNotificationStore from './notificationStore'
-import useSettingsStore from './settingsStore'
+import { Client, ClientManifest, LoggingData } from '@shared/types/index.ts'
+import useNotificationStore from './notificationStore.ts'
+import useSettingsStore from './settingsStore.ts'
 
 // Utility function to parse ADB devices
 const parseADBDevices = (response: string): string[] => {

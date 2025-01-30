@@ -1,6 +1,6 @@
-import Button from '@renderer/components/Button'
-import { useClientStore } from '@renderer/stores'
-import { EventMode } from '@shared/types'
+import Button from '@renderer/components/Button.tsx'
+import { useClientStore } from '@renderer/stores/index.ts'
+import { EventMode } from '@shared/types/index.ts'
 
 interface AvailableModesProps {
   modes: EventMode[]
@@ -19,7 +19,7 @@ const AvailableModes: React.FC<AvailableModesProps> = ({
   const clientManifest = useClientStore((state) => state.clientManifest)
 
   return (
-    <div className="w-full overflow-y-auto border-b border-gray-700 p-3 flex-shrink-0 items-center justify-between flex gap-3">
+    <div className="w-full overflow-y-auto border-b border-gray-700 p-3 shrink-0 items-center justify-between flex gap-3">
       <div className="items-center flex gap-3">
         <p>Modes: </p>
         {modes.map((mode, index) => (

@@ -19,7 +19,7 @@ import {
   Profile,
   Settings,
   SocketData
-} from '@shared/types'
+} from '@shared/types/index.ts'
 
 // Custom APIs for renderer
 const api = {
@@ -385,6 +385,5 @@ if (process.contextIsolated) {
     console.error(error)
   }
 } else {
-  // @ts-ignore (define in dts)
   window.electron = { ...electronAPI, ...api }
 }

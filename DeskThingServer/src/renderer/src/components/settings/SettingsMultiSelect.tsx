@@ -1,7 +1,7 @@
 import React from 'react'
-import SettingComponent from './SettingComponent'
-import { SettingOption, SettingsMultiSelect } from '@shared/types'
-import Select from '../Select'
+import SettingComponent from './SettingComponent.tsx'
+import { SettingOption, SettingsMultiSelect } from '@shared/types/index.ts'
+import Select from '../Select.tsx'
 import { MultiValue } from 'react-select'
 
 interface SettingsMultiSelectProps {

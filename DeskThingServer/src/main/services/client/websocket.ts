@@ -1,28 +1,28 @@
 console.log('[ClientSocket Service] Starting')
 import WebSocket, { WebSocketServer } from 'ws'
-import { createServer, Server as HttpServer, IncomingMessage } from 'http'
-import loggingStore from '../../stores/loggingStore'
+import { createServer, IncomingMessage, Server as HttpServer } from 'node:http'
+import loggingStore from '@server/stores/loggingStore.ts'
 import {
+  Action,
   AppDataInterface,
-  MESSAGE_TYPES,
   Client,
   ClientManifest,
+  MESSAGE_TYPES,
   Settings,
   SocketData,
-  Action
-} from '@shared/types'
-import { addData } from '../../handlers/dataHandler'
-import { HandleDeviceData } from '../../handlers/deviceHandler'
-import settingsStore from '../../stores/settingsStore'
-import AppState from '../../services/apps/appState'
-import crypto from 'crypto'
+} from '@shared/types/index.ts'
+import { addData } from '@server/handlers/dataHandler.ts'
+import { HandleDeviceData } from '@server/handlers/deviceHandler.ts'
+import settingsStore from '@server/stores/settingsStore.ts'
+import AppState from '@server/services/apps/appState.ts'
+import crypto from 'node:crypto'
 
-import { sendMessageToApp } from '../apps'
-import ConnectionStore from '../../stores/connectionsStore'
+import { sendMessageToApp } from '@server/services/apps/index.ts'
+import ConnectionStore from '@server/stores/connectionsStore.ts'
 
-import { getDeviceType, sendTime } from './clientUtils'
+import { getDeviceType, sendTime } from './clientUtils.ts'
 import express from 'express'
-import { setupExpressServer } from './expressServer'
+import { setupExpressServer } from './expressServer.ts'
 import {
   sendConfigData,
   sendError,
@@ -30,16 +30,16 @@ import {
   sendMessageToClient,
   sendMessageToClients,
   sendSettingsData
-} from './clientCom'
-import { sendIpcData } from '../..'
-import mappingStore from '../mappings/mappingStore'
+} from './clientCom.ts'
+import { sendIpcData } from '@server/index.ts'
+import mappingStore from '@server/services/mappings/mappingStore.ts'
 
 export let server: WebSocketServer | null = null
 export let httpServer: HttpServer
-export const Clients: { client: Client; socket }[] = []
+export const Clients: { client: Client; socket: WebSocket }[] = []
 
-let currentPort
-let currentAddress
+let currentPort: number | undefined
+let currentAddress: string | undefined
 
 const alwaysAllow = ['preferences', 'ping', 'pong', 'manifest']
 
@@ -141,7 +141,7 @@ export const setupServer = async (): Promise<void> => {
   })
 
   // Handle incoming messages from the client
-  server.on('connection', async (socket: WebSocket.WebSocket, req: IncomingMessage) => {
+  server.on('connection', async (socket: WebSocket, req: IncomingMessage) => {
     // Handle the incoming connection and add it to the ConnectionStore
 
     // This is a bad way of handling and syncing clients
@@ -194,7 +194,6 @@ export const setupServer = async (): Promise<void> => {
       const now = Date.now()
 
       /**
-       *
        * Check throttle
        * The purpose of the throttle is so when multiple clients are connected,
        * they often send the same request at the same time (i.e. song at its end).
@@ -226,7 +225,7 @@ export const setupServer = async (): Promise<void> => {
           handleServerMessage(socket, client, messageData)
         } else if (messageData.app === 'utility' || messageData.app === 'music') {
           // Handle music requests
-          const MusicHandler = (await import('../../handlers/musicHandler')).default
+          const MusicHandler = (await import('../../handlers/musicHandler.ts')).default
           MusicHandler.handleClientRequest(messageData)
         }
 
@@ -259,7 +258,7 @@ export const setupServer = async (): Promise<void> => {
 }
 
 const handleServerMessage = async (
-  socket,
+  socket: WebSocket,
   client: Client,
   messageData: SocketData
 ): Promise<void> => {

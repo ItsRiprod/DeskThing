@@ -1,7 +1,7 @@
 import React from 'react'
-import Nav from './Nav'
-import { useClientStore } from '@renderer/stores'
-import { IconLogo, IconWifi } from '@renderer/assets/icons'
+import Nav from './Nav.tsx'
+import { useClientStore } from '@renderer/stores/index.ts'
+import { IconLogo, IconWifi } from '@renderer/assets/icons/index.ts'
 
 const TopBar: React.FC = () => {
   const connections = useClientStore((clientStore) => clientStore.connections)

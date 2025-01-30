@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { usePageStore } from '@renderer/stores/'
+import { usePageStore } from '@renderer/stores/index.ts'
 
 const StateDataListener = (): null => {
   const { setPage } = usePageStore()

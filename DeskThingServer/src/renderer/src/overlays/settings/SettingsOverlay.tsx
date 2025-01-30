@@ -1,12 +1,12 @@
 import React from 'react'
-import Overlay from '../Overlay'
-import { IconCarThingSmall, IconComputer, IconMusic, IconServer } from '@renderer/assets/icons'
-import Button from '@renderer/components/Button'
-import ClientSettings from './ClientSettings'
-import DeviceSettings from './DeviceSettings'
-import ServerSettings from './ServerSettings'
+import Overlay from '../Overlay.tsx'
+import { IconCarThingSmall, IconComputer, IconMusic, IconServer } from '@renderer/assets/icons/index.ts'
+import Button from '@renderer/components/Button.tsx'
+import ClientSettings from './ClientSettings.tsx'
+import DeviceSettings from './DeviceSettings.tsx'
+import ServerSettings from './ServerSettings.tsx'
 import { useSearchParams } from 'react-router-dom'
-import MusicSettings from './MusicSettings'
+import MusicSettings from './MusicSettings.tsx'
 
 const settingsPages = [
   { key: 'server', label: 'Server', Icon: IconServer },

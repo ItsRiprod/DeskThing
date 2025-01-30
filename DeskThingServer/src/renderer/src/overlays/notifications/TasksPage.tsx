@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
-import { useNotificationStore } from '@renderer/stores'
-import { Task } from '@renderer/stores/notificationStore'
-import Button from '@renderer/components/Button'
-import { IconCheck, IconX } from '@renderer/assets/icons'
+import { useNotificationStore } from '@renderer/stores/index.ts'
+import { Task } from '@renderer/stores/notificationStore.ts'
+import Button from '@renderer/components/Button.tsx'
+import { IconCheck, IconX } from '@renderer/assets/icons/index.ts'
 
 const TasksPage: React.FC = () => {
   const tasks = useNotificationStore((state) => state.tasks)

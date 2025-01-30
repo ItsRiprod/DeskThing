@@ -8,14 +8,14 @@ import {
   IconPing,
   IconRefresh,
   IconX
-} from '@renderer/assets/icons'
-import { Client, LoggingData } from '@shared/types'
+} from '@renderer/assets/icons/index.ts'
+import { Client, LoggingData } from '@shared/types/index.ts'
 import React, { useEffect, useState } from 'react'
-import Button from './Button'
-// import { useSettingsStore } from '@renderer/stores'
-import ClientDetailsOverlay from '@renderer/overlays/ClientDetailsOverlay'
-import DownloadNotification from '@renderer/overlays/DownloadNotification'
-import { useClientStore, useSettingsStore } from '@renderer/stores'
+import Button from './Button.tsx'
+// import { useSettingsStore } from '@renderer/stores/index.ts'
+import ClientDetailsOverlay from '@renderer/overlays/ClientDetailsOverlay.tsx'
+import DownloadNotification from '@renderer/overlays/DownloadNotification.tsx'
+import { useClientStore, useSettingsStore } from '@renderer/stores/index.ts'
 
 interface ConnectionComponentProps {
   client: Client
@@ -195,11 +195,9 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
           </h2>
         </div>
       </div>
-      <div className="flex gap-2 items-center">
-        {!client.connected && offline ? (
-          <p className="text-red-500 italic">Device Offline!</p>
-        ) : (
-          !client.connected && <p className="text-red-500 italic">Not Connected!</p>
+      <div className='flex gap-2 items-center'>
+        {!client.connected && offline ? <p className='text-red-500 italic'>Device Offline!</p> : (
+          !client.connected && <p className='text-red-500 italic'>Not Connected!</p>
         )}
         {client.adbId && !offline && (
           <>
@@ -209,11 +207,9 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
               disabled={loading}
             >
               <IconRefresh
-                className={
-                  animatingIcons.chromium
-                    ? 'rotate-[360deg] transition-transform duration-1000'
-                    : ''
-                }
+                className={animatingIcons.chromium
+                  ? 'rotate-[360deg] transition-transform duration-1000'
+                  : ''}
               />
               <p className="hidden group-hover:block">
                 Restart <span className="hidden lg:inline">Chromium</span>
@@ -225,7 +221,8 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
                 onClick={configureDevice}
                 disabled={loading}
               >
-                <div className="absolute inset-0 w-full h-full border-blue-500 border animate-pulse rounded-lg"></div>
+                <div className='absolute inset-0 w-full h-full border-blue-500 border animate-pulse rounded-lg'>
+                </div>
                 <IconConfig />
                 <p className="hidden group-hover:block lg:block">
                   Config<span className="hidden lg:inline">ure</span>
@@ -247,7 +244,10 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
           </Button>
         )}
         {!offline && (
-          <Button className="group hover:bg-zinc-900 gap-2" onClick={() => setEnabled(true)}>
+          <Button
+            className='group hover:bg-zinc-900 gap-2'
+            onClick={() => setEnabled(true)}
+          >
             <IconLogs />
             <p className="hidden group-hover:block">Details</p>
           </Button>

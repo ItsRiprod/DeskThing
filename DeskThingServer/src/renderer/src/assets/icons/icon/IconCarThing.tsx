@@ -1,4 +1,4 @@
-import { Icon, IconProps } from '.'
+import { Icon, IconProps } from './index.tsx'
 
 interface CarThingProps extends IconProps {
   highlighted?: string[]

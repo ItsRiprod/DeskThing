@@ -1,6 +1,6 @@
 import { app } from 'electron'
-import { join } from 'path'
-import fs from 'fs'
+import { join } from 'node:path'
+import fs from 'node:fs'
 
 export const readFromFile = <T>(filename: string): T | false => {
   const dataFilePath = join(app.getPath('userData'), filename)

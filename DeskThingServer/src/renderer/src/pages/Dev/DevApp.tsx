@@ -1,7 +1,7 @@
 import React from 'react'
-import Sidebar from '@renderer/nav/Sidebar'
-import MainElement from '@renderer/nav/MainElement'
-import Loading from '@renderer/components/Loading'
+import Sidebar from '@renderer/nav/Sidebar.tsx'
+import MainElement from '@renderer/nav/MainElement.tsx'
+import Loading from '@renderer/components/Loading.tsx'
 
 const DevApp: React.FC = () => {
   return (

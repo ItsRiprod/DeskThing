@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import { PageProps } from '..'
-import useMappingStore from '@renderer/stores/mappingStore'
-import { Key } from '@shared/types'
-import { ActionIcon } from '../components/ActionIcon'
-import Button from '@renderer/components/Button'
-import { IconArrowDown, IconLink, IconMusic } from '@renderer/assets/icons'
+import { PageProps } from '../index.tsx'
+import useMappingStore from '@renderer/stores/mappingStore.ts'
+import { Key } from '@shared/types/index.ts'
+import { ActionIcon } from '../components/ActionIcon.tsx'
+import Button from '@renderer/components/Button.tsx'
+import { IconArrowDown, IconLink, IconMusic } from '@renderer/assets/icons/index.ts'
 
 const keyList: string[] = [
   'DynamicAction1',
@@ -49,11 +49,15 @@ const MiniplayerPage: React.FC<PageProps> = ({
           miniplayerKeys.map((key, index) => (
             <Button
               key={key?.id || index}
-              className={`flex hover:bg-zinc-700 items-center justify-center rounded-lg p-3 ${selectedKey?.id == key.id ? 'bg-zinc-800' : 'bg-zinc-900'}`}
+              className={`flex hover:bg-zinc-700 items-center justify-center rounded-lg p-3 ${
+                selectedKey?.id == key.id ? 'bg-zinc-800' : 'bg-zinc-900'
+              }`}
               onClick={() => setSelectedKey(key)}
             >
               <div
-                className={`text-xs absolute ${index % 2 == 0 ? '-translate-y-12' : 'translate-y-12'}`}
+                className={`text-xs absolute ${
+                  index % 2 == 0 ? '-translate-y-12' : 'translate-y-12'
+                }`}
               >
                 {key.id}
               </div>

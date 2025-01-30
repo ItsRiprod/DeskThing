@@ -1,7 +1,14 @@
 console.log('[AppCom Service] Starting')
-import { openAuthWindow, sendIpcAuthMessage } from '../..'
-import { AuthScopes, MESSAGE_TYPES, IncomingData, Key, Action, ToClientType } from '@shared/types'
-import loggingStore from '../../stores/loggingStore'
+import { openAuthWindow, sendIpcAuthMessage } from '../../index.ts'
+import {
+  Action,
+  AuthScopes,
+  IncomingData,
+  Key,
+  MESSAGE_TYPES,
+  ToClientType,
+} from '@shared/types/index.ts'
+import loggingStore from '../../stores/loggingStore.ts'
 import { ipcMain } from 'electron'
 
 /**
@@ -12,10 +19,10 @@ import { ipcMain } from 'electron'
  * @param {...any[]} args - Additional arguments related to the data or action.
  */
 export async function handleDataFromApp(app: string, appData: IncomingData): Promise<void> {
-  const keyMapStore = (await import('../mappings/mappingStore')).default
-  const { sendMessageToClients, handleClientMessage } = await import('../client/clientCom')
-  const { getData, setData, addData } = await import('../../handlers/dataHandler')
-  const { getConfig } = await import('../../handlers/configHandler')
+  const keyMapStore = (await import('../mappings/mappingStore.ts')).default
+  const { sendMessageToClients, handleClientMessage } = await import('../client/clientCom.ts')
+  const { getData, setData, addData } = await import('../../handlers/dataHandler.ts')
+  const { getConfig } = await import('../../handlers/configHandler.ts')
 
   switch (appData.type) {
     case 'message':
@@ -58,8 +65,14 @@ export async function handleDataFromApp(app: string, appData: IncomingData): Pro
       if (app && appData.payload) {
         loggingStore.log(
           MESSAGE_TYPES.LOGGING,
-          `[handleDataFromApp] App ${app} is sending data to the client with ${appData.payload ? (JSON.stringify(appData.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(appData.payload)) : 'undefined'}`,
-          app.toUpperCase()
+          `[handleDataFromApp] App ${app} is sending data to the client with ${
+            appData.payload
+              ? (JSON.stringify(appData.payload).length > 1000
+                ? '[Large Payload]'
+                : JSON.stringify(appData.payload))
+              : 'undefined'
+          }`,
+          app.toUpperCase(),
         )
         if (appData.payload.app == 'client') {
           handleClientMessage(appData.payload)
@@ -78,8 +91,14 @@ export async function handleDataFromApp(app: string, appData: IncomingData): Pro
         sendMessageToApp(appData.request, appData.payload)
         loggingStore.log(
           MESSAGE_TYPES.LOGGING,
-          `[handleDataFromApp] App ${app} is sending data to ${appData.request} with ${appData.payload ? (JSON.stringify(appData.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(appData.payload)) : 'undefined'}`,
-          app.toUpperCase()
+          `[handleDataFromApp] App ${app} is sending data to ${appData.request} with ${
+            appData.payload
+              ? (JSON.stringify(appData.payload).length > 1000
+                ? '[Large Payload]'
+                : JSON.stringify(appData.payload))
+              : 'undefined'
+          }`,
+          app.toUpperCase(),
         )
       } else {
         loggingStore.log(
@@ -219,7 +238,7 @@ export async function requestUserInput(appName: string, scope: AuthScopes): Prom
  * @param {...any[]} args - Additional arguments for the message.
  */
 export async function sendMessageToApp(appName: string, data: IncomingData): Promise<void> {
-  const { AppHandler } = await import('./appState')
+  const { AppHandler } = await import('./appState.ts')
   const appHandler = AppHandler.getInstance()
   loggingStore.log(
     MESSAGE_TYPES.LOGGING,

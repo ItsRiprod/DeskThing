@@ -1,8 +1,8 @@
 console.log('[Settings Store] Starting')
-import { readFromFile, writeToFile } from '../utils/fileHandler'
-import loggingStore from './loggingStore'
-import os from 'os'
-import { LOGGING_LEVEL, Settings, MESSAGE_TYPES } from '@shared/types'
+import { readFromFile, writeToFile } from '../utils/fileHandler.ts'
+import loggingStore from './loggingStore.ts'
+import os from 'node:os'
+import { LOGGING_LEVEL, MESSAGE_TYPES, Settings } from '@shared/types/index.ts'
 
 const settingsVersion = '0.9.2'
 const version_code = 9.2
@@ -138,10 +138,6 @@ class SettingsStore {
     }
   }
 
-  /**
-   *
-   * @returns Returns the default settings for the application
-   */
   private getDefaultSettings(): Settings {
     return {
       version: settingsVersion,

@@ -5,7 +5,7 @@
  * @version 0.9.4
  */
 import { create } from 'zustand'
-import { Action, Key, ButtonMapping, ActionReference, Profile } from '@shared/types'
+import { Action, ActionReference, ButtonMapping, Key, Profile } from '@shared/types/index.ts'
 
 const DefaultProfile: Profile = {
   id: 'default',

@@ -1,7 +1,7 @@
 import React from 'react'
-import Button from './Button'
-import { GithubAsset } from '@shared/types'
-import { IconDownload } from '@renderer/assets/icons'
+import Button from './Button.tsx'
+import { GithubAsset } from '@shared/types/index.ts'
+import { IconDownload } from '@renderer/assets/icons/index.ts'
 
 interface AssetComponentProps {
   asset: GithubAsset

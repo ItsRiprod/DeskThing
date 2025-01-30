@@ -5,17 +5,21 @@ import {
   MappingStructure,
   MESSAGE_TYPES,
   Profile
-} from '@shared/types'
-import loggingStore from '@server/stores/loggingStore'
+} from '@shared/types/index.ts'
+import loggingStore from '@server/stores/loggingStore.ts'
 import {
   readFromFile,
   readFromGlobalFile,
   writeToFile,
   writeToGlobalFile
-} from '@server/utils/fileHandler'
-import { defaultData } from '@server/static/defaultMapping'
-import { isValidButtonMapping, isValidFileStructure, isValidMappingStructure } from './utilsMaps'
-import path from 'path'
+} from '@server/utils/fileHandler.ts'
+import { defaultData } from '@server/static/defaultMapping.ts'
+import {
+  isValidButtonMapping,
+  isValidFileStructure,
+  isValidMappingStructure,
+} from '@server/services/mappings/utilsMaps.ts'
+import path from 'node:path'
 
 // Loads the mapping from the file
 export const loadMappings = async (): Promise<MappingStructure> => {

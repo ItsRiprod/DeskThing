@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import { PageProps } from '..'
-import useMappingStore from '@renderer/stores/mappingStore'
-import { App, Key } from '@shared/types'
-import { ActionIcon } from '../components/ActionIcon'
-import Button from '@renderer/components/Button'
-import { useAppStore } from '@renderer/stores'
+import { PageProps } from '../index.tsx'
+import useMappingStore from '@renderer/stores/mappingStore.ts'
+import { App, Key } from '@shared/types/index.ts'
+import { ActionIcon } from '../components/ActionIcon.tsx'
+import Button from '@renderer/components/Button.tsx'
+import { useAppStore } from '@renderer/stores/index.ts'
 
 const AppMappingsPage: React.FC<PageProps> = ({
   selectedKey,
@@ -32,7 +32,7 @@ const AppMappingsPage: React.FC<PageProps> = ({
 
   return (
     <div className="h-full items-center relative flex flex-col w-full">
-      <div className="w-full overflow-y-auto border-b border-gray-700 p-3 flex-shrink-0 items-center justify-between flex gap-3">
+      <div className="w-full overflow-y-auto border-b border-gray-700 p-3 shrink-0 items-center justify-between flex gap-3">
         <div className="items-center flex gap-3">
           <p>Apps:</p>
           <Button
@@ -59,7 +59,9 @@ const AppMappingsPage: React.FC<PageProps> = ({
               availableKeys.map((key, index) => (
                 <div key={key?.id || index}>
                   <Button
-                    className={`relative flex hover:bg-zinc-700 h-full w-full items-center justify-center rounded-lg p-3 ${selectedKey?.id == key.id ? 'bg-zinc-800' : 'bg-zinc-900'}`}
+                    className={`relative flex hover:bg-zinc-700 h-full w-full items-center justify-center rounded-lg p-3 ${
+                      selectedKey?.id == key.id ? 'bg-zinc-800' : 'bg-zinc-900'
+                    }`}
                     onClick={() => setSelectedKey(key)}
                   >
                     <div

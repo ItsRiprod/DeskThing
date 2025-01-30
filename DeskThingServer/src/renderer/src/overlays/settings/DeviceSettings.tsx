@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
-import useSettingsStore from '../../stores/settingsStore'
-import Button from '@renderer/components/Button'
-import { IconLoading, IconPlay, IconToggle } from '@renderer/assets/icons'
-import { ReplyData } from '@shared/types'
+import useSettingsStore from '../../stores/settingsStore.ts'
+import Button from '@renderer/components/Button.tsx'
+import { IconLoading, IconPlay, IconToggle } from '@renderer/assets/icons/index.ts'
+import { ReplyData } from '@shared/types/index.ts'
 
 const DeviceSettings: React.FC = () => {
   const { settings, saveSettings } = useSettingsStore()

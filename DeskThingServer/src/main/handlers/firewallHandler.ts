@@ -1,11 +1,11 @@
 console.log('[Firewall Handler] Starting')
-import { exec } from 'child_process'
-import os from 'os'
-import loggingStore from '../stores/loggingStore'
-import fs from 'fs'
-import { join } from 'path'
+import { exec } from 'node:child_process'
+import os from 'node:os'
+import loggingStore from '../stores/loggingStore.ts'
+import fs from 'node:fs'
+import { join } from 'node:path'
 import { app } from 'electron'
-import { ReplyFn, MESSAGE_TYPES } from '@shared/types'
+import { MESSAGE_TYPES, ReplyFn } from '@shared/types/index.ts'
 
 // Function to execute shell commands
 function runCommand(command: string): Promise<string> {

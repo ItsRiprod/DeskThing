@@ -13,9 +13,15 @@
  */
 
 console.log('[Index] Starting')
-import { AppIPCData, AuthScopes, Client, UtilityIPCData, MESSAGE_TYPES } from '@shared/types'
-import { app, shell, BrowserWindow, ipcMain, Tray, Menu, nativeImage } from 'electron'
-import { join, resolve } from 'path'
+import {
+  AppIPCData,
+  AuthScopes,
+  Client,
+  MESSAGE_TYPES,
+  UtilityIPCData,
+} from '@shared/types/index.ts'
+import { app, BrowserWindow, ipcMain, Menu, nativeImage, shell, Tray } from 'electron'
+import { join, resolve } from 'node:path'
 import icon from '../../resources/icon.png?asset'
 
 // Global window and tray references to prevent garbage collection
@@ -34,7 +40,7 @@ if (process.defaultApp) {
 
 /**
  * Creates and configures the main application window
- * @returns {BrowserWindow} The configured main window instance
+ * @returns The configured main window instance
  */
 function createMainWindow(): BrowserWindow {
   // Create window with specific dimensions and settings
@@ -194,7 +200,7 @@ async function initializeTray(): Promise<void> {
         if (clientWindow && !clientWindow.isDestroyed()) {
           clientWindow.focus()
         } else {
-          const settingsStore = await import('./stores/settingsStore')
+          const settingsStore = await import('./stores/settingsStore.ts')
           const data = await settingsStore.default.getSettings()
           if (data) {
             clientWindow = createClientWindow(data.devicePort)
@@ -235,7 +241,7 @@ async function initializeDoc(): Promise<void> {
         if (clientWindow && !clientWindow.isDestroyed()) {
           clientWindow.focus()
         } else {
-          const settingsStore = await import('./stores/settingsStore')
+          const settingsStore = await import('./stores/settingsStore.ts')
           const data = await settingsStore.default.getSettings()
           if (data) {
             clientWindow = createClientWindow(data.devicePort)
@@ -260,7 +266,7 @@ async function initializeDoc(): Promise<void> {
 async function setupIpcHandlers(): Promise<void> {
   // Import required stores
   const [{ default: settingsStore }, { default: loggingStore, ResponseLogger }] = await Promise.all(
-    [import('./stores/settingsStore'), import('./stores/loggingStore')]
+    [import('./stores/settingsStore.ts'), import('./stores/loggingStore.ts')]
   )
 
   // Default handler for unimplemented IPC messages
@@ -271,7 +277,7 @@ async function setupIpcHandlers(): Promise<void> {
 
   // Handle app-related IPC messages
   ipcMain.handle('APPS', async (event, data: AppIPCData) => {
-    const { appHandler } = await import('./handlers/appHandler')
+    const { appHandler } = await import('./handlers/appHandler.ts')
     const handler = appHandler[data.type] || defaultHandler
     const replyFn = ResponseLogger(event.sender.send.bind(event.sender))
     try {
@@ -289,7 +295,7 @@ async function setupIpcHandlers(): Promise<void> {
 
   // Handle client-related IPC messages
   ipcMain.handle('CLIENT', async (event, data: AppIPCData) => {
-    const { clientHandler } = await import('./handlers/clientHandler')
+    const { clientHandler } = await import('./handlers/clientHandler.ts')
     const handler = clientHandler[data.type] || defaultHandler
     const replyFn = ResponseLogger(event.sender.send.bind(event.sender))
     try {
@@ -307,7 +313,7 @@ async function setupIpcHandlers(): Promise<void> {
 
   // Handle utility-related IPC messages
   ipcMain.handle('UTILITY', async (event, data: UtilityIPCData) => {
-    const { utilityHandler } = await import('./handlers/utilityHandler')
+    const { utilityHandler } = await import('./handlers/utilityHandler.ts')
     const handler = utilityHandler[data.type] || defaultHandler
     const replyFn = ResponseLogger(event.sender.send.bind(event.sender))
 
@@ -325,7 +331,7 @@ async function setupIpcHandlers(): Promise<void> {
   })
 
   // Set up mapping store listeners
-  import('./services/mappings/mappingStore').then(({ default: mappingStore }) => {
+  import('./services/mappings/mappingStore.ts').then(({ default: mappingStore }) => {
     mappingStore.addListener('action', (action) => {
       sendIpcData('action', action)
     })
@@ -348,7 +354,7 @@ async function setupIpcHandlers(): Promise<void> {
   })
 
   // Set up connections store listeners
-  import('./stores/connectionsStore').then(({ default: ConnectionStore }) => {
+  import('./stores/connectionsStore.ts').then(({ default: ConnectionStore }) => {
     ConnectionStore.on((clients: Client[]) => {
       sendIpcData('connections', { status: true, data: clients.length, final: true })
       sendIpcData('clients', { status: true, data: clients, final: true })
@@ -418,7 +424,7 @@ if (!app.requestSingleInstanceLock()) {
 
   // Handle window closure
   app.on('window-all-closed', async (e) => {
-    const { default: settingsStore } = await import('./stores/settingsStore')
+    const { default: settingsStore } = await import('./stores/settingsStore.ts')
 
     const settings = await settingsStore.getSettings()
     if (settings.minimizeApp) {
@@ -452,17 +458,17 @@ async function openAuthWindow(url: string): Promise<void> {
 }
 async function loadModules(): Promise<void> {
   try {
-    import('./handlers/authHandler')
+    import('./handlers/authHandler.ts')
 
-    import('./services/client/websocket').then(({ restartServer }) => {
+    import('./services/client/websocket.ts').then(({ restartServer }) => {
       restartServer()
     })
 
-    import('./services/apps').then(({ loadAndRunEnabledApps }) => {
+    import('./services/apps/index.ts').then(({ loadAndRunEnabledApps }) => {
       loadAndRunEnabledApps()
     })
 
-    import('./handlers/musicHandler')
+    import('./handlers/musicHandler.ts')
   } catch (error) {
     console.error('Error loading modules:', error)
   }
@@ -479,4 +485,4 @@ async function sendIpcData(dataType: string, data: unknown): Promise<void> {
   mainWindow?.webContents.send(dataType, data)
 }
 
-export { sendIpcAuthMessage, openAuthWindow, sendIpcData }
+export { openAuthWindow, sendIpcAuthMessage, sendIpcData }

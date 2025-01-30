@@ -1,28 +1,28 @@
 console.log('[MapStore Service] Starting')
 import {
   Action,
+  ActionReference,
+  Button,
   ButtonMapping,
-  MESSAGE_TYPES,
   EventMode,
   Key,
   MappingStructure,
-  ActionReference,
-  Button,
-  Profile
-} from '@shared/types'
-import loggingStore from '@server/stores/loggingStore'
-import { writeToGlobalFile } from '@server/utils/fileHandler'
-import { deepMerge } from '@server/utils/objectUtils'
-import { importProfile, loadMappings, saveMappings } from './fileMaps'
+  MESSAGE_TYPES,
+  Profile,
+} from '@shared/types/index.ts'
+import loggingStore from '@server/stores/loggingStore.ts'
+import { writeToGlobalFile } from '@server/utils/fileHandler.ts'
+import { deepMerge } from '@server/utils/objectUtils.ts'
+import { importProfile, loadMappings, saveMappings } from './fileMaps.ts'
 import {
   ConstructActionReference,
   FetchIcon,
   isValidAction,
   isValidActionReference,
-  isValidKey
-} from './utilsMaps'
-import { sendMessageToApp } from '../apps'
-import { defaultProfile } from '@server/static/defaultMapping'
+  isValidKey,
+} from '@server/services/mappings/utilsMaps.ts'
+import { sendMessageToApp } from '@server/services/apps/index.ts'
+import { defaultProfile } from '@server/static/defaultMapping.ts'
 
 type ListeningTypes = 'key' | 'profile' | 'action' | 'update'
 
@@ -71,7 +71,7 @@ export class MappingState {
     }
     if (
       value.profiles[value.selected_profile.id] !=
-      this._mappings.profiles[this._mappings.selected_profile.id]
+        this._mappings.profiles[this._mappings.selected_profile.id]
     ) {
       this.notifyListeners('profile', value.profiles[value.selected_profile.id])
     }
@@ -119,7 +119,11 @@ export class MappingState {
     if (!mappingProfile) {
       loggingStore.log(
         MESSAGE_TYPES.ERROR,
-        `MAPHANDLER: Profile ${button.profile || 'default'} does not exist! Create a new profile with the name ${button.profile || 'default'} and try again`
+        `MAPHANDLER: Profile ${
+          button.profile || 'default'
+        } does not exist! Create a new profile with the name ${
+          button.profile || 'default'
+        } and try again`,
       )
       return
     }
@@ -144,9 +148,7 @@ export class MappingState {
     }
 
     // Ensuring the key exists in the mapping
-    if (!mappingProfile[button.key]) {
-      mappingProfile[button.key] = {}
-    }
+    mappingProfile[button.key] ??= {}
 
     const action = ConstructActionReference(mappingAction)
 
@@ -180,7 +182,11 @@ export class MappingState {
     if (!mappingsProfile) {
       loggingStore.log(
         MESSAGE_TYPES.ERROR,
-        `MAPHANDLER: Profile ${button.profile || 'default'} does not exist! Create a new profile with the name ${button.profile || 'default'} and try again`
+        `MAPHANDLER: Profile ${
+          button.profile || 'default'
+        } does not exist! Create a new profile with the name ${
+          button.profile || 'default'
+        } and try again`,
       )
       return
     }
@@ -205,7 +211,9 @@ export class MappingState {
       if (!mappingsProfile[button.key][button.mode]) {
         loggingStore.log(
           MESSAGE_TYPES.ERROR,
-          `MAPHANDLER: Mode ${button.mode} does not exist in key ${button.key} in profile ${button.profile || 'default'}!`
+          `MAPHANDLER: Mode ${button.mode} does not exist in key ${button.key} in profile ${
+            button.profile || 'default'
+          }!`,
         )
       } else {
         // Removing the button from the mapping
@@ -322,16 +330,11 @@ export class MappingState {
   removeSource = (sourceId: string): void => {
     const mappings = this.mappings
 
+    // TODO: proper name for this type, idk what it is. local type to make it easier to read.
+    type something = Record<string, { [Mode in EventMode]?: ActionReference }>
+
     // Update all profiles
-    const disableSourceActions = (actionContainer: {
-      [key: string]: {
-        [Mode in EventMode]?: ActionReference
-      }
-    }): {
-      [key: string]: {
-        [Mode in EventMode]?: ActionReference
-      }
-    } => {
+    const disableSourceActions = (actionContainer: something): something => {
       Object.values(actionContainer).forEach((buttonMappings) => {
         Object.keys(buttonMappings).forEach((mode) => {
           if (buttonMappings[mode]?.source === sourceId) {

@@ -1,15 +1,15 @@
 console.log('[Music Handler] Starting')
-import loggingStore from '../stores/loggingStore'
-import settingsStore from '../stores/settingsStore'
-import { Settings, SocketData, MESSAGE_TYPES, SongData } from '@shared/types'
-import { sendMessageToApp } from '../services/apps'
-import { getAppByName } from './configHandler'
-import appState from '../services/apps/appState'
-import { sendMessageToClients } from '../services/client/clientCom'
+import loggingStore from '../stores/loggingStore.ts'
+import settingsStore from '../stores/settingsStore.ts'
+import { MESSAGE_TYPES, Settings, SocketData, SongData } from '@shared/types/index.ts'
+import { sendMessageToApp } from '../services/apps/index.ts'
+import { getAppByName } from './configHandler.ts'
+import appState from '../services/apps/appState.ts'
+import { sendMessageToClients } from '../services/client/clientCom.ts'
 
 export class MusicHandler {
   private static instance: MusicHandler
-  private refreshInterval: NodeJS.Timeout | null = null
+  private refreshInterval: number | null = null
   private currentApp: string | null = null
 
   private constructor() {

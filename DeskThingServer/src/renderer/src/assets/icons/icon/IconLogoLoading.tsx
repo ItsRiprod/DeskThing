@@ -1,4 +1,4 @@
-import { Icon, IconProps } from '.'
+import { Icon, IconProps } from './index.tsx'
 
 function IconLogoLoading(props: IconProps): JSX.Element {
   const strokeWidth = props.strokeWidth || 1.5

@@ -1,6 +1,6 @@
 import React from 'react'
-import { useClientStore } from '@renderer/stores'
-import { Client } from '@shared/types'
+import { useClientStore } from '@renderer/stores/index.ts'
+import { Client } from '@shared/types/index.ts'
 
 const ClientsWidget: React.FC = () => {
   const clients = useClientStore((state) => state.clients)

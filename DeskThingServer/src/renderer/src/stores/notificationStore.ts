@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { Log, MESSAGE_TYPES } from '@shared/types'
+import { Log, MESSAGE_TYPES } from '@shared/types/index.ts'
 
 export interface AuthScopes {
   [key: string]: {

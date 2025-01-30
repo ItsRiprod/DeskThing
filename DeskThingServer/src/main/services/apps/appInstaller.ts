@@ -1,22 +1,24 @@
 console.log('[AppInst Service] Starting')
-import { join, resolve } from 'path'
+import { join, resolve } from 'node:path'
 import { app } from 'electron'
-import loggingStore from '../../stores/loggingStore'
+import loggingStore from '../../stores/loggingStore.ts'
 import {
-  IncomingData,
-  ToClientType,
-  Response,
-  Manifest,
-  DeskThing,
   AppReturnData,
-  MESSAGE_TYPES
-} from '@shared/types'
-import { getAppFilePath, getManifest } from './appUtils'
-import { mkdirSync, existsSync, rmSync, promises } from 'node:fs'
-import { handleDataFromApp } from './appCommunication'
+  DeskThing,
+  IncomingData,
+  Manifest,
+  MESSAGE_TYPES,
+  ReplyFn,
+  Response,
+  ToClientType,
+} from '@shared/types/index.ts'
+import { getAppFilePath, getManifest } from './appUtils.ts'
+import { existsSync, mkdirSync, promises, rmSync } from 'node:fs'
+import { handleDataFromApp } from './appCommunication.ts'
+import { Buffer } from 'node:buffer'
 
 /**
- * Inputs a .zip file path of an app and extracts it to the /apps/appId/ folder.
+ * Inputs a .zip file path of an app and extracts it to the /apps/index.ts/appId/ folder.
  * Returns metadata about the extracted app.
  *
  * @param {string} zipFilePath - The file path of the .zip file to extract.
@@ -28,8 +30,8 @@ import { handleDataFromApp } from './appCommunication'
  * - {boolean} success - Whether the extraction was successful.
  * - {string} message - A message about the extraction process.
  */
-export async function handleZip(zipFilePath: string, reply?): Promise<AppReturnData> {
-  const { getManifest } = await import('./appUtils')
+export async function handleZip(zipFilePath: string, reply?: ReplyFn): Promise<AppReturnData> {
+  const { getManifest } = await import('./appUtils.ts')
   try {
     loggingStore.log(MESSAGE_TYPES.LOGGING, `[handleZip] Extracting ${zipFilePath}...`)
     const appPath = join(app.getPath('userData'), 'apps') // Extract to user data folder
@@ -122,7 +124,7 @@ export async function handleZip(zipFilePath: string, reply?): Promise<AppReturnD
     const appDirectory = join(appPath, returnData.appId)
     if (existsSync(appDirectory)) {
       loggingStore.log(MESSAGE_TYPES.LOGGING, `[handleZip] Old app detected, purging...`)
-      const { AppHandler } = await import('./appState')
+      const { AppHandler } = await import('./appState.ts')
       const appHandler = AppHandler.getInstance()
 
       await appHandler.disable(returnData.appId)
@@ -158,7 +160,10 @@ export async function handleZip(zipFilePath: string, reply?): Promise<AppReturnD
  * @param event
  * @returns
  */
-export async function handleZipFromUrl(zipUrlPath: string, reply): Promise<AppReturnData | void> {
+export async function handleZipFromUrl(
+  zipUrlPath: string,
+  reply: ReplyFn,
+): Promise<AppReturnData | void> {
   const tempZipPath = getAppFilePath('downloads', 'temp.zip')
   let returnData: AppReturnData | undefined
   try {
@@ -252,7 +257,7 @@ export async function handleZipFromUrl(zipUrlPath: string, reply): Promise<AppRe
  */
 export async function run(appName: string): Promise<void> {
   try {
-    const AppState = await import('./appState')
+    const AppState = await import('./appState.ts')
     const appState = AppState.default
 
     const app = appState.get(appName)
@@ -302,7 +307,7 @@ export async function run(appName: string): Promise<void> {
  * @returns
  */
 export const start = async (appName: string): Promise<boolean> => {
-  const AppState = await import('./appState')
+  const AppState = await import('./appState.ts')
   const appState = AppState.default
   const appInstance = appState.get(appName)
 
@@ -361,7 +366,7 @@ export const start = async (appName: string): Promise<boolean> => {
  * @returns
  */
 const setupFunctions = async (appName: string, DeskThing: DeskThing): Promise<void> => {
-  const AppState = await import('./appState')
+  const AppState = await import('./appState.ts')
   const appState = AppState.default
   const appInstance = appState.get(appName)
   // Currently does nothing
@@ -378,7 +383,6 @@ const setupFunctions = async (appName: string, DeskThing: DeskThing): Promise<vo
     appInstance.func.start = async (): Promise<Response> => {
       return DeskThing.start({
         toServer: (data) => handleDataFromApp(appName, data),
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         SysEvents: (_event: string, _listener: (...args: string[]) => void) => {
           return () => {
             /* do something with this to let apps listen for server events like apps being added or settings being changed */
@@ -449,7 +453,7 @@ const handleManifest = async (
  * @param appName
  * @returns
  */
-const getDeskThing = async (appName): Promise<DeskThing | void> => {
+const getDeskThing = async (appName: string): Promise<DeskThing | void> => {
   const appEntryPointJs = getAppFilePath(appName, 'index.js')
   const appEntryPointMjs = getAppFilePath(appName, 'index.mjs')
   const appEntryPointCjs = getAppFilePath(appName, 'index.cjs')

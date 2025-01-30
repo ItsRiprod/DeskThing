@@ -1,6 +1,6 @@
-import { IconGear } from '@renderer/assets/icons'
+import { IconGear } from '@renderer/assets/icons/index.ts'
 import React from 'react'
-import Button from './Button'
+import Button from './Button.tsx'
 import { useSearchParams } from 'react-router-dom'
 
 const SettingsButton: React.FC = () => {
@@ -14,7 +14,7 @@ const SettingsButton: React.FC = () => {
     <>
       <Button className="hover:bg-zinc-900" onClick={handleOpenSettings}>
         <IconGear iconSize={24} strokeWidth={2} />
-        <p className="flex-grow text-center text-lg md:block hidden">Settings</p>
+        <p className="grow text-center text-lg md:block hidden">Settings</p>
       </Button>
     </>
   )

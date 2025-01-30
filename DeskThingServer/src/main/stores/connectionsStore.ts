@@ -1,7 +1,7 @@
 console.log('[Connection Store] Starting')
-import { Client, MESSAGE_TYPES } from '@shared/types'
-import loggingStore from '../stores/loggingStore'
-import settingsStore from './settingsStore'
+import { Client, MESSAGE_TYPES } from '@shared/types/index.ts'
+import loggingStore from '../stores/loggingStore.ts'
+import settingsStore from './settingsStore.ts'
 
 type ClientListener = (client: Client[]) => void
 type DeviceListener = (device: string[]) => void
@@ -13,7 +13,7 @@ class ConnectionStore {
   private clientListeners: ClientListener[] = []
   private deviceListeners: DeviceListener[] = []
   private autoDetectADB: boolean = false
-  private clearTimeout: NodeJS.Timeout | null = null
+  private clearTimeout: number | null = null
 
   constructor() {
     this.setupConnectionListeners()
@@ -133,7 +133,7 @@ class ConnectionStore {
   }
 
   async getAdbDevices(): Promise<string[]> {
-    const { handleAdbCommands } = await import('../handlers/adbHandler')
+    const { handleAdbCommands } = await import('../handlers/adbHandler.ts')
     return handleAdbCommands('devices')
       .then((result) => {
         const parseADBDevices = (response: string): string[] => {

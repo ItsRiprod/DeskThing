@@ -1,8 +1,8 @@
 import React from 'react'
-import { App as AppType } from '@shared/types/app'
-import { IconPause, IconPlay, IconWrench } from '@renderer/assets/icons'
-import Button from './Button'
-import { useAppStore } from '@renderer/stores'
+import { App as AppType } from '@shared/types/app.ts'
+import { IconPause, IconPlay, IconWrench } from '@renderer/assets/icons/index.ts'
+import Button from './Button.tsx'
+import { useAppStore } from '@renderer/stores/index.ts'
 import { useSearchParams } from 'react-router-dom'
 
 interface AppProps {

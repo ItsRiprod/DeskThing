@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import useSettingsStore from '../../stores/settingsStore'
-import useAppStore from '../../stores/appStore'
-import Button from '@renderer/components/Button'
-import { IconLoading, IconSave, IconToggle } from '@renderer/assets/icons'
-import Select from '@renderer/components/Select'
+import useSettingsStore from '../../stores/settingsStore.ts'
+import useAppStore from '../../stores/appStore.ts'
+import Button from '@renderer/components/Button.tsx'
+import { IconLoading, IconSave, IconToggle } from '@renderer/assets/icons/index.ts'
+import Select from '@renderer/components/Select.tsx'
 import { SingleValue } from 'react-select'
-import { SettingOption, Settings } from '@shared/types'
+import { SettingOption, Settings } from '@shared/types/index.ts'
 
 const MusicSettings: React.FC = () => {
   const saveSettings = useSettingsStore((settings) => settings.saveSettings)
@@ -85,7 +85,7 @@ const MusicSettings: React.FC = () => {
               onChange={(e) =>
                 handleSettingChange('refreshInterval', Number(e.target.value) * 1000)
               }
-              className="focus:text-white bg-zinc-900 text-white rounded px-2 py-2"
+              className="focus:text-white bg-zinc-900 text-white rounded-sm px-2 py-2"
               placeholder="Enter A Value"
               disabled={!settings || settings.refreshInterval === -1}
             />
@@ -101,7 +101,7 @@ const MusicSettings: React.FC = () => {
             handleSettingChange('playbackLocation', value?.value || '')
           }}
           value={settings ? settings.playbackLocation || '' : 'Disabled'}
-          className="bg-zinc-900 rounded hover:cursor-pointer text-white px-2 py-2 w-full"
+          className="bg-zinc-900 rounded-sm hover:cursor-pointer text-white px-2 py-2 w-full"
           options={[
             ...audioSources.map((app) => ({
               value: app.id,

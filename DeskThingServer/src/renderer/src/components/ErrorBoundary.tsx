@@ -1,7 +1,7 @@
 // src/components/ErrorBoundary.tsx
 
-import { Component, ReactNode, ErrorInfo } from 'react'
-import Loading from './Loading'
+import { Component, ErrorInfo, ReactNode } from 'react'
+import Loading from './Loading.tsx'
 
 interface ErrorBoundaryProps {
   children: ReactNode
@@ -21,11 +21,11 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     return { hasError: true }
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     console.error('ErrorBoundary caught an error', error, errorInfo)
   }
 
-  render(): ReactNode {
+  override render(): ReactNode {
     if (this.state.hasError) {
       return <Loading message={'Something went wrong! Please restart the app.'} />
     }

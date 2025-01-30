@@ -1,5 +1,5 @@
-import { IconX } from '@renderer/assets/icons'
-import Button from '@renderer/components/Button'
+import { IconX } from '@renderer/assets/icons/index.ts'
+import Button from '@renderer/components/Button.tsx'
 import React, { useRef, useEffect } from 'react'
 
 interface DownloadConfirmationProps {

@@ -1,7 +1,13 @@
 console.log('[Auth Handler] Starting')
-import { ClientIPCData, ClientManifest, SocketData, ReplyFn, MESSAGE_TYPES } from '@shared/types'
-import loggingStore from '../stores/loggingStore'
-import { handleAdbCommands } from './adbHandler'
+import {
+  ClientIPCData,
+  ClientManifest,
+  MESSAGE_TYPES,
+  ReplyFn,
+  SocketData,
+} from '@shared/types/index.ts'
+import loggingStore from '../stores/loggingStore.ts'
+import { handleAdbCommands } from './adbHandler.ts'
 import {
   configureDevice,
   getClientManifest,
@@ -9,9 +15,9 @@ import {
   HandlePushWebApp,
   HandleWebappZipFromUrl,
   SetupProxy
-} from './deviceHandler'
-import { sendMessageToClient, sendMessageToClients } from '../services/client/clientCom'
-import mappingStore from '@server/services/mappings/mappingStore'
+} from './deviceHandler.ts'
+import { sendMessageToClient, sendMessageToClients } from '../services/client/clientCom.ts'
+import mappingStore from '@server/services/mappings/mappingStore.ts'
 
 export const clientHandler: Record<
   ClientIPCData['type'],
@@ -136,7 +142,7 @@ export const clientHandler: Record<
   }
 }
 
-const handleUrl = async (data, replyFn: ReplyFn): Promise<void> => {
+const handleUrl = async (data: {payload : string}, replyFn: ReplyFn): Promise<void> => {
   try {
     replyFn('logging', {
       status: true,

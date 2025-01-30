@@ -1,7 +1,7 @@
-import { IconLogoGear } from '@renderer/assets/icons'
-import { Icon, IconProps } from '@renderer/assets/icons/icon'
-import useMappingStore from '@renderer/stores/mappingStore'
-import { Action, ActionReference } from '@shared/types'
+import { IconLogoGear } from '@renderer/assets/icons/index.ts'
+import { Icon, IconProps } from '@renderer/assets/icons/icon/index.tsx'
+import useMappingStore from '@renderer/stores/mappingStore.ts'
+import { Action, ActionReference } from '@shared/types/index.ts'
 import { FC, useEffect, useState } from 'react'
 
 interface ActionIconProps extends IconProps {

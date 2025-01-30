@@ -1,8 +1,8 @@
 import React from 'react'
-import { useNotificationStore } from '@renderer/stores'
-import { IconTrash } from '@renderer/assets/icons'
-import Button from '@renderer/components/Button'
-import { MESSAGE_TYPES } from '@shared/types'
+import { useNotificationStore } from '@renderer/stores/index.ts'
+import { IconTrash } from '@renderer/assets/icons/index.ts'
+import Button from '@renderer/components/Button.tsx'
+import { MESSAGE_TYPES } from '@shared/types/index.ts'
 
 const EvensPage: React.FC = () => {
   const logs = useNotificationStore((state) => state.logs)

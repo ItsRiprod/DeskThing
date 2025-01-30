@@ -1,8 +1,8 @@
 import React from 'react'
-import { AppSettingProps } from './AppsOverlay'
-import Button from '@renderer/components/Button'
-import { IconPlay, IconStop, IconTrash, IconX } from '@renderer/assets/icons'
-import { useAppStore } from '@renderer/stores'
+import { AppSettingProps } from './AppsOverlay.tsx'
+import Button from '@renderer/components/Button.tsx'
+import { IconPlay, IconStop, IconTrash, IconX } from '@renderer/assets/icons/index.ts'
+import { useAppStore } from '@renderer/stores/index.ts'
 
 const AppActions: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
   const stopApp = useAppStore((state) => state.stopApp)

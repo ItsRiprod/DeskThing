@@ -1,7 +1,7 @@
 console.log('[ClientUtils Service] Starting')
-import loggingStore from '@server/stores/loggingStore'
-import { sendMessageToClients } from './clientCom'
-import { MESSAGE_TYPES } from '@shared/types'
+import loggingStore from '@server/stores/loggingStore.ts'
+import { sendMessageToClients } from './clientCom.ts'
+import { MESSAGE_TYPES } from '@shared/types/index.ts'
 
 const getDelayToNextMinute = async (): Promise<number> => {
   const now = new Date()

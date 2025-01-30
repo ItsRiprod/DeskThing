@@ -1,9 +1,9 @@
 import { FC, useState } from 'react'
-import Button from '@renderer/components/Button'
-import useMappingStore from '@renderer/stores/mappingStore'
-import { Action, ButtonMapping, EventMode, Key } from '@shared/types'
-import ActionButton from './ActionButton'
-import { IconArrowUp } from '@renderer/assets/icons'
+import Button from '@renderer/components/Button.tsx'
+import useMappingStore from '@renderer/stores/mappingStore.ts'
+import { Action, ButtonMapping, EventMode, Key } from '@shared/types/index.ts'
+import ActionButton from './ActionButton.tsx'
+import { IconArrowUp } from '@renderer/assets/icons/index.ts'
 
 interface AllActionsComponentProps {
   selectedKey: Key | undefined
@@ -24,7 +24,9 @@ const AllActionsComponent: FC<AllActionsComponentProps> = ({
 
   return (
     <div
-      className={`${expanded ? 'absolute max-h-60' : 'max-h-0'} transition-[max-height] hs:relative bg-black bottom-0 hs:max-h-60 border-t flex-shrink-0 border-gray-500 flex`}
+      className={`${
+        expanded ? 'absolute max-h-60' : 'max-h-0'
+      } transition-[max-height] hs:relative bg-black bottom-0 hs:max-h-60 border-t shrink-0 border-gray-500 flex`}
     >
       <div className="absolute h-fit hs:hidden -translate-y-12">
         <Button onClick={() => setIsExpanded((state) => !state)}>
@@ -32,7 +34,7 @@ const AllActionsComponent: FC<AllActionsComponentProps> = ({
           <IconArrowUp className={expanded ? 'rotate-180' : ''} />
         </Button>
       </div>
-      <div className="max-h-60 gap-2 flex-shrink-0 overflow-y-auto flex flex-col hs:p-2 w-24 bg-zinc-900 border-r border-gray-700">
+      <div className="max-h-60 gap-2 shrink-0 overflow-y-auto flex flex-col hs:p-2 w-24 bg-zinc-900 border-r border-gray-700">
         <Button
           className={`${filter === 'all' && 'bg-zinc-800'} hover:bg-zinc-800`}
           onClick={() => setFilter('all')}
@@ -61,29 +63,29 @@ const AllActionsComponent: FC<AllActionsComponentProps> = ({
       <div className="h-full max-h-60 content-start overflow-y-auto flex flex-wrap gap-2 hs:p-2">
         {filter === 'apps'
           ? actions
-              .filter((action) => action.source !== 'server')
-              .map((action) => (
-                <ActionButton
-                  key={action.id}
-                  selectedKey={selectedKey}
-                  currentMapping={currentMapping}
-                  action={action}
-                  setAction={setAction}
-                  mode={mode}
-                />
-              ))
+            .filter((action) => action.source !== 'server')
+            .map((action) => (
+              <ActionButton
+                key={action.id}
+                selectedKey={selectedKey}
+                currentMapping={currentMapping}
+                action={action}
+                setAction={setAction}
+                mode={mode}
+              />
+            ))
           : actions
-              .filter((action) => action.tag === filter || filter === 'all')
-              .map((action) => (
-                <ActionButton
-                  key={action.id}
-                  selectedKey={selectedKey}
-                  currentMapping={currentMapping}
-                  action={action}
-                  setAction={setAction}
-                  mode={mode}
-                />
-              ))}
+            .filter((action) => action.tag === filter || filter === 'all')
+            .map((action) => (
+              <ActionButton
+                key={action.id}
+                selectedKey={selectedKey}
+                currentMapping={currentMapping}
+                action={action}
+                setAction={setAction}
+                mode={mode}
+              />
+            ))}
       </div>
     </div>
   )

@@ -1,7 +1,7 @@
-import { IconCoffee } from '@renderer/assets/icons'
+import { IconCoffee } from '@renderer/assets/icons/index.ts'
 import React from 'react'
 import { useReward } from 'react-rewards'
-import Button from './Button'
+import Button from './Button.tsx'
 
 const SponsorButton: React.FC = () => {
   const confettiConfig = {
@@ -21,8 +21,8 @@ const SponsorButton: React.FC = () => {
     >
       <span id="rewardId" />
       <IconCoffee iconSize={24} strokeWidth={2} />
-      <p className="flex-grow text-center text-lg md:block hidden group-hover:hidden">Coffee</p>
-      <p className="flex-grow text-center text-lg group-hover:md:block hidden">Support</p>
+      <p className="grow text-center text-lg md:block hidden group-hover:hidden">Coffee</p>
+      <p className="grow text-center text-lg md:group-hover:block hidden">Support</p>
     </Button>
   )
 }

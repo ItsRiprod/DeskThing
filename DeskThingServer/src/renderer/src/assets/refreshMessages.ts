@@ -136,6 +136,6 @@ export const deviceMessages = [
   {
     message: 'There are no more messages. You have reached the end of the line',
     weight: 1,
-    minimum: 110
-  }
-]
+    minimum: 110,
+  },
+] as const

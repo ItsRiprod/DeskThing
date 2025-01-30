@@ -1,7 +1,7 @@
-import Button from '@renderer/components/Button'
-import { ButtonMapping, Action, EventMode, Key } from '@shared/types'
+import Button from '@renderer/components/Button.tsx'
+import { ButtonMapping, Action, EventMode, Key } from '@shared/types/index.ts'
 import { FC, memo } from 'react'
-import { ActionIcon } from './ActionIcon'
+import { ActionIcon } from './ActionIcon.tsx'
 
 interface ActionButtonProps {
   selectedKey: Key | undefined

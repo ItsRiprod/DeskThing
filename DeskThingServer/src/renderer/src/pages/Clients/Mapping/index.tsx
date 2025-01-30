@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import Sidebar from '@renderer/nav/Sidebar'
-import Button from '@renderer/components/Button'
+import Sidebar from "@renderer/nav/Sidebar.tsx"
+import Button from '@renderer/components/Button.tsx'
 import {
   IconAlbum,
   IconCarThingSmall,
@@ -13,19 +13,19 @@ import {
   IconSave,
   IconTrash,
   IconUpload
-} from '@renderer/assets/icons'
-import MainElement from '@renderer/nav/MainElement'
-import useMappingStore from '@renderer/stores/mappingStore'
-import { ButtonMapping, EventMode, Key, Profile } from '@shared/types'
-import CarThingPage from './pages/CarThingPage'
-import WheelPage from './pages/WeaponWheelPage'
-import MiniplayerPage from './pages/MiniplayerPage'
-import TrayPage from './pages/TrayPage'
-import AppMappingsPage from './pages/AppMappingsPage'
-import { IconProps } from '@renderer/assets/icons/icon'
-import MappingPage from './MappingPage'
+} from '@renderer/assets/icons/index.ts'
+import MainElement from '@renderer/nav/MainElement.tsx'
+import useMappingStore from '@renderer/stores/mappingStore.ts'
+import { ButtonMapping, EventMode, Key, Profile } from '@shared/types/index.ts'
+import CarThingPage from './pages/CarThingPage.tsx'
+import WheelPage from './pages/WeaponWheelPage.tsx'
+import MiniplayerPage from './pages/MiniplayerPage.tsx'
+import TrayPage from './pages/TrayPage.tsx'
+import AppMappingsPage from './pages/AppMappingsPage.tsx'
+import { IconProps } from '@renderer/assets/icons/icon/index.tsx'
+import MappingPage from './MappingPage.tsx'
 import { useSearchParams } from 'react-router-dom'
-import Tooltip from '@renderer/components/Tooltip'
+import Tooltip from '@renderer/components/Tooltip.tsx'
 
 export interface PageProps {
   onMappingChange?: () => void

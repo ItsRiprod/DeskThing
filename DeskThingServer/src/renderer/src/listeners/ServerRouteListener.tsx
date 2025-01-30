@@ -1,4 +1,4 @@
-import { usePageStore } from '@renderer/stores'
+import { usePageStore } from '@renderer/stores/index.ts'
 import { useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 

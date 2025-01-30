@@ -1,4 +1,4 @@
-import { useNotificationStore } from '@renderer/stores'
+import { useNotificationStore } from '@renderer/stores/index.ts'
 import React from 'react'
 
 const IssuesPage: React.FC = () => {

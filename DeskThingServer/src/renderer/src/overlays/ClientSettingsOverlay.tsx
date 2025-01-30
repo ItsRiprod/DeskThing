@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import Overlay from './Overlay'
-import { useClientStore, useAppStore, useSettingsStore } from '@renderer/stores'
-import { Client } from '@shared/types'
-import { IconRefresh, IconSave } from '@renderer/assets/icons'
+import Overlay from './Overlay.tsx'
+import { useClientStore, useAppStore, useSettingsStore } from '@renderer/stores/index.ts'
+import { Client } from '@shared/types/index.ts'
+import { IconRefresh, IconSave } from '@renderer/assets/icons/index.ts'
 
 interface ClientSettingsOverlayProps {
   onClose: () => void
@@ -86,35 +86,35 @@ const ClientSettingsOverlay: React.FC<ClientSettingsOverlayProps> = ({ onClose }
                     value={clientSettings.ip || ''}
                     onChange={handleInputChange}
                     onFocus={() => handleFocus('ip')}
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    className="shadow-sm appearance-none border rounded-sm w-full py-2 px-3 text-gray-700 leading-tight focus:outline-hidden focus:shadow-outline"
                   />
                   {focusedField === 'ip' && (
                     <div className="text-xs gap-1 flex-col flex p-1">
                       <button
-                        className="flex p-1 border rounded border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
+                        className="flex p-1 border rounded-sm border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
                         onClick={() => setClientSettings((prev) => ({ ...prev, ip: 'localhost' }))}
                       >
                         <p>ADB / Local Client:</p>
-                        <p className="font-geistMono bg-slate-900 px-2 rounded">localhost</p>
+                        <p className="font-geistMono bg-slate-900 px-2 rounded-sm">localhost</p>
                       </button>
                       <button
                         onClick={() =>
                           setClientSettings((prev) => ({ ...prev, ip: '192.168.7.1' }))
                         }
-                        className="flex p-1 border rounded border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
+                        className="flex p-1 border rounded-sm border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
                       >
                         <p>Car Thing RNDIS:</p>
-                        <p className="font-geistMono bg-slate-900 px-2  rounded">192.168.7.1</p>
+                        <p className="font-geistMono bg-slate-900 px-2  rounded-sm">192.168.7.1</p>
                       </button>
                       {settings?.localIp &&
                         settings.localIp.map((ip, index) => (
                           <button
-                            className="flex p-1 border rounded border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
+                            className="flex p-1 border rounded-sm border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
                             key={index}
                             onClick={() => setClientSettings((prev) => ({ ...prev, ip }))}
                           >
                             <p>Local Network:</p>
-                            <p className="font-geistMono bg-slate-900 px-2  rounded">{ip}</p>
+                            <p className="font-geistMono bg-slate-900 px-2  rounded-sm">{ip}</p>
                           </button>
                         ))}
                     </div>
@@ -131,7 +131,7 @@ const ClientSettingsOverlay: React.FC<ClientSettingsOverlayProps> = ({ onClose }
                     value={clientSettings.port || ''}
                     onChange={handleInputChange}
                     onFocus={() => handleFocus('port')}
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    className="shadow-sm appearance-none border rounded-sm w-full py-2 px-3 text-gray-700 leading-tight focus:outline-hidden focus:shadow-outline"
                   />
                   {focusedField === 'port' && (
                     <div className="text-xs gap-1 flex-col flex p-1">
@@ -139,10 +139,10 @@ const ClientSettingsOverlay: React.FC<ClientSettingsOverlayProps> = ({ onClose }
                         onClick={() =>
                           setClientSettings((prev) => ({ ...prev, port: settings?.devicePort }))
                         }
-                        className="flex p-1 border rounded border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
+                        className="flex p-1 border rounded-sm border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
                       >
                         <p>Current Port:</p>
-                        <p className="font-geistMono bg-slate-900 px-2  rounded">
+                        <p className="font-geistMono bg-slate-900 px-2  rounded-sm">
                           {settings?.devicePort}
                         </p>
                       </button>
@@ -160,35 +160,35 @@ const ClientSettingsOverlay: React.FC<ClientSettingsOverlayProps> = ({ onClose }
                     value={clientSettings.default_view || ''}
                     onChange={handleInputChange}
                     onFocus={() => handleFocus('default_view')}
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    className="shadow-sm appearance-none border rounded-sm w-full py-2 px-3 text-gray-700 leading-tight focus:outline-hidden focus:shadow-outline"
                   />
                   {focusedField === 'default_view' && (
                     <div className="text-xs gap-1 flex-col flex p-1">
                       <button
-                        className="flex p-1 border rounded border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
+                        className="flex p-1 border rounded-sm border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
                         onClick={() =>
                           setClientSettings((prev) => ({ ...prev, default_view: 'landing' }))
                         }
                       >
-                        <p className="font-geistMono bg-slate-900 px-2 rounded">Landing</p>
+                        <p className="font-geistMono bg-slate-900 px-2 rounded-sm">Landing</p>
                       </button>
                       <button
-                        className="flex p-1 border rounded border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
+                        className="flex p-1 border rounded-sm border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
                         onClick={() =>
                           setClientSettings((prev) => ({ ...prev, default_view: 'dashboard' }))
                         }
                       >
-                        <p className="font-geistMono bg-slate-900 px-2 rounded">Dashboard</p>
+                        <p className="font-geistMono bg-slate-900 px-2 rounded-sm">Dashboard</p>
                       </button>
                       {apps.map((app, index) => (
                         <button
-                          className="flex p-1 border rounded border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
+                          className="flex p-1 border rounded-sm border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
                           key={index}
                           onClick={() =>
                             setClientSettings((prev) => ({ ...prev, default_view: app.name }))
                           }
                         >
-                          <p className="font-geistMono bg-slate-900 px-2 rounded">
+                          <p className="font-geistMono bg-slate-900 px-2 rounded-sm">
                             {app.manifest?.label || app.name}
                           </p>
                         </button>
@@ -207,33 +207,33 @@ const ClientSettingsOverlay: React.FC<ClientSettingsOverlayProps> = ({ onClose }
                     value={clientSettings.miniplayer || ''}
                     onChange={handleInputChange}
                     onFocus={() => handleFocus('miniplayer')}
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    className="shadow-sm appearance-none border rounded-sm w-full py-2 px-3 text-gray-700 leading-tight focus:outline-hidden focus:shadow-outline"
                   />
                   {focusedField === 'miniplayer' && (
                     <div className="text-xs gap-1 flex-col flex p-1">
                       <button
-                        className="flex p-1 border rounded border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
+                        className="flex p-1 border rounded-sm border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
                         onClick={() =>
                           setClientSettings((prev) => ({ ...prev, miniplayer: 'peek' }))
                         }
                       >
-                        <p className="font-geistMono bg-slate-900 px-2 rounded">Peek</p>
+                        <p className="font-geistMono bg-slate-900 px-2 rounded-sm">Peek</p>
                       </button>
                       <button
-                        className="flex p-1 border rounded border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
+                        className="flex p-1 border rounded-sm border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
                         onClick={() =>
                           setClientSettings((prev) => ({ ...prev, miniplayer: 'hidden' }))
                         }
                       >
-                        <p className="font-geistMono bg-slate-900 px-2 rounded">Hidden</p>
+                        <p className="font-geistMono bg-slate-900 px-2 rounded-sm">Hidden</p>
                       </button>
                       <button
-                        className="flex p-1 border rounded border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
+                        className="flex p-1 border rounded-sm border-cyan-600 hover:bg-cyan-600 gap-2 px-3"
                         onClick={() =>
                           setClientSettings((prev) => ({ ...prev, miniplayer: 'full' }))
                         }
                       >
-                        <p className="font-geistMono bg-slate-900 px-2 rounded">Full</p>
+                        <p className="font-geistMono bg-slate-900 px-2 rounded-sm">Full</p>
                       </button>
                     </div>
                   )}

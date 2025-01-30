@@ -1,7 +1,14 @@
 console.log('[AppState Service] Starting')
-import { App, AppInstance, Manifest, AppReturnData, MESSAGE_TYPES } from '@shared/types'
-import { sendConfigData, sendSettingsData } from '../client/clientCom'
-import loggingStore from '../../stores/loggingStore'
+import {
+  App,
+  AppInstance,
+  AppReturnData,
+  Manifest,
+  MESSAGE_TYPES,
+  ReplyFn,
+} from '@shared/types/index.ts'
+import { sendConfigData, sendSettingsData } from '../client/clientCom.ts'
+import loggingStore from '../../stores/loggingStore.ts'
 
 /**
  * TODO: Sync with the file
@@ -35,7 +42,7 @@ export class AppHandler {
    */
   async loadApps(): Promise<void> {
     loggingStore.log(MESSAGE_TYPES.LOGGING, '[appState] [loadApps]: Loading apps...')
-    const { getAppData } = await import('../../handlers/configHandler')
+    const { getAppData } = await import('../../handlers/configHandler.ts')
 
     const data = await getAppData()
 
@@ -59,14 +66,14 @@ export class AppHandler {
   }
 
   private async saveAppsToFile(): Promise<void> {
-    const { setAppsData } = await import('../../handlers/configHandler')
+    const { setAppsData } = await import('../../handlers/configHandler.ts')
     const apps = this.getAllBase()
     await setAppsData(apps)
     this.notify()
   }
 
   private async saveAppToFile(name: string): Promise<void> {
-    const { setAppData } = await import('../../handlers/configHandler')
+    const { setAppData } = await import('../../handlers/configHandler.ts')
     const { func: _func, ...app } = this.apps[name]
     await setAppData(app)
   }
@@ -135,7 +142,7 @@ export class AppHandler {
     }
     this.remove(name)
 
-    import('./appManager').then(({ purgeApp }) => {
+    import('./appManager.ts').then(({ purgeApp }) => {
       purgeApp(name)
     })
 
@@ -193,7 +200,7 @@ export class AppHandler {
       await this.apps[name].func.purge()
     }
 
-    import('./appManager').then(({ clearCache }) => {
+    import('./appManager.ts').then(({ clearCache }) => {
       clearCache(name)
     })
 
@@ -237,7 +244,7 @@ export class AppHandler {
     this.apps[name].running = true
     this.enable(name)
 
-    const { run } = await import('./appInstaller')
+    const { run } = await import('./appInstaller.ts')
     await run(name)
     this.saveAppToFile(name)
     return true
@@ -250,12 +257,12 @@ export class AppHandler {
 
     this.apps[name].running = true
     this.enable(name)
-    const { start } = await import('./appInstaller')
+    const { start } = await import('./appInstaller.ts')
     return await start(name)
   }
 
-  async addURL(url: string, reply): Promise<AppReturnData | void> {
-    const { handleZipFromUrl } = await import('./appInstaller')
+  async addURL(url: string, reply: ReplyFn): Promise<AppReturnData | void> {
+    const { handleZipFromUrl } = await import('./appInstaller.ts')
     const returnData = await handleZipFromUrl(url, reply)
     if (returnData) {
       const App: AppInstance = {
@@ -271,8 +278,8 @@ export class AppHandler {
       return returnData
     }
   }
-  async addZIP(zip: string, event): Promise<AppReturnData | void> {
-    const { handleZip } = await import('./appInstaller')
+  async addZIP(zip: string, event: any): Promise<AppReturnData | void> {
+    const { handleZip } = await import('./appInstaller.ts')
     const returnData = await handleZip(zip, event)
     if (returnData) {
       const App: AppInstance = {
@@ -298,7 +305,7 @@ export class AppHandler {
     if (this.apps[appName]) {
       this.apps[appName].manifest = manifest
     }
-    const { addAppManifest } = await import('../../handlers/configHandler')
+    const { addAppManifest } = await import('../../handlers/configHandler.ts')
     // Add the manifest to the config file
     addAppManifest(manifest, appName)
     this.saveAppToFile(appName)

@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { Log, MESSAGE_TYPES } from '@shared/types'
+import { Log, MESSAGE_TYPES } from '@shared/types/index.ts'
 
 interface LogStoreState {
   logList: Log[]
@@ -45,8 +45,9 @@ const useLogStore = create<LogStoreState>((set, get) => ({
       }
     }
     const { maxLogLength, maxNumLogs } = get()
-    const truncatedLog =
-      log.log.length > maxLogLength ? `${log.log.substring(0, maxLogLength)}...` : log.log
+    const truncatedLog = log.log.length > maxLogLength
+      ? `${log.log.substring(0, maxLogLength)}...`
+      : log.log
 
     const newLog = {
       ...log,

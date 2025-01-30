@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useClientStore, useNotificationStore } from '../stores'
+import { useClientStore, useNotificationStore } from '../stores/index.ts'
 
 const ClientDataListener = (): null => {
   const setClients = useClientStore((state) => state.setClients)

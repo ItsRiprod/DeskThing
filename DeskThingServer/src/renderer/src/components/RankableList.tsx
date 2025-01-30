@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { SettingOption } from '@shared/types'
-import { IconArrowDown, IconArrowUp } from '@renderer/assets/icons'
+import { SettingOption } from '@shared/types/index.ts'
+import { IconArrowDown, IconArrowUp } from '@renderer/assets/icons/index.ts'
 
 type RankableListProps = {
   options: SettingOption[]

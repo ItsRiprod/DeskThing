@@ -1,10 +1,10 @@
-import { PageProps } from '..'
-import { IconCarThing } from '@renderer/assets/icons'
-import Button from '@renderer/components/Button'
-import useMappingStore from '@renderer/stores/mappingStore'
-import { useState, useEffect } from 'react'
-import { ActionIcon } from '../components/ActionIcon'
-import { EventMode, Key } from '@shared/types'
+import { PageProps } from '../index.tsx'
+import { IconCarThing } from '@renderer/assets/icons/index.ts'
+import Button from '@renderer/components/Button.tsx'
+import useMappingStore from '@renderer/stores/mappingStore.ts'
+import { useEffect, useState } from 'react'
+import { ActionIcon } from '../components/ActionIcon.tsx'
+import { EventMode, Key } from '@shared/types/index.ts'
 
 const keyList: string[] = ['Swipe', 'Digit1', 'Digit2', 'Digit3', 'Digit4', 'Escape']
 
@@ -44,59 +44,59 @@ const CarThingPage: React.FC<PageProps> = ({
       <div className="flex -translate-x-12 flex-col h-1/3 items-center justify-center aspect-square">
         <div className="flex w-full h-full items-center justify-center">
           <Button
-            className={`flex hover:bg-zinc-700 items-center justify-center rounded-lg p-3 ${mode == EventMode.SwipeDown ? 'bg-zinc-800' : 'bg-zinc-900'}`}
+            className={`flex hover:bg-zinc-700 items-center justify-center rounded-lg p-3 ${
+              mode == EventMode.SwipeDown ? 'bg-zinc-800' : 'bg-zinc-900'
+            }`}
             onClick={() => onPress('Swipe', EventMode.SwipeDown)}
           >
             <ActionIcon
-              className="w-fit h-fit"
-              action={
-                currentMapping && miniplayerKeys.length > 0
-                  ? currentMapping.mapping['Swipe'][EventMode.SwipeDown]
-                  : undefined
-              }
+              className='w-fit h-fit'
+              action={currentMapping && miniplayerKeys.length > 0
+                ? currentMapping.mapping['Swipe'][EventMode.SwipeDown]
+                : undefined}
             />
           </Button>
         </div>
         <div className="flex w-full h-full items-center justify-between">
           <Button
-            className={`flex hover:bg-zinc-700 items-center justify-center rounded-lg p-3 ${mode == EventMode.SwipeLeft ? 'bg-zinc-800' : 'bg-zinc-900'}`}
+            className={`flex hover:bg-zinc-700 items-center justify-center rounded-lg p-3 ${
+              mode == EventMode.SwipeLeft ? 'bg-zinc-800' : 'bg-zinc-900'
+            }`}
             onClick={() => onPress('Swipe', EventMode.SwipeLeft)}
           >
             <ActionIcon
-              className="w-fit h-fit"
-              action={
-                currentMapping && miniplayerKeys.length > 0
-                  ? currentMapping.mapping['Swipe'][EventMode.SwipeLeft]
-                  : undefined
-              }
+              className='w-fit h-fit'
+              action={currentMapping && miniplayerKeys.length > 0
+                ? currentMapping.mapping['Swipe'][EventMode.SwipeLeft]
+                : undefined}
             />
           </Button>
           <Button
-            className={`flex hover:bg-zinc-700 items-center justify-center rounded-lg p-3 ${mode == EventMode.SwipeRight ? 'bg-zinc-800' : 'bg-zinc-900'}`}
+            className={`flex hover:bg-zinc-700 items-center justify-center rounded-lg p-3 ${
+              mode == EventMode.SwipeRight ? 'bg-zinc-800' : 'bg-zinc-900'
+            }`}
             onClick={() => onPress('Swipe', EventMode.SwipeRight)}
           >
             <ActionIcon
-              className="w-fit h-fit"
-              action={
-                currentMapping && miniplayerKeys.length > 0
-                  ? currentMapping.mapping['Swipe'][EventMode.SwipeRight]
-                  : undefined
-              }
+              className='w-fit h-fit'
+              action={currentMapping && miniplayerKeys.length > 0
+                ? currentMapping.mapping['Swipe'][EventMode.SwipeRight]
+                : undefined}
             />
           </Button>
         </div>
         <div className="flex w-full h-full items-center justify-center">
           <Button
-            className={`flex hover:bg-zinc-700 items-center justify-center rounded-lg p-3 ${mode == EventMode.SwipeUp ? 'bg-zinc-800' : 'bg-zinc-900'}`}
+            className={`flex hover:bg-zinc-700 items-center justify-center rounded-lg p-3 ${
+              mode == EventMode.SwipeUp ? 'bg-zinc-800' : 'bg-zinc-900'
+            }`}
             onClick={() => onPress('Swipe', EventMode.SwipeUp)}
           >
             <ActionIcon
-              className="w-fit h-fit"
-              action={
-                currentMapping && miniplayerKeys.length > 0
-                  ? currentMapping.mapping['Swipe'][EventMode.SwipeUp]
-                  : undefined
-              }
+              className='w-fit h-fit'
+              action={currentMapping && miniplayerKeys.length > 0
+                ? currentMapping.mapping['Swipe'][EventMode.SwipeUp]
+                : undefined}
             />
           </Button>
         </div>

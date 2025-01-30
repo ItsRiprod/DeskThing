@@ -1,4 +1,4 @@
-import { SettingsType } from '@shared/types'
+import { SettingsType } from '@shared/types/index.ts'
 
 interface SettingComponentProps {
   setting: SettingsType

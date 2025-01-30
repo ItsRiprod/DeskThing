@@ -1,4 +1,4 @@
-import { Icon } from '.'
+import { Icon } from './index.tsx'
 
 function IconLightbulbOn(props): JSX.Element {
   return (

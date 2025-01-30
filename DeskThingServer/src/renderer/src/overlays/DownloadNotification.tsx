@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
-import { LoggingData } from '@shared/types/ipcTypes'
-import { IconCheckCircle, IconLoading } from '@renderer/assets/icons'
+import { LoggingData } from '@shared/types/ipcTypes.ts'
+import { IconCheckCircle, IconLoading } from '@renderer/assets/icons/index.ts'
 
 interface DownloadNotificationProps {
   loggingData: LoggingData | null
@@ -28,7 +28,7 @@ const DownloadNotification: React.FC<DownloadNotificationProps> = ({
     <div className="fixed gap-2 bottom-5 right-5 bg-black p-5 flex text-white rounded-md shadow-md z-50">
       <div className="h-full w-24">
         {loggingData.final ? (
-          <IconCheckCircle className="stroke-[3] w-full h-full" />
+          <IconCheckCircle className="stroke-3 w-full h-full" />
         ) : (
           <IconLoading className="w-full h-full" />
         )}

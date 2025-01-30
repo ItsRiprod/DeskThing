@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useAppStore } from '../stores'
+import { useAppStore } from '../stores/index.ts'
 
 const AppStoreDataListener = (): null => {
   const setAppList = useAppStore((state) => state.setAppList)

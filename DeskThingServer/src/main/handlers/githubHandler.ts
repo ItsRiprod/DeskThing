@@ -1,5 +1,5 @@
 console.log('[Github Handler] Starting')
-import { GithubRelease } from '@shared/types'
+import { GithubRelease } from '@shared/types/index.ts'
 
 export async function getLatestRelease(repoUrl: string): Promise<GithubRelease> {
   try {

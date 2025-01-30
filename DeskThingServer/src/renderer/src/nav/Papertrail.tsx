@@ -1,5 +1,5 @@
 import React from 'react'
-import { usePageStore } from '../stores/'
+import { usePageStore } from '../stores/index.ts'
 
 const Papertrail: React.FC = () => {
   const currentPage = usePageStore((pageStore) => pageStore.currentPage)
