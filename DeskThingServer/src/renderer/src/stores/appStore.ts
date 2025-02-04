@@ -66,13 +66,11 @@ const useAppStore = create<AppStoreState>((set, get) => ({
 
   // Sets the entire list of apps
   setAppList: async (apps: App[]): Promise<void> => {
-    console.log('Setting app list:', apps)
     const { order } = get()
     set({ appsList: apps })
 
     const missingApps = apps.filter((app) => !order.includes(app.name))
 
-    console.log('Missing apps:', missingApps)
     set({ order: [...order, ...missingApps.map((app) => app.name)] })
   },
 
@@ -101,7 +99,8 @@ const useAppStore = create<AppStoreState>((set, get) => ({
         name: newAppName,
         enabled: false,
         running: false,
-        prefIndex: 0
+        prefIndex: 0,
+        timeStarted: 0
       }
       return {
         appsList: [...state.appsList, appData],

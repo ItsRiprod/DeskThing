@@ -215,11 +215,11 @@ export enum MESSAGE_TYPES {
 }
 
 export type LoggingOptions = {
-  domain?: string
-  source?: string
-  function?: string
-  error?: Error
-  date?: string
+  domain?: string // server or the name of the app/client
+  source?: string // the function or class name
+  function?: string // the method of the class or null if not in class
+  error?: Error // the new Error for errors (cast unknowns as Error)
+  date?: string // the current date (filled in my logger - not needed)
 }
 
 /**

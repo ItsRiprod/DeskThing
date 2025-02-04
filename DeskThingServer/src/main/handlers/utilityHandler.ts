@@ -287,8 +287,19 @@ export const utilityHandler: Record<
       case 'start':
         if (typeof data.payload === 'string') return await taskStore.startTask(data.payload)
         return
+      case 'pause':
+        return await taskStore.pauseTask()
+      case 'restart':
+        if (typeof data.payload === 'string') return await taskStore.restartTask(data.payload)
+        return
       case 'complete_task':
         if (typeof data.payload === 'string') return await taskStore.completeTask(data.payload)
+        return
+      case 'next':
+        if (typeof data.payload === 'string') return await taskStore.nextStep(data.payload)
+        return
+      case 'previous':
+        if (typeof data.payload === 'string') return await taskStore.prevStep(data.payload)
         return
       default:
         return

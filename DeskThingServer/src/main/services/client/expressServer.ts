@@ -47,14 +47,16 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
   ): Promise<void> => {
     const userDataPath = electronApp.getPath('userData')
     const webAppDir = join(userDataPath, 'webapp')
-    Logger.log(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Serving ${appName} from ${webAppDir}`)
+    Logger.info(`WEBSOCKET: Serving ${appName} from ${webAppDir}`, {
+      source: 'handleClientConnection'
+    })
 
     const clientIp = req.hostname
 
-    Logger.log(
-      MESSAGE_TYPES.LOGGING,
-      `WEBSOCKET: Serving ${appName} from ${webAppDir} to ${clientIp}`
-    )
+    Logger.info(`WEBSOCKET: Serving ${appName} from ${webAppDir} to ${clientIp}`, {
+      domain: appName,
+      source: 'handleClientConnection'
+    })
     try {
       if (req.path.endsWith('manifest.js')) {
         const manifestPath = join(webAppDir, 'manifest.js')
@@ -82,11 +84,10 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
         }
       }
     } catch (error) {
-      if (error instanceof Error) {
-        console.error('WEBSOCKET: Error serving app:', error.message)
-      } else {
-        console.error('WEBSOCKET: Error serving app:', error)
-      }
+      Logger.error('WEBSOCKET: Error serving app:', {
+        error: error as Error,
+        source: 'handleClientConnection'
+      })
     }
   }
 
@@ -109,10 +110,10 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
       root != 'image' &&
       root != 'app'
     ) {
-      Logger.log(
-        MESSAGE_TYPES.WARNING,
-        `WEBSOCKET: Client is not updated! Please update to v0.9.1 or later ${root}`
-      )
+      Logger.info(`WEBSOCKET: Client is not updated! Please update to v0.9.1 or later ${root}`, {
+        domain: 'server',
+        source: 'expressServer'
+      })
       const ErrorPage = fs.readFileSync(join(staticPath, 'Error.html'), 'utf-8')
 
       res.send(ErrorPage)

@@ -1,0 +1,223 @@
+import {
+  IconArrowDown,
+  IconExpand,
+  IconGrip,
+  IconLink,
+  IconMinimize,
+  IconReload,
+  IconStop,
+  IconX
+} from '@renderer/assets/icons'
+import Button from '@renderer/components/Button'
+import TaskBase from '@renderer/components/tasks/TaskBase'
+import useTaskStore from '@renderer/stores/taskStore'
+import { Task } from '@shared/types/tasks'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+
+const TaskOverlay: React.FC = () => {
+  const tasks = useTaskStore((state) => state.taskList.tasks)
+  const currentTaskId = useTaskStore((state) => state.taskList.currentTaskId)
+  const rejectTask = useTaskStore((state) => state.rejectTask)
+  const restartTask = useTaskStore((state) => state.restartTask)
+  const clearTask = useTaskStore((state) => state.removeCurrentTask)
+
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const [currentStepIndex, setCurrentStepIndex] = useState(-1)
+  const [currentTask, setCurrentTask] = useState<Task>()
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const [expanded, setExpanded] = useState(true)
+  const [position, setPosition] = useState({
+    x: window.innerWidth / 2,
+    y: window.innerHeight / 2
+  })
+
+  const taskRef = useRef<HTMLDivElement>(null)
+
+  if (!currentTaskId) return null
+
+  useEffect(() => {
+    const updatePosition = (): void => {
+      if (taskRef.current) {
+        setPosition({
+          x: window.innerWidth - taskRef.current.offsetWidth,
+          y: window.innerHeight - taskRef.current.offsetHeight
+        })
+      }
+    }
+
+    // Initial position after render
+    setTimeout(updatePosition, 0)
+  }, [])
+
+  useEffect(() => {
+    if (!currentTask || !currentTask.currentStep) {
+      setCurrentStepIndex(-1)
+    } else {
+      const index = Object.values(currentTask.steps).findIndex(
+        (step) => step.id == currentTask.currentStep
+      )
+
+      setCurrentStepIndex(index)
+    }
+  }, [currentTask?.currentStep])
+
+  useEffect(() => {
+    if (tasks[currentTaskId] && tasks[currentTaskId].started) {
+      setCurrentTask(tasks[currentTaskId])
+    }
+  }, [tasks, currentTaskId])
+
+  useEffect(() => {
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove)
+      window.addEventListener('mouseup', handleMouseUp)
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isDragging, dragOffset])
+
+  const toggleFullscreen = (): void => {
+    setIsFullscreen(!isFullscreen)
+    setExpanded(!isFullscreen || expanded)
+  }
+
+  const handleMouseDown = (e: React.MouseEvent): void => {
+    if (isFullscreen) return
+    setIsDragging(true)
+    setDragOffset({
+      x: e.clientX - position.x,
+      y: e.clientY - position.y
+    })
+  }
+
+  const handleMouseMove = (e: MouseEvent): void => {
+    if (!isDragging || isFullscreen) return
+    const newX = Math.min(
+      Math.max(0, e.clientX - dragOffset.x),
+      window.innerWidth - (taskRef.current?.offsetWidth || 0)
+    )
+    const newY = Math.min(
+      Math.max(0, e.clientY - dragOffset.y),
+
+      window.innerHeight - (taskRef.current?.offsetHeight || 0)
+    )
+    setPosition({ x: newX, y: newY })
+  }
+
+  const handleMouseUp = (): void => {
+    setIsDragging(false)
+  }
+
+  const openTasks = (): void => {
+    searchParams.set('page', 'task')
+    searchParams.set('notifications', 'true')
+    setSearchParams(searchParams)
+  }
+
+  const handleRestart = (): void => {
+    restartTask(currentTaskId)
+  }
+
+  const handleReject = (): void => {
+    rejectTask(currentTaskId)
+  }
+
+  const handleExpand = (): void => {
+    setExpanded(!expanded)
+  }
+
+  const memoizedTaskBase = useMemo(
+    () => currentTask && <TaskBase task={currentTask} />,
+    [currentTask, expanded]
+  )
+  return (
+    <div
+      ref={taskRef}
+      style={
+        isFullscreen
+          ? {}
+          : {
+              transform: `translate(${position.x}px, ${position.y}px)`
+            }
+      }
+      className={`fixed select-none flex ${isFullscreen ? 'min-w-full min-h-full transition-[min-height,min-width,transform]' : ''} min-w-0 min-h-0 items-center flex-col justify-center bg-black bg-opacity-90 z-50`}
+    >
+      <div className={`flex flex-col justify-center rounded-lg w-full bg-zinc-900`}>
+        <div className="flex justify-between">
+          <div className="flex">
+            {!isFullscreen && (
+              <div
+                style={{
+                  cursor: isDragging ? 'grabbing' : 'grab'
+                }}
+                className="text-white hover:text-gray-300 py-3 px-1 flex items-center justify-center"
+                onMouseDown={handleMouseDown}
+              >
+                <IconGrip iconSize={32} />
+              </div>
+            )}
+            <Button
+              className="text-white items-center hover:text-gray-300"
+              onClick={toggleFullscreen}
+            >
+              {isFullscreen ? <IconMinimize /> : <IconExpand />}
+            </Button>
+          </div>
+          <div className="flex items-center">
+            <Button onClick={handleExpand} className="gap-2 items-center">
+              <p>{currentTask?.label || currentTask?.id}</p>
+              <p>
+                {currentTask &&
+                  currentStepIndex != -1 &&
+                  `${currentStepIndex + 1}/${Object.values(currentTask.steps).length}`}
+              </p>
+              <IconArrowDown
+                className={`${!expanded ? 'rotate-180' : 'rotate-0'} transition-transform`}
+              />
+            </Button>
+            <Button onClick={clearTask} className="group hover:bg-zinc-950">
+              <IconX className="group-hover:stroke-red-500" />
+            </Button>
+          </div>
+        </div>
+        <div
+          className={`${expanded ? 'max-h-screen' : 'max-h-0'} transition-[max-height] overflow-hidden`}
+        >
+          <div>{memoizedTaskBase}</div>
+          <div className="flex p-2 gap-3 text-sm justify-between w-full">
+            <Button
+              onClick={openTasks}
+              className="gap-1 items-center bg-zinc-700 hover:bg-zinc-600"
+            >
+              <p>All Tasks</p>
+              <IconLink iconSize={12} />
+            </Button>
+            <Button
+              onClick={handleRestart}
+              className="gap-1 items-center bg-zinc-700 hover:bg-zinc-600"
+            >
+              <p>Restart Task</p>
+              <IconReload iconSize={12} />
+            </Button>
+            <Button
+              onClick={handleReject}
+              className="gap-1 items-center bg-zinc-700 hover:bg-red-600"
+            >
+              <p>Cancel Task</p>
+              <IconStop iconSize={12} />
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default TaskOverlay

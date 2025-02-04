@@ -500,46 +500,79 @@ const api = {
     }),
 
   // Tasks
-  getTaskList: async (): Promise<TaskList> =>
-    await sendCommand('UTILITY', {
-      kind: 'utility',
-      type: 'task',
-      request: 'get',
-      payload: ''
-    }),
+  tasks: {
+    getTaskList: async (): Promise<TaskList> =>
+      await sendCommand('UTILITY', {
+        kind: 'utility',
+        type: 'task',
+        request: 'get',
+        payload: ''
+      }),
 
-  stopTask: async (taskId: string): Promise<void> =>
-    await sendCommand('UTILITY', {
-      kind: 'utility',
-      type: 'task',
-      request: 'stop',
-      payload: taskId
-    }),
+    stopTask: async (taskId: string): Promise<void> =>
+      await sendCommand('UTILITY', {
+        kind: 'utility',
+        type: 'task',
+        request: 'stop',
+        payload: taskId
+      }),
 
-  startTask: async (taskId: string): Promise<void> =>
-    await sendCommand('UTILITY', {
-      kind: 'utility',
-      type: 'task',
-      request: 'start',
-      payload: taskId
-    }),
+    startTask: async (taskId: string): Promise<void> =>
+      await sendCommand('UTILITY', {
+        kind: 'utility',
+        type: 'task',
+        request: 'start',
+        payload: taskId
+      }),
 
-  completeStep: async (taskId: string, stepId: string): Promise<void> =>
-    await sendCommand('UTILITY', {
-      kind: 'utility',
-      type: 'task',
-      request: 'complete',
-      payload: [taskId, stepId]
-    }),
+    completeStep: async (taskId: string, stepId: string): Promise<void> =>
+      await sendCommand('UTILITY', {
+        kind: 'utility',
+        type: 'task',
+        request: 'complete',
+        payload: [taskId, stepId]
+      }),
 
-  completeTask: async (taskId: string): Promise<void> =>
-    await sendCommand('UTILITY', {
-      kind: 'utility',
-      type: 'task',
-      request: 'complete_task',
-      payload: taskId
-    }),
+    completeTask: async (taskId: string): Promise<void> =>
+      await sendCommand('UTILITY', {
+        kind: 'utility',
+        type: 'task',
+        request: 'complete_task',
+        payload: taskId
+      }),
 
+    pauseTask: async (): Promise<void> =>
+      await sendCommand('UTILITY', {
+        kind: 'utility',
+        type: 'task',
+        request: 'pause',
+        payload: ''
+      }),
+
+    nextStep: async (taskId: string): Promise<void> =>
+      await sendCommand('UTILITY', {
+        kind: 'utility',
+        type: 'task',
+        request: 'next',
+        payload: taskId
+      }),
+
+    prevStep: async (taskId: string): Promise<void> =>
+      await sendCommand('UTILITY', {
+        kind: 'utility',
+        type: 'task',
+        request: 'previous',
+        payload: taskId
+      }),
+
+    restartTask: async (taskId: string): Promise<void> =>
+      await sendCommand('UTILITY', {
+        kind: 'utility',
+        type: 'task',
+        request: 'restart',
+        payload: taskId
+      })
+  },
   update: {
     check: async (): Promise<void> =>
       await sendCommand('UTILITY', {

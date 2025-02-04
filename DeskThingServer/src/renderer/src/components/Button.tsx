@@ -24,6 +24,7 @@ interface ButtonProps {
   style?: React.CSSProperties
   disabled?: boolean
   onMouseEnter?: () => void
+  onMouseDown?: (e: React.MouseEvent) => void
 }
 const Button: React.FC<ButtonProps> = ({
   children,
@@ -35,7 +36,8 @@ const Button: React.FC<ButtonProps> = ({
   ref,
   style,
   disabled,
-  onMouseEnter
+  onMouseEnter,
+  onMouseDown
 }) => {
   const baseClasses = 'relative group flex-row flex p-3 hover:font-semibold rounded-md'
   const combinedClasses = `${baseClasses} ${className}`
@@ -50,6 +52,7 @@ const Button: React.FC<ButtonProps> = ({
         className={combinedClasses}
         onClick={onClick}
         onMouseEnter={onMouseEnter}
+        onMouseDown={onMouseDown}
       >
         {children}
       </a>

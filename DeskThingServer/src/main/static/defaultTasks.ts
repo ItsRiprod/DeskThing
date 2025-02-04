@@ -1,10 +1,11 @@
-import { TaskList, Task } from '@shared/types/tasks'
+import { TaskList, Task, STEP_TYPES } from '@shared/types/tasks'
 
 const tasks: { [key: string]: Task } = {
   gettingstarted: {
     id: 'gettingstarted',
-    version: '0.10.5',
+    version: '0.10.4',
     started: false,
+    available: true,
     source: 'server',
     label: 'Welcome to DeskThing',
     description:
@@ -12,7 +13,7 @@ const tasks: { [key: string]: Task } = {
     steps: {
       client: {
         id: 'client',
-        type: 'task',
+        type: STEP_TYPES.TASK,
         label: 'Setup the Client',
         taskId: 'client',
         instructions: 'Ensure you have a client setup',
@@ -20,7 +21,7 @@ const tasks: { [key: string]: Task } = {
       },
       device: {
         id: 'device',
-        type: 'task',
+        type: STEP_TYPES.TASK,
         label: 'Setup the Car Thing',
         taskId: 'device',
         instructions: 'Finish setting up a device!',
@@ -28,7 +29,7 @@ const tasks: { [key: string]: Task } = {
       },
       app: {
         id: 'app',
-        type: 'shortcut',
+        type: STEP_TYPES.SHORTCUT,
         destination: 'downloads/app',
         label: 'Setup an App',
         instructions: 'Download your first app!',
@@ -41,13 +42,14 @@ const tasks: { [key: string]: Task } = {
     id: 'device',
     version: '0.10.4',
     started: false,
+    available: true,
     source: 'server',
     label: 'Setting up a Device',
-    description: 'Set up your Car Thing to work with DeskThing!',
+    description: 'Setting up your Car Thing to work with DeskThing!',
     steps: {
       client: {
         id: 'client',
-        type: 'task',
+        type: STEP_TYPES.TASK,
         label: 'Install the Client',
         taskId: 'client',
         instructions: 'Ensure you have a client setup',
@@ -55,22 +57,22 @@ const tasks: { [key: string]: Task } = {
       },
       setup: {
         id: 'setup',
-        type: 'external',
+        type: STEP_TYPES.EXTERNAL,
         label: 'Setup',
         instructions: 'Go to the DeskThing youtube channel and follow a Step A video',
-        url: 'https://deskthing.com/youtube',
+        url: 'https://deskthing.app/youtube',
         completed: false
       },
       connect: {
         id: 'connect',
-        type: 'external',
+        type: STEP_TYPES.EXTERNAL,
         label: 'Plug in your Car Thing',
         instructions: 'Plug in your device to your computer!',
         completed: false
       },
       detect: {
         id: 'detect',
-        type: 'shortcut',
+        type: STEP_TYPES.SHORTCUT,
         destination: 'clients/connections',
         label: 'Detect',
         instructions: 'Find your device in the Connections tab',
@@ -78,32 +80,32 @@ const tasks: { [key: string]: Task } = {
         debugging: {
           cable: {
             id: 'cable',
-            type: 'external',
+            type: STEP_TYPES.EXTERNAL,
             label: 'Different cable',
             instructions: 'Try using a different cable'
           },
           port: {
             id: 'port',
-            type: 'external',
+            type: STEP_TYPES.EXTERNAL,
             label: 'Different port',
             instructions: 'Try different ports on your computer'
           },
           driver: {
             id: 'driver',
-            type: 'external',
+            type: STEP_TYPES.EXTERNAL,
             label: 'Windows - Check Drivers',
             instructions:
               'Ensure ADB Interface and NDIS Compatible Device show up in Device Manager'
           },
           norndis: {
             id: 'norndis',
-            type: 'external',
+            type: STEP_TYPES.EXTERNAL,
             label: 'AMD CPU - norndis',
             instructions: 'Reflash with the "norndis" image in Thing Labs and try again'
           },
           biosport: {
             id: 'biosport',
-            type: 'external',
+            type: STEP_TYPES.EXTERNAL,
             label: 'AMD CPU - Try the BIOS port',
             instructions: 'Try using the BIOS port on your motherboard'
           }
@@ -111,7 +113,7 @@ const tasks: { [key: string]: Task } = {
       },
       configure: {
         id: 'configure',
-        type: 'shortcut',
+        type: STEP_TYPES.SHORTCUT,
         destination: 'clients/connections',
         label: 'Configure',
         instructions: 'Configure your device in the Connections tab',
@@ -119,7 +121,7 @@ const tasks: { [key: string]: Task } = {
         debugging: {
           offline: {
             id: 'offline',
-            type: 'external',
+            type: STEP_TYPES.EXTERNAL,
             label: 'Offline',
             instructions: 'If your device is offline, click the "reconnect offline" button'
           }
@@ -130,15 +132,16 @@ const tasks: { [key: string]: Task } = {
   },
   client: {
     id: 'client',
-    version: '0.10.4',
+    version: '0.10.3',
     started: false,
+    available: true,
     source: 'server',
-    label: 'Setting up a Device',
-    description: 'Let us go over how to download a client to DeskThing',
+    label: 'Setting up a Client',
+    description: 'Downloading a client to DeskThing',
     steps: {
       client: {
         id: 'client',
-        type: 'shortcut',
+        type: STEP_TYPES.SHORTCUT,
         label: 'Download a Client',
         destination: 'downloads/client',
         instructions: 'Click Download Latest on the DeskThing Client to download it.',
@@ -146,7 +149,7 @@ const tasks: { [key: string]: Task } = {
       },
       refresh: {
         id: 'refresh',
-        type: 'step',
+        type: STEP_TYPES.STEP,
         label: 'Refresh the client',
         instructions: 'Ensure you Refresh the client and ensure the new version is installed.',
         completed: false
@@ -156,7 +159,7 @@ const tasks: { [key: string]: Task } = {
   },
   updateClient: {
     id: 'updateClient',
-    version: '0.10.4',
+    version: '0.10.3',
     started: false,
     source: 'server',
     label: 'Setting up a Device',
@@ -164,7 +167,7 @@ const tasks: { [key: string]: Task } = {
     steps: {
       download: {
         id: 'download',
-        type: 'shortcut',
+        type: STEP_TYPES.SHORTCUT,
         label: 'Download the updated Client',
         destination: 'downloads/client',
         instructions: 'Go to the downloads page and download the latest client',
@@ -172,14 +175,14 @@ const tasks: { [key: string]: Task } = {
       },
       refresh: {
         id: 'refresh',
-        type: 'step',
+        type: STEP_TYPES.STEP,
         label: 'Refresh the client',
         instructions: 'Ensure you Refresh the client and ensure the new version is installed.',
         completed: false
       },
       flash: {
         id: 'flash',
-        type: 'shortcut',
+        type: STEP_TYPES.SHORTCUT,
         label: 'Flash the new client',
         destination: 'clients/connections',
         instructions: 'Click Details -> Push Staged to load the new client to your device!',

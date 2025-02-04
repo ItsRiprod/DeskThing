@@ -96,7 +96,10 @@ class SettingsStore {
   public async loadSettings(): Promise<Settings> {
     try {
       const data = await readFromFile<Settings>(this.settingsFilePath)
-      Logger.log(MESSAGE_TYPES.LOGGING, 'SETTINGS: Loaded settings!')
+      Logger.info('Loaded Settings!', {
+        source: 'settingStore',
+        function: 'loadSettings'
+      })
 
       if (!data || !data.version_code || data.version_code < version_code) {
         // File does not exist, create it with default settings
@@ -133,11 +136,11 @@ class SettingsStore {
         await autoLaunch.disable()
       }
     } catch (err) {
-      Logger.log(
-        MESSAGE_TYPES.WARNING,
-        `[updateAutoLaunch]: Failed to enable auto launching ${err}`
-      )
-      console.error('Error updating auto launch:', err)
+      Logger.error('Failed to enable auto launching', {
+        source: 'settingsStore',
+        function: 'updateAutoLaunch',
+        error: err as Error
+      })
     }
   }
   /**
@@ -153,9 +156,12 @@ class SettingsStore {
       await writeToFile(this.settings, this.settingsFilePath)
       Logger.log(
         MESSAGE_TYPES.LOGGING,
-        'SETTINGS: Updated settings!' + JSON.stringify(this.settings)
+        'SETTINGS: Updated settings!' + JSON.stringify(this.settings),
+        {
+          source: 'settingsStore',
+          function: 'saveSettings'
+        }
       )
-
       this.notifyListeners()
     } catch (err) {
       console.error('Error saving settings:', err)

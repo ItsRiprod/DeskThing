@@ -15,11 +15,12 @@ type taskStoreListener = (taskList: TaskList) => void
 
 class TaskStore {
   private saveTimeout: NodeJS.Timeout | null = null
-  private readonly SAVE_DELAY = 1000 // Delay a second before saving to file
+  private readonly SAVE_DELAY = 100 // Delay a second before saving to file
   private static instance: TaskStore
   private taskList: TaskList = { tasks: {}, version: '', currentTaskId: '' }
   private listeners: taskStoreListener[] = []
   private taskStepReferences: Map<string, { taskId: string; stepId: string }[]> = new Map()
+  private saveAgain = false
 
   private constructor() {
     this.initializeTaskList()
@@ -28,6 +29,22 @@ class TaskStore {
 
   private initializeTaskList = async (): Promise<void> => {
     this.taskList = await this.getTaskList()
+    let changes = false
+    // Compare versions and update tasks if needed
+    Object.entries(defaultTaskList.tasks).forEach(([taskId, defaultTask]) => {
+      const existingTask = this.taskList.tasks[taskId]
+      if (existingTask && existingTask.version !== defaultTask.version) {
+        this.taskList.tasks[taskId] = defaultTask
+        changes = true
+      }
+      if (!existingTask) {
+        this.taskList.tasks[taskId] = defaultTask
+        changes = true
+      }
+    })
+    if (changes) {
+      await this.saveTaskList()
+    }
   }
 
   public static getInstance(): TaskStore {
@@ -169,7 +186,7 @@ class TaskStore {
   }
 
   public async saveTaskList(): Promise<void> {
-    Logger.warn('[saveTaskList] Saving the task list!')
+    Logger.info('[saveTaskList] Saving the task list!')
     try {
       if (isValidTaskList(this.taskList).isValid) {
         await writeToFile(this.taskList, 'tasks.json')
@@ -192,13 +209,18 @@ class TaskStore {
   }
 
   private debouncedSave(): void {
-    if (this.saveTimeout) {
-      clearTimeout(this.saveTimeout)
-    }
-    this.saveTimeout = setTimeout(() => {
+    if (!this.saveTimeout) {
       this.saveTaskList()
-      this.saveTimeout = null
-    }, this.SAVE_DELAY)
+      this.saveTimeout = setTimeout(() => {
+        this.saveTimeout = null
+        if (this.saveAgain) {
+          this.saveAgain = false
+          this.debouncedSave()
+        }
+      }, this.SAVE_DELAY)
+    } else {
+      this.saveAgain = true
+    }
   }
 
   public getTask(taskId: string): Task | TaskReference | undefined {
@@ -273,7 +295,7 @@ class TaskStore {
       return
     }
     if (!task.started) {
-      Logger.warn(`[resolveTask]: Task ${taskId} has not been started`)
+      Logger.info(`[resolveTask]: Task ${taskId} has not been started`)
       return
     }
 
@@ -328,7 +350,7 @@ class TaskStore {
       return
     }
 
-    const task = await this.fetchTask(taskRef)
+    const task = taskRef.source == 'server' ? (taskRef as Task) : await this.fetchTask(taskRef)
 
     if (!task) {
       Logger.warn(`Task ${taskId} does not exist from app ${taskRef.source}`, {
@@ -340,7 +362,7 @@ class TaskStore {
 
     task.started = true
     task.completed = false
-    task.currentStep = Object.keys(task.steps)[0]
+    task.currentStep = task.currentStep || Object.keys(task.steps)[0]
     this.taskList.currentTaskId = task.id
     this.taskList.tasks[taskId] = task
     this.debouncedSave()
@@ -360,6 +382,11 @@ class TaskStore {
     this.debouncedSave()
   }
 
+  async pauseTask(): Promise<void> {
+    this.taskList.currentTaskId = undefined
+    this.debouncedSave()
+  }
+
   /**
    * Step Management
    */
@@ -374,7 +401,7 @@ class TaskStore {
       return
     }
     if (!task.started) {
-      Logger.warn(`[addStep]: Task ${taskId} has not been started!`, {
+      Logger.info(`[addStep]: Task ${taskId} has not been started!`, {
         function: 'addStep',
         source: 'taskStore'
       })
@@ -404,7 +431,7 @@ class TaskStore {
       return
     }
     if (!task.started) {
-      Logger.warn(`Task ${taskId} has not been started!`, {
+      Logger.info(`Task ${taskId} has not been started!`, {
         function: 'updateStep',
         source: 'taskStore'
       })
@@ -450,7 +477,7 @@ class TaskStore {
       return
     }
     if (!task.started) {
-      Logger.warn(`Task ${taskId} has not been started!`, {
+      Logger.info(`Task ${taskId} has not been started!`, {
         function: 'deleteStep',
         source: 'taskStore'
       })
@@ -483,18 +510,122 @@ class TaskStore {
     this.debouncedSave()
   }
 
-  async getNextStep(taskId: string, stepId: string): Promise<string | undefined> {
-    const task = this.getTask(taskId)
+  async nextStep(taskId: string): Promise<void> {
+    let task = this.getTask(taskId)
     if (!task) {
-      Logger.warn(`[getNextStep]: Task ${taskId} does not exist`)
+      Logger.warn(`[nextStep]: Task ${taskId} does not exist`)
       return
     }
     if (!task.started) {
-      Logger.warn(`[getNextStep]: Task ${taskId} must be started before getting the next step!`)
-      return
+      Logger.info(`Task ${taskId} has not been started!`, {
+        function: 'nextStep',
+        source: 'taskStore'
+      })
+      task = await this.fetchTask(task)
+      if (!task) {
+        Logger.warn(`Task ${taskId} does not exist`, {
+          function: 'nextStep',
+          source: 'taskStore'
+        })
+        return
+      }
     }
     if (!task.steps) {
-      Logger.warn(`[getNextStep]: Task ${taskId} does not have any steps`)
+      Logger.warn(`[nextStep]: Task ${taskId} does not have any steps`)
+      return
+    }
+    if (!task.currentStep) {
+      Logger.info(`[nextStep]: Task ${taskId} does not have a current step`)
+      task.currentStep = Object.values(task.steps)[0].id
+      this.taskList.tasks[taskId] = task
+      this.debouncedSave()
+      return
+    }
+    const currentStep = task.steps[task.currentStep]
+    if (!currentStep) {
+      Logger.warn(`[nextStep]: Task ${taskId} does not have a current step`)
+      task.currentStep = Object.values(task.steps)[0].id
+      this.taskList.tasks[taskId] = task
+      this.debouncedSave()
+      return
+    }
+    if (!currentStep.completed) {
+      Logger.info(`[nextStep]: Step ${currentStep.id} in ${taskId} has not been completed yet!`)
+      return
+    }
+    const nextStep = await this.getNextStep(task, task.currentStep)
+    if (!nextStep) {
+      Logger.warn(`[nextStep]: Task ${taskId} does not have a next step`)
+      return
+    }
+    task.currentStep = nextStep.id
+    this.taskList.tasks[taskId] = task
+    this.debouncedSave()
+  }
+  async prevStep(taskId: string): Promise<void> {
+    let task = this.getTask(taskId)
+    if (!task) {
+      Logger.warn(`[prevStep]: Task ${taskId} does not exist`)
+      return
+    }
+    if (!task.started) {
+      Logger.warn(`Task ${taskId} has not been started!`, {
+        function: 'prevStep',
+        source: 'taskStore'
+      })
+      task = await this.fetchTask(task)
+      if (!task) {
+        Logger.warn(`Task ${taskId} does not exist`, {
+          function: 'prevStep',
+          source: 'taskStore'
+        })
+        return
+      }
+    }
+    if (!task.steps) {
+      Logger.warn(`[prevStep]: Task ${taskId} does not have any steps`)
+      return
+    }
+    if (!task.currentStep) {
+      Logger.info(`[prevStep]: Task ${taskId} does not have a current step`)
+      task.currentStep = Object.values(task.steps)[0].id
+      this.taskList.tasks[taskId] = task
+      this.debouncedSave()
+      return
+    }
+
+    const stepIndex = Object.values(task.steps).findIndex((s) => s.id === task.currentStep)
+    if (stepIndex === -1) {
+      Logger.info(`[prevStep]: Task ${taskId} does not have a current step`)
+      task.currentStep = Object.values(task.steps)[0].id
+      this.taskList.tasks[taskId] = task
+      this.debouncedSave()
+      return
+    }
+    if (stepIndex === 0) {
+      Logger.info(`[prevStep]: Task ${taskId} is on the first step`)
+      return
+    }
+    const prevStep = Object.values(task.steps)[stepIndex - 1]
+    task.currentStep = prevStep.id
+    this.taskList.tasks[taskId] = task
+    this.debouncedSave()
+  }
+
+  async getNextStep(task: string | Task, stepId: string): Promise<Step | undefined> {
+    // If it is just the ID, fetch the actual task
+    if (typeof task === 'string') {
+      const newTask = this.getTask(task)
+      if (!newTask || !newTask.started) {
+        Logger.warn(`[getNextStep]: Task ${task} does not exist`)
+        return
+      }
+
+      task = newTask
+    }
+
+    if (!task.steps) {
+      Logger.warn(`[getNextStep]: Task ${task.id} does not have any steps`)
       return
     }
     if (!task.steps[stepId]) {
@@ -503,6 +634,7 @@ class TaskStore {
     }
 
     const stepIndex = Object.values(task.steps).findIndex((s) => s.id === stepId)
+
     if (stepIndex === -1) {
       Logger.warn(`[getNextStep]: Step ${stepId} does not exist`)
       return
@@ -511,11 +643,11 @@ class TaskStore {
     const nextStep = Object.values(task.steps)[stepIndex + 1]
 
     if (!nextStep) {
-      Logger.warn(`[getNextStep]: No next step for step ${stepId}`)
+      Logger.info(`[getNextStep]: No next step for step ${stepId}`)
       return
     }
 
-    return nextStep.id
+    return nextStep
   }
 
   async completeStep(taskId: string, stepId: string): Promise<void> {
@@ -525,7 +657,7 @@ class TaskStore {
       return
     }
     if (!task.started) {
-      Logger.warn(`Task ${taskId} has not been started!`, {
+      Logger.info(`Task ${taskId} has not been started!`, {
         function: 'completeStep',
         source: 'taskStore'
       })
@@ -543,15 +675,24 @@ class TaskStore {
       return
     }
     if (!task.steps[stepId]) {
-      Logger.warn(`[completeStep]: Step ${stepId} does not exist`)
+      Logger.info(`[completeStep]: Step ${stepId} does not exist`)
       return
+    } else {
+      task.steps[stepId].completed = true
     }
-    task.steps[stepId].completed = true
     this.taskList.tasks[taskId] = task
 
-    const nextStep = await this.getNextStep(taskId, stepId)
+    const nextStep = await this.getNextStep(task, stepId)
     if (nextStep) {
-      task.currentStep = nextStep
+      // Keep getting next steps until we find an incomplete one or reach the end
+      let currentStep: Step | undefined = nextStep
+      while (currentStep && currentStep.completed) {
+        currentStep = await this.getNextStep(taskId, currentStep.id)
+      }
+
+      // If we found an incomplete step, set it as current
+      // Otherwise currentStep will be undefined and we'll use the last known step
+      task.currentStep = currentStep?.id || nextStep.id
     } else {
       task.currentStep = undefined
     }

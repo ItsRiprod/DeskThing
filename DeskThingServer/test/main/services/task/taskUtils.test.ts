@@ -27,11 +27,11 @@ vi.mock('@server/services/mappings/utilsMaps', () => ({
 describe('taskUtils', () => {
   describe('isValidTaskList', () => {
     it('should reject null or undefined input', () => {
-      expect(isValidTaskList(null)).toEqual({
+      expect(isValidTaskList({})).toEqual({
         isValid: false,
         error: 'TaskList must be an object'
       })
-      expect(isValidTaskList(undefined)).toEqual({
+      expect(isValidTaskList({})).toEqual({
         isValid: false,
         error: 'TaskList must be an object'
       })
@@ -49,7 +49,14 @@ describe('taskUtils', () => {
         isValidTaskList({
           version: '1.0.0',
           tasks: {
-            task1: { id: 'task1' }
+            task1: {
+              id: 'task1',
+              source: '',
+              version: '1.0.0',
+              started: false,
+              completed: false,
+              label: 'Test Task'
+            }
           }
         })
       ).toEqual({

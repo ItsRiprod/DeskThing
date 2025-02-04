@@ -116,7 +116,7 @@ describe('TaskStore', () => {
     vi.runAllTimers()
 
     const updatedParentTask = TaskStore.getTask('parent-task')
-    expect(updatedParentTask?.steps?.['step-1'].completed).toBe(true)
+    expect(updatedParentTask?.started && updatedParentTask?.steps?.['step-1'].completed).toBe(true)
   })
 
   it('should handle task restart correctly', async () => {
@@ -149,7 +149,7 @@ describe('TaskStore', () => {
 
     const updatedTask = TaskStore.getTask('restart-task')
     expect(updatedTask?.completed).toBe(false)
-    expect(updatedTask?.steps?.['step1'].completed).toBe(false)
+    expect(updatedTask?.started && updatedTask?.steps?.['step1'].completed).toBe(false)
   })
 
   it('should complete task when all steps are completed', async () => {

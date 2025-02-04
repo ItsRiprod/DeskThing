@@ -12,16 +12,10 @@
  * - Manages module loading and initialization
  */
 
-console.log('[Index] Starting')
-import {
-  AppIPCData,
-  AuthScopes,
-  Client,
-  UtilityIPCData,
-  MESSAGE_TYPES,
-  App,
-  ServerIPCData
-} from '@shared/types'
+import Logger from './utils/logger'
+Logger.info('[Index] Starting', { domain: 'server', source: 'index' })
+
+import { AppIPCData, AuthScopes, Client, UtilityIPCData, App, ServerIPCData } from '@shared/types'
 import { app, shell, BrowserWindow, ipcMain, Tray, Menu, nativeImage } from 'electron'
 import { join, resolve } from 'path'
 import icon from '../../resources/icon.png?asset'
@@ -271,8 +265,12 @@ async function setupIpcHandlers(): Promise<void> {
   const { default: Logger, ResponseLogger } = await import('./utils/logger')
   // Default handler for unimplemented IPC messages
   const defaultHandler = async (data: AppIPCData): Promise<void> => {
-    console.error(`No handler implemented for type: ${data.type} ${data}`)
-    Logger.log(MESSAGE_TYPES.ERROR, `No handler implemented for type: ${data.type}`)
+    Logger.error(`No handler implemented for type: ${data.type}`, {
+      domain: 'server',
+      source: 'ipcHandlers',
+      function: 'defaultHandler',
+      error: new Error(`Unhandled type: ${data.type}`)
+    })
   }
 
   // Handle app-related IPC messages
@@ -284,12 +282,20 @@ async function setupIpcHandlers(): Promise<void> {
       if (handler) {
         return await handler(data, replyFn)
       } else {
-        console.error(`No handler found for type: ${data.type}`)
-        throw new Error(`Unhandled type: ${data.type}`)
+        Logger.error(`No handler found for type: ${data.type}`, {
+          domain: 'server',
+          source: 'ipcHandlers',
+          function: 'APPS',
+          error: new Error(`Unhandled type: ${data.type}`)
+        })
       }
     } catch (error) {
-      console.error('Error in IPC handler:', error)
-      Logger.log(MESSAGE_TYPES.ERROR, `Error in IPC handler: ${error}`)
+      Logger.error(`Error in IPC handler: ${error}`, {
+        domain: 'server',
+        source: 'ipcHandlers',
+        function: 'APPS',
+        error: error instanceof Error ? error : new Error(String(error))
+      })
     }
   })
 
@@ -302,12 +308,20 @@ async function setupIpcHandlers(): Promise<void> {
       if (handler) {
         return await handler(data, replyFn)
       } else {
-        console.error(`No handler found for type: ${data.type}`)
-        throw new Error(`Unhandled type: ${data.type}`)
+        Logger.error(`No handler found for type: ${data.type}`, {
+          domain: 'server',
+          source: 'ipcHandlers',
+          function: 'CLIENT',
+          error: new Error(`Unhandled type: ${data.type}`)
+        })
       }
     } catch (error) {
-      console.error('Error in IPC handler:', error)
-      Logger.log(MESSAGE_TYPES.ERROR, `Error in IPC handler: ${error}`)
+      Logger.error(`Error in IPC handler: ${error}`, {
+        domain: 'server',
+        source: 'ipcHandlers',
+        function: 'CLIENT',
+        error: error instanceof Error ? error : new Error(String(error))
+      })
     }
   })
 
@@ -321,16 +335,24 @@ async function setupIpcHandlers(): Promise<void> {
       if (handler) {
         return await handler(data, replyFn)
       } else {
-        console.error(`No handler found for type: ${data.type}`)
-        throw new Error(`Unhandled type: ${data.type}`)
+        Logger.error(`No handler found for type: ${data.type}`, {
+          domain: 'server',
+          source: 'ipcHandlers',
+          function: 'UTILITY',
+          error: new Error(`Unhandled type: ${data.type}`)
+        })
       }
     } catch (error) {
-      console.error('Error in IPC handler:', error)
-      Logger.log(MESSAGE_TYPES.ERROR, `Error in IPC handler: ${error}`)
+      Logger.error(`Error in IPC handler: ${error}`, {
+        domain: 'server',
+        source: 'ipcHandlers',
+        function: 'UTILITY',
+        error: error instanceof Error ? error : new Error(String(error))
+      })
     }
   })
 
-  // Set up mapping store listeners
+  // Store listeners
   import('./stores').then(({ mappingStore, appStore, connectionStore, taskStore }) => {
     mappingStore.addListener('action', (action) => {
       action &&
@@ -388,10 +410,10 @@ async function setupIpcHandlers(): Promise<void> {
   })
 
   // Set up logging store listener
-  Logger.addListener((errorData) => {
+  Logger.addListener((logData) => {
     sendIpcData({
       type: 'log',
-      payload: errorData
+      payload: logData
     })
   })
 
@@ -517,7 +539,12 @@ async function loadModules(): Promise<void> {
 
     import('./stores/musicStore')
   } catch (error) {
-    console.error('Error loading modules:', error)
+    Logger.error('Error loading modules:', {
+      domain: 'server',
+      source: 'index',
+      function: 'loadModules',
+      error: error instanceof Error ? error : new Error(String(error))
+    })
   }
 }
 

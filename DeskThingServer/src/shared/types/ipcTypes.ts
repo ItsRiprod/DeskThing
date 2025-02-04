@@ -107,7 +107,16 @@ export interface UtilityIPCData extends UtilityIPCBase {
 }
 export interface UtilityIPCTask extends UtilityIPCBase {
   type: 'task'
-  request: 'get' | 'complete' | 'start' | 'stop' | 'complete_task'
+  request:
+    | 'get'
+    | 'complete'
+    | 'start'
+    | 'stop'
+    | 'complete_task'
+    | 'restart'
+    | 'pause'
+    | 'next'
+    | 'previous'
   payload: string | string[]
 }
 export interface UtilityIPCUpdate extends UtilityIPCBase {

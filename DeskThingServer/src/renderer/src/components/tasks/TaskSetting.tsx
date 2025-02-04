@@ -1,11 +1,12 @@
 import { FC } from 'react'
-import { TaskProps } from './TaskBase'
+import { StepProps } from './TaskBase'
+import { STEP_TYPES } from '@shared/types/tasks'
 
-export const TaskSetting: FC<TaskProps> = ({ step, taskId }) => {
+export const TaskSetting: FC<StepProps> = ({ step }) => {
+  if (step.type != STEP_TYPES.SETTING) return <div>Not an action</div>
   return (
     <>
-      {step.label}
-      {taskId}
+      {step?.label}
     </>
   )
 }

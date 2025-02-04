@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { Log, MESSAGE_TYPES } from '@shared/types'
+import { Log } from '@shared/types'
 
 interface LogStoreState {
   logList: Log[]
@@ -14,7 +14,7 @@ interface LogStoreState {
 const useLogStore = create<LogStoreState>((set, get) => ({
   logList: [],
   maxLogLength: 1000,
-  maxNumLogs: 300,
+  maxNumLogs: 500,
 
   getLogs: async (): Promise<Log[]> => {
     const { logList } = get()
@@ -56,20 +56,12 @@ const useLogStore = create<LogStoreState>((set, get) => ({
     set((state) => ({
       logList: [...state.logList, newLog as Log].slice(-maxNumLogs)
     }))
-
-    if (log.type != MESSAGE_TYPES.LOGGING) {
-      console.log(newLog)
-    }
   },
   addLogsFromFile: async (logs: Log[]): Promise<void> => {
     const { maxNumLogs } = get()
-    console.log('adding logs from file', logs)
     set((state) => ({
       logList: [...state.logList, ...logs].slice(-maxNumLogs)
     }))
-
-    // Emit update event (for now, just log to console)
-    console.log('Logs updated', get().logList)
   }
 }))
 

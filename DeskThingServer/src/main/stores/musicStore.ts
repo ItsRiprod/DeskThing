@@ -46,15 +46,18 @@ export class MusicStore {
   private handleSettingsUpdate = async (settings: Settings): Promise<void> => {
     this.updateRefreshInterval(settings.refreshInterval)
 
-    Logger.log(
-      MESSAGE_TYPES.LOGGING,
-      `[MusicStore]: Received settings update - checking for changes | Playback location: ${this.currentApp} -> ${settings.playbackLocation}`
+    Logger.info(
+      `Received settings update - checking for changes | Playback location: ${this.currentApp} -> ${settings.playbackLocation}`,
+      {
+        source: 'MusicStore',
+        function: 'handleSettingsUpdate'
+      }
     )
     if (settings.playbackLocation) {
-      Logger.log(
-        MESSAGE_TYPES.LOGGING,
-        `[MusicStore]: Setting restarting to use ${settings.playbackLocation}`
-      )
+      Logger.info(`Setting restarting to use ${settings.playbackLocation}`, {
+        source: 'MusicStore',
+        function: 'handleSettingsUpdate'
+      })
       this.currentApp = settings.playbackLocation
       this.refreshMusicData()
     }

@@ -1,5 +1,5 @@
 console.log('[ClientCom Service] Starting')
-import { SocketData, MESSAGE_TYPES, SongData, AppSettings } from '@shared/types'
+import { SocketData, SongData, AppSettings } from '@shared/types'
 import { server, Clients } from './websocket'
 import { connectionStore, appStore } from '@server/stores/'
 import Logger from '@server/utils/logger'
@@ -30,9 +30,12 @@ export const handleClientMessage = async (data: SocketData): Promise<void> => {
  * @returns - A Promise that resolves when the message has been sent to all clients.
  */
 export const sendMessageToClients = async (data: SocketData): Promise<void> => {
-  Logger.log(
-    MESSAGE_TYPES.LOGGING,
-    `Sending message to clients: ${data.payload ? (JSON.stringify(data.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(data.payload)) : 'undefined'}`
+  Logger.info(
+    `Sending message to clients: ${data.payload ? (JSON.stringify(data.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(data.payload)) : 'undefined'}`,
+    {
+      source: 'clientCom',
+      function: 'sendMessageToClients'
+    }
   )
   if (server) {
     server.clients.forEach((client) => {
@@ -41,7 +44,10 @@ export const sendMessageToClients = async (data: SocketData): Promise<void> => {
       }
     })
   } else {
-    Logger.info('WSOCKET: No server running - setting one up')
+    Logger.warn('WSOCKET: No server running - setting one up', {
+      source: 'clientCom',
+      function: 'sendMessageToClients'
+    })
   }
 }
 
@@ -57,10 +63,16 @@ export const disconnectClient = (connectionId: string): void => {
   if (client && server) {
     client.socket.terminate()
     Clients.splice(Clients.indexOf(client), 1)
-    Logger.info(`Forcibly disconnected client: ${connectionId}`)
+    Logger.info(`Forcibly disconnected client: ${connectionId}`, {
+      source: 'clientCom',
+      function: 'disconnectClient'
+    })
     connectionStore.removeClient(connectionId)
   } else {
-    Logger.info(`Client not found or server not running: ${connectionId}`)
+    Logger.info(`Client not found or server not running: ${connectionId}`, {
+      source: 'clientCom',
+      function: 'disconnectClient'
+    })
   }
 }
 
@@ -80,7 +92,10 @@ export const sendMessageToClient = (clientId: string | undefined, data: SocketDa
     // Burst the message if there is no client provided
     sendMessageToClients(data)
   } else {
-    Logger.info('WSOCKET: No clients connected or server running')
+    Logger.info('No clients connected or server running', {
+      source: 'clientCom',
+      function: 'sendMessageToClient'
+    })
   }
 }
 
@@ -95,7 +110,11 @@ export const sendError = async (clientId: string | undefined, error: string): Pr
   try {
     sendMessageToClient(clientId, { app: 'client', type: 'error', payload: error })
   } catch (error) {
-    console.error('WSOCKET: Error sending message:', error)
+    Logger.error('Error sending message', {
+      source: 'clientCom',
+      function: 'sendError',
+      error: error as Error
+    })
   }
 }
 
@@ -112,8 +131,7 @@ export const sendConfigData = async (clientId?: string): Promise<void> => {
     const filteredAppData = appData.filter((app) => app.manifest?.isWebApp !== false)
 
     sendMessageToClient(clientId, { app: 'client', type: 'config', payload: filteredAppData })
-
-    Logger.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Preferences sent!')
+    Logger.info('WSOCKET: Preferences sent!', { source: 'clientCom', function: 'sendSettingsData' })
   } catch (error) {
     console.error('WSOCKET: Error getting config data:', error)
     sendError(clientId, 'WSOCKET: Error getting config data')
@@ -151,9 +169,13 @@ export const sendSettingsData = async (clientId?: string): Promise<void> => {
     }
 
     sendMessageToClient(clientId, { app: 'client', type: 'settings', payload: settings })
-    Logger.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Preferences sent!')
+    Logger.info('WSOCKET: Preferences sent!', { source: 'clientCom', function: 'sendSettingData' })
   } catch (error) {
-    console.error('WSOCKET: Error getting config data:', error)
+    Logger.error('WSOCKET: Error getting config data', {
+      source: 'clientCom',
+      function: 'sendConfigData',
+      error: error as Error
+    })
     sendError(clientId, 'WSOCKET: Error getting config data')
   }
 }
@@ -167,9 +189,13 @@ export const sendSettingsData = async (clientId?: string): Promise<void> => {
 export const sendSettingData = async (app: string, setting: AppSettings): Promise<void> => {
   try {
     sendMessageToClient(undefined, { app: 'client', type: 'setting', payload: { app, setting } })
-    Logger.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Preferences sent!')
+    Logger.info('WSOCKET: Preferences sent!', { source: 'clientCom', function: 'sendSettingData' })
   } catch (error) {
-    console.error('WSOCKET: Error getting config data:', error)
+    Logger.error('WSOCKET: Error getting config data', {
+      source: 'clientCom',
+      function: 'sendSettingData',
+      error: error as Error
+    })
     sendError(undefined, 'WSOCKET: Error getting config data')
   }
 }
@@ -187,7 +213,10 @@ export const sendMappings = async (clientId?: string): Promise<void> => {
     const actions = await keyMapStore.getActions()
 
     if (!mappings) {
-      Logger.log(MESSAGE_TYPES.WARNING, '[WSOCKET.sendMappings]: No mappings found!')
+      Logger.warn('No mappings found!', {
+        source: 'clientCom',
+        function: 'sendMappings'
+      })
       return
     }
 
@@ -202,9 +231,16 @@ export const sendMappings = async (clientId?: string): Promise<void> => {
       payload: combinedActions
     })
 
-    Logger.log(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Client has been sent button map ${mappings.id}!`)
+    Logger.info('Button mappings sent', {
+      source: 'clientCom',
+      function: 'sendMappings'
+    })
   } catch (error) {
-    console.error('WSOCKET: Error getting button mappings:', error)
+    Logger.error('WSOCKET: Error getting button mappings', {
+      source: 'clientCom',
+      function: 'sendMappings',
+      error: error as Error
+    })
     sendError(clientId, 'WSOCKET: Error getting button mappings')
   }
 }

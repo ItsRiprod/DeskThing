@@ -7,6 +7,8 @@ import AppsOverlay from './apps/AppsOverlay'
 import AddProfileOverlay from './AddProfile.'
 import UpdateOverlay from './UpdateOverlay'
 import useUpdateStore from '@renderer/stores/updateStore'
+import useTaskStore from '@renderer/stores/taskStore'
+import TaskOverlay from './TaskOverlay'
 
 const overlays = {
   qr: QROverlay,
@@ -22,6 +24,7 @@ const OverlayWrapper: React.FC<React.PropsWithChildren> = ({
   const [searchParams] = useSearchParams()
   const [activeOverlays, setActiveOverlays] = useState<string[]>([])
   const update = useUpdateStore((state) => state.update)
+  const currentTaskId = useTaskStore((state) => state.taskList.currentTaskId)
 
   useEffect(() => {
     const newActiveOverlays = Object.keys(overlays).filter(
@@ -32,6 +35,7 @@ const OverlayWrapper: React.FC<React.PropsWithChildren> = ({
 
   return (
     <>
+      {currentTaskId && <TaskOverlay />}
       {(update.updateAvailable || update.updateDownloaded) && <UpdateOverlay />}
       {activeOverlays.map((key) => {
         const OverlayComponent = overlays[key]

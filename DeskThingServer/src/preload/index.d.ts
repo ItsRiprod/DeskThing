@@ -84,11 +84,17 @@ declare global {
 
       runAction: (action: Action | ActionReference) => Promise<void>
 
-      getTaskList: () => Promise<TaskList>
-      stopTask: (taskId: string) => Promise<void>
-      startTask: (taskId: string) => Promise<void>
-      completeStep: (taskId: string, stepId: string) => Promise<void>
-      completeTask: (taskId: string) => Promise<void>
+      tasks: {
+        getTaskList: () => Promise<TaskList>
+        stopTask: (taskId: string) => Promise<void>
+        startTask: (taskId: string) => Promise<void>
+        completeStep: (taskId: string, stepId: string) => Promise<void>
+        completeTask: (taskId: string) => Promise<void>
+        restartTask: (taskId: string) => Promise<void>
+        pauseTask: () => Promise<void>
+        nextStep: (taskId: string) => Promise<void>
+        prevStep: (taskId: string) => Promise<void>
+      }
 
       update: {
         check: () => Promise<void>

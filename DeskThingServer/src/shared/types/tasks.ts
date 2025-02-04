@@ -28,6 +28,7 @@ export type Task = {
   id: string
   source: string
   version: string
+  available?: boolean
   completed: boolean
   label: string
   started: boolean
@@ -43,6 +44,7 @@ export type TaskReference = {
   id: string
   source: string
   version: string
+  available?: boolean
   completed: boolean
   label: string
   started: false
@@ -57,7 +59,7 @@ export type Step = TaskStep | TaskAction | TaskShortcut | TaskSetting | TaskTask
 export interface TaskStep {
   parentId?: string
   id: string
-  type: 'step'
+  type: STEP_TYPES.STEP
   label?: string
   instructions?: string
   completed: boolean
@@ -70,7 +72,7 @@ export interface TaskStep {
  * @params action - The action to run to complete the task
  */
 export interface TaskAction extends Omit<TaskStep, 'type'> {
-  type: 'action'
+  type: STEP_TYPES.ACTION
   action: Action | ActionReference
 }
 
@@ -78,7 +80,7 @@ export interface TaskAction extends Omit<TaskStep, 'type'> {
  * A task that the user can complete themselves
  */
 export interface TaskExternal extends Omit<TaskStep, 'type'> {
-  type: 'external'
+  type: STEP_TYPES.EXTERNAL
   url?: string
 }
 
@@ -87,7 +89,7 @@ export interface TaskExternal extends Omit<TaskStep, 'type'> {
  * @params taskId - The id of the task to complete
  */
 export interface TaskTask extends Omit<TaskStep, 'type'> {
-  type: 'task'
+  type: STEP_TYPES.TASK
   taskId: string
 }
 
@@ -96,7 +98,7 @@ export interface TaskTask extends Omit<TaskStep, 'type'> {
  * @params destination - The destination to navigate to
  */
 export interface TaskShortcut extends Omit<TaskStep, 'type'> {
-  type: 'shortcut'
+  type: STEP_TYPES.SHORTCUT
   destination: string
 }
 
@@ -106,15 +108,15 @@ export interface TaskShortcut extends Omit<TaskStep, 'type'> {
  * @params setting - The setting to set
  */
 export interface TaskSetting extends Omit<TaskStep, 'type'> {
-  type: 'setting'
+  type: STEP_TYPES.SETTING
   setting: SettingsType
 }
 
-export const STEP_TYPES = {
-  ACTION: 'action',
-  SHORTCUT: 'shortcut',
-  SETTING: 'setting',
-  TASK: 'task',
-  EXTERNAL: 'external',
-  STEP: 'step'
-} as const
+export enum STEP_TYPES {
+  ACTION = 'action',
+  SHORTCUT = 'shortcut',
+  SETTING = 'setting',
+  TASK = 'task',
+  EXTERNAL = 'external',
+  STEP = 'step'
+}
