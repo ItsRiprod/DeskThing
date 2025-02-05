@@ -32,28 +32,29 @@ const TaskOverlay: React.FC = () => {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [expanded, setExpanded] = useState(true)
   const [position, setPosition] = useState({
-    x: window.innerWidth / 2,
-    y: window.innerHeight / 2
+    x: 0,
+    y: 0
   })
-
   const taskRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const updatePosition = (): void => {
+    if (!taskRef.current) return
+
+    const resizeObserver = new ResizeObserver(() => {
       if (taskRef.current) {
-        setPosition({
-          x: window.innerWidth - taskRef.current.offsetWidth,
-          y: window.innerHeight - taskRef.current.offsetHeight
-        })
+        const maxX = window.innerWidth - taskRef.current.offsetWidth
+        const maxY = window.innerHeight - taskRef.current.offsetHeight
+
+        setPosition((prev) => ({
+          x: prev.x > maxX ? maxX : prev.x,
+          y: prev.y > maxY ? maxY : prev.y
+        }))
       }
-    }
+    })
 
-    // Initial position after render
-    setTimeout(updatePosition, 0)
+    resizeObserver.observe(taskRef.current)
+    return () => resizeObserver.disconnect()
   }, [])
-
-  if (!currentTaskId) return null
-
   useEffect(() => {
     if (!currentTask || !currentTask.currentStep) {
       setCurrentStepIndex(-1)
@@ -67,7 +68,7 @@ const TaskOverlay: React.FC = () => {
   }, [currentTask?.currentStep])
 
   useEffect(() => {
-    if (tasks[currentTaskId] && tasks[currentTaskId].started) {
+    if (currentTaskId && tasks[currentTaskId] && tasks[currentTaskId].started) {
       setCurrentTask(tasks[currentTaskId])
     }
   }, [tasks, currentTaskId])
@@ -78,11 +79,23 @@ const TaskOverlay: React.FC = () => {
       window.addEventListener('mouseup', handleMouseUp)
     }
 
+    const handleResize = (): void => {
+      if (taskRef.current) {
+        setPosition({
+          x: Math.min(window.innerWidth - taskRef.current.offsetWidth, position.x),
+          y: Math.min(window.innerHeight - taskRef.current.offsetHeight, position.y)
+        })
+      }
+    }
+
+    window.addEventListener('resize', handleResize)
+
     return () => {
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('mouseup', handleMouseUp)
+      window.removeEventListener('resize', handleResize)
     }
-  }, [isDragging, dragOffset])
+  }, [isDragging, dragOffset, position])
 
   const toggleFullscreen = (): void => {
     setIsFullscreen(!isFullscreen)
@@ -123,20 +136,23 @@ const TaskOverlay: React.FC = () => {
   }
 
   const handleRestart = (): void => {
+    if (!currentTaskId) return
     openTasks()
     restartTask(currentTaskId)
   }
 
   const handleReject = (): void => {
+    if (!currentTaskId) return
     rejectTask(currentTaskId)
   }
 
   const handleExpand = (): void => {
+    if (!currentTaskId) return
     setExpanded(!expanded)
   }
 
   const memoizedTaskBase = useMemo(
-    () => currentTask && <TaskBase task={currentTask} />,
+    () => (currentTask ? <TaskBase task={currentTask} /> : <div>Unable to load task</div>),
     [currentTask]
   )
   return (
@@ -177,7 +193,7 @@ const TaskOverlay: React.FC = () => {
             <Button
               title={expanded ? 'Collapse' : 'Expand'}
               onClick={handleExpand}
-              className="gap-2 items-center"
+              className={`gap-2 items-center ${expanded ? 'text-gray-300 hover:text-white' : ''}`}
             >
               <p>{currentTask?.label || currentTask?.id}</p>
               <p>
@@ -206,7 +222,7 @@ const TaskOverlay: React.FC = () => {
             <Button
               title="View All Tasks"
               onClick={openTasks}
-              className="gap-1 items-center bg-zinc-700 hover:bg-zinc-600"
+              className="gap-1 text-gray-400 hover:text-white items-center bg-zinc-700 hover:bg-zinc-600"
             >
               <p>All Tasks</p>
               <IconLink iconSize={12} />
@@ -214,7 +230,7 @@ const TaskOverlay: React.FC = () => {
             <Button
               title="Restart Current Task"
               onClick={handleRestart}
-              className="gap-1 items-center bg-zinc-700 hover:bg-zinc-600"
+              className="gap-1 text-gray-400 hover:text-white items-center bg-zinc-700 hover:bg-zinc-600"
             >
               <p>Restart Task</p>
               <IconReload iconSize={12} />
@@ -222,7 +238,7 @@ const TaskOverlay: React.FC = () => {
             <Button
               title="Cancel the current task"
               onClick={handleReject}
-              className="gap-1 items-center bg-zinc-700 hover:bg-red-600"
+              className="gap-1 text-gray-400 hover:text-white items-center bg-zinc-700 hover:bg-red-600"
             >
               <p>Cancel Task</p>
               <IconStop iconSize={12} />

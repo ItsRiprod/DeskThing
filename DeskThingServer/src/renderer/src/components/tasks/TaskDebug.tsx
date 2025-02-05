@@ -33,7 +33,9 @@ export const DebugComponent = ({ debugStep }: DebugComponentProps): JSX.Element 
 
   return (
     <div className="">
-      <CurrentStepComponent step={{ ...debugStep, completed: false, strict: true } as Step} />
+      <CurrentStepComponent
+        step={{ ...debugStep, debug: true, completed: false, strict: true } as Step}
+      />
     </div>
   )
 }

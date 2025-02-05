@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { Client, ClientManifest, LoggingData } from '@shared/types'
 import useNotificationStore from './notificationStore'
 import useSettingsStore from './settingsStore'
+import useTaskStore from './taskStore'
 
 // Utility function to parse ADB devices
 const parseADBDevices = (response: string): string[] => {
@@ -46,6 +47,10 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
     }
 
     const currentDevices = get().ADBDevices
+    if (currentDevices.length > 0) {
+      const resolveStep = useTaskStore.getState().resolveStep
+      resolveStep('device', 'detect')
+    }
     const newDevices = devices.filter((device) => !currentDevices.includes(device))
 
     set((state) => {
@@ -55,6 +60,8 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
 
       devices.forEach((deviceId) => {
         if (!updatedClients.some((client) => client.adbId === deviceId)) {
+          const resolveStep = useTaskStore.getState().resolveStep
+          resolveStep('device', 'configure')
           updatedClients.push({
             adbId: deviceId,
             device_type: { name: 'Car Thing', id: 4 },
@@ -92,11 +99,6 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
   setClients: async (clients: Client[]): Promise<void> => {
     set({ clients })
     get().requestADBDevices() // update adb mapping
-
-    if (clients.some((client) => client.adbId)) {
-      const resolveTask = useNotificationStore.getInitialState().resolveTask
-      resolveTask('adbdevices-configure')
-    }
   },
   setClientManifest: async (client: ClientManifest): Promise<void> =>
     set({ clientManifest: client }),

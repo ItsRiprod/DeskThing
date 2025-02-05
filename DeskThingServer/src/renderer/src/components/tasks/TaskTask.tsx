@@ -11,6 +11,7 @@ export const TaskTask: FC<StepProps> = ({ step }) => {
 
   const completeStep = useTaskStore((state) => state.resolveStep)
   const tasks = useTaskStore((state) => state.taskList.tasks)
+  const startTask = useTaskStore((state) => state.acceptTask)
   const [searchParams, setSearchParams] = useSearchParams()
   const [stepCompleted, setStepCompleted] = useState(false)
 
@@ -23,39 +24,48 @@ export const TaskTask: FC<StepProps> = ({ step }) => {
   }
 
   const openTasks = (): void => {
-    searchParams.set('page', 'task')
-    searchParams.set('notifications', 'true')
-    setSearchParams(searchParams)
+    const task = Object.values(tasks).find((task) => task.id === step.taskId)
+    if (task) {
+      startTask(task.id)
+    } else {
+      searchParams.set('page', 'task')
+      searchParams.set('notifications', 'true')
+      setSearchParams(searchParams)
+    }
   }
 
   useEffect(() => {
     const task = Object.values(tasks).find((task) => task.id === step.taskId)
     setStepCompleted(task?.completed || false)
-    console.log('Task Step', task)
-  }, [tasks])
+  }, [tasks, step.taskId])
 
   return (
     <div className="gap-2 flex flex-col">
       <h2 className="text-2xl">{step.label}</h2>
       <p>{step.instructions}</p>
-      <div className="w-full flex justify-between gap-5">
-        <Button
-          title="Open Tasks notification"
-          className="gap-2 bg-cyan-700 hover:bg-cyan-600"
-          onClick={openTasks}
-        >
-          <p>Open {step.taskId} task</p>
-          <IconLink />
-        </Button>
-        <Button
-          className={`group ${stepCompleted ? 'bg-green-700 hover:bg-green-600' : 'bg-zinc-950 text-gray-500'}`}
-          disabled={step.strict && !stepCompleted}
-          title={`${step.strict ? 'Complete task first' : 'Continue Anyway'}`}
-          onClick={handleComplete}
-        >
-          {stepCompleted ? <p>Mark as Completed</p> : <p>Complete task {step.taskId} first</p>}
-          {stepCompleted ? <IconCheck /> : <IconX />}
-        </Button>
+      <div className="w-full flex items-end justify-between gap-5">
+        <div className="flex flex-col">
+          {stepCompleted && <p className="italic text-xs text-gray-400">Task is Completed</p>}
+          <Button
+            title="Open Tasks notification"
+            className="gap-2 bg-cyan-700 hover:bg-cyan-600"
+            onClick={openTasks}
+          >
+            <p>Open {step.taskId} task</p>
+            <IconLink />
+          </Button>
+        </div>
+        {!step.debug && (
+          <Button
+            className={`group ${stepCompleted ? 'bg-green-700 hover:bg-green-600' : 'bg-zinc-950 text-gray-500'}`}
+            disabled={step.strict && !stepCompleted}
+            title={`${step.strict ? 'Complete task first' : 'Continue Anyway'}`}
+            onClick={handleComplete}
+          >
+            {stepCompleted ? <p>Confirm Completion</p> : <p>Complete task {step.taskId} first</p>}
+            {stepCompleted ? <IconCheck /> : <IconX />}
+          </Button>
+        )}
       </div>
     </div>
   )

@@ -38,15 +38,17 @@ export const TaskExternal: FC<StepProps> = ({ step }) => {
             <IconLink />
           </Button>
         )}
-        <Button
-          className={`w-full justify-center group ${stepCompleted ? 'bg-green-700 hover:bg-green-600' : 'bg-zinc-950 text-gray-500'}`}
-          disabled={step.strict && !stepCompleted}
-          title={`${step.strict ? 'Complete task first' : 'Continue Anyway'}`}
-          onClick={handleComplete}
-        >
-          {stepCompleted || !step.url ? <p>Mark as Completed</p> : <p>Open Link First</p>}
-          {stepCompleted || !step.url ? <IconCheck /> : <IconX />}
-        </Button>
+        {step.debug != true && (
+          <Button
+            className={`w-full justify-center group ${stepCompleted ? 'bg-green-700 hover:bg-green-600' : 'bg-zinc-950 text-gray-500'}`}
+            disabled={step.strict && !stepCompleted}
+            title={`${stepCompleted ? 'Confirm Completion' : step.strict ? 'Complete task first' : 'Continue Anyway'}`}
+            onClick={handleComplete}
+          >
+            {stepCompleted || !step.url ? <p>Mark as Completed</p> : <p>Open Link First</p>}
+            {stepCompleted || !step.url ? <IconCheck /> : <IconX />}
+          </Button>
+        )}
       </div>
     </div>
   )

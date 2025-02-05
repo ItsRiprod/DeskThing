@@ -15,6 +15,7 @@ import MainElement from '@renderer/nav/MainElement'
 import DownloadNotification from '@renderer/overlays/DownloadNotification'
 import Overlay from '@renderer/overlays/Overlay'
 import { useSearchParams } from 'react-router-dom'
+import useTaskStore from '@renderer/stores/taskStore'
 
 const ClientDownloads: React.FC = () => {
   const clientReleases = useGithubStore((githubStore) => githubStore.clientReleases)
@@ -25,6 +26,9 @@ const ClientDownloads: React.FC = () => {
   // Running clients
   const loadClientUrl = useClientStore((clientStore) => clientStore.loadClientUrl)
   const loadClientZip = useClientStore((clientStore) => clientStore.loadClientZip)
+
+  const resolveStep = useTaskStore((store) => store.resolveStep)
+
   const logging = useClientStore((clientStore) => clientStore.logging)
 
   const [searchParams, setSearchParams] = useSearchParams()
@@ -75,11 +79,12 @@ const ClientDownloads: React.FC = () => {
     setClientDownloads(null)
     try {
       await loadClientUrl(url)
-      await setTimeout(() => {
+      setTimeout(() => {
         setLoading(false)
+        resolveStep('client', 'download')
       }, 2000)
     } catch (error) {
-      await setTimeout(() => {
+      setTimeout(() => {
         setLoading(false)
         setShowLogging(false)
       }, 2000)
@@ -109,6 +114,7 @@ const ClientDownloads: React.FC = () => {
 
   const onRefreshClick = async (): Promise<void> => {
     refreshClient()
+    resolveStep('client', 'refresh')
     setClientRefreshing(true)
     setTimeout(() => setClientRefreshing(false), Math.random() * 1500 + 500)
   }

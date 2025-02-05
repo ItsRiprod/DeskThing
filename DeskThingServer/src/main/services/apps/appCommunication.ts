@@ -11,13 +11,27 @@ import {
 import Logger from '@server/utils/logger'
 import { ipcMain } from 'electron'
 
-type HandlerFunction = (app: string, appData: FromAppData) => void
-type TypeHandler = {
-  [key in IncomingAppDataTypes]: RequestHandler
-}
-type RequestHandler = {
-  [key: string]: HandlerFunction
-}
+type HandlerFunction = (app: string, appData: FromAppData) => Promise<void>
+
+type RequestHandler = Record<string, HandlerFunction>
+
+const wrapHandlers = (handlers: Record<string, HandlerFunction>): Record<string, HandlerFunction> =>
+  Object.fromEntries(Object.entries(handlers).map(([k, v]) => [k, wrapHandler(v)]))
+
+const wrapHandler =
+  (handler: HandlerFunction) =>
+  async (app: string, data: FromAppData): Promise<void> => {
+    try {
+      Logger.info(`Handling ${data.type} from ${app}`, { domain: app.toUpperCase() })
+      await handler(app, data)
+    } catch (error) {
+      Logger.error(`Handler failed`, {
+        error: error as Error,
+        source: 'appCommunication',
+        function: 'wrapHandler'
+      })
+    }
+  }
 
 /**
  * Handles data received from an app.
@@ -57,7 +71,7 @@ export async function handleDataFromApp(app: string, appData: FromAppData): Prom
  * @param {string} app - The name of the app that sent the unknown data.
  * @param {FromAppData} appData - The data received from the app.
  */
-const handleRequestMissing: HandlerFunction = (app: string, appData: FromAppData) => {
+const handleRequestMissing: HandlerFunction = async (app: string, appData: FromAppData) => {
   Logger.log(
     MESSAGE_TYPES.WARNING,
     `[handleComs]: App ${app} sent unknown data type: ${appData.type} and request: ${appData.request}, with payload ${appData.payload ? (JSON.stringify(appData.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(appData.payload)) : 'undefined'}`,
@@ -108,7 +122,7 @@ const handleRequestOpen: HandlerFunction = async (_app, appData) => {
  * @param {FromAppData} appData - The data received from the app, including the log type and payload.
  * @returns {void}
  */
-const handleRequestLog: HandlerFunction = (app, appData) => {
+const handleRequestLog: HandlerFunction = async (app, appData) => {
   if (appData.request && Object.values(MESSAGE_TYPES).includes(appData.request as MESSAGE_TYPES)) {
     Logger.log(appData.request as MESSAGE_TYPES, appData.payload, { domain: app.toUpperCase() })
   } else {
@@ -382,6 +396,107 @@ const handleRequestGetInput: HandlerFunction = async (app, appData) => {
   })
 }
 
+const handleRequestSendToClient = async (app, appData): Promise<void> => {
+  const { sendMessageToClients, handleClientMessage } = await import('../client/clientCom')
+  if (app && appData.payload) {
+    Logger.log(
+      MESSAGE_TYPES.LOGGING,
+      `[handleDataFromApp] App ${app} is sending data to the client with ${appData.payload ? (JSON.stringify(appData.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(appData.payload)) : 'undefined'}`,
+      { domain: app.toUpperCase() }
+    )
+    if (appData.payload.app == 'client') {
+      handleClientMessage(appData.payload)
+    } else {
+      sendMessageToClients({
+        app: appData.payload.app || app,
+        type: appData.payload.type || '',
+        payload: appData.payload.payload || '',
+        request: appData.payload.request || ''
+      })
+    }
+  }
+}
+
+const handleRequestSendToApp: HandlerFunction = async (app, appData): Promise<void> => {
+  if (appData.payload && appData.request) {
+    const { appStore } = await import('@server/stores')
+    appStore.sendDataToApp(appData.request, appData.payload)
+    Logger.log(
+      MESSAGE_TYPES.LOGGING,
+      `[handleDataFromApp] App ${app} is sending data to ${appData.request} with ${appData.payload ? (JSON.stringify(appData.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(appData.payload)) : 'undefined'}`,
+      { domain: app.toUpperCase() }
+    )
+  } else {
+    Logger.log(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: App data malformed`, appData.payload)
+  }
+}
+
+// Tasks
+const handleRequestGetTask: HandlerFunction = async (app, appData): Promise<void> => {
+  const { taskStore } = await import('@server/stores')
+}
+const handleRequestSetTask: HandlerFunction = async (app, appData): Promise<void> => {
+  const { taskStore } = await import('@server/stores')
+}
+const handleRequestDeleteTask: HandlerFunction = async (app, appData): Promise<void> => {
+  const { taskStore } = await import('@server/stores')
+}
+const handleRequestAddTask: HandlerFunction = async (app, appData): Promise<void> => {
+  const { taskStore } = await import('@server/stores')
+}
+const handleRequestCompleteTask: HandlerFunction = async (app, appData): Promise<void> => {
+  const { taskStore } = await import('@server/stores')
+}
+const handleRequestRestartTask: HandlerFunction = async (app, appData): Promise<void> => {
+  const { taskStore } = await import('@server/stores')
+}
+const handleRequestStartTask: HandlerFunction = async (app, appData): Promise<void> => {
+  const { taskStore } = await import('@server/stores')
+}
+const handleRequestEndTask: HandlerFunction = async (app, appData): Promise<void> => {
+  const { taskStore } = await import('@server/stores')
+}
+
+// Steps
+const handleRequestGetStep: HandlerFunction = async (app, appData): Promise<void> => {
+  const { taskStore } = await import('@server/stores')
+}
+const handleRequestSetStep: HandlerFunction = async (app, appData): Promise<void> => {
+  const { taskStore } = await import('@server/stores')
+}
+const handleRequestDeleteStep: HandlerFunction = async (app, appData): Promise<void> => {
+  const { taskStore } = await import('@server/stores')
+}
+const handleRequestAddStep: HandlerFunction = async (app, appData): Promise<void> => {
+  const { taskStore } = await import('@server/stores')
+}
+const handleRequestCompleteStep: HandlerFunction = async (app, appData): Promise<void> => {
+  const { taskStore } = await import('@server/stores')
+}
+const handleRequestRestartStep: HandlerFunction = async (app, appData): Promise<void> => {
+  const { taskStore } = await import('@server/stores')
+}
+
+const handleTask: RequestHandler = {
+  get: handleRequestGetTask,
+  set: handleRequestSetTask,
+  delete: handleRequestDeleteTask,
+  add: handleRequestAddTask,
+  complete: handleRequestCompleteTask,
+  restart: handleRequestRestartTask,
+  start: handleRequestStartTask,
+  end: handleRequestEndTask,
+  default: handleRequestMissing
+}
+const handleStep: RequestHandler = {
+  get: handleRequestGetStep,
+  set: handleRequestSetStep,
+  delete: handleRequestDeleteStep,
+  add: handleRequestAddStep,
+  complete: handleRequestCompleteStep,
+  restart: handleRequestRestartStep,
+  default: handleRequestMissing
+}
 const handleGet = {
   data: handleRequestGetData,
   config: handleRequestGetConfig,
@@ -401,43 +516,11 @@ const handleOpen: RequestHandler = {
   default: handleRequestOpen
 }
 const handleSendToClient: RequestHandler = {
-  default: async (app, appData): Promise<void> => {
-    const { sendMessageToClients, handleClientMessage } = await import('../client/clientCom')
-    if (app && appData.payload) {
-      Logger.log(
-        MESSAGE_TYPES.LOGGING,
-        `[handleDataFromApp] App ${app} is sending data to the client with ${appData.payload ? (JSON.stringify(appData.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(appData.payload)) : 'undefined'}`,
-        { domain: app.toUpperCase() }
-      )
-      if (appData.payload.app == 'client') {
-        handleClientMessage(appData.payload)
-      } else {
-        sendMessageToClients({
-          app: appData.payload.app || app,
-          type: appData.payload.type || '',
-          payload: appData.payload.payload || '',
-          request: appData.payload.request || ''
-        })
-      }
-    }
-  }
+  default: handleRequestSendToClient
 }
 const handleSendToApp: RequestHandler = {
-  default: async (app, appData): Promise<void> => {
-    if (appData.payload && appData.request) {
-      const { appStore } = await import('@server/stores')
-      appStore.sendDataToApp(appData.request, appData.payload)
-      Logger.log(
-        MESSAGE_TYPES.LOGGING,
-        `[handleDataFromApp] App ${app} is sending data to ${appData.request} with ${appData.payload ? (JSON.stringify(appData.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(appData.payload)) : 'undefined'}`,
-        { domain: app.toUpperCase() }
-      )
-    } else {
-      Logger.log(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: App data malformed`, appData.payload)
-    }
-  }
+  default: handleRequestSendToApp
 }
-
 const handleLog: RequestHandler = {
   [MESSAGE_TYPES.DEBUG]: handleRequestLog,
   [MESSAGE_TYPES.ERROR]: handleRequestLog,
@@ -464,19 +547,19 @@ const handleDefault: RequestHandler = {
   default: handleRequestMissing
 }
 
-const handleData: TypeHandler = {
-  get: handleGet,
-  set: handleSet,
-  delete: handleDelete,
-  open: handleOpen,
-  send: handleSendToClient,
-  toApp: handleSendToApp,
-  log: handleLog,
-  key: handleKey,
-  action: handleAction,
-  default: handleDefault
-  // step: { default: () => {} },
-  // task: { default: () => {} }
+const handleData: Record<IncomingAppDataTypes, RequestHandler> = {
+  get: wrapHandlers(handleGet),
+  set: wrapHandlers(handleSet),
+  delete: wrapHandlers(handleDelete),
+  open: wrapHandlers(handleOpen),
+  send: wrapHandlers(handleSendToClient),
+  toApp: wrapHandlers(handleSendToApp),
+  log: wrapHandlers(handleLog),
+  key: wrapHandlers(handleKey),
+  action: wrapHandlers(handleAction),
+  default: wrapHandlers(handleDefault),
+  task: wrapHandlers(handleTask),
+  step: wrapHandlers(handleStep)
 }
 
 /**

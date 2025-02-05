@@ -70,13 +70,21 @@ const tasks: { [key: string]: Task } = {
         instructions: 'Plug in your device to your computer!',
         completed: false
       },
-      detect: {
-        id: 'detect',
+      navigate: {
+        id: 'navigate',
         type: STEP_TYPES.SHORTCUT,
         destination: 'clients/connections',
-        label: 'Detect',
-        instructions: 'Find your device in the Connections tab',
+        label: 'Navigate To Connections',
+        instructions: 'Go to the Connections tab',
+        completed: false
+      },
+      detect: {
+        id: 'detect',
+        type: STEP_TYPES.STEP,
+        label: 'Detect Device',
+        instructions: 'Refresh ADB until you see your device',
         completed: false,
+        strict: true,
         debugging: {
           cable: {
             id: 'cable',
@@ -113,11 +121,11 @@ const tasks: { [key: string]: Task } = {
       },
       configure: {
         id: 'configure',
-        type: STEP_TYPES.SHORTCUT,
-        destination: 'clients/connections',
+        type: STEP_TYPES.STEP,
         label: 'Configure',
-        instructions: 'Configure your device in the Connections tab',
+        instructions: 'Click "configure" next to your device in the Connections tab',
         completed: false,
+        strict: true,
         debugging: {
           offline: {
             id: 'offline',
@@ -139,17 +147,26 @@ const tasks: { [key: string]: Task } = {
     label: 'Setting up a Client',
     description: 'Downloading a client to DeskThing',
     steps: {
-      client: {
-        id: 'client',
+      navigate: {
+        id: 'navigate',
         type: STEP_TYPES.SHORTCUT,
-        label: 'Download a Client',
+        label: 'Go to Client Downloads',
         destination: 'downloads/client',
+        instructions: 'Navigate to the Client Downloads page',
+        completed: false
+      },
+      download: {
+        id: 'download',
+        type: STEP_TYPES.STEP,
+        label: 'Download a Client',
+        strict: true,
         instructions: 'Click Download Latest on the DeskThing Client to download it.',
         completed: false
       },
       refresh: {
         id: 'refresh',
         type: STEP_TYPES.STEP,
+        strict: false,
         label: 'Refresh the client',
         instructions: 'Ensure you Refresh the client and ensure the new version is installed.',
         completed: false

@@ -4,10 +4,8 @@ import Button from '@renderer/components/Button'
 import { IconPlay, IconStop, IconTrash, IconX } from '@renderer/assets/icons'
 import { useAppStore } from '@renderer/stores'
 import useMappingStore from '@renderer/stores/mappingStore'
-import { Action, SettingOption } from '@shared/types'
-import { ActionIcon } from '@renderer/pages/Clients/Mapping/components/ActionIcon'
-import Select from '@renderer/components/Select'
-import { SingleValue } from 'react-select'
+import { Action } from '@shared/types'
+import ActionElement from '@renderer/components/ActionElement'
 
 const AppActions: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
   const stopApp = useAppStore((state) => state.stopApp)
@@ -89,55 +87,6 @@ const AppActions: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
           <ActionElement key={action.id} action={action} />
         ))}
       </div>
-    </div>
-  )
-}
-
-const ActionElement = ({ action }: { action: Action }): JSX.Element => {
-  const runAction = useMappingStore((state) => state.executeAction)
-  const [value, setValue] = useState<string | undefined>(action.value)
-
-  const handleValueChange = (value: string): void => {
-    setValue(value)
-    action.value = value
-  }
-  const handleRunAction = (): void => {
-    runAction(action)
-  }
-
-  return (
-    <div className="flex gap-2 border-cyan-500 border rounded-md">
-      <Button
-        disabled={!action.enabled}
-        onClick={handleRunAction}
-        className="justify-center items-center hover:bg-cyan-500"
-      >
-        <ActionIcon action={action} className="stroke-2" />
-        <p>{action.name || action.id}</p>
-      </Button>
-      {action?.value_options && action.value_options.length > 0 ? (
-        <Select
-          options={action.value_options.map((option) => ({
-            label: option,
-            value: option
-          }))}
-          menuPlacement="auto"
-          placeholder={action.value ?? ''}
-          value={value || action.value || ''}
-          onChange={(selected) => {
-            const selectedValue = selected as SingleValue<SettingOption>
-            handleValueChange(selectedValue?.value || '')
-          }}
-        />
-      ) : action?.value_instructions ? (
-        <input
-          type="text"
-          className="p-2 border rounded text-black"
-          placeholder="Enter value"
-          value={value}
-          onChange={(e) => handleValueChange(e.target.value)}
-        />
-      ) : null}
     </div>
   )
 }

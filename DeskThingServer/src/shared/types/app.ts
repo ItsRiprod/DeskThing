@@ -420,5 +420,29 @@ export enum IncomingAppDataTypes { // v0.10.4
    * @example
    * DeskThing.sendData(SEND_TYPES.ACTION, { request: 'add', payload: { id: 'myAction', name: 'My Action' }})
    */
-  ACTION = 'action'
+  ACTION = 'action',
+
+  /**
+   * Manages tasks in the system.
+   * Supports operations: get, set, delete, add, complete, restart, start, and end
+   *
+   * @remarks
+   * It is recommended to use {@link DeskThing.tasks.addTask} instead of sending data directly.
+   *
+   * @example
+   * DeskThing.sendData(SEND_TYPES.TASK, { request: 'add', payload: { id: 'myAction', name: 'My Action' }})
+   */
+  TASK = 'task',
+
+  /**
+   * Manages actions in the system.
+   * Supports operations: get, set, delete, add, complete, restart, start, and end
+   *
+   * @remarks
+   * It is recommended to use {@link DeskThing.tasks.addStep} instead of sending data directly.
+   *
+   * @example
+   * DeskThing.sendData(SEND_TYPES.ACTION, { request: 'add', payload: { id: 'myAction', name: 'My Action' }})
+   */
+  STEP = 'step'
 }

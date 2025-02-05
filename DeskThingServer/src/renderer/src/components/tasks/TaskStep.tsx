@@ -1,12 +1,16 @@
-import { FC } from 'react'
+import { FC, useState } from 'react'
 import { StepProps } from './TaskBase'
 import useTaskStore from '@renderer/stores/taskStore'
 import Button from '../Button'
-import { IconCheck } from '@renderer/assets/icons'
+import { IconCheck, IconLoading } from '@renderer/assets/icons'
 
 export const TaskStep: FC<StepProps> = ({ step }) => {
-  console.log('Task Step', step)
+  const [loading, setLoading] = useState(true)
   const completeStep = useTaskStore((state) => state.resolveStep)
+
+  setTimeout(() => {
+    setLoading(false)
+  }, 2000)
 
   const handleComplete = (): void => {
     if (!step.parentId) {
@@ -21,11 +25,28 @@ export const TaskStep: FC<StepProps> = ({ step }) => {
       <h2 className="text-2xl">{step?.label}</h2>
       <p>{step.instructions}</p>
       <p>Task Step</p>
-      <div className="w-full flex justify-end">
-        <Button className="bg-green-700 hover:bg-green-600" onClick={handleComplete}>
-          <p>Mark as Completed</p>
-          <IconCheck />
-        </Button>
+      <div className="w-full items-center flex justify-end">
+        {!step.debug && (
+          <Button
+            title={step.strict && !step.completed ? 'Complete task first' : 'Continue Anyway'}
+            disabled={step.completed ? false : loading || (step.strict && !step.completed)}
+            className="group bg-green-700 hover:bg-green-600 disabled:bg-zinc-950 disabled:text-gray-500"
+            onClick={handleComplete}
+          >
+            {step.completed
+              ? 'Mark as Completed'
+              : loading || step.strict
+                ? 'Waiting for Completion'
+                : 'Mark as Completed'}
+            {step.completed ? (
+              <IconCheck />
+            ) : loading || step.strict ? (
+              <IconLoading />
+            ) : (
+              <IconCheck />
+            )}
+          </Button>
+        )}
       </div>
     </div>
   )

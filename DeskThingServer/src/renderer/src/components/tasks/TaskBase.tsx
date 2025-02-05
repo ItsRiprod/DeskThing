@@ -114,21 +114,36 @@ export const TaskBase: FC<TaskProps> = memo(
             ) : (
               <div className="flex gap-4 flex-col">
                 <Suspense fallback={<IconLoading />}>
-                  {currentStep && StepComponent && <StepComponent step={currentStep} />}
+                  {currentStep ? (
+                    StepComponent && <StepComponent step={currentStep} />
+                  ) : (
+                    <>
+                      <p>No step selected</p>
+                      <Button
+                        className="items-center gap-2 bg-zinc-700 hover:bg-zinc-600"
+                        onClick={handlers.handleNextStep}
+                      >
+                        <p>Go to first step</p>
+                        <IconLink />
+                      </Button>
+                    </>
+                  )}
                 </Suspense>
               </div>
             )}
           </div>
-          <Button
-            disabled={!currentStep?.completed}
-            title={currentStep?.completed ? 'Go to next step' : 'Disabled - Step Not Completed'}
-            onClick={handlers.handleNextStep}
-            className="group"
-          >
-            <IconArrowRight
-              className={`stroke-1 ${currentStep?.completed ? 'group-hover:stroke-2' : 'text-gray-500'}`}
-            />
-          </Button>
+          {task.currentStep !== undefined && (
+            <Button
+              disabled={!currentStep?.completed}
+              title={currentStep?.completed ? 'Go to next step' : 'Disabled - Step Not Completed'}
+              onClick={handlers.handleNextStep}
+              className="group"
+            >
+              <IconArrowRight
+                className={`stroke-1 ${currentStep?.completed ? 'group-hover:stroke-2' : 'text-gray-500'}`}
+              />
+            </Button>
+          )}
         </div>
         {currentStep?.debugging && (
           <div className="bg-zinc-950 overflow-auto max-h-[50vh]">

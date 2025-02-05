@@ -16,6 +16,7 @@ import Button from './Button'
 import ClientDetailsOverlay from '@renderer/overlays/ClientDetailsOverlay'
 import DownloadNotification from '@renderer/overlays/DownloadNotification'
 import { useClientStore, useSettingsStore } from '@renderer/stores'
+import useTaskStore from '@renderer/stores/taskStore'
 
 interface ConnectionComponentProps {
   client: Client
@@ -32,6 +33,7 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
   const refreshADbClients = useClientStore((store) => store.requestADBDevices)
   const requestClientManifest = useClientStore((store) => store.requestClientManifest)
   const devicePort = useSettingsStore((store) => store.settings.devicePort)
+  const resolveStep = useTaskStore((state) => state.resolveStep)
 
   useEffect(() => {
     if (client.adbId?.includes('offline')) {
@@ -106,6 +108,7 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
         console.log(reply)
         setLogging(reply)
         if (reply.final) {
+          resolveStep('device', 'configure')
           unsubscribe()
           requestClientManifest()
         }

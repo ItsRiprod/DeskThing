@@ -61,15 +61,18 @@ export const TaskShortcut: FC<StepProps> = ({ step }) => {
           <p>{step.instructions}</p>
         </div>
       </div>
-      {isComplete ? (
-        <Button
-          disabled={!isComplete}
-          className="bg-green-800 hover:bg-green-500"
-          onClick={handleComplete}
-        >
-          <p>Mark as Completed</p>
-          <IconCheck />
-        </Button>
+      {isComplete && !step.debug ? (
+        <div className="w-full flex flex-col">
+          <Button
+            disabled={!isComplete}
+            className="bg-green-800 hover:bg-green-500"
+            onClick={handleComplete}
+          >
+            <p>Mark as Completed</p>
+            <IconCheck />
+          </Button>
+          <p className="text-xs italic text-gray-300">Page Visited</p>
+        </div>
       ) : (
         <Button className="bg-zinc-900 hover:bg-zinc-700" onClick={handleServerRouting}>
           <p>Go to {step.destination}</p>

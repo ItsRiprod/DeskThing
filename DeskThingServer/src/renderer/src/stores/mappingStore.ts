@@ -41,6 +41,8 @@ interface MappingStoreState {
   setActions: (actions: Action[]) => Promise<void>
   getActions: () => Promise<Action[]>
 
+  getActionFromReference: (action: ActionReference) => Action | undefined
+
   addKey: (key: Key) => Promise<void>
   removeKey: (keyId: string) => Promise<void>
 
@@ -117,6 +119,11 @@ const useMappingStore = create<MappingStoreState>(
       const actions = await window.electron.getActions()
       set({ actions })
       return actions
+    },
+
+    getActionFromReference: (actionRef: ActionReference): Action | undefined => {
+      const action = get().actions.find((a) => a.id === actionRef.id)
+      return action
     },
 
     getIcon: async (actionRef: Action | ActionReference): Promise<string | null> => {

@@ -5,17 +5,17 @@ interface NotificationStoreState {
   taskList: TaskList
 
   // Tasks
-  removeCurrentTask: () => void
-  acceptTask: (taskId: string) => void
-  rejectTask: (taskId: string) => void
-  resolveStep: (taskId: string, stepId: string) => void
-  resolveTask: (taskId: string) => void
-  pauseTask: () => void
-  restartTask: (taskId: string) => void
+  removeCurrentTask: () => Promise<void>
+  acceptTask: (taskId: string) => Promise<void>
+  rejectTask: (taskId: string) => Promise<void>
+  resolveStep: (taskId: string, stepId: string) => Promise<void>
+  resolveTask: (taskId: string) => Promise<void>
+  pauseTask: () => Promise<void>
+  restartTask: (taskId: string) => Promise<void>
   requestTasks: () => Promise<void>
-  setTaskList: (taskList: TaskList) => void
-  nextStep: (taskId: string) => void
-  prevStep: (taskId: string) => void
+  setTaskList: (taskList: TaskList) => Promise<void>
+  nextStep: (taskId: string) => Promise<void>
+  prevStep: (taskId: string) => Promise<void>
 }
 
 // Create Zustand store
@@ -25,7 +25,7 @@ const useTaskStore = create<NotificationStoreState>((set) => ({
     tasks: {}
   },
 
-  removeCurrentTask: (): void => {
+  removeCurrentTask: async (): Promise<void> => {
     set((state) => ({
       taskList: {
         ...state.taskList,
@@ -35,30 +35,29 @@ const useTaskStore = create<NotificationStoreState>((set) => ({
   },
   // Tasks
   acceptTask: async (taskId: string): Promise<void> => {
-    console.log('acceptTask', taskId)
-    window.electron.tasks.startTask(taskId)
+    return window.electron.tasks.startTask(taskId)
   },
   rejectTask: async (taskId: string): Promise<void> => {
-    window.electron.tasks.stopTask(taskId)
+    return window.electron.tasks.stopTask(taskId)
   },
   resolveStep: async (taskId: string, stepId: string): Promise<void> => {
-    window.electron.tasks.completeStep(taskId, stepId)
+    return window.electron.tasks.completeStep(taskId, stepId)
   },
   resolveTask: async (taskId: string): Promise<void> => {
-    window.electron.tasks.completeTask(taskId)
+    return window.electron.tasks.completeTask(taskId)
   },
   restartTask: async (taskId: string): Promise<void> => {
-    window.electron.tasks.restartTask(taskId)
+    return window.electron.tasks.restartTask(taskId)
   },
   pauseTask: async (): Promise<void> => {
-    window.electron.tasks.pauseTask()
+    return window.electron.tasks.pauseTask()
   },
 
   nextStep: async (taskId: string): Promise<void> => {
-    window.electron.tasks.nextStep(taskId)
+    return window.electron.tasks.nextStep(taskId)
   },
   prevStep: async (taskId: string): Promise<void> => {
-    window.electron.tasks.prevStep(taskId)
+    return window.electron.tasks.prevStep(taskId)
   },
 
   requestTasks: async (): Promise<void> => {
