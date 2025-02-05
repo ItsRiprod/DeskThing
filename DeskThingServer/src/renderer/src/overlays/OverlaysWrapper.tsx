@@ -14,16 +14,18 @@ const overlays = {
   addProfile: AddProfileOverlay
 }
 
+type ActiveOverlays = (keyof typeof overlays)[]
+
 const OverlayWrapper: React.FC<React.PropsWithChildren> = ({
   children
 }: React.PropsWithChildren) => {
   const [searchParams] = useSearchParams()
-  const [activeOverlays, setActiveOverlays] = useState<string[]>([])
+  const [activeOverlays, setActiveOverlays] = useState<ActiveOverlays>([])
 
   useEffect(() => {
     const newActiveOverlays = Object.keys(overlays).filter(
       (key) => searchParams.get(key) === 'true'
-    )
+    ) as ActiveOverlays
     setActiveOverlays(newActiveOverlays)
   }, [searchParams])
 

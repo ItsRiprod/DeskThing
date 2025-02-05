@@ -1,3 +1,4 @@
+import { IpcRendererListener } from '@electron-toolkit/preload'
 import { App, AppDataInterface, AppReturnData, LoggingData } from '@shared/types'
 import { create } from 'zustand'
 
@@ -118,7 +119,7 @@ const useAppStore = create<AppStoreState>((set) => ({
   loadAppUrl: async (appName: string): Promise<AppReturnData | null> => {
     const response = window.electron.handleAppUrl(appName)
 
-    const loggingListener = (_event, reply: LoggingData): void => {
+    const loggingListener: IpcRendererListener = (_event, reply: LoggingData): void => {
       set({ logging: reply })
       if (reply.final === true || reply.status === false) {
         removeListener()
@@ -131,7 +132,7 @@ const useAppStore = create<AppStoreState>((set) => ({
   loadAppZip: async (appName: string): Promise<AppReturnData | null> => {
     const response = window.electron.handleAppZip(appName)
 
-    const loggingListener = (_event, reply: LoggingData): void => {
+    const loggingListener: IpcRendererListener = (_event, reply: LoggingData): void => {
       set({ logging: reply })
       if (reply.final === true || reply.status === false) {
         removeListener()

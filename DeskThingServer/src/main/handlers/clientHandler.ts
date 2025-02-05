@@ -131,12 +131,12 @@ export const clientHandler: Record<
       case 'get':
         return await mappingStore.fetchActionIcon(data.payload)
       case 'set':
-        return await mappingStore.updateIcon(data.payload.id, data.payload.icon)
+        return mappingStore.updateIcon(data.payload.id, data.payload.icon)
     }
   }
 }
 
-const handleUrl = async (data, replyFn: ReplyFn): Promise<void> => {
+const handleUrl = async (data: ClientIPCData, replyFn: ReplyFn): Promise<void> => {
   try {
     replyFn('logging', {
       status: true,

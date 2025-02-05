@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Action, ButtonMapping, Key } from '@shared/types'
 import useMappingStore from '@renderer/stores/mappingStore'
+import { IpcRendererListener } from '@electron-toolkit/preload'
 
 const MappingsDataListener = (): null => {
   const setKeys = useMappingStore((state) => state.setKeys)
@@ -10,13 +11,19 @@ const MappingsDataListener = (): null => {
   const requestMappings = useMappingStore((state) => state.requestMappings)
 
   useEffect(() => {
-    const handleKeyUpdate = async (_event, key: Key[]): Promise<void> => {
+    const handleKeyUpdate: IpcRendererListener = async (_event, key: Key[]): Promise<void> => {
       setKeys(key)
     }
-    const handleActionUpdate = async (_event, action: Action[]): Promise<void> => {
+    const handleActionUpdate: IpcRendererListener = async (
+      _event,
+      action: Action[]
+    ): Promise<void> => {
       setActions(action)
     }
-    const handleProfileUpdate = async (_event, profile: ButtonMapping): Promise<void> => {
+    const handleProfileUpdate: IpcRendererListener = async (
+      _event,
+      profile: ButtonMapping
+    ): Promise<void> => {
       console.log(profile)
       setProfile(profile)
       const currentProfile = await window.electron.getCurrentProfile()

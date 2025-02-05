@@ -11,6 +11,22 @@
     "composite": true,
     "jsx": "react-jsx",
     "baseUrl": ".",
+    "allowUnreachableCode": false,
+    "alwaysStrict": true,
+    "checkJs": true,
+    "moduleResolution": "bundler",
+    "forceConsistentCasingInFileNames": true,
+    "incremental": true,
+    "noImplicitOverride": true,
+    "noImplicitThis": true,
+    "noImplicitAny": true,
+    "noErrorTruncation": true,
+    "noUncheckedIndexedAccess": false,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "resolvePackageJsonImports": true,
+    "strictFunctionTypes": true,
+    "useUnknownInCatchVariables": true,
     "paths": {
       "@renderer/*": [
         "src/renderer/src/*"

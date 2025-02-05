@@ -1,13 +1,14 @@
 import { create } from 'zustand'
 import { Log, MESSAGE_TYPES } from '@shared/types'
 
-export interface AuthScopes {
-  [key: string]: {
+export type AuthScopes = Record<
+  string,
+  {
     instructions: string
     label: string
     value?: string
   }
-}
+>
 
 export interface Task {
   title: string
@@ -55,7 +56,7 @@ interface NotificationStoreState {
   // Requests
   hasActiveRequest: (appName: string) => boolean
   getRequestByAppName: (appName: string) => Request | undefined
-  resolveRequest: (requestId: string, formData: { [key: string]: string }) => Promise<void>
+  resolveRequest: (requestId: string, formData: Record<string, string>) => Promise<void>
   addRequest: (appName: string, scopes: AuthScopes) => void
   triggerRequestDisplay: (appName: string) => void
 
@@ -192,7 +193,7 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
     return get().requestQueue.find((request) => request.appName === appName)
   },
 
-  resolveRequest: async (requestId: string, formData: { [key: string]: string }): Promise<void> => {
+  resolveRequest: async (requestId: string, formData: Record<string, string>): Promise<void> => {
     await window.electron.ping()
 
     set((state) => ({

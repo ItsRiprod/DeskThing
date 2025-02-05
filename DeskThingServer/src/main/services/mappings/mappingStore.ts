@@ -144,9 +144,7 @@ export class MappingState {
     }
 
     // Ensuring the key exists in the mapping
-    if (!mappingProfile[button.key]) {
-      mappingProfile[button.key] = {}
-    }
+    mappingProfile[button.key] ??= {}
 
     const action = ConstructActionReference(mappingAction)
 
@@ -154,7 +152,7 @@ export class MappingState {
     if (!isValidActionReference(action)) {
       loggingStore.log(
         MESSAGE_TYPES.ERROR,
-        `MAPHANDLER: Action ${action.id} is invalid, cannot add to mapping`
+        `MAPHANDLER: Action ${action} is invalid, cannot add to mapping`
       )
       return
     }
@@ -322,16 +320,15 @@ export class MappingState {
   removeSource = (sourceId: string): void => {
     const mappings = this.mappings
 
+    type something = Record<
+      string,
+      {
+        [Mode in EventMode]?: ActionReference
+      }
+    >
+
     // Update all profiles
-    const disableSourceActions = (actionContainer: {
-      [key: string]: {
-        [Mode in EventMode]?: ActionReference
-      }
-    }): {
-      [key: string]: {
-        [Mode in EventMode]?: ActionReference
-      }
-    } => {
+    const disableSourceActions = (actionContainer: something): something => {
       Object.values(actionContainer).forEach((buttonMappings) => {
         Object.keys(buttonMappings).forEach((mode) => {
           if (buttonMappings[mode]?.source === sourceId) {
@@ -414,7 +411,7 @@ export class MappingState {
     const actionIndex = mappings.actions.findIndex((action) => action.id === actionId)
     if (actionIndex !== -1) {
       // Update the icon
-      return mappings.actions[actionIndex]
+      return mappings.actions[actionIndex] ?? null
     } else {
       loggingStore.log(MESSAGE_TYPES.ERROR, `MAPHANDLER: Action ${actionId} not found`)
       return null
@@ -447,7 +444,7 @@ export class MappingState {
   }
 
   getProfile(profileName: string): ButtonMapping | null {
-    return this.mappings.profiles[profileName]
+    return this.mappings.profiles[profileName] ?? null
   }
 
   getCurrentProfile = (): Profile => {
@@ -501,7 +498,7 @@ export class MappingState {
     }
 
     // Clone the base profile to create the new profile
-    const baseButtonMapping = mappings.profiles[profile.extends || 'default']
+    const baseButtonMapping = mappings.profiles[profile.extends ?? 'default']!
     const newButtonMapping: ButtonMapping = {
       version: baseButtonMapping.version,
       id: `${profile.id}`, // Ensure a unique ID

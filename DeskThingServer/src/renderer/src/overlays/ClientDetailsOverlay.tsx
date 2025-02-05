@@ -41,7 +41,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
     usid?: string
     mac_bt?: string
   }>({})
-  const [supervisorData, setSupervisorData] = useState<{ [key: string]: string }>({})
+  const [supervisorData, setSupervisorData] = useState<Record<string, string>>({})
 
   const getSupervisorData = async (): Promise<void> => {
     const supervisorResponse = await window.electron.handleClientADB(
@@ -50,7 +50,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
     console.log('Raw adb response (supervisorctl):', supervisorResponse)
     if (supervisorResponse) {
       const supervisorLines = supervisorResponse.trim().split('\n')
-      const parsedData: { [key: string]: string } = {}
+      const parsedData: Record<string, string> = {}
       supervisorLines.forEach((line) => {
         const [name, status] = line.split(/\s+/)
         if (name && status) {
@@ -73,7 +73,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
         console.log('Raw adb response (version):', versionResponse)
         if (versionResponse) {
           const versionMatch = versionResponse.match(/SHORT_VERSION\s+(\S+)/)
-          if (versionMatch) {
+          if (versionMatch && versionMatch[1]) {
             const shortVersion = versionMatch[1].trim()
             setDeviceData((prevData) => ({
               ...prevData,
@@ -383,7 +383,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
             >
               <IconReload
                 className={
-                  animatingIcons.restart && '-rotate-[360deg] transition-transform duration-500'
+                  animatingIcons.restart ? '-rotate-[360deg] transition-transform duration-500' : ''
                 }
               />
               <p className="bg-black group-hover:block hidden text-nowrap">Restart</p>

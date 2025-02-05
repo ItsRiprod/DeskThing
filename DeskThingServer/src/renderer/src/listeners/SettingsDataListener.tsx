@@ -1,13 +1,17 @@
 import { useEffect } from 'react'
 import { useSettingsStore } from '../stores/'
 import { Settings } from '@shared/types'
+import { IpcRendererListener } from '@electron-toolkit/preload'
 
 const SettingsDataListener = (): null => {
   const setSettings = useSettingsStore((state) => state.setSettings)
 
   useEffect(() => {
-    const handleSettingsUpdate = async (_event, settings: Settings): Promise<void> => {
-      await setSettings(settings)
+    const handleSettingsUpdate: IpcRendererListener = async (
+      _event,
+      settings: Settings
+    ): Promise<void> => {
+      setSettings(settings)
     }
 
     const getInitialSettings = async (): Promise<void> => {

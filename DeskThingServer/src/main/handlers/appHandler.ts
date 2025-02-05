@@ -6,7 +6,8 @@ import {
   AppReturnData,
   AppIPCData,
   ReplyFn,
-  MESSAGE_TYPES
+  MESSAGE_TYPES,
+  ReplyData
 } from '@shared/types'
 import loggingStore from '../stores/loggingStore'
 import { getData, setData } from './dataHandler'
@@ -89,7 +90,7 @@ export const appHandler: Record<
   url: async (data, replyFn) => {
     replyFn('logging', { status: true, data: 'Handling app from URL...', final: false })
 
-    const reply = async (channel: string, data): Promise<void> => {
+    const reply = async (channel: string, data: ReplyData): Promise<void> => {
       replyFn(channel, data)
     }
 
@@ -112,7 +113,7 @@ export const appHandler: Record<
     })
     if (result.canceled) return null
 
-    const filePath = result.filePaths[0]
+    const filePath = result.filePaths[0]!
     return { path: filePath, name: path.basename(filePath) }
   },
   'dev-add-app': async (data, replyFn) => {
@@ -142,21 +143,24 @@ const getApps = (replyFn: ReplyFn): App[] => {
   return data
 }
 
-const setAppData = async (replyFn: ReplyFn, id, data: AppDataInterface): Promise<void> => {
+const setAppData = (replyFn: ReplyFn, id: string, data: AppDataInterface) => {
   loggingStore.log(MESSAGE_TYPES.LOGGING, 'SERVER: Saving ' + id + "'s data " + data)
-  await setData(id, data)
+  setData(id, data)
   replyFn('logging', { status: true, data: 'Finished', final: true })
 }
 
-const getAppData = async (replyFn, payload): Promise<AppDataInterface | null> => {
+const getAppData = async (
+  replyFn: ReplyFn,
+  payload: AppIPCData['payload']
+): Promise<AppDataInterface | null> => {
   try {
-    const data = await getData(payload)
+    const data = getData(payload)
     replyFn('logging', { status: true, data: 'Finished', final: true })
     return data
   } catch (error) {
     loggingStore.log(MESSAGE_TYPES.ERROR, 'SERVER: Error saving manifest' + error)
     console.error('Error setting client manifest:', error)
-    replyFn('logging', { status: false, data: 'Unfinished', error: error, final: true })
+    replyFn('logging', { status: false, data: 'Unfinished', error: error as string, final: true })
     return null
   }
 }

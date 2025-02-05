@@ -1,6 +1,6 @@
-import { Icon } from '.'
+import { Icon, IconProps } from '.'
 
-function IconWifiDisconnect(props): JSX.Element {
+function IconWifiDisconnect(props: IconProps): JSX.Element {
   return (
     <Icon {...props}>
       <svg

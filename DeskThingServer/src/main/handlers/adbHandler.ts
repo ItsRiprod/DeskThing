@@ -19,7 +19,7 @@ const splitArgs = (str: string): string[] => {
   const matches: string[] = []
   let match: RegExpExecArray | null
 
-  while ((match = regex.exec(str)) !== null) {
+  while ((match = regex.exec(str)) !== null && match[1]) {
     matches.push(match[1].replace(/(^"|"$)/g, '')) // Remove surrounding quotes if any
   }
 

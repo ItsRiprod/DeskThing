@@ -1,6 +1,6 @@
-import { Icon } from '.'
+import { Icon, IconProps } from '.'
 
-function IconLoading(props): JSX.Element {
+function IconLoading(props: IconProps): JSX.Element {
   return (
     <Icon {...props} strokeWidth={0} fill="none">
       <svg viewBox="0 0 24 24">

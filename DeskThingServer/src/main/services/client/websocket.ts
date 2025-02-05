@@ -36,10 +36,10 @@ import mappingStore from '../mappings/mappingStore'
 
 export let server: WebSocketServer | null = null
 export let httpServer: HttpServer
-export const Clients: { client: Client; socket }[] = []
+export const Clients: { client: Client; socket: WebSocket }[] = []
 
-let currentPort
-let currentAddress
+let currentPort: number | undefined
+let currentAddress: string | undefined
 
 const alwaysAllow = ['preferences', 'ping', 'pong', 'manifest']
 
@@ -141,7 +141,7 @@ export const setupServer = async (): Promise<void> => {
   })
 
   // Handle incoming messages from the client
-  server.on('connection', async (socket: WebSocket.WebSocket, req: IncomingMessage) => {
+  server.on('connection', async (socket: WebSocket, req: IncomingMessage) => {
     // Handle the incoming connection and add it to the ConnectionStore
 
     // This is a bad way of handling and syncing clients
@@ -259,7 +259,7 @@ export const setupServer = async (): Promise<void> => {
 }
 
 const handleServerMessage = async (
-  socket,
+  socket: WebSocket,
   client: Client,
   messageData: SocketData
 ): Promise<void> => {

@@ -13,7 +13,14 @@
  */
 
 console.log('[Index] Starting')
-import { AppIPCData, AuthScopes, Client, UtilityIPCData, MESSAGE_TYPES } from '@shared/types'
+import {
+  AppIPCData,
+  AuthScopes,
+  Client,
+  UtilityIPCData,
+  MESSAGE_TYPES,
+  ClientIPCData
+} from '@shared/types'
 import { app, shell, BrowserWindow, ipcMain, Tray, Menu, nativeImage } from 'electron'
 import { join, resolve } from 'path'
 import icon from '../../resources/icon.png?asset'
@@ -288,7 +295,7 @@ async function setupIpcHandlers(): Promise<void> {
   })
 
   // Handle client-related IPC messages
-  ipcMain.handle('CLIENT', async (event, data: AppIPCData) => {
+  ipcMain.handle('CLIENT', async (event, data: ClientIPCData) => {
     const { clientHandler } = await import('./handlers/clientHandler')
     const handler = clientHandler[data.type] || defaultHandler
     const replyFn = ResponseLogger(event.sender.send.bind(event.sender))
@@ -396,8 +403,9 @@ if (!app.requestSingleInstanceLock()) {
 
     // Set up window optimization
     app.on('browser-window-created', (_, window) => {
-      const { optimizer } = require('@electron-toolkit/utils')
-      optimizer.watchWindowShortcuts(window)
+      import('@electron-toolkit/utils').then((utils) =>
+        utils.default.optimizer.watchWindowShortcuts(window)
+      )
     })
 
     // Create main window and set up handlers
@@ -417,7 +425,7 @@ if (!app.requestSingleInstanceLock()) {
   })
 
   // Handle window closure
-  app.on('window-all-closed', async (e) => {
+  app.on('window-all-closed', async (e: Event) => {
     const { default: settingsStore } = await import('./stores/settingsStore')
 
     const settings = await settingsStore.getSettings()

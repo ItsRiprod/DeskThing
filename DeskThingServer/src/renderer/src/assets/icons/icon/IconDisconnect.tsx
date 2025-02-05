@@ -1,6 +1,6 @@
-import { Icon } from '.'
+import { Icon, IconProps } from '.'
 
-function IconDisconnect(props): JSX.Element {
+function IconDisconnect(props: IconProps): JSX.Element {
   return (
     <Icon {...props}>
       <svg viewBox="0 0 24 24">

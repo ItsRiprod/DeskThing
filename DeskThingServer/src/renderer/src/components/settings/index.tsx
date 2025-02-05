@@ -16,13 +16,7 @@ export interface SettingsProps {
   className?: string
 }
 
-const SETTINGS_COMPONENTS: {
-  [K in SettingsType['type']]: React.ComponentType<{
-    setting: SettingsType & { type: K }
-    handleSettingChange: (value: number | boolean | string | string[]) => void
-    className?: string
-  }>
-} = {
+const SETTINGS_COMPONENTS = {
   boolean: SettingsBooleanComponent,
   list: SettingsListComponent,
   multiselect: SettingsMultiSelectComponent,
@@ -32,7 +26,13 @@ const SETTINGS_COMPONENTS: {
   select: SettingsSelectComponent,
   string: SettingsStringComponent,
   color: SettingsColorComponent
-} as const
+} as const satisfies {
+  [K in SettingsType['type']]: React.ComponentType<{
+    setting: SettingsType & { type: K }
+    handleSettingChange: (value: number | boolean | string | string[]) => void
+    className?: string
+  }>
+}
 
 export const Settings: React.FC<SettingsProps> = ({ setting, className, handleSettingChange }) => {
   const SettingComponent = SETTINGS_COMPONENTS[setting.type] as React.ComponentType<{

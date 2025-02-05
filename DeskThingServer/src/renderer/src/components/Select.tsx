@@ -1,15 +1,11 @@
 import { SettingOption } from '@shared/types'
 import React from 'react'
-import ReactSelect, { MenuPlacement, MultiValue, SingleValue } from 'react-select'
+import ReactSelect, { StylesConfig, Props } from 'react-select'
 
-interface SelectProps {
+interface SelectProps extends Props {
   options: SettingOption[]
   value: string[] | string
-  isMulti?: boolean
   placeholder: string
-  menuPlacement?: MenuPlacement
-  className?: string
-  onChange: (value: SingleValue<SettingOption> | MultiValue<SettingOption>) => void
 }
 const Select: React.FC<SelectProps> = ({
   options,
@@ -79,7 +75,7 @@ const Select: React.FC<SelectProps> = ({
         color: 'white'
       }
     })
-  }
+  } as StylesConfig
 
   return (
     <>

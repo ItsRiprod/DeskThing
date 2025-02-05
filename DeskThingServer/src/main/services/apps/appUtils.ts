@@ -58,7 +58,7 @@ export async function getManifest(fileLocation: string): Promise<Manifest | unde
 export function getAppFilePath(appName: string, fileName: string = '/'): string {
   let path
   if (appName == 'developer-app') {
-    if (devAppPath) {
+    if (devAppPath!) {
       path = join(devAppPath, fileName)
     } else {
       loggingStore.log(MESSAGE_TYPES.ERROR, 'Developer app path not set! (Expected if on startup)')
@@ -66,5 +66,5 @@ export function getAppFilePath(appName: string, fileName: string = '/'): string 
   } else {
     path = join(app.getPath('userData'), 'apps', appName, fileName)
   }
-  return path
+  return path!
 }

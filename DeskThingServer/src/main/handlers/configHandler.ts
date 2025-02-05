@@ -85,8 +85,9 @@ const addAppManifest = (manifest: Manifest, appName: string): void => {
 
 const addConfig = (configName: string, config: string | Array<string>, data = readData()): void => {
   if (!data.config) {
-    const val = {}
-    val[configName] = config
+    const val = {
+      [configName]: config
+    }
     data.config = val
   } else if (Array.isArray(data.config[configName])) {
     const existingArray = data.config[configName] as string[]
@@ -113,7 +114,7 @@ const addConfig = (configName: string, config: string | Array<string>, data = re
 }
 const getConfig = (
   configName: string
-): { [app: string]: string | Array<string> | ButtonMapping | undefined } => {
+): Record<string, string | Array<string> | ButtonMapping | undefined> => {
   const data = readData()
 
   if (!data.config) {

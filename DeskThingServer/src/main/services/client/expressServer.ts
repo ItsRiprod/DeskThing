@@ -104,7 +104,8 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
     const appName = req.params.appName
 
     if (appName === 'client' || appName == null) {
-      handleClientConnection(appName, req, res, next)
+      // DID YOU MEAN && appName !== null ???
+      handleClientConnection(appName!, req, res, next)
     } else {
       const appPath = getAppFilePath(appName)
       loggingStore.log(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Serving ${appName} from ${appPath}`)

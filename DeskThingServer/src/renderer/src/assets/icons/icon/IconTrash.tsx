@@ -1,6 +1,6 @@
-import { Icon } from '.'
+import { Icon, IconProps } from '.'
 
-function IconTrash(props): JSX.Element {
+function IconTrash(props: IconProps): JSX.Element {
   return (
     <Icon {...props}>
       <svg viewBox="0 0 17 16" fill="none">
