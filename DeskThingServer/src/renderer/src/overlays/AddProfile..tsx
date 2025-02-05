@@ -100,7 +100,7 @@ const AddProfileOverlay: FC = () => {
           </select>
         </div>
         <div className="flex justify-end">
-          <Button onClick={handleSubmit} className="hover:bg-zinc-800">
+          <Button title="Create New Profile" onClick={handleSubmit} className="hover:bg-zinc-800">
             Create Profile
             <IconArrowRight />
           </Button>

@@ -9,6 +9,8 @@ const RequestDataListener = (): null => {
   const setTasks = useTaskStore((state) => state.setTaskList)
   const getTaskList = useTaskStore((state) => state.requestTasks)
 
+  getTaskList()
+
   useEffect(() => {
     const handleDisplayUserForm = async (
       _event,
@@ -20,8 +22,6 @@ const RequestDataListener = (): null => {
     const handleTask = async (_event, tasks: TaskList): Promise<void> => {
       setTasks(tasks)
     }
-
-    getTaskList()
 
     window.electron.ipcRenderer.on('display-user-form', handleDisplayUserForm)
     window.electron.ipcRenderer.on('taskList', handleTask)

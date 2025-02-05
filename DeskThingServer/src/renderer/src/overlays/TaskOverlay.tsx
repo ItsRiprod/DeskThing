@@ -9,6 +9,7 @@ import {
   IconX
 } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
+import ErrorBoundary from '@renderer/components/ErrorBoundary'
 import TaskBase from '@renderer/components/tasks/TaskBase'
 import useTaskStore from '@renderer/stores/taskStore'
 import { Task } from '@shared/types/tasks'
@@ -37,8 +38,6 @@ const TaskOverlay: React.FC = () => {
 
   const taskRef = useRef<HTMLDivElement>(null)
 
-  if (!currentTaskId) return null
-
   useEffect(() => {
     const updatePosition = (): void => {
       if (taskRef.current) {
@@ -52,6 +51,8 @@ const TaskOverlay: React.FC = () => {
     // Initial position after render
     setTimeout(updatePosition, 0)
   }, [])
+
+  if (!currentTaskId) return null
 
   useEffect(() => {
     if (!currentTask || !currentTask.currentStep) {
@@ -122,6 +123,7 @@ const TaskOverlay: React.FC = () => {
   }
 
   const handleRestart = (): void => {
+    openTasks()
     restartTask(currentTaskId)
   }
 
@@ -135,7 +137,7 @@ const TaskOverlay: React.FC = () => {
 
   const memoizedTaskBase = useMemo(
     () => currentTask && <TaskBase task={currentTask} />,
-    [currentTask, expanded]
+    [currentTask]
   )
   return (
     <div
@@ -164,6 +166,7 @@ const TaskOverlay: React.FC = () => {
               </div>
             )}
             <Button
+              title={isFullscreen ? 'Minimize' : 'Expand'}
               className="text-white items-center hover:text-gray-300"
               onClick={toggleFullscreen}
             >
@@ -171,7 +174,11 @@ const TaskOverlay: React.FC = () => {
             </Button>
           </div>
           <div className="flex items-center">
-            <Button onClick={handleExpand} className="gap-2 items-center">
+            <Button
+              title={expanded ? 'Collapse' : 'Expand'}
+              onClick={handleExpand}
+              className="gap-2 items-center"
+            >
               <p>{currentTask?.label || currentTask?.id}</p>
               <p>
                 {currentTask &&
@@ -182,7 +189,7 @@ const TaskOverlay: React.FC = () => {
                 className={`${!expanded ? 'rotate-180' : 'rotate-0'} transition-transform`}
               />
             </Button>
-            <Button onClick={clearTask} className="group hover:bg-zinc-950">
+            <Button title="Close Task" onClick={clearTask} className="group hover:bg-zinc-950">
               <IconX className="group-hover:stroke-red-500" />
             </Button>
           </div>
@@ -190,9 +197,14 @@ const TaskOverlay: React.FC = () => {
         <div
           className={`${expanded ? 'max-h-screen' : 'max-h-0'} transition-[max-height] overflow-hidden`}
         >
-          <div>{memoizedTaskBase}</div>
+          <ErrorBoundary
+            fallback={<div onClick={() => window.location.reload()}>Error - Click to refresh</div>}
+          >
+            <div>{memoizedTaskBase}</div>
+          </ErrorBoundary>
           <div className="flex p-2 gap-3 text-sm justify-between w-full">
             <Button
+              title="View All Tasks"
               onClick={openTasks}
               className="gap-1 items-center bg-zinc-700 hover:bg-zinc-600"
             >
@@ -200,6 +212,7 @@ const TaskOverlay: React.FC = () => {
               <IconLink iconSize={12} />
             </Button>
             <Button
+              title="Restart Current Task"
               onClick={handleRestart}
               className="gap-1 items-center bg-zinc-700 hover:bg-zinc-600"
             >
@@ -207,6 +220,7 @@ const TaskOverlay: React.FC = () => {
               <IconReload iconSize={12} />
             </Button>
             <Button
+              title="Cancel the current task"
               onClick={handleReject}
               className="gap-1 items-center bg-zinc-700 hover:bg-red-600"
             >

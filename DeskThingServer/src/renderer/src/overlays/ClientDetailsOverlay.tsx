@@ -347,6 +347,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
         {client.adbId && (
           <>
             <Button
+              title="Set Device Client to Staged Client"
               className="bg-black group hover:bg-zinc-950 gap-2 w-full justify-center"
               onClick={handlePushStaged}
               disabled={loading}
@@ -355,6 +356,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
               <p className="bg-black group-hover:block hidden text-nowrap">Push Staged</p>
             </Button>
             <Button
+              title="Restart Client's Chromium"
               className="bg-black group hover:bg-zinc-950 gap-2 w-full justify-center"
               onClick={restartChromium}
               disabled={loading}
@@ -369,6 +371,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
               <p className="bg-black group-hover:block hidden text-nowrap">Reload Chromium</p>
             </Button>
             <Button
+              title="Setup ADB Port for Device"
               className="bg-black group hover:bg-zinc-950 gap-2 w-full justify-center"
               onClick={openPort}
               disabled={loading}
@@ -377,6 +380,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
               <p className="bg-black group-hover:block hidden text-nowrap">Setup Port</p>
             </Button>
             <Button
+              title="Restart the Client"
               className="bg-black group border-red-500 border hover:bg-zinc-950 gap-2 w-full justify-center"
               onClick={handleRestart}
               disabled={loading}
@@ -389,6 +393,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
               <p className="bg-black group-hover:block hidden text-nowrap">Restart</p>
             </Button>
             <Button
+              title="Shutdown the Client"
               className="bg-black group border-red-500 border hover:bg-zinc-950 gap-2 w-full justify-center"
               onClick={handleShutdown}
               disabled={loading}
@@ -401,6 +406,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
         {client.connected && (
           <>
             <Button
+              title="Ping the Client"
               className="bg-black group hover:bg-zinc-950 gap-2 w-full justify-center"
               onClick={handlePing}
             >
@@ -408,6 +414,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
               <p className="bg-black group-hover:block hidden text-nowrap">Ping</p>
             </Button>
             <Button
+              title="Disconnect the Client"
               className="group bg-red-700 gap-2 w-full justify-center"
               onClick={handleDisconnect}
             >
@@ -453,6 +460,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
                     {key}: {value}
                   </h3>
                   <Button
+                    title="Toggle Supervisor"
                     className="bg-black group hover:bg-zinc-950 gap-2"
                     onClick={() => handleToggleSupervisor(key, value != 'RUNNING')}
                     disabled={animatingIcons[key]}
@@ -499,6 +507,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
                 className="flex-1 px-3 py-2 bg-zinc-900 rounded-md text-white border border-zinc-700 focus:outline-none focus:border-zinc-500"
               />
               <Button
+                title="Execute Command"
                 className="group bg-black group  hover:bg-zinc-950"
                 onClick={handleExecuteCommand}
               >

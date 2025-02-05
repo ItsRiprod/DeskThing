@@ -19,12 +19,10 @@ class TaskStore {
   private static instance: TaskStore
   private taskList: TaskList = { tasks: {}, version: '', currentTaskId: '' }
   private listeners: taskStoreListener[] = []
-  private taskStepReferences: Map<string, { taskId: string; stepId: string }[]> = new Map()
   private saveAgain = false
 
   private constructor() {
     this.initializeTaskList()
-    this.buildTaskReferences()
   }
 
   private initializeTaskList = async (): Promise<void> => {
@@ -65,56 +63,6 @@ class TaskStore {
 
   off(listener: taskStoreListener): void {
     this.listeners = this.listeners.filter((l) => l !== listener)
-  }
-
-  private async buildTaskReferences(): Promise<void> {
-    Object.entries(this.taskList.tasks).forEach(([taskId, task]) => {
-      if (task.started && task.steps) {
-        Object.entries(task.steps).forEach(([stepId, step]) => {
-          if (step.type === 'task' && step.taskId) {
-            const refs = this.taskStepReferences.get(step.taskId) || []
-            refs.push({ taskId, stepId })
-            this.taskStepReferences.set(step.taskId, refs)
-          }
-        })
-      }
-    })
-  }
-
-  private updateStepReference(taskId: string, stepId: string, step: Step): void {
-    if (step.type === 'task' && step.taskId) {
-      const refs = this.taskStepReferences.get(step.taskId) || []
-      refs.push({ taskId, stepId })
-      this.taskStepReferences.set(step.taskId, refs)
-    }
-  }
-
-  // Remove step reference
-  private async removeStepReference(taskId: string, stepId?: string, step?: Step): Promise<void> {
-    this.taskStepReferences.delete(taskId)
-
-    // Clean up references FROM this task
-    if (!stepId && !step) {
-      // When removing entire task, clean up all its steps' references
-      const task = this.getTask(taskId)
-      if (task?.started && task?.steps) {
-        Object.values(task.steps).forEach((step) => {
-          if (step.type === 'task' && step.taskId) {
-            const refs = this.taskStepReferences.get(step.taskId) || []
-            const filtered = refs.filter((ref) => ref.taskId !== taskId)
-            this.taskStepReferences.set(step.taskId, filtered)
-          }
-        })
-      }
-      return
-    }
-
-    // Handle individual step removal
-    if (stepId && step?.type === 'task' && step.taskId) {
-      const refs = this.taskStepReferences.get(step.taskId) || []
-      const filtered = refs.filter((ref) => ref.taskId !== taskId || ref.stepId !== stepId)
-      this.taskStepReferences.set(step.taskId, filtered)
-    }
   }
 
   private fetchTask = async (taskReference: TaskReference | Task): Promise<Task | undefined> => {
@@ -267,7 +215,6 @@ class TaskStore {
     Logger.log(MESSAGE_TYPES.LOGGING, `[updateTask]: Updating task ${newTask.id}`)
     Object.assign(task, newTask)
     this.taskList.tasks[task.id] = task
-    this.buildTaskReferences()
     this.debouncedSave()
   }
 
@@ -282,8 +229,6 @@ class TaskStore {
       Logger.warn(`[deleteTask]: Task ${taskId} does not exist`)
       return
     }
-
-    this.removeStepReference(taskId)
 
     delete this.taskList.tasks[taskId]
     this.debouncedSave()
@@ -307,16 +252,6 @@ class TaskStore {
       })
     }
     task.currentStep = undefined
-
-    const references = this.taskStepReferences.get(taskId)
-    if (references) {
-      references.forEach(({ taskId: parentTaskId, stepId }) => {
-        const parentTask = this.taskList.tasks[parentTaskId]
-        if (parentTask.started && parentTask?.steps?.[stepId]) {
-          parentTask.steps[stepId].completed = true
-        }
-      })
-    }
 
     this.taskList.tasks[taskId] = task
 
@@ -419,7 +354,6 @@ class TaskStore {
       task.steps = {}
     }
     task.steps[step.id] = step
-    this.updateStepReference(taskId, step.id, step)
     this.taskList.tasks[taskId] = task
     this.debouncedSave()
   }
@@ -461,8 +395,6 @@ class TaskStore {
 
     Object.assign(step, newStep)
     if (isValidStep(newStep).isValid) {
-      this.updateStepReference(taskId, step.id, step)
-
       this.taskList.tasks[taskId] = task
       this.debouncedSave()
     } else {
@@ -498,8 +430,6 @@ class TaskStore {
       Logger.warn(`[deleteStep]: Step ${stepId} does not exist`)
       return
     }
-    const step = task.steps[stepId]
-    this.removeStepReference(taskId, stepId, step)
 
     if (task.currentStep === stepId) {
       task.currentStep = undefined

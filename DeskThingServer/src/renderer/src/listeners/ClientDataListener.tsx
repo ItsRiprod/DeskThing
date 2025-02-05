@@ -17,6 +17,14 @@ const ClientDataListener = (): null => {
   const requestConnections = useClientStore((state) => state.requestConnections)
   const requestClientManifest = useClientStore((state) => state.requestClientManifest)
 
+  const getInitialState = async (): Promise<void> => {
+    requestConnections()
+    requestADBDevices()
+    requestClientManifest()
+  }
+
+  getInitialState()
+
   useEffect(() => {
     window.electron.ipcRenderer.on('clients', async (_event, data) => {
       setClients(data.data)
@@ -29,14 +37,6 @@ const ClientDataListener = (): null => {
     window.electron.ipcRenderer.on('adbdevices', async (_event, data) => {
       setAdbDevices(data.data)
     })
-
-    const getInitialState = async (): Promise<void> => {
-      requestConnections()
-      requestADBDevices()
-      requestClientManifest()
-    }
-
-    getInitialState()
 
     // Cleanup listeners on unmount
     return () => {

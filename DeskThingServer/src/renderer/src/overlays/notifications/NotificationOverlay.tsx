@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import Overlay from '../Overlay'
 import Button from '@renderer/components/Button'
 import { IconBell, IconLayoutgrid, IconLogs, IconWarning } from '@renderer/assets/icons'
@@ -9,6 +9,7 @@ import TasksPage from './TasksPage'
 import IssuesPage from './IssuesPage'
 import { useSearchParams } from 'react-router-dom'
 import useTaskStore from '@renderer/stores/taskStore'
+import ErrorBoundary from '@renderer/components/ErrorBoundary'
 
 const NotificationOverlay: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -16,6 +17,21 @@ const NotificationOverlay: React.FC = () => {
   const notifState = useNotificationStore((state) => state)
   const taskList = useTaskStore((state) => state.taskList.tasks)
   const page = searchParams.get('page') || 'event'
+
+  const NotificationPage = useMemo(() => {
+    switch (page) {
+      case 'event':
+        return <EvensPage />
+      case 'request':
+        return <RequestsPage />
+      case 'task':
+        return <TasksPage />
+      case 'issue':
+        return <IssuesPage />
+      default:
+        return <EvensPage />
+    }
+  }, [page])
 
   const activeTasks = Object.values(taskList).filter((task) => task.completed == false)
 
@@ -75,10 +91,7 @@ const NotificationOverlay: React.FC = () => {
           />
         </div>
         <div className="w-full">
-          {page == 'issue' && <IssuesPage />}
-          {page == 'event' && <EvensPage />}
-          {page == 'request' && <RequestsPage />}
-          {page == 'task' && <TasksPage />}
+          <ErrorBoundary>{NotificationPage}</ErrorBoundary>
         </div>
       </div>
     </Overlay>

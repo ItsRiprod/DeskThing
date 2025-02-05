@@ -204,6 +204,7 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
         {client.adbId && !offline && (
           <>
             <Button
+              title="Restart Chromium on the Device"
               className="group hover:bg-zinc-900 gap-2"
               onClick={restartChromium}
               disabled={loading}
@@ -221,6 +222,7 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
             </Button>
             {!client.connected && (
               <Button
+                title="Reconnect Offline Device"
                 className="group relative hover:bg-zinc-900 gap-2"
                 onClick={configureDevice}
                 disabled={loading}
@@ -236,6 +238,7 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
         )}
         {offline && (
           <Button
+            title="Reconnect Device"
             className="group hover:bg-red-900 gap-2 border-red-500 border"
             onClick={handleConnectOffline}
             disabled={loading}
@@ -247,18 +250,27 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
           </Button>
         )}
         {!offline && (
-          <Button className="group hover:bg-zinc-900 gap-2" onClick={() => setEnabled(true)}>
+          <Button
+            title="Client Details and Settings"
+            className="group hover:bg-zinc-900 gap-2"
+            onClick={() => setEnabled(true)}
+          >
             <IconLogs />
             <p className="hidden group-hover:block">Details</p>
           </Button>
         )}
         {client.connected && !offline && (
           <>
-            <Button className="group hover:bg-zinc-900 gap-2" onClick={handlePing}>
+            <Button
+              title="Ping Client"
+              className="group hover:bg-zinc-900 gap-2"
+              onClick={handlePing}
+            >
               <IconPing className={animatingIcons.ping ? 'animate-ping' : ''} />
               <p className="hidden group-hover:block">Ping</p>
             </Button>
             <Button
+              title="Disconnect Client"
               className="group bg-red-700 gap-2"
               disabled={loading}
               onClick={handleDisconnect}

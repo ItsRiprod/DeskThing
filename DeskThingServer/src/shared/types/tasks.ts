@@ -59,6 +59,7 @@ export type Step = TaskStep | TaskAction | TaskShortcut | TaskSetting | TaskTask
 export interface TaskStep {
   parentId?: string
   id: string
+  strict?: boolean
   type: STEP_TYPES.STEP
   label?: string
   instructions?: string

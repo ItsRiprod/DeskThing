@@ -13,17 +13,17 @@ import { App } from '@shared/types'
 const AppStoreDataListener = (): null => {
   const setAppList = useAppStore((state) => state.setAppList)
 
+  const initialRequest = async (): Promise<void> => {
+    const appsList = await window.electron.getApps()
+    setAppList(appsList)
+  }
+
+  initialRequest()
+
   useEffect(() => {
     const handleAppData = async (_event, response: App[]): Promise<void> => {
       setAppList(response)
     }
-
-    const initialRequest = async (): Promise<void> => {
-      const appsList = await window.electron.getApps()
-      setAppList(appsList)
-    }
-
-    initialRequest()
 
     // Listen for IPC events
     window.electron.ipcRenderer.on('app-data', handleAppData)

@@ -8,6 +8,7 @@ import AppDetails from './AppDetails'
 import AppSettings from './AppSettings'
 import { App } from '@shared/types'
 import { useAppStore } from '@renderer/stores'
+import ErrorBoundary from '@renderer/components/ErrorBoundary'
 
 export interface AppSettingProps {
   app: App
@@ -70,9 +71,21 @@ const AppsOverlay: React.FC = () => {
         </div>
         <div className="w-full h-full relative overflow-auto">
           <div className="absolute inset w-full h-full">
-            {currentPage == 'actions' && <AppActions app={app} />}
-            {currentPage == 'details' && <AppDetails app={app} />}
-            {currentPage == 'settings' && <AppSettings app={app} />}
+            {currentPage == 'actions' && (
+              <ErrorBoundary>
+                <AppActions app={app} />
+              </ErrorBoundary>
+            )}
+            {currentPage == 'details' && (
+              <ErrorBoundary>
+                <AppDetails app={app} />
+              </ErrorBoundary>
+            )}
+            {currentPage == 'settings' && (
+              <ErrorBoundary>
+                <AppSettings app={app} />
+              </ErrorBoundary>
+            )}
           </div>
         </div>
       </div>

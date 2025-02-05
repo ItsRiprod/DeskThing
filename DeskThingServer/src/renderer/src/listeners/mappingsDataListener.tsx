@@ -18,6 +18,8 @@ const MappingsDataListener = (): null => {
   const setCurrentProfile = useMappingStore((state) => state.setCurrentProfile)
   const requestMappings = useMappingStore((state) => state.requestMappings)
 
+  requestMappings()
+
   useEffect(() => {
     const handleKeyUpdate = async (_event, key: Key[]): Promise<void> => {
       setKeys(key)
@@ -31,8 +33,6 @@ const MappingsDataListener = (): null => {
       const currentProfile = await window.electron.getCurrentProfile()
       setCurrentProfile(currentProfile)
     }
-
-    requestMappings()
 
     window.electron.ipcRenderer.on('key', handleKeyUpdate)
     window.electron.ipcRenderer.on('action', handleActionUpdate)

@@ -1,12 +1,13 @@
-import { FC } from 'react'
+import { FC, useState } from 'react'
 import { StepProps } from './TaskBase'
 import useTaskStore from '@renderer/stores/taskStore'
 import Button from '../Button'
-import { IconCheck } from '@renderer/assets/icons'
+import { IconCheck, IconLink, IconX } from '@renderer/assets/icons'
 import { STEP_TYPES } from '@shared/types/tasks'
 
 export const TaskExternal: FC<StepProps> = ({ step }) => {
   if (step.type != STEP_TYPES.EXTERNAL) return <div>Not an external</div>
+  const [stepCompleted, setStepCompleted] = useState(step.url ? false : true)
   const completeStep = useTaskStore((state) => state.resolveStep)
 
   const handleComplete = (): void => {
@@ -17,24 +18,36 @@ export const TaskExternal: FC<StepProps> = ({ step }) => {
     completeStep(step.parentId, step.id)
   }
 
+  const handleLinkPress = (): void => {
+    if (step.url) {
+      window.open(step.url, '_blank')
+    }
+    setStepCompleted(true)
+  }
+
   return (
-    <div className="flex flex-col justify-between">
+    <div className="flex flex-col justify-between gap-5">
       <div>
         <h2 className="text-2xl">{step?.label}</h2>
         <p>{step?.instructions}</p>
       </div>
-      {step.url && (
-        <Button href={step.url} target="_blank">
-          <p>Go to {step.url}</p>
+      <div className="flex justify-between gap-5">
+        {step.url && (
+          <Button className="w-full bg-cyan-700 hover:bg-cyan-600 gap-2" onClick={handleLinkPress}>
+            <p className="text-nowrap">Go to {step.url}</p>
+            <IconLink />
+          </Button>
+        )}
+        <Button
+          className={`w-full justify-center group ${stepCompleted ? 'bg-green-700 hover:bg-green-600' : 'bg-zinc-950 text-gray-500'}`}
+          disabled={step.strict && !stepCompleted}
+          title={`${step.strict ? 'Complete task first' : 'Continue Anyway'}`}
+          onClick={handleComplete}
+        >
+          {stepCompleted || !step.url ? <p>Mark as Completed</p> : <p>Open Link First</p>}
+          {stepCompleted || !step.url ? <IconCheck /> : <IconX />}
         </Button>
-      )}
-      <Button
-        className="bg-green-700 hover:bg-green-500 gap-2 items-center"
-        onClick={handleComplete}
-      >
-        <p>Mark as Completed</p>
-        <IconCheck />
-      </Button>
+      </div>
     </div>
   )
 }

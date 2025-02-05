@@ -29,6 +29,7 @@ const ReleaseComponent: React.FC<AssetComponentProps> = ({ asset, onClick, loadi
       <h3 className="pl-5 font-semibold">{asset.name}</h3>
       {/* Download button with dynamic styling based on loading state */}
       <Button
+        title="Download App"
         onClick={() => onClick(asset)}
         className={`border-green-500 ${loading ? '' : 'hover:bg-green-500 group'} flex gap-2`}
         disabled={loading}

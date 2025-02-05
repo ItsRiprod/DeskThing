@@ -34,7 +34,7 @@ const NotificationButton: React.FC = () => {
 
   return (
     <div ref={refs.setReference}>
-      <Button onClick={handleOpenNotifications} className={`gap-2 hover:bg-zinc-900`}>
+      <Button title="System Notifications" onClick={handleOpenNotifications} className={`gap-2 hover:bg-zinc-900`}>
         {taskNum > 0 ? (
           <div
             className={`${errors > 0 || issues > 0 ? 'bg-red-500' : 'bg-green-500'} relative p-1 w-full rounded text-xs group`}
