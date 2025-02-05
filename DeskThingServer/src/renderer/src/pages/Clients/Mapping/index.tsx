@@ -44,11 +44,9 @@ interface Page {
   keyList: string[]
 }
 
-interface PagesInterface {
-  [key: string]: Page
-}
+type PagesInterface = Record<string, Page>
 
-const pages: PagesInterface = {
+const pages = {
   carthing: {
     keyList: ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Escape', 'Swipe'],
     id: 'carthing',
@@ -92,7 +90,7 @@ const pages: PagesInterface = {
     component: AppMappingsPage,
     label: 'Apps'
   }
-}
+} as const satisfies PagesInterface
 
 const ClientMappingPage: React.FC = () => {
   const activeProfile = useMappingStore((state) => state.currentProfile)
@@ -153,7 +151,7 @@ const ClientMappingPage: React.FC = () => {
     setCurrentMapping(mapping)
   }
 
-  const handlePageChange = async (page: string): Promise<void> => {
+  const handlePageChange = async (page: keyof typeof pages): Promise<void> => {
     if (pages[page]) {
       setSelectedPage(pages[page])
     }

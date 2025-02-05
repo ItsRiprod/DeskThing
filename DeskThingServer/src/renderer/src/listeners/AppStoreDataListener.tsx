@@ -1,11 +1,12 @@
 import { useEffect } from 'react'
 import { useAppStore } from '../stores'
+import { IpcRendererListener } from '@electron-toolkit/preload'
 
 const AppStoreDataListener = (): null => {
   const setAppList = useAppStore((state) => state.setAppList)
 
   useEffect(() => {
-    const handleAppData = async (_event, response): Promise<void> => {
+    const handleAppData: IpcRendererListener = async (_event, response): Promise<void> => {
       setAppList(response.apps)
     }
 

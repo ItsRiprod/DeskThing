@@ -25,7 +25,7 @@ const AppsList: React.FC = () => {
     setActiveRequests(requests.map((request) => request.appName))
   }, [requests])
 
-  const handleDragStart = (e, appName: string): void => {
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, appName: string): void => {
     setDraggedApp(appName)
 
     // Create a custom drag image

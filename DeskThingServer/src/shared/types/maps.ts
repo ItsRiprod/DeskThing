@@ -26,7 +26,7 @@ export type Key = {
 export type Button = {
   mode: EventMode // The mode of the button
   action: string // The action to be triggered
-  key: string // The key to be triggered
+  key: keyof ButtonMapping // The key to be triggered
   profile?: string // The profile to be used
 }
 
@@ -65,11 +65,7 @@ export type Profile = {
 }
 
 export interface ButtonMapping extends Profile {
-  mapping: {
-    [key: string]: {
-      [Mode in EventMode]?: ActionReference
-    }
-  }
+  mapping: Record<string, { [Mode in EventMode]?: ActionReference }>
 }
 
 export type MappingFileStructure = {

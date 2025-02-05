@@ -1,6 +1,6 @@
-import { Icon } from '.'
+import { Icon, IconProps } from '.'
 
-function IconQR(props): JSX.Element {
+function IconQR(props: IconProps): JSX.Element {
   return (
     <Icon {...props} fill={'currentColor'}>
       <svg

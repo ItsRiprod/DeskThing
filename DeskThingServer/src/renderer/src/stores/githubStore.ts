@@ -32,7 +32,7 @@ const useGithubStore = create<GithubStoreState>((set, get) => ({
   extractReleaseDetails: (releaseName: string): ReleaseDetails => {
     const parts = releaseName.split('-')
     const appDetails = {
-      name: parts[0],
+      name: parts[0]!,
       version: parts[2] + (parts[3] ? '-' + parts[3] : '')
     }
     return appDetails
@@ -70,17 +70,17 @@ const useGithubStore = create<GithubStoreState>((set, get) => ({
           if (!updatedClientReleases[clientDetails.name]) {
             updatedClientReleases[clientDetails.name] = []
           }
-          const assetExists = updatedClientReleases[clientDetails.name].some(
+          const assetExists = updatedClientReleases[clientDetails.name]!.some(
             (existingAsset) => existingAsset.updated_at === asset.updated_at
           )
           if (!assetExists) {
-            updatedClientReleases[clientDetails.name].push(asset)
+            updatedClientReleases[clientDetails.name]!.push(asset)
           }
         })
       })
       // Sort the releases by date
       Object.keys(updatedClientReleases).forEach((clientName) => {
-        updatedClientReleases[clientName].sort(
+        updatedClientReleases[clientName]!.sort(
           (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
         )
       })
@@ -101,17 +101,17 @@ const useGithubStore = create<GithubStoreState>((set, get) => ({
           if (!updatedAppReleases[appDetails.name]) {
             updatedAppReleases[appDetails.name] = []
           }
-          const assetExists = updatedAppReleases[appDetails.name].some(
+          const assetExists = updatedAppReleases[appDetails.name]!.some(
             (existingAsset) => existingAsset.id === asset.id
           )
           if (!assetExists) {
-            updatedAppReleases[appDetails.name].push(asset)
+            updatedAppReleases[appDetails.name]!.push(asset)
           }
         })
       })
       // Sort the releases by date
       Object.keys(updatedAppReleases).forEach((appName) => {
-        updatedAppReleases[appName].sort(
+        updatedAppReleases[appName]!.sort(
           (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
         )
       })

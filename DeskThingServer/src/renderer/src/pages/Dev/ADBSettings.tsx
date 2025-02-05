@@ -77,7 +77,7 @@ const ADBSettings: React.FC = () => {
           className={restarting ? 'text-gray-300' : 'hover:bg-zinc-900'}
         >
           <IconReload
-            className={restarting && `-rotate-[360deg] transition-transform duration-1000`}
+            className={restarting ? `-rotate-[360deg] transition-transform duration-1000` : ''}
           />
           <p className="md:block xs:hidden text-center flex-grow">Restart ADB</p>
         </Button>
@@ -86,7 +86,7 @@ const ADBSettings: React.FC = () => {
           className={refreshing ? 'text-gray-300' : 'hover:bg-zinc-900'}
           onClick={handleRefreshDevices}
         >
-          <IconRefresh className={refreshing && `animate-spin`} />
+          <IconRefresh className={refreshing ? `animate-spin` : ''} />
           <p className="md:block xs:hidden text-center flex-grow">Find Devices</p>
         </Button>
       </Sidebar>

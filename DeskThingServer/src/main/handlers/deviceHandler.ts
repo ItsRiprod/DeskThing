@@ -405,7 +405,7 @@ export const HandleWebappZipFromUrl = async (
             })
         }
       })
-      response.on('error', (error) => {
+      response.on('error', (error: Error) => {
         console.error('Error downloading zip file:', error)
         loggingStore.log(MESSAGE_TYPES.ERROR, `Error downloading zip file: ${error}`)
 

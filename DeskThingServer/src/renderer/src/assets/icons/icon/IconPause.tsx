@@ -1,6 +1,6 @@
-import { Icon } from '.'
+import { Icon, IconProps } from '.'
 
-function IconPause(props): JSX.Element {
+function IconPause(props: IconProps): JSX.Element {
   return (
     <Icon {...props}>
       <svg viewBox="0 0 24 24">

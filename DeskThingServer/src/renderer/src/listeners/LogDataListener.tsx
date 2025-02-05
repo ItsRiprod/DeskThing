@@ -1,13 +1,14 @@
 import { useEffect } from 'react'
 import { useLogStore, useNotificationStore } from '../stores'
 import { Log } from '@shared/types'
+import { IpcRendererListener } from '@electron-toolkit/preload'
 
 const LogDataListener = (): null => {
   const addLog = useLogStore((state) => state.addLog)
   const addLogs = useNotificationStore((state) => state.addLog)
 
   useEffect(() => {
-    const handleLog = async (_event, log: Log): Promise<void> => {
+    const handleLog: IpcRendererListener = async (_event, log: Log): Promise<void> => {
       addLog(log)
       addLogs(log)
     }

@@ -43,6 +43,7 @@ export const isValidMappingStructure = async (structure: MappingStructure): Prom
       return false
     }
 
+    // structure.actions.every ?
     for (let index = 0; index < structure.actions.length; index++) {
       const action = structure.actions[index]
       if (!isValidAction(action)) {
@@ -59,6 +60,7 @@ export const isValidMappingStructure = async (structure: MappingStructure): Prom
       return false
     }
 
+    // structure.keys.every ?
     for (let index = 0; index < structure.keys.length; index++) {
       const key = structure.keys[index]
       if (!isValidKey(key)) {
@@ -106,7 +108,7 @@ export const isValidFileStructure = (structure: MappingFileStructure): boolean =
       loggingStore.log(MESSAGE_TYPES.ERROR, 'validateFileStructure: Actions is not an array!')
       return false
     }
-
+    // structure.actions.every ?
     for (let index = 0; index < structure.actions.length; index++) {
       const action = structure.actions[index]
       if (!isValidAction(action)) {
@@ -122,7 +124,7 @@ export const isValidFileStructure = (structure: MappingFileStructure): boolean =
       loggingStore.log(MESSAGE_TYPES.ERROR, 'validateFileStructure: Keys is not an array!')
       return false
     }
-
+    // structure.actions.every ?
     for (let index = 0; index < structure.keys.length; index++) {
       const key = structure.keys[index]
       if (!isValidKey(key)) {
@@ -188,7 +190,7 @@ export const isValidButtonMapping = (mapping: ButtonMapping): boolean => {
  * @param action - The action to validate
  * @throws Error if any required field is missing or invalid
  */
-export const isValidAction = (action: unknown): boolean => {
+export const isValidAction = (action: unknown): action is Action => {
   if (!action || typeof action !== 'object') return false
   const actionObj = action as Action
   if (typeof actionObj.id !== 'string') return false
@@ -211,7 +213,7 @@ export const isValidAction = (action: unknown): boolean => {
  * @param action - The action to validate
  * @throws Error if any required field is missing or invalid
  */
-export const isValidActionReference = (action: ActionReference): boolean => {
+export const isValidActionReference = (action: ActionReference): action is ActionReference => {
   if (typeof action !== 'object') {
     loggingStore.log(MESSAGE_TYPES.ERROR, `validateActionReference: action is not a valid object`)
     return false
@@ -241,7 +243,7 @@ export const isValidActionReference = (action: ActionReference): boolean => {
  * @param key - The key to validate
  * @returns true if the key is valid, false otherwise
  */
-export const isValidKey = (key: Key): boolean => {
+export const isValidKey = (key: Key): key is Key => {
   return (
     typeof key.id === 'string' &&
     typeof key.source === 'string' &&
@@ -254,17 +256,17 @@ export const isValidKey = (key: Key): boolean => {
 
 export const FetchIcon = async (action: Action): Promise<string | null> => {
   if (!action) return null
-  const { app } = require('electron')
-  const fs = require('fs').promises
-  const path = require('path')
+  const { app } = await import('electron')
+  const { readFile } = await import('fs/promises')
+  const { join } = await import('path')
 
   try {
     const iconPath =
       action.source === 'server'
-        ? path.join(app.getPath('userData'), 'webapp', 'icons', `${action.icon || action.id}.svg`)
-        : path.join(getAppFilePath(action.source), 'icons', `${action.id}.svg`)
+        ? join(app.getPath('userData'), 'webapp', 'icons', `${action.icon || action.id}.svg`)
+        : join(getAppFilePath(action.source), 'icons', `${action.id}.svg`)
 
-    return await fs.readFile(iconPath, 'utf8')
+    return readFile(iconPath, 'utf8')
   } catch (error) {
     return null
   }

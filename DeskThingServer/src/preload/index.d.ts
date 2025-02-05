@@ -10,7 +10,7 @@ import {
   Profile
 } from '@shared/types'
 
-type AppData = { [key: string]: string }
+type AppData = Record<string, string>
 
 declare global {
   interface Window {

@@ -2,7 +2,7 @@ import React from 'react'
 
 interface ButtonProps {
   children: React.ReactNode
-  onClick?: (e) => void
+  onClick?: () => void
   className?: string
   href?: string
   target?: string

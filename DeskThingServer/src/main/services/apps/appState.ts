@@ -1,5 +1,5 @@
 console.log('[AppState Service] Starting')
-import { App, AppInstance, Manifest, AppReturnData, MESSAGE_TYPES } from '@shared/types'
+import { App, AppInstance, Manifest, AppReturnData, MESSAGE_TYPES, ReplyFn } from '@shared/types'
 import { sendConfigData, sendSettingsData } from '../client/clientCom'
 import loggingStore from '../../stores/loggingStore'
 
@@ -8,7 +8,7 @@ import loggingStore from '../../stores/loggingStore'
  */
 export class AppHandler {
   public static instance: AppHandler
-  private apps: { [key: string]: AppInstance } = {}
+  private apps: Record<string, AppInstance> = {}
   private order: string[] = []
 
   public static getInstance(): AppHandler {
@@ -37,7 +37,7 @@ export class AppHandler {
     loggingStore.log(MESSAGE_TYPES.LOGGING, '[appState] [loadApps]: Loading apps...')
     const { getAppData } = await import('../../handlers/configHandler')
 
-    const data = await getAppData()
+    const data = getAppData()
 
     data.apps.forEach((app) => {
       if (this.apps[app.name]) {
@@ -105,12 +105,12 @@ export class AppHandler {
    * @returns all apps
    */
   getAll(): AppInstance[] {
-    return this.order.map((name) => this.apps[name])
+    return this.order.map((name) => this.apps[name]!)
   }
 
   getAllBase(): App[] {
     const baseApp = this.order.map((name) => {
-      const { func: _func, ...baseApp } = this.apps[name]
+      const { func: _func, ...baseApp } = this.apps[name]!
       return baseApp
     })
     return baseApp
@@ -254,7 +254,7 @@ export class AppHandler {
     return await start(name)
   }
 
-  async addURL(url: string, reply): Promise<AppReturnData | void> {
+  async addURL(url: string, reply: ReplyFn): Promise<AppReturnData | void> {
     const { handleZipFromUrl } = await import('./appInstaller')
     const returnData = await handleZipFromUrl(url, reply)
     if (returnData) {
@@ -271,7 +271,7 @@ export class AppHandler {
       return returnData
     }
   }
-  async addZIP(zip: string, event): Promise<AppReturnData | void> {
+  async addZIP(zip: string, event: ReplyFn): Promise<AppReturnData | void> {
     const { handleZip } = await import('./appInstaller')
     const returnData = await handleZip(zip, event)
     if (returnData) {

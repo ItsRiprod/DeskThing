@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useClientStore, useNotificationStore } from '@renderer/stores'
 import { AuthScopes } from '@shared/types'
+import { IpcRendererListener } from '@electron-toolkit/preload'
 
 const RequestDataListener = (): null => {
   const addRequest = useNotificationStore((state) => state.addRequest)
@@ -41,7 +42,7 @@ const RequestDataListener = (): null => {
   }, [devices])
 
   useEffect(() => {
-    const handleDisplayUserForm = async (
+    const handleDisplayUserForm: IpcRendererListener = async (
       _event,
       requestId: string,
       fields: AuthScopes

@@ -1,5 +1,5 @@
 console.log('[ClientCom Service] Starting')
-import { SocketData, MESSAGE_TYPES, SongData } from '@shared/types'
+import { SocketData, MESSAGE_TYPES, SongData, AppSettings } from '@shared/types'
 import { server, Clients } from './websocket'
 import loggingStore from '../../stores/loggingStore'
 import connectionsStore from '../../stores/connectionsStore'
@@ -93,7 +93,7 @@ export const sendSettingsData = async (clientId?: string): Promise<void> => {
       throw new Error('Invalid configuration format')
     }
 
-    const settings = {}
+    const settings: Record<string, AppSettings> = {}
 
     if (appData && config) {
       appData.map((app) => {

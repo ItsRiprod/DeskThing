@@ -1,6 +1,6 @@
-import { Icon } from '.'
+import { Icon, IconProps } from '.'
 
-function IconCheckCircle(props): JSX.Element {
+function IconCheckCircle(props: IconProps): JSX.Element {
   return (
     <Icon {...props}>
       <svg viewBox="0 0 58 58" fill="none" xmlns="http://www.w3.org/2000/svg">

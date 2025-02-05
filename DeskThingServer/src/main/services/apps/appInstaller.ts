@@ -9,7 +9,8 @@ import {
   Manifest,
   DeskThing,
   AppReturnData,
-  MESSAGE_TYPES
+  MESSAGE_TYPES,
+  ReplyFn
 } from '@shared/types'
 import { getAppFilePath, getManifest } from './appUtils'
 import { mkdirSync, existsSync, rmSync, promises } from 'node:fs'
@@ -28,7 +29,7 @@ import { handleDataFromApp } from './appCommunication'
  * - {boolean} success - Whether the extraction was successful.
  * - {string} message - A message about the extraction process.
  */
-export async function handleZip(zipFilePath: string, reply?): Promise<AppReturnData> {
+export async function handleZip(zipFilePath: string, reply?: ReplyFn): Promise<AppReturnData> {
   const { getManifest } = await import('./appUtils')
   try {
     loggingStore.log(MESSAGE_TYPES.LOGGING, `[handleZip] Extracting ${zipFilePath}...`)
@@ -158,7 +159,10 @@ export async function handleZip(zipFilePath: string, reply?): Promise<AppReturnD
  * @param event
  * @returns
  */
-export async function handleZipFromUrl(zipUrlPath: string, reply): Promise<AppReturnData | void> {
+export async function handleZipFromUrl(
+  zipUrlPath: string,
+  reply: ReplyFn
+): Promise<AppReturnData | void> {
   const tempZipPath = getAppFilePath('downloads', 'temp.zip')
   let returnData: AppReturnData | undefined
   try {
@@ -449,7 +453,7 @@ const handleManifest = async (
  * @param appName
  * @returns
  */
-const getDeskThing = async (appName): Promise<DeskThing | void> => {
+const getDeskThing = async (appName: string): Promise<DeskThing | void> => {
   const appEntryPointJs = getAppFilePath(appName, 'index.js')
   const appEntryPointMjs = getAppFilePath(appName, 'index.mjs')
   const appEntryPointCjs = getAppFilePath(appName, 'index.cjs')

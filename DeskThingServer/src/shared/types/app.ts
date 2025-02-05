@@ -38,13 +38,14 @@ export interface AppInstance extends App {
 // Type that setups up the expected format for data sent to and from main
 export type ToClientType = (data: IncomingData) => void
 
-export interface AuthScopes {
-  [key: string]: {
+export type AuthScopes = Record<
+  string,
+  {
     instructions: string
     label: string
     value?: string
   }
-}
+>
 
 export type Response = {
   data: any
@@ -83,9 +84,7 @@ export interface App {
   manifest?: Manifest
 }
 
-export interface Config {
-  [appName: string]: string | string[]
-}
+export type Config = Record<string, string | string[]>
 
 export interface AppDataInterface {
   [key: string]: string | AppSettings | undefined | any[]
@@ -206,9 +205,7 @@ export type SettingsType =
   | SettingsList
   | SettingsColor
 
-export interface AppSettings {
-  [key: string]: SettingsType
-}
+export type AppSettings = Record<string, SettingsType>
 
 export interface AppData {
   apps: App[]
@@ -232,9 +229,7 @@ export interface AppReturnData {
   requirements: string[]
 }
 
-export interface SortedReleases {
-  [key: string]: GithubAsset[]
-}
+export type SortedReleases = Record<string, GithubAsset[]>
 
 export interface ReleaseDetails {
   name: string

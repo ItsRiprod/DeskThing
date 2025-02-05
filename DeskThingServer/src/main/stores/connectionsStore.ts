@@ -165,7 +165,7 @@ class ConnectionStore {
       if (this.autoDetectADB === true) {
         loggingStore.log(MESSAGE_TYPES.LOGGING, 'Auto-detecting ADB devices...')
         await this.getAdbDevices()
-        this.clearTimeout = await setTimeout(checkAndAutoDetect, 7000)
+        this.clearTimeout = setTimeout(checkAndAutoDetect, 7000)
       }
     }
 

@@ -4,8 +4,10 @@ module.exports = {
     'plugin:react/recommended',
     'plugin:react/jsx-runtime',
     '@electron-toolkit/eslint-config-ts/recommended',
-    '@electron-toolkit/eslint-config-prettier'
+    '@electron-toolkit/eslint-config-prettier',
+    'plugin:@typescript-eslint/recommended'
   ],
+  plugins: ['@typescript-eslint'],
   rules: {
     'prettier/prettier': [
       'error',
@@ -13,6 +15,7 @@ module.exports = {
         endOfLine: 'auto'
       }
     ],
-    '@typescript-eslint/no-unused-vars': ['error', { varsIgnorePattern: '^_' }]
+    '@typescript-eslint/no-unused-vars': ['error', { varsIgnorePattern: '^_' }],
+    '@typescript-eslint/explicit-function-return-type': 'off'
   }
 }

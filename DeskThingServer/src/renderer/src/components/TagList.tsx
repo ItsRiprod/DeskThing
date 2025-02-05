@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { WithContext as ReactTags } from 'react-tag-input'
-import { Tag } from 'react-tag-input/types/components/SingleTag'
+import type { Tag } from 'node_modules/react-tag-input/types/components/SingleTag'
 
 type TagListProps = {
   value: string[]

@@ -1,6 +1,6 @@
-import { Icon } from '.'
+import { Icon, IconProps } from '.'
 
-function IconPlay(props): JSX.Element {
+function IconPlay(props: IconProps): JSX.Element {
   return (
     <Icon {...props}>
       <svg

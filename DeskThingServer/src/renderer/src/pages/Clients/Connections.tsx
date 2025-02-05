@@ -38,11 +38,12 @@ const ClientConnections: React.FC = () => {
       let randomWeight = Math.random() * totalWeight
       let selectedIndex = 0
 
+      // maybe use a elegibleMsgs.forEach loop here?
       for (let i = 0; i < eligibleMessages.length; i++) {
-        randomWeight -= eligibleMessages[i].weight
+        randomWeight -= eligibleMessages[i]!.weight
         if (randomWeight <= 0) {
           selectedIndex = deviceMessages.findIndex(
-            (msg) => msg.message === eligibleMessages[i].message
+            (msg) => msg.message === eligibleMessages[i]!.message
           )
           break
         }
@@ -166,7 +167,7 @@ const ClientConnections: React.FC = () => {
               ))
             ) : (
               <div className="first-letter:">
-                <p>{deviceMessages[currentMessageIndex].message}</p>
+                <p>{deviceMessages[currentMessageIndex]!.message}</p>
               </div>
             )}
           </div>

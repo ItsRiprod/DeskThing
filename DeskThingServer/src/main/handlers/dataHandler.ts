@@ -3,9 +3,7 @@ import { AppDataInterface } from '@shared/types'
 import { readFromFile, writeToFile } from '../utils/fileHandler'
 import { sendMessageToApp } from '../services/apps'
 
-interface Data {
-  [appName: string]: AppDataInterface
-}
+type Data = Record<string, AppDataInterface>
 
 // Default data structure
 const defaultData: Data = {}
@@ -59,7 +57,7 @@ const addData = (key: string, value: AppDataInterface): void => {
 // Get data function
 const getData = (app: string): AppDataInterface => {
   const data = readData()
-  return data[app]
+  return data[app]!
 }
 
 const purgeAppData = async (appName: string): Promise<void> => {
