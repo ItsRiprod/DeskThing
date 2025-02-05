@@ -24,7 +24,7 @@ const AllActionsComponent: FC<AllActionsComponentProps> = ({
 
   return (
     <div
-      className={`${expanded ? 'absolute max-h-60' : 'max-h-0'} transition-[max-height] hs:relative bg-black bottom-0 hs:max-h-60 border-t flex-shrink-0 border-gray-500 flex`}
+      className={`${expanded ? 'absolute max-h-60' : 'max-h-0'} transition-[max-height] hs:relative bg-black bottom-0 hs:max-h-60 border-t shrink-0 border-gray-500 flex`}
     >
       <div className="absolute h-fit hs:hidden -translate-y-12">
         <Button onClick={() => setIsExpanded((state) => !state)}>
@@ -32,7 +32,7 @@ const AllActionsComponent: FC<AllActionsComponentProps> = ({
           <IconArrowUp className={expanded ? 'rotate-180' : ''} />
         </Button>
       </div>
-      <div className="max-h-60 gap-2 flex-shrink-0 overflow-y-auto flex flex-col hs:p-2 w-24 bg-zinc-900 border-r border-gray-700">
+      <div className="max-h-60 gap-2 shrink-0 overflow-y-auto flex flex-col hs:p-2 w-24 bg-zinc-900 border-r border-gray-700">
         <Button
           className={`${filter === 'all' && 'bg-zinc-800'} hover:bg-zinc-800`}
           onClick={() => setFilter('all')}

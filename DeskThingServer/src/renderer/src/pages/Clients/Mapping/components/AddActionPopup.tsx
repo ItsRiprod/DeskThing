@@ -70,7 +70,7 @@ const AddActionPopup = ({ pendingAction, updateAction }: AddActionPopupProps): J
               pendingAction?.value_instructions && (
                 <input
                   type="text"
-                  className="p-2 border rounded text-black"
+                  className="p-2 border rounded-sm text-black"
                   placeholder="Enter value"
                   value={value}
                   onChange={(e) => handleValueChange(e.target.value)}

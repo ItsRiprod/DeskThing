@@ -40,7 +40,7 @@ const ClientSettings: React.FC = () => {
             type="text"
             value={localSettings.ip || ''}
             onChange={(e) => handleSettingChange('ip', e.target.value)}
-            className="focus:text-white bg-zinc-900 text-white rounded px-2 py-2"
+            className="focus:text-white bg-zinc-900 text-white rounded-sm px-2 py-2"
           />
         </div>
       </div>
@@ -50,7 +50,7 @@ const ClientSettings: React.FC = () => {
           type="number"
           value={localSettings.port || ''}
           onChange={(e) => handleSettingChange('port', Number(e.target.value))}
-          className="focus:text-white bg-zinc-900 text-white rounded px-2 py-2"
+          className="focus:text-white bg-zinc-900 text-white rounded-sm px-2 py-2"
         />
       </div>
       <div className="w-full px-4 flex justify-between items-center">

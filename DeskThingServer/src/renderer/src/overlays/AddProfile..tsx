@@ -68,7 +68,7 @@ const AddProfileOverlay: FC = () => {
           <label className="text-sm text-zinc-400">Profile Name</label>
           <input
             type="text"
-            className="p-2 rounded bg-zinc-800 border border-zinc-700 text-white focus:outline-none focus:border-blue-500"
+            className="p-2 rounded-sm bg-zinc-800 border border-zinc-700 text-white focus:outline-hidden focus:border-blue-500"
             placeholder="Enter profile name"
             value={profile.name}
             onChange={(e) => handleChange('name', e.target.value)}
@@ -78,7 +78,7 @@ const AddProfileOverlay: FC = () => {
           <label className="text-sm text-zinc-400">Description</label>
           <input
             type="text"
-            className="p-2 rounded bg-zinc-800 border border-zinc-700 text-white focus:outline-none focus:border-blue-500"
+            className="p-2 rounded-sm bg-zinc-800 border border-zinc-700 text-white focus:outline-hidden focus:border-blue-500"
             placeholder="Enter profile description"
             value={profile.description}
             onChange={(e) => handleChange('description', e.target.value)}
@@ -87,7 +87,7 @@ const AddProfileOverlay: FC = () => {
         <div className="flex flex-col gap-2">
           <label className="text-sm text-zinc-400">Base Profile</label>
           <select
-            className="p-2 rounded bg-zinc-800 border border-zinc-700 text-white focus:outline-none focus:border-blue-500"
+            className="p-2 rounded-sm bg-zinc-800 border border-zinc-700 text-white focus:outline-hidden focus:border-blue-500"
             value={profile.extends}
             onChange={(e) => handleChange('extends', e.target.value)}
           >

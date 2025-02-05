@@ -115,7 +115,7 @@ const ClientConnections: React.FC = () => {
         <div className="flex flex-col gap-2">
           <Button onClick={handleDownloadsNav} className="hover:bg-zinc-900">
             <IconDownload strokeWidth={1.5} />
-            <p className="md:block xs:hidden text-center flex-grow">Downloads</p>
+            <p className="md:block xs:hidden text-center grow">Downloads</p>
           </Button>
           <Button
             className={`hover:bg-zinc-900 ${isRestarting ? 'cursor-not-allowed opacity-50' : ''}`}
@@ -125,7 +125,7 @@ const ClientConnections: React.FC = () => {
               strokeWidth={1.5}
               className={isRestarting ? '-rotate-[360deg] transition-transform duration-1000' : ''}
             />
-            <p className="md:block xs:hidden text-center flex-grow">Restart Server</p>
+            <p className="md:block xs:hidden text-center grow">Restart Server</p>
           </Button>
         </div>
       </Sidebar>
@@ -134,7 +134,7 @@ const ClientConnections: React.FC = () => {
           <div className="w-full p-4 border rounded-xl border-zinc-900 flex gap-4 justify-between bg-zinc-950">
             <Button className="border-gray-500 gap-2 w-full hover:bg-zinc-900" onClick={openQr}>
               <IconQR />
-              <p className="md:block hidden text-center flex-grow">QR Code</p>
+              <p className="md:block hidden text-center grow">QR Code</p>
             </Button>
             <Button
               className={`border-gray-500 w-full hover:bg-zinc-900 gap-2 ${isRefreshing ? 'cursor-not-allowed opacity-50' : ''}`}
@@ -142,7 +142,7 @@ const ClientConnections: React.FC = () => {
               disabled={isRefreshing}
             >
               <IconRefresh strokeWidth={1.5} className={isRefreshing ? 'animate-spin' : ''} />
-              <p className="md:block hidden text-center flex-grow">
+              <p className="md:block hidden text-center grow">
                 {isRefreshing ? 'Searching...' : 'Refresh ADB'}
               </p>
             </Button>
@@ -151,7 +151,7 @@ const ClientConnections: React.FC = () => {
               onClick={handleAutoConfigToggle}
             >
               <IconCarThingSmall strokeWidth={2} iconSize={28} />
-              <p className="md:block hidden text-center flex-grow">
+              <p className="md:block hidden text-center grow">
                 <span className="hidden group-hover:inline">
                   {settings.autoConfig ? 'Disable' : 'Enable'}
                 </span>{' '}

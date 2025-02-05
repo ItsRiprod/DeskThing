@@ -31,17 +31,17 @@ const NotificationButton: React.FC = () => {
       <Button onClick={handleOpenNotifications} className={`gap-2 hover:bg-zinc-900`}>
         {taskNum > 0 ? (
           <p
-            className={`${errors > 0 || issues > 0 ? 'bg-red-500' : 'bg-green-500'} relative p-1 w-full rounded text-xs`}
+            className={`${errors > 0 || issues > 0 ? 'bg-red-500' : 'bg-green-500'} relative p-1 w-full rounded-sm text-xs`}
           >
             {requests.length > 0 && (
-              <div className="absolute inset-0 rounded w-full h-full animate-ping border-2 border-blue-500"></div>
+              <div className="absolute inset-0 rounded-sm w-full h-full animate-ping border-2 border-blue-500"></div>
             )}
             {taskNum}
           </p>
         ) : (
           <IconBell iconSize={24} strokeWidth={2} />
         )}
-        <p className="flex-grow text-center text-lg md:block hidden">Notifications</p>
+        <p className="grow text-center text-lg md:block hidden">Notifications</p>
       </Button>
     </>
   )

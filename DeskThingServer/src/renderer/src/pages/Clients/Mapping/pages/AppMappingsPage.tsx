@@ -32,7 +32,7 @@ const AppMappingsPage: React.FC<PageProps> = ({
 
   return (
     <div className="h-full items-center relative flex flex-col w-full">
-      <div className="w-full overflow-y-auto border-b border-gray-700 p-3 flex-shrink-0 items-center justify-between flex gap-3">
+      <div className="w-full overflow-y-auto border-b border-gray-700 p-3 shrink-0 items-center justify-between flex gap-3">
         <div className="items-center flex gap-3">
           <p>Apps:</p>
           <Button

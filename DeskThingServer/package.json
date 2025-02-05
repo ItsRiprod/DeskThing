@@ -25,6 +25,8 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.0",
     "@electron-toolkit/utils": "^3.0.0",
+    "@tailwindcss/postcss": "^4.0.3",
+    "@tailwindcss/vite": "^4.0.3",
     "@types/auto-launch": "^5.0.5",
     "@types/ws": "^8.5.13",
     "adm-zip": "^0.5.16",
@@ -63,7 +65,7 @@
     "prettier": "^3.2.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "tailwindcss": "^3.4.4",
+    "tailwindcss": "^4.0.0",
     "typedoc": "^0.26.10",
     "typescript": "^5.3.3",
     "vite": "^5.0.12"

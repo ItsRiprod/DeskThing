@@ -85,7 +85,7 @@ const MusicSettings: React.FC = () => {
               onChange={(e) =>
                 handleSettingChange('refreshInterval', Number(e.target.value) * 1000)
               }
-              className="focus:text-white bg-zinc-900 text-white rounded px-2 py-2"
+              className="focus:text-white bg-zinc-900 text-white rounded-sm px-2 py-2"
               placeholder="Enter A Value"
               disabled={!settings || settings.refreshInterval === -1}
             />
@@ -101,7 +101,7 @@ const MusicSettings: React.FC = () => {
             handleSettingChange('playbackLocation', value?.value || '')
           }}
           value={settings ? settings.playbackLocation || '' : 'Disabled'}
-          className="bg-zinc-900 rounded hover:cursor-pointer text-white px-2 py-2 w-full"
+          className="bg-zinc-900 rounded-sm hover:cursor-pointer text-white px-2 py-2 w-full"
           options={[
             ...audioSources.map((app) => ({
               value: app.id,

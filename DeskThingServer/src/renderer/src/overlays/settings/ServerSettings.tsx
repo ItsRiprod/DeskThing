@@ -38,7 +38,7 @@ const ServerSettings: React.FC = () => {
           type="number"
           value={settings.callbackPort}
           onChange={(e) => handleSettingChange('callbackPort', Number(e.target.value))}
-          className="border border-gray-300 focus:text-black text-gray-500 rounded px-2 py-1"
+          className="border border-gray-300 focus:text-black text-gray-500 rounded-sm px-2 py-1"
         />
       </div>
       <div className="w-full p-4 flex justify-between items-center">
@@ -47,7 +47,7 @@ const ServerSettings: React.FC = () => {
           type="number"
           value={settings.devicePort}
           onChange={(e) => handleSettingChange('devicePort', Number(e.target.value))}
-          className="border border-gray-300 rounded focus:text-black text-gray-500 px-2 py-1"
+          className="border border-gray-300 rounded-sm focus:text-black text-gray-500 px-2 py-1"
         />
       </div>
       <div className="w-full p-4 flex justify-between items-center">
@@ -56,7 +56,7 @@ const ServerSettings: React.FC = () => {
           type="text"
           value={settings.address}
           onChange={(e) => handleSettingChange('address', e.target.value)}
-          className="border border-gray-300 focus:text-black text-gray-500 rounded px-2 py-1"
+          className="border border-gray-300 focus:text-black text-gray-500 rounded-sm px-2 py-1"
         />
       </div>
       <div className="w-full px-4 flex justify-between items-center">

@@ -496,7 +496,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
                 value={command}
                 type="text"
                 placeholder="Enter ADB command..."
-                className="flex-1 px-3 py-2 bg-zinc-900 rounded-md text-white border border-zinc-700 focus:outline-none focus:border-zinc-500"
+                className="flex-1 px-3 py-2 bg-zinc-900 rounded-md text-white border border-zinc-700 focus:outline-hidden focus:border-zinc-500"
               />
               <Button
                 className="group bg-black group  hover:bg-zinc-950"

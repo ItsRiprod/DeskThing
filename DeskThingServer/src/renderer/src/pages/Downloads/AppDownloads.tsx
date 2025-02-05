@@ -118,7 +118,7 @@ const AppDownloads: React.FC = () => {
 
                   return (
                     <div
-                      className="flex flex-row justify-between items-center bg-zinc-900 px-3 p-2 rounded"
+                      className="flex flex-row justify-between items-center bg-zinc-900 px-3 p-2 rounded-sm"
                       key={index}
                     >
                       <div className="">
@@ -142,7 +142,7 @@ const AppDownloads: React.FC = () => {
                           onClick={() => handleDownloadClick(release.browser_download_url)}
                           disabled={loading}
                         >
-                          <p className="group-hover:block hidden text-center flex-grow">
+                          <p className="group-hover:block hidden text-center grow">
                             Download {fileSize}
                           </p>
                           <IconDownload className="group-hover:stroke-2 stroke-1" />
@@ -167,11 +167,11 @@ const AppDownloads: React.FC = () => {
           <div className="flex flex-col gap-2">
             <Button onClick={handleUploadClick} className="hover:bg-zinc-900">
               {selectingFile ? <IconLoading strokeWidth={1.5} /> : <IconUpload strokeWidth={1.5} />}
-              <p className="md:block xs:hidden xs:text-center flex-grow">Upload App</p>
+              <p className="md:block xs:hidden xs:text-center grow">Upload App</p>
             </Button>
             <Button onClick={gotoClientDownloads} className="hover:bg-zinc-900">
               <IconLink strokeWidth={1.5} />
-              <p className="md:block xs:hidden xs:text-center flex-grow">Clients</p>
+              <p className="md:block xs:hidden xs:text-center grow">Clients</p>
             </Button>
           </div>
         </div>
@@ -199,13 +199,13 @@ const AppDownloads: React.FC = () => {
                       disabled={loading}
                       onClick={() => handleDownloadLatestClick(name)}
                     >
-                      <p className="group-hover:block hidden text-center flex-grow">
+                      <p className="group-hover:block hidden text-center grow">
                         Download Latest
                       </p>
                       <IconDownload className="group-hover:stroke-2 stroke-1" />
                     </Button>
                     <Button className="group gap-2" onClick={() => handleMoreDownloadsClick(name)}>
-                      <p className="group-hover:block hidden text-center flex-grow">
+                      <p className="group-hover:block hidden text-center grow">
                         More Downloads
                       </p>
                       <IconLogs className="group-hover:stroke-2 stroke-1" />
