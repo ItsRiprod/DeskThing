@@ -51,7 +51,7 @@ export const SettingsColorComponent: React.FC<SettingsColorProps> = ({
             type="color"
             value={localValue}
             onChange={(e) => setLocalValue(e.target.value)}
-            className="w-12 h-8 rounded cursor-pointer"
+            className="w-12 h-8 rounded-sm cursor-pointer"
             onClick={() => setShowPrompt(true)}
           />
           {showPrompt && (

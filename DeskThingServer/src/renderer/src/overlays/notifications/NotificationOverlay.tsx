@@ -63,7 +63,7 @@ const NotificationOverlay: React.FC = () => {
             className="relative"
           >
             {notifState.requestQueue.length > 0 && (
-              <div className="absolute inset-0 rounded w-full h-full animate-pulse border-2 border-blue-500"></div>
+              <div className="absolute inset-0 rounded-sm w-full h-full animate-pulse border-2 border-blue-500"></div>
             )}
           </NavComponent>
           <NavComponent

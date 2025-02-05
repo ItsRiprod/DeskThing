@@ -35,7 +35,7 @@ const AvailableKeys: React.FC<AvailableKeysProps> = ({
   }, [KeyList, keys])
 
   return (
-    <div className="absolute flex-shrink-0 h-full w-fit right-0 md:relative">
+    <div className="absolute shrink-0 h-full w-fit right-0 md:relative">
       <div
         className={`${actionsExpanded ? 'w-48 ' : 'w-0'} transition-[width] md:w-64 border-l border-gray-700 relative h-full`}
       >

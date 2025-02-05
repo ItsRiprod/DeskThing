@@ -73,7 +73,7 @@ const AppsList: React.FC = () => {
         <div className="flex flex-col gap-2">
           <Button onClick={handleDownloadsNav}>
             <IconDownload strokeWidth={1.5} />
-            <p className="xs:hidden md:block block text-center flex-grow">Download</p>
+            <p className="xs:hidden md:block block text-center grow">Download</p>
           </Button>
         </div>
       </Sidebar>
@@ -113,7 +113,7 @@ const AppsList: React.FC = () => {
                   onClick={handleDownloadsNav}
                   className="bg-zinc-900 gap-2 hover:bg-zinc-800"
                 >
-                  <p className="md:block hidden text-center flex-grow">Downloads Page</p>
+                  <p className="md:block hidden text-center grow">Downloads Page</p>
                   <IconLink strokeWidth={1.5} />
                 </Button>
               </div>

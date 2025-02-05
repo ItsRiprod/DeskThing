@@ -146,7 +146,7 @@ const ClientDownloads: React.FC = () => {
 
                   return (
                     <div
-                      className="flex flex-row justify-between items-center bg-zinc-900 px-3 p-2 rounded"
+                      className="flex flex-row justify-between items-center bg-zinc-900 px-3 p-2 rounded-sm"
                       key={index}
                     >
                       <div className="">
@@ -169,7 +169,7 @@ const ClientDownloads: React.FC = () => {
                           className="group gap-2"
                           onClick={() => handleDownloadClick(release.browser_download_url)}
                         >
-                          <p className="group-hover:block hidden text-center flex-grow">
+                          <p className="group-hover:block hidden text-center grow">
                             Download {fileSize}
                           </p>
                           <IconDownload className="group-hover:stroke-2 stroke-1" />
@@ -205,14 +205,14 @@ const ClientDownloads: React.FC = () => {
             disabled={clientRefreshing}
           >
             <IconRefresh className={`stroke-2 ${clientRefreshing ? 'animate-spin' : ''}`} />
-            <p className="md:block xs:hidden text-center flex-grow">Refresh Client</p>
+            <p className="md:block xs:hidden text-center grow">Refresh Client</p>
           </Button>
         </div>
         <div>
           <div className="flex flex-col md:items-stretch xs:items-center gap-2">
             <Button className="hover:bg-zinc-900" onClick={openClientSettings}>
               <IconGear strokeWidth={1.5} />
-              <p className="md:block xs:hidden text-center flex-grow">Client Settings</p>
+              <p className="md:block xs:hidden text-center grow">Client Settings</p>
             </Button>
             <Button
               onClick={handleUploadClick}
@@ -220,11 +220,11 @@ const ClientDownloads: React.FC = () => {
               disabled={selectingFile}
             >
               {selectingFile ? <IconLoading /> : <IconUpload strokeWidth={1.5} />}
-              <p className="md:block xs:hidden text-center flex-grow">Upload Client</p>
+              <p className="md:block xs:hidden text-center grow">Upload Client</p>
             </Button>
             <Button onClick={gotoAppDownloads} className="hover:bg-zinc-900">
               <IconLink strokeWidth={1.5} />
-              <p className="md:block xs:hidden text-center flex-grow">Apps</p>
+              <p className="md:block xs:hidden text-center grow">Apps</p>
             </Button>
           </div>
         </div>
@@ -252,7 +252,7 @@ const ClientDownloads: React.FC = () => {
                       onClick={() => handleDownloadLatestClick(name)}
                       disabled={loading}
                     >
-                      <p className="group-hover:block hidden text-center flex-grow">
+                      <p className="group-hover:block hidden text-center grow">
                         Download Latest
                       </p>
                       {loading ? (
@@ -266,7 +266,7 @@ const ClientDownloads: React.FC = () => {
                       onClick={() => handleMoreDownloadsClick(name)}
                       disabled={loading}
                     >
-                      <p className="group-hover:block hidden text-center flex-grow">
+                      <p className="group-hover:block hidden text-center grow">
                         More Downloads
                       </p>
                       <IconLogs className="group-hover:stroke-2 stroke-1" />
