@@ -26,14 +26,16 @@ const Steps: StepComponents = {
 
 type DebugComponentProps = {
   debugStep: DebugStep
+  source: string
 }
 
-export const DebugComponent = ({ debugStep }: DebugComponentProps): JSX.Element => {
+export const DebugComponent = ({ debugStep, source }: DebugComponentProps): JSX.Element => {
   const CurrentStepComponent = Steps[debugStep.type]
 
   return (
     <div className="">
       <CurrentStepComponent
+        source={source}
         step={{ ...debugStep, debug: true, completed: false, strict: true } as Step}
       />
     </div>

@@ -11,14 +11,31 @@ import Logger from '@server/utils/logger'
 import { MESSAGE_TYPES } from '@shared/types'
 import appStore from './appStore'
 
-type taskStoreListener = (taskList: TaskList) => void
+type TaskStoreEvents = {
+  taskList: TaskList
+  step: { source: string; taskId: string; step: Step }
+  task: Task | TaskReference
+}
+
+// Create listener types automatically from event map
+type Listener<T> = (payload: T) => void
+type TaskStoreListener<K extends keyof TaskStoreEvents> = Listener<TaskStoreEvents[K]>
+
+// Create listeners collection type automatically
+type TaskStoreListeners = {
+  [K in keyof TaskStoreEvents]: TaskStoreListener<K>[]
+}
 
 class TaskStore {
   private saveTimeout: NodeJS.Timeout | null = null
   private readonly SAVE_DELAY = 100 // Delay a second before saving to file
   private static instance: TaskStore
   private taskList: TaskList = { tasks: {}, version: '', currentTaskId: '' }
-  private listeners: taskStoreListener[] = []
+  private listeners: TaskStoreListeners = {
+    taskList: [],
+    step: [],
+    task: []
+  }
   private saveAgain = false
 
   private constructor() {
@@ -52,17 +69,25 @@ class TaskStore {
     return TaskStore.instance
   }
 
-  private async notifyListeners(): Promise<void> {
-    await Promise.all(this.listeners.map((listener) => listener(this.taskList)))
+  /**
+   * Notifies all of the taskList listeners
+   */
+  private async notify<K extends keyof TaskStoreEvents>(
+    type: K,
+    payload: TaskStoreEvents[K]
+  ): Promise<void> {
+    await Promise.all(this.listeners[type].map((listener) => listener(payload)))
   }
 
-  on(listener: taskStoreListener): () => void {
-    this.listeners.push(listener)
-    return () => this.off(listener)
+  on<K extends keyof TaskStoreEvents>(type: K, listener: TaskStoreListener<K>): () => void {
+    this.listeners[type].push(listener)
+    return () => this.off(type, listener)
   }
 
-  off(listener: taskStoreListener): void {
-    this.listeners = this.listeners.filter((l) => l !== listener)
+  off<K extends keyof TaskStoreEvents>(type: K, listener: TaskStoreListener<K>): void {
+    this.listeners[type] = this.listeners[type].filter(
+      (l) => l !== listener
+    ) as TaskStoreListeners[K]
   }
 
   private fetchTask = async (taskReference: TaskReference | Task): Promise<Task | undefined> => {
@@ -78,15 +103,15 @@ class TaskStore {
 
       const task = tasks[taskReference.id]
 
-      const validity = isValidTask(task)
-      if (!task || !validity.isValid) {
+      try {
+        isValidTask(task)
+        return task
+      } catch (error) {
         Logger.warn(`Task ${taskReference.id} is invalid`, {
           function: 'fetchTask',
           source: 'taskStore'
         })
         return
-      } else {
-        return task
       }
     } catch (error) {
       Logger.error(`Failed to fetch task ${taskReference.id}`, {
@@ -97,21 +122,24 @@ class TaskStore {
       return
     }
   }
-
   private fetchTaskList = async (): Promise<TaskList> => {
     const taskList = await readFromFile<TaskList>('tasks.json')
 
     if (!taskList) {
-      Logger.warn('[fetchTaskList]: Failed to fetch tasks!')
+      Logger.error('[fetchTaskList]: Failed to fetch tasks!', {
+        function: 'fetchTaskList',
+        source: 'taskStore'
+      })
       return defaultTaskList
     }
 
-    const validity = isValidTaskList(taskList)
-
-    if (taskList && validity.isValid) {
+    try {
+      isValidTaskList(taskList)
       return taskList
-    } else {
-      Logger.warn('[fetchTaskList]: Failed to fetch tasks! ' + validity.error)
+    } catch (error) {
+      Logger.warn('[fetchTaskList]: Failed to fetch tasks! ', {
+        error: error as Error
+      })
       // Return the default task data
       try {
         await writeToFile(defaultTaskList, 'tasks.json')
@@ -127,8 +155,13 @@ class TaskStore {
   }
 
   public async getTaskList(): Promise<TaskList> {
-    if (this.taskList && isValidTaskList(this.taskList).isValid) {
-      return sanitizeTaskList(this.taskList)
+    if (this.taskList) {
+      try {
+        isValidTaskList(this.taskList)
+        return sanitizeTaskList(this.taskList)
+      } catch (error) {
+        return await this.fetchTaskList()
+      }
     }
     return await this.fetchTaskList()
   }
@@ -136,14 +169,10 @@ class TaskStore {
   public async saveTaskList(): Promise<void> {
     Logger.info('[saveTaskList] Saving the task list!')
     try {
-      if (isValidTaskList(this.taskList).isValid) {
-        await writeToFile(this.taskList, 'tasks.json')
-        this.notifyListeners()
-        return
-      } else {
-        Logger.error('[saveTaskList]: Failed to save tasks!')
-        return
-      }
+      isValidTaskList(this.taskList)
+      await writeToFile(this.taskList, 'tasks.json')
+      this.notify('taskList', this.taskList)
+      return
     } catch (error) {
       Logger.error('Failed to save tasks! ', {
         error: error as Error,
@@ -155,7 +184,6 @@ class TaskStore {
       this.taskList = await this.fetchTaskList()
     }
   }
-
   private debouncedSave(): void {
     if (!this.saveTimeout) {
       this.saveTaskList()
@@ -187,13 +215,56 @@ class TaskStore {
     return this.taskList.currentTaskId
   }
 
+  public async getStep(taskId: string, stepId: string): Promise<Step | undefined> {
+    let task = this.getTask(taskId)
+    if (!task) {
+      Logger.warn(`[getStep]: Task ${taskId} does not exist`)
+      return
+    }
+    if (!task.started) {
+      task = await this.fetchTask(task)
+    }
+    return task?.steps[stepId]
+  }
+
   /**
    * Task Management
    */
 
   public async addTask(task: Task): Promise<void> {
-    this.taskList.tasks[task.id] = task
-    this.debouncedSave()
+    try {
+      isValidTask(task)
+      this.taskList.tasks[task.id] = task
+      this.debouncedSave()
+    } catch (error) {
+      Logger.error(`Error trying to add task ${task.id}`, {
+        error: error as Error,
+        function: 'addTask',
+        source: 'taskStore'
+      })
+    }
+  }
+
+  public async addTasks(tasks: Record<string, Task>): Promise<void> {
+    const validTasks: Record<string, Task> = {}
+
+    for (const [id, task] of Object.entries(tasks)) {
+      try {
+        isValidTask(task)
+        validTasks[id] = task
+      } catch (error) {
+        Logger.error(`Error trying to add task ${task.id}`, {
+          error: error as Error,
+          function: 'addTask',
+          source: 'taskStore'
+        })
+      }
+    }
+
+    if (Object.keys(validTasks).length > 0) {
+      this.taskList.tasks = { ...this.taskList.tasks, ...validTasks }
+      this.debouncedSave()
+    }
   }
 
   async updateTask(newTask: Partial<Task>): Promise<void> {
@@ -205,9 +276,12 @@ class TaskStore {
 
     if (!task) {
       Logger.warn(`[updateTask]: Task ${newTask.id} does not exist`)
-      if (isValidTask(newTask).isValid) {
+      try {
+        isValidTask(newTask)
         Logger.log(MESSAGE_TYPES.LOGGING, `[updateTask]: Adding task ${newTask.id} as it is new`)
         this.addTask(newTask as Task)
+      } catch (error) {
+        Logger.warn(`[updateTask]: Invalid task ${newTask.id}`, { error: error as Error })
       }
       return
     }
@@ -255,6 +329,8 @@ class TaskStore {
 
     this.taskList.tasks[taskId] = task
 
+    this.notify('task', task)
+
     this.debouncedSave()
   }
 
@@ -272,6 +348,9 @@ class TaskStore {
       task.currentStep = undefined
     }
     this.taskList.tasks[taskId] = task
+
+    this.notify('task', task)
+
     this.stopTask(taskId) // saves it too
   }
 
@@ -394,14 +473,14 @@ class TaskStore {
     Logger.log(MESSAGE_TYPES.LOGGING, `[updateStep]: Updating step ${newStep.id}`)
 
     Object.assign(step, newStep)
-    if (isValidStep(newStep).isValid) {
+    try {
+      isValidStep(newStep)
       this.taskList.tasks[taskId] = task
       this.debouncedSave()
-    } else {
-      Logger.warn(`[updateStep]: Step ${newStep.id} is invalid`)
+    } catch (error) {
+      Logger.warn(`[updateStep]: Step ${newStep.id} is invalid`, { error: error as Error })
     }
   }
-
   async deleteStep(taskId: string, stepId: string): Promise<void> {
     let task = this.getTask(taskId)
     if (!task) {
@@ -630,8 +709,10 @@ class TaskStore {
     if (task.source != 'server') {
       appStore.completeStep(task, stepId)
     }
-    // Potentially handle server action resolutions
 
+    this.notify('step', { taskId: task.id, source: task.source, step: task.steps[stepId] })
+
+    // Potentially handle server action resolutions
     const allStepsCompleted = Object.values(task.steps).every((step) => step.completed)
 
     if (allStepsCompleted) {

@@ -4,7 +4,7 @@ import { execFile } from 'child_process'
 import getPlatform from '@server/utils/get-platform'
 import Logger from '@server/utils/logger'
 import settingsStore from '../stores/settingsStore'
-import { ReplyFn, MESSAGE_TYPES } from '@shared/types'
+import { ReplyFn } from '@shared/types'
 
 const isDevelopment = process.env.NODE_ENV === 'development'
 const execPath = isDevelopment
@@ -55,8 +55,12 @@ export const handleAdbCommands = async (command: string, replyFn?: ReplyFn): Pro
               final: false,
               error: stderr
             })
-          Logger.log(MESSAGE_TYPES.ERROR, `ADB Error: ${stderr}, ${command}, ${adbPath}`)
-          reject(`ADB Error: ${stderr}, ${command}, ${adbPath}`)
+          Logger.error(`ADB Error: ${stderr}, ${command}, ${adbPath}`, {
+            error: error as Error,
+            function: 'adbHandler',
+            source: 'adbHandler'
+          })
+          reject(new Error(`ADB Error: ${stderr}, ${command}, ${adbPath}`))
         } else {
           replyFn &&
             replyFn('logging', {

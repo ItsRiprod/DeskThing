@@ -7,9 +7,11 @@ import Button from './Button'
 import Select from './Select'
 
 const ActionElement = ({
-  action: actionOrRef
+  action: actionOrRef,
+  onTrigger
 }: {
   action: Action | ActionReference
+  onTrigger?: (val?: string) => void
 }): JSX.Element => {
   const getAction = useMappingStore((state) => state.getActionFromReference)
   const runAction = useMappingStore((state) => state.executeAction)
@@ -26,6 +28,7 @@ const ActionElement = ({
   }
   const handleRunAction = (): void => {
     runAction(action)
+    onTrigger && onTrigger(action.value)
   }
 
   return (

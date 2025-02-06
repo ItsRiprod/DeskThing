@@ -401,7 +401,7 @@ async function setupIpcHandlers(): Promise<void> {
       })
     })
 
-    taskStore.on((taskList) => {
+    taskStore.on('taskList', (taskList) => {
       sendIpcData({
         type: 'taskList',
         payload: taskList

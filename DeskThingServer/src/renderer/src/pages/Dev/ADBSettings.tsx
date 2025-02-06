@@ -22,15 +22,17 @@ const ADBSettings: React.FC = () => {
   const sendCommand = async (): Promise<void> => {
     setLoading(true)
     setPastCommands((prev) => (prev.includes(inputValue) ? prev : [...prev, inputValue]))
+    setResponse('Sending Command...')
 
     if (commandType == 'adb') {
-      const adbCommand = `${adbDevice.length > 0 ? ' -s ' + adbDevice : ''} ${inputValue.trim()}`
+      const adbCommand = `${adbDevice.length > 0 && adbDevice != 'None' ? ' -s ' + adbDevice : ''} ${inputValue.trim()}`
 
       const response = await window.electron.handleClientADB(adbCommand)
 
       setResponse(response)
+    } else {
+      setResponse(`${commandType} Not Supported`)
     }
-    setResponse('Not Supported')
     setLoading(false)
   }
 
@@ -112,7 +114,7 @@ const ADBSettings: React.FC = () => {
                   {device}
                 </option>
               ))}
-              <option value="">None</option>
+              <option value="None">None</option>
             </select>
           </div>
           <div className="flex flex-col w-full sm:flex-row gap-2">
@@ -121,6 +123,11 @@ const ADBSettings: React.FC = () => {
               className="p-2 rounded text-black w-full"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  sendCommand()
+                }
+              }}
             />
             <Button
               className="text-nowrap border group border-cyan-500 hover:bg-cyan-500"

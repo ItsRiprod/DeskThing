@@ -18,6 +18,7 @@ export type TaskProps = {
 
 export type StepProps = {
   step: Step
+  source: string
 }
 
 type StepComponent = FC<StepProps>
@@ -78,7 +79,7 @@ export const TaskBase: FC<TaskProps> = memo(
           <div className="flex flex-col gap-2 px-2">
             {Object.entries(debugging).map(([key, debug]) => (
               <Suspense key={key} fallback={<IconLoading />}>
-                <DebugComponent debugStep={debug} />
+                <DebugComponent debugStep={debug} source={task.source} />
               </Suspense>
             ))}
           </div>
@@ -115,7 +116,7 @@ export const TaskBase: FC<TaskProps> = memo(
               <div className="flex gap-4 flex-col">
                 <Suspense fallback={<IconLoading />}>
                   {currentStep ? (
-                    StepComponent && <StepComponent step={currentStep} />
+                    StepComponent && <StepComponent source={task.source} step={currentStep} />
                   ) : (
                     <>
                       <p>No step selected</p>

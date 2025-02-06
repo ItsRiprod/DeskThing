@@ -4,8 +4,70 @@
  */
 import { app } from 'electron'
 import { join } from 'path'
-import fs from 'fs'
+import fs from 'node:fs'
 import Logger from '@server/utils/logger'
+
+class FileOperationQueue {
+  private queues: Map<string, Array<() => Promise<void>>> = new Map()
+  private processingQueues: Set<string> = new Set()
+  private retryDelay = 100
+  private maxRetries = 3
+
+  private async processQueue(queueId: string): Promise<void> {
+    if (this.processingQueues.has(queueId) || !this.queues.get(queueId)?.length) return
+
+    this.processingQueues.add(queueId)
+    const queue = this.queues.get(queueId)!
+    const operation = queue.shift()
+
+    if (operation) {
+      let retries = 0
+      while (retries < this.maxRetries) {
+        try {
+          await operation()
+          break
+        } catch (error) {
+          retries++
+          if (retries === this.maxRetries) {
+            Logger.error(`Failed to process operation after ${this.maxRetries} retries`, {
+              error: error as Error,
+              function: 'processQueue',
+              source: 'FileHandler'
+            })
+            break
+          }
+          await new Promise((resolve) => setTimeout(resolve, this.retryDelay))
+        }
+      }
+    }
+
+    this.processingQueues.delete(queueId)
+    if (queue.length === 0) {
+      this.queues.delete(queueId)
+    } else {
+      this.processQueue(queueId)
+    }
+  }
+
+  public enqueue<T>(queueId: string, operation: () => Promise<T>): Promise<T> {
+    return new Promise((resolve, reject) => {
+      if (!this.queues.has(queueId)) {
+        this.queues.set(queueId, [])
+      }
+
+      this.queues.get(queueId)!.push(async () => {
+        try {
+          const result = await operation()
+          resolve(result)
+        } catch (err) {
+          reject(err)
+        }
+      })
+      this.processQueue(queueId)
+    })
+  }
+}
+const fileQueue = new FileOperationQueue()
 
 /**
  * Reads data from a file in the user's application data directory.
@@ -14,23 +76,25 @@ import Logger from '@server/utils/logger'
  * @returns The parsed data from the file, or `false` if the file does not exist or an error occurs.
  */
 export const readFromFile = async <T>(filename: string): Promise<T | false> => {
-  const dataFilePath = join(app.getPath('userData'), filename)
-  try {
+  return fileQueue.enqueue(filename, async () => {
+    const dataFilePath = join(app.getPath('userData'), filename)
     try {
-      await fs.promises.access(dataFilePath)
-    } catch (err) {
-      throw new Error('[readFromFile]: File does not exist or do not have access', { cause: err })
-    }
+      try {
+        await fs.promises.access(dataFilePath)
+      } catch (err) {
+        throw new Error('[readFromFile]: File does not exist or do not have access', { cause: err })
+      }
 
-    const rawData = await fs.promises.readFile(dataFilePath)
-    return JSON.parse(rawData.toString())
-  } catch (err) {
-    Logger.error('Error reading data', {
-      error: err as Error,
-      source: 'readFromFile'
-    })
-    throw new Error('[readFromFile]: Error reading data', { cause: err })
-  }
+      const rawData = await fs.promises.readFile(dataFilePath)
+      return JSON.parse(rawData.toString())
+    } catch (err) {
+      Logger.error('Error reading data', {
+        error: err as Error,
+        source: 'readFromFile'
+      })
+      throw new Error('[readFromFile]: Error reading data', { cause: err })
+    }
+  })
 }
 
 /**
@@ -42,33 +106,69 @@ export const readFromFile = async <T>(filename: string): Promise<T | false> => {
  * @throws - error when it fails
  */
 export const writeToFile = async <T>(data: T, filepath: string): Promise<void> => {
-  const uniqueId = `${Date.now()}-${Math.random().toString(36).slice(2)}`
-  const tempPath = join(app.getPath('temp'), `${filepath}-${uniqueId}.tmp`)
-  const tempDir = join(app.getPath('temp'), ...filepath.split(/[/\\]/).slice(0, -1))
-  const finalPath = join(app.getPath('userData'), filepath)
-  const dirPath = join(app.getPath('userData'), ...filepath.split(/[/\\]/).slice(0, -1))
+  return fileQueue.enqueue(filepath, async () => {
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const tempPath = join(app.getPath('temp'), `${filepath}-${uniqueId}.tmp`)
+    const tempDir = join(app.getPath('temp'), ...filepath.split(/[/\\]/).slice(0, -1))
+    const finalPath = join(app.getPath('userData'), filepath)
+    const dirPath = join(app.getPath('userData'), ...filepath.split(/[/\\]/).slice(0, -1))
 
-  try {
-    await Promise.all([
-      fs.promises.mkdir(tempDir, { recursive: true }),
-      fs.promises.mkdir(dirPath, { recursive: true })
-    ])
+    try {
+      await fs.promises.mkdir(tempDir, { recursive: true })
 
-    await fs.promises.writeFile(tempPath, JSON.stringify(data, null, 2))
-    await fs.promises.copyFile(tempPath, finalPath)
-    await fs.promises.unlink(tempPath)
-  } catch (err) {
-    Logger.error('Error writing data', {
-      error: err as Error,
-      source: 'writeToFile'
-    })
-    throw new Error('[writeToFile]: failed with ' + { source: err })
-  } finally {
-    await Promise.allSettled([
-      fs.promises.rm(tempPath, { force: true }),
-      fs.promises.rm(tempDir, { force: true, recursive: true })
-    ])
-  }
+      await fs.promises.mkdir(dirPath, { recursive: true })
+
+      await fs.promises.writeFile(tempPath, JSON.stringify(data, null, 2))
+
+      await fs.promises.access(tempPath)
+
+      await fs.promises.copyFile(tempPath, finalPath)
+
+      await fs.promises.access(finalPath)
+
+      const exists = await fs.promises
+        .access(tempPath)
+        .then(() => true)
+        .catch(() => false)
+      if (exists) {
+        await fs.promises.unlink(tempPath)
+      }
+    } catch (err) {
+      Logger.error('Error writing data', {
+        error: err as Error,
+        source: 'writeToFile'
+      })
+      throw new Error('[writeToFile]: failed with ', { cause: err })
+    } finally {
+      try {
+        await Promise.allSettled([
+          fs.promises.rm(tempPath, { force: true }),
+          fs.promises.rm(tempDir, { force: true, recursive: true })
+        ])
+      } catch (err) {
+        Logger.error('Error deleting temp files', {
+          error: err as Error,
+          source: 'writeToFile'
+        })
+      }
+    }
+  })
+}
+
+export const addToFile = async (data: string | Buffer, filepath: string): Promise<void> => {
+  return fileQueue.enqueue(filepath, async () => {
+    const fullPath = join(app.getPath('userData'), filepath)
+    const dirPath = join(app.getPath('userData'), ...filepath.split(/[/\\]/).slice(0, -1))
+
+    try {
+      await fs.promises.mkdir(dirPath, { recursive: true })
+
+      const content = typeof data === 'string' ? data : data.toString()
+      await fs.promises.appendFile(fullPath, content + '\n')
+    } catch (err) {
+      throw new Error('[addToFile]: failed with ' + { source: err })
+    }
+  })
 }
 
 /**
@@ -91,20 +191,21 @@ export const writeToGlobalFile = async <T>(data: T, filepath: string): Promise<v
  * @returns The parsed data from the file, or `false` if the file does not exist or an error occurs.
  */
 export const readFromGlobalFile = async <T>(filename: string): Promise<T | false> => {
-  const dataFilePath = join(app.getPath('userData'), filename)
-  try {
-    if (!fs.existsSync(dataFilePath)) {
-      // File does not exist, create it with default data
+  return fileQueue.enqueue(filename, async () => {
+    const dataFilePath = join(app.getPath('userData'), filename)
+    try {
+      if (!fs.existsSync(dataFilePath)) {
+        // File does not exist, create it with default data
+        return false
+      }
+      const rawData = await fs.promises.readFile(dataFilePath)
+      return JSON.parse(rawData.toString())
+    } catch (err) {
+      console.error('Error reading data:', err)
       return false
     }
-    const rawData = await fs.promises.readFile(dataFilePath)
-    return JSON.parse(rawData.toString())
-  } catch (err) {
-    console.error('Error reading data:', err)
-    return false
-  }
+  })
 }
-
 /**
  * Deletes a file from the user's application data directory.
  *
@@ -116,35 +217,36 @@ export const readFromGlobalFile = async <T>(filename: string): Promise<T | false
  * @param filename - The name of the file to delete.
  * @returns `true` if the deletion was successful, `false` if the file doesn't exist or an error occurs.
  */
-export const deleteFile = async (filename: string): Promise<boolean> => {
+export const deleteFile = async (filename: string): Promise<void> => {
   if (!filename || typeof filename !== 'string') {
-    console.error('[deleteFile] Invalid filename provided')
-    return false
+    throw new Error('[deleteFile] Invalid filename provided')
   }
 
-  const filePath = join(app.getPath('userData'), filename)
+  return fileQueue.enqueue(filename, async () => {
+    const filePath = join(app.getPath('userData'), filename)
 
-  try {
-    const fileStats = await fs.promises.stat(filePath)
-    if (!fileStats.isFile()) {
-      console.error('[deleteFile] Path exists but is not a file:', filePath)
-      return false
+    try {
+      const fileStats = await fs.promises.stat(filePath)
+      if (!fileStats.isFile()) {
+        throw new Error('[deleteFile] Path exists but is not a file: ' + filePath)
+      }
+
+      await fs.promises.unlink(filePath)
+    } catch (error: unknown) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === 'ENOENT'
+      ) {
+        throw new Error('[deleteFile] File does not exist: ' + filePath)
+      }
+
+      if (error instanceof Error) {
+        throw new Error('[deleteFile] Error deleting file: ' + error.message)
+      } else {
+        throw new Error('[deleteFile] Unknown error deleting file: ', { cause: error })
+      }
     }
-
-    await fs.promises.unlink(filePath)
-    return true
-  } catch (error: unknown) {
-    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT') {
-      // File doesn't exist, which is an acceptable state
-      return false
-    }
-
-    if (error instanceof Error) {
-      console.error('[deleteFile] Error deleting file:', error.message)
-    } else {
-      console.error('[deleteFile] Unknown error deleting file:', error)
-    }
-
-    return false
-  }
+  })
 }

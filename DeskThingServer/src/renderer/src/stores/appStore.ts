@@ -25,8 +25,8 @@ interface AppStoreState {
   stopApp: (appName: string) => void
   runApp: (appName: string) => void
   enableApp: (appName: string) => void
-  getAppData: (appName: string) => Promise<{ [key: string]: string } | null>
-  setAppData: (appName: string, data: { [key: string]: string }) => void
+  getAppData: (appName: string) => Promise<Record<string, string> | null>
+  setAppData: (appName: string, data: Record<string, string>) => void
   getAppSettings: (appName: string) => Promise<AppSettings | null>
   setAppSettings: (appName: string, settings: AppSettings) => void
   setAppList: (apps: App[]) => void
@@ -146,11 +146,11 @@ const useAppStore = create<AppStoreState>((set, get) => ({
     }))
   },
 
-  getAppData: async (appName: string): Promise<{ [key: string]: string } | null> => {
+  getAppData: async (appName: string): Promise<Record<string, string> | null> => {
     return await window.electron.getAppData(appName)
   },
 
-  setAppData: (appName: string, data: { [key: string]: string }): void => {
+  setAppData: (appName: string, data: Record<string, string>): void => {
     window.electron.setAppData(appName, data)
   },
 

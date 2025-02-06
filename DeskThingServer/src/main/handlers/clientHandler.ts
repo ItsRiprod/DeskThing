@@ -59,9 +59,30 @@ export const clientHandler: Record<
   adb: async (data, replyFn) => {
     replyFn('logging', { status: true, data: 'Working', final: false })
 
-    const response = await handleAdbCommands(data.payload, replyFn)
-    replyFn('logging', { status: true, data: response, final: true })
-    return response
+    try {
+      const response = await handleAdbCommands(data.payload, replyFn)
+      Logger.info(`adb response: ${response}`, {
+        function: 'handle adb',
+        source: 'clientHandler'
+      })
+      replyFn('logging', { status: true, data: response, final: true })
+      return response
+    } catch (error) {
+      Logger.error(`Error handling adb commands`, {
+        function: 'handleAdbCommands',
+        source: 'clientHandler',
+        error: error as Error
+      })
+      if (error instanceof Error) {
+        return error.message
+      } else if (error instanceof String) {
+        return String(error)
+      } else if (error instanceof Object) {
+        return JSON.stringify(error)
+      } else {
+        return 'Unknown error'
+      }
+    }
   },
   configure: async (data, replyFn) => {
     replyFn('logging', { status: true, data: 'Configuring Device', final: false })

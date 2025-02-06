@@ -20,9 +20,11 @@ import {
   Profile,
   Settings,
   SocketData,
-  AppManifest
+  AppManifest,
+  Step,
+  TaskList,
+  Task
 } from '@shared/types'
-import { TaskList } from '@shared/types/tasks'
 
 // Custom APIs for renderer
 const api = {
@@ -46,7 +48,7 @@ const api = {
       payload: appId
     }),
 
-  setAppData: async (appId: string, data: { [key: string]: string }): Promise<void> =>
+  setAppData: async (appId: string, data: Record<string, string>): Promise<void> =>
     await sendCommand('APPS', {
       kind: 'app',
       type: 'data',
@@ -505,8 +507,7 @@ const api = {
       await sendCommand('UTILITY', {
         kind: 'utility',
         type: 'task',
-        request: 'get',
-        payload: ''
+        request: 'get'
       }),
 
     stopTask: async (taskId: string): Promise<void> =>
@@ -545,8 +546,7 @@ const api = {
       await sendCommand('UTILITY', {
         kind: 'utility',
         type: 'task',
-        request: 'pause',
-        payload: ''
+        request: 'pause'
       }),
 
     nextStep: async (taskId: string): Promise<void> =>
@@ -571,6 +571,22 @@ const api = {
         type: 'task',
         request: 'restart',
         payload: taskId
+      }),
+
+    updateStep: async (taskId: string, step: Partial<Step>): Promise<void> =>
+      await sendCommand('UTILITY', {
+        kind: 'utility',
+        type: 'task',
+        request: 'update-step',
+        payload: [taskId, step]
+      }),
+
+    updateTask: async (task: Partial<Task>): Promise<void> =>
+      await sendCommand('UTILITY', {
+        kind: 'utility',
+        type: 'task',
+        request: 'update-task',
+        payload: task
       })
   },
   update: {

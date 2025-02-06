@@ -21,11 +21,10 @@ interface SettingComponentProps {
 const SettingComponent = ({ setting, children, className }: SettingComponentProps): JSX.Element => {
   return (
     <div
-      className={`py-3 shrink-0 flex items-center hover:bg-zinc-950 justify-between w-full border-t relative border-gray-900 ${className}`}
+      className={`py-3 shrink-0 flex items-center hover:bg-zinc-950/30 justify-between w-full relative ${className}`}
     >
       <div className="w-full flex-1">
         <div className="text-gray-500 font-geistMono absolute -top-2 inset flex justify-between w-full">
-          <p>{setting.type?.toUpperCase() || 'Legacy Setting'}</p>
           {setting.type === 'number' && (
             <p>
               MIN: {setting.min} | MAX: {setting.max}

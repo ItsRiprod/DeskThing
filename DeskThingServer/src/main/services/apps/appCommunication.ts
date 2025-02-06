@@ -6,10 +6,15 @@ import {
   FromAppData,
   Key,
   Action,
-  IncomingAppDataTypes
+  IncomingAppDataTypes,
+  AppSettings,
+  AppDataInterface
 } from '@shared/types'
 import Logger from '@server/utils/logger'
 import { ipcMain } from 'electron'
+import { isValidStep, isValidTask } from '../task'
+import { isValidKey } from '../mappings/utilsMaps'
+import { Task, TaskReference } from '@shared/types/tasks'
 
 type HandlerFunction = (app: string, appData: FromAppData) => Promise<void>
 
@@ -81,12 +86,14 @@ const handleRequestMissing: HandlerFunction = async (app: string, appData: FromA
 
 const handleRequestSetSettings: HandlerFunction = async (app, appData) => {
   const { appStore } = await import('@server/stores')
-  appStore.addSettings(app, appData.payload)
+  appStore.addSettings(app, appData.payload as AppSettings)
 }
 
 const handleRequestSetData: HandlerFunction = async (app, appData) => {
   const { appStore } = await import('@server/stores')
-  appStore.addData(app, appData.payload)
+  if (typeof appData.payload === 'object' && appData.payload !== null) {
+    appStore.addData(app, appData.payload as Record<string, string>)
+  }
 }
 
 /**
@@ -99,7 +106,7 @@ const handleRequestSetData: HandlerFunction = async (app, appData) => {
 const handleRequestSet: HandlerFunction = async (app: string, appData): Promise<void> => {
   const { appStore } = await import('@server/stores')
   if (!appData.payload) return
-  const { settings, ...data } = appData.payload
+  const { settings = undefined, data = undefined } = appData.payload as AppDataInterface
   data && appStore.addData(app, data)
   settings && appStore.addSettings(app, settings)
 }
@@ -110,9 +117,17 @@ const handleRequestSet: HandlerFunction = async (app: string, appData): Promise<
  * @param {any} appData - The payload data containing information for the authentication window.
  * @returns {Promise<void>} - A Promise that resolves when the authentication window has been opened.
  */
-const handleRequestOpen: HandlerFunction = async (_app, appData) => {
+const handleRequestOpen: HandlerFunction = async (app, appData) => {
   const { openAuthWindow } = await import('@server/index')
-  openAuthWindow(appData.payload)
+  if (typeof appData.payload == 'string') {
+    openAuthWindow(appData.payload)
+  } else {
+    Logger.warn('App sent invalid payload for openAuthWindow', {
+      source: 'appCommunication',
+      function: 'handleRequestOpen',
+      domain: app
+    })
+  }
 }
 
 /**
@@ -124,7 +139,13 @@ const handleRequestOpen: HandlerFunction = async (_app, appData) => {
  */
 const handleRequestLog: HandlerFunction = async (app, appData) => {
   if (appData.request && Object.values(MESSAGE_TYPES).includes(appData.request as MESSAGE_TYPES)) {
-    Logger.log(appData.request as MESSAGE_TYPES, appData.payload, { domain: app.toUpperCase() })
+    const message =
+      typeof appData.payload === 'string'
+        ? appData.payload
+        : typeof appData.payload === 'object'
+          ? JSON.stringify(appData.payload)
+          : String(appData.payload)
+    Logger.log(appData.request as MESSAGE_TYPES, message, { domain: app.toUpperCase() })
   } else {
     Logger.log(
       MESSAGE_TYPES.WARNING,
@@ -144,6 +165,7 @@ const handleRequestKeyAdd: HandlerFunction = async (app, appData): Promise<void>
   const { default: keyMapStore } = await import('@server/stores/mappingStore')
   try {
     if (appData.payload) {
+      isValidKey(appData.payload)
       Logger.log(
         MESSAGE_TYPES.LOGGING,
         `[handleDataFromApp] App ${app} is adding key ${appData.payload.id}`,
@@ -161,7 +183,12 @@ const handleRequestKeyAdd: HandlerFunction = async (app, appData): Promise<void>
       Logger.info(`${app.toUpperCase()}: Added Button Successfully`)
     }
   } catch (Error) {
-    Logger.log(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: ${Error}`)
+    Logger.error('Unable to add key', {
+      domain: app.toUpperCase(),
+      error: Error as Error,
+      function: 'handleRequestKeyAdd',
+      source: 'appCommunication'
+    })
   }
 }
 /**
@@ -173,12 +200,29 @@ const handleRequestKeyAdd: HandlerFunction = async (app, appData): Promise<void>
  */
 const handleRequestKeyRemove: HandlerFunction = async (app, appData): Promise<void> => {
   const { default: keyMapStore } = await import('@server/stores/mappingStore')
-  keyMapStore.removeKey(appData.payload.id)
-  Logger.log(
-    MESSAGE_TYPES.LOGGING,
-    `[handleDataFromApp] App ${app} is removing key ${appData.payload.id}`,
-    { domain: app.toUpperCase() }
-  )
+  if (!appData.payload || typeof appData.payload !== 'object') {
+    Logger.error('Invalid payload for key removal', {
+      domain: app.toUpperCase(),
+      function: 'handleRequestKeyRemove',
+      source: 'appCommunication'
+    })
+    return
+  }
+  const payload = appData.payload as Record<string, unknown>
+  if (typeof payload.id == 'string') {
+    keyMapStore.removeKey(payload.id)
+    Logger.log(
+      MESSAGE_TYPES.LOGGING,
+      `[handleDataFromApp] App ${app} is removing key ${payload.id}`,
+      { domain: app.toUpperCase() }
+    )
+  } else {
+    Logger.error('No ID found in payload (unable to add it)', {
+      domain: app.toUpperCase(),
+      function: 'handleRequestKeyRemove',
+      source: 'appCommunication'
+    })
+  }
 }
 /**
  * Handles a request to trigger a key in the key map store.
@@ -431,71 +475,233 @@ const handleRequestSendToApp: HandlerFunction = async (app, appData): Promise<vo
   }
 }
 
+const taskWrapper = (handler: HandlerFunction) => {
+  return async (app: string, appData: FromAppData): Promise<void> => {
+    try {
+      if (!appData.payload.taskId) {
+        Logger.info('Missing taskId', {
+          domain: app.toUpperCase(),
+          function: 'taskWrapper'
+        })
+        return
+      }
+      await handler(app, appData)
+    } catch (error) {
+      Logger.log(MESSAGE_TYPES.ERROR, `[handleAppData]: ${error}`)
+    }
+  }
+}
+
 // Tasks
-const handleRequestGetTask: HandlerFunction = async (app, appData): Promise<void> => {
-  const { taskStore } = await import('@server/stores')
+const handleRequestInitTasks: HandlerFunction = async (app, appData): Promise<void> => {
+  const { appStore } = await import('@server/stores')
+  const existingTasks = (await appStore.getTasks(app)) || {}
+
+  try {
+    const newTasks = Object.entries(appData.payload.tasks as Record<string, Task>).reduce<
+      Record<string, Task>
+    >((acc, [id, task]) => {
+      try {
+        isValidTask(task)
+        if (!existingTasks[id]) {
+          acc[id] = task
+        }
+        return acc
+      } catch (error) {
+        Logger.error(
+          `Error in handleRequestInitTasks. Unable to add task ${typeof task == 'object' ? JSON.stringify(task) : 'unknown'}`,
+          {
+            domain: app.toUpperCase(),
+            function: 'handleRequestInitTasks',
+            error: error as Error
+          }
+        )
+        return acc
+      }
+    }, {})
+
+    const mergedTasks = { ...existingTasks, ...newTasks }
+
+    const { sendMessageToClients } = await import('../client/clientCom')
+    sendMessageToClients({
+      app: app,
+      type: 'task',
+      payload: mergedTasks,
+      request: 'update'
+    })
+    appStore.setTasks(app, mergedTasks)
+  } catch (error) {
+    Logger.error('Error in handleRequestInitTasks', {
+      domain: app.toUpperCase(),
+      function: 'handleRequestInitTasks',
+      error: error as Error
+    })
+  }
 }
-const handleRequestSetTask: HandlerFunction = async (app, appData): Promise<void> => {
+
+const handleRequestGetTask: HandlerFunction = async (app): Promise<void> => {
   const { taskStore } = await import('@server/stores')
+  const tasks = taskStore.getTasksBySource(app)
+  if (tasks) {
+    const { sendMessageToClients } = await import('../client/clientCom')
+    Logger.fatal('FIX THIS: App return type for "get step" has not been finalized yet!', {
+      function: 'handleRequestGetStep',
+      source: 'appCommunication.ts'
+    })
+    const task: Record<string, Task | TaskReference> = Object.fromEntries(
+      tasks.map((task) => [task.id, task])
+    )
+    sendMessageToClients({
+      app: app,
+      type: 'task',
+      payload: task,
+      request: 'update'
+    })
+  }
 }
-const handleRequestDeleteTask: HandlerFunction = async (app, appData): Promise<void> => {
+const handleRequestUpdateTask: HandlerFunction = async (app, appData): Promise<void> => {
   const { taskStore } = await import('@server/stores')
+  if (!appData.payload.task || appData.payload.task.id) {
+    Logger.warn('Missing step or step id', {
+      domain: app.toUpperCase(),
+      function: 'handleRequestUpdateStep'
+    })
+    return
+  }
+  return taskStore.updateTask(appData.payload.task)
+}
+const handleRequestDeleteTask: HandlerFunction = async (_app, appData): Promise<void> => {
+  const { taskStore } = await import('@server/stores')
+  return taskStore.deleteTask(appData.payload.taskId)
 }
 const handleRequestAddTask: HandlerFunction = async (app, appData): Promise<void> => {
   const { taskStore } = await import('@server/stores')
+  try {
+    isValidTask(appData.payload.task)
+    return taskStore.addTask(appData.payload.task)
+  } catch (error) {
+    Logger.error(`Invalid task`, {
+      domain: app.toUpperCase(),
+      function: 'handleRequestAddTask',
+      error: error as Error
+    })
+  }
 }
-const handleRequestCompleteTask: HandlerFunction = async (app, appData): Promise<void> => {
+const handleRequestCompleteTask: HandlerFunction = async (_app, appData): Promise<void> => {
   const { taskStore } = await import('@server/stores')
+  return taskStore.completeTask(appData.payload.taskId)
 }
-const handleRequestRestartTask: HandlerFunction = async (app, appData): Promise<void> => {
+const handleRequestRestartTask: HandlerFunction = async (_app, appData): Promise<void> => {
   const { taskStore } = await import('@server/stores')
+  return taskStore.restartTask(appData.payload.taskId)
 }
-const handleRequestStartTask: HandlerFunction = async (app, appData): Promise<void> => {
+const handleRequestStartTask: HandlerFunction = async (_app, appData): Promise<void> => {
   const { taskStore } = await import('@server/stores')
+  return taskStore.startTask(appData.payload.taskId)
 }
-const handleRequestEndTask: HandlerFunction = async (app, appData): Promise<void> => {
+const handleRequestEndTask: HandlerFunction = async (_app, appData): Promise<void> => {
   const { taskStore } = await import('@server/stores')
+  return taskStore.stopTask(appData.payload.taskId)
+}
+
+const stepWrapper = (handler: HandlerFunction) => {
+  return async (app: string, appData: FromAppData): Promise<void> => {
+    try {
+      if (!appData.payload.taskId || !appData.payload.stepId) {
+        Logger.info('Missing taskId or stepId', {
+          domain: app.toUpperCase(),
+          function: 'stepWrapper'
+        })
+        return
+      }
+      await handler(app, appData)
+    } catch (error) {
+      Logger.log(MESSAGE_TYPES.ERROR, `[handleAppData]: ${error}`)
+    }
+  }
 }
 
 // Steps
 const handleRequestGetStep: HandlerFunction = async (app, appData): Promise<void> => {
   const { taskStore } = await import('@server/stores')
+  const step = await taskStore.getStep(appData.payload.taskId, appData.payload.stepId)
+  if (step) {
+    const { sendMessageToClients } = await import('../client/clientCom')
+    Logger.fatal('FIX THIS: App return type for "get step" has not been finalized yet!', {
+      function: 'handleRequestGetStep',
+      source: 'appCommunication.ts'
+    })
+    sendMessageToClients({
+      app: app,
+      type: 'task',
+      payload: step,
+      request: 'step'
+    })
+  }
 }
-const handleRequestSetStep: HandlerFunction = async (app, appData): Promise<void> => {
+const handleRequestUpdateStep: HandlerFunction = async (app, appData): Promise<void> => {
   const { taskStore } = await import('@server/stores')
+  if (!appData.payload.step || appData.payload.step.id) {
+    Logger.warn('Missing step or step id', {
+      domain: app.toUpperCase(),
+      function: 'handleRequestAddStep'
+    })
+    return
+  }
+  return taskStore.updateStep(appData.payload.taskId, appData.payload.step)
 }
-const handleRequestDeleteStep: HandlerFunction = async (app, appData): Promise<void> => {
+const handleRequestDeleteStep: HandlerFunction = async (_app, appData): Promise<void> => {
   const { taskStore } = await import('@server/stores')
+  return taskStore.deleteStep(appData.payload.taskId, appData.payload.stepId)
 }
 const handleRequestAddStep: HandlerFunction = async (app, appData): Promise<void> => {
   const { taskStore } = await import('@server/stores')
+  if (!appData.payload.step) {
+    Logger.warn('Missing step', {
+      domain: app.toUpperCase(),
+      function: 'handleRequestAddStep'
+    })
+    return
+  }
+  try {
+    isValidStep(appData.payload.step)
+    taskStore.addStep(appData.payload.taskId, appData.payload.step)
+  } catch (error) {
+    Logger.warn(`Unable to verify step: ${error}`, {
+      domain: app.toUpperCase(),
+      function: 'handleRequestAddStep'
+    })
+  }
 }
-const handleRequestCompleteStep: HandlerFunction = async (app, appData): Promise<void> => {
+const handleRequestCompleteStep: HandlerFunction = async (_app, appData): Promise<void> => {
   const { taskStore } = await import('@server/stores')
+  return taskStore.completeStep(appData.payload.taskId, appData.payload.stepId)
 }
-const handleRequestRestartStep: HandlerFunction = async (app, appData): Promise<void> => {
+const handleRequestRestartStep: HandlerFunction = async (_app, appData): Promise<void> => {
   const { taskStore } = await import('@server/stores')
+  return taskStore.restartStep(appData.payload.taskId, appData.payload.stepId)
 }
 
 const handleTask: RequestHandler = {
+  init: handleRequestInitTasks,
   get: handleRequestGetTask,
-  set: handleRequestSetTask,
-  delete: handleRequestDeleteTask,
+  update: taskWrapper(handleRequestUpdateTask),
+  delete: taskWrapper(handleRequestDeleteTask),
   add: handleRequestAddTask,
-  complete: handleRequestCompleteTask,
-  restart: handleRequestRestartTask,
-  start: handleRequestStartTask,
-  end: handleRequestEndTask,
-  default: handleRequestMissing
+  complete: taskWrapper(handleRequestCompleteTask),
+  restart: taskWrapper(handleRequestRestartTask),
+  start: taskWrapper(handleRequestStartTask),
+  end: taskWrapper(handleRequestEndTask),
+  default: taskWrapper(handleRequestMissing)
 }
 const handleStep: RequestHandler = {
-  get: handleRequestGetStep,
-  set: handleRequestSetStep,
-  delete: handleRequestDeleteStep,
-  add: handleRequestAddStep,
-  complete: handleRequestCompleteStep,
-  restart: handleRequestRestartStep,
-  default: handleRequestMissing
+  get: stepWrapper(handleRequestGetStep),
+  update: stepWrapper(handleRequestUpdateStep),
+  delete: stepWrapper(handleRequestDeleteStep),
+  add: taskWrapper(handleRequestAddStep),
+  complete: stepWrapper(handleRequestCompleteStep),
+  restart: stepWrapper(handleRequestRestartStep),
+  default: stepWrapper(handleRequestMissing)
 }
 const handleGet = {
   data: handleRequestGetData,

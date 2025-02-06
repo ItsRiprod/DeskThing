@@ -31,7 +31,7 @@ const Logs: React.FC = () => {
   const logContainerRef = useRef<HTMLDivElement>(null)
   const [autoScroll, setAutoScroll] = useState(true)
   const { reward, isAnimating } = useReward('rewardId', 'confetti')
-  const [hoveredLog, setHoveredLog] = useState<string | null>(null)
+  const [hoveredLog, setHoveredLog] = useState<Error | null>(null)
 
   const filteredLogs = useMemo(
     () => (filter ? logList.filter((log) => !filter || log.type === filter) : logList),
@@ -47,22 +47,6 @@ const Logs: React.FC = () => {
       logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight
     }
   }, [filteredLogs, autoScroll])
-
-  const LogItem = memo(({ log }: { log: Log; index: number }) => (
-    <li
-      className={`group text-sm hover:bg-zinc-900 items-center flex overflow-auto justify-between w-full font-geistMono break-words whitespace-pre-wrap ${
-        colorMap[log.type]
-      }`}
-      onClick={() => setHoveredLog(log.options?.error?.stack || null)}
-    >
-      <p className="break-words">{log.log}</p>
-      <div className="right-full pr-4 text-xs italic text-gray-600 group-hover:text-gray-300 text-nowrap flex flex-col items-end">
-        <p>[{new Date(log.options.date as string).toLocaleTimeString()}]</p>
-        <p>{`${log.options.source}${log.options.function && `.${log.options.function}`}`}</p>
-      </div>
-    </li>
-  ))
-  LogItem.displayName = 'LogItem'
 
   const handleLogsOpen = (): void => {
     window.electron.openLogsFolder()
@@ -85,7 +69,10 @@ const Logs: React.FC = () => {
         <div className="relative h-full overflow-auto">
           <p>
             {hoveredLog && (
-              <div className="absolute inset-0 text-xs text-gray-500 break-words">{hoveredLog}</div>
+              <div className="absolute inset-0">
+                <p className="text-xs text-gray-500 break-words">{hoveredLog.message}</p>
+                <p className="text-xs text-gray-500 break-words">{hoveredLog.stack}</p>
+              </div>
             )}
           </p>
         </div>
@@ -174,7 +161,11 @@ const Logs: React.FC = () => {
           {filteredLogs.length > 0 ? (
             <ul className="space-y-2">
               {filteredLogs.map((log, index) => (
-                <LogItem key={`${log.options.date}-${index}`} log={log} index={index} />
+                <LogItem
+                  key={`${log.options.date}-${index}`}
+                  log={log}
+                  setHoveredLog={setHoveredLog}
+                />
               ))}
             </ul>
           ) : (
@@ -187,6 +178,24 @@ const Logs: React.FC = () => {
     </div>
   )
 }
+
+const LogItem = memo(
+  ({ log, setHoveredLog }: { log: Log; setHoveredLog: (log: Error | null) => void }) => (
+    <li
+      className={`group text-sm hover:bg-zinc-900 items-center flex overflow-auto justify-between w-full font-geistMono break-words whitespace-pre-wrap ${
+        colorMap[log.type]
+      }`}
+      onClick={() => setHoveredLog(log.options?.error || null)}
+    >
+      <p className="break-words">{log.log}</p>
+      <div className="right-full pr-4 text-xs italic text-gray-600 group-hover:text-gray-300 text-nowrap flex flex-col items-end">
+        <p>[{new Date(log.options.date as string).toLocaleTimeString()}]</p>
+        <p>{`${log.options.source}${log.options.function && `.${log.options.function}`}`}</p>
+      </div>
+    </li>
+  )
+)
+LogItem.displayName = 'LogItem'
 
 Logs.displayName = 'Logs'
 

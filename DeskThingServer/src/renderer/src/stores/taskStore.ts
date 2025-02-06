@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { TaskList } from '@shared/types/tasks'
+import { Step, TaskList } from '@shared/types/tasks'
 
 interface NotificationStoreState {
   taskList: TaskList
@@ -16,6 +16,7 @@ interface NotificationStoreState {
   setTaskList: (taskList: TaskList) => Promise<void>
   nextStep: (taskId: string) => Promise<void>
   prevStep: (taskId: string) => Promise<void>
+  updateStep: (taskId: string, step: Partial<Step>) => Promise<void>
 }
 
 // Create Zustand store
@@ -71,6 +72,12 @@ const useTaskStore = create<NotificationStoreState>((set) => ({
     set(() => ({
       taskList: taskList
     }))
+  },
+
+  updateStep: async (taskId, step): Promise<void> => {
+    if (step.id) {
+      return window.electron.tasks.updateStep(taskId, step)
+    }
   }
 }))
 

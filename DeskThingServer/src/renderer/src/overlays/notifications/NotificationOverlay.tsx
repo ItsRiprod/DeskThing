@@ -14,7 +14,7 @@ import ErrorBoundary from '@renderer/components/ErrorBoundary'
 const NotificationOverlay: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const notifState = useNotificationStore((state) => state)
+  const notificationState = useNotificationStore((state) => state)
   const taskList = useTaskStore((state) => state.taskList.tasks)
   const page = searchParams.get('page') || 'event'
 
@@ -59,26 +59,26 @@ const NotificationOverlay: React.FC = () => {
             setPage={setPage}
             page="Event"
             curPage={page}
-            value={notifState.logs.length}
+            value={notificationState.logs.length}
             Icon={<IconLogs />}
           />
           <NavComponent
             setPage={setPage}
             page="Issue"
             curPage={page}
-            value={notifState.issues.length}
+            value={notificationState.issues.length}
             Icon={<IconWarning />}
-            className={notifState.issues.length > 0 ? 'bg-red-600' : ''}
+            className={notificationState.issues.length > 0 ? 'bg-red-600' : ''}
           />
           <NavComponent
             setPage={setPage}
             page="Request"
             curPage={page}
-            value={notifState.requestQueue.length}
+            value={notificationState.requestQueue.length}
             Icon={<IconBell />}
             className="relative"
           >
-            {notifState.requestQueue.length > 0 && (
+            {notificationState.requestQueue.length > 0 && (
               <div className="absolute inset-0 rounded w-full h-full animate-pulse border-2 border-blue-500"></div>
             )}
           </NavComponent>

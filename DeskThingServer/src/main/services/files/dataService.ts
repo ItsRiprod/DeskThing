@@ -13,6 +13,7 @@ console.log('[Data Handler] Starting')
 import { AppDataInterface } from '@shared/types'
 import { deleteFile, readFromFile, writeToFile } from '../../utils/fileHandler'
 import { join } from 'path'
+import logger from '@server/utils/logger'
 
 // Updated function to read Data using the new fileHandler
 const readAppData = async (name: string): Promise<AppDataInterface | undefined> => {
@@ -88,5 +89,13 @@ export const getData = async (app: string): Promise<AppDataInterface | undefined
 }
 
 export const purgeAppData = async (appName: string): Promise<void> => {
-  await deleteFile(join('data', `${appName}.json`))
+  try {
+    await deleteFile(join('data', `${appName}.json`))
+  } catch (error) {
+    logger.error('Error deleting app data:', {
+      error: error as Error,
+      function: 'purgeAppData',
+      source: 'dataService'
+    })
+  }
 }

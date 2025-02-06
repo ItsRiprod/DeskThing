@@ -9,7 +9,8 @@ import {
   ActionReference,
   Button,
   Profile,
-  ToAppData
+  ToAppData,
+  MappingFileStructure
 } from '@shared/types'
 import Logger from '@server/utils/logger'
 import { writeToFile } from '@server/utils/fileHandler'
@@ -20,7 +21,9 @@ import {
   FetchIcon,
   isValidAction,
   isValidActionReference,
-  isValidKey
+  isValidKey,
+  await validMappingExists,
+  isValidFileStructure
 } from '@server/services/mappings/utilsMaps'
 import { defaultProfile } from '@server/static/defaultMapping'
 
@@ -29,7 +32,7 @@ type ListeningTypes = 'key' | 'profile' | 'action' | 'update'
 type Listener = (data?: Key[] | ButtonMapping | Action[]) => void
 
 export class MappingState {
-  private _mappings: MappingStructure
+  private _mappings: MappingStructure | undefined
   private static instance: MappingState
   private listeners: Record<ListeningTypes, Set<Listener>> = {
     key: new Set(),
@@ -39,7 +42,6 @@ export class MappingState {
   }
 
   constructor() {
-    this._mappings = this.mappings
     this.fetchMappings()
   }
 
@@ -52,7 +54,7 @@ export class MappingState {
   /**
    * Gets the mappings from the file if they dont exist in cache
    */
-  get mappings(): MappingStructure {
+  get mappings(): MappingStructure | undefined {
     if (!this._mappings || this._mappings == undefined) {
       this.fetchMappings()
     }
@@ -65,16 +67,16 @@ export class MappingState {
    */
   set mappings(value: MappingStructure) {
     Logger.log(MESSAGE_TYPES.DEBUG, `[MappingStore]: Saving mappings to file`)
-    if (value.keys != this._mappings.keys) {
+    if (value.keys != this._mappings?.keys) {
       this.notifyListeners('key', value.keys)
     }
     if (
       value.profiles[value.selected_profile.id] !=
-      this._mappings.profiles[this._mappings.selected_profile.id]
+      this._mappings?.profiles[this._mappings.selected_profile.id]
     ) {
       this.notifyListeners('profile', value.profiles[value.selected_profile.id])
     }
-    if (value.actions != this._mappings.actions) {
+    if (value.actions != this._mappings?.actions) {
       this.notifyListeners('action', value.actions)
     }
 
@@ -92,6 +94,10 @@ export class MappingState {
     }
 
     return mappings
+  }
+
+  async setMappings(mappings: MappingStructure): Promise<void> {
+    this._mappings = mappings
   }
 
   /**
@@ -142,7 +148,18 @@ export class MappingState {
    * @param profile - default is 'default'
    */
   addButton = async (button: Button): Promise<void> => {
-    const mappingProfile = this.mappings.profiles[button.profile || 'default']
+    try {
+      validMappingExists(this.mappings)
+    } catch (error) {
+      Logger.error(`Unable to add button ${button.action}`, {
+        function: 'addButton',
+        error: error as Error,
+        source: 'mappingStore'
+      })
+      return
+    }
+
+    const mappingProfile = this.mappings?.profiles[button.profile || 'default']
     if (!mappingProfile) {
       Logger.log(
         MESSAGE_TYPES.ERROR,
@@ -151,7 +168,7 @@ export class MappingState {
       return
     }
 
-    const mappingKey = this.mappings.keys.find((searchKey) => searchKey.id === button.key)
+    const mappingKey = this.mappings?.keys.find((searchKey) => searchKey.id === button.key)
 
     if (!mappingKey?.modes?.includes(button.mode)) {
       Logger.log(
@@ -161,7 +178,7 @@ export class MappingState {
       return
     }
 
-    const mappingAction = this.mappings.actions.find(
+    const mappingAction = this.mappings?.actions.find(
       (searchAction) => searchAction.id == button.action
     )
 
@@ -177,23 +194,25 @@ export class MappingState {
 
     const action = ConstructActionReference(mappingAction)
 
-    // Ensure that the structure of the button is valid
-    if (!isValidActionReference(action)) {
-      Logger.log(
-        MESSAGE_TYPES.ERROR,
-        `[MappingStore]: Action ${action.id} is invalid, cannot add to mapping`
-      )
-      return
+    try {
+      // Ensure that the structure of the button is valid
+      isValidActionReference(action)
+
+      // Adding the button to the mapping
+      mappingProfile[button.key][button.mode] = action
+
+      // Save the mappings to file
+      this.mappings.profiles[button.profile || 'default'] = mappingProfile
+
+      this.notifyListeners('profile', mappingProfile)
+      await saveMappings(this.mappings)
+    } catch (error) {
+      Logger.error('Unable to verify action reference', {
+        function: 'addButton',
+        error: error as Error,
+        source: 'mappingStore'
+      })
     }
-
-    // Adding the button to the mapping
-    mappingProfile[button.key][button.mode] = action
-
-    // Save the mappings to file
-    this.mappings.profiles[button.profile || 'default'] = mappingProfile
-
-    this.notifyListeners('profile', mappingProfile)
-    await saveMappings(this.mappings)
   }
 
   /**
@@ -203,6 +222,17 @@ export class MappingState {
    * @param profile - default is 'default'
    */
   removeButton = async (button: Button): Promise<void> => {
+    try {
+      await validMappingExists(this.mappings)
+    } catch (error) {
+      Logger.error('Unable to remove button', {
+        function: 'removeButton',
+        error: error as Error,
+        source: 'mappingStore'
+      })
+      return
+    }
+
     const mappingsProfile = this.mappings.profiles[button.profile || 'default']
     if (!mappingsProfile) {
       Logger.log(
@@ -255,28 +285,44 @@ export class MappingState {
    * @returns A Promise that resolves when the key has been added or updated.
    */
   addKey = async (key: Key): Promise<void> => {
+
     const keys = this.mappings.keys
     // Validate key structure
-    if (!isValidKey(key)) {
-      Logger.log(MESSAGE_TYPES.ERROR, `[MappingStore]: Invalid key structure`)
-      return
+    try {
+      isValidKey(key)
+      // Check if the key already exists
+      const existingKeyIndex = keys.findIndex((k) => k.id === key.id)
+      if (existingKeyIndex !== -1) {
+        // Replace the existing key
+        keys[existingKeyIndex] = key
+        Logger.log(MESSAGE_TYPES.LOGGING, `[MappingStore]: Key ${key.id} updated`)
+      } else {
+        // Add the new key
+        keys.push(key)
+        Logger.log(MESSAGE_TYPES.LOGGING, `[MappingStore]: Key ${key.id} added`)
+      }
+      // Save the mappings
+      this.mappings.keys = keys
+    } catch (error) {
+      Logger.error('Unable to add key', {
+        function: 'addKey',
+        error: error as Error,
+        source: 'mappingStore'
+      })
     }
-    // Check if the key already exists
-    const existingKeyIndex = keys.findIndex((k) => k.id === key.id)
-    if (existingKeyIndex !== -1) {
-      // Replace the existing key
-      keys[existingKeyIndex] = key
-      Logger.log(MESSAGE_TYPES.LOGGING, `[MappingStore]: Key ${key.id} updated`)
-    } else {
-      // Add the new key
-      keys.push(key)
-      Logger.log(MESSAGE_TYPES.LOGGING, `[MappingStore]: Key ${key.id} added`)
-    }
-    // Save the mappings
-    this.mappings.keys = keys
   }
 
   removeKey = async (keyId: string): Promise<void> => {
+    try {
+      await validMappingExists(this.mappings)
+    } catch (error) {
+      Logger.error('Unable to remove key', {
+        function: 'removeKey',
+        error: error as Error,
+        source: 'mappingStore'
+      })
+      return
+    }
     const keys = this.mappings.keys
     // Find the index of the key to remove
     const keyIndex = keys.findIndex((key) => key.id === keyId)
@@ -298,6 +344,16 @@ export class MappingState {
    * @returns `true` if the key exists, `false` otherwise.
    */
   keyExists = (keyId: string): boolean => {
+    try {
+      await validMappingExists(this.mappings)
+    } catch (error) {
+      Logger.error('Unable to add key', {
+        function: 'addKey',
+        error: error as Error,
+        source: 'mappingStore'
+      })
+      return false
+    }
     const mappings = this.mappings
     return mappings.keys.some((key) => key.id === keyId)
   }
@@ -320,22 +376,29 @@ export class MappingState {
    * @returns A Promise that resolves when the action has been added or updated.
    */
   addAction = async (action: Action): Promise<void> => {
-    const mappings = this.mappings
-    // Validate action structure
-    if (!isValidAction(action)) {
-      Logger.log(MESSAGE_TYPES.ERROR, `[MappingStore]: Invalid action structure`)
-      return
-    }
-    // Check if the action already exists
-    const existingActionIndex = mappings.actions.findIndex((a) => a.id === action.id)
-    if (existingActionIndex !== -1) {
-      // Replace the existing action
-      mappings.actions[existingActionIndex] = action
-      Logger.log(MESSAGE_TYPES.LOGGING, `[MappingStore]: Action ${action.id} updated`)
-    } else {
-      // Add the new action
-      mappings.actions.push(action)
-      Logger.log(MESSAGE_TYPES.LOGGING, `[MappingStore]: Action ${action.id} added`)
+    try {
+      const mappings = this.mappings
+      // Validate action structure
+      isValidAction(action)
+      // Check if the action already exists
+      const existingActionIndex = mappings.actions.findIndex((a) => a.id === action.id)
+      if (existingActionIndex !== -1) {
+        // Replace the existing action
+        mappings.actions[existingActionIndex] = action
+        Logger.log(MESSAGE_TYPES.LOGGING, `[MappingStore]: Action ${action.id} updated`)
+      } else {
+        // Add the new action
+        mappings.actions.push(action)
+        Logger.log(MESSAGE_TYPES.LOGGING, `[MappingStore]: Action ${action.id} added`)
+      }
+      // Save the mappings
+      this.mappings = mappings
+    } catch (error) {
+      Logger.error('Unable to add action', {
+        function: 'addAction',
+        error: error as Error,
+        source: 'mappingStore'
+      })
     }
   }
 
@@ -765,16 +828,25 @@ export class MappingState {
    * @returns void
    */
   runAction(action: Action | ActionReference): void {
-    if (isValidActionReference(action) && action.enabled) {
-      const SocketData: ToAppData = {
-        payload: action,
-        type: 'action'
+    try {
+      isValidActionReference(action)
+      if (action.enabled) {
+        const SocketData: ToAppData = {
+          payload: action,
+          type: 'action'
+        }
+        import('@server/stores').then(({ appStore }) => {
+          appStore.sendDataToApp(action.source, SocketData)
+        })
+      } else {
+        Logger.log(MESSAGE_TYPES.ERROR, `[MappingStore]: Action not found or not enabled!`)
       }
-      import('@server/stores').then(({ appStore }) => {
-        appStore.sendDataToApp(action.source, SocketData)
+    } catch (error) {
+      Logger.error(`Unable to run action ${action?.id || 'unknown. (is it undefined?)'}`, {
+        function: 'runAction',
+        source: 'mappingStore',
+        error: error as Error
       })
-    } else {
-      Logger.log(MESSAGE_TYPES.ERROR, `[MappingStore]: Action not found or not enabled!`)
     }
   }
 
@@ -801,11 +873,13 @@ export class MappingState {
    * @returns The URL of the icon, or `null` if the icon could not be fetched.
    */
   fetchActionIcon = async (action: Action | ActionReference): Promise<string | null> => {
-    if (!isValidAction(action)) {
+    try {
+      isValidAction(action)
+      return await FetchIcon(action as Action)
+    } catch {
+      if (!action || action.id) return null
       const actualAction = this.getAction(action.id)
       return actualAction ? await FetchIcon(actualAction) : null
-    } else {
-      return await FetchIcon(action as Action)
     }
   }
 

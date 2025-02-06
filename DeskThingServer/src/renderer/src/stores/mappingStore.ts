@@ -41,7 +41,9 @@ interface MappingStoreState {
   setActions: (actions: Action[]) => Promise<void>
   getActions: () => Promise<Action[]>
 
-  getActionFromReference: (action: ActionReference) => Action | undefined
+  getActionFromReference: (
+    action: ActionReference | { id: string; source: string }
+  ) => Action | undefined
 
   addKey: (key: Key) => Promise<void>
   removeKey: (keyId: string) => Promise<void>
@@ -121,8 +123,12 @@ const useMappingStore = create<MappingStoreState>(
       return actions
     },
 
-    getActionFromReference: (actionRef: ActionReference): Action | undefined => {
-      const action = get().actions.find((a) => a.id === actionRef.id)
+    getActionFromReference: (
+      actionRef: ActionReference | { id: string; source: string }
+    ): Action | undefined => {
+      const action = get().actions.find(
+        (a) => a.id === actionRef.id && a.source === actionRef.source
+      )
       return action
     },
 

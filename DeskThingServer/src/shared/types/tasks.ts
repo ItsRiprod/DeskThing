@@ -10,7 +10,7 @@
  */
 
 import { SettingsType } from './app'
-import { Action, ActionReference } from './maps'
+import { Action } from './maps'
 
 /**
  * The way tasks are stored in the database
@@ -34,7 +34,7 @@ export type Task = {
   started: boolean
   currentStep?: string
   description?: string
-  steps: { [key: string]: Step }
+  steps: Record<string, Step>
 }
 
 /**
@@ -75,7 +75,7 @@ export interface TaskStep {
  */
 export interface TaskAction extends Omit<TaskStep, 'type'> {
   type: STEP_TYPES.ACTION
-  action: Action | ActionReference
+  action: Action | string
 }
 
 /**
@@ -107,11 +107,11 @@ export interface TaskShortcut extends Omit<TaskStep, 'type'> {
 /**
  * A step in a task that requires the user to input data of some kind.
  * All settings here will be added to the app's settings automatically
- * @params setting - The setting to set
+ * @params setting - The setting to set or the ID of an existing setting
  */
 export interface TaskSetting extends Omit<TaskStep, 'type'> {
   type: STEP_TYPES.SETTING
-  setting: SettingsType
+  setting: SettingsType | string
 }
 
 export enum STEP_TYPES {

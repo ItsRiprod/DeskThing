@@ -13,7 +13,8 @@ import {
   MappingStructure,
   Profile,
   UtilityIPCTask,
-  UtilityIPCUpdate
+  UtilityIPCUpdate,
+  IPCData
 } from '@shared/types'
 import { connectionStore, settingsStore, mappingStore } from '@server/stores'
 import { getReleases } from './githubHandler'
@@ -59,7 +60,7 @@ import { FeedbackService } from '@server/services/feedbackService'
 export const utilityHandler: Record<
   UtilityIPCData['type'] | UtilityIPCTask['type'] | UtilityIPCUpdate['type'],
   (
-    data: UtilityIPCData | UtilityIPCTask | UtilityIPCUpdate,
+    data: IPCData & { kind: 'utility' },
     replyFn: ReplyFn
   ) => Promise<
     | void
@@ -124,6 +125,7 @@ export const utilityHandler: Record<
     }
   },
   github: async (data) => {
+    if (data.type != 'github') return
     try {
       return await getReleases(data.payload)
     } catch (error) {
@@ -228,6 +230,7 @@ export const utilityHandler: Record<
     }
   },
   profiles: async (data) => {
+    if (data.type != 'profiles') return
     switch (data.request) {
       case 'get':
         if (typeof data.payload === 'string') {
@@ -260,6 +263,7 @@ export const utilityHandler: Record<
     }
   },
   run: async (data) => {
+    if (data.type !== 'run') return
     const action = data.payload as Action
     if (action.source !== 'server' && action.enabled) {
       return await mappingStore.runAction(action)
@@ -278,29 +282,25 @@ export const utilityHandler: Record<
       case 'get':
         return await taskStore.getTaskList()
       case 'stop':
-        if (typeof data.payload === 'string') return await taskStore.stopTask(data.payload)
-        return
+        return await taskStore.stopTask(data.payload)
       case 'complete':
-        if (Array.isArray(data.payload) && data.payload.length === 2)
-          return await taskStore.completeStep(data.payload[0], data.payload[1])
-        return
+        return await taskStore.completeStep(data.payload[0], data.payload[1])
       case 'start':
-        if (typeof data.payload === 'string') return await taskStore.startTask(data.payload)
-        return
+        return await taskStore.startTask(data.payload)
       case 'pause':
         return await taskStore.pauseTask()
       case 'restart':
-        if (typeof data.payload === 'string') return await taskStore.restartTask(data.payload)
-        return
+        return await taskStore.restartTask(data.payload)
       case 'complete_task':
-        if (typeof data.payload === 'string') return await taskStore.completeTask(data.payload)
-        return
+        return await taskStore.completeTask(data.payload)
       case 'next':
-        if (typeof data.payload === 'string') return await taskStore.nextStep(data.payload)
-        return
+        return await taskStore.nextStep(data.payload)
       case 'previous':
-        if (typeof data.payload === 'string') return await taskStore.prevStep(data.payload)
-        return
+        return await taskStore.prevStep(data.payload)
+      case 'update-task':
+        return await taskStore.updateTask(data.payload)
+      case 'update-step':
+        return await taskStore.updateStep(data.payload[0], data.payload[1])
       default:
         return
     }
@@ -320,6 +320,7 @@ export const utilityHandler: Record<
     }
   },
   feedback: async (data) => {
+    if (data.type != 'feedback') return
     if (!data.payload) return
     return await FeedbackService.sendFeedback(data.payload)
   }

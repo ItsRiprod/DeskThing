@@ -1,6 +1,6 @@
 import { TaskList, Task, STEP_TYPES } from '@shared/types/tasks'
 
-const tasks: { [key: string]: Task } = {
+const tasks: Record<string, Task> = {
   gettingstarted: {
     id: 'gettingstarted',
     version: '0.10.4',

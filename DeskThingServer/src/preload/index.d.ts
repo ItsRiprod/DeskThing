@@ -10,7 +10,7 @@ import {
   Profile
 } from '@shared/types'
 
-type AppData = { [key: string]: string }
+type AppData = Record<string, string>
 
 declare global {
   interface Window {
@@ -18,8 +18,8 @@ declare global {
       ping: () => Promise<string>
       pingClient: (clientId: string) => Promise<string | null>
       getApps: () => Promise<App[]>
-      getAppData: (appId: string) => Promise<{ [key: string]: string } | null>
-      setAppData: (appId: string, data: { [key: string]: string }) => Promise<void>
+      getAppData: (appId: string) => Promise<Record<string, string> | null>
+      setAppData: (appId: string, data: Record<string, string>) => Promise<void>
       getAppSettings: (appId: string) => Promise<AppSettings | null>
       setAppSettings: (appId: string, settings: AppSettings) => Promise<void>
       stopApp: (appId: string) => Promise<void>
@@ -94,6 +94,8 @@ declare global {
         pauseTask: () => Promise<void>
         nextStep: (taskId: string) => Promise<void>
         prevStep: (taskId: string) => Promise<void>
+        updateStep: (taskId: string, step: Partial<Step>) => Promise<void>
+        updateTask: (task: Partial<Task>) => Promise<void>
       }
 
       update: {

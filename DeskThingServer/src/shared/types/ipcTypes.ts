@@ -5,7 +5,7 @@ import { App, AppReturnData } from './app'
 import { BrowserWindow } from 'electron'
 import { Log, Settings } from './types'
 import { Action, ButtonMapping, Key } from './maps'
-import { TaskList } from './tasks'
+import { Step, TaskList, Task } from './tasks'
 export const IPC_HANDLERS = {
   UTILITY: 'utility',
   CLIENT: 'client',
@@ -105,20 +105,31 @@ export interface UtilityIPCData extends UtilityIPCBase {
   request: IPC_METHODS
   payload: any
 }
-export interface UtilityIPCTask extends UtilityIPCBase {
+
+export type UtilityIPCTask = {
   type: 'task'
-  request:
-    | 'get'
-    | 'complete'
-    | 'start'
-    | 'stop'
-    | 'complete_task'
-    | 'restart'
-    | 'pause'
-    | 'next'
-    | 'previous'
-  payload: string | string[]
-}
+} & (
+  | {
+      request: 'complete_task' | 'start' | 'stop' | 'restart' | 'previous' | 'next'
+      payload: string
+    }
+  | {
+      request: 'complete'
+      payload: string[]
+    }
+  | {
+      request: 'get' | 'pause'
+    }
+  | {
+      request: 'update-step'
+      payload: [string, Partial<Step>]
+    }
+  | {
+      request: 'update-task'
+      payload: Partial<Task>
+    }
+)
+
 export interface UtilityIPCUpdate extends UtilityIPCBase {
   type: 'update'
   request: 'check' | 'download' | 'restart'

@@ -142,44 +142,41 @@ export interface Config {
 export interface AppDataInterface {
   version: string
   settings?: AppSettings
-  data?: { [key: string]: string }
+  data?: Record<string, string>
   tasks?: { [key: string]: Task }
 }
 
-export type SettingsBase = {
-  type:
-    | 'boolean'
-    | 'list'
-    | 'multiselect'
-    | 'number'
-    | 'range'
-    | 'ranked'
-    | 'select'
-    | 'string'
-    | 'color'
-  label: string
-  description?: string
+export enum SETTING_TYPES {
+  BOOLEAN = 'boolean',
+  NUMBER = 'number',
+  STRING = 'string',
+  RANGE = 'range',
+  SELECT = 'select',
+  MULTISELECT = 'multiselect',
+  LIST = 'list',
+  RANKED = 'ranked',
+  COLOR = 'color'
 }
 
-export interface SettingsNumber {
+export type SettingsNumber = {
+  type: SETTING_TYPES.NUMBER
   value: number
-  type: 'number'
   min: number
   max: number
   label: string
   description?: string
 }
 
-export interface SettingsBoolean {
+export type SettingsBoolean = {
+  type: SETTING_TYPES.BOOLEAN
   value: boolean
-  type: 'boolean'
   label: string
   description?: string
 }
 
-export interface SettingsRange {
+export type SettingsRange = {
+  type: SETTING_TYPES.RANGE
   value: number
-  type: 'range'
   label: string
   min: number
   max: number
@@ -187,17 +184,17 @@ export interface SettingsRange {
   description?: string
 }
 
-export interface SettingsString {
+export type SettingsString = {
+  type: SETTING_TYPES.STRING
   value: string
-  type: 'string'
   label: string
   maxLength?: number
   description?: string
 }
 
-export interface SettingsSelect {
+export type SettingsSelect = {
+  type: SETTING_TYPES.SELECT
   value: string
-  type: 'select'
   label: string
   description?: string
   placeholder?: string
@@ -209,9 +206,9 @@ export type SettingOption = {
   value: string
 }
 
-export interface SettingsRanked {
+export type SettingsRanked = {
+  type: SETTING_TYPES.RANKED
   value: string[]
-  type: 'ranked'
   label: string
   description?: string
   options: SettingOption[]
@@ -220,49 +217,46 @@ export interface SettingsRanked {
 /**
  * Not fully implemented yet!
  */
-export interface SettingsList {
+export type SettingsList = {
+  type: SETTING_TYPES.LIST
   value: string[]
   placeholder?: string
   maxValues?: number
   orderable?: boolean
   unique?: boolean
-  type: 'list'
   label: string
   description?: string
   options: SettingOption[]
 }
 
-export interface SettingsMultiSelect {
+export type SettingsMultiSelect = {
+  type: SETTING_TYPES.MULTISELECT
   value: string[]
-  type: 'multiselect'
   label: string
   description?: string
   placeholder?: string
   options: SettingOption[]
 }
 
-export interface SettingsColor extends SettingsBase {
-  type: 'color'
+export type SettingsColor = {
+  type: SETTING_TYPES.COLOR
   value: string
   label: string
   description?: string
-  placeholder?: string
 }
 
 export type SettingsType =
-  | SettingsNumber
-  | SettingsBoolean
-  | SettingsString
-  | SettingsSelect
-  | SettingsMultiSelect
-  | SettingsRange
-  | SettingsRanked
-  | SettingsList
-  | SettingsColor
+  | ({ type: SETTING_TYPES.NUMBER } & SettingsNumber)
+  | ({ type: SETTING_TYPES.BOOLEAN } & SettingsBoolean)
+  | ({ type: SETTING_TYPES.STRING } & SettingsString)
+  | ({ type: SETTING_TYPES.SELECT } & SettingsSelect)
+  | ({ type: SETTING_TYPES.MULTISELECT } & SettingsMultiSelect)
+  | ({ type: SETTING_TYPES.RANGE } & SettingsRange)
+  | ({ type: SETTING_TYPES.RANKED } & SettingsRanked)
+  | ({ type: SETTING_TYPES.LIST } & SettingsList)
+  | ({ type: SETTING_TYPES.COLOR } & SettingsColor)
 
-export interface AppSettings {
-  [key: string]: SettingsType
-}
+export type AppSettings = Record<string, SettingsType>
 
 export type LegacyAppData = {
   apps: App[]
@@ -306,7 +300,7 @@ export interface ReleaseDetails {
  */
 
 // Events that can be sent back to the server
-export enum IncomingAppDataTypes { // v0.10.4
+export enum IncomingAppDataTypes { // v0.10.4.2
   /**
    * Default handler for unknown or unspecified data types.
    * Will log a warning message about the unknown data type.
@@ -424,7 +418,7 @@ export enum IncomingAppDataTypes { // v0.10.4
 
   /**
    * Manages tasks in the system.
-   * Supports operations: get, set, delete, add, complete, restart, start, and end
+   * Supports operations: get, update, delete, add, complete, restart, start, and end
    *
    * @remarks
    * It is recommended to use {@link DeskThing.tasks.addTask} instead of sending data directly.
@@ -436,7 +430,7 @@ export enum IncomingAppDataTypes { // v0.10.4
 
   /**
    * Manages actions in the system.
-   * Supports operations: get, set, delete, add, complete, restart, start, and end
+   * Supports operations: get, update, delete, add, complete, restart, start, and end
    *
    * @remarks
    * It is recommended to use {@link DeskThing.tasks.addStep} instead of sending data directly.

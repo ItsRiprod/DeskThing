@@ -133,7 +133,7 @@ class Logger {
         }
       } else {
         if (options.error) {
-          options.error = new Error('Error not found', { cause: options.error })
+          options.error = new Error('Abnormal error detected: ', { cause: options.error })
         }
       }
       options.date = options.date || new Date().toISOString()
@@ -173,23 +173,18 @@ class Logger {
           console.log('\x1b[0m%s', readableMessage) // Default color for other types
       }
 
-      await new Promise<void>((resolve, reject) => {
-        fs.writeFile(logFile, JSON.stringify(this.logs, null, 2), (err) => {
-          if (err) {
-            console.error('Failed to write to log file:', err)
-            reject(err)
-            return
-          }
-          fs.appendFile(readableLogFile, readableMessage, (appendErr) => {
-            if (appendErr) {
-              console.error('Failed to write to readable log file:', appendErr)
-              reject(appendErr)
-              return
-            }
-            resolve()
-          })
-        })
-      })
+      try {
+        await fs.promises.writeFile(logFile, JSON.stringify(this.logs, null, 2))
+      } catch (err) {
+        console.error('Failed to write to log file:', err)
+        throw err
+      }
+      try {
+        await fs.promises.appendFile(readableLogFile, readableMessage)
+      } catch (appendErr) {
+        console.error('Failed to write to readable log file:', appendErr)
+        throw appendErr
+      }
     } catch (error) {
       console.error('Failed to log message:', error)
       throw error

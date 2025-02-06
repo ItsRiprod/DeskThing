@@ -15,7 +15,7 @@ import Logger from '@server/utils/logger'
 import { getData, overwriteData, setData } from '@server/services/files/dataService'
 import { loadAndRunEnabledApps } from '@server/services/apps'
 import { Step, Task, TaskReference } from '@shared/types/tasks'
-import { isValidTask } from '@server/services/task'
+import { isValidStep, isValidTask } from '@server/services/task'
 
 type AppsListener = (data: App[]) => void
 type AppSettingsListener = (appId: string, data: AppSettings) => void
@@ -29,10 +29,10 @@ type ListenerEvents = 'settings' | 'apps'
 
 export class AppStore {
   public static instance: AppStore
-  private apps: { [key: string]: AppInstance } = {}
+  private apps: Record<string, AppInstance> = {}
   private order: string[] = []
   private listeners: AppStoreListeners = {}
-  private functionTimeouts: { [key: string]: NodeJS.Timeout } = {}
+  private functionTimeouts: Record<string, NodeJS.Timeout> = {}
 
   public static getInstance(): AppStore {
     if (!AppStore.instance) {
@@ -48,14 +48,30 @@ export class AppStore {
 
   private async setupListeners(): Promise<void> {
     import('@server/stores/taskStore').then(({ default: taskStore }) => {
-      taskStore.on(async (tasks) => {
+      taskStore.on('taskList', async (tasks) => {
         Object.values(tasks.tasks).map((task) => {
           if (task.source && task.started) {
             if (this.apps[task.source]) {
-              this.updateTask(task.source, task)
+              this.updateTaskList(task.source, task)
             }
           }
         })
+      })
+
+      taskStore.on('step', async (payload) => {
+        if (payload.source && payload.taskId && payload.step) {
+          if (this.apps[payload.source]) {
+            this.updateStep(payload.source, payload.taskId, payload.step)
+          }
+        }
+      })
+
+      taskStore.on('task', async (payload) => {
+        if (payload.source && payload.id) {
+          if (this.apps[payload.source]) {
+            this.updateTask(payload.source, payload)
+          }
+        }
       })
     })
   }
@@ -278,7 +294,7 @@ export class AppStore {
     return this.order
   }
 
-  async getData(name: string): Promise<{ [key: string]: string } | undefined> {
+  async getData(name: string): Promise<Record<string, string> | undefined> {
     if (!(name in this.apps)) {
       return
     }
@@ -317,7 +333,7 @@ export class AppStore {
     return data?.tasks
   }
 
-  async addData(app: string, data: { [key: string]: string }): Promise<void> {
+  async addData(app: string, data: Record<string, string>): Promise<void> {
     if (!this.apps[app]) return
 
     const result = await setData(app, { data: data })
@@ -337,10 +353,12 @@ export class AppStore {
     }
   }
 
-  async setTasks(app: string, tasks: { [key: string]: Task }): Promise<void> {
+  async setTasks(app: string, tasks: Record<string, Task>): Promise<void> {
     if (!this.apps[app]) return
 
     const result = await setData(app, { tasks })
+    const { taskStore } = await import('@server/stores')
+    taskStore.addTasks(tasks)
 
     if (!result) {
       const version = this.apps[app].manifest?.version
@@ -355,20 +373,25 @@ export class AppStore {
     }
   }
 
-  async updateTask(app: string, task: Partial<Task>): Promise<void> {
+  async updateTaskList(app: string, task: Task): Promise<void> {
     if (!this.apps[app]) return
 
-    const data = await getData(app)
-    if (!data) {
-      await this.setTasks(app, task as { [key: string]: Task })
+    try {
+      isValidTask(task)
+    } catch (error) {
+      Logger.error('Invalid task', {
+        source: 'AppStore',
+        domain: app,
+        function: 'updateTaskList',
+        error: error as Error
+      })
       return
     }
 
-    // Validate each task before updating
-    const validation = isValidTask(task)
-
-    if (!validation.isValid) {
-      throw new Error(`Invalid task ${task.id}: ${validation.error}`)
+    const data = await getData(app)
+    if (!data) {
+      await this.setTasks(app, { [task.id]: task })
+      return
     }
 
     const updatedTasks = {
@@ -379,6 +402,62 @@ export class AppStore {
     this.sendDataToApp(app, { type: 'task', request: 'update', payload: updatedTasks })
 
     await setData(app, { tasks: updatedTasks })
+  }
+
+  async updateStep(app: string, taskId: string, step: Partial<Step>): Promise<void> {
+    if (!this.apps[app]) return
+
+    try {
+      isValidStep(step)
+    } catch (error) {
+      Logger.error('Invalid step', {
+        source: 'AppStore',
+        domain: app,
+        function: 'updateStep',
+        error: error as Error
+      })
+      return
+    }
+
+    const data = await getData(app)
+    if (!data) return
+    if (!data?.tasks?.[taskId]) return
+
+    data.tasks[taskId].steps[step.id] = step
+
+    this.sendDataToApp(app, { type: 'task', request: 'step', payload: step })
+
+    await setData(app, { tasks: data.tasks })
+  }
+
+  async updateTask(app: string, task: Partial<Task>): Promise<void> {
+    if (!this.apps[app]) return
+
+    try {
+      isValidTask(task)
+    } catch (error) {
+      Logger.error('Invalid task', {
+        source: 'AppStore',
+        domain: app,
+        function: 'updateTask',
+        error: error as Error
+      })
+      return
+    }
+
+    const data = await getData(app)
+    if (!data) return
+
+    if (!data?.tasks?.[task.id]) {
+      if (!data.tasks) data.tasks = {}
+      data.tasks[task.id] = task
+    } else {
+      data.tasks[task.id] = { ...data.tasks[task.id], ...task }
+    }
+
+    this.sendDataToApp(app, { type: 'task', request: 'task', payload: data.tasks[task.id] })
+
+    await setData(app, { tasks: data.tasks })
   }
 
   // merge with existing settings

@@ -1,196 +1,223 @@
+import { isValidAction } from '../mappings/utilsMaps'
 import {
   Step,
   STEP_TYPES,
   Task,
   TaskAction,
+  TaskExternal,
   TaskList,
-  TaskReference,
   TaskSetting,
   TaskShortcut,
+  TaskStep,
   TaskTask
 } from '@shared/types/tasks'
-import { isValidActionReference } from '../mappings/utilsMaps'
-import { SettingsBase } from '@shared/types'
 
-interface ValidationResult {
-  isValid: boolean
-  error: string
-}
-
-export function isValidTaskList(taskList: Partial<TaskList>): ValidationResult {
-  if (!taskList || typeof taskList !== 'object')
-    return { isValid: false, error: 'TaskList must be an object' }
-
-  if (!taskList.version) {
-    return { isValid: false, error: '[ValidateTaskList] TaskList does not have an ID' }
-  }
-  if (!taskList.tasks || typeof taskList.tasks !== 'object') {
-    return { isValid: false, error: '[ValidateTaskList] TaskList does not have any tasks' }
-  }
-
-  if (taskList.currentTaskId && !taskList.tasks[taskList.currentTaskId]) {
-    return {
-      isValid: false,
-      error: '[ValidateTaskList] CurrentTaskId references non-existent task'
-    }
-  }
-
-  for (const taskId of Object.keys(taskList.tasks)) {
-    const taskValidation = taskList.tasks[taskId].started
-      ? isValidTask(taskList.tasks[taskId]) // task is started thus has steps
-      : isValidTaskReference(taskList.tasks[taskId])
-    if (!taskValidation.isValid) {
-      return taskValidation
-    }
-  }
-  return { isValid: true, error: '' }
-}
-
-export function sanitizeTaskList(taskList: TaskList): TaskList {
-  const sanitized = { ...taskList }
-
-  if (sanitized.currentTaskId) {
-    if (!sanitized.tasks[sanitized.currentTaskId]) {
-      sanitized.currentTaskId = undefined
-    } else {
-      sanitized.tasks[sanitized.currentTaskId].started = true
-    }
-  }
-
-  return sanitized
-}
-
-export function isValidTaskReference(task: unknown): ValidationResult {
-  if (!task || typeof task !== 'object') return { isValid: false, error: 'Task must be an object' }
-  const t = task as Partial<TaskReference>
-
-  if (!t.id) {
-    return { isValid: false, error: '[ValidateTask] Tasks must have an ID' }
-  }
-  if (!t.source) {
-    return { isValid: false, error: `[ValidateTask] Task ${t.id} does not have a source` }
-  }
+export function isValidTaskList(taskList: unknown): asserts taskList is TaskList {
+  if (!taskList || typeof taskList !== 'object') throw new Error('TaskList must be an object')
+  const t = taskList as Partial<TaskList>
   if (!t.version) {
-    return {
-      isValid: false,
-      error: `[ValidateTask] Task ${t.id} from ${t.source} must have a specified version`
-    }
+    throw new Error('[ValidateTaskList] TaskList must have a version')
   }
-
-  return { isValid: true, error: '' }
+  if (!t.tasks || typeof t.tasks !== 'object' || Object.values(t.tasks).length === 0) {
+    throw new Error('[ValidateTaskList] TaskList must have at least one task')
+  } else {
+    Object.values(t.tasks).forEach((task) => {
+      isValidTask(task)
+    })
+  }
 }
 
-export function isValidTask(task: unknown): ValidationResult {
-  if (!task || typeof task !== 'object') return { isValid: false, error: 'Task must be an object' }
+export function isValidTask(task: unknown): asserts task is Task {
+  if (!task || typeof task !== 'object') throw new Error('Task must be an object')
   const t = task as Partial<Task>
 
   if (!t.id) {
-    return { isValid: false, error: '[ValidateTask] Tasks must have an ID' }
+    throw new Error('[ValidateTask] Tasks must have an ID')
   }
   if (!t.source) {
-    return { isValid: false, error: `[ValidateTask] Task ${t.id} does not have a source` }
+    throw new Error(`[ValidateTask] Task ${t.id} does not have a source`)
   }
   if (!t.version) {
-    return {
-      isValid: false,
-      error: `[ValidateTask] Task ${t.id} from ${t.source} must have a specified version`
-    }
+    throw new Error(`[ValidateTask] Task ${t.id} from ${t.source} must have a specified version`)
   }
   if (!t.steps || typeof t.steps !== 'object' || Object.values(t.steps).length === 0) {
-    return {
-      isValid: false,
-      error: `[ValidateTask] Task ${t.id} from ${t.source} must have at least one specified step`
-    }
+    throw new Error(
+      `[ValidateTask] Task ${t.id} from ${t.source} must have at least one specified step`
+    )
+  } else {
+    Object.values(t.steps).forEach((step) => {
+      isValidStep(step)
+    })
   }
-
-  for (const step of Object.values(t.steps)) {
-    const stepValidation = isValidStep(step)
-    if (!stepValidation.isValid) {
-      return stepValidation
-    }
-  }
-  return { isValid: true, error: '' }
 }
 
-export function isValidStep(step: unknown): ValidationResult {
-  if (!step || typeof step !== 'object') return { isValid: false, error: 'Step must be an object' }
+export function isValidStep(step: unknown): asserts step is Step {
+  if (!step || typeof step !== 'object') throw new Error('Step must be an object')
   const s = step as Partial<Step>
 
   if (!s.id) {
-    return { isValid: false, error: '[ValidateStep] Step must have an ID' }
+    throw new Error('[ValidateStep] Step must have an ID')
   }
   if (!s.type) {
-    return { isValid: false, error: `[ValidateStep] Step ${s.id} does not have a type` }
+    throw new Error(`[ValidateStep] Step ${s.id} does not have a type`)
   }
 
   switch (s.type) {
     case STEP_TYPES.ACTION:
-      return isValidTaskAction(s)
+      isValidTaskAction(s)
+      break
     case STEP_TYPES.SHORTCUT:
-      return isValidTaskShortcut(s)
+      isValidTaskShortcut(s)
+      break
     case STEP_TYPES.SETTING:
-      return isValidTaskSetting(s)
+      isValidTaskSetting(s)
+      break
     case STEP_TYPES.TASK:
-      return isValidTaskTask(s)
+      isValidTaskTask(s)
+      break
     case STEP_TYPES.EXTERNAL:
-      return isValidTaskExternal(s)
+      isValidTaskExternal(s)
+      break
     case STEP_TYPES.STEP:
-      return isValidTaskStep(s)
+      isValidTaskStep(s)
+      break
     default:
-      return { isValid: false, error: `[ValidateStep] Step ${s.id} has invalid type ${s.type}` }
+      throw new Error(`[ValidateStep] Step ${s.id} has invalid type ${s.type}`)
   }
 }
 
+export const sanitizeTaskList = (taskList: Partial<TaskList>): TaskList => {
+  const updatedTaskList = {
+    version: taskList.version || '1.0.0',
+    tasks: taskList.tasks
+      ? Object.fromEntries(
+          Object.entries(taskList.tasks).map(([key, task]) => [key, sanitizeTask(task)])
+        )
+      : {},
+    currentTaskId: taskList.currentTaskId || ''
+  }
+  return updatedTaskList as TaskList
+}
+export const sanitizeTask = (task: Partial<Task>): Task => {
+  const updatedTask = {
+    id: task.id || '',
+    source: task.source || '',
+    version: task.version || '1.0.0',
+    available: task.available ?? false,
+    completed: task.completed ?? false,
+    label: task.label || task.id || '',
+    started: task.started ?? false,
+    currentStep: task.currentStep || '',
+    description: task.description || '',
+    steps: task.steps
+      ? Object.fromEntries(
+          Object.entries(task.steps).map(([key, step]) => [key, sanitizeStep(step)])
+        )
+      : {}
+  }
+  return updatedTask as Task
+}
+export const sanitizeStep = (step: Partial<Step>): Step => {
+  if (!step.type) {
+    throw new Error('Step must have a type')
+  }
+
+  switch (step.type) {
+    case STEP_TYPES.ACTION:
+      return {
+        id: step.id || '',
+        type: STEP_TYPES.ACTION,
+        // Should be fixed with a sanitized action but that does not exist yet
+        action: step.action ? step.action : undefined,
+        label: step.label || ''
+      } as TaskAction
+    case STEP_TYPES.SHORTCUT:
+      return {
+        id: step.id || '',
+        type: STEP_TYPES.SHORTCUT,
+        destination: step.destination || '',
+        label: step.label || ''
+      } as TaskShortcut
+    case STEP_TYPES.SETTING:
+      return {
+        id: step.id || '',
+        type: STEP_TYPES.SETTING,
+        // Should be fixed with a sanitized setting but that does not exist yet
+        setting: step.setting ? step.setting : undefined,
+        label: step.label || ''
+      } as TaskSetting
+    case STEP_TYPES.TASK:
+      return {
+        id: step.id || '',
+        type: STEP_TYPES.TASK,
+        taskId: step.taskId || '',
+        completed: step.completed ?? false,
+        label: step.label || ''
+      } as TaskTask
+    case STEP_TYPES.EXTERNAL:
+      return {
+        id: step.id || '',
+        type: STEP_TYPES.EXTERNAL,
+        label: step.label || ''
+      } as TaskExternal
+    case STEP_TYPES.STEP:
+      return {
+        id: step.id || '',
+        type: STEP_TYPES.STEP,
+        label: step.label || ''
+      } as TaskStep
+    default:
+      throw new Error(`Invalid step type: ${step.type}`)
+  }
+}
 function validateStepBase(
   step: unknown,
   expectedType: (typeof STEP_TYPES)[keyof typeof STEP_TYPES]
-): ValidationResult {
-  if (!step || typeof step !== 'object') return { isValid: false, error: 'Step must be an object' }
+): asserts step is Step {
+  if (!step || typeof step !== 'object') throw new Error('Step must be an object')
   const s = step as Partial<Step>
 
   if (!s.type) {
-    return { isValid: false, error: '[ValidateStep] Step must have a type' }
+    throw new Error('[ValidateStep] Step must have a type')
   }
   if (s.type !== expectedType) {
-    return { isValid: false, error: `[ValidateStep] Step ${s.id} is not a ${expectedType}` }
+    throw new Error(`[ValidateStep] Step ${s.id} is not a ${expectedType}`)
   }
-  return { isValid: true, error: '' }
 }
 
-export function isValidTaskAction(step: unknown): ValidationResult {
-  const baseValidation = validateStepBase(step, STEP_TYPES.ACTION)
-  if (!baseValidation.isValid) return baseValidation
+export function isValidTaskAction(step: unknown): asserts step is TaskAction {
+  validateStepBase(step, STEP_TYPES.ACTION)
   const s = step as Partial<TaskAction>
 
-  if (!s.action || !isValidActionReference(s.action)) {
-    return { isValid: false, error: `[ValidateTaskAction] Step ${s.id} is not a valid action` }
+  if (!s.action) {
+    throw new Error(`[ValidateTaskAction] Step ${s.id} does not have an action`)
   }
-  return { isValid: true, error: '' }
+
+  if (typeof s.action === 'string') {
+    return // early break for string keys
+  }
+
+  const action = s.action
+  isValidAction({ ...action, source: 'test' })
 }
 
-export function isValidTaskShortcut(step: unknown): ValidationResult {
-  const baseValidation = validateStepBase(step, STEP_TYPES.SHORTCUT)
-  if (!baseValidation.isValid) return baseValidation
+export function isValidTaskShortcut(step: unknown): asserts step is TaskShortcut {
+  validateStepBase(step, STEP_TYPES.SHORTCUT)
   const s = step as Partial<TaskShortcut>
 
   if (!s.destination) {
-    return {
-      isValid: false,
-      error: `[ValidateTaskShortcut] Step ${s.id} does not have a destination`
-    }
+    throw new Error(`[ValidateTaskShortcut] Step ${s.id} does not have a destination`)
   }
-  return { isValid: true, error: '' }
 }
 
-export function isValidTaskSetting(step: unknown): ValidationResult {
-  const baseValidation = validateStepBase(step, STEP_TYPES.SETTING)
-  if (!baseValidation.isValid) return baseValidation
+export function isValidTaskSetting(step: unknown): asserts step is TaskSetting {
+  validateStepBase(step, STEP_TYPES.SETTING)
   const s = step as Partial<TaskSetting>
 
   if (!s.setting) {
-    return { isValid: false, error: `[ValidateTaskSetting] Step ${s.id} does not have a setting` }
+    throw new Error(`[ValidateTaskSetting] Step ${s.id} does not have a setting`)
   }
-  const validTypes: SettingsBase['type'][] = [
+  const validTypes = [
     'boolean',
     'list',
     'multiselect',
@@ -200,39 +227,33 @@ export function isValidTaskSetting(step: unknown): ValidationResult {
     'select',
     'string',
     'color'
-  ]
+  ] as const
+
+  if (typeof s.setting === 'string') {
+    return // early break for string types
+  }
+
   if (!s.setting.type || !validTypes.includes(s.setting.type)) {
-    return { isValid: false, error: `[ValidateTaskSetting] Step ${s.id} has invalid setting type` }
+    throw new Error(`[ValidateTaskSetting] Step ${s.id} has invalid setting type`)
   }
   if (!s.setting.label) {
-    return {
-      isValid: false,
-      error: `[ValidateTaskSetting] Step ${s.id} setting does not have a label`
-    }
+    throw new Error(`[ValidateTaskSetting] Step ${s.id} setting does not have a label`)
   }
-  return { isValid: true, error: '' }
 }
 
-export function isValidTaskTask(step: unknown): ValidationResult {
-  const baseValidation = validateStepBase(step, STEP_TYPES.TASK)
-  if (!baseValidation.isValid) return baseValidation
+export function isValidTaskTask(step: unknown): asserts step is TaskTask {
+  validateStepBase(step, STEP_TYPES.TASK)
   const s = step as Partial<TaskTask>
 
   if (!s.taskId) {
-    return { isValid: false, error: `[ValidateTaskTask] Step ${s.id} does not have a taskId` }
+    throw new Error(`[ValidateTaskTask] Step ${s.id} does not have a taskId`)
   }
-  return { isValid: true, error: '' }
 }
 
-export function isValidTaskExternal(step: unknown): ValidationResult {
-  const baseValidation = validateStepBase(step, STEP_TYPES.EXTERNAL)
-  if (!baseValidation.isValid) return baseValidation
-
-  return { isValid: true, error: '' }
+export function isValidTaskExternal(step: unknown): asserts step is Step {
+  validateStepBase(step, STEP_TYPES.EXTERNAL)
 }
 
-export function isValidTaskStep(step: unknown): ValidationResult {
-  const baseValidation = validateStepBase(step, STEP_TYPES.STEP)
-  if (!baseValidation.isValid) return baseValidation
-  return { isValid: true, error: '' }
+export function isValidTaskStep(step: unknown): asserts step is Step {
+  validateStepBase(step, STEP_TYPES.STEP)
 }

@@ -133,7 +133,8 @@ export interface SocketData {
     | string
     | object
     | number
-    | { [key: string]: string | Array<string> }
+    | Record<string, string>
+    | Array<string>
     | { id: string; value: string | number | boolean | string[] }
 }
 

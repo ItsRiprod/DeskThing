@@ -53,7 +53,7 @@ export const appHandler: Record<
     | App
     | string
     | AppReturnData
-    | { [key: string]: string }
+    | Record<string, string>
     | { path: string; name: string }
   >
 > = {
@@ -310,7 +310,7 @@ const setAppSettings = async (
 const setAppData = async (
   replyFn: ReplyFn,
   appId: string,
-  appData: { [key: string]: string }
+  appData: Record<string, string>
 ): Promise<void> => {
   const { appStore } = await import('@server/stores')
   Logger.info('[setAppData]: Saving ' + appId + "'s data " + appData)
@@ -345,7 +345,7 @@ const getAppSettings = async (replyFn, payload): Promise<AppSettings | null> => 
  * @param payload - The payload containing the data needed to retrieve the app data.
  * @returns A Promise that resolves to the app data, or null if an error occurs.
  */
-const getAppData = async (replyFn, payload): Promise<{ [key: string]: string } | null> => {
+const getAppData = async (replyFn, payload): Promise<Record<string, string> | null> => {
   try {
     const { appStore } = await import('@server/stores')
     const data = await appStore.getData(payload)
