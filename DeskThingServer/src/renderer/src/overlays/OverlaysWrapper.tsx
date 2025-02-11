@@ -9,13 +9,15 @@ import UpdateOverlay from './UpdateOverlay'
 import useUpdateStore from '@renderer/stores/updateStore'
 import useTaskStore from '@renderer/stores/taskStore'
 import TaskOverlay from './TaskOverlay'
+import FeedbackOverlay from './FeedbackOverlay'
 
 const overlays = {
   qr: QROverlay,
   settings: SettingsOverlay,
   notifications: NotificationOverlay,
   app: AppsOverlay,
-  addProfile: AddProfileOverlay
+  addProfile: AddProfileOverlay,
+  feedback: FeedbackOverlay
 }
 
 const OverlayWrapper: React.FC<React.PropsWithChildren> = ({

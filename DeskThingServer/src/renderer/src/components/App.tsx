@@ -6,7 +6,7 @@
  * @returns A React component that renders the App UI.
  */
 import React from 'react'
-import { App as AppType } from '@shared/types/app'
+import { App as AppType } from '@DeskThing/types'
 import { IconPause, IconPlay, IconWrench } from '@renderer/assets/icons'
 import Button from './Button'
 import { useAppStore } from '@renderer/stores'
@@ -23,7 +23,11 @@ interface RunningProps {
 
 const Running: React.FC<RunningProps> = ({ stopApp }) => {
   return (
-    <Button title="Pause App" className="group hover:bg-amber-500 gap-2 bg-amber-800" onClick={stopApp}>
+    <Button
+      title="Pause App"
+      className="group hover:bg-amber-500 gap-2 bg-amber-800"
+      onClick={stopApp}
+    >
       <p className="group-hover:block hidden">Pause</p>
       <IconPause className="stroke-2" />
     </Button>
@@ -90,7 +94,11 @@ const App: React.FC<AppProps> = ({ app, activeRequest }) => {
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <Button title="App Settings" onClick={showAppDetails} className="group bg-slate-950 hover:bg-slate-900 gap-2">
+        <Button
+          title="App Settings"
+          onClick={showAppDetails}
+          className="group bg-slate-950 hover:bg-slate-900 gap-2"
+        >
           <IconWrench />
           <p className="group-hover:block hidden">Settings</p>
         </Button>

@@ -1,6 +1,6 @@
 import { ActionIcon } from '@renderer/pages/Clients/Mapping/components/ActionIcon'
 import useMappingStore from '@renderer/stores/mappingStore'
-import { Action, ActionReference, SettingOption } from '@shared/types'
+import { Action, ActionReference, SettingOption } from '@DeskThing/types'
 import { useState } from 'react'
 import { SingleValue } from 'react-select'
 import Button from './Button'

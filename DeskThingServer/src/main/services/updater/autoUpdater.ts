@@ -1,7 +1,8 @@
-import { MESSAGE_TYPES, UpdateInfoType, UpdateProgressType } from '@shared/types'
+import { UpdateInfoType, UpdateProgressType } from '@shared/types'
 import electronUpdater, { type AppUpdater } from 'electron-updater'
 import { notifyUpdateFinished, notifyUpdateStatus } from './updateUtils'
 import { sendIpcData } from '@server/index'
+import { LOGGING_LEVELS } from '@DeskThing/types'
 
 let configuredUpdater: AppUpdater | null = null
 
@@ -30,7 +31,7 @@ export function getAutoUpdater(): AppUpdater {
       if (progressObj.total) {
         logMessage += ` - ${progressObj.transferred}/${progressObj.total}`
       }
-      Logger.log(MESSAGE_TYPES.LOGGING, logMessage)
+      Logger.log(LOGGING_LEVELS.LOG, logMessage)
 
       const progress: UpdateProgressType = {
         percent: progressObj.percent,
@@ -44,7 +45,7 @@ export function getAutoUpdater(): AppUpdater {
 
     autoUpdater.on('update-downloaded', (info) => {
       // Prompt the user to quit and install the update
-      Logger.log(MESSAGE_TYPES.DEBUG, 'Update downloaded: ' + JSON.stringify(info))
+      Logger.log(LOGGING_LEVELS.LOG, 'Update downloaded: ' + JSON.stringify(info))
       notifyUpdateFinished(info)
     })
   })

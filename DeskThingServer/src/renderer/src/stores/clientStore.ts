@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import { Client, ClientManifest, LoggingData } from '@shared/types'
+import { Client, LoggingData } from '@shared/types'
+import { ClientManifest } from '@deskthing/types'
 import useNotificationStore from './notificationStore'
 import useSettingsStore from './settingsStore'
 import useTaskStore from './taskStore'

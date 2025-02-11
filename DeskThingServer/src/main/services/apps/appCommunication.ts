@@ -2,21 +2,24 @@ console.log('[AppCom Service] Starting')
 import { openAuthWindow, sendIpcAuthMessage } from '../..'
 import {
   AuthScopes,
-  MESSAGE_TYPES,
-  FromAppData,
+  LOGGING_LEVELS,
+  ToServerData,
   Key,
   Action,
-  IncomingAppDataTypes,
+  SEND_TYPES,
   AppSettings,
-  AppDataInterface
-} from '@shared/types'
+  AppDataInterface,
+  ServerEvent,
+  Task
+} from '@DeskThing/types'
+import { TaskReference } from '@shared/types'
 import Logger from '@server/utils/logger'
 import { ipcMain } from 'electron'
 import { isValidStep, isValidTask } from '../task'
 import { isValidKey } from '../mappings/utilsMaps'
-import { Task, TaskReference } from '@shared/types/tasks'
+import { isValidAppDataInterface } from '../files/appServiceUtils'
 
-type HandlerFunction = (app: string, appData: FromAppData) => Promise<void>
+type HandlerFunction = (app: string, appData: ToServerData) => Promise<void>
 
 type RequestHandler = Record<string, HandlerFunction>
 
@@ -25,9 +28,9 @@ const wrapHandlers = (handlers: Record<string, HandlerFunction>): Record<string,
 
 const wrapHandler =
   (handler: HandlerFunction) =>
-  async (app: string, data: FromAppData): Promise<void> => {
+  async (app: string, data: ToServerData): Promise<void> => {
     try {
-      Logger.info(`Handling ${data.type} from ${app}`, { domain: app.toUpperCase() })
+      Logger.info(`Handling ${data.type} from ${app}`, { domain: 'SERVER.' + app.toUpperCase() })
       await handler(app, data)
     } catch (error) {
       Logger.error(`Handler failed`, {
@@ -42,29 +45,29 @@ const wrapHandler =
  * Handles data received from an app.
  *
  * @param {string} app - The name of the app sending the data.
- * @param {FromAppData} appData - The type of data or action requested.
+ * @param {ToServerData} appData - The type of data or action requested.
  */
-export async function handleDataFromApp(app: string, appData: FromAppData): Promise<void> {
-  if (Object.values(IncomingAppDataTypes).includes(appData.type)) {
+export async function handleDataFromApp(app: string, appData: ToServerData): Promise<void> {
+  if (Object.values(SEND_TYPES).includes(appData.type)) {
     Logger.debug(
       `[handleDataFromApp] Handling data from ${app} with type "${appData.type}" and request "${appData.request}"`,
-      { domain: app.toUpperCase() }
+      { domain: 'SERVER.' + app.toUpperCase() }
     )
     try {
       handleData[appData.type || 'default'][appData.request || 'default'](app, appData)
     } catch (error) {
       Logger.log(
-        MESSAGE_TYPES.WARNING,
+        LOGGING_LEVELS.WARN,
         `[handleDataFromApp]: Function "${appData.type}" and "${appData.request}" not found. Defaulting to legacy`,
-        { domain: app.toUpperCase() }
+        { domain: 'SERVER.' + app.toUpperCase() }
       )
       await handleLegacyCommunication(app, appData)
     }
   } else {
     Logger.log(
-      MESSAGE_TYPES.WARNING,
+      LOGGING_LEVELS.WARN,
       `[appComm]: Type ${appData.type}${appData.request && ' and request ' + appData.request} used by ${app} is depreciated and will be removed in a future version!`,
-      { domain: app.toUpperCase() }
+      { domain: 'SERVER.' + app.toUpperCase() }
     )
     await handleLegacyCommunication(app, appData)
   }
@@ -74,13 +77,13 @@ export async function handleDataFromApp(app: string, appData: FromAppData): Prom
  * Logs a warning message when an app sends an unknown data type or request.
  *
  * @param {string} app - The name of the app that sent the unknown data.
- * @param {FromAppData} appData - The data received from the app.
+ * @param {ToServerData} appData - The data received from the app.
  */
-const handleRequestMissing: HandlerFunction = async (app: string, appData: FromAppData) => {
+const handleRequestMissing: HandlerFunction = async (app: string, appData: ToServerData) => {
   Logger.log(
-    MESSAGE_TYPES.WARNING,
+    LOGGING_LEVELS.WARN,
     `[handleComs]: App ${app} sent unknown data type: ${appData.type} and request: ${appData.request}, with payload ${appData.payload ? (JSON.stringify(appData.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(appData.payload)) : 'undefined'}`,
-    { domain: app.toUpperCase() }
+    { domain: 'SERVER.' + app.toUpperCase() }
   )
 }
 
@@ -93,6 +96,20 @@ const handleRequestSetData: HandlerFunction = async (app, appData) => {
   const { appStore } = await import('@server/stores')
   if (typeof appData.payload === 'object' && appData.payload !== null) {
     appStore.addData(app, appData.payload as Record<string, string>)
+  }
+}
+
+const handleRequestSetAppData: HandlerFunction = async (app, appData) => {
+  const { appStore } = await import('@server/stores')
+  try {
+    isValidAppDataInterface(appData.payload)
+    appStore.addAppData(app, appData.payload as AppDataInterface)
+  } catch (error) {
+    Logger.error(`[handleRequestSetAppData]: Error setting app data`, {
+      error: error as Error,
+      source: 'appCommunication',
+      function: 'handleRequestSetAppData'
+    })
   }
 }
 
@@ -134,23 +151,27 @@ const handleRequestOpen: HandlerFunction = async (app, appData) => {
  * Handles a request to log data from an app.
  *
  * @param {string} app - The name of the app that sent the log request.
- * @param {FromAppData} appData - The data received from the app, including the log type and payload.
+ * @param {ToServerData} appData - The data received from the app, including the log type and payload.
  * @returns {void}
  */
 const handleRequestLog: HandlerFunction = async (app, appData) => {
-  if (appData.request && Object.values(MESSAGE_TYPES).includes(appData.request as MESSAGE_TYPES)) {
+  if (
+    appData.request &&
+    Object.values(LOGGING_LEVELS).includes(appData.request as LOGGING_LEVELS)
+  ) {
     const message =
       typeof appData.payload === 'string'
         ? appData.payload
         : typeof appData.payload === 'object'
           ? JSON.stringify(appData.payload)
           : String(appData.payload)
-    Logger.log(appData.request as MESSAGE_TYPES, message, { domain: app.toUpperCase() })
+
+    Logger.log(appData.request as LOGGING_LEVELS, message, { domain: app.toUpperCase() })
   } else {
     Logger.log(
-      MESSAGE_TYPES.WARNING,
+      LOGGING_LEVELS.WARN,
       `[handleComs]: App ${app} sent unknown log type: ${appData.request}. Please use LOG_TYPES.LOG or similar.`,
-      { domain: app.toUpperCase() }
+      { domain: 'SERVER.' + app.toUpperCase() }
     )
   }
 }
@@ -167,9 +188,9 @@ const handleRequestKeyAdd: HandlerFunction = async (app, appData): Promise<void>
     if (appData.payload) {
       isValidKey(appData.payload)
       Logger.log(
-        MESSAGE_TYPES.LOGGING,
+        LOGGING_LEVELS.LOG,
         `[handleDataFromApp] App ${app} is adding key ${appData.payload.id}`,
-        { domain: app.toUpperCase() }
+        { domain: 'SERVER.' + app.toUpperCase() }
       )
       const Key: Key = {
         id: appData.payload.id || 'unsetid',
@@ -184,7 +205,7 @@ const handleRequestKeyAdd: HandlerFunction = async (app, appData): Promise<void>
     }
   } catch (Error) {
     Logger.error('Unable to add key', {
-      domain: app.toUpperCase(),
+      domain: 'SERVER.' + app.toUpperCase(),
       error: Error as Error,
       function: 'handleRequestKeyAdd',
       source: 'appCommunication'
@@ -202,7 +223,7 @@ const handleRequestKeyRemove: HandlerFunction = async (app, appData): Promise<vo
   const { default: keyMapStore } = await import('@server/stores/mappingStore')
   if (!appData.payload || typeof appData.payload !== 'object') {
     Logger.error('Invalid payload for key removal', {
-      domain: app.toUpperCase(),
+      domain: 'SERVER.' + app.toUpperCase(),
       function: 'handleRequestKeyRemove',
       source: 'appCommunication'
     })
@@ -211,14 +232,12 @@ const handleRequestKeyRemove: HandlerFunction = async (app, appData): Promise<vo
   const payload = appData.payload as Record<string, unknown>
   if (typeof payload.id == 'string') {
     keyMapStore.removeKey(payload.id)
-    Logger.log(
-      MESSAGE_TYPES.LOGGING,
-      `[handleDataFromApp] App ${app} is removing key ${payload.id}`,
-      { domain: app.toUpperCase() }
-    )
+    Logger.log(LOGGING_LEVELS.LOG, `[handleDataFromApp] App ${app} is removing key ${payload.id}`, {
+      domain: 'SERVER.' + app.toUpperCase()
+    })
   } else {
     Logger.error('No ID found in payload (unable to add it)', {
-      domain: app.toUpperCase(),
+      domain: 'SERVER.' + app.toUpperCase(),
       function: 'handleRequestKeyRemove',
       source: 'appCommunication'
     })
@@ -237,9 +256,9 @@ const handleRequestKeyTrigger: HandlerFunction = async (app, appData): Promise<v
     keyMapStore.triggerKey(appData.payload.id, appData.payload.mode)
   } else {
     Logger.log(
-      MESSAGE_TYPES.LOGGING,
+      LOGGING_LEVELS.LOG,
       `[handleDataFromApp] App ${app} failed to trigger key ${appData.payload.id}`,
-      { domain: app.toUpperCase() }
+      { domain: 'SERVER.' + app.toUpperCase() }
     )
   }
 }
@@ -256,9 +275,9 @@ const handleRequestActionRun: HandlerFunction = async (app, appData): Promise<vo
     keyMapStore.runAction(appData.payload.id)
   } else {
     Logger.log(
-      MESSAGE_TYPES.LOGGING,
+      LOGGING_LEVELS.LOG,
       `[handleDataFromApp] App ${app} failed to provide id ${appData.payload}`,
-      { domain: app.toUpperCase() }
+      { domain: 'SERVER.' + app.toUpperCase() }
     )
   }
 }
@@ -275,9 +294,9 @@ const handleRequestActionUpdate: HandlerFunction = async (app, appData): Promise
     keyMapStore.updateIcon(appData.payload.id, appData.payload.icon)
   } else {
     Logger.log(
-      MESSAGE_TYPES.LOGGING,
+      LOGGING_LEVELS.LOG,
       `[handleDataFromApp] App ${app} failed to provide id ${appData.payload}`,
-      { domain: app.toUpperCase() }
+      { domain: 'SERVER.' + app.toUpperCase() }
     )
   }
 }
@@ -292,9 +311,9 @@ const handleRequestActionRemove: HandlerFunction = async (app, appData): Promise
   const { default: keyMapStore } = await import('@server/stores/mappingStore')
   keyMapStore.removeAction(appData.payload.id)
   Logger.log(
-    MESSAGE_TYPES.LOGGING,
+    LOGGING_LEVELS.LOG,
     `[handleDataFromApp] App ${app} is removing action ${appData.payload.id}`,
-    { domain: app.toUpperCase() }
+    { domain: 'SERVER.' + app.toUpperCase() }
   )
 }
 /**
@@ -324,13 +343,13 @@ const handleRequestActionAdd: HandlerFunction = async (app, appData): Promise<vo
       }
       keyMapStore.addAction(Action)
       Logger.log(
-        MESSAGE_TYPES.LOGGING,
+        LOGGING_LEVELS.LOG,
         `[handleDataFromApp] App ${app} is adding Action ${appData.payload.id}`,
-        { domain: app.toUpperCase() }
+        { domain: 'SERVER.' + app.toUpperCase() }
       )
     }
   } catch (Error) {
-    Logger.log(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: ${Error}`)
+    Logger.log(LOGGING_LEVELS.ERROR, `${app.toUpperCase()}: ${Error}`)
   }
 }
 
@@ -344,8 +363,32 @@ const handleRequestGetData: HandlerFunction = async (app): Promise<void> => {
   const { appStore } = await import('@server/stores')
 
   const data = await appStore.getData(app)
+  if (data) {
+    appStore.sendDataToApp(app, { type: ServerEvent.DATA, payload: data })
+  } else {
+    Logger.error(`[handleData]: App ${app} failed to provide data`, {
+      domain: 'SERVER.' + app.toUpperCase()
+    })
+  }
+}
 
-  appStore.sendDataToApp(app, { type: 'data', payload: data })
+/**
+ * Handles a request to retrieve data for a specific app.
+ *
+ * @param {string} app - The name of the app requesting the data.
+ * @returns {Promise<void>} - A Promise that resolves when the data has been sent to the app.
+ */
+const handleRequestGetAppData: HandlerFunction = async (app): Promise<void> => {
+  const { appStore } = await import('@server/stores')
+
+  const data = await appStore.getAppData(app)
+  if (data) {
+    appStore.sendDataToApp(app, { type: ServerEvent.APPDATA, payload: data })
+  } else {
+    Logger.error(`[handleAppData]: App ${app} failed to provide data`, {
+      domain: 'SERVER.' + app.toUpperCase()
+    })
+  }
 }
 
 /**
@@ -356,7 +399,7 @@ const handleRequestGetData: HandlerFunction = async (app): Promise<void> => {
  */
 const handleRequestDelData: HandlerFunction = async (app, appData): Promise<void> => {
   Logger.log(
-    MESSAGE_TYPES.LOGGING,
+    LOGGING_LEVELS.LOG,
     `[handleAppData]: ${app} is deleting data: ${appData.payload.toString()}`
   )
   if (
@@ -364,7 +407,7 @@ const handleRequestDelData: HandlerFunction = async (app, appData): Promise<void
     (typeof appData.payload !== 'string' && !Array.isArray(appData.payload))
   ) {
     Logger.log(
-      MESSAGE_TYPES.ERROR,
+      LOGGING_LEVELS.ERROR,
       `[handleAppData]: Cannot delete data because ${appData.payload.toString()} is not a string or string[]`
     )
     return
@@ -376,9 +419,9 @@ const handleRequestDelData: HandlerFunction = async (app, appData): Promise<void
 
 const handleRequestGetConfig: HandlerFunction = async (app): Promise<void> => {
   const { appStore } = await import('@server/stores')
-  appStore.sendDataToApp(app, { type: 'config', payload: {} })
+  appStore.sendDataToApp(app, { type: ServerEvent.CONFIG, payload: {} })
   Logger.log(
-    MESSAGE_TYPES.ERROR,
+    LOGGING_LEVELS.ERROR,
     `[handleAppData]: ${app} tried accessing "Config" data type which is depreciated and no longer in use!`
   )
 }
@@ -392,7 +435,13 @@ const handleRequestGetConfig: HandlerFunction = async (app): Promise<void> => {
 const handleRequestGetSettings: HandlerFunction = async (app): Promise<void> => {
   const { appStore } = await import('@server/stores')
   const settings = await appStore.getSettings(app)
-  appStore.sendDataToApp(app, { type: 'settings', payload: settings })
+  if (settings) {
+    appStore.sendDataToApp(app, { type: ServerEvent.SETTINGS, payload: settings })
+  } else {
+    Logger.error(`[handleAppData]: App ${app} failed to provide settings`, {
+      domain: 'SERVER.' + app.toUpperCase()
+    })
+  }
 }
 
 /**
@@ -403,7 +452,7 @@ const handleRequestGetSettings: HandlerFunction = async (app): Promise<void> => 
  */
 const handleRequestDelSettings: HandlerFunction = async (app, appData): Promise<void> => {
   Logger.log(
-    MESSAGE_TYPES.LOGGING,
+    LOGGING_LEVELS.LOG,
     `[handleAppData]: ${app} is deleting settings: ${appData.payload.toString()}`
   )
   if (
@@ -411,7 +460,7 @@ const handleRequestDelSettings: HandlerFunction = async (app, appData): Promise<
     (typeof appData.payload !== 'string' && !Array.isArray(appData.payload))
   ) {
     Logger.log(
-      MESSAGE_TYPES.ERROR,
+      LOGGING_LEVELS.ERROR,
       `[handleAppData]: Cannot delete settings because ${appData.payload.toString()} is not a string or string[]`
     )
     return
@@ -436,7 +485,7 @@ const handleRequestGetInput: HandlerFunction = async (app, appData) => {
 
   ipcMain.once(`user-data-response-${app}`, async (_event, formData) => {
     const { appStore } = await import('@server/stores')
-    appStore.sendDataToApp(app, { type: 'input', payload: formData })
+    appStore.sendDataToApp(app, { type: ServerEvent.INPUT, request: '', payload: formData })
   })
 }
 
@@ -444,9 +493,9 @@ const handleRequestSendToClient = async (app, appData): Promise<void> => {
   const { sendMessageToClients, handleClientMessage } = await import('../client/clientCom')
   if (app && appData.payload) {
     Logger.log(
-      MESSAGE_TYPES.LOGGING,
+      LOGGING_LEVELS.LOG,
       `[handleDataFromApp] App ${app} is sending data to the client with ${appData.payload ? (JSON.stringify(appData.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(appData.payload)) : 'undefined'}`,
-      { domain: app.toUpperCase() }
+      { domain: 'SERVER.' + app.toUpperCase() }
     )
     if (appData.payload.app == 'client') {
       handleClientMessage(appData.payload)
@@ -466,28 +515,28 @@ const handleRequestSendToApp: HandlerFunction = async (app, appData): Promise<vo
     const { appStore } = await import('@server/stores')
     appStore.sendDataToApp(appData.request, appData.payload)
     Logger.log(
-      MESSAGE_TYPES.LOGGING,
+      LOGGING_LEVELS.LOG,
       `[handleDataFromApp] App ${app} is sending data to ${appData.request} with ${appData.payload ? (JSON.stringify(appData.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(appData.payload)) : 'undefined'}`,
-      { domain: app.toUpperCase() }
+      { domain: 'SERVER.' + app.toUpperCase() }
     )
   } else {
-    Logger.log(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: App data malformed`, appData.payload)
+    Logger.log(LOGGING_LEVELS.ERROR, `${app.toUpperCase()}: App data malformed`, appData.payload)
   }
 }
 
 const taskWrapper = (handler: HandlerFunction) => {
-  return async (app: string, appData: FromAppData): Promise<void> => {
+  return async (app: string, appData: ToServerData): Promise<void> => {
     try {
       if (!appData.payload.taskId) {
         Logger.info('Missing taskId', {
-          domain: app.toUpperCase(),
+          domain: 'SERVER.' + app.toUpperCase(),
           function: 'taskWrapper'
         })
         return
       }
       await handler(app, appData)
     } catch (error) {
-      Logger.log(MESSAGE_TYPES.ERROR, `[handleAppData]: ${error}`)
+      Logger.log(LOGGING_LEVELS.ERROR, `[handleAppData]: ${error}`)
     }
   }
 }
@@ -511,7 +560,7 @@ const handleRequestInitTasks: HandlerFunction = async (app, appData): Promise<vo
         Logger.error(
           `Error in handleRequestInitTasks. Unable to add task ${typeof task == 'object' ? JSON.stringify(task) : 'unknown'}`,
           {
-            domain: app.toUpperCase(),
+            domain: 'SERVER.' + app.toUpperCase(),
             function: 'handleRequestInitTasks',
             error: error as Error
           }
@@ -525,14 +574,14 @@ const handleRequestInitTasks: HandlerFunction = async (app, appData): Promise<vo
     const { sendMessageToClients } = await import('../client/clientCom')
     sendMessageToClients({
       app: app,
-      type: 'task',
+      type: ServerEvent.TASKS,
       payload: mergedTasks,
       request: 'update'
     })
     appStore.setTasks(app, mergedTasks)
   } catch (error) {
     Logger.error('Error in handleRequestInitTasks', {
-      domain: app.toUpperCase(),
+      domain: 'SERVER.' + app.toUpperCase(),
       function: 'handleRequestInitTasks',
       error: error as Error
     })
@@ -563,7 +612,7 @@ const handleRequestUpdateTask: HandlerFunction = async (app, appData): Promise<v
   const { taskStore } = await import('@server/stores')
   if (!appData.payload.task || appData.payload.task.id) {
     Logger.warn('Missing step or step id', {
-      domain: app.toUpperCase(),
+      domain: 'SERVER.' + app.toUpperCase(),
       function: 'handleRequestUpdateStep'
     })
     return
@@ -581,7 +630,7 @@ const handleRequestAddTask: HandlerFunction = async (app, appData): Promise<void
     return taskStore.addTask(appData.payload.task)
   } catch (error) {
     Logger.error(`Invalid task`, {
-      domain: app.toUpperCase(),
+      domain: 'SERVER.' + app.toUpperCase(),
       function: 'handleRequestAddTask',
       error: error as Error
     })
@@ -605,18 +654,18 @@ const handleRequestEndTask: HandlerFunction = async (_app, appData): Promise<voi
 }
 
 const stepWrapper = (handler: HandlerFunction) => {
-  return async (app: string, appData: FromAppData): Promise<void> => {
+  return async (app: string, appData: ToServerData): Promise<void> => {
     try {
       if (!appData.payload.taskId || !appData.payload.stepId) {
         Logger.info('Missing taskId or stepId', {
-          domain: app.toUpperCase(),
+          domain: 'SERVER.' + app.toUpperCase(),
           function: 'stepWrapper'
         })
         return
       }
       await handler(app, appData)
     } catch (error) {
-      Logger.log(MESSAGE_TYPES.ERROR, `[handleAppData]: ${error}`)
+      Logger.log(LOGGING_LEVELS.ERROR, `[handleAppData]: ${error}`)
     }
   }
 }
@@ -643,7 +692,7 @@ const handleRequestUpdateStep: HandlerFunction = async (app, appData): Promise<v
   const { taskStore } = await import('@server/stores')
   if (!appData.payload.step || appData.payload.step.id) {
     Logger.warn('Missing step or step id', {
-      domain: app.toUpperCase(),
+      domain: 'SERVER.' + app.toUpperCase(),
       function: 'handleRequestAddStep'
     })
     return
@@ -658,7 +707,7 @@ const handleRequestAddStep: HandlerFunction = async (app, appData): Promise<void
   const { taskStore } = await import('@server/stores')
   if (!appData.payload.step) {
     Logger.warn('Missing step', {
-      domain: app.toUpperCase(),
+      domain: 'SERVER.' + app.toUpperCase(),
       function: 'handleRequestAddStep'
     })
     return
@@ -668,7 +717,7 @@ const handleRequestAddStep: HandlerFunction = async (app, appData): Promise<void
     taskStore.addStep(appData.payload.taskId, appData.payload.step)
   } catch (error) {
     Logger.warn(`Unable to verify step: ${error}`, {
-      domain: app.toUpperCase(),
+      domain: 'SERVER.' + app.toUpperCase(),
       function: 'handleRequestAddStep'
     })
   }
@@ -705,6 +754,7 @@ const handleStep: RequestHandler = {
 }
 const handleGet = {
   data: handleRequestGetData,
+  appData: handleRequestGetAppData,
   config: handleRequestGetConfig,
   settings: handleRequestGetSettings,
   input: handleRequestGetInput
@@ -712,12 +762,14 @@ const handleGet = {
 const handleSet: RequestHandler = {
   settings: handleRequestSetSettings,
   data: handleRequestSetData,
+  appData: handleRequestSetAppData,
   default: handleRequestSet
 }
 const handleDelete: RequestHandler = {
   settings: handleRequestDelSettings,
   data: handleRequestDelData
 }
+
 const handleOpen: RequestHandler = {
   default: handleRequestOpen
 }
@@ -728,12 +780,12 @@ const handleSendToApp: RequestHandler = {
   default: handleRequestSendToApp
 }
 const handleLog: RequestHandler = {
-  [MESSAGE_TYPES.DEBUG]: handleRequestLog,
-  [MESSAGE_TYPES.ERROR]: handleRequestLog,
-  [MESSAGE_TYPES.FATAL]: handleRequestLog,
-  [MESSAGE_TYPES.LOGGING]: handleRequestLog,
-  [MESSAGE_TYPES.MESSAGE]: handleRequestLog,
-  [MESSAGE_TYPES.WARNING]: handleRequestLog,
+  [LOGGING_LEVELS.DEBUG]: handleRequestLog,
+  [LOGGING_LEVELS.ERROR]: handleRequestLog,
+  [LOGGING_LEVELS.FATAL]: handleRequestLog,
+  [LOGGING_LEVELS.LOG]: handleRequestLog,
+  [LOGGING_LEVELS.MESSAGE]: handleRequestLog,
+  [LOGGING_LEVELS.WARN]: handleRequestLog,
   default: handleRequestMissing
 }
 const handleKey: RequestHandler = {
@@ -753,7 +805,7 @@ const handleDefault: RequestHandler = {
   default: handleRequestMissing
 }
 
-const handleData: Record<IncomingAppDataTypes, RequestHandler> = {
+const handleData: Record<SEND_TYPES, RequestHandler> = {
   get: wrapHandlers(handleGet),
   set: wrapHandlers(handleSet),
   delete: wrapHandlers(handleDelete),
@@ -779,27 +831,30 @@ const handleData: Record<IncomingAppDataTypes, RequestHandler> = {
  * @param app
  * @param appData
  */
-const handleLegacyCommunication = async (app: string, appData: FromAppData): Promise<void> => {
+const handleLegacyCommunication = async (app: string, appData: ToServerData): Promise<void> => {
   const keyMapStore = (await import('@server/stores/mappingStore')).default
   const { sendMessageToClients, handleClientMessage } = await import('../client/clientCom')
   const { appStore } = await import('@server/stores')
 
   switch (appData.type as string) {
     case 'message':
-      Logger.log(MESSAGE_TYPES.MESSAGE, appData.payload, { domain: app.toUpperCase() })
+      Logger.log(LOGGING_LEVELS.MESSAGE, appData.payload, { domain: 'SERVER.' + app.toUpperCase() })
       break
     case 'get':
       switch (appData.request) {
         case 'data':
           {
-            appStore.sendDataToApp(app, { type: 'data', payload: await appStore.getData(app) })
+            appStore.sendDataToApp(app, {
+              type: ServerEvent.DATA,
+              payload: (await appStore.getData(app)) as Record<string, string>
+            })
           }
           break
         case 'config':
           {
-            appStore.sendDataToApp(app, { type: 'config', payload: {} })
+            appStore.sendDataToApp(app, { type: ServerEvent.CONFIG, payload: {} })
             Logger.log(
-              MESSAGE_TYPES.ERROR,
+              LOGGING_LEVELS.ERROR,
               `[handleAppData]: ${app} tried accessing "Config" data type which is depreciated and no longer in use!`
             )
           }
@@ -826,9 +881,9 @@ const handleLegacyCommunication = async (app: string, appData: FromAppData): Pro
     case 'data':
       if (app && appData.payload) {
         Logger.log(
-          MESSAGE_TYPES.LOGGING,
+          LOGGING_LEVELS.LOG,
           `[handleDataFromApp] App ${app} is sending data to the client with ${appData.payload ? (JSON.stringify(appData.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(appData.payload)) : 'undefined'}`,
-          { domain: app.toUpperCase() }
+          { domain: 'SERVER.' + app.toUpperCase() }
         )
         if (appData.payload.app == 'client') {
           handleClientMessage(appData.payload)
@@ -846,19 +901,25 @@ const handleLegacyCommunication = async (app: string, appData: FromAppData): Pro
       if (appData.payload && appData.request) {
         appStore.sendDataToApp(appData.request, appData.payload)
         Logger.log(
-          MESSAGE_TYPES.LOGGING,
+          LOGGING_LEVELS.LOG,
           `[handleDataFromApp] App ${app} is sending data to ${appData.request} with ${appData.payload ? (JSON.stringify(appData.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(appData.payload)) : 'undefined'}`,
-          { domain: app.toUpperCase() }
+          { domain: 'SERVER.' + app.toUpperCase() }
         )
       } else {
-        Logger.log(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: App data malformed`, appData.payload)
+        Logger.log(
+          LOGGING_LEVELS.ERROR,
+          `${app.toUpperCase()}: App data malformed`,
+          appData.payload
+        )
       }
       break
     case 'error':
-      Logger.log(MESSAGE_TYPES.ERROR, `${appData.payload}`, { domain: app.toUpperCase() })
+      Logger.log(LOGGING_LEVELS.ERROR, `${appData.payload}`, {
+        domain: 'SERVER.' + app.toUpperCase()
+      })
       break
     case 'log':
-      Logger.info(`${appData.payload}`, { domain: app.toUpperCase() })
+      Logger.info(`${appData.payload}`, { domain: 'SERVER.' + app.toUpperCase() })
       break
     case 'button':
     case 'key':
@@ -866,9 +927,9 @@ const handleLegacyCommunication = async (app: string, appData: FromAppData): Pro
         try {
           if (appData.payload) {
             Logger.log(
-              MESSAGE_TYPES.LOGGING,
+              LOGGING_LEVELS.LOG,
               `[handleDataFromApp] App ${app} is adding key ${appData.payload.id}`,
-              { domain: app.toUpperCase() }
+              { domain: 'SERVER.' + app.toUpperCase() }
             )
             const Key: Key = {
               id: appData.payload.id || 'unsetid',
@@ -882,14 +943,14 @@ const handleLegacyCommunication = async (app: string, appData: FromAppData): Pro
             Logger.info(`${app.toUpperCase()}: Added Button Successfully`)
           }
         } catch (Error) {
-          Logger.log(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: ${Error}`)
+          Logger.log(LOGGING_LEVELS.ERROR, `${app.toUpperCase()}: ${Error}`)
         }
       } else if (appData.request == 'remove') {
         keyMapStore.removeKey(appData.payload.id)
         Logger.log(
-          MESSAGE_TYPES.LOGGING,
+          LOGGING_LEVELS.LOG,
           `[handleDataFromApp] App ${app} is removing key ${appData.payload.id}`,
-          { domain: app.toUpperCase() }
+          { domain: 'SERVER.' + app.toUpperCase() }
         )
       }
       break
@@ -914,13 +975,13 @@ const handleLegacyCommunication = async (app: string, appData: FromAppData): Pro
               }
               keyMapStore.addAction(Action)
               Logger.log(
-                MESSAGE_TYPES.LOGGING,
+                LOGGING_LEVELS.LOG,
                 `[handleDataFromApp] App ${app} is adding Action ${appData.payload.id}`,
-                { domain: app.toUpperCase() }
+                { domain: 'SERVER.' + app.toUpperCase() }
               )
             }
           } catch (Error) {
-            Logger.log(MESSAGE_TYPES.ERROR, `${app.toUpperCase()}: ${Error}`)
+            Logger.log(LOGGING_LEVELS.ERROR, `${app.toUpperCase()}: ${Error}`)
           }
           break
         case 'remove':
@@ -930,9 +991,9 @@ const handleLegacyCommunication = async (app: string, appData: FromAppData): Pro
           if (appData.payload) {
             keyMapStore.updateIcon(appData.payload.id, appData.payload.icon)
             Logger.log(
-              MESSAGE_TYPES.LOGGING,
+              LOGGING_LEVELS.LOG,
               `[handleDataFromApp] App ${app} is updating ${appData.payload.id}'s icon ${appData.payload.icon}`,
-              { domain: app.toUpperCase() }
+              { domain: 'SERVER.' + app.toUpperCase() }
             )
           }
           break
@@ -940,9 +1001,9 @@ const handleLegacyCommunication = async (app: string, appData: FromAppData): Pro
           if (appData.payload) {
             keyMapStore.runAction(appData.payload.id)
             Logger.log(
-              MESSAGE_TYPES.LOGGING,
+              LOGGING_LEVELS.LOG,
               `[handleDataFromApp] App ${app} is running action ${appData.payload.id}`,
-              { domain: app.toUpperCase() }
+              { domain: 'SERVER.' + app.toUpperCase() }
             )
           }
           break
@@ -952,9 +1013,9 @@ const handleLegacyCommunication = async (app: string, appData: FromAppData): Pro
       break
     default:
       Logger.log(
-        MESSAGE_TYPES.ERROR,
+        LOGGING_LEVELS.ERROR,
         `[handleDataFromApp] App ${app} sent an unknown object with type: ${appData.type} and request: ${appData.request}`,
-        { domain: app.toUpperCase() }
+        { domain: 'SERVER.' + app.toUpperCase() }
       )
       break
   }
@@ -973,7 +1034,7 @@ export async function requestUserInput(appName: string, scope: AuthScopes): Prom
 
   ipcMain.once(`user-data-response-${appName}`, async (_event, formData) => {
     const { appStore } = await import('@server/stores')
-    appStore.sendDataToApp(appName, { type: 'input', payload: formData })
+    appStore.sendDataToApp(appName, { type: ServerEvent.INPUT, request: '', payload: formData })
   })
 }
 
@@ -985,5 +1046,5 @@ const sendSettings = async (appName: string): Promise<void> => {
   const { default: settingsStore } = await import('@server/stores/settingsStore')
   const settings = await settingsStore.getSettings()
   const { appStore } = await import('@server/stores')
-  appStore.sendDataToApp(appName, { type: 'settings', payload: settings })
+  appStore.sendDataToApp(appName, { type: ServerEvent.SETTINGS, payload: settings })
 }

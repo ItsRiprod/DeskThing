@@ -5,7 +5,8 @@ import { join } from 'path'
 import * as fs from 'fs'
 import { app, net } from 'electron'
 import { handleAdbCommands } from './adbHandler'
-import { Client, ClientManifest, MESSAGE_TYPES, ReplyData, ReplyFn } from '@shared/types'
+import { Client, ReplyData, ReplyFn } from '@shared/types'
+import { ClientManifest, LOGGING_LEVELS } from '@DeskThing/types'
 import settingsStore from '../stores/settingsStore'
 import { getLatestRelease } from './githubHandler'
 
@@ -31,11 +32,11 @@ export const HandleDeviceData = async (data: string): Promise<void> => {
         })
         break
       default:
-        Logger.log(MESSAGE_TYPES.ERROR, 'HandleDeviceData Unable to find device version')
+        Logger.log(LOGGING_LEVELS.ERROR, 'HandleDeviceData Unable to find device version')
         break
     }
   } catch (Exception) {
-    Logger.log(MESSAGE_TYPES.ERROR, 'HandleDeviceData encountered the error ' + Exception)
+    Logger.log(LOGGING_LEVELS.ERROR, 'HandleDeviceData encountered the error ' + Exception)
   }
 }
 
@@ -299,7 +300,7 @@ export const HandlePushWebApp = async (
           final: false
         })
       Logger.log(
-        MESSAGE_TYPES.ERROR,
+        LOGGING_LEVELS.ERROR,
         '[HandlePushWebApp] Client Not Found! Ensure it is downloaded'
       )
       return
@@ -390,7 +391,7 @@ export const HandlePushWebApp = async (
           error: `${Exception}`
         })
     }
-    Logger.log(MESSAGE_TYPES.ERROR, 'HandlePushWebApp encountered the error ' + Exception)
+    Logger.log(LOGGING_LEVELS.ERROR, 'HandlePushWebApp encountered the error ' + Exception)
   }
 }
 
@@ -447,7 +448,7 @@ export const HandleWebappZipFromUrl = async (
           reply && reply('logging', { status: true, data: 'Success!', final: false })
         } catch (error) {
           console.error('Error extracting zip file:', error)
-          Logger.log(MESSAGE_TYPES.ERROR, `Error extracting zip file: ${error}`)
+          Logger.log(LOGGING_LEVELS.ERROR, `Error extracting zip file: ${error}`)
 
           // Notify failure to the frontend
           reply &&
@@ -461,7 +462,7 @@ export const HandleWebappZipFromUrl = async (
       })
       response.on('error', (error) => {
         console.error('Error downloading zip file:', error)
-        Logger.log(MESSAGE_TYPES.ERROR, `Error downloading zip file: ${error}`)
+        Logger.log(LOGGING_LEVELS.ERROR, `Error downloading zip file: ${error}`)
 
         // Notify failure to the frontend
         reply &&
@@ -475,7 +476,7 @@ export const HandleWebappZipFromUrl = async (
     } else {
       const errorMessage = `Failed to download zip file: ${response.statusCode}`
       console.error(errorMessage)
-      Logger.log(MESSAGE_TYPES.ERROR, errorMessage)
+      Logger.log(LOGGING_LEVELS.ERROR, errorMessage)
 
       // Notify failure to the frontend
       reply &&
@@ -490,7 +491,7 @@ export const HandleWebappZipFromUrl = async (
 
   request.on('error', (error) => {
     console.error('Error sending request:', error)
-    Logger.log(MESSAGE_TYPES.ERROR, `Error sending request: ${error}`)
+    Logger.log(LOGGING_LEVELS.ERROR, `Error sending request: ${error}`)
 
     // Notify failure to the frontend
     reply &&
@@ -544,7 +545,7 @@ export const handleClientManifestUpdate = async (
     Logger.info('DEVICE HANDLER: Manifest file updated successfully')
   } catch (error) {
     console.error('Error updating manifest file:', error)
-    Logger.log(MESSAGE_TYPES.ERROR, 'DEVICE HANDLER: Error updating manifest file: ' + error)
+    Logger.log(LOGGING_LEVELS.ERROR, 'DEVICE HANDLER: Error updating manifest file: ' + error)
   }
 }
 
@@ -571,7 +572,7 @@ export const checkForClient = async (
         data: 'Manifest file not found',
         final: false
       })
-    Logger.log(MESSAGE_TYPES.ERROR, 'DEVICE HANDLER: Manifest file not found')
+    Logger.log(LOGGING_LEVELS.ERROR, 'DEVICE HANDLER: Manifest file not found')
   }
   return manifestExists
 }
@@ -599,7 +600,7 @@ export const getClientManifest = async (
         final: false
       })
     Logger.log(
-      MESSAGE_TYPES.ERROR,
+      LOGGING_LEVELS.ERROR,
       'DEVICE HANDLER: Client is not detected or downloaded! Please download the client! (downloads -> client)'
     )
     return null
@@ -630,7 +631,7 @@ export const getClientManifest = async (
   } catch (error) {
     console.error('Error reading or parsing manifest file:', error)
     Logger.log(
-      MESSAGE_TYPES.ERROR,
+      LOGGING_LEVELS.ERROR,
       'DEVICE HANDLER: Error reading or parsing manifest file: ' + error
     )
     reply &&
@@ -766,7 +767,7 @@ user=root`
       final: false,
       error: `${Exception}`
     })
-    Logger.log(MESSAGE_TYPES.ERROR, 'SetupProxy encountered the error ' + Exception)
+    Logger.log(LOGGING_LEVELS.ERROR, 'SetupProxy encountered the error ' + Exception)
     throw new Error('SetupProxy encountered the error ' + Exception)
   }
 }
@@ -880,7 +881,7 @@ export const AppendToSupervisor = async (
       final: false,
       error: `${Exception}`
     })
-    Logger.log(MESSAGE_TYPES.ERROR, 'AppendToSupervisor encountered the error ' + Exception)
+    Logger.log(LOGGING_LEVELS.ERROR, 'AppendToSupervisor encountered the error ' + Exception)
   }
 }
 
@@ -972,6 +973,6 @@ files = /etc/supervisor.d/*.conf\n`
       final: false,
       error: `${Exception}`
     })
-    Logger.log(MESSAGE_TYPES.ERROR, 'EnsureSupervisorInclude encountered the error ' + Exception)
+    Logger.log(LOGGING_LEVELS.ERROR, 'EnsureSupervisorInclude encountered the error ' + Exception)
   }
 }

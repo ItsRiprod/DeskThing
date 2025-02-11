@@ -2,14 +2,14 @@ import React from 'react'
 import { useNotificationStore, usePageStore } from '@renderer/stores'
 import { IconLink, IconTrash } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
-import { MESSAGE_TYPES } from '@shared/types'
+import { LOGGING_LEVELS } from '@DeskThing/types'
 
 const colorMap = {
-  [MESSAGE_TYPES.ERROR]: 'text-red-500',
-  [MESSAGE_TYPES.FATAL]: 'text-red-700',
-  [MESSAGE_TYPES.WARNING]: 'text-orange-500',
-  [MESSAGE_TYPES.MESSAGE]: 'text-yellow-500',
-  [MESSAGE_TYPES.DEBUG]: 'text-blue-500'
+  [LOGGING_LEVELS.ERROR]: 'text-red-500',
+  [LOGGING_LEVELS.FATAL]: 'text-red-700',
+  [LOGGING_LEVELS.WARN]: 'text-orange-500',
+  [LOGGING_LEVELS.MESSAGE]: 'text-yellow-500',
+  [LOGGING_LEVELS.DEBUG]: 'text-blue-500'
 } as const
 
 const EvensPage: React.FC = () => {

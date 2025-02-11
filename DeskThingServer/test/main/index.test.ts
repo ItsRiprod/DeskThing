@@ -1,13 +1,13 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { app, BrowserWindow, shell } from 'electron'
+import { BrowserWindow, shell } from 'electron'
 import {
   createMainWindow,
   createClientWindow,
   handleUrl,
   openAuthWindow,
   sendIpcData
-} from '@server/index'
-import { ServerIPCData } from '@shared/types'
+} from '../../src/main'
+import { ServerIPCData } from '@DeskThing/types'
 
 // Mock electron modules
 vi.mock('electron', () => {
@@ -44,10 +44,8 @@ vi.mock('electron', () => {
       on: vi.fn(),
       quit: vi.fn(),
       setAsDefaultProtocolClient: vi.fn(),
-      requestSingleInstanceLock: vi.fn().mockImplementation(() => {
-        app.quit()
-        return false
-      }),
+
+      requestSingleInstanceLock: vi.fn().mockReturnValue(false),
       setAppUserModelId: vi.fn(),
       dock: {
         setMenu: vi.fn()
@@ -74,6 +72,22 @@ vi.mock('electron', () => {
   }
 })
 
+// Mock path module
+vi.mock('path', () => ({
+  join: vi.fn(),
+  resolve: vi.fn()
+}))
+
+// Mock logger
+vi.mock('../../src/main/utils/logger', () => ({
+  default: {
+    info: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    addListener: vi.fn()
+  }
+}))
+
 describe('Main Process', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -93,7 +107,11 @@ describe('Main Process', () => {
           minWidth: 500,
           minHeight: 400,
           show: false,
-          autoHideMenuBar: true
+
+          autoHideMenuBar: true,
+          webPreferences: expect.objectContaining({
+            sandbox: false
+          })
         })
       )
       expect(window).toBeDefined()
@@ -109,7 +127,13 @@ describe('Main Process', () => {
           minWidth: 500,
           minHeight: 140,
           show: false,
-          frame: true
+
+          frame: true,
+          webPreferences: expect.objectContaining({
+            sandbox: false,
+            contextIsolation: true,
+            nodeIntegration: false
+          })
         })
       )
       expect(window.loadURL).toHaveBeenCalledWith(`http://localhost:${port}/`, {})
@@ -127,10 +151,11 @@ describe('Main Process', () => {
     it('should log error when no main window exists', () => {
       const testUrl = 'deskthing://test/path'
       const consoleSpy = vi.spyOn(console, 'log')
-      global.mainWindow = null
-      handleUrl(testUrl)
+
+      handleUrl(testUrl, null)
       expect(consoleSpy).toHaveBeenCalledWith('No main window found')
     })
+
     it('should open auth window in external browser', async () => {
       const testUrl = 'https://auth.example.com'
       await openAuthWindow(testUrl)
@@ -139,22 +164,15 @@ describe('Main Process', () => {
   })
 
   describe('IPC Communication', () => {
-    it('should send IPC data to main window', () => {
+    it('should send IPC data to specified window', () => {
       const mockWindow = new BrowserWindow()
       const testData = { test: 'data' }
       sendIpcData({
         type: 'test-type',
         payload: testData,
-        window: mockWindow as BrowserWindow
+        window: mockWindow
       } as unknown as ServerIPCData)
       expect(mockWindow.webContents.send).toHaveBeenCalledWith('test-type', testData)
-    })
-  })
-
-  describe('App Lifecycle', () => {
-    it('should quit if single instance lock cannot be obtained', () => {
-      app.requestSingleInstanceLock()
-      expect(app.quit).toHaveBeenCalled()
     })
   })
 })

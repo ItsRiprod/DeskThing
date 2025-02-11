@@ -1,11 +1,14 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { Client } from '@shared/types'
+import { Client } from '@DeskThing/types'
 import connectionStore from '@server/stores/connectionsStore'
 
-vi.mock('@server/stores/', () => ({
-  Logger: {
+vi.mock('@server/utils/logger', () => ({
+  default: {
     log: vi.fn()
-  },
+  }
+}))
+
+vi.mock('@server/stores', () => ({
   settingsStore: {
     getSettings: vi.fn().mockResolvedValue({ autoDetectADB: false }),
     addListener: vi.fn()
@@ -21,7 +24,8 @@ describe('connectionStore', () => {
     vi.clearAllMocks()
   })
 
-  afterEach(() => {
+  afterEach(async () => {
+    await connectionStore.removeAllClients()
     vi.resetModules()
   })
 
@@ -85,6 +89,19 @@ describe('connectionStore', () => {
       await connectionStore.removeAllClients()
       expect(connectionStore.getClients()).toHaveLength(0)
     })
+
+    it('should ping client correctly', async () => {
+      const client: Client = {
+        connectionId: '123',
+        client_name: 'test',
+        ip: '',
+        connected: false,
+        timestamp: 0
+      }
+      await connectionStore.addClient(client)
+      expect(connectionStore.pingClient('123')).toBe(true)
+      expect(connectionStore.pingClient('456')).toBe(false)
+    })
   })
 
   describe('Listeners', () => {
@@ -101,7 +118,16 @@ describe('connectionStore', () => {
       expect(listener).toHaveBeenCalled()
     })
 
-    it('should remove listeners correctly', async () => {
+    it('should notify device listeners when devices change', async () => {
+      const listener = vi.fn()
+      await connectionStore.onDevice(listener)
+      const { handleAdbCommands } = await import('@server/handlers/adbHandler')
+      vi.mocked(handleAdbCommands).mockResolvedValue('List of devices attached\nClient1\tdevice\n')
+      await connectionStore.getAdbDevices()
+      expect(listener).toHaveBeenCalled()
+    })
+
+    it('should remove client listeners correctly', async () => {
       const listener = vi.fn()
       const removeListener = await connectionStore.on(listener)
       removeListener()
@@ -112,6 +138,14 @@ describe('connectionStore', () => {
         connected: false,
         timestamp: 0
       })
+      expect(listener).not.toHaveBeenCalled()
+    })
+
+    it('should remove device listeners correctly', async () => {
+      const listener = vi.fn()
+      const removeListener = await connectionStore.onDevice(listener)
+      removeListener()
+      await connectionStore.getAdbDevices()
       expect(listener).not.toHaveBeenCalled()
     })
   })

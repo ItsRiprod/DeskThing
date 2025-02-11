@@ -14,10 +14,11 @@
  */
 
 console.log('[Config Handler] Starting')
-import { AppData, App, MESSAGE_TYPES, AppManifest } from '@shared/types'
+import { App, LOGGING_LEVELS, AppManifest } from '@DeskThing/types'
 import Logger from '@server/utils/logger'
+import { AppData } from '@shared/types'
 import { readFromFile, writeToFile } from '../../utils/fileHandler'
-import { verifyAppDataStructure, verifyAppStructure } from './appServiceUtils'
+import { verifyAppDataStructure, sanitizeAppStructure } from './appServiceUtils'
 
 const defaultData: AppData = {}
 
@@ -37,10 +38,10 @@ const readData = async (): Promise<AppData> => {
     return data
   } catch (err) {
     if (err instanceof Error) {
-      Logger.log(MESSAGE_TYPES.WARNING, '[ReadData] Failed with ' + err.message)
+      Logger.log(LOGGING_LEVELS.WARN, '[ReadData] Failed with ' + err.message)
     } else {
       Logger.log(
-        MESSAGE_TYPES.WARNING,
+        LOGGING_LEVELS.WARN,
         '[ReadData] Failed with unknown error. See full logs for details'
       )
       console.error('Error reading data:', err)
@@ -57,7 +58,7 @@ const readData = async (): Promise<AppData> => {
  */
 const writeData = async (data: AppData): Promise<void> => {
   try {
-    Logger.log(MESSAGE_TYPES.LOGGING, '[Config Handler] Writing data')
+    Logger.log(LOGGING_LEVELS.LOG, '[Config Handler] Writing data')
 
     verifyAppDataStructure(data)
 
@@ -78,7 +79,7 @@ export const setAppData = async (newApp: Partial<App>): Promise<void> => {
   const data = await readData()
 
   if (!newApp.name) {
-    Logger.log(MESSAGE_TYPES.WARNING, 'Unable to save app. Missing name!')
+    Logger.log(LOGGING_LEVELS.WARN, 'Unable to save app. Missing name!')
     return
   }
 
@@ -91,14 +92,14 @@ export const setAppData = async (newApp: Partial<App>): Promise<void> => {
   } else {
     // Add new app
     try {
-      verifyAppStructure(newApp)
+      sanitizeAppStructure(newApp)
       data[newApp.name] = newApp
     } catch (error) {
       if (error instanceof Error) {
-        Logger.log(MESSAGE_TYPES.ERROR, `Failed to save app: ${error.message}`)
+        Logger.log(LOGGING_LEVELS.ERROR, `Failed to save app: ${error.message}`)
         console.error('App save error:', error.stack)
       } else {
-        Logger.log(MESSAGE_TYPES.ERROR, 'Failed to save app: Unknown error occurred')
+        Logger.log(LOGGING_LEVELS.ERROR, 'Failed to save app: Unknown error occurred')
         console.error('Unexpected app save error:', error)
       }
       return
@@ -133,14 +134,14 @@ export const setAppsData = async (appsList: App[]): Promise<void> => {
 export const addAppManifest = async (manifest: AppManifest, appName: string): Promise<void> => {
   const data = await readData()
 
-  Logger.log(MESSAGE_TYPES.LOGGING, `Adding manifest for ${appName} in the config file`)
+  Logger.log(LOGGING_LEVELS.LOG, `Adding manifest for ${appName} in the config file`)
   // Find existing app by name
   if (data[appName]) {
     // Update existing app
     data[appName].manifest = manifest
   } else {
     // Add new app
-    Logger.log(MESSAGE_TYPES.ERROR, `Adding manifest for ${appName} failed! App does not exist!`)
+    Logger.log(LOGGING_LEVELS.ERROR, `Adding manifest for ${appName} failed! App does not exist!`)
   }
   await writeData(data)
 }
@@ -178,7 +179,7 @@ export const getAppByName = async (appName: string): Promise<App | undefined> =>
  */
 export const purgeAppConfig = async (appName: string): Promise<void> => {
   try {
-    Logger.log(MESSAGE_TYPES.LOGGING, `Purging app: ${appName}`)
+    Logger.log(LOGGING_LEVELS.LOG, `Purging app: ${appName}`)
     const data = await readData()
 
     if (!data[appName]) {
@@ -188,7 +189,7 @@ export const purgeAppConfig = async (appName: string): Promise<void> => {
     delete data[appName]
     await writeData(data)
   } catch (error) {
-    Logger.log(MESSAGE_TYPES.ERROR, `Failed to purge app ${appName}: ${error}`)
+    Logger.log(LOGGING_LEVELS.ERROR, `Failed to purge app ${appName}: ${error}`)
     throw error
   }
 }

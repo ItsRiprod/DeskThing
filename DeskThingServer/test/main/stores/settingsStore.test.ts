@@ -1,7 +1,8 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import fs from 'fs'
 import os from 'os'
-import { LOGGING_LEVEL } from '@shared/types'
+import { LOGGING_LEVEL, Settings } from '@DeskThing/types'
+import { writeToFile, readFromFile } from '@server/utils/fileHandler'
+
 vi.mock('fs')
 vi.mock('os')
 vi.mock('auto-launch', () => ({
@@ -11,22 +12,44 @@ vi.mock('auto-launch', () => ({
   }))
 }))
 
-import settingsStore from '@server/stores/settingsStore'
-vi.mock('@server/utils/fileHandler', () => ({
-  writeToFile: vi.fn(),
-  readFromFile: vi.fn()
-}))
-
-vi.mock('@server/stores/', () => ({
-  Logger: {
+vi.mock('@server/utils/fileHandler')
+vi.mock('@server/utils/logger', () => ({
+  default: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    fatal: vi.fn(),
     log: vi.fn()
   }
 }))
+
+import settingsStore from '@server/stores/settingsStore'
+
 describe('settingsStore', () => {
+  const mockSettings: Settings = {
+    version: '0.9.2',
+    version_code: 9.2,
+    callbackPort: 8888,
+    devicePort: 8891,
+    address: '0.0.0.0',
+    LogLevel: LOGGING_LEVEL.PRODUCTION,
+    autoStart: false,
+    autoConfig: false,
+    minimizeApp: true,
+    globalADB: false,
+    autoDetectADB: false,
+    refreshInterval: -1,
+    playbackLocation: 'none',
+    localIp: ['192.168.1.100'],
+    appRepos: ['https://github.com/ItsRiprod/deskthing-apps'],
+    clientRepos: ['https://github.com/ItsRiprod/deskthing-client']
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.spyOn(fs, 'writeFileSync').mockReturnValue(undefined)
-    vi.spyOn(fs, 'existsSync').mockReturnValue(true)
+    vi.mocked(readFromFile).mockResolvedValue(mockSettings)
+    vi.mocked(writeToFile).mockResolvedValue(undefined)
     vi.mocked(os.networkInterfaces).mockReturnValue({
       eth0: [
         {
@@ -45,6 +68,12 @@ describe('settingsStore', () => {
     vi.resetModules()
   })
 
+  it('should initialize with default settings', async () => {
+    vi.mocked(readFromFile).mockRejectedValue(new Error('File not found'))
+    const settings = await settingsStore.getSettings()
+    expect(settings)
+  })
+
   it('should return localhost when no valid network interfaces are found', async () => {
     vi.mocked(os.networkInterfaces).mockReturnValue({} as NodeJS.Dict<os.NetworkInterfaceInfo[]>)
     const settings = await settingsStore.getSettings()
@@ -58,38 +87,45 @@ describe('settingsStore', () => {
     settingsStore.addListener(listener1)
     settingsStore.addListener(listener2)
 
-    // Need to wait for the initial setupSettings to complete
-    await settingsStore.getSettings()
-
     await settingsStore.updateSetting('minimizeApp', false)
-    // Need to wait for the async notifyListeners to complete
     await new Promise(process.nextTick)
 
-    expect(listener1).toHaveBeenCalled()
-    expect(listener2).toHaveBeenCalled()
+    expect(listener1).toHaveBeenCalledWith(expect.objectContaining({ minimizeApp: false }))
+    expect(listener2).toHaveBeenCalledWith(expect.objectContaining({ minimizeApp: false }))
   })
+
   it('should handle auto-launch setting updates', async () => {
     await settingsStore.updateSetting('autoStart', true)
     const settings = await settingsStore.getSettings()
     expect(settings.autoStart).toBe(true)
+    expect(writeToFile).toHaveBeenCalledWith(
+      expect.objectContaining({ autoStart: true }),
+      'settings.json'
+    )
   })
 
   it('should maintain version information in settings', async () => {
     const settings = await settingsStore.getSettings()
-    expect(settings.version).toBeDefined()
-    expect(settings.version_code).toBeDefined()
+    expect(settings.version).toBe('0.9.2')
+    expect(settings.version_code).toBe(9.2)
   })
 
-  it('should handle missing settings file gracefully', async () => {
-    vi.spyOn(fs, 'existsSync').mockReturnValue(false)
+  it('should handle outdated version code by creating new settings', async () => {
+    vi.mocked(readFromFile).mockResolvedValueOnce({
+      ...mockSettings,
+      version_code: 9.1
+    })
     const settings = await settingsStore.loadSettings()
-    expect(settings).toEqual(
-      expect.objectContaining({
-        callbackPort: 8888,
-        devicePort: 8891,
-        address: '0.0.0.0',
-        LogLevel: LOGGING_LEVEL.PRODUCTION
-      })
-    )
+    expect(settings).toEqual(expect.objectContaining(mockSettings))
+    expect(writeToFile).toHaveBeenCalled()
+  })
+
+  it('should save settings correctly', async () => {
+    const newSettings: Settings = {
+      ...mockSettings,
+      minimizeApp: false
+    }
+    await settingsStore.saveSettings(newSettings)
+    expect(writeToFile).toHaveBeenCalledWith(newSettings, 'settings.json')
   })
 })

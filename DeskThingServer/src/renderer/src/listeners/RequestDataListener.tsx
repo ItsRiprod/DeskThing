@@ -1,8 +1,8 @@
 import { useEffect } from 'react'
 import { useNotificationStore } from '@renderer/stores'
-import { AuthScopes } from '@shared/types'
+import { AuthScopes } from '@DeskThing/types'
 import useTaskStore from '@renderer/stores/taskStore'
-import { TaskList } from '@shared/types/tasks'
+import { TaskList } from '@shared/types'
 
 const RequestDataListener = (): null => {
   const addRequest = useNotificationStore((state) => state.addRequest)

@@ -1,4 +1,4 @@
-import { Step, STEP_TYPES } from '@shared/types/tasks'
+import { Step, STEP_TYPES } from '@DeskThing/types'
 import { FC } from 'react'
 import TaskAction from './TaskAction'
 import { StepProps } from './TaskBase'

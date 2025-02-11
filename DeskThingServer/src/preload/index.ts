@@ -1,29 +1,30 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, Settings, Task } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import {
+  App,
   Action,
   ActionReference,
-  App,
   AppDataInterface,
-  AppReturnData,
-  AppSettings,
-  Button,
-  ButtonMapping,
-  Client,
-  ClientManifest,
-  GithubRelease,
-  ToAppData,
-  IPC_HANDLERS,
-  IPCData,
-  Key,
-  Log,
-  Profile,
-  Settings,
-  SocketData,
   AppManifest,
+  AppSettings,
+  ClientManifest,
+  Key,
+  SocketData,
   Step,
   TaskList,
-  Task
+  ToAppData
+} from '@DeskThing/types'
+import {
+  Profile,
+  Client,
+  ButtonMapping,
+  Log,
+  AppReturnData,
+  Button,
+  FeedbackReport,
+  GithubRelease,
+  IPC_HANDLERS,
+  IPCData
 } from '@shared/types'
 
 // Custom APIs for renderer
@@ -611,6 +612,22 @@ const api = {
         kind: 'utility',
         type: 'update',
         request: 'restart',
+        payload: ''
+      })
+  },
+  feedback: {
+    submit: async (feedback: FeedbackReport): Promise<void> =>
+      await sendCommand('UTILITY', {
+        kind: 'utility',
+        type: 'feedback',
+        request: 'set',
+        payload: feedback
+      }),
+    getForumData: async (): Promise<void> =>
+      await sendCommand('UTILITY', {
+        kind: 'utility',
+        type: 'feedback',
+        request: 'get',
         payload: ''
       })
   }

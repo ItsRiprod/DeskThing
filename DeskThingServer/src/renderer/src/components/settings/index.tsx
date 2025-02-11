@@ -1,5 +1,5 @@
 import React from 'react'
-import { SettingsType } from '@shared/types'
+import { SettingsType } from '@DeskThing/types'
 import { SettingsBooleanComponent } from './SettingsBoolean'
 import { SettingsListComponent } from './SettingsList'
 import { SettingsMultiSelectComponent } from './SettingsMultiSelect'

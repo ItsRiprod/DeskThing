@@ -82,7 +82,9 @@ export const readFromFile = async <T>(filename: string): Promise<T | false> => {
       try {
         await fs.promises.access(dataFilePath)
       } catch (err) {
-        throw new Error('[readFromFile]: File does not exist or do not have access', { cause: err })
+        throw new Error(`[readFromFile]: File ${filename} does not exist or do not have access`, {
+          cause: err
+        })
       }
 
       const rawData = await fs.promises.readFile(dataFilePath)
@@ -92,7 +94,7 @@ export const readFromFile = async <T>(filename: string): Promise<T | false> => {
         error: err as Error,
         source: 'readFromFile'
       })
-      throw new Error('[readFromFile]: Error reading data', { cause: err })
+      throw new Error(`[readFromFile]: Error reading data from file ${filename}`, { cause: err })
     }
   })
 }
@@ -107,31 +109,51 @@ export const readFromFile = async <T>(filename: string): Promise<T | false> => {
  */
 export const writeToFile = async <T>(data: T, filepath: string): Promise<void> => {
   return fileQueue.enqueue(filepath, async () => {
-    const uniqueId = `${Date.now()}-${Math.random().toString(36).slice(2)}`
-    const tempPath = join(app.getPath('temp'), `${filepath}-${uniqueId}.tmp`)
-    const tempDir = join(app.getPath('temp'), ...filepath.split(/[/\\]/).slice(0, -1))
     const finalPath = join(app.getPath('userData'), filepath)
     const dirPath = join(app.getPath('userData'), ...filepath.split(/[/\\]/).slice(0, -1))
 
     try {
-      await fs.promises.mkdir(tempDir, { recursive: true })
-
-      await fs.promises.mkdir(dirPath, { recursive: true })
-
-      await fs.promises.writeFile(tempPath, JSON.stringify(data, null, 2))
-
-      await fs.promises.access(tempPath)
-
-      await fs.promises.copyFile(tempPath, finalPath)
-
-      await fs.promises.access(finalPath)
-
-      const exists = await fs.promises
-        .access(tempPath)
+      // Check if file exists
+      const fileExists = await fs.promises
+        .access(finalPath)
         .then(() => true)
         .catch(() => false)
-      if (exists) {
-        await fs.promises.unlink(tempPath)
+
+      if (!fileExists) {
+        // If file doesn't exist, write directly
+        await fs.promises.mkdir(dirPath, { recursive: true })
+        await fs.promises.writeFile(finalPath, JSON.stringify(data, null, 2))
+        return
+      }
+
+      // If file exists, use temp file for safe writing
+      const uniqueId = `${Date.now()}-${Math.random().toString(36).slice(2)}`
+      const tempPath = join(app.getPath('temp'), `${filepath}-${uniqueId}.tmp`)
+      const tempDir = join(app.getPath('temp'), ...filepath.split(/[/\\]/).slice(0, -1))
+
+      try {
+        await fs.promises.mkdir(tempDir, { recursive: true })
+        await fs.promises.mkdir(dirPath, { recursive: true })
+        await fs.promises.writeFile(tempPath, JSON.stringify(data, null, 2))
+        await fs.promises.copyFile(tempPath, finalPath)
+      } catch (err) {
+        Logger.error('Error writing data', {
+          error: err as Error,
+          source: 'writeToFile'
+        })
+        throw new Error('[writeToFile]: failed with ', { cause: err })
+      } finally {
+        try {
+          await Promise.allSettled([
+            fs.promises.rm(tempPath, { force: true }),
+            fs.promises.rm(tempDir, { force: true, recursive: true })
+          ])
+        } catch (err) {
+          Logger.error('Error deleting temp files', {
+            error: err as Error,
+            source: 'writeToFile'
+          })
+        }
       }
     } catch (err) {
       Logger.error('Error writing data', {
@@ -139,22 +161,9 @@ export const writeToFile = async <T>(data: T, filepath: string): Promise<void> =
         source: 'writeToFile'
       })
       throw new Error('[writeToFile]: failed with ', { cause: err })
-    } finally {
-      try {
-        await Promise.allSettled([
-          fs.promises.rm(tempPath, { force: true }),
-          fs.promises.rm(tempDir, { force: true, recursive: true })
-        ])
-      } catch (err) {
-        Logger.error('Error deleting temp files', {
-          error: err as Error,
-          source: 'writeToFile'
-        })
-      }
     }
   })
 }
-
 export const addToFile = async (data: string | Buffer, filepath: string): Promise<void> => {
   return fileQueue.enqueue(filepath, async () => {
     const fullPath = join(app.getPath('userData'), filepath)

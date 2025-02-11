@@ -1,152 +1,20 @@
 console.log('[AppInst Service] Starting')
-import { join, resolve } from 'path'
-import { app } from 'electron'
+import { resolve } from 'path'
 import Logger from '@server/utils/logger'
 import {
-  ToAppData,
-  ToClientType,
   Response,
   AppManifest,
-  DeskThing,
-  AppReturnData,
-  MESSAGE_TYPES,
-  ReplyFn,
-  AppInstance
-} from '@shared/types'
+  LOGGING_LEVELS,
+  DeskThingType,
+  EventPayload
+} from '@DeskThing/types'
+import { ReplyFn, AppInstance } from '@shared/types'
 import { getAppFilePath, getManifest } from './appUtils'
-import { mkdirSync, existsSync, rmSync, promises } from 'node:fs'
+import { existsSync, promises } from 'node:fs'
 import { handleDataFromApp } from './appCommunication'
 import { constructManifest } from '../files/appServiceUtils'
-
-/**
- * Inputs a .zip file path of an app and extracts it to the /apps/appId/ folder.
- * Returns metadata about the extracted app.
- *
- * @param {string} zipFilePath - The file path of the .zip file to extract.
- * @depreciated
- * @returns {Promise<returnData>} An object containing metadata about the extracted app:
- * - {string} appId - The ID of the app extracted.
- * - {string} appName - The name of the app extracted.
- * - {string} appVersion - The version of the app extracted.
- * - {string} author - The author of the app extracted.
- * - {boolean} success - Whether the extraction was successful.
- * - {string} message - A message about the extraction process.
- */
-export async function handleZip(zipFilePath: string, reply?): Promise<AppReturnData> {
-  const { getManifest } = await import('./appUtils')
-  try {
-    Logger.info(`[handleZip] Extracting ${zipFilePath}...`)
-    const appPath = join(app.getPath('userData'), 'apps') // Extract to user data folder
-    // Create the extraction directory if it doesn't exist
-    if (!existsSync(appPath)) {
-      Logger.info(`[handleZip] Creating extraction directory at ${appPath}...`)
-      mkdirSync(appPath, { recursive: true })
-    }
-
-    // Create the 'temp' file directory for temporary extraction
-    const tempDir = join(appPath, 'temp')
-
-    // Delete the temp directory if it exists
-    if (existsSync(tempDir)) {
-      Logger.info(`[handleZip] Removing temporary directory at ${tempDir}...`)
-      rmSync(tempDir, { recursive: true, force: true })
-    }
-    mkdirSync(tempDir, { recursive: true })
-
-    reply && reply('logging', { status: true, data: 'Extracting App', final: false })
-
-    // Extract the .zip file to a temporary location to get the manifest.json
-    const AdmZip = await import('adm-zip')
-    await new Promise<void>((resolve, reject) => {
-      try {
-        Logger.info(`[handleZip] Extracting app...`)
-        const zip = new AdmZip.default(zipFilePath)
-
-        zip.getEntries().forEach((entry) => {
-          if (entry.isDirectory) {
-            Logger.info(`[handleZip] Skipping directory ${entry.entryName}`)
-          } else {
-            Logger.info(`[handleZip] Extracting file ${entry.entryName}`)
-            zip.extractEntryTo(entry, tempDir, true, true)
-          }
-        })
-
-        zip.extractAllTo(tempDir, true)
-        Logger.info(`[handleZip] App extracted to ${tempDir}`)
-        resolve()
-      } catch (error) {
-        Logger.error(`SERVER: Error extracting ${zipFilePath}`, {
-          function: 'handleZip',
-          source: 'handleZip',
-          error: error as Error
-        })
-        reply && reply('logging', { status: false, data: 'Extraction failed!', final: true })
-        reject(error)
-      }
-    })
-
-    reply && reply('logging', { status: true, data: 'Getting Manifest', final: false })
-
-    const manifestData = await getManifest(tempDir)
-    let returnData
-
-    Logger.info(`[handleZip] Fetching manifest...`)
-    if (!manifestData) {
-      Logger.error(`SERVER: Error getting manifest from ${zipFilePath}`, {
-        function: 'handleZip',
-        source: 'handleZip'
-      })
-      returnData = {
-        appId: '',
-        appName: '',
-        appVersion: '',
-        author: '',
-        platforms: [],
-        requirements: []
-      }
-    } else {
-      returnData = {
-        appId: manifestData.id,
-        appName: manifestData.label,
-        appVersion: manifestData.version,
-        author: manifestData.author,
-        platforms: manifestData.platforms,
-        requirements: manifestData.requires
-      }
-    }
-
-    reply && reply('logging', { status: true, data: 'Disabling and purging app', final: false })
-
-    // Create the folder where the app will be stored in
-    const appDirectory = join(appPath, returnData.appId)
-    if (existsSync(appDirectory)) {
-      Logger.info(`[handleZip] Old app detected, purging...`)
-      const { default: appHandler } = await import('@server/stores/appStore')
-
-      await appHandler.disable(returnData.appId)
-
-      await appHandler.purge(returnData.appId)
-      rmSync(appDirectory, { recursive: true })
-    }
-
-    Logger.info(`[handleZip] Moving files to ${appDirectory}...`)
-    // Move the extracted files from tempDir to appDirectory
-    await promises.rename(tempDir, appDirectory)
-
-    reply && reply('logging', { status: true, data: 'App files moved successfully', final: false })
-
-    Logger.info(`SERVER: Successfully extracted ${zipFilePath} to ${appDirectory}`)
-    Logger.info(`Successfully extracted ${zipFilePath} to ${appDirectory}`)
-    return returnData
-  } catch (error) {
-    Logger.error(`Error extracting ${zipFilePath}`, {
-      function: 'handleZIP',
-      source: 'handleZIP',
-      error: error as Error
-    })
-    throw new Error('[handleZIP] Error handling zip file')
-  }
-}
+import appStore from '@server/stores/appStore'
+import { overwriteData } from '../files/dataService'
 
 interface ExecuteStagedFileType {
   reply?: ReplyFn
@@ -161,23 +29,28 @@ export const executeStagedFile = async ({
   appId,
   run = false
 }: ExecuteStagedFileType): Promise<void> => {
-  const tempPath = getAppFilePath('staged')
   const tempZipPath = getAppFilePath('staged', 'temp.zip')
   const extractedPath = getAppFilePath('staged', 'extracted')
-
+  const appManifestData = await getManifest(extractedPath)
   // get the app id
+  if (!appManifestData) {
+    Logger.error(`SERVER: Error getting manifest from ${extractedPath}`, {
+      function: 'executeStagedFile',
+      source: 'executeStagedFile',
+      error: new Error('Error getting manifest from tempPath')
+    })
+    reply && reply('logging', { status: false, data: 'Error getting manifest', final: true })
+    return
+  }
+
   if (!appId) {
-    const manifestData = await getManifest(tempPath)
-    if (!manifestData) {
-      Logger.error(`SERVER: Error getting manifest from ${tempPath}`, {
-        function: 'executeStagedFile',
-        source: 'executeStagedFile',
-        error: new Error('Error getting manifest from tempPath')
-      })
-      reply && reply('logging', { status: false, data: 'Error getting manifest', final: true })
-      return
-    }
-    appId = manifestData.id
+    appId = appManifestData.id
+  }
+  if (overwrite) {
+    Logger.info(`[executeStagedFile] Overwriting existing app (overwrite is enabled)...`)
+    await appStore.purge(appId)
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+    await overwriteData(appId, { version: appManifestData.version })
   }
 
   const appPath = getAppFilePath(appId)
@@ -200,22 +73,16 @@ export const executeStagedFile = async ({
   }
 
   // Get the app store
-  const { appStore } = await import('@server/stores')
 
   const app = appStore.get(appId)
 
-  if (app) {
+  if (app && !overwrite) {
     // If the app already exists in the app store
-    if (overwrite) {
-      Logger.info(`[executeStagedFile] Overwriting existing app (overwrite is enabled)...`)
-      await appStore.purge(appId)
-    } else {
-      Logger.info(`[executeStagedFile] Disabling existing app (Overwrite is disabled)...`)
-      // Check if the app exists and disable it if it does
-      const app = appStore.get(appId)
-      if (app?.enabled || app?.running) {
-        await appStore.disable(appId)
-      }
+    Logger.info(`[executeStagedFile] Disabling existing app (Overwrite is disabled)...`)
+    // Check if the app exists and disable it if it does
+    const app = appStore.get(appId)
+    if (app?.enabled || app?.running) {
+      await appStore.disable(appId)
     }
   } else {
     // If the app is new
@@ -232,8 +99,7 @@ export const executeStagedFile = async ({
         verifiedManifest: false,
         updateAvailable: false,
         updateChecked: false
-      },
-      func: {}
+      }
     }
     appStore.add(App)
   }
@@ -265,9 +131,8 @@ export const executeStagedFile = async ({
   }
 
   if (run) {
-    const { default: appHandler } = await import('@server/stores/appStore')
     Logger.info(`[executeStagedFile] Running app automatically...`)
-    await appHandler.run(appId)
+    await appStore.run(appId)
   }
 }
 
@@ -400,7 +265,7 @@ export const stageAppFile = async (path: string, reply: ReplyFn): Promise<AppMan
       if (error instanceof Error) {
         const errorMessage = `Failed to copy local file: ${error.message}`
         console.error(`[handleZipFromFile] Error copying local file: ${error.message}`)
-        Logger.log(MESSAGE_TYPES.ERROR, errorMessage)
+        Logger.log(LOGGING_LEVELS.ERROR, errorMessage)
         reply('logging', {
           status: false,
           data: 'Encountered an error',
@@ -427,7 +292,7 @@ export const stageAppFile = async (path: string, reply: ReplyFn): Promise<AppMan
       Logger.info(`[handleZipFromFile] Extracting app...`)
       if (!existsSync(tempZipPath)) {
         Logger.log(
-          MESSAGE_TYPES.ERROR,
+          LOGGING_LEVELS.ERROR,
           `[handleZipFromFile] Temporary zip path at ${tempZipPath} does not exist!`
         )
         reply('logging', { status: false, data: 'Temp path does not exist!', final: false })
@@ -441,7 +306,7 @@ export const stageAppFile = async (path: string, reply: ReplyFn): Promise<AppMan
       reply('logging', { status: true, data: `App extracted to ${extractedPath}`, final: false })
       resolve()
     } catch (error) {
-      Logger.log(MESSAGE_TYPES.ERROR, `[handleZipFromFile]: Error extracting ${extractedPath}`)
+      Logger.log(LOGGING_LEVELS.ERROR, `[handleZipFromFile]: Error extracting ${extractedPath}`)
       reply && reply('logging', { status: false, data: 'Extraction failed!', final: true })
       reject(error)
     }
@@ -458,7 +323,7 @@ export const stageAppFile = async (path: string, reply: ReplyFn): Promise<AppMan
   Logger.info(`[handleZip] Fetching manifest...`)
   if (!manifestData) {
     Logger.log(
-      MESSAGE_TYPES.ERROR,
+      LOGGING_LEVELS.ERROR,
       `[handleZip] Error getting manifest from ${extractedPath}. Returning placeholder data...`
     )
     reply && reply('logging', { status: true, data: 'Error getting manifest!', final: false })
@@ -470,97 +335,6 @@ export const stageAppFile = async (path: string, reply: ReplyFn): Promise<AppMan
 }
 
 /**
- * Downloads a .zip file from a URL and extracts it to the /apps/appId/ folder.
- * @depreciated
- * @param zipUrlPath
- * @param event
- * @returns
- */
-export async function handleZipFromUrl(zipUrlPath: string, reply): Promise<AppReturnData | void> {
-  const tempZipPath = getAppFilePath('downloads', 'temp.zip')
-  let returnData: AppReturnData | undefined
-  try {
-    Logger.info(`[handleZipFromUrl] Downloading ${zipUrlPath}...`)
-    if (!existsSync(getAppFilePath('downloads'))) {
-      Logger.info(`[handleZipFromUrl] Creating downloads directory...`)
-      mkdirSync(getAppFilePath('downloads'), { recursive: true })
-    }
-
-    reply('logging', { status: true, data: 'Fetching...', final: false })
-
-    const response = await fetch(zipUrlPath)
-
-    if (!response.ok) {
-      console.error(`[handleZipFromFile] Failed to download zip file: ${response.status}`)
-      const errorMessage = `Failed to download zip file: ${response.status}`
-      Logger.log(MESSAGE_TYPES.ERROR, errorMessage)
-      reply('logging', {
-        status: false,
-        data: 'Encountered an error',
-        final: true,
-        error: errorMessage
-      })
-      return
-    } else {
-      Logger.info(`[handleZipFromUrl] Downloading ${zipUrlPath}`)
-      reply('logging', { status: true, data: 'Downloading... 0%', final: false })
-    }
-
-    const response2 = response.clone()
-    const contentLength = Number(response.headers.get('content-length'))
-    let receivedLength = 0
-    const reader = response2.body?.getReader()
-    if (!reader) {
-      throw new Error('Failed to get reader from response body')
-    }
-    const chunks: Uint8Array[] = []
-    let lastProgress = 0
-
-    let done = false
-    while (!done) {
-      const result = await reader.read()
-      done = result.done
-      if (!done) {
-        chunks.push(result.value as Uint8Array)
-        receivedLength += result.value?.length || 0
-        const progress = Math.round((receivedLength / contentLength) * 100)
-        if (progress > lastProgress) {
-          reply('logging', { status: true, data: `Downloading... ${progress}%`, final: false })
-          lastProgress = progress
-        }
-      }
-    }
-
-    const arrayBuffer = await response.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-    Logger.info(`[handleZipFromUrl] Writing to ${tempZipPath}...`)
-    await promises.writeFile(tempZipPath, buffer)
-
-    reply('logging', { status: true, data: 'Extracting...', final: false })
-
-    returnData = await handleZip(tempZipPath, reply)
-    Logger.info(`Successfully processed and deleted ${tempZipPath}`)
-    reply('zip-name', { status: true, data: returnData, final: true })
-    return returnData
-  } catch (error) {
-    Logger.log(MESSAGE_TYPES.ERROR, `[handleZIPfromURL] Error handling zip file: ${error}`)
-    throw new Error('[handleZIPfromURL] Error handling zip file' + error)
-  } finally {
-    // Clean up the temporary zip file and extracted directory
-    try {
-      if (existsSync(tempZipPath)) {
-        await promises.unlink(tempZipPath)
-      }
-      if (existsSync(getAppFilePath('downloads', 'extracted'))) {
-        await promises.rm(getAppFilePath('downloads', 'extracted'), { recursive: true })
-      }
-      Logger.info(`Successfully deleted temporary files`)
-    } catch (cleanupError) {
-      console.error(`Error deleting temp files: ${cleanupError}`)
-    }
-  }
-}
-/**
  * Runs an app by its name.
  *
  * This portion of code will run the /appName/index.js of the provided app, save the app to the list of running apps, and setup any listeners/callback functions the apps will use.
@@ -570,11 +344,22 @@ export async function handleZipFromUrl(zipUrlPath: string, reply): Promise<AppRe
  */
 export const run = async (app: AppInstance): Promise<void> => {
   try {
-    if (app && typeof app.func.start === 'function') {
-      app.func.start()
-      if (app.meta?.verified && app.meta.verifiedManifest) {
-        return // the app has already been verified
-      }
+    if (
+      app &&
+      typeof app.func?.start === 'function' &&
+      app.meta?.verified &&
+      app.meta.verifiedManifest
+    ) {
+      app.func.start({
+        toServer: (data) => handleDataFromApp(app.name, data),
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        SysEvents: (_event: string, _listener: (...args: string[]) => void) => {
+          return () => {
+            /* do something with this to let apps listen for server events like apps being added or settings being changed */
+          }
+        }
+      })
+      return // the app has already been verified
     } else {
       Logger.info(`App ${app.name} has never been started. Running.`, {
         source: 'appInstaller',
@@ -592,6 +377,14 @@ export const run = async (app: AppInstance): Promise<void> => {
       return
     }
 
+    Logger.info(`Configuring ${app.name}!`, {
+      source: 'appInstaller',
+      function: 'AppRunner'
+    })
+
+    // changes the reference for functions
+    await setupFunctions(app, DeskThing)
+    appStore.add(app)
     if (!app.manifest) {
       Logger.info(`Getting ${app.name}'s manifest file!`, {
         source: 'appInstaller',
@@ -609,24 +402,15 @@ export const run = async (app: AppInstance): Promise<void> => {
         })
         return
       } else {
-        const { appStore } = await import('@server/stores')
         appStore.appendManifest(manifest, app.name)
       }
     }
-
-    Logger.info(`Configuring ${app.name}!`, {
-      source: 'appInstaller',
-      function: 'AppRunner'
-    })
-
-    // changes the reference for functions
-    await setupFunctions(app, DeskThing)
 
     Logger.info(`Running ${app.name}!`, {
       source: 'appInstaller',
       function: 'AppRunner'
     })
-    const result = await start(app.name)
+    const result = await start(app)
     if (!result) {
       Logger.error(`App ${app.name} failed to start!`, {
         source: 'appInstaller',
@@ -652,58 +436,72 @@ export const run = async (app: AppInstance): Promise<void> => {
  * @param appName
  * @returns
  */
-export const start = async (appName: string): Promise<boolean> => {
-  const AppState = await import('../../stores/appStore')
-  const appState = AppState.default
-  const appInstance = appState.get(appName)
-  Logger.info(`[start(${appName})]: Attempting to start app.`)
+export const start = async (appInstance: string | AppInstance): Promise<boolean> => {
+  if (typeof appInstance == 'string') {
+    appInstance = appStore.get(appInstance) as AppInstance
+  }
+  Logger.info(`[start(${appInstance.name})]: Attempting to start app.`)
 
-  if (!appInstance || !appInstance.func.start || appInstance.func.start === undefined) {
-    Logger.log(
-      MESSAGE_TYPES.ERROR,
-      `[start(${appName})]: App ${appName} not found. or not started correctly`
-    )
+  if (!appInstance || !appInstance.func?.start || appInstance.func.start === undefined) {
+    Logger.warn(`App ${appInstance.name} not found or not started correctly!`, {
+      source: 'appInstaller',
+      function: 'AppRunner'
+    })
     return false
   }
   // Check if all required apps are running
-  const manifest = appInstance.manifest
+  const appPath = getAppFilePath(appInstance.name)
+  const manifest = appInstance.manifest || (await getManifest(appPath))
 
   if (!manifest) {
-    Logger.log(MESSAGE_TYPES.ERROR, `[start(${appName})]: App ${appName} not found.`)
+    Logger.warn(`[start(${appInstance.name})]: App ${appInstance.name}'s manifest not found.`, {
+      function: 'start',
+      source: 'appInstaller'
+    })
     return false
   }
 
   if (manifest.requires) {
     const requiredApps = manifest.requires || []
     for (const requiredApp of requiredApps) {
-      if (!appState.getOrder().includes(requiredApp) && requiredApp.length > 2) {
+      if (!appStore.getOrder().includes(requiredApp) && requiredApp.length > 2) {
         Logger.log(
-          MESSAGE_TYPES.ERROR,
-          `[start(${appName})]: Unable to run ${appName}! This app requires '${requiredApp}' to be enabled and running.`
+          LOGGING_LEVELS.ERROR,
+          `[start(${appInstance.name})]: Unable to run ${appInstance.name}! This app requires '${requiredApp}' to be enabled and running.`
         )
-        appState.stop(appName)
+        appStore.stop(appInstance.name)
         return false
       }
     }
   }
 
   try {
-    const startResponse: Response = await appInstance.func.start()
-    if (startResponse.status == 200) {
-      Logger.log(
-        MESSAGE_TYPES.MESSAGE,
-        `[start(${appName})]: App ${appName} started successfully with response ${startResponse.data.message}`
-      )
-      return true
-    } else {
-      Logger.log(
-        MESSAGE_TYPES.ERROR,
-        `[start(${appName})]: App ${appName} failed to start with response ${startResponse.data.message}`
-      )
-      return false
+    if (appInstance.func?.start) {
+      const startResponse: Response = await appInstance.func.start({
+        toServer: (data) => handleDataFromApp(appInstance.name, data),
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        SysEvents: (_event: string, _listener: (...args: string[]) => void) => {
+          return () => {
+            /* do something with this to let apps listen for server events like apps being added or settings being changed */
+          }
+        }
+      })
+      if (startResponse.status == 200) {
+        Logger.log(
+          LOGGING_LEVELS.MESSAGE,
+          `[start(${appInstance.name})]: App ${appInstance.name} started successfully with response ${startResponse.data.message}`
+        )
+        return true
+      } else {
+        Logger.log(
+          LOGGING_LEVELS.ERROR,
+          `[start(${appInstance.name})]: App ${appInstance.name} failed to start with response ${startResponse.data.message}`
+        )
+        return false
+      }
     }
   } catch (error) {
-    Logger.log(MESSAGE_TYPES.ERROR, `[start(${appName})]: Error starting app ${error}`, {
+    Logger.log(LOGGING_LEVELS.ERROR, `[start(${appInstance.name})]: Error starting app ${error}`, {
       source: 'appInstaller',
       function: 'AppRunner',
       error: error as Error
@@ -718,14 +516,20 @@ export const start = async (appName: string): Promise<boolean> => {
  * @param DeskThing
  * @returns
  */
-const setupFunctions = async (appInstance: AppInstance, DeskThing: DeskThing): Promise<void> => {
-  const listeners: ToClientType[] = []
+const setupFunctions = async (
+  appInstance: AppInstance,
+  DeskThing: DeskThingType
+): Promise<void> => {
+  const listeners: ((data: EventPayload) => Promise<void>)[] = []
   await Logger.info(`Configuring functions for ${appInstance.name}.`, {
     source: 'appInstaller',
     function: 'setupFunctions'
   })
 
   try {
+    if (!appInstance.func) {
+      appInstance.func = {} as DeskThingType
+    }
     appInstance.func.purge = async (): Promise<Response> => DeskThing.purge()
 
     appInstance.func.start = async (): Promise<Response> => {
@@ -742,12 +546,12 @@ const setupFunctions = async (appInstance: AppInstance, DeskThing: DeskThing): P
 
     appInstance.func.stop = async (): Promise<Response> => DeskThing.stop()
 
-    appInstance.func.toClient = async (data: ToAppData): Promise<void> => {
+    appInstance.func.toClient = async (data: EventPayload): Promise<void> => {
       listeners.forEach((listener) => listener(data))
       DeskThing.toClient(data)
     }
   } catch (error) {
-    await Logger.error(`Error configuring app functions`, {
+    Logger.error(`Error configuring app functions`, {
       source: 'appInstaller',
       function: 'setupFunctions',
       error: error as Error
@@ -769,11 +573,11 @@ const handleManifest = async (
     return manifestResponse.data
   } else if (manifestResponse.status == 500) {
     // Manifest not found, searching manually
-    Logger.log(MESSAGE_TYPES.ERROR, `Manifest for app ${appName} not found! Searching manually`)
+    Logger.log(LOGGING_LEVELS.ERROR, `Manifest for app ${appName} not found! Searching manually`)
 
     const manifest = await getManifest(getAppFilePath(appName))
     if (manifest == undefined) {
-      Logger.log(MESSAGE_TYPES.ERROR, `Manifest for app ${appName} not found!`, {
+      Logger.log(LOGGING_LEVELS.ERROR, `Manifest for app ${appName} not found!`, {
         source: 'appInstaller',
         function: 'handleManifest',
         error: new Error(`Manifest for app ${appName} not found!`)
@@ -800,7 +604,7 @@ const handleManifest = async (
  * @param appName
  * @returns
  */
-const getDeskThing = async (appName: string): Promise<DeskThing | void> => {
+const getDeskThing = async (appName: string): Promise<DeskThingType | void> => {
   const appEntryPointJs = getAppFilePath(appName, 'index.js')
   const appEntryPointMjs = getAppFilePath(appName, 'index.mjs')
   const appEntryPointCjs = getAppFilePath(appName, 'index.cjs')
@@ -813,7 +617,7 @@ const getDeskThing = async (appName: string): Promise<DeskThing | void> => {
     appEntryPoint = appEntryPointCjs
   } else {
     Logger.log(
-      MESSAGE_TYPES.ERROR,
+      LOGGING_LEVELS.ERROR,
       `Entry point for app ${appName} not found. (Does it have an index.js file?)`
     )
     return
@@ -821,7 +625,7 @@ const getDeskThing = async (appName: string): Promise<DeskThing | void> => {
   if (existsSync(appEntryPoint)) {
     // TODO: Should verify the deskthing structure to ensure it is from the connector
     const { DeskThing } = await import(`file://${resolve(appEntryPoint)}?cacheBust=${Date.now()}`)
-    return DeskThing as DeskThing
+    return DeskThing as DeskThingType
   }
   return
 }

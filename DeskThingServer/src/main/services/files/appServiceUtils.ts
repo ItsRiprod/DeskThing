@@ -1,72 +1,133 @@
 import Logger from '@server/utils/logger'
 import {
   App,
-  AppData,
+  AppDataInterface,
   AppManifest,
-  LegacyAppData,
-  MESSAGE_TYPES,
+  LOGGING_LEVELS,
   PlatformTypes,
   TagTypes
-} from '@shared/types'
-
+} from '@DeskThing/types'
+import { AppData, LegacyAppData } from '@shared/types'
+import { isValidTask } from '../task'
+import { isValidAppSettings } from '../apps'
+import { isValidAction, isValidKey } from '../mappings/utilsMaps'
 /**
  * @throws Error when not a structure
  * @param apps - The AppData
  * */
-export const verifyAppDataStructure: (apps?: AppData | LegacyAppData) => asserts apps is AppData = (
-  apps
-) => {
+export const verifyAppDataStructure: (
+  apps?: unknown | AppData | LegacyAppData
+) => asserts apps is AppData = (apps) => {
   if (!apps) throw new Error('[verifyAppDataStructure] Apps do not exist')
   if (typeof apps != 'object') throw new Error('[verifyAppStructure] Apps is not an object')
 
   // Only old structures should have apps and config
   if ('apps' in apps && 'config' in apps) {
-    Logger.log(MESSAGE_TYPES.WARNING, 'App Data outdated. Updating...')
+    Logger.log(LOGGING_LEVELS.WARN, 'App Data outdated. Updating...')
     const oldApps = apps as LegacyAppData
     oldApps.apps.forEach((app) => {
       try {
-        verifyAppStructure(app)
+        sanitizeAppStructure(app)
         apps[app.name] = app
       } catch (error) {
         handleError(
           error,
           `[verifyAppDataStructure]: App ${app?.name || 'unknown'} had issue being verified`
         )
-        verifyAppMeta(app)
-        apps[app.name] = app
       }
     })
-    // @ts-expect-error - Deleting legacy properties
     delete apps.apps
-    // @ts-expect-error - Deleting legacy properties
     delete apps.config
   } else {
     Object.entries(apps).forEach(([appId, app]) => {
-      verifyAppStructure(app)
-      apps[appId] = app
+      try {
+        sanitizeAppStructure(app as Partial<App>)
+        apps[appId] = app
+      } catch (error) {
+        handleError(
+          error,
+          `[verifyAppDataStructure]: App ${app || 'unknown'} had issue being verified`
+        )
+      }
     })
   }
 }
 
 const handleError = (error: unknown | Error, message: string): void => {
   if (error instanceof Error) {
-    Logger.log(MESSAGE_TYPES.ERROR, message + ' ' + error.message)
+    Logger.log(LOGGING_LEVELS.ERROR, message + ' ' + error.message)
   } else {
-    Logger.log(MESSAGE_TYPES.ERROR, message + ' ' + error)
+    Logger.log(LOGGING_LEVELS.ERROR, message + ' ' + error)
     console.error(error)
   }
 }
+
+/**
+ * Verifies that the app is a valid AppDataInterface.
+ * @throws  Error if the app is not a valid AppDataInterface
+ * @param app - The app to verify
+ */
+export const isValidAppDataInterface: (
+  app: Partial<AppDataInterface>
+) => asserts app is AppDataInterface = (app) => {
+  if (!app) {
+    throw new Error('App data interface is undefined')
+  }
+  if (typeof app !== 'object') {
+    throw new Error('App data interface is not an object')
+  }
+  if (!app.version) {
+    throw new Error('App data interface version is undefined')
+  }
+  if (app.settings) {
+    isValidAppSettings(app.settings)
+  }
+  if (app.tasks) {
+    Object.values(app.tasks).forEach((task) => {
+      isValidTask(task)
+    })
+  }
+  if (app.actions) {
+    Object.values(app.actions).forEach((action) => {
+      isValidAction(action)
+    })
+  }
+  if (app.keys) {
+    Object.values(app.keys).forEach((key) => {
+      isValidKey(key)
+    })
+  }
+}
+
+export const sanitizeAppDataInterface: (
+  app: Partial<AppDataInterface>
+) => asserts app is AppDataInterface = (app) => {
+  if (!app.version) {
+    app.version = '1.0.0'
+  }
+
+  app.settings = app.settings ?? {}
+  app.data = app.data ?? {}
+  app.tasks = app.tasks ?? {}
+  app.keys = app.keys ?? {}
+  app.actions = app.actions ?? {}
+}
+
 /**
  * @throws - If the app is not an App
  * @param app Potentially partial app
  */
-export const verifyAppStructure: (app: Partial<App>) => asserts app is App = (app) => {
+export const sanitizeAppStructure: (app: Partial<App>) => asserts app is App = (app) => {
   if (typeof app != 'object') {
     throw new Error('App is not an object!')
   }
 
   if (!app.name) {
-    throw new Error('App does not have a name!' + JSON.stringify(app))
+    if (app.manifest) {
+      app.name = app.manifest.id
+    } else {
+      throw new Error('App does not have a name!' + JSON.stringify(app))
+    }
   }
 
   app.name = app.name || ''
@@ -74,7 +135,7 @@ export const verifyAppStructure: (app: Partial<App>) => asserts app is App = (ap
   app.running = app.running ?? false
   app.prefIndex = app.prefIndex ?? 1
 
-  verifyAppMeta(app as Partial<App>)
+  sanitizeAppMeta(app as Partial<App>)
 }
 /**
  * verify app meta information and return the properly constructed one
@@ -82,9 +143,9 @@ export const verifyAppStructure: (app: Partial<App>) => asserts app is App = (ap
  * Also verifies the manifest data if it needs to be verified
  * @asserts app is Required<Pick<App, 'meta'>>
  */
-export const verifyAppMeta: (app: Partial<App>) => asserts app is Required<Pick<App, 'meta'>> = (
-  app
-) => {
+export const sanitizeAppMeta: (
+  app: Partial<App>
+) => asserts app is Required<Pick<App, 'meta' | 'manifest'>> = (app) => {
   const currentMetaVersion = '0.10.4' // find a better way to do this
 
   if (!app.meta) {

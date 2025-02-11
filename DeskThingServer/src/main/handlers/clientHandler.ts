@@ -1,5 +1,6 @@
 console.log('[Auth Handler] Starting')
-import { ClientIPCData, ClientManifest, SocketData, ReplyFn, MESSAGE_TYPES } from '@shared/types'
+import { ClientManifest, SocketData, LOGGING_LEVELS } from '@DeskThing/types'
+import { ReplyFn, ClientIPCData } from '@shared/types'
 import Logger from '@server/utils/logger'
 import { handleAdbCommands } from './adbHandler'
 import {
@@ -37,9 +38,9 @@ export const clientHandler: Record<
     } catch (error) {
       console.error('Error pinging client:', error)
       if (error instanceof Error) {
-        Logger.log(MESSAGE_TYPES.ERROR, error.message)
+        Logger.log(LOGGING_LEVELS.ERROR, error.message)
       } else {
-        Logger.log(MESSAGE_TYPES.ERROR, String(error))
+        Logger.log(LOGGING_LEVELS.ERROR, String(error))
       }
       return 'Error pinging' + data.payload
     }
@@ -112,9 +113,9 @@ export const clientHandler: Record<
         final: true
       })
       if (error instanceof Error) {
-        Logger.log(MESSAGE_TYPES.ERROR, error.message)
+        Logger.log(LOGGING_LEVELS.ERROR, error.message)
       } else {
-        Logger.log(MESSAGE_TYPES.ERROR, String(error))
+        Logger.log(LOGGING_LEVELS.ERROR, String(error))
       }
     }
   },
@@ -136,9 +137,9 @@ export const clientHandler: Record<
       })
       console.error('Error pushing proxy script:', error)
       if (error instanceof Error) {
-        Logger.log(MESSAGE_TYPES.ERROR, error.message)
+        Logger.log(LOGGING_LEVELS.ERROR, error.message)
       } else {
-        Logger.log(MESSAGE_TYPES.ERROR, String(error))
+        Logger.log(LOGGING_LEVELS.ERROR, String(error))
       }
     }
   },

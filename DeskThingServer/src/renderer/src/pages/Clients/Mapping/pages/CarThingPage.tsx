@@ -4,7 +4,7 @@ import Button from '@renderer/components/Button'
 import useMappingStore from '@renderer/stores/mappingStore'
 import { useState, useEffect } from 'react'
 import { ActionIcon } from '../components/ActionIcon'
-import { EventMode, Key } from '@shared/types'
+import { EventMode, Key } from '@DeskThing/types'
 
 const keyList: string[] = ['Swipe', 'Digit1', 'Digit2', 'Digit3', 'Digit4', 'Escape']
 

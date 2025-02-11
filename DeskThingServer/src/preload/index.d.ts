@@ -1,14 +1,6 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
-import {
-  ActionReference,
-  AppReturnData,
-  AppSettings,
-  ButtonMapping,
-  Client,
-  ClientManifest,
-  Log,
-  Profile
-} from '@shared/types'
+import { ActionReference, AppSettings, ClientManifest } from '@DeskThing/types'
+import { Profile, Client, ButtonMapping, Log } from '@shared/types'
 
 type AppData = Record<string, string>
 
@@ -32,8 +24,6 @@ declare global {
         runStaged: (appId: string, overwrite: boolean) => Promise<void>
       }
 
-      handleAppZip: (path: string) => Promise<AppReturnData | null>
-      handleAppUrl: (url: string) => Promise<AppReturnData | null>
       handleResponseToUserData: (requestId: string, payload: ToAppData) => Promise<void>
       handleDevAppZip: (path: string) => Promise<void>
       sendDataToApp: (data: SocketData) => Promise<void>
@@ -102,6 +92,10 @@ declare global {
         check: () => Promise<void>
         download: () => Promise<void>
         install: () => Promise<void>
+      }
+      feedback: {
+        submit: (feedback: FeedbackReport) => Promise<void>
+        getForumData: () => Promise<void>
       }
     }
     api: unknown // Or define `api` more specifically if you have a shape for it

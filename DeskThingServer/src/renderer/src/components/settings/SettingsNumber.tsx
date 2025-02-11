@@ -1,6 +1,6 @@
 import React from 'react'
 import SettingComponent from './SettingComponent'
-import { SettingsNumber } from '@shared/types'
+import { SettingsNumber } from '@DeskThing/types'
 
 interface SettingsNumberProps {
   setting: SettingsNumber

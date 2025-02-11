@@ -1,4 +1,4 @@
-import { Step, STEP_TYPES, Task } from '@shared/types/tasks'
+import { Step, STEP_TYPES, Task } from '@DeskThing/types'
 import { FC, lazy, memo, Suspense, useMemo, useState } from 'react'
 import Button from '../Button'
 import {
@@ -68,7 +68,7 @@ export const TaskBase: FC<TaskProps> = memo(
 
     const StepComponent = useMemo(
       () => (currentStep?.type ? Steps[currentStep.type] : undefined),
-      [currentStep?.type]
+      [currentStep]
     )
 
     const DebugComponent = lazy(() => import('./TaskDebug'))
@@ -116,7 +116,13 @@ export const TaskBase: FC<TaskProps> = memo(
               <div className="flex gap-4 flex-col">
                 <Suspense fallback={<IconLoading />}>
                   {currentStep ? (
-                    StepComponent && <StepComponent source={task.source} step={currentStep} />
+                    StepComponent && (
+                      <StepComponent
+                        key={`${task.id}-${currentStep.id}`}
+                        source={task.source}
+                        step={currentStep}
+                      />
+                    )
                   ) : (
                     <>
                       <p>No step selected</p>

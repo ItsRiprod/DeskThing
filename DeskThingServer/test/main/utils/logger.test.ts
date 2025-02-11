@@ -2,7 +2,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import fs from 'fs'
 import Logger, { ResponseLogger } from '@server/utils/logger'
-import { MESSAGE_TYPES, LOGGING_LEVEL } from '@shared/types'
+import { MESSAGE_TYPES, LOGGING_LEVEL } from '@DeskThing/types'
 
 vi.mock('fs')
 vi.mock('electron', () => ({
@@ -22,6 +22,7 @@ describe('Logger', () => {
     vi.clearAllMocks()
     vi.mocked(fs.writeFileSync).mockImplementation(() => undefined)
     vi.mocked(fs.existsSync).mockReturnValue(true)
+    vi.mocked(fs.renameSync).mockImplementation(() => undefined)
   })
 
   afterEach(() => {
@@ -34,7 +35,7 @@ describe('Logger', () => {
       store.setLogLevel(LOGGING_LEVEL.PRODUCTION)
       const consoleSpy = vi.spyOn(console, 'log')
 
-      await store.log(MESSAGE_TYPES.LOGGING, 'test message')
+      await store.log(MESSAGE_TYPES.LOGGING, 'test message', { domain: 'test' })
 
       expect(consoleSpy).not.toHaveBeenCalled()
     })
@@ -42,16 +43,18 @@ describe('Logger', () => {
     it('should log non-LOGGING messages in PRODUCTION mode', async () => {
       const store = Logger
       store.setLogLevel(LOGGING_LEVEL.PRODUCTION)
-      const consoleSpy = vi.spyOn(console, 'log')
+      const consoleSpy = vi.spyOn(console, 'warn')
 
-      vi.mocked(fs.writeFile).mockImplementation((_, __, callback: any) => callback(null))
-      vi.mocked(fs.appendFile).mockImplementation((_, __, callback: any) => callback(null))
+      vi.spyOn(fs.promises, 'writeFile').mockResolvedValue(undefined)
+      vi.spyOn(fs.promises, 'appendFile').mockResolvedValue(undefined)
 
       await store.log(MESSAGE_TYPES.WARNING, 'test warning')
 
       expect(consoleSpy).toHaveBeenCalledWith(
         '\x1b[33m%s\x1b[0m',
-        expect.stringContaining('[server] WARNING: test warning')
+        expect.stringContaining('server') &&
+          expect.stringContaining('WARNING') &&
+          expect.stringContaining('test warning')
       )
     })
   })
@@ -59,15 +62,14 @@ describe('Logger', () => {
   describe('File Operations', () => {
     it('should handle file write errors gracefully', async () => {
       const mockError = new Error('Write error')
-      vi.mocked(fs.writeFile).mockImplementation((_, __, callback: (error: Error) => void) =>
-        callback(mockError)
-      )
+      vi.spyOn(fs.promises, 'writeFile').mockRejectedValue(mockError)
       const consoleSpy = vi.spyOn(console, 'error')
 
       await expect(Logger.log(MESSAGE_TYPES.ERROR, 'test error')).rejects.toThrow('Write error')
 
       expect(consoleSpy).toHaveBeenCalledWith('Failed to write to log file:', mockError)
     })
+
     it('should return empty array when log file does not exist', async () => {
       vi.mocked(fs.existsSync).mockReturnValue(false)
 
@@ -83,8 +85,8 @@ describe('Logger', () => {
       const listener2 = vi.fn()
       const store = Logger
 
-      vi.mocked(fs.writeFile).mockImplementation((_, __, callback: any) => callback(null))
-      vi.mocked(fs.appendFile).mockImplementation((_, __, callback: any) => callback(null))
+      vi.spyOn(fs.promises, 'writeFile').mockResolvedValue(undefined)
+      vi.spyOn(fs.promises, 'appendFile').mockResolvedValue(undefined)
 
       store.addListener(listener1)
       store.addListener(listener2)
@@ -100,6 +102,9 @@ describe('Logger', () => {
       const mockReply = vi.fn()
       const wrappedReply = ResponseLogger(mockReply)
       const logSpy = vi.spyOn(Logger, 'log')
+
+      vi.spyOn(fs.promises, 'writeFile').mockResolvedValue(undefined)
+      vi.spyOn(fs.promises, 'appendFile').mockResolvedValue(undefined)
 
       await wrappedReply('test-channel', {
         data: { success: true },

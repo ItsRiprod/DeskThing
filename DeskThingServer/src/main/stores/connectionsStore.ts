@@ -4,7 +4,8 @@
  * The class also handles the auto-detection of ADB devices and notifies listeners of changes to the client and device lists.
  */
 console.log('[Connection Store] Starting')
-import { Client, MESSAGE_TYPES } from '@shared/types'
+import { LOGGING_LEVELS } from '@DeskThing/types'
+import { Client } from '@shared/types'
 import { settingsStore } from '.'
 import Logger from '@server/utils/logger'
 type ClientListener = (client: Client[]) => void
@@ -42,19 +43,19 @@ class ConnectionStore {
 
           if (newSettings.autoDetectADB) {
             this.checkAutoDetectADB()
-            Logger.log(MESSAGE_TYPES.LOGGING, '[ADB]: Auto-Detect is Enabled', {
+            Logger.log(LOGGING_LEVELS.LOG, '[ADB]: Auto-Detect is Enabled', {
               function: 'setupConnectionListeners',
               source: 'ConnectionStore'
             })
           } else {
-            Logger.log(MESSAGE_TYPES.LOGGING, '[ADB]: Auto-Detect is Disabled', {
+            Logger.log(LOGGING_LEVELS.LOG, '[ADB]: Auto-Detect is Disabled', {
               function: 'setupConnectionListeners',
               source: 'ConnectionStore'
             })
           }
         }
       } catch (error) {
-        Logger.log(MESSAGE_TYPES.ERROR, 'ADB: Error updating with settings', {
+        Logger.log(LOGGING_LEVELS.ERROR, 'ADB: Error updating with settings', {
           error: error as Error,
           function: 'setupConnectionListeners',
           source: 'ConnectionStore'
@@ -90,7 +91,7 @@ class ConnectionStore {
   }
 
   pingClient(connectionId: string): boolean {
-    Logger.log(MESSAGE_TYPES.LOGGING, 'Pinging client:' + connectionId, {
+    Logger.log(LOGGING_LEVELS.LOG, 'Pinging client:' + connectionId, {
       function: 'pingClient',
       source: 'ConnectionStore'
     })
@@ -117,7 +118,7 @@ class ConnectionStore {
   }
 
   async updateClient(connectionId: string, updates: Partial<Client>): Promise<void> {
-    Logger.log(MESSAGE_TYPES.LOGGING, 'Updating client:' + connectionId + updates, {
+    Logger.log(LOGGING_LEVELS.LOG, 'Updating client:' + connectionId + updates, {
       function: 'updateClient',
       source: 'ConnectionStore'
     })
@@ -127,7 +128,7 @@ class ConnectionStore {
       this.clients[clientIndex] = { ...this.clients[clientIndex], ...updates }
       this.notifyListeners()
     } else {
-      Logger.log(MESSAGE_TYPES.LOGGING, 'Client not found:' + connectionId, {
+      Logger.log(LOGGING_LEVELS.LOG, 'Client not found:' + connectionId, {
         function: 'updateClient',
         source: 'ConnectionStore'
       })
@@ -135,13 +136,13 @@ class ConnectionStore {
   }
 
   async removeClient(connectionId: string): Promise<void> {
-    Logger.log(MESSAGE_TYPES.LOGGING, 'Removing client:' + connectionId)
+    Logger.log(LOGGING_LEVELS.LOG, 'Removing client:' + connectionId)
     this.clients = this.clients.filter((c) => c.connectionId !== connectionId)
     this.notifyListeners()
   }
 
   async removeAllClients(): Promise<void> {
-    Logger.log(MESSAGE_TYPES.LOGGING, 'Removing all clients')
+    Logger.log(LOGGING_LEVELS.LOG, 'Removing all clients')
     this.clients = []
     this.notifyListeners()
   }
@@ -169,7 +170,7 @@ class ConnectionStore {
         const newDevices = parseADBDevices(result) || []
         this.devices = newDevices
         this.notifyDeviceListeners()
-        Logger.log(MESSAGE_TYPES.LOGGING, 'ADB Device found!')
+        Logger.log(LOGGING_LEVELS.LOG, 'ADB Device found!')
         return newDevices
       })
       .catch((error) => {
@@ -185,7 +186,7 @@ class ConnectionStore {
 
     const checkAndAutoDetect = async (): Promise<void> => {
       if (this.autoDetectADB === true) {
-        Logger.log(MESSAGE_TYPES.LOGGING, 'Auto-detecting ADB devices...')
+        Logger.log(LOGGING_LEVELS.LOG, 'Auto-detecting ADB devices...')
         await this.getAdbDevices()
         this.clearTimeout = await setTimeout(checkAndAutoDetect, 7000)
       }

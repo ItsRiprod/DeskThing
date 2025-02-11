@@ -1,16 +1,7 @@
 console.log('[MapUtil Service] Starting')
 import Logger from '@server/utils/logger'
-import {
-  Action,
-  ActionReference,
-  ButtonMapping,
-  EventMode,
-  Key,
-  LoggingOptions,
-  MappingFileStructure,
-  MappingStructure,
-  MESSAGE_TYPES
-} from '@shared/types'
+import { Action, ActionReference, EventMode, Key, LOGGING_LEVELS } from '@DeskThing/types'
+import { ButtonMapping, MappingFileStructure, Profile, LoggingOptions } from '@shared/types'
 import { getAppFilePath } from '../apps'
 
 export const validMappingExists: (
@@ -24,23 +15,34 @@ export const validMappingExists: (
     throw new Error('[validMappingExists] No mapping found')
   }
 }
-export const isValidMappingStructure = async (structure: MappingStructure): Promise<void> => {
+
+export const isValidMappingStructure = async (structure: unknown): Promise<void> => {
+  if (!structure) throw new Error('Mapping structure is undefined')
+  if (typeof structure !== 'object') {
+    Logger.log(LOGGING_LEVELS.ERROR, 'validateMappingStructure: Structure is not an object!')
+    throw new Error('Structure must be an object')
+  }
+  const structObj = structure as MappingFileStructure
+  if (!('version' in structure)) {
+    Logger.log(LOGGING_LEVELS.ERROR, 'validateMappingStructure: Version is not defined!')
+    throw new Error('Version must be defined')
+  }
   if (typeof structure.version !== 'string') {
-    Logger.log(MESSAGE_TYPES.ERROR, 'validateMappingStructure: Version is not a string!')
+    Logger.log(LOGGING_LEVELS.ERROR, 'validateMappingStructure: Version is not a string!')
     throw new Error('Version must be a string')
   }
-  if (typeof structure.profiles.default !== 'object') {
-    Logger.log(MESSAGE_TYPES.ERROR, 'validateMappingStructure: Default is not an object!')
+  if (typeof structObj.profiles['default'] !== 'object') {
+    Logger.log(LOGGING_LEVELS.ERROR, 'validateMappingStructure: Default is not an object!')
     throw new Error('Default profile must be an object')
   }
 
   await Promise.all(
-    Object.values(structure.profiles).map(async (profile) => {
+    Object.values(structObj.profiles).map(async (profile) => {
       try {
-        isValidButtonMapping(profile)
+        isValidProfile(profile)
       } catch (error) {
         Logger.log(
-          MESSAGE_TYPES.ERROR,
+          LOGGING_LEVELS.ERROR,
           `validateMappingStructure: ${profile.id} is not a valid button mapping!`
         )
         throw error
@@ -48,36 +50,36 @@ export const isValidMappingStructure = async (structure: MappingStructure): Prom
     })
   )
 
-  if (!Array.isArray(structure.actions)) {
-    Logger.log(MESSAGE_TYPES.ERROR, 'validateMappingStructure: Actions is not an array!')
+  if (!Array.isArray(structObj.actions)) {
+    Logger.log(LOGGING_LEVELS.ERROR, 'validateMappingStructure: Actions is not an array!')
     throw new Error('Actions must be an array')
   }
 
-  for (let index = 0; index < structure.actions.length; index++) {
-    const action = structure.actions[index]
+  for (let index = 0; index < structObj.actions.length; index++) {
+    const action = structObj.actions[index]
     try {
       isValidAction(action)
     } catch (error) {
       Logger.log(
-        MESSAGE_TYPES.ERROR,
+        LOGGING_LEVELS.ERROR,
         `validateMappingStructure: Action ${String(action)} is not a valid action!`
       )
       throw error
     }
   }
 
-  if (!Array.isArray(structure.keys)) {
-    Logger.log(MESSAGE_TYPES.ERROR, 'validateMappingStructure: Keys is not an array!')
+  if (!Array.isArray(structObj.keys)) {
+    Logger.log(LOGGING_LEVELS.ERROR, 'validateMappingStructure: Keys is not an array!')
     throw new Error('Keys must be an array')
   }
 
-  for (let index = 0; index < structure.keys.length; index++) {
-    const key = structure.keys[index]
+  for (let index = 0; index < structObj.keys.length; index++) {
+    const key = structObj.keys[index]
     try {
       isValidKey(key)
     } catch (error) {
       Logger.log(
-        MESSAGE_TYPES.ERROR,
+        LOGGING_LEVELS.ERROR,
         `validateMappingStructure: Key ${String(key)} is not a valid key!`
       )
       throw error
@@ -87,40 +89,56 @@ export const isValidMappingStructure = async (structure: MappingStructure): Prom
 
 export const isValidFileStructure: (
   structure: MappingFileStructure | unknown
-) => asserts structure is MappingFileStructure = (structure) => {
+) => asserts structure is MappingFileStructure = (structure: unknown) => {
   if (!structure) throw new Error('Mapping structure is undefined')
-  if (typeof structure !== 'object') throw new Error('Mapping structure is not an object')
+  if (typeof structure !== 'object' || structure === null)
+    throw new Error('Mapping structure is not an object')
   if (!('version' in structure)) {
-    Logger.log(MESSAGE_TYPES.ERROR, 'validateFileStructure: Version is not defined!')
+    Logger.log(LOGGING_LEVELS.ERROR, 'validateFileStructure: Version is not defined!')
     throw new Error('Version must be defined')
   }
   if (typeof structure.version !== 'string') {
-    Logger.log(MESSAGE_TYPES.ERROR, 'validateFileStructure: Version is not a string!')
+    Logger.log(LOGGING_LEVELS.ERROR, 'validateFileStructure: Version is not a string!')
     throw new Error('Version must be a string')
   }
 
   if (!('profiles' in structure)) {
-    Logger.log(MESSAGE_TYPES.ERROR, 'validateFileStructure: Profiles is not defined!')
+    Logger.log(LOGGING_LEVELS.ERROR, 'validateFileStructure: Profiles is not defined!')
     throw new Error('Profiles must be defined')
   }
 
-  if (!Array.isArray(structure.profiles)) {
-    Logger.log(MESSAGE_TYPES.ERROR, 'validateFileStructure: Profiles is not an array!')
+  if (
+    typeof structure.profiles !== 'object' ||
+    structure.profiles === null ||
+    Array.isArray(structure.profiles)
+  ) {
+    Logger.log(LOGGING_LEVELS.ERROR, 'validateFileStructure: Profiles is not an object!')
     throw new Error('Profiles must be an object')
+  } else {
+    Object.values(structure.profiles).forEach((profile) => {
+      try {
+        isValidProfile(profile)
+      } catch (error) {
+        Logger.log(
+          LOGGING_LEVELS.ERROR,
+          `validateFileStructure: ${profile.id} is not a valid button mapping!`
+        )
+        throw error
+      }
+    })
   }
-
-  if (structure.profiles.length == 0) {
-    Logger.log(MESSAGE_TYPES.ERROR, 'validateFileStructure: There are no available profiles!')
+  if (Object.keys(structure.profiles).length === 0) {
+    Logger.log(LOGGING_LEVELS.ERROR, 'validateFileStructure: There are no available profiles!')
     throw new Error('Must have at least one profile')
   }
 
   if (!('actions' in structure)) {
-    Logger.log(MESSAGE_TYPES.ERROR, 'validateFileStructure: Actions is not defined!')
+    Logger.log(LOGGING_LEVELS.ERROR, 'validateFileStructure: Actions is not defined!')
     throw new Error('Actions must be defined')
   }
 
   if (!Array.isArray(structure.actions)) {
-    Logger.log(MESSAGE_TYPES.ERROR, 'validateFileStructure: Actions is not an array!')
+    Logger.log(LOGGING_LEVELS.ERROR, 'validateFileStructure: Actions is not an array!')
     throw new Error('Actions must be an array')
   }
 
@@ -130,7 +148,7 @@ export const isValidFileStructure: (
       isValidAction(action)
     } catch (error) {
       Logger.log(
-        MESSAGE_TYPES.ERROR,
+        LOGGING_LEVELS.ERROR,
         `validateFileStructure: Action ${String(action)} is not a valid action!`
       )
       throw error
@@ -138,12 +156,12 @@ export const isValidFileStructure: (
   }
 
   if (!('keys' in structure)) {
-    Logger.log(MESSAGE_TYPES.ERROR, 'validateFileStructure: Keys is not defined!')
+    Logger.log(LOGGING_LEVELS.ERROR, 'validateFileStructure: Keys is not defined!')
     throw new Error('Keys must be defined')
   }
 
   if (!Array.isArray(structure.keys)) {
-    Logger.log(MESSAGE_TYPES.ERROR, 'validateFileStructure: Keys is not an array!')
+    Logger.log(LOGGING_LEVELS.ERROR, 'validateFileStructure: Keys is not an array!')
     throw new Error('Keys must be an array')
   }
 
@@ -153,7 +171,7 @@ export const isValidFileStructure: (
       isValidKey(key)
     } catch (error) {
       Logger.log(
-        MESSAGE_TYPES.ERROR,
+        LOGGING_LEVELS.ERROR,
         `validateFileStructure: Key ${String(key)} is not a valid key!`
       )
       throw error
@@ -161,26 +179,63 @@ export const isValidFileStructure: (
   }
 }
 
-export const isValidButtonMapping = (mapping: ButtonMapping): void => {
-  for (const [key, modes] of Object.entries(mapping.mapping)) {
+export const isValidProfile: (profile: unknown) => asserts profile is Profile = (
+  profile: unknown
+) => {
+  if (!profile) throw new Error('Profile is undefined')
+  if (typeof profile !== 'object') throw new Error('Profile is not an object')
+  if (!('id' in profile)) {
+    Logger.log(LOGGING_LEVELS.ERROR, 'validateProfile: Id is not defined!')
+    throw new Error('Id must be defined')
+  }
+  if (typeof profile.id !== 'string') {
+    Logger.log(LOGGING_LEVELS.ERROR, 'validateProfile: Id is not a string!')
+    throw new Error('Id must be a string')
+  }
+  if (!('version' in profile)) {
+    Logger.log(LOGGING_LEVELS.ERROR, 'validateProfile: Name is not defined!')
+    throw new Error('Name must be defined')
+  }
+  if (typeof profile.version !== 'string') {
+    Logger.log(LOGGING_LEVELS.ERROR, 'validateProfile: Name is not a string!')
+    throw new Error('Name must be a string')
+  }
+}
+export const isValidButtonMapping: (mapping: unknown) => asserts mapping is ButtonMapping = (
+  mapping: unknown
+): void => {
+  isValidProfile(mapping)
+
+  if (!('mapping' in mapping)) {
+    Logger.log(LOGGING_LEVELS.ERROR, 'validateProfile: Mapping is not defined!')
+    throw new Error('Mapping must be defined')
+  }
+  if (typeof mapping.mapping !== 'object') {
+    Logger.log(LOGGING_LEVELS.ERROR, 'validateProfile: Mapping is not an object!')
+    throw new Error('Mapping must be an object')
+  }
+
+  const maps = mapping as ButtonMapping
+
+  for (const [key, modes] of Object.entries(maps.mapping)) {
     if (typeof key !== 'string') {
-      Logger.log(MESSAGE_TYPES.ERROR, 'validateProfile: Key is not a string!')
+      Logger.log(LOGGING_LEVELS.ERROR, 'validateProfile: Key is not a string!')
       throw new Error('Key must be a string')
     }
     if (typeof modes !== 'object') {
-      Logger.log(MESSAGE_TYPES.ERROR, 'validateProfile: modes is not an object!')
+      Logger.log(LOGGING_LEVELS.ERROR, 'validateProfile: modes is not an object!')
       throw new Error('Modes must be an object')
     }
 
     for (const [Mode, action] of Object.entries(modes)) {
       if (!Object.values(EventMode).includes(Number(Mode))) {
-        Logger.log(MESSAGE_TYPES.ERROR, `validateProfile: ${Mode} is not a valid mode`)
+        Logger.log(LOGGING_LEVELS.ERROR, `validateProfile: ${Mode} is not a valid mode`)
         throw new Error(`Invalid mode: ${Mode}`)
       }
       try {
         isValidActionReference(action)
       } catch (error) {
-        Logger.log(MESSAGE_TYPES.ERROR, `validateProfile: ${String(action)} is not a valid action`)
+        Logger.log(LOGGING_LEVELS.ERROR, `validateProfile: ${String(action)} is not a valid action`)
         throw error
       }
     }
@@ -248,7 +303,7 @@ export const isValidActionReference: (action: unknown) => asserts action is Acti
   if (typeof actionRef.enabled !== 'boolean') {
     actionRef.enabled = true // Default to enabled
     Logger.log(
-      MESSAGE_TYPES.WARNING,
+      LOGGING_LEVELS.WARN,
       `validateActionReference: enabled was not set to a boolean value`
     )
   }
@@ -292,6 +347,13 @@ export const FetchIcon = async (action: Action): Promise<string | null> => {
   const { app } = require('electron')
   const fs = require('fs').promises
   const path = require('path')
+
+  if (!action.source) {
+    Logger.warn('Unable to fetch icon for action: source is not defined', {
+      source: 'FetchIcon'
+    })
+    return null
+  }
 
   try {
     const iconPath =

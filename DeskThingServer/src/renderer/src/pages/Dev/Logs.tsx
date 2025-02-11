@@ -13,21 +13,22 @@ import {
   IconWarning
 } from '@renderer/assets/icons'
 import { useReward } from 'react-rewards'
-import { Log, MESSAGE_TYPES } from '@shared/types/types'
+import { Log } from '@shared/types'
+import { LOGGING_LEVELS } from '@DeskThing/types'
 
 const colorMap = {
-  [MESSAGE_TYPES.ERROR]: 'text-red-500',
-  [MESSAGE_TYPES.FATAL]: 'text-red-700',
-  [MESSAGE_TYPES.WARNING]: 'text-orange-500',
-  [MESSAGE_TYPES.MESSAGE]: 'text-yellow-500',
-  [MESSAGE_TYPES.DEBUG]: 'text-blue-500',
-  [MESSAGE_TYPES.LOGGING]: 'text-gray-500'
+  [LOGGING_LEVELS.ERROR]: 'text-red-500',
+  [LOGGING_LEVELS.FATAL]: 'text-red-700',
+  [LOGGING_LEVELS.WARN]: 'text-orange-500',
+  [LOGGING_LEVELS.MESSAGE]: 'text-yellow-500',
+  [LOGGING_LEVELS.DEBUG]: 'text-blue-500',
+  [LOGGING_LEVELS.LOG]: 'text-gray-500'
 }
 
 const Logs: React.FC = () => {
   const logList = useLogStore((state) => state.logList)
   const getLogs = useLogStore((state) => state.getLogs)
-  const [filter, setFilter] = useState<MESSAGE_TYPES | null>(null)
+  const [filter, setFilter] = useState<LOGGING_LEVELS | null>(null)
   const logContainerRef = useRef<HTMLDivElement>(null)
   const [autoScroll, setAutoScroll] = useState(true)
   const { reward, isAnimating } = useReward('rewardId', 'confetti')
@@ -111,43 +112,43 @@ const Logs: React.FC = () => {
             <p className="md:block hidden text-center flex-grow">All</p>
           </Button>
           <Button
-            onClick={() => setFilter(MESSAGE_TYPES.MESSAGE)}
-            className={`w-full ${filter === MESSAGE_TYPES.MESSAGE ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
+            onClick={() => setFilter(LOGGING_LEVELS.MESSAGE)}
+            className={`w-full ${filter === LOGGING_LEVELS.MESSAGE ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
           >
             <IconBell strokeWidth={1.5} />
             <p className="md:block hidden text-center flex-grow">Messages</p>
           </Button>
           <Button
-            onClick={() => setFilter(MESSAGE_TYPES.ERROR)}
-            className={`w-full ${filter === MESSAGE_TYPES.ERROR ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
+            onClick={() => setFilter(LOGGING_LEVELS.ERROR)}
+            className={`w-full ${filter === LOGGING_LEVELS.ERROR ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
           >
             <IconWarning strokeWidth={1.5} />
             <p className="md:block hidden text-center flex-grow">Errors</p>
           </Button>
           <Button
-            onClick={() => setFilter(MESSAGE_TYPES.WARNING)}
-            className={`w-full ${filter === MESSAGE_TYPES.WARNING ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
+            onClick={() => setFilter(LOGGING_LEVELS.WARN)}
+            className={`w-full ${filter === LOGGING_LEVELS.WARN ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
           >
             <IconWarning strokeWidth={1.5} />
-            <p className="md:block hidden text-center flex-grow">Warnings</p>
+            <p className="md:block hidden text-center flex-grow">WARNs</p>
           </Button>
           <Button
-            onClick={() => setFilter(MESSAGE_TYPES.FATAL)}
-            className={`w-full ${filter === MESSAGE_TYPES.FATAL ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
+            onClick={() => setFilter(LOGGING_LEVELS.FATAL)}
+            className={`w-full ${filter === LOGGING_LEVELS.FATAL ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
           >
             <IconWarning strokeWidth={1.5} />
             <p className="md:block hidden text-center flex-grow">Fatal</p>
           </Button>
           <Button
-            onClick={() => setFilter(MESSAGE_TYPES.DEBUG)}
-            className={`w-full ${filter === MESSAGE_TYPES.DEBUG ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
+            onClick={() => setFilter(LOGGING_LEVELS.DEBUG)}
+            className={`w-full ${filter === LOGGING_LEVELS.DEBUG ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
           >
             <IconLogs strokeWidth={1.5} />
             <p className="md:block hidden text-center flex-grow">Debug</p>
           </Button>
           <Button
-            onClick={() => setFilter(MESSAGE_TYPES.LOGGING)}
-            className={`w-full ${filter === MESSAGE_TYPES.LOGGING ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
+            onClick={() => setFilter(LOGGING_LEVELS.LOG)}
+            className={`w-full ${filter === LOGGING_LEVELS.LOG ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
           >
             <IconLogs strokeWidth={1.5} />
             <p className="md:block hidden text-center flex-grow">Logs</p>

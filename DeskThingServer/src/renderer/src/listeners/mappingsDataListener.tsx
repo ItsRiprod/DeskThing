@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { Action, ButtonMapping, Key } from '@shared/types'
+import { Action, Key } from '@DeskThing/types'
+import { ButtonMapping } from '@shared/types'
 import useMappingStore from '@renderer/stores/mappingStore'
 
 /**

@@ -1,6 +1,6 @@
 import Button from '@renderer/components/Button'
 import { useClientStore } from '@renderer/stores'
-import { EventMode } from '@shared/types'
+import { EventMode } from '@DeskThing/types'
 
 interface AvailableModesProps {
   modes: EventMode[]

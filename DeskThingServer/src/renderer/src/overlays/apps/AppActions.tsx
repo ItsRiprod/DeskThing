@@ -4,7 +4,7 @@ import Button from '@renderer/components/Button'
 import { IconPlay, IconStop, IconTrash, IconX } from '@renderer/assets/icons'
 import { useAppStore } from '@renderer/stores'
 import useMappingStore from '@renderer/stores/mappingStore'
-import { Action } from '@shared/types'
+import { Action } from '@DeskThing/types'
 import ActionElement from '@renderer/components/ActionElement'
 
 const AppActions: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {

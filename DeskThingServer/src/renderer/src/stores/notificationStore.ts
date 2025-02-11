@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import { Log, MESSAGE_TYPES } from '@shared/types'
+import { LOGGING_LEVELS } from '@DeskThing/types'
+import { Log } from '@shared/types'
 
 export interface AuthScopes {
   [key: string]: {
@@ -86,9 +87,9 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
 
   addLog: async (log: Log): Promise<void> => {
     if (
-      log.type === MESSAGE_TYPES.ERROR ||
-      log.type === MESSAGE_TYPES.FATAL ||
-      log.type === MESSAGE_TYPES.WARNING
+      log.type === LOGGING_LEVELS.ERROR ||
+      log.type === LOGGING_LEVELS.FATAL ||
+      log.type === LOGGING_LEVELS.WARN
     ) {
       set((state) => ({
         logs: [log, ...state.logs].slice(0, 99)

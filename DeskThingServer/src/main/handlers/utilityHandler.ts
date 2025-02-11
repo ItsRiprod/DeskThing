@@ -1,20 +1,19 @@
 console.log('[Utility Handler] Starting')
+import { Action, LOGGING_LEVELS, Key } from '@DeskThing/types'
 import {
   ReplyFn,
   UtilityIPCData,
   ButtonMapping,
   Client,
-  MESSAGE_TYPES,
   GithubRelease,
   Log,
   Settings,
-  Action,
-  Key,
   MappingStructure,
   Profile,
   UtilityIPCTask,
   UtilityIPCUpdate,
-  IPCData
+  IPCData,
+  TaskList
 } from '@shared/types'
 import { connectionStore, settingsStore, mappingStore } from '@server/stores'
 import { getReleases } from './githubHandler'
@@ -30,7 +29,6 @@ import {
   startDownload
 } from '@server/services/updater/autoUpdater'
 import { UpdateCheckResult } from 'electron-updater'
-import { TaskList } from '@shared/types/tasks'
 import { FeedbackService } from '@server/services/feedbackService'
 
 /**
@@ -130,9 +128,9 @@ export const utilityHandler: Record<
       return await getReleases(data.payload)
     } catch (error) {
       if (error instanceof Error) {
-        Logger.log(MESSAGE_TYPES.ERROR, error.message)
+        Logger.log(LOGGING_LEVELS.ERROR, error.message)
       } else {
-        Logger.log(MESSAGE_TYPES.ERROR, String(error))
+        Logger.log(LOGGING_LEVELS.ERROR, String(error))
       }
       return []
     }
@@ -179,7 +177,7 @@ export const utilityHandler: Record<
         const { action, key, mode, profile } = data.payload
         if (!action || !key || !mode) {
           Logger.log(
-            MESSAGE_TYPES.ERROR,
+            LOGGING_LEVELS.ERROR,
             `Missing required button data: ${JSON.stringify({
               action: !!action,
               key: !!key,
@@ -192,9 +190,15 @@ export const utilityHandler: Record<
           return await mappingStore.addButton({ action, key, mode, profile })
         } catch (error) {
           if (error instanceof Error) {
-            Logger.log(MESSAGE_TYPES.ERROR, `UtilityHandler: Failed to add button ${error.message}`)
+            Logger.log(
+              LOGGING_LEVELS.ERROR,
+              `UtilityHandler: Failed to add button ${error.message}`
+            )
           } else {
-            Logger.log(MESSAGE_TYPES.ERROR, `UtilityHandler: Failed to add button ${String(error)}`)
+            Logger.log(
+              LOGGING_LEVELS.ERROR,
+              `UtilityHandler: Failed to add button ${String(error)}`
+            )
           }
           return
         }
@@ -203,7 +207,7 @@ export const utilityHandler: Record<
         const { action, key, mode, profile } = data.payload
         if (!key || !mode) {
           Logger.log(
-            MESSAGE_TYPES.ERROR,
+            LOGGING_LEVELS.ERROR,
             `Missing required button data: ${JSON.stringify({
               key: !!key,
               mode: !!mode
@@ -242,7 +246,7 @@ export const utilityHandler: Record<
         if (data.payload) {
           return await mappingStore.addProfile(data.payload)
         } else {
-          Logger.log(MESSAGE_TYPES.ERROR, 'UtilityHandler: Missing profile name!')
+          Logger.log(LOGGING_LEVELS.ERROR, 'UtilityHandler: Missing profile name!')
           return
         }
       case 'delete':
@@ -268,7 +272,7 @@ export const utilityHandler: Record<
     if (action.source !== 'server' && action.enabled) {
       return await mappingStore.runAction(action)
     } else {
-      Logger.log(MESSAGE_TYPES.ERROR, 'UtilityHandler: Action not enabled or does not exist!')
+      Logger.log(LOGGING_LEVELS.ERROR, 'UtilityHandler: Action not enabled or does not exist!')
     }
   },
 
@@ -321,8 +325,12 @@ export const utilityHandler: Record<
   },
   feedback: async (data) => {
     if (data.type != 'feedback') return
-    if (!data.payload) return
-    return await FeedbackService.sendFeedback(data.payload)
+    switch (data.request) {
+      case 'set':
+        return await FeedbackService.sendFeedback(data.payload)
+      case 'get':
+        break
+    }
   }
 }
 
@@ -364,7 +372,7 @@ const refreshFirewall = async (replyFn: ReplyFn): Promise<void> => {
       } catch (firewallError) {
         if (!(firewallError instanceof Error)) return
 
-        Logger.log(MESSAGE_TYPES.ERROR, `FIREWALL: ${firewallError.message}`)
+        Logger.log(LOGGING_LEVELS.ERROR, `FIREWALL: ${firewallError.message}`)
         replyFn('logging', {
           status: false,
           data: 'Error in firewall',
@@ -374,7 +382,7 @@ const refreshFirewall = async (replyFn: ReplyFn): Promise<void> => {
         return
       }
     } else {
-      Logger.log(MESSAGE_TYPES.ERROR, '[firewall] No settings found!')
+      Logger.log(LOGGING_LEVELS.ERROR, '[firewall] No settings found!')
       replyFn('logging', {
         status: false,
         data: 'Error in firewall',
@@ -383,7 +391,7 @@ const refreshFirewall = async (replyFn: ReplyFn): Promise<void> => {
       })
     }
   } catch (error) {
-    Logger.log(MESSAGE_TYPES.ERROR, 'SERVER: [firewall] Error saving manifest' + error)
+    Logger.log(LOGGING_LEVELS.ERROR, 'SERVER: [firewall] Error saving manifest' + error)
     console.error('[Firewall] Error setting client manifest:', error)
     if (error instanceof Error) {
       replyFn('logging', { status: false, data: 'Unfinished', error: error.message, final: true })

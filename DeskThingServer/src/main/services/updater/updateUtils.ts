@@ -1,6 +1,7 @@
 import { sendIpcData } from '@server/index'
 import Logger from '@server/utils/logger'
-import { MESSAGE_TYPES, UpdateInfoType } from '@shared/types'
+import { LOGGING_LEVELS } from '@DeskThing/types'
+import { UpdateInfoType } from '@shared/types'
 import { UpdateCheckResult, UpdateDownloadedEvent } from 'electron-updater'
 
 export const notifyUpdateStatus = async (
@@ -16,7 +17,7 @@ export const notifyUpdateStatus = async (
       releaseName: downloadNotification.updateInfo.releaseName,
       releaseDate: downloadNotification.updateInfo.releaseDate
     }
-    Logger.log(MESSAGE_TYPES.DEBUG, 'Update notification: ' + downloadNotification)
+    Logger.log(LOGGING_LEVELS.DEBUG, 'Update notification: ' + downloadNotification)
     sendIpcData({ type: 'update-status', payload: updateInfo })
   } else {
     const updateInfo: UpdateInfoType = {
@@ -24,7 +25,7 @@ export const notifyUpdateStatus = async (
       updateDownloaded: false
     }
     sendIpcData({ type: 'update-status', payload: updateInfo })
-    Logger.log(MESSAGE_TYPES.DEBUG, 'No update available')
+    Logger.log(LOGGING_LEVELS.DEBUG, 'No update available')
   }
 }
 
@@ -45,5 +46,5 @@ export const notifyUpdateFinished = async (
   }
 
   sendIpcData({ type: 'update-status', payload: updateInfo })
-  Logger.log(MESSAGE_TYPES.DEBUG, 'Update finished')
+  Logger.log(LOGGING_LEVELS.DEBUG, 'Update finished')
 }

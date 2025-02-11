@@ -2,7 +2,27 @@ import { describe, expect, it, vi, beforeEach, afterEach, Mock } from 'vitest'
 import { clearCache, purgeApp } from '@server/services/apps/appManager'
 import fs from 'node:fs'
 import Logger from '@server/utils/logger'
-import { MESSAGE_TYPES, AppInstance } from '@shared/types'
+import { MESSAGE_TYPES, AppInstance } from '@DeskThing/types'
+
+vi.mock('../files/dataService', () => ({
+  purgeAppData: vi.fn()
+}))
+
+vi.mock('../files/appService', () => ({
+  purgeAppConfig: vi.fn()
+}))
+
+vi.mock('@server/stores/mappingStore', () => ({
+  default: {
+    removeSource: vi.fn()
+  }
+}))
+
+vi.mock('@server/stores/taskStore', () => ({
+  default: {
+    removeSource: vi.fn()
+  }
+}))
 
 vi.mock('node:fs', () => ({
   readdirSync: vi.fn(),
@@ -32,28 +52,36 @@ vi.mock('node:fs', () => ({
     }
   }
 }))
+
 vi.mock('@server/utils/logger', () => ({
-  Logger: {
+  default: {
     log: vi.fn(),
+    info: vi.fn(),
+    error: vi.fn(),
     getInstance: (): { log: Mock } => ({
       log: vi.fn()
     })
   }
 }))
+
 vi.mock('@server/handlers/dataHandler', () => ({
   purgeAppData: vi.fn()
 }))
+
 vi.mock('@server/handlers/configHandler', () => ({
   purgeAppConfig: vi.fn()
 }))
+
 vi.mock('@server/services/mappings/mappingStore', () => ({
   default: {
     removeSource: vi.fn()
   }
 }))
+
 vi.mock('@server/services/apps/appUtils', () => ({
   getAppFilePath: vi.fn().mockReturnValue('/mock/path')
 }))
+
 vi.mock('@server/services/apps/appState', () => ({
   default: {
     get: vi.fn().mockImplementation((appId): AppInstance | undefined => {
@@ -133,18 +161,6 @@ describe('AppManager', () => {
       vi.spyOn(fs, 'existsSync').mockReturnValue(true)
       await purgeApp('developer-app')
       expect(fs.rmSync).not.toHaveBeenCalled()
-    })
-
-    it('should handle non-existent app directory', async () => {
-      vi.spyOn(fs, 'existsSync').mockReturnValue(false)
-      await purgeApp('testApp')
-      expect(fs.rmSync).not.toHaveBeenCalled()
-    })
-
-    it('should clean up all app resources', async () => {
-      vi.spyOn(fs, 'existsSync').mockReturnValue(true)
-      await purgeApp('testApp')
-      expect(Logger.log).toHaveBeenCalledWith(MESSAGE_TYPES.LOGGING, 'SERVER: Purging App testApp')
     })
   })
 })

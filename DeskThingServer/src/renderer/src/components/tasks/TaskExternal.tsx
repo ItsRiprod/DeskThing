@@ -3,7 +3,7 @@ import { StepProps } from './TaskBase'
 import useTaskStore from '@renderer/stores/taskStore'
 import Button from '../Button'
 import { IconCheck, IconLink, IconX } from '@renderer/assets/icons'
-import { STEP_TYPES } from '@shared/types/tasks'
+import { STEP_TYPES } from '@DeskThing/types'
 
 export const TaskExternal: FC<StepProps> = ({ step }) => {
   if (step.type != STEP_TYPES.EXTERNAL) return <div>Not an external</div>

@@ -4,7 +4,8 @@ import http from 'http'
 import url from 'url'
 import settingsStore from '../stores/settingsStore'
 import Logger from '@server/utils/logger'
-import { Settings, MESSAGE_TYPES } from '@shared/types'
+import { Settings } from '@shared/types'
+import { LOGGING_LEVELS, ServerEvent } from '@DeskThing/types'
 
 const successView = '<h1>Success</h1><p>You can now close this window.</p>'
 
@@ -44,7 +45,7 @@ async function handleCallback(req: http.IncomingMessage, res: http.ServerRespons
 
   const code = parsedUrl.query.code as string
   import('@server/stores').then(({ appStore }) => {
-    appStore.sendDataToApp(appName, { type: 'callback-data', payload: code })
+    appStore.sendDataToApp(appName, { type: ServerEvent.CALLBACK_DATA, payload: code })
   })
 
   res.writeHead(200, { 'Content-Type': 'text/html' })
@@ -80,7 +81,7 @@ const startServer = async (): Promise<void> => {
   })
 
   server.listen(callBackPort, () => {
-    Logger.log(MESSAGE_TYPES.MESSAGE, `CALLBACK: running at http://localhost:${callBackPort}/`)
+    Logger.log(LOGGING_LEVELS.MESSAGE, `CALLBACK: running at http://localhost:${callBackPort}/`)
   })
 }
 

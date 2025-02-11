@@ -3,7 +3,7 @@ import { StepProps } from './TaskBase'
 import useTaskStore from '@renderer/stores/taskStore'
 import Button from '../Button'
 import { useSearchParams } from 'react-router-dom'
-import { STEP_TYPES } from '@shared/types/tasks'
+import { STEP_TYPES } from '@DeskThing/types'
 import { IconCheck, IconLink, IconX } from '@renderer/assets/icons'
 
 export const TaskTask: FC<StepProps> = ({ step }) => {

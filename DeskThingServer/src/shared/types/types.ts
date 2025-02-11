@@ -1,5 +1,7 @@
 // Ik this is bad practice but I don't have time to fix it right now
 
+import { LOGGING_LEVELS, Task } from '@deskthing/types'
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export interface GithubRelease {
   url: string
@@ -41,6 +43,10 @@ export interface GithubRelease {
   body: string
 }
 
+export interface SortedReleases {
+  [key: string]: GithubAsset[]
+}
+
 export type GithubAsset = {
   url: string
   id: number
@@ -76,7 +82,14 @@ export type GithubAsset = {
   browser_download_url: string
 }
 
-// The Client is how the clients are stored to keep track of them
+export interface RepoReleases {
+  repoUrl: string
+  releases: GithubRelease[]
+}
+
+/**
+ * The client object that keeps track of connected clients
+ */
 export interface Client {
   ip: string
   port?: number
@@ -96,82 +109,21 @@ export interface Client {
   miniplayer?: string
 }
 
-// The standard manifest that all the clients should have
-export interface ClientManifest {
-  name: string
+export type TaskReference = {
   id: string
-  short_name: string
-  description: string
-  builtFor: string
-  reactive: boolean
-  author: string
+  source: string
   version: string
-  port: number
-  ip: string
-  /*
-   * @deprecated
-   */
-  compatible_server?: number[] // depreciated
-  uuid?: string
-  version_code?: number
-  adbId?: string
-  device_type: { id: number; name: string }
+  available?: boolean
+  completed: boolean
+  label: string
+  started: false
+  description?: string
 }
 
-export interface RepoReleases {
-  repoUrl: string
-  releases: GithubRelease[]
-}
-
-// The socket data that is used for any communication. I.e. between the app-server or server-client
-export interface SocketData {
-  app: string
-  type: string
-  request?: string
-  payload?:
-    | Array<string>
-    | string
-    | object
-    | number
-    | Record<string, string>
-    | Array<string>
-    | { id: string; value: string | number | boolean | string[] }
-}
-
-export type SongData = {
-  album: string | null
-  artist: string | null
-  playlist: string | null
-  playlist_id: string | null
-  track_name: string
-  shuffle_state: boolean | null
-  repeat_state: 'off' | 'all' | 'track' //off, all, track
-  is_playing: boolean
-  can_fast_forward: boolean // Whether or not there an an option to 'fastforward 30 sec'
-  can_skip: boolean
-  can_like: boolean
-  can_change_volume: boolean
-  can_set_output: boolean
-  track_duration: number | null
-  track_progress: number | null
-  volume: number // percentage 0-100
-  thumbnail: string | null //base64 encoding that includes data:image/png;base64, at the beginning
-  device: string | null // Name of device that is playing the audio
-  id: string | null // A way to identify the current song (is used for certain actions)
-  device_id: string | null // a way to identify the current device if needed
-  timestamp: number
-  liked?: boolean
-  color?: color
-}
-export interface color {
-  value: number[]
-  rgb: string
-  rgba: string
-  hex: string
-  hexa: string
-  isDark: boolean
-  isLight: boolean
-  error?: string
+export interface TaskList {
+  version: string
+  tasks: Record<string, TaskReference | Task>
+  currentTaskId?: string
 }
 
 // The settings for the app
@@ -179,7 +131,7 @@ export interface Settings {
   version: string
   version_code: number
   callbackPort: number
-  LogLevel: LOGGING_LEVEL
+  LogLevel: LOG_FILTER
   devicePort: number
   address: string
   autoStart: boolean
@@ -202,19 +154,6 @@ export interface StatusMessage {
   minimum: number
 }
 
-/**
- * The MESSAGE_TYPES object defines a set of constants that represent the different types of messages that can be sent or received in the application.
- * Error, Log, Message, Warning, Fatal, and Debugging.
- */
-export enum MESSAGE_TYPES {
-  ERROR = 'error',
-  LOGGING = 'log',
-  MESSAGE = 'message',
-  WARNING = 'warning',
-  FATAL = 'fatal',
-  DEBUG = 'debugging'
-}
-
 export type LoggingOptions = {
   domain?: string // server or the name of the app/client
   source?: string // the function or class name
@@ -224,12 +163,12 @@ export type LoggingOptions = {
 }
 
 /**
- * The LOGGING_LEVEL object defines a set of constants that represent the different levels of logging that can be used in the application.
+ * The LOG_FILTER object defines a set of constants that represent the different levels of logging that can be used in the application.
  * These levels are used to determine which logs should be displayed in the application.
  * The levels are: SYSTEM, APPS, and PRODUCTION.
  * The SYSTEM level is used for system-level logs, the APPS level is used for app and client emitted logs, and the PRODUCTION level is used for only errors, warnings, debugging, and fatal logs.
  */
-export enum LOGGING_LEVEL {
+export enum LOG_FILTER {
   SYSTEM = 'system', // All system-level logs
   APPS = 'apps', // all app and client emitted logs
   PRODUCTION = 'production' // Only errors, warnings, debugging, and fatal logs
@@ -237,65 +176,6 @@ export enum LOGGING_LEVEL {
 
 export interface Log {
   options: LoggingOptions
-  type: MESSAGE_TYPES
+  type: LOGGING_LEVELS
   log: string
 }
-
-interface BaseFeedback {
-  timestamp?: string
-  title: string
-  feedback: string
-  discordId?: string
-}
-
-export interface SystemInfo {
-  serverVersion?: string
-  clientVersion?: string
-  apps?: Array<{
-    name: string
-    version: string
-    running: boolean
-    enabled: boolean
-    runningDuration: number
-  }>
-  clients?: Array<{
-    name: string
-    connectionType: string
-    deviceType: string
-    connectionDuration: string
-  }>
-  os?: string
-  cpu?: string
-  page?: string
-  uptime?: number
-}
-
-interface DetailedFeedback extends BaseFeedback {
-  reproduce?: string[]
-  expected?: string
-  actual?: string
-}
-
-interface BugFeedback extends DetailedFeedback, SystemInfo {}
-
-interface FeatureFeedback extends BaseFeedback {}
-
-interface QuestionFeedback extends BaseFeedback {}
-
-interface OtherFeedback extends DetailedFeedback, SystemInfo {}
-
-export type FeedbackType = 'bug' | 'feature' | 'question' | 'other'
-
-type FeedbackMap = {
-  bug: BugFeedback
-  feature: FeatureFeedback
-  question: QuestionFeedback
-  other: OtherFeedback
-}
-
-export type FeedbackReport = {
-  [K in FeedbackType]: {
-    type: K
-    feedback: FeedbackMap[K]
-  }
-}[FeedbackType]

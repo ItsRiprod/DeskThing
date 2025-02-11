@@ -8,16 +8,8 @@
  */
 console.log('[App Handler] Starting')
 import path from 'path'
-import {
-  App,
-  AppDataInterface,
-  AppReturnData,
-  AppIPCData,
-  ReplyFn,
-  MESSAGE_TYPES,
-  AppSettings,
-  AppManifest
-} from '@shared/types'
+import { AppDataInterface, App, LOGGING_LEVELS, AppSettings, AppManifest } from '@DeskThing/types'
+import { AppIPCData, ReplyFn } from '@shared/types'
 import { appStore } from '@server/stores'
 import Logger from '@server/utils/logger'
 import { dialog, BrowserWindow } from 'electron'
@@ -52,7 +44,6 @@ export const appHandler: Record<
     | AppSettings
     | App
     | string
-    | AppReturnData
     | Record<string, string>
     | { path: string; name: string }
   >
@@ -178,27 +169,10 @@ export const appHandler: Record<
    * @param replyFn - The function to call to send a response back to the client.
    * @returns The processed data from the zipped app, or `null` if there was an error.
    */
-  zip: async (data, replyFn) => {
-    /**
-     * This needs to be reworked to make a pre-run state and a post-run state
-     */
-    replyFn('logging', { status: true, data: 'Handling zipped app', final: false })
-
-    const returnData = await appStore.addZIP(data.payload, replyFn) // Extract to user data folder
-
-    if (!returnData) {
-      replyFn('logging', {
-        status: false,
-        data: returnData,
-        error: '[handleZip] No data returned!',
-        final: true
-      })
-      return returnData
-    }
-
-    replyFn('logging', { status: true, data: 'Finished', final: true })
-    replyFn('zip-name', { status: true, data: returnData, final: true })
-    return returnData
+  zip: async (_data, replyFn) => {
+    Logger.fatal('appHandler.zip() is depreciated, use add() instead')
+    replyFn('logging', { status: false, data: '', final: true })
+    return null
   },
   /**
    * Handles the processing of an app from a URL.
@@ -214,17 +188,10 @@ export const appHandler: Record<
    * @param replyFn - The function to call to send a response back to the client.
    * @returns The processed data from the app, or `null` if there was an error.
    */
-  url: async (data, replyFn) => {
-    replyFn('logging', { status: true, data: 'Handling app from URL...', final: false })
-
-    const reply = async (channel: string, data): Promise<void> => {
-      replyFn(channel, data)
-    }
-
-    const returnData = await appStore.addURL(data.payload, reply) // Extract to user data folder
-    replyFn('logging', { status: true, data: 'Finished', final: true })
-    replyFn('zip-name', { status: true, data: returnData, final: true })
-    return returnData
+  url: async (_data, replyFn) => {
+    Logger.fatal('appHandler.zip() is depreciated, use add() instead')
+    replyFn('logging', { status: false, data: '', final: true })
+    return null
   },
 
   add: async (data, replyFn) => {
@@ -236,7 +203,7 @@ export const appHandler: Record<
   staged: async (data, reply) => {
     reply('logging', { status: true, data: `Handling staged app...`, final: false })
     Logger.log(
-      MESSAGE_TYPES.LOGGING,
+      LOGGING_LEVELS.LOG,
       `Handling staged app with id "${data.payload.appId || 'Unknwon'}" and overwrite set to ${data.payload.overwrite ? 'true' : 'false'}...`
     )
     return await appStore.runStagedApp({ ...data.payload, reply })
@@ -260,7 +227,7 @@ export const appHandler: Record<
     return { path: filePath, name: path.basename(filePath) }
   },
   'dev-add-app': async (data, replyFn) => {
-    Logger.log(MESSAGE_TYPES.ERROR, 'Developer App Not implemented Yet ', data.payload.appPath)
+    Logger.log(LOGGING_LEVELS.ERROR, 'Developer App Not implemented Yet ', data.payload.appPath)
     // await appStore.run('developer-app', appPath)
     replyFn('logging', { status: true, data: 'Finished', final: true })
   },
@@ -332,7 +299,7 @@ const getAppSettings = async (replyFn, payload): Promise<AppSettings | null> => 
     replyFn('logging', { status: true, data: 'Finished', final: true })
     return data || null
   } catch (error) {
-    Logger.log(MESSAGE_TYPES.ERROR, '[getAppSettings]: Error getting settings' + error)
+    Logger.log(LOGGING_LEVELS.ERROR, '[getAppSettings]: Error getting settings' + error)
     console.error('Error setting app settings:', error)
     replyFn('logging', { status: false, data: 'Unfinished', error: error, final: true })
     return null
@@ -352,7 +319,7 @@ const getAppData = async (replyFn, payload): Promise<Record<string, string> | nu
     replyFn('logging', { status: true, data: 'Finished', final: true })
     return data || null
   } catch (error) {
-    Logger.log(MESSAGE_TYPES.ERROR, '[getAppData]: Error getting app data' + error)
+    Logger.log(LOGGING_LEVELS.ERROR, '[getAppData]: Error getting app data' + error)
     console.error('Error setting app settings:', error)
     replyFn('logging', { status: false, data: 'Unfinished', error: error, final: true })
     return null

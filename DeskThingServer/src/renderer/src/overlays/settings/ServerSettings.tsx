@@ -4,7 +4,8 @@ import Button from '@renderer/components/Button'
 import { IconLoading, IconPlay, IconSave, IconToggle } from '@renderer/assets/icons'
 import Select from '@renderer/components/Select'
 import { SingleValue } from 'react-select'
-import { LOGGING_LEVEL, SettingOption } from '@shared/types'
+import { SettingOption } from '@DeskThing/types'
+import { LOG_FILTER } from '@shared/types'
 import useUpdateStore from '@renderer/stores/updateStore'
 
 const ServerSettings: React.FC = () => {
@@ -16,9 +17,9 @@ const ServerSettings: React.FC = () => {
   const checkForUpdateFn = useUpdateStore((state) => state.checkForUpdates)
 
   const logLevelOptions = [
-    { value: LOGGING_LEVEL.SYSTEM, label: 'SYSTEM' },
-    { value: LOGGING_LEVEL.APPS, label: 'APPS' },
-    { value: LOGGING_LEVEL.PRODUCTION, label: 'PRODUCTION' }
+    { value: LOG_FILTER.SYSTEM, label: 'SYSTEM' },
+    { value: LOG_FILTER.APPS, label: 'APPS' },
+    { value: LOG_FILTER.PRODUCTION, label: 'PRODUCTION' }
   ]
 
   const handleSettingChange = (key: string, value: string | boolean | number): void => {
@@ -102,7 +103,7 @@ const ServerSettings: React.FC = () => {
           className="w-full"
           onChange={(selected) => {
             const selectedValue = selected as SingleValue<SettingOption>
-            handleSettingChange('logLevel', selectedValue?.value || LOGGING_LEVEL.PRODUCTION)
+            handleSettingChange('logLevel', selectedValue?.value || LOG_FILTER.PRODUCTION)
           }}
         />
       </div>

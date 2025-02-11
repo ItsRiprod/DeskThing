@@ -1,6 +1,6 @@
 console.log('[AppRnr Service] Starting')
 import Logger from '@server/utils/logger'
-import { MESSAGE_TYPES } from '@shared/types'
+import { LOGGING_LEVELS } from '@DeskThing/types'
 
 /**
  * Loads and runs all enabled apps from appData.json
@@ -41,7 +41,7 @@ export async function loadAndRunEnabledApps(): Promise<void> {
       })
     )
   } catch (error) {
-    Logger.log(MESSAGE_TYPES.ERROR, `SERVER: Error loading and running enabled apps`, {
+    Logger.log(LOGGING_LEVELS.ERROR, `SERVER: Error loading and running enabled apps`, {
       source: 'loadAndRunEnabledApps',
       error: error as Error
     })

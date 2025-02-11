@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { loadAndRunEnabledApps } from '@server/services/apps/appRunner'
-import { MESSAGE_TYPES } from '@shared/types'
+import { MESSAGE_TYPES } from '@DeskThing/types'
 import Logger from '@server/utils/logger'
 
-vi.mock('@server/stores/Logger', () => ({
+vi.mock('@server/utils/logger', () => ({
   default: {
     log: vi.fn(),
     info: vi.fn(),
@@ -13,99 +14,20 @@ vi.mock('@server/stores/Logger', () => ({
   }
 }))
 
-vi.mock('@server/stores/', () => ({
-  Logger: {
-    log: vi.fn(),
-    getInstance: vi.fn().mockReturnValue({
-      log: vi.fn(),
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-      debug: vi.fn(),
-      setLogLevel: vi.fn()
-    })
-  },
+vi.mock('@server/stores', () => ({
   appStore: {
     getAll: vi.fn(),
     run: vi.fn()
   }
 }))
 
-vi.mock('@server/handlers/appHandler', () => ({
-  default: {
-    getInstance: vi.fn().mockReturnValue({
-      getAll: vi.fn(),
-      run: vi.fn()
-    })
-  }
-}))
-
-vi.mock('@server/index', () => ({
-  default: vi.fn(),
-  sendIpcAuthMessage: vi.fn(),
-  sendIpcData: vi.fn(),
-  ipcMain: {
-    once: vi.fn()
-  }
-}))
-
-vi.mock('@server/handlers/dataHandler', () => ({
-  purgeAppData: vi.fn()
-}))
-
-vi.mock('@server/handlers/configHandler', () => ({
-  getAppData: vi.fn().mockReturnValue([
-    { name: 'app1', enabled: true, running: false },
-    { name: 'app2', enabled: true, running: false },
-    { name: 'app3', enabled: false, running: false }
-  ]),
-  setAppData: vi.fn()
-}))
-
-vi.mock('@server/services/apps/appUtils', () => ({
-  getManifest: vi.fn(),
-  getAppFilePath: vi.fn()
-}))
-
-vi.mock('@server/utils/fileHandler', () => ({
-  readFromFile: vi.fn(),
-  writeToFile: vi.fn(),
-  writeToGlobalFile: vi.fn(),
-  readFromGlobalFile: vi.fn()
-}))
-
-vi.mock('@server/handlers/deviceHandler', () => ({
-  default: {
-    start: vi.fn(),
-    stop: vi.fn(),
-    isRunning: vi.fn(),
-    getDevices: vi.fn(),
-    addListener: vi.fn(),
-    removeListener: vi.fn()
-  }
-}))
-
-vi.mock('@server/services/client/expressServer', () => ({
-  setupExpressServer: vi.fn(),
-  default: {
-    start: vi.fn(),
-    stop: vi.fn(),
-    isRunning: vi.fn()
-  }
-}))
-
 describe('appRunner', () => {
-  // Mock AppHandler directly since we're using dynamic imports in appRunner.ts
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let mockAppHandlerInstance: any
+  let mockAppStore: any
 
   beforeEach(async () => {
     vi.clearAllMocks()
     const { appStore } = await import('@server/stores')
-    mockAppHandlerInstance = appStore
-
-    mockAppHandlerInstance.getAll = vi.fn()
-    mockAppHandlerInstance.run = vi.fn()
+    mockAppStore = appStore
   })
 
   it('should run all enabled apps successfully', async () => {
@@ -114,64 +36,78 @@ describe('appRunner', () => {
       { name: 'app2', enabled: true, running: false },
       { name: 'app3', enabled: false, running: false }
     ]
-    mockAppHandlerInstance.getAll.mockReturnValue(mockApps)
-    mockAppHandlerInstance.run.mockImplementation((appName: string) => {
+    mockAppStore.getAll.mockReturnValue(mockApps)
+    mockAppStore.run.mockImplementation((appName: string) => {
       const app = mockApps.find((app) => app.name === appName)
       if (app) app.running = true
       return Promise.resolve()
     })
+
     await loadAndRunEnabledApps()
 
-    expect(mockAppHandlerInstance.run).toHaveBeenCalledTimes(2)
-    expect(mockAppHandlerInstance.run).toHaveBeenCalledWith('app1')
-    expect(mockAppHandlerInstance.run).toHaveBeenCalledWith('app2')
+    expect(mockAppStore.run).toHaveBeenCalledTimes(2)
+    expect(mockAppStore.run).toHaveBeenCalledWith('app1')
+    expect(mockAppStore.run).toHaveBeenCalledWith('app2')
+    expect(Logger.info).toHaveBeenCalledWith('Loaded apps config. Running apps...', {
+      source: 'loadAndRunEnabledApps'
+    })
   })
 
-  it('should not run apps that are already running', async () => {
+  it('should retry failed apps', async () => {
     const mockApps = [
       { name: 'app1', enabled: true, running: false },
-      { name: 'app2', enabled: true, running: true }
+      { name: 'app2', enabled: true, running: false }
     ]
-    mockAppHandlerInstance.getAll.mockReturnValue(mockApps)
-    mockAppHandlerInstance.run.mockImplementation((appName) => {
+    mockAppStore.getAll.mockReturnValue(mockApps)
+    mockAppStore.run.mockImplementation((appName) => {
       const app = mockApps.find((app) => app.name === appName)
-      if (app) app.running = true
+      if (app) app.running = false
       return Promise.resolve()
     })
 
     await loadAndRunEnabledApps()
 
-    expect(mockAppHandlerInstance.run).toHaveBeenCalledTimes(1)
-    expect(mockAppHandlerInstance.run).toHaveBeenCalledWith('app1')
-    expect(vi.mocked(Logger.log)).toHaveBeenCalledWith(
-      MESSAGE_TYPES.LOGGING,
-      'SERVER: Loaded apps config. Running apps...'
-    )
+    expect(mockAppStore.run).toHaveBeenCalledTimes(4)
+    expect(Logger.info).toHaveBeenCalledWith('SERVER: Attempting to run app1 again', {
+      source: 'loadAndRunEnabledApps'
+    })
+    expect(Logger.info).toHaveBeenCalledWith('SERVER: Attempting to run app2 again', {
+      source: 'loadAndRunEnabledApps'
+    })
   })
+
   it('should handle errors during app loading', async () => {
-    mockAppHandlerInstance.getAll.mockImplementation(() => {
+    mockAppStore.getAll.mockImplementation(() => {
       throw new Error('Failed to load apps')
     })
 
     await loadAndRunEnabledApps()
 
-    expect(vi.mocked(Logger.log)).toHaveBeenCalledWith(
+    expect(Logger.log).toHaveBeenCalledWith(
       MESSAGE_TYPES.ERROR,
-      'SERVER: Error loading and running enabled apps'
+      'SERVER: Error loading and running enabled apps',
+      {
+        source: 'loadAndRunEnabledApps',
+        error: expect.any(Error)
+      }
     )
   })
 
   it('should handle errors during app running', async () => {
     const mockApps = [{ name: 'app1', enabled: true, running: false }]
-    mockAppHandlerInstance.getAll.mockReturnValue(mockApps)
-    mockAppHandlerInstance.run.mockRejectedValue(new Error('Failed to run app'))
+    mockAppStore.getAll.mockReturnValue(mockApps)
+    mockAppStore.run.mockRejectedValue(new Error('Failed to run app'))
 
     await loadAndRunEnabledApps()
 
-    expect(mockAppHandlerInstance.run).toHaveBeenCalledWith('app1')
-    expect(vi.mocked(Logger.log)).toHaveBeenCalledWith(
+    expect(mockAppStore.run).toHaveBeenCalledWith('app1')
+    expect(Logger.log).toHaveBeenCalledWith(
       MESSAGE_TYPES.ERROR,
-      'SERVER: Error loading and running enabled apps'
+      'SERVER: Error loading and running enabled apps',
+      {
+        source: 'loadAndRunEnabledApps',
+        error: expect.any(Error)
+      }
     )
   })
 
@@ -180,14 +116,13 @@ describe('appRunner', () => {
       { name: 'app1', enabled: false, running: false },
       { name: 'app2', enabled: false, running: false }
     ]
-    mockAppHandlerInstance.getAll.mockReturnValue(mockApps)
+    mockAppStore.getAll.mockReturnValue(mockApps)
 
     await loadAndRunEnabledApps()
 
-    expect(mockAppHandlerInstance.run).not.toHaveBeenCalled()
-    expect(vi.mocked(Logger.log)).toHaveBeenCalledWith(
-      MESSAGE_TYPES.LOGGING,
-      'SERVER: Loaded apps config. Running apps...'
-    )
+    expect(mockAppStore.run).not.toHaveBeenCalled()
+    expect(Logger.info).toHaveBeenCalledWith('Loaded apps config. Running apps...', {
+      source: 'loadAndRunEnabledApps'
+    })
   })
 })

@@ -11,7 +11,7 @@ const LogsWidget: React.FC = () => {
         <div className="absolute inset-0 w-full text-wrap break-words">
           {logs.map((log, index) => (
             <div key={index} className="mb-2 text-sm">
-              <span className="text-gray-400">{log.date}</span>
+              <span className="text-gray-400">{log.log}</span>
               <span className={`ml-2 ${log.type === 'error' ? 'text-red-500' : 'text-green-500'}`}>
                 [{log.type}]
               </span>

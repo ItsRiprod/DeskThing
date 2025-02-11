@@ -1,6 +1,6 @@
 console.log('[ClientExpress Service] Starting')
 import Logger from '@server/utils/logger'
-import { MESSAGE_TYPES } from '@shared/types'
+import { LOGGING_LEVELS } from '@DeskThing/types'
 import { app, app as electronApp } from 'electron'
 import { join } from 'path'
 import { getAppFilePath } from '../apps'
@@ -131,13 +131,13 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
       handleClientConnection(appName, req, res, next)
     } else {
       const appPath = getAppFilePath(appName)
-      Logger.log(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Serving ${appName} from ${appPath}`)
+      Logger.log(LOGGING_LEVELS.LOG, `WEBSOCKET: Serving ${appName} from ${appPath}`)
 
       if (fs.existsSync(appPath)) {
         express.static(appPath)(req, res, next)
       } else {
         Logger.log(
-          MESSAGE_TYPES.WARNING,
+          LOGGING_LEVELS.WARN,
           `WEBSOCKET: Client may not updated! Ensure it is on version v0.10.0 or later`
         )
         const ErrorPage = fs.readFileSync(join(staticPath, 'Error.html'), 'utf-8')
@@ -168,7 +168,7 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
       const appName = req.params.appName
       if (imageName != null) {
         const appPath = getAppFilePath(appName)
-        Logger.log(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Serving ${appName} from ${appPath}`)
+        Logger.log(LOGGING_LEVELS.LOG, `WEBSOCKET: Serving ${appName} from ${appPath}`)
 
         if (fs.existsSync(join(appPath, imageName))) {
           console.log('Serving image:', join(appPath, 'images', imageName))
@@ -189,7 +189,7 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
   expressApp.use('/fetch/:url(*)', async (req: Request, res: Response) => {
     try {
       const url = decodeURIComponent(req.params.url)
-      Logger.log(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Fetching external resource from ${url}`)
+      Logger.log(LOGGING_LEVELS.LOG, `WEBSOCKET: Fetching external resource from ${url}`)
 
       const response = await fetch(url)
       const contentType = response.headers.get('content-type')
@@ -213,7 +213,7 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
     } catch (error) {
       if (error instanceof Error) {
         Logger.log(
-          MESSAGE_TYPES.LOGGING,
+          LOGGING_LEVELS.LOG,
           `WEBSOCKET: Error fetching external resource: ${error.message}`
         )
       }

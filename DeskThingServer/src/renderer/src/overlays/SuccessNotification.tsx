@@ -4,7 +4,7 @@ import Button from '@renderer/components/Button'
 import { IconPlay, IconToggle } from '@renderer/assets/icons'
 import { useEffect, useState } from 'react'
 import { useAppStore } from '@renderer/stores'
-import { App, AppManifest, PlatformTypes } from '@shared/types'
+import { App, AppManifest, PlatformTypes } from '@DeskThing/types'
 
 interface CompatibilityResult {
   isCompatible: boolean

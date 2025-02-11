@@ -1,11 +1,12 @@
 // Ik this is bad practice but I don't have time to fix it right now
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { App, AppReturnData } from './app'
 import { BrowserWindow } from 'electron'
 import { Log, Settings } from './types'
-import { Action, ButtonMapping, Key } from './maps'
-import { Step, TaskList, Task } from './tasks'
+import { ButtonMapping } from './maps'
+import { Step, Task, Action, Key, App, AppManifest } from '@deskthing/types'
+import { TaskList } from '@shared/types'
+
 export const IPC_HANDLERS = {
   UTILITY: 'utility',
   CLIENT: 'client',
@@ -245,7 +246,7 @@ export interface TasksIPC extends OutgoingIPCBase {
 
 export interface LoggingData {
   status: boolean
-  data: AppReturnData | string // add as needed
+  data: AppManifest | string // add as needed
   final: boolean
   error?: string
 }

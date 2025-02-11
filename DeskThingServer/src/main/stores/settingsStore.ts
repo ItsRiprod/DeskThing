@@ -2,8 +2,8 @@ console.log('[Settings Store] Starting')
 import { readFromFile, writeToFile } from '../utils/fileHandler'
 import Logger from '@server/utils/logger'
 import os from 'os'
-import { LOGGING_LEVEL, Settings, MESSAGE_TYPES } from '@shared/types'
-
+import { LOGGING_LEVELS } from '@DeskThing/types'
+import { Settings, LOG_FILTER } from '@shared/types'
 const settingsVersion = '0.9.2'
 const version_code = 9.2
 
@@ -118,6 +118,7 @@ class SettingsStore {
       console.error('Error loading settings:', err)
       const defaultSettings = this.getDefaultSettings()
       defaultSettings.localIp = getLocalIpAddress()
+      writeToFile(defaultSettings, this.settingsFilePath)
       return defaultSettings
     }
   }
@@ -155,7 +156,7 @@ class SettingsStore {
 
       await writeToFile(this.settings, this.settingsFilePath)
       Logger.log(
-        MESSAGE_TYPES.LOGGING,
+        LOGGING_LEVELS.LOG,
         'SETTINGS: Updated settings!' + JSON.stringify(this.settings),
         {
           source: 'settingsStore',
@@ -179,7 +180,7 @@ class SettingsStore {
       callbackPort: 8888,
       devicePort: 8891,
       address: '0.0.0.0',
-      LogLevel: LOGGING_LEVEL.PRODUCTION,
+      LogLevel: LOG_FILTER.PRODUCTION,
       autoStart: false,
       autoConfig: false,
       minimizeApp: true,

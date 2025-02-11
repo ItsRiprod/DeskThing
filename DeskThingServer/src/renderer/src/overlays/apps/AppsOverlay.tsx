@@ -6,7 +6,7 @@ import { useSearchParams } from 'react-router-dom'
 import AppActions from './AppActions'
 import AppDetails from './AppDetails'
 import AppSettings from './AppSettings'
-import { App } from '@shared/types'
+import { App } from '@DeskThing/types'
 import { useAppStore } from '@renderer/stores'
 import ErrorBoundary from '@renderer/components/ErrorBoundary'
 

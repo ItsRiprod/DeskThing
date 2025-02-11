@@ -1,6 +1,6 @@
 import { create } from 'zustand'
-import { Step, TaskList } from '@shared/types/tasks'
-
+import { Step } from '@DeskThing/types'
+import { TaskList } from '@shared/types'
 interface NotificationStoreState {
   taskList: TaskList
 

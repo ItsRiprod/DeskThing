@@ -1,6 +1,6 @@
 import React from 'react'
 import SettingComponent from './SettingComponent'
-import { SettingsBoolean } from '@shared/types'
+import { SettingsBoolean } from '@DeskThing/types'
 import Button from '../Button'
 import { IconToggle } from '@renderer/assets/icons'
 
@@ -23,7 +23,10 @@ export const SettingsBooleanComponent: React.FC<SettingsBooleanProps> = ({
 }) => {
   return (
     <SettingComponent setting={setting} className={className}>
-      <Button title={`${setting.value ? 'Disable' : 'Enable'} ${setting.label}`} onClick={() => handleSettingChange(!setting.value as boolean)}>
+      <Button
+        title={`${setting.value ? 'Disable' : 'Enable'} ${setting.label}`}
+        onClick={() => handleSettingChange(!setting.value as boolean)}
+      >
         <IconToggle
           iconSize={64}
           checked={setting.value as boolean}

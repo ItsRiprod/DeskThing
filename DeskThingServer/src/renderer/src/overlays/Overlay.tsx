@@ -1,6 +1,7 @@
 import { IconX } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
 import ErrorBoundary from '@renderer/components/ErrorBoundary'
+import FeedbackButton from '@renderer/components/FeedbackButton'
 import React, { useRef, useEffect } from 'react'
 
 interface DownloadConfirmationProps {
@@ -28,13 +29,12 @@ const Overlay: React.FC<DownloadConfirmationProps> = ({ onClose, className, chil
   return (
     <div className="fixed animate-fade inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div ref={overlayRef} className={`relative bg-black rounded-lg ${className}`}>
-        <Button
-          title="Close Window"
-          className="first:absolute top-2 right-2 w-fit h-fit hover:bg-black bg-zinc-900"
-          onClick={onClose}
-        >
-          <IconX />
-        </Button>
+        <div className="first:absolute top-2 right-2 w-fit h-fit flex">
+          <FeedbackButton className={'hover:bg-black bg-zinc-900'} showText={false} />
+          <Button title="Close Window" className="hover:bg-black bg-zinc-900" onClick={onClose}>
+            <IconX />
+          </Button>
+        </div>
         <ErrorBoundary>{children}</ErrorBoundary>
       </div>
     </div>

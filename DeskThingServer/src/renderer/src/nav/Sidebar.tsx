@@ -4,6 +4,7 @@ import NotificationButton from '../components/NotificationButton'
 import SettingsButton from '../components/SettingsButton'
 import Button from '@renderer/components/Button'
 import { IconArrowLeft } from '@renderer/assets/icons'
+import FeedbackButton from '@renderer/components/FeedbackButton'
 
 interface SidebarProps {
   children: React.ReactNode
@@ -25,6 +26,9 @@ const Sidebar: React.FC<SidebarProps> = ({ children, className }) => {
         </div>
         <div className="border-t justify-center min-h-fit flex-shrink-0 pt-2 border-gray-500 flex xs:flex-col gap-2">
           <div className="items-center flex flex-col justify-center md:items-stretch">
+            <FeedbackButton />
+          </div>
+          <div className="items-center flex flex-col justify-center md:items-stretch">
             <NotificationButton />
           </div>
           <div className="items-center flex flex-col justify-center md:items-stretch">
@@ -36,7 +40,11 @@ const Sidebar: React.FC<SidebarProps> = ({ children, className }) => {
         </div>
       </nav>
       <div className="absolute top-0 right-0 translate-x-12 xs:hidden">
-        <Button title={`${sidebarVisible ? 'Hide' : 'Show'} Sidebar`} onClick={() => setSidebarVisible((state) => !state)} className="bg-zinc-900/75 ">
+        <Button
+          title={`${sidebarVisible ? 'Hide' : 'Show'} Sidebar`}
+          onClick={() => setSidebarVisible((state) => !state)}
+          className="bg-zinc-900/75 "
+        >
           <IconArrowLeft className={`${!sidebarVisible && 'rotate-180'}`} />
         </Button>
       </div>

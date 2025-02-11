@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { LOGGING_LEVEL, Settings } from '@shared/types'
+import { LOG_FILTER, Settings } from '@shared/types'
 
 interface SettingsStoreState {
   settings: Settings
@@ -19,7 +19,7 @@ const useSettingsStore = create<SettingsStoreState>((set, get) => ({
     devicePort: -1,
     address: '-.-.-.-',
     autoStart: true,
-    LogLevel: LOGGING_LEVEL.PRODUCTION,
+    LogLevel: LOG_FILTER.PRODUCTION,
     minimizeApp: true,
     autoConfig: false,
     globalADB: false,

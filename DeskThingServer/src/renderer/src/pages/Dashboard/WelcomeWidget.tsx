@@ -1,11 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import {
-  IconCarThing,
-  IconCarThingSmall,
-  IconDiscord,
-  IconLink,
-  IconYoutube
-} from '@renderer/assets/icons'
+import { IconCarThingSmall, IconDiscord, IconLink, IconYoutube } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
 import { useNavigate } from 'react-router-dom'
 import Lottie from 'lottie-react'

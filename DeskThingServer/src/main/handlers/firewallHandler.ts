@@ -5,7 +5,8 @@ import Logger from '@server/utils/logger'
 import fs from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
-import { ReplyFn, MESSAGE_TYPES } from '@shared/types'
+import { LOGGING_LEVELS } from '@DeskThing/types'
+import { ReplyFn } from '@shared/types'
 
 /**
  * Executes a shell command and returns the stdout output as a Promise.
@@ -57,7 +58,7 @@ async function checkFirewallRuleExists(port: number): Promise<boolean> {
       const result = await runCommand(checkCommand)
       return result.trim() === 'true'
     } else {
-      Logger.log(MESSAGE_TYPES.ERROR, `FIREWALL: Unsupported OS!`)
+      Logger.log(LOGGING_LEVELS.ERROR, `FIREWALL: Unsupported OS!`)
       console.error('Unsupported OS')
       return false
     }
@@ -85,15 +86,13 @@ async function setupFirewall(port: number, reply?: ReplyFn): Promise<void> {
     reply && reply('logging', { status: true, data: 'Checking if rules exist', final: false })
     const ruleExists = await checkFirewallRuleExists(port)
     if (ruleExists) {
-      Logger.log(
-        MESSAGE_TYPES.LOGGING,
-        `FIREWALL: Firewall rule for port ${port} verified successfully`
-      )
-      Logger.info(`Firewall rule for port ${port} verified successfully`)
+      Logger.info(` Firewall rule for port ${port} verified successfully`, {
+        source: 'setupFirewall'
+      })
       reply &&
         reply('logging', { status: true, data: 'Verified that the rule exists!', final: false })
     } else {
-      Logger.log(MESSAGE_TYPES.ERROR, `FIREWALL: Failed to verify firewall rule for port ${port}!`)
+      Logger.log(LOGGING_LEVELS.ERROR, `FIREWALL: Failed to verify firewall rule for port ${port}!`)
       console.error(`Failed to verify firewall rule for port ${port}`)
     }
 
@@ -129,8 +128,9 @@ async function setupFirewall(port: number, reply?: ReplyFn): Promise<void> {
 
       try {
         await runCommand(`powershell -ExecutionPolicy Bypass -File "${tempScriptPath}"`)
-        Logger.info(`FIREWALL: Firewall rules set up successfully on Windows`)
-        Logger.info('Firewall rules set up successfully on Windows')
+        Logger.info('Firewall rules set up successfully on Windows', {
+          source: 'setupFirewall'
+        })
 
         reply &&
           reply('logging', { status: true, data: 'Firewall ran without error', final: false })
@@ -154,8 +154,9 @@ async function setupFirewall(port: number, reply?: ReplyFn): Promise<void> {
       `
 
       await runCommand(`echo "${script}" | bash`)
-      Logger.info(`FIREWALL: Firewall rules set up successfully on Linux`)
-      Logger.info('Firewall rules set up successfully on Linux')
+      Logger.info('Firewall rules set up successfully on Linux', {
+        source: 'setupFirewall'
+      })
     } else if (platform === 'darwin') {
       reply &&
         reply('logging', {
@@ -176,14 +177,15 @@ async function setupFirewall(port: number, reply?: ReplyFn): Promise<void> {
       `
 
       await runCommand(`echo "${script}" | bash`)
-      Logger.info(`FIREWALL: Firewall rules set up successfully on macOS`)
-      Logger.info('Firewall rules set up successfully on macOS')
+      Logger.info('Firewall rules set up successfully on macOS', {
+        source: 'setupFirewall'
+      })
     } else {
       console.error('Unsupported OS')
     }
   } catch (error) {
     Logger.log(
-      MESSAGE_TYPES.ERROR,
+      LOGGING_LEVELS.ERROR,
       `FIREWALL: Error encountered trying to setup firewall for ${port}! Run administrator and try again`
     )
     if (error instanceof Error) {

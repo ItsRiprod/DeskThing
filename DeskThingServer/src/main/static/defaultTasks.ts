@@ -1,5 +1,5 @@
-import { TaskList, Task, STEP_TYPES } from '@shared/types/tasks'
-
+import { Task, STEP_TYPES } from '@DeskThing/types'
+import { TaskList } from '@shared/types'
 const tasks: Record<string, Task> = {
   gettingstarted: {
     id: 'gettingstarted',

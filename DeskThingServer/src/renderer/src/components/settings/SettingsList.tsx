@@ -1,6 +1,6 @@
 import React from 'react'
 import SettingComponent from './SettingComponent'
-import { SettingsList } from '@shared/types'
+import { SettingsList } from '@DeskThing/types'
 import TagList from '../TagList'
 
 interface SettingsListProps {

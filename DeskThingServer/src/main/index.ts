@@ -15,7 +15,8 @@
 import Logger from './utils/logger'
 Logger.info('[Index] Starting', { domain: 'server', source: 'index' })
 
-import { AppIPCData, AuthScopes, Client, UtilityIPCData, App, ServerIPCData } from '@shared/types'
+import { AppIPCData, Client, UtilityIPCData, ServerIPCData } from '@shared/types'
+import { App, AuthScopes } from '@deskthing/types'
 import { app, shell, BrowserWindow, ipcMain, Tray, Menu, nativeImage } from 'electron'
 import { join, resolve } from 'path'
 import icon from '../../resources/icon.png?asset'

@@ -1,20 +1,21 @@
 console.log('[AppState Service] Starting')
 import {
   App,
-  AppInstance,
   AppManifest,
-  AppReturnData,
-  MESSAGE_TYPES,
+  LOGGING_LEVELS,
   AppDataInterface,
-  ToAppData,
   SettingsType,
   AppSettings,
-  ReplyFn
-} from '@shared/types'
+  ServerEvent,
+  EventPayload,
+  Step,
+  Task,
+  DeskThingType
+} from '@DeskThing/types'
 import Logger from '@server/utils/logger'
 import { getData, overwriteData, setData } from '@server/services/files/dataService'
-import { loadAndRunEnabledApps } from '@server/services/apps'
-import { Step, Task, TaskReference } from '@shared/types/tasks'
+import { isValidAppSettings, loadAndRunEnabledApps } from '@server/services/apps'
+import { ReplyFn, TaskReference, AppInstance } from '@shared/types'
 import { isValidStep, isValidTask } from '@server/services/task'
 
 type AppsListener = (data: App[]) => void
@@ -92,8 +93,7 @@ export class AppStore {
       } else {
         // Create new AppInstance
         this.apps[app.name] = {
-          ...app,
-          func: {} // Initialize empty func object for AppInstance
+          ...app
         }
       }
 
@@ -204,7 +204,7 @@ export class AppStore {
         func: {
           ...this.apps[app.name].func,
           ...app.func
-        }
+        } as DeskThingType
       }
     } else {
       // If it's a new app, add it to the apps object
@@ -248,23 +248,32 @@ export class AppStore {
     await this.saveAppsToFile()
     return true
   }
+
   async purge(name: string): Promise<boolean> {
     if (!(name in this.apps)) {
       return false
     }
 
     const app = this.apps[name]
-    if (typeof app.func.purge === 'function') {
+    if (typeof app.func?.purge === 'function') {
       await app.func.purge()
     }
-    await this.remove(name)
 
     const { purgeApp } = await import('../services/apps/appManager')
 
-    await purgeApp(name)
+    try {
+      await purgeApp(name)
+    } catch (error) {
+      Logger.error(`Error purging app ${name}`, {
+        source: 'AppStore',
+        domain: name,
+        function: 'purge',
+        error: error as Error
+      })
+    }
 
     // Saves all apps
-    this.remove(name)
+    await this.remove(name)
     return true
   }
 
@@ -292,6 +301,19 @@ export class AppStore {
   }
   getOrder(): string[] {
     return this.order
+  }
+
+  async getAppData(name: string): Promise<AppDataInterface | undefined> {
+    if (!(name in this.apps)) {
+      return
+    }
+    Logger.info('Getting Data', {
+      source: 'AppStore',
+      domain: name,
+      function: 'getData'
+    })
+    const data = await getData(name)
+    return data
   }
 
   async getData(name: string): Promise<Record<string, string> | undefined> {
@@ -353,6 +375,24 @@ export class AppStore {
     }
   }
 
+  async addAppData(app: string, data: AppDataInterface): Promise<void> {
+    if (!this.apps[app]) return
+
+    const result = await setData(app, data)
+
+    if (!result) {
+      const version = this.apps[app].manifest?.version
+      const appData = {
+        ...data,
+        version: version || 'v0.0.0'
+      } as AppDataInterface
+
+      await setData(app, appData)
+    } else {
+      // set the cache with the data
+    }
+  }
+
   async setTasks(app: string, tasks: Record<string, Task>): Promise<void> {
     if (!this.apps[app]) return
 
@@ -394,12 +434,12 @@ export class AppStore {
       return
     }
 
-    const updatedTasks = {
+    const updatedTasks: Record<string, Task> = {
       ...data.tasks,
-      [task.id as string]: task as Task
+      [task.id]: task as Task
     }
 
-    this.sendDataToApp(app, { type: 'task', request: 'update', payload: updatedTasks })
+    this.sendDataToApp(app, { type: ServerEvent.TASKS, request: 'update', payload: updatedTasks })
 
     await setData(app, { tasks: updatedTasks })
   }
@@ -425,7 +465,7 @@ export class AppStore {
 
     data.tasks[taskId].steps[step.id] = step
 
-    this.sendDataToApp(app, { type: 'task', request: 'step', payload: step })
+    this.sendDataToApp(app, { type: ServerEvent.TASKS, request: 'step', payload: step })
 
     await setData(app, { tasks: data.tasks })
   }
@@ -455,7 +495,11 @@ export class AppStore {
       data.tasks[task.id] = { ...data.tasks[task.id], ...task }
     }
 
-    this.sendDataToApp(app, { type: 'task', request: 'task', payload: data.tasks[task.id] })
+    this.sendDataToApp(app, {
+      type: ServerEvent.TASKS,
+      request: 'task',
+      payload: data.tasks[task.id]
+    })
 
     await setData(app, { tasks: data.tasks })
   }
@@ -469,7 +513,19 @@ export class AppStore {
     })
     if (!this.apps[app]) return
 
-    const result = await setData(app, { settings })
+    try {
+      isValidAppSettings(settings)
+    } catch (error) {
+      Logger.error('Invalid settings', {
+        source: 'AppStore',
+        domain: 'SERVER.' + app.toUpperCase(),
+        function: 'addSettings',
+        error: error as Error
+      })
+      return
+    }
+
+    const result = await setData(app, { settings: settings })
 
     if (!result) {
       Logger.info('There is no file, so making one with settings added', {
@@ -595,9 +651,9 @@ export class AppStore {
     }
 
     this.sendDataToApp(task.source, {
-      type: 'step',
+      type: ServerEvent.TASKS,
       payload: { ...task.steps[stepId], parentId: task.id } as Step,
-      request: stepId
+      request: 'step'
     })
   }
 
@@ -630,13 +686,13 @@ export class AppStore {
     if (!result) {
       Logger.warn(`Something went wrong updating settings!`, {
         source: 'AppStore',
-        domain: app,
+        domain: 'SERVER.' + app.toUpperCase(),
         function: 'addSetting'
       })
     }
   }
 
-  async sendDataToApp(name: string, data: ToAppData): Promise<void> {
+  async sendDataToApp(name: string, data: EventPayload): Promise<void> {
     try {
       const app = this.apps[name]
 
@@ -650,17 +706,17 @@ export class AppStore {
         return
       }
 
-      if (app && typeof app.func.toClient === 'function') {
+      if (app && typeof app.func?.toClient === 'function') {
         Logger.info(`Sending message with ${data.type}`, {
           source: 'AppStore',
-          domain: name,
+          domain: 'SERVER.' + name.toUpperCase(),
           function: 'sendDataToApp'
         })
-        app.func.toClient(data)
+        app.func?.toClient(data)
       } else {
         Logger.error(`App does not have toClient function. (try restarted it?)`, {
           source: 'AppStore',
-          domain: name,
+          domain: 'SERVER.' + name.toUpperCase(),
           function: 'sendDataToApp'
         })
       }
@@ -711,14 +767,14 @@ export class AppStore {
     this.stop(name)
     this.apps[name].enabled = false
 
-    if (typeof this.apps[name].func.purge === 'function') {
+    if (typeof this.apps[name].func?.purge === 'function') {
       await this.apps[name].func.purge()
     }
 
     const { clearCache } = await import('../services/apps/appManager')
     await clearCache(name)
 
-    this.apps[name].func = {}
+    this.apps[name].func = undefined
 
     await this.saveAppToFile(name)
     return true
@@ -737,7 +793,7 @@ export class AppStore {
     this.apps[name].running = false
 
     // Start clearing the cache
-    if (typeof this.apps[name].func.stop === 'function') {
+    if (typeof this.apps[name].func?.stop === 'function') {
       await this.apps[name].func.stop()
     }
 
@@ -753,7 +809,11 @@ export class AppStore {
   async run(name: string): Promise<boolean> {
     // Early break
     if (!(name in this.apps)) {
-      Logger.log(MESSAGE_TYPES.ERROR, `[run]: App ${name} not found.`)
+      Logger.error(`[run]: App ${name} not found.`, {
+        function: 'run',
+        source: 'AppStore'
+      })
+      console.log('App list', this.apps)
       return false
     }
 
@@ -769,6 +829,7 @@ export class AppStore {
 
   async start(name: string): Promise<boolean> {
     if (!(name in this.apps)) {
+      Logger.info(`App ${name} was not found`)
       return false
     }
 
@@ -776,58 +837,6 @@ export class AppStore {
     this.enable(name)
     const { start } = await import('../services/apps/appInstaller')
     return await start(name)
-  }
-
-  /**
-   * @depreciated - use addApp instead
-   * @param url
-   * @param reply
-   * @returns
-   */
-  async addURL(url: string, reply): Promise<AppReturnData | void> {
-    Logger.log(MESSAGE_TYPES.FATAL, 'addURL is deprecated and will be removed in a future version')
-    const { handleZipFromUrl } = await import('../services/apps/appInstaller')
-    const returnData = await handleZipFromUrl(url, reply)
-    if (returnData) {
-      const App: AppInstance = {
-        name: returnData.appId,
-        enabled: false,
-        running: false,
-        timeStarted: 0,
-        prefIndex: 10,
-        func: {}
-      }
-
-      this.add(App)
-
-      return returnData
-    }
-  }
-
-  /**
-   * @depreciated - use addApp instead
-   * @param zip
-   * @param event
-   * @returns
-   */
-  async addZIP(zip: string, event): Promise<AppReturnData | void> {
-    Logger.log(MESSAGE_TYPES.FATAL, 'addZIP is deprecated and will be removed in a future version')
-    const { handleZip } = await import('../services/apps/appInstaller')
-    const returnData = await handleZip(zip, event)
-    if (returnData) {
-      const App: AppInstance = {
-        name: returnData.appId,
-        enabled: false,
-        running: false,
-        prefIndex: 10,
-        timeStarted: 0,
-        func: {}
-      }
-
-      this.add(App)
-
-      return returnData
-    }
   }
 
   async runStagedApp({
@@ -851,7 +860,7 @@ export class AppStore {
    * @returns The app manifest that was added
    */
   async addApp(appPath: string, reply: ReplyFn): Promise<AppManifest | undefined> {
-    Logger.log(MESSAGE_TYPES.LOGGING, `[store.addApp]: Running addApp for ${appPath}`)
+    Logger.log(LOGGING_LEVELS.LOG, `[store.addApp]: Running addApp for ${appPath}`)
     const { stageAppFile } = await import('../services/apps/appInstaller')
 
     try {
@@ -883,7 +892,7 @@ export class AppStore {
       return newAppManifest
     } catch (e) {
       if (e instanceof Error) {
-        Logger.log(MESSAGE_TYPES.ERROR, `[store.addApp]: ${e.message}`)
+        Logger.log(LOGGING_LEVELS.ERROR, `[store.addApp]: ${e.message}`)
         reply &&
           reply('logging', {
             status: false,
@@ -892,7 +901,7 @@ export class AppStore {
             final: true
           })
       } else {
-        Logger.log(MESSAGE_TYPES.ERROR, `[store.addApp]: Unknown error ` + String(e))
+        Logger.log(LOGGING_LEVELS.ERROR, `[store.addApp]: Unknown error ` + String(e))
         reply &&
           reply('logging', {
             status: false,
@@ -911,7 +920,7 @@ export class AppStore {
    * @param appName
    */
   async appendManifest(manifest: AppManifest, appName: string): Promise<void> {
-    Logger.log(MESSAGE_TYPES.LOGGING, `Appending manifest to ${appName}`)
+    Logger.log(LOGGING_LEVELS.LOG, `Appending manifest to ${appName}`)
     if (this.apps[appName]) {
       this.apps[appName].manifest = manifest
     }

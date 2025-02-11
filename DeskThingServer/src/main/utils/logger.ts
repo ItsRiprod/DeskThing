@@ -7,15 +7,8 @@ console.log('[Logging Store] Starting')
 import fs from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
-import {
-  MESSAGE_TYPES,
-  Log,
-  LOGGING_LEVEL,
-  Settings,
-  ReplyData,
-  ReplyFn,
-  LoggingOptions
-} from '@shared/types'
+import { LOGGING_LEVELS } from '@DeskThing/types'
+import { Log, LOG_FILTER, ReplyData, Settings, ReplyFn, LoggingOptions } from '@shared/types'
 
 // Logger configuration
 const logFile = join(app.getPath('userData'), 'logs', 'application.log.json')
@@ -31,7 +24,7 @@ class Logger {
   private static instance: Logger
   private listeners: ((data: Log) => void)[] = []
   private logs: Log[] = []
-  private logLevel: LOGGING_LEVEL = LOGGING_LEVEL.SYSTEM
+  private logLevel: LOG_FILTER = LOG_FILTER.SYSTEM
 
   private constructor() {
     // Rename existing log files if they exist
@@ -74,28 +67,28 @@ class Logger {
    * Sets the log level of the `Logger` instance.
    * @param level - The new log level to set.
    */
-  public setLogLevel(level: LOGGING_LEVEL): void {
+  public setLogLevel(level: LOG_FILTER): void {
     this.logLevel = level
   }
 
   public info = async (message: string, options?: LoggingOptions): Promise<void> => {
-    this.log(MESSAGE_TYPES.LOGGING, message, options)
+    this.log(LOGGING_LEVELS.LOG, message, options)
   }
 
   public warn = async (message: string, options?: LoggingOptions): Promise<void> => {
-    this.log(MESSAGE_TYPES.WARNING, message, options)
+    this.log(LOGGING_LEVELS.WARN, message, options)
   }
 
   public error = async (message: string, options?: LoggingOptions): Promise<void> => {
-    this.log(MESSAGE_TYPES.ERROR, message, options)
+    this.log(LOGGING_LEVELS.ERROR, message, options)
   }
 
   public debug = async (message: string, options?: LoggingOptions): Promise<void> => {
-    this.log(MESSAGE_TYPES.DEBUG, message, options)
+    this.log(LOGGING_LEVELS.DEBUG, message, options)
   }
 
   public fatal = async (message: string, options?: LoggingOptions): Promise<void> => {
-    this.log(MESSAGE_TYPES.FATAL, message, options)
+    this.log(LOGGING_LEVELS.FATAL, message, options)
   }
 
   /**
@@ -105,7 +98,7 @@ class Logger {
    * @param source - The source of the message (default is 'server').
    * @returns A Promise that resolves when the message has been logged.
    */
-  async log(level: MESSAGE_TYPES, message: string, options?: LoggingOptions): Promise<void> {
+  async log(level: LOGGING_LEVELS, message: string, options?: LoggingOptions): Promise<void> {
     if (!options || !options.domain) {
       options = {
         ...options,
@@ -114,14 +107,14 @@ class Logger {
     }
     try {
       if (
-        level === MESSAGE_TYPES.LOGGING &&
+        level === LOGGING_LEVELS.LOG &&
         options.domain === 'server' &&
-        this.logLevel != LOGGING_LEVEL.SYSTEM
+        this.logLevel != LOG_FILTER.SYSTEM
       ) {
         return
       }
 
-      if (level === MESSAGE_TYPES.LOGGING && this.logLevel === LOGGING_LEVEL.PRODUCTION) {
+      if (level === LOGGING_LEVELS.LOG && this.logLevel === LOG_FILTER.PRODUCTION) {
         return
       }
 
@@ -151,22 +144,22 @@ class Logger {
       const readableMessage = `${options.domain || 'Unknown:'} ${readableTimestamp} ${level.toUpperCase()} [${options.source || 'server'}${options.function ? '.' + options.function : ''}]: ${message}\n${options.error ? options.error.message + '\n' : ''}`
 
       switch (level) {
-        case MESSAGE_TYPES.ERROR:
+        case LOGGING_LEVELS.ERROR:
           console.error('\x1b[31m%s\x1b[0m', readableMessage) // Red for error
           break
-        case MESSAGE_TYPES.WARNING:
+        case LOGGING_LEVELS.WARN:
           console.warn('\x1b[33m%s\x1b[0m', readableMessage) // Yellow for warning
           break
-        case MESSAGE_TYPES.MESSAGE:
+        case LOGGING_LEVELS.MESSAGE:
           console.log('\x1b[32m%s\x1b[0m', readableMessage) // Green for messages
           break
-        case MESSAGE_TYPES.LOGGING:
+        case LOGGING_LEVELS.LOG:
           console.log('\x1b[90m%s\x1b[0m', readableMessage) // Dark gray for info
           break
-        case MESSAGE_TYPES.FATAL:
+        case LOGGING_LEVELS.FATAL:
           console.log('\x1b[35m%s\x1b[0m', readableMessage) // Magenta for fatal
           break
-        case MESSAGE_TYPES.DEBUG:
+        case LOGGING_LEVELS.DEBUG:
           console.log('\x1b[34m%s\x1b[0m', readableMessage) // Blue for debug
           break
         default:
@@ -247,7 +240,7 @@ class Logger {
  */
 export const ResponseLogger = (replyFn: ReplyFn): ReplyFn => {
   return async (channel: string, reply: ReplyData): Promise<void> => {
-    await Logger.getInstance().log(MESSAGE_TYPES.LOGGING, `${JSON.stringify(reply)}`, {
+    await Logger.getInstance().log(LOGGING_LEVELS.LOG, `${JSON.stringify(reply)}`, {
       function: channel,
       source: 'ResponseLogger'
     })

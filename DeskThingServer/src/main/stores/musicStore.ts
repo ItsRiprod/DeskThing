@@ -6,7 +6,8 @@
 console.log('[Music Handler] Starting')
 import { settingsStore, appStore } from '.'
 import Logger from '@server/utils/logger'
-import { Settings, SocketData, MESSAGE_TYPES, SongData, OutgoingEvent } from '@shared/types'
+import { SocketData, LOGGING_LEVELS, SongData, ServerEvent, EventPayload } from '@DeskThing/types'
+import { Settings } from '@shared/types'
 import { getAppByName } from '../services/files/appService'
 import { sendMessageToClients } from '../services/client/clientCom'
 import { getColorFromImage } from '../services/music/musicUtils'
@@ -38,7 +39,7 @@ export class MusicStore {
     settingsStore.addListener(this.handleSettingsUpdate.bind(this))
 
     setTimeout(() => {
-      Logger.log(MESSAGE_TYPES.DEBUG, '[MusicStore]: Initialized')
+      Logger.log(LOGGING_LEVELS.DEBUG, '[MusicStore]: Initialized')
       this.refreshMusicData()
     }, 3000) // Delay to ensure settings are loaded
   }
@@ -69,16 +70,16 @@ export class MusicStore {
     }
 
     if (refreshRate < 0) {
-      Logger.log(MESSAGE_TYPES.LOGGING, `[MusicStore]: Cancelling Refresh Interval!`)
+      Logger.log(LOGGING_LEVELS.LOG, `[MusicStore]: Cancelling Refresh Interval!`)
       return
     } else if (refreshRate < 5) {
       Logger.log(
-        MESSAGE_TYPES.WARNING,
+        LOGGING_LEVELS.WARN,
         `[MusicStore]: Refresh Interval is ${refreshRate}! Performance may be impacted`
       )
       if (refreshRate < 1) {
         Logger.log(
-          MESSAGE_TYPES.WARNING,
+          LOGGING_LEVELS.WARN,
           `[MusicStore]: Refresh Interval is ${refreshRate}! This could very well end your system. Highly unrecommended. Please change this ASAP!`
         )
       }
@@ -94,7 +95,7 @@ export class MusicStore {
       return this.currentApp
     } else {
       Logger.log(
-        MESSAGE_TYPES.LOGGING,
+        LOGGING_LEVELS.LOG,
         `[MusicStore]: Current app is not set! Attempting to find one...`
       )
     }
@@ -103,13 +104,13 @@ export class MusicStore {
 
     if (settings.playbackLocation && settings.playbackLocation != 'none') {
       Logger.log(
-        MESSAGE_TYPES.LOGGING,
+        LOGGING_LEVELS.LOG,
         `[MusicStore]: Fount ${settings.playbackLocation} in settings. Setting playback location to i!`
       )
       return settings.playbackLocation
     } else {
       Logger.log(
-        MESSAGE_TYPES.LOGGING,
+        LOGGING_LEVELS.LOG,
         `[MusicStore]: Unable to find a playback from settings! ${settings.playbackLocation}`
       )
     }
@@ -120,13 +121,13 @@ export class MusicStore {
 
     if (audioSource) {
       Logger.log(
-        MESSAGE_TYPES.WARNING,
+        LOGGING_LEVELS.WARN,
         `[MusicStore]: Found ${audioSource.name} as an audio source automatically. Applying.`
       )
       return audioSource.name
     } else {
       Logger.log(
-        MESSAGE_TYPES.LOGGING,
+        LOGGING_LEVELS.LOG,
         `[MusicStore]: Unable to automatically set an audio source. No app found!`
       )
       return null
@@ -135,7 +136,7 @@ export class MusicStore {
 
   private async getPlaybackSource(): Promise<string | null> {
     if (this.currentApp == 'disabled') {
-      Logger.log(MESSAGE_TYPES.LOGGING, `[MusicStore]: Music is disabled! Cancelling refresh`)
+      Logger.log(LOGGING_LEVELS.LOG, `[MusicStore]: Music is disabled! Cancelling refresh`)
       const settings = await settingsStore.getSettings()
       if (settings.refreshInterval > 0) {
         settingsStore.updateSetting('refreshInterval', -1)
@@ -151,7 +152,7 @@ export class MusicStore {
         return app
       } else {
         Logger.log(
-          MESSAGE_TYPES.ERROR,
+          LOGGING_LEVELS.ERROR,
           `[MusicStore]: No Audiosource Found! Go to Downloads -> Apps and download an audio source! (Spotify, MediaWin, GMP, etc)`
         )
         return null
@@ -163,24 +164,32 @@ export class MusicStore {
       const currentApp = (await settingsStore.getSettings()).playbackLocation
       if (!currentApp || currentApp.length == 0) {
         Logger.log(
-          MESSAGE_TYPES.ERROR,
+          LOGGING_LEVELS.ERROR,
           `[MusicStore]: No playback location set! Go to settings -> Music to set the playback location!`
         )
         return null
       } else {
         Logger.log(
-          MESSAGE_TYPES.WARNING,
+          LOGGING_LEVELS.WARN,
           `[MusicStore]: Playback location was not set! Setting to ${currentApp}`
         )
         this.currentApp = currentApp
       }
     }
 
+    if (!this.currentApp) {
+      Logger.log(
+        LOGGING_LEVELS.ERROR,
+        `[MusicStore]: No playback location set! Go to settings -> Music to set the playback location!`
+      )
+      return null
+    }
+
     const app = await getAppByName(this.currentApp)
 
     if (!app || app.running == false) {
       Logger.log(
-        MESSAGE_TYPES.ERROR,
+        LOGGING_LEVELS.ERROR,
         `[MusicStore]: App ${this.currentApp} is not found or not running!`
       )
       return null
@@ -192,31 +201,31 @@ export class MusicStore {
   private async refreshMusicData(): Promise<void> {
     const currentApp = await this.getPlaybackSource()
 
-    Logger.log(MESSAGE_TYPES.LOGGING, `[MusicStore]: Attempting to refresh Music Data!`)
+    Logger.log(LOGGING_LEVELS.LOG, `[MusicStore]: Attempting to refresh Music Data!`)
 
     if (!currentApp) {
-      Logger.log(MESSAGE_TYPES.LOGGING, `[MusicStore]: No playback source set or found!`)
+      Logger.log(LOGGING_LEVELS.LOG, `[MusicStore]: No playback source set or found!`)
       return
     }
 
     try {
       const { appStore } = await import('@server/stores')
-      appStore.sendDataToApp(currentApp, { type: 'get', request: 'refresh', payload: '' })
-      Logger.log(MESSAGE_TYPES.LOGGING, `[MusicStore]: Refreshed with ${currentApp}!`)
+      appStore.sendDataToApp(currentApp, { type: ServerEvent.GET, request: 'refresh', payload: '' })
+      Logger.log(LOGGING_LEVELS.LOG, `[MusicStore]: Refreshed with ${currentApp}!`)
     } catch (error) {
-      Logger.log(MESSAGE_TYPES.ERROR, `[MusicStore]: Music refresh failed: ${error}`)
+      Logger.log(LOGGING_LEVELS.ERROR, `[MusicStore]: Music refresh failed: ${error}`)
     }
   }
 
   public async setAudioSource(source: string): Promise<void> {
     if (source.length == 0) {
       Logger.log(
-        MESSAGE_TYPES.ERROR,
+        LOGGING_LEVELS.ERROR,
         `[MusicStore]: Unable to update playback location. No playback location passed!`
       )
       return
     }
-    Logger.log(MESSAGE_TYPES.LOGGING, `[MusicStore]: Setting Playback Location to ${source}`)
+    Logger.log(LOGGING_LEVELS.LOG, `[MusicStore]: Setting Playback Location to ${source}`)
     settingsStore.updateSetting('playbackLocation', source)
     this.currentApp = source
   }
@@ -232,24 +241,24 @@ export class MusicStore {
 
     if (request.app == 'utility') {
       Logger.log(
-        MESSAGE_TYPES.LOGGING,
+        LOGGING_LEVELS.LOG,
         `[MusicStore]: Legacy Name called! Support for this will be dropped in future updates. Migrate your app to use 'music' instead!`
       )
     }
 
-    Logger.log(MESSAGE_TYPES.LOGGING, `[MusicStore]: ${request.type} ${request.request}`)
+    Logger.log(LOGGING_LEVELS.LOG, `[MusicStore]: ${request.type} ${request.request}`)
 
     const { appStore } = await import('@server/stores')
     appStore.sendDataToApp(currentApp, {
-      type: request.type as OutgoingEvent,
+      type: request.type as ServerEvent,
       request: request.request,
       payload: request.payload
-    })
+    } as EventPayload)
   }
 
   public async handleMusicMessage(songData: SongData): Promise<void> {
     if (!songData || typeof songData !== 'object') {
-      Logger.log(MESSAGE_TYPES.ERROR, '[MusicStore]: Invalid song data received')
+      Logger.log(LOGGING_LEVELS.ERROR, '[MusicStore]: Invalid song data received')
       return
     }
 
@@ -273,9 +282,9 @@ export class MusicStore {
         })
       }
 
-      Logger.log(MESSAGE_TYPES.LOGGING, '[MusicStore]: Song data sent to clients')
+      Logger.log(LOGGING_LEVELS.LOG, '[MusicStore]: Song data sent to clients')
     } catch (error) {
-      Logger.log(MESSAGE_TYPES.ERROR, `[MusicStore]: Failed to send song data: ${error}`)
+      Logger.log(LOGGING_LEVELS.ERROR, `[MusicStore]: Failed to send song data: ${error}`)
     }
   }
 }

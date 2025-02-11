@@ -1,11 +1,6 @@
 console.log('[MapFile Service] Starting')
-import {
-  ButtonMapping,
-  MappingFileStructure,
-  MappingStructure,
-  MESSAGE_TYPES,
-  Profile
-} from '@shared/types'
+import { LOGGING_LEVELS } from '@DeskThing/types'
+import { Profile, MappingStructure, ButtonMapping, MappingFileStructure } from '@shared/types'
 import Logger from '@server/utils/logger'
 import { readFromFile, writeToFile } from '@server/utils/fileHandler'
 import { defaultData } from '@server/static/defaultMapping'
@@ -63,12 +58,22 @@ export const loadMappings = async (): Promise<MappingStructure> => {
 const fetchProfiles = async (fileData: MappingFileStructure): Promise<MappingStructure> => {
   // Map through each profile file and load its data
   const profiles = await Promise.all(
-    fileData.profiles.map(async (profile) => {
+    Object.values(fileData.profiles).map(async (profile) => {
       // Read the profile data from the mappings directory
       const data = await readFromFile<ButtonMapping>(path.join('mappings', `${profile.id}.json`))
-      if (data && isValidButtonMapping(data)) {
-        // Return profile data in key-value format
-        return { [profile.id]: data }
+      if (data) {
+        try {
+          isValidButtonMapping(data)
+          // Return profile data in key-value format
+          return { [profile.id]: data }
+        } catch (error) {
+          Logger.error(`Profile ${profile.id} is corrupt or does not exist, using default`, {
+            error: error as Error,
+            function: 'fetchProfiles',
+            source: 'FileHandler'
+          })
+          return null
+        }
       } else {
         Logger.warn(`Unable to fetch profile`, {
           error: new Error(`Failed to fetch profile ${profile.id}`),
@@ -94,31 +99,55 @@ const fetchProfiles = async (fileData: MappingFileStructure): Promise<MappingStr
 }
 
 /**
+ * Saves the profile to the system
+ */
+const saveProfile = async (profile: ButtonMapping): Promise<Profile> => {
+  try {
+    isValidButtonMapping(profile)
+    const filePath = path.join('mappings', `${profile.id}.json`)
+    await writeToFile<ButtonMapping>(profile, filePath)
+
+    return { ...profile, mapping: undefined } as Profile
+  } catch (error) {
+    Logger.warn('Failed to save profile', {
+      error: error as Error,
+      function: 'saveProfile',
+      source: 'FileHandler'
+    })
+    // Return stripped profile even if save fails
+    return { ...profile, mapping: undefined } as Profile
+  }
+}
+
+/**
  * Saves the mapping profiles to individual JSON files in the 'mappings' directory.
  * @param {MappingStructure} mappingData - The mapping data to save.
  * @returns {Promise<MappingFileStructure>} The updated mapping file structure, including the saved profiles.
  */
 const saveProfiles = async (mappingData: MappingStructure): Promise<MappingFileStructure> => {
-  const profiles: Profile[] = await Promise.all(
-    Object.values(mappingData.profiles).map(async (profile) => {
-      try {
-        // Save each profile to a .json file named after its id (e.g. 'default' -> 'default.json')
-        console.log('Writing map: ', profile.id, ' to file')
-        await writeToFile<ButtonMapping>(profile, path.join('mappings', `${profile.id}.json`))
-        return { ...profile, mapping: undefined }
-      } catch (error) {
-        Logger.warn('failed to save profile', {
-          error: error as Error,
-          function: 'saveProfiles',
-          source: 'FileHandler'
-        })
-        // Return this data regardless
-        return { ...profile, mapping: undefined }
-      }
-    })
-  )
+  try {
+    isValidMappingStructure(mappingData)
 
-  return { ...mappingData, profiles }
+    const profiles = Object.fromEntries(
+      await Promise.all(
+        Object.entries(mappingData.profiles).map(async ([key, profile]) => [
+          key,
+          await saveProfile(profile)
+        ])
+      )
+    )
+
+    return { ...mappingData, profiles }
+  } catch (error) {
+    Logger.warn('Corrupted mapping data, resetting to default', {
+      error: error as Error,
+      function: 'saveProfiles',
+      source: 'FileHandler'
+    })
+
+    await saveMappings(defaultData)
+    return defaultData as unknown as MappingFileStructure
+  }
 }
 
 /**
@@ -129,7 +158,7 @@ const saveProfiles = async (mappingData: MappingStructure): Promise<MappingFileS
 export const saveMappings = async (mapping: MappingStructure): Promise<void> => {
   try {
     await isValidMappingStructure(mapping)
-    Logger.log(MESSAGE_TYPES.LOGGING, `MAPHANDLER: Saving button mapping`)
+    Logger.log(LOGGING_LEVELS.LOG, `MAPHANDLER: Saving button mapping`)
     const saveData = await saveProfiles(mapping)
     await writeToFile(saveData, path.join('mappings', 'mappings.json'))
   } catch (error) {
@@ -159,7 +188,7 @@ export const saveMappings = async (mapping: MappingStructure): Promise<void> => 
 export const exportProfile = async (profile: ButtonMapping, filePath: string): Promise<void> => {
   try {
     await writeToFile<ButtonMapping>(profile, filePath)
-    Logger.log(MESSAGE_TYPES.LOGGING, `MAPHANDLER: Profile ${profile} exported to ${filePath}`)
+    Logger.log(LOGGING_LEVELS.LOG, `MAPHANDLER: Profile ${profile} exported to ${filePath}`)
   } catch (error) {
     Logger.error('Failed to export profile', {
       error: error as Error,

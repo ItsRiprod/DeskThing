@@ -2,13 +2,14 @@ import {
   isValidStep,
   isValidTask,
   isValidTaskList,
-  sanitizeTaskList
+  sanitizeTaskList,
+  sanitizeTaskListFile
 } from '@server/services/task/taskUtils'
 import defaultTaskList from '@server/static/defaultTasks'
 import { readFromFile, writeToFile } from '@server/utils/fileHandler'
-import { Step, Task, TaskList, TaskReference } from '@shared/types/tasks'
+import { TaskReference, TaskList } from '@shared/types'
 import Logger from '@server/utils/logger'
-import { MESSAGE_TYPES } from '@shared/types'
+import { LOGGING_LEVELS, Step, Task } from '@DeskThing/types'
 import appStore from './appStore'
 
 type TaskStoreEvents = {
@@ -36,7 +37,7 @@ class TaskStore {
     step: [],
     task: []
   }
-  private saveAgain = false
+  private pendingSave = false
 
   private constructor() {
     this.initializeTaskList()
@@ -130,19 +131,19 @@ class TaskStore {
         function: 'fetchTaskList',
         source: 'taskStore'
       })
-      return defaultTaskList
+      return sanitizeTaskList(defaultTaskList)
     }
 
     try {
       isValidTaskList(taskList)
-      return taskList
+      return sanitizeTaskList(taskList)
     } catch (error) {
       Logger.warn('[fetchTaskList]: Failed to fetch tasks! ', {
         error: error as Error
       })
       // Return the default task data
       try {
-        await writeToFile(defaultTaskList, 'tasks.json')
+        await this.saveTaskList(defaultTaskList)
       } catch (error) {
         Logger.error('Failed to save default tasks!', {
           error: error as Error,
@@ -150,7 +151,7 @@ class TaskStore {
           source: 'taskStore'
         })
       }
-      return defaultTaskList
+      return sanitizeTaskList(defaultTaskList)
     }
   }
 
@@ -166,11 +167,15 @@ class TaskStore {
     return await this.fetchTaskList()
   }
 
-  public async saveTaskList(): Promise<void> {
+  public async saveTaskList(taskList?: TaskList): Promise<void> {
+    this.taskList = taskList || this.taskList
+
     Logger.info('[saveTaskList] Saving the task list!')
     try {
       isValidTaskList(this.taskList)
-      await writeToFile(this.taskList, 'tasks.json')
+      // Remove tasks and make TaskReferences
+      const sTaskList = sanitizeTaskListFile(this.taskList)
+      await writeToFile(sTaskList, 'tasks.json')
       this.notify('taskList', this.taskList)
       return
     } catch (error) {
@@ -184,18 +189,27 @@ class TaskStore {
       this.taskList = await this.fetchTaskList()
     }
   }
-  private debouncedSave(): void {
-    if (!this.saveTimeout) {
-      this.saveTaskList()
-      this.saveTimeout = setTimeout(() => {
-        this.saveTimeout = null
-        if (this.saveAgain) {
-          this.saveAgain = false
-          this.debouncedSave()
-        }
-      }, this.SAVE_DELAY)
-    } else {
-      this.saveAgain = true
+  private async debouncedSave(): Promise<void> {
+    try {
+      if (!this.saveTimeout) {
+        const promise = this.saveTaskList()
+        this.saveTimeout = setTimeout(() => {
+          this.saveTimeout = null
+          if (this.pendingSave) {
+            this.pendingSave = false
+            this.debouncedSave()
+          }
+        }, this.SAVE_DELAY)
+
+        await promise
+      } else {
+        this.pendingSave = true
+      }
+    } catch (error) {
+      Logger.error('Failed to save tasks in debouncedSave', {
+        error: error as Error,
+        source: 'taskStore'
+      })
     }
   }
 
@@ -209,6 +223,18 @@ class TaskStore {
 
   public getTasksBySource(source: string): (Task | TaskReference)[] {
     return Object.values(this.taskList.tasks).filter((task) => task.source === source)
+  }
+
+  public removeSource = async (source: string): Promise<void> => {
+    const tasks = this.getTasksBySource(source)
+    tasks.forEach((task) => {
+      Logger.info(`Removing task ${task.id}`, {
+        function: 'removeSource',
+        source: 'taskStore'
+      })
+      delete this.taskList.tasks[task.id]
+    })
+    this.debouncedSave()
   }
 
   public getCurrentTaskId(): string | undefined {
@@ -278,7 +304,7 @@ class TaskStore {
       Logger.warn(`[updateTask]: Task ${newTask.id} does not exist`)
       try {
         isValidTask(newTask)
-        Logger.log(MESSAGE_TYPES.LOGGING, `[updateTask]: Adding task ${newTask.id} as it is new`)
+        Logger.log(LOGGING_LEVELS.LOG, `[updateTask]: Adding task ${newTask.id} as it is new`)
         this.addTask(newTask as Task)
       } catch (error) {
         Logger.warn(`[updateTask]: Invalid task ${newTask.id}`, { error: error as Error })
@@ -286,7 +312,7 @@ class TaskStore {
       return
     }
 
-    Logger.log(MESSAGE_TYPES.LOGGING, `[updateTask]: Updating task ${newTask.id}`)
+    Logger.log(LOGGING_LEVELS.LOG, `[updateTask]: Updating task ${newTask.id}`)
     Object.assign(task, newTask)
     this.taskList.tasks[task.id] = task
     this.debouncedSave()
@@ -470,7 +496,10 @@ class TaskStore {
       return
     }
 
-    Logger.log(MESSAGE_TYPES.LOGGING, `[updateStep]: Updating step ${newStep.id}`)
+    Logger.info(`[updateStep]: Updating step ${newStep.id}`, {
+      function: 'updateStep',
+      source: 'taskStore'
+    })
 
     Object.assign(step, newStep)
     try {
@@ -717,7 +746,7 @@ class TaskStore {
 
     if (allStepsCompleted) {
       this.completeTask(taskId)
-      Logger.log(MESSAGE_TYPES.LOGGING, `[completeStep]: All steps completed for task ${taskId}`)
+      Logger.log(LOGGING_LEVELS.LOG, `[completeStep]: All steps completed for task ${taskId}`)
     }
 
     this.debouncedSave()

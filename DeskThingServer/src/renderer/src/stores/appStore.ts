@@ -1,4 +1,5 @@
-import { App, AppReturnData, AppSettings, LoggingData, AppManifest } from '@shared/types'
+import { App, AppManifest, AppSettings } from '@DeskThing/types'
+import { LoggingData } from '@shared/types'
 import { create } from 'zustand'
 
 interface AppStoreState {
@@ -9,14 +10,6 @@ interface AppStoreState {
 
   requestApps: () => void
   removeAppFromList: (appName: string) => void
-  /**
-   * @depreciated
-   */
-  loadAppUrl: (appName: string) => Promise<AppReturnData | null>
-  /**
-   * @depreciated
-   */
-  loadAppZip: (appName: string) => Promise<AppReturnData | null>
   addApp: (path: string) => Promise<AppManifest | void>
   runStagedApp: (overwrite?: boolean) => Promise<void>
   setOrder: (order: string[]) => void
@@ -150,7 +143,7 @@ const useAppStore = create<AppStoreState>((set, get) => ({
     return await window.electron.getAppData(appName)
   },
 
-  setAppData: (appName: string, data: Record<string, string>): void => {
+  setAppData: (appName: string, data: { [key: string]: string }): void => {
     window.electron.setAppData(appName, data)
   },
 
@@ -160,33 +153,6 @@ const useAppStore = create<AppStoreState>((set, get) => ({
 
   setAppSettings: (appName: string, settings: AppSettings): void => {
     window.electron.setAppSettings(appName, settings)
-  },
-
-  loadAppUrl: async (appName: string): Promise<AppReturnData | null> => {
-    const response = window.electron.handleAppUrl(appName)
-
-    const loggingListener = (_event, reply: LoggingData): void => {
-      set({ logging: reply })
-      if (reply.final === true || reply.status === false) {
-        removeListener()
-      }
-    }
-    const removeListener = window.electron.ipcRenderer.on('logging', loggingListener)
-    return response
-  },
-
-  loadAppZip: async (appName: string): Promise<AppReturnData | null> => {
-    const response = window.electron.handleAppZip(appName)
-
-    const loggingListener = (_event, reply: LoggingData): void => {
-      set({ logging: reply })
-      if (reply.final === true || reply.status === false) {
-        removeListener()
-      }
-    }
-    const removeListener = window.electron.ipcRenderer.on('logging', loggingListener)
-
-    return response
   },
 
   addApp: async (appPath: string): Promise<AppManifest | void> => {

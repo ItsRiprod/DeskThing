@@ -1,8 +1,8 @@
 import { FC, useEffect, useState } from 'react'
 import { StepProps } from './TaskBase'
-import { STEP_TYPES } from '@shared/types/tasks'
+import { STEP_TYPES } from '@DeskThing/types'
 import { useAppStore } from '@renderer/stores'
-import { SettingsType } from '@shared/types'
+import { SettingsType } from '@DeskThing/types'
 import { IconCheck, IconX } from '@renderer/assets/icons'
 import Button from '../Button'
 import useTaskStore from '@renderer/stores/taskStore'
@@ -16,7 +16,7 @@ export const TaskSetting: FC<StepProps> = ({ step, source }) => {
   const getSetting = useAppStore((state) => state.getAppSettings)
   const setAppSettings = useAppStore((state) => state.setAppSettings)
   const [stepCompleted, setIsComplete] = useState(false)
-  const [setting, setSetting] = useState<SettingsType | null>(
+  const [setting, setSetting] = useState<SettingsType | null | undefined>(
     typeof step.setting !== 'string' ? step.setting : null
   )
 
@@ -64,11 +64,15 @@ export const TaskSetting: FC<StepProps> = ({ step, source }) => {
   const handleSettingChange = (value: SettingsType['value']): void => {
     setIsComplete(true)
     if (setting) {
-      console.log('Changing the settings')
-      setting.value
+      console.log('Changing the settings', setting.value)
       setSetting((settingType) => {
-        if (!settingType) return setting
+        if (!settingType) {
+          return typeof step.setting !== 'string' ? step.setting : null
+        }
+        console.log('Changing from the setting', settingType.value)
+        console.log('To', value)
         settingType.value = value
+        console.log('Setting is now', settingType.value)
         return settingType
       })
     } else {

@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useAppStore } from '../stores'
-import { App } from '@shared/types'
+import { App } from '@DeskThing/types'
 
 /**
  * Listens for app data events and updates the app list in the application store.

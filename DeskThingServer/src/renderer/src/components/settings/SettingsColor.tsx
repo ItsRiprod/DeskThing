@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import SettingComponent from './SettingComponent'
-import { SettingsColor } from '@shared/types'
+import { SettingsColor } from '@DeskThing/types'
 
 interface SettingsColorProps {
   setting: SettingsColor

@@ -5,12 +5,12 @@ import {
   Task,
   TaskAction,
   TaskExternal,
-  TaskList,
   TaskSetting,
   TaskShortcut,
   TaskStep,
   TaskTask
-} from '@shared/types/tasks'
+} from '@DeskThing/types'
+import { TaskReference, TaskList } from '@shared/types'
 
 export function isValidTaskList(taskList: unknown): asserts taskList is TaskList {
   if (!taskList || typeof taskList !== 'object') throw new Error('TaskList must be an object')
@@ -22,7 +22,13 @@ export function isValidTaskList(taskList: unknown): asserts taskList is TaskList
     throw new Error('[ValidateTaskList] TaskList must have at least one task')
   } else {
     Object.values(t.tasks).forEach((task) => {
-      isValidTask(task)
+      if (task.started == false) {
+        // Task is a reference or assumed to be a reference
+        isValidTaskReference(task)
+      } else {
+        // Task is a task
+        isValidTask(task)
+      }
     })
   }
 }
@@ -51,6 +57,37 @@ export function isValidTask(task: unknown): asserts task is Task {
   }
 }
 
+export function isValidTaskReference(task: unknown): asserts task is TaskReference {
+  if (!task || typeof task !== 'object') throw new Error('Task must be an object')
+  const t = task as Partial<TaskReference>
+
+  if (!t.id) {
+    throw new Error('[ValidateTaskReference] Tasks must have an ID')
+  }
+  if (!t.source) {
+    throw new Error(`[ValidateTaskReference] Task ${t.id} does not have a source`)
+  }
+  if (!t.version) {
+    throw new Error(
+      `[ValidateTaskReference] Task ${t.id} from ${t.source} must have a specified version`
+    )
+  }
+  if (t.started !== false) {
+    throw new Error(
+      `[ValidateTaskReference] Task reference ${t.id} from ${t.source} must have started set to false`
+    )
+  }
+  if (typeof t.completed !== 'boolean') {
+    throw new Error(
+      `[ValidateTaskReference] Task reference ${t.id} from ${t.source} must have completed status`
+    )
+  }
+  if (!t.label) {
+    throw new Error(
+      `[ValidateTaskReference] Task reference ${t.id} from ${t.source} must have a label`
+    )
+  }
+}
 export function isValidStep(step: unknown): asserts step is Step {
   if (!step || typeof step !== 'object') throw new Error('Step must be an object')
   const s = step as Partial<Step>
@@ -91,13 +128,44 @@ export const sanitizeTaskList = (taskList: Partial<TaskList>): TaskList => {
     version: taskList.version || '1.0.0',
     tasks: taskList.tasks
       ? Object.fromEntries(
-          Object.entries(taskList.tasks).map(([key, task]) => [key, sanitizeTask(task)])
+          Object.values(taskList.tasks).map((task) => [task.id, sanitizeTask(task)])
         )
       : {},
     currentTaskId: taskList.currentTaskId || ''
   }
   return updatedTaskList as TaskList
 }
+
+export const sanitizeTaskListFile = (taskList: Partial<TaskList>): TaskList => {
+  const updatedTaskList = {
+    version: taskList.version || '1.0.0',
+    tasks: taskList.tasks
+      ? Object.fromEntries(
+          Object.values(taskList.tasks).map((task) => [
+            `${task.source}.${task.id}`,
+            task.source === 'server' ? sanitizeTask(task) : sanitizeTaskReference(task)
+          ])
+        )
+      : {},
+    currentTaskId: ''
+  }
+  return updatedTaskList as TaskList
+}
+
+export const sanitizeTaskReference = (task: Partial<TaskReference | Task>): TaskReference => {
+  const updatedTask = {
+    id: task.id || '',
+    source: task.source || '',
+    version: task.version || '1.0.0',
+    available: task.available ?? false,
+    completed: task.completed ?? false,
+    label: task.label || task.id || '',
+    started: false,
+    description: task.description || ''
+  }
+  return updatedTask as TaskReference
+}
+
 export const sanitizeTask = (task: Partial<Task>): Task => {
   const updatedTask = {
     id: task.id || '',

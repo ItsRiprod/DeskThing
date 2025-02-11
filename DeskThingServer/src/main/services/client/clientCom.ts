@@ -1,5 +1,5 @@
 console.log('[ClientCom Service] Starting')
-import { SocketData, SongData, AppSettings } from '@shared/types'
+import { SocketData, SongData, AppSettings } from '@DeskThing/types'
 import { server, Clients } from './websocket'
 import { connectionStore, appStore } from '@server/stores/'
 import Logger from '@server/utils/logger'

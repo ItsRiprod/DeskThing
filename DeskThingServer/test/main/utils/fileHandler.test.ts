@@ -1,24 +1,44 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import fs from 'fs'
+import fs from 'node:fs'
 import {
   readFromFile,
   readFromGlobalFile,
   writeToFile,
-  writeToGlobalFile
+  writeToGlobalFile,
+  deleteFile,
+  addToFile
 } from '@server/utils/fileHandler'
 
-vi.mock('electron', () => ({
-  app: {
-    getPath: vi.fn().mockReturnValue('\\mock\\user\\data')
+vi.mock('@server/utils/logger', () => ({
+  default: {
+    error: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+    fatal: vi.fn()
   }
 }))
 
-vi.mock('fs', () => ({
+vi.mock('electron', () => ({
+  app: {
+    getPath: vi.fn((path) => (path === 'userData' ? '\\mock\\user\\data' : '\\mock\\temp'))
+  }
+}))
+
+vi.mock('node:fs', () => ({
   default: {
-    existsSync: vi.fn(),
-    readFileSync: vi.fn(),
-    writeFileSync: vi.fn(),
-    mkdirSync: vi.fn()
+    promises: {
+      access: vi.fn(),
+      readFile: vi.fn(),
+      writeFile: vi.fn(),
+      mkdir: vi.fn(),
+      copyFile: vi.fn(),
+      rm: vi.fn(),
+      appendFile: vi.fn(),
+      stat: vi.fn(),
+      unlink: vi.fn()
+    }
   }
 }))
 
@@ -32,127 +52,123 @@ describe('fileHandler', () => {
   })
 
   describe('readFromFile', () => {
-    it('should return false when file does not exist', () => {
-      vi.mocked(fs.existsSync).mockReturnValue(false)
-      const result = readFromFile('test.json')
-      expect(result).toBe(false)
-      expect(fs.existsSync).toHaveBeenCalledWith('\\mock\\user\\data\\test.json')
-    })
-
-    it('should read and parse JSON file successfully', () => {
+    it('should read and parse JSON file successfully', async () => {
       const mockData = { test: 'data' }
-      vi.mocked(fs.existsSync).mockReturnValue(true)
-      vi.mocked(fs.readFileSync).mockReturnValue(Buffer.from(JSON.stringify(mockData)))
+      vi.mocked(fs.promises.access).mockResolvedValue(undefined)
+      vi.mocked(fs.promises.readFile).mockResolvedValue(Buffer.from(JSON.stringify(mockData)))
 
-      const result = readFromFile<typeof mockData>('test.json')
+      const result = await readFromFile<typeof mockData>('test.json')
       expect(result).toEqual(mockData)
-      expect(fs.readFileSync).toHaveBeenCalledWith('\\mock\\user\\data\\test.json')
+      expect(fs.promises.readFile).toHaveBeenCalledWith('\\mock\\user\\data\\test.json')
     })
 
-    it('should return false when JSON parsing fails', () => {
-      vi.mocked(fs.existsSync).mockReturnValue(true)
-      vi.mocked(fs.readFileSync).mockReturnValue(Buffer.from('invalid json'))
+    it('should throw error when JSON parsing fails', async () => {
+      vi.mocked(fs.promises.access).mockResolvedValue(undefined)
+      vi.mocked(fs.promises.readFile).mockResolvedValue(Buffer.from('invalid json'))
 
-      const result = readFromFile('test.json')
+      await expect(readFromFile('test.json')).rejects.toThrow('[readFromFile]: Error reading data')
+    })
+  })
+
+  describe('writeToFile', () => {
+    it('should write data to new file when file does not exist', async () => {
+      const mockData = { key: 'value' }
+      vi.mocked(fs.promises.access).mockRejectedValue(new Error())
+      vi.mocked(fs.promises.mkdir).mockResolvedValue(undefined)
+      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined)
+
+      await expect(writeToFile(mockData, 'test.json')).resolves.toBeUndefined()
+      expect(fs.promises.mkdir).toHaveBeenCalledWith('\\mock\\user\\data', { recursive: true })
+      expect(fs.promises.writeFile).toHaveBeenCalledWith(
+        '\\mock\\user\\data\\test.json',
+        JSON.stringify(mockData, null, 2)
+      )
+    })
+
+    it('should use temp file for safe writing when file exists', async () => {
+      const mockData = { key: 'value' }
+      vi.mocked(fs.promises.access).mockResolvedValue(undefined)
+      vi.mocked(fs.promises.mkdir).mockResolvedValue(undefined)
+      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined)
+      vi.mocked(fs.promises.copyFile).mockResolvedValue(undefined)
+      vi.mocked(fs.promises.rm).mockResolvedValue(undefined)
+
+      await expect(writeToFile(mockData, 'test.json')).resolves.toBeUndefined()
+      expect(fs.promises.mkdir).toHaveBeenCalledWith('\\mock\\temp', { recursive: true })
+      expect(fs.promises.copyFile).toHaveBeenCalled()
+      expect(fs.promises.rm).toHaveBeenCalled()
+    })
+  })
+
+  describe('addToFile', () => {
+    it('should append string data to file', async () => {
+      const mockData = 'test data'
+      vi.mocked(fs.promises.mkdir).mockResolvedValue(undefined)
+      vi.mocked(fs.promises.appendFile).mockResolvedValue(undefined)
+
+      await expect(addToFile(mockData, 'test.log')).resolves.toBeUndefined()
+      expect(fs.promises.appendFile).toHaveBeenCalledWith(
+        '\\mock\\user\\data\\test.log',
+        'test data\n'
+      )
+    })
+
+    it('should append buffer data to file', async () => {
+      const mockData = Buffer.from('test data')
+      vi.mocked(fs.promises.mkdir).mockResolvedValue(undefined)
+      vi.mocked(fs.promises.appendFile).mockResolvedValue(undefined)
+
+      await expect(addToFile(mockData, 'test.log')).resolves.toBeUndefined()
+      expect(fs.promises.appendFile).toHaveBeenCalledWith(
+        '\\mock\\user\\data\\test.log',
+        'test data\n'
+      )
+    })
+  })
+
+  describe('deleteFile', () => {
+    it('should delete existing file', async () => {
+      vi.mocked(fs.promises.stat).mockResolvedValue({ isFile: () => true } as fs.Stats)
+      vi.mocked(fs.promises.unlink).mockResolvedValue(undefined)
+
+      await expect(deleteFile('test.json')).resolves.toBeUndefined()
+      expect(fs.promises.unlink).toHaveBeenCalledWith('\\mock\\user\\data\\test.json')
+    })
+
+    it('should throw error when file does not exist', async () => {
+      const error = new Error('File not found')
+      ;(error as any).code = 'ENOENT'
+      vi.mocked(fs.promises.stat).mockRejectedValue(error)
+
+      await expect(deleteFile('test.json')).rejects.toThrow('[deleteFile] File does not exist')
+    })
+
+    it('should throw error when path is not a file', async () => {
+      vi.mocked(fs.promises.stat).mockResolvedValue({ isFile: () => false } as fs.Stats)
+
+      await expect(deleteFile('test.json')).rejects.toThrow(
+        '[deleteFile] Path exists but is not a file'
+      )
+    })
+  })
+
+  describe('deprecated functions', () => {
+    it('writeToGlobalFile should call writeToFile', async () => {
+      const mockData = { key: 'value' }
+      vi.mocked(fs.promises.access).mockResolvedValue(undefined)
+      vi.mocked(fs.promises.mkdir).mockResolvedValue(undefined)
+      vi.mocked(fs.promises.writeFile).mockResolvedValue(undefined)
+      vi.mocked(fs.promises.copyFile).mockResolvedValue(undefined)
+      vi.mocked(fs.promises.rm).mockResolvedValue(undefined)
+
+      await expect(writeToGlobalFile(mockData, 'test.json')).resolves.toBeUndefined()
+    })
+
+    it('readFromGlobalFile should return false when file does not exist', async () => {
+      vi.mocked(fs.promises.access).mockRejectedValue(new Error())
+
+      const result = await readFromGlobalFile('test.json')
       expect(result).toBe(false)
     })
-
-    it('should return false when file read throws error', () => {
-      vi.mocked(fs.existsSync).mockReturnValue(true)
-      vi.mocked(fs.readFileSync).mockImplementation(() => {
-        throw new Error('Read error')
-      })
-
-      const result = readFromFile('test.json')
-      expect(result).toBe(false)
-    })
-  })
-})
-describe('writeToFile', () => {
-  it('should successfully write data to file', () => {
-    const mockData = { key: 'value' }
-    vi.mocked(fs.existsSync).mockReturnValue(true)
-    vi.mocked(fs.writeFileSync).mockImplementation(() => undefined)
-
-    expect(() => writeToFile(mockData, 'test.json')).not.toThrow()
-    expect(fs.writeFileSync).toHaveBeenCalledWith(
-      '\\mock\\user\\data\\test.json',
-      JSON.stringify(mockData, null, 2)
-    )
-  })
-
-  it('should create directory if it does not exist', () => {
-    const mockData = { key: 'value' }
-    vi.mocked(fs.existsSync).mockReturnValue(false)
-    vi.mocked(fs.mkdirSync).mockImplementation(() => undefined)
-    vi.mocked(fs.writeFileSync).mockImplementation(() => undefined)
-
-    expect(() => writeToFile(mockData, 'nested/path/test.json')).not.toThrow()
-    expect(fs.mkdirSync).toHaveBeenCalledWith('\\mock\\user\\data\\nested\\path', {
-      recursive: true
-    })
-  })
-
-  it('should throw error when write operation fails', () => {
-    const mockData = { key: 'value' }
-    vi.mocked(fs.existsSync).mockReturnValue(true)
-    vi.mocked(fs.writeFileSync).mockImplementation(() => {
-      throw new Error('Write error')
-    })
-
-    expect(() => writeToFile(mockData, 'test.json')).toThrow(
-      '[writeToFile]: failed with Write error'
-    )
-  })
-})
-
-describe('writeToGlobalFile', () => {
-  it('should successfully write data to global file', () => {
-    const mockData = { key: 'value' }
-    vi.mocked(fs.writeFileSync).mockImplementation(() => undefined)
-
-    expect(() => writeToGlobalFile(mockData, '/global/path/test.json')).not.toThrow()
-    expect(fs.writeFileSync).toHaveBeenCalledWith(
-      '/global/path/test.json',
-      JSON.stringify(mockData, null, 2)
-    )
-  })
-
-  it('should throw error when global write operation fails', () => {
-    const mockData = { key: 'value' }
-    vi.mocked(fs.writeFileSync).mockImplementation(() => {
-      throw new Error('Write error')
-    })
-
-    expect(() => writeToGlobalFile(mockData, '/global/path/test.json')).toThrow(
-      '[writeToGlobalFile] failed with Write error'
-    )
-  })
-})
-
-describe('readFromGlobalFile', () => {
-  it('should successfully read and parse global file', async () => {
-    const mockData = { key: 'value' }
-    vi.mocked(fs.existsSync).mockReturnValue(true)
-    vi.mocked(fs.readFileSync).mockReturnValue(Buffer.from(JSON.stringify(mockData)))
-
-    const result = await readFromGlobalFile<typeof mockData>('test.json')
-    expect(result).toEqual(mockData)
-    expect(fs.readFileSync).toHaveBeenCalledWith('\\mock\\user\\data\\test.json')
-  })
-
-  it('should return false when global file does not exist', async () => {
-    vi.mocked(fs.existsSync).mockReturnValue(false)
-
-    const result = await readFromGlobalFile('test.json')
-    expect(result).toBe(false)
-  })
-
-  it('should return false when global file parsing fails', async () => {
-    vi.mocked(fs.existsSync).mockReturnValue(true)
-    vi.mocked(fs.readFileSync).mockReturnValue(Buffer.from('invalid json'))
-
-    const result = await readFromGlobalFile('test.json')
-    expect(result).toBe(false)
   })
 })
