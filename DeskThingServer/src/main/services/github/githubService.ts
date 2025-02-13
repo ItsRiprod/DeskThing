@@ -1,5 +1,6 @@
 console.log('[Github Handler] Starting')
-import { GithubRelease } from '@shared/types'
+import logger from '@server/utils/logger'
+import { GithubAsset, GithubRelease } from '@shared/types'
 
 /**
  * Fetches the latest release information for the specified GitHub repository.
@@ -16,6 +17,11 @@ export async function getLatestRelease(repoUrl: string): Promise<GithubRelease> 
       throw new Error('Invalid GitHub repository URL')
     }
 
+    logger.info(`Fetching latest release for ${repoUrl}`, {
+      function: 'getLatestRelease',
+      source: 'githubService'
+    })
+
     const owner = repoMatch[1]
     const repo = repoMatch[2]
 
@@ -23,13 +29,19 @@ export async function getLatestRelease(repoUrl: string): Promise<GithubRelease> 
     const response = await fetch(apiUrl)
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
+      throw new Error(
+        `HTTP error while getting latest release ${response.status}! status: ${response.statusText}`
+      )
     }
 
     const release = await response.json()
     return release
   } catch (error) {
-    console.error('Error fetching latest release:', error)
+    logger.error('Error while getting latest release!', {
+      error: error as Error,
+      function: 'getLatestRelease',
+      source: 'githubService'
+    })
     throw error
   }
 }
@@ -56,7 +68,9 @@ export async function getReleases(repoUrl: string): Promise<GithubRelease[]> {
     const response = await fetch(apiUrl)
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
+      throw new Error(
+        `HTTP error while getting releases ${response.status}! status: ${response.statusText}`
+      )
     }
 
     return await response.json()
@@ -64,4 +78,23 @@ export async function getReleases(repoUrl: string): Promise<GithubRelease[]> {
     console.error('Error fetching releases:', error)
     throw error
   }
+}
+
+/**
+ *
+ * @param asset
+ * @throws - Error if asset is not found
+ * @returns
+ */
+export async function fetchAssetContent<T>(asset: GithubAsset | undefined): Promise<T | undefined> {
+  if (!asset) {
+    throw new Error('Asset not found')
+  }
+  const response = await fetch(asset.browser_download_url)
+  if (!response.ok) {
+    throw new Error(
+      `HTTP error while fetching Asset Content ${response.status}! status: ${response.statusText}`
+    )
+  }
+  return response.json()
 }

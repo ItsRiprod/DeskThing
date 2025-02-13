@@ -13,12 +13,12 @@
  * If the configuration file doesn't exist, it will be created with default values.
  */
 
-console.log('[Config Handler] Starting')
+console.log('[App File Service] Starting')
 import { App, LOGGING_LEVELS, AppManifest } from '@DeskThing/types'
 import Logger from '@server/utils/logger'
 import { AppData } from '@shared/types'
-import { readFromFile, writeToFile } from '../../utils/fileHandler'
-import { verifyAppDataStructure, sanitizeAppStructure } from './appServiceUtils'
+import { readFromFile, writeToFile } from './fileService'
+import { verifyAppDataStructure, sanitizeAppStructure } from '../apps/appUtils'
 
 const defaultData: AppData = {}
 

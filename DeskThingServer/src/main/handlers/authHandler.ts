@@ -1,5 +1,5 @@
 console.log('[Auth Handler] Starting')
-import { getAppData } from '../services/files/appService'
+import { getAppData } from '../services/files/appFileService'
 import http from 'http'
 import url from 'url'
 import settingsStore from '../stores/settingsStore'

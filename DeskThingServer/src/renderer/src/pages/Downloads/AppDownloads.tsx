@@ -1,12 +1,22 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Sidebar from '@renderer/nav/Sidebar'
 import Button from '@renderer/components/Button'
-import { IconDownload, IconLink, IconLoading, IconLogs, IconUpload } from '@renderer/assets/icons'
+import {
+  IconArrowDown,
+  IconArrowUp,
+  IconDownload,
+  IconLink,
+  IconLoading,
+  IconLogoGear,
+  IconPlus,
+  IconStop,
+  IconUpload
+} from '@renderer/assets/icons'
 import { useAppStore, useGithubStore, usePageStore } from '@renderer/stores'
 import MainElement from '@renderer/nav/MainElement'
 import DownloadNotification from '@renderer/overlays/DownloadNotification'
-import Overlay from '@renderer/overlays/Overlay'
 import { SuccessNotification } from '@renderer/overlays/SuccessNotification'
+import { AppReleaseCommunity, AppReleaseMeta, AppReleaseSingleMeta } from '@DeskThing/types'
 
 /**
  * The `AppDownloads` component is responsible for rendering the downloads page of the application. It displays a list of available app downloads, allows users to upload their own app, and provides a link to the client downloads page.
@@ -21,25 +31,31 @@ import { SuccessNotification } from '@renderer/overlays/SuccessNotification'
  * - Handling errors and edge cases, such as when the GitHub API limit is reached
  */
 const AppDownloads: React.FC = () => {
-  // Getting releases to show
   const appReleases = useGithubStore((githubStore) => githubStore.appReleases)
-  const extractNameDetails = useGithubStore((githubStore) => githubStore.extractReleaseDetails)
-
-  // Running apps
+  const communityApps = useGithubStore((githubStore) => githubStore.communityApps)
+  const getApps = useGithubStore((githubStore) => githubStore.getApps)
+  const getAppReferences = useGithubStore((githubStore) => githubStore.getAppReferences)
+  const addRepo = useGithubStore((githubStore) => githubStore.addAppRepo)
+  const removeRepo = useGithubStore((githubStore) => githubStore.removeAppRepo)
+  const refresh = useGithubStore((githubStore) => githubStore.refreshApps)
   const addApp = useAppStore((appStore) => appStore.addApp)
   const stagedAppManifest = useAppStore((appStore) => appStore.stagedManifest)
   const logging = useAppStore((appStore) => appStore.logging)
 
-  // Displaying overlays
+  const [uiState, setUiState] = useState({
+    showCommunity: false
+  })
+
   const [showLogging, setShowLogging] = useState(false)
   const [selectingFile, setSelectingFile] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  // Displaying available downloads
-  const [appDownloads, setAppDownloads] = useState<string | null>(null)
-
-  // Navigation
   const setPage = usePageStore((pageStore) => pageStore.setPage)
+
+  useEffect(() => {
+    getApps()
+    getAppReferences()
+  }, [getApps])
 
   const gotoClientDownloads = (): void => {
     setPage('Downloads/Client')
@@ -68,18 +84,9 @@ const AppDownloads: React.FC = () => {
     }
   }
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-  }
-
   const handleDownloadClick = async (url: string): Promise<void> => {
     setShowLogging(true)
     setLoading(true)
-    setAppDownloads(null)
     try {
       await addApp(url)
     } catch (error) {
@@ -90,77 +97,29 @@ const AppDownloads: React.FC = () => {
     }
   }
 
-  const handleDownloadLatestClick = async (name: string): Promise<void> => {
-    const latest = appReleases[name].reduce((latest, current) =>
-      new Date(current.updated_at) > new Date(latest.updated_at) ? current : latest
-    )
-
-    handleDownloadClick(latest.browser_download_url)
+  const handleAddClick = (appRelease: AppReleaseCommunity): void => {
+    if (appRelease.added) {
+      removeRepo(appRelease.repository)
+    } else {
+      addRepo(appRelease.repository)
+    }
   }
 
-  const handleMoreDownloadsClick = (App: string): void => {
-    setAppDownloads(App)
+  const handleDownloadLatestClick = async (app: AppReleaseSingleMeta): Promise<void> => {
+    handleDownloadClick(app.updateUrl)
+  }
+
+  const handleToggleCommunityApps = (): void => {
+    setUiState((prev) => ({
+      ...prev,
+      showCommunity: !prev.showCommunity
+    }))
   }
 
   return (
     <div className="flex h-full w-full">
       {logging && showLogging && (
         <DownloadNotification loggingData={logging} onClose={handleDownloadFinalized} />
-      )}
-      {appDownloads && (
-        <Overlay
-          onClose={() => setAppDownloads(null)}
-          className="border border-gray-500 lg:w-[960px] w-4/5 h-5/6 p-5 flex flex-col"
-        >
-          <div className="text-2xl py-5">
-            {appDownloads.charAt(0).toUpperCase() + appDownloads.slice(1).toLowerCase()} App
-            Downloads
-          </div>
-          <div className="w-full h-full overflow-y-auto">
-            <div className="w-full h-full flex flex-col gap-2">
-              {appReleases[appDownloads] &&
-                appReleases[appDownloads].map((release, index) => {
-                  const appDetails = extractNameDetails(release.name)
-                  const fileSize = formatFileSize(release.size)
-
-                  return (
-                    <div
-                      className="flex flex-row justify-between items-center bg-zinc-900 px-3 p-2 rounded"
-                      key={index}
-                    >
-                      <div className="">
-                        <div className="flex items-center">
-                          <h1 className="text-2xl font-semibold">
-                            {appDetails.name.charAt(0).toUpperCase() +
-                              appDetails.name.slice(1).toLowerCase()}
-                          </h1>
-                          <p className="italic text-gray-500">
-                            {appDetails.version.replace('.zip', '')}
-                          </p>
-                        </div>
-                        <p className="text-xs text-gray-500">{release.download_count} Downloads</p>
-                        <p className="text-xs text-gray-500">
-                          Uploaded {new Date(release.created_at).toDateString()}
-                        </p>
-                      </div>
-                      <div>
-                        <Button
-                          className={`${!loading && 'group'} gap-2`}
-                          onClick={() => handleDownloadClick(release.browser_download_url)}
-                          disabled={loading}
-                        >
-                          <p className="group-hover:block hidden text-center flex-grow">
-                            Download {fileSize}
-                          </p>
-                          <IconDownload className="group-hover:stroke-2 stroke-1" />
-                        </Button>
-                      </div>
-                    </div>
-                  )
-                })}
-            </div>
-          </div>
-        </Overlay>
       )}
       {stagedAppManifest && <SuccessNotification />}
       <Sidebar className="flex justify-end flex-col h-full max-h-full md:items-stretch xs:items-center">
@@ -180,40 +139,37 @@ const AppDownloads: React.FC = () => {
       <MainElement className="p-4">
         <div className="w-full h-full relative overflow-y-auto flex flex-col">
           <div className="absolute inset w-full h-full flex flex-col gap-2">
-            {Object.keys(appReleases).length > 0 ? (
-              Object.keys(appReleases).map((name) => (
-                <div
-                  key={name}
-                  className="flex hover:bg-zinc-800 bg-zinc-900 rounded-lg justify-between items-center p-2"
-                >
-                  <div>
-                    <h1 className="text-xl">
-                      {name.charAt(0).toUpperCase() + name.slice(1).toLowerCase()} App
-                    </h1>
-                    <p className="text-sm text-gray-500">
-                      {appReleases[name].length} available downloads
-                    </p>
+            {appReleases.length > 0 ? (
+              appReleases.map((appRelease: AppReleaseMeta) =>
+                appRelease.type === 'single' ? (
+                  <AppDownloadComponent
+                    key={appRelease.id}
+                    appRelease={appRelease}
+                    loading={loading}
+                    onDownoadLatestClick={handleDownloadLatestClick}
+                  />
+                ) : appRelease.type === 'multi' ? (
+                  <div
+                    className="border-l flex flex-col px-5 border-gray-500 gap-2"
+                    key={appRelease.id}
+                  >
+                    <div className="w-full flex justify-between items-center">
+                      <p>{appRelease.id}</p>
+                      <p>{appRelease.version}</p>
+                    </div>
+                    {appRelease.releases.map((release) => (
+                      <AppDownloadComponent
+                        key={release.id}
+                        appRelease={release}
+                        loading={loading}
+                        onDownoadLatestClick={handleDownloadLatestClick}
+                      />
+                    ))}
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      className={`${loading ? 'text-gray-600' : 'group'} gap-2`}
-                      disabled={loading}
-                      onClick={() => handleDownloadLatestClick(name)}
-                    >
-                      <p className="group-hover:block hidden text-center flex-grow">
-                        Download Latest
-                      </p>
-                      <IconDownload className="group-hover:stroke-2 stroke-1" />
-                    </Button>
-                    <Button className="group gap-2" onClick={() => handleMoreDownloadsClick(name)}>
-                      <p className="group-hover:block hidden text-center flex-grow">
-                        More Downloads
-                      </p>
-                      <IconLogs className="group-hover:stroke-2 stroke-1" />
-                    </Button>
-                  </div>
-                </div>
-              ))
+                ) : (
+                  <div></div>
+                )
+              )
             ) : (
               <div className="w-full h-full flex flex-col justify-center items-center">
                 <h1 className="text-2xl font-semibold">Uh oh-</h1>
@@ -222,11 +178,128 @@ const AppDownloads: React.FC = () => {
                   Check the logs for a potential reason. You might have hit the Github API limit.
                   Try again later or add a repo in settings!
                 </p>
+                <Button onClick={refresh} className="mt-2">
+                  <p>Refresh</p>
+                </Button>
               </div>
             )}
+            <div className="flex flex-col gap-2">
+              <Button
+                onClick={handleToggleCommunityApps}
+                className="hover:bg-zinc-900 flex justify-between items-center"
+              >
+                <p className="text-xl">Additional Apps</p>
+                {uiState.showCommunity ? <IconArrowDown /> : <IconArrowUp />}
+              </Button>
+
+              {uiState.showCommunity &&
+                (communityApps.length > 0 ? (
+                  communityApps.map((appRelease, index) => (
+                    <AppDownloadCommunityComponent
+                      key={index}
+                      appRelease={appRelease}
+                      loading={loading}
+                      onAddClick={handleAddClick}
+                    />
+                  ))
+                ) : (
+                  <div className="w-full h-full flex flex-col justify-center items-center">
+                    <h1 className="text-2xl font-semibold">Uh oh-</h1>
+                  </div>
+                ))}
+            </div>
           </div>
         </div>
       </MainElement>
+    </div>
+  )
+}
+
+const AppDownloadCommunityComponent: React.FC<{
+  appRelease: AppReleaseCommunity
+  onAddClick: (appRelease: AppReleaseCommunity) => void
+  loading: boolean
+}> = ({ appRelease, onAddClick, loading }) => {
+  return (
+    <div className="flex hover:bg-zinc-800 bg-zinc-900 rounded-lg justify-between items-center p-2">
+      <div className="flex gap-4 items-center">
+        {appRelease.icon ? (
+          <img src={appRelease.icon} alt={appRelease.label} className="w-12 h-12 rounded" />
+        ) : (
+          <div className="w-12 h-12 rounded items-center flex justify-center">
+            <IconLogoGear className="text-black w-12 h-12" />
+          </div>
+        )}
+        <div>
+          <h1 className="text-xl">{appRelease.label}</h1>
+          <div className="flex gap-2 text-sm text-gray-500">
+            <p>v{appRelease.version}</p>
+            <p>•</p>
+            <p>By {appRelease.author}</p>
+          </div>
+          <p className="text-sm text-gray-400">{appRelease.description}</p>
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <Button
+          className={`${loading ? 'text-gray-600' : 'group'} gap-2`}
+          disabled={loading}
+          onClick={() => onAddClick(appRelease)}
+        >
+          <p className="group-hover:block hidden text-center flex-grow">
+            {appRelease.added ? 'Remove' : 'Add'}
+          </p>
+          {appRelease.added ? (
+            <IconStop className="group-hover:stroke-2 stroke-1" />
+          ) : (
+            <IconPlus className="group-hover:stroke-2 stroke-1" />
+          )}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+const AppDownloadComponent: React.FC<{
+  appRelease: AppReleaseSingleMeta
+  onDownoadLatestClick: (appRelease: AppReleaseSingleMeta) => void
+  loading: boolean
+}> = ({ appRelease, onDownoadLatestClick, loading }) => {
+  return (
+    <div
+      key={appRelease.id}
+      className="flex hover:bg-zinc-800 bg-zinc-900 rounded-lg justify-between items-center p-2"
+    >
+      <div className="flex gap-4 items-center">
+        {appRelease.icon ? (
+          <img src={appRelease.icon} alt={appRelease.label} className="w-12 h-12 rounded" />
+        ) : (
+          <div className="w-12 h-12 rounded items-center flex justify-center">
+            <IconLogoGear className="text-black w-12 h-12" />
+          </div>
+        )}
+        <div>
+          <h1 className="text-xl">{appRelease.label}</h1>
+          <div className="flex gap-2 text-sm text-gray-500">
+            <p>v{appRelease.version}</p>
+            <p>•</p>
+            <p>By {appRelease.author}</p>
+            <p>•</p>
+            <p>{appRelease.downloads || 0} downloads</p>
+          </div>
+          <p className="text-sm text-gray-400">{appRelease.description}</p>
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <Button
+          className={`${loading ? 'text-gray-600' : 'group'} gap-2`}
+          disabled={loading}
+          onClick={() => onDownoadLatestClick(appRelease)}
+        >
+          <p className="group-hover:block hidden text-center flex-grow">Download Latest</p>
+          <IconDownload className="group-hover:stroke-2 stroke-1" />
+        </Button>
+      </div>
     </div>
   )
 }

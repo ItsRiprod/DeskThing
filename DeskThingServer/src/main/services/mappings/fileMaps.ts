@@ -2,7 +2,7 @@ console.log('[MapFile Service] Starting')
 import { LOGGING_LEVELS } from '@DeskThing/types'
 import { Profile, MappingStructure, ButtonMapping, MappingFileStructure } from '@shared/types'
 import Logger from '@server/utils/logger'
-import { readFromFile, writeToFile } from '@server/utils/fileHandler'
+import { readFromFile, writeToFile } from '@server/services/files/fileService'
 import { defaultData } from '@server/static/defaultMapping'
 import { isValidButtonMapping, isValidFileStructure, isValidMappingStructure } from './utilsMaps'
 import path from 'path'
@@ -17,7 +17,7 @@ export const loadMappings = async (): Promise<MappingStructure> => {
     Logger.error(`Mappings file is corrupt or does not exist, using default`, {
       error: new Error('Version not found or data is null'),
       function: 'loadMappings',
-      source: 'FileHandler'
+      source: 'FileService'
     })
     await saveMappings(defaultData)
     return defaultData
@@ -29,7 +29,7 @@ export const loadMappings = async (): Promise<MappingStructure> => {
     Logger.error(`Mappings file is corrupt or does not exist, using default`, {
       error: error as Error,
       function: 'loadMappings',
-      source: 'FileHandler'
+      source: 'FileService'
     })
     await saveMappings(defaultData)
     return defaultData
@@ -43,7 +43,7 @@ export const loadMappings = async (): Promise<MappingStructure> => {
     Logger.error(`Mappings file is corrupt, resetting to default`, {
       error: error as Error,
       function: 'loadMappings',
-      source: 'FileHandler'
+      source: 'FileService'
     })
     await saveMappings(defaultData)
     return defaultData
@@ -70,7 +70,7 @@ const fetchProfiles = async (fileData: MappingFileStructure): Promise<MappingStr
           Logger.error(`Profile ${profile.id} is corrupt or does not exist, using default`, {
             error: error as Error,
             function: 'fetchProfiles',
-            source: 'FileHandler'
+            source: 'FileService'
           })
           return null
         }
@@ -78,7 +78,7 @@ const fetchProfiles = async (fileData: MappingFileStructure): Promise<MappingStr
         Logger.warn(`Unable to fetch profile`, {
           error: new Error(`Failed to fetch profile ${profile.id}`),
           function: 'fetchProfiles',
-          source: 'FileHandler'
+          source: 'FileService'
         })
         // Return null for failed profile loads
         return null
@@ -112,7 +112,7 @@ const saveProfile = async (profile: ButtonMapping): Promise<Profile> => {
     Logger.warn('Failed to save profile', {
       error: error as Error,
       function: 'saveProfile',
-      source: 'FileHandler'
+      source: 'FileService'
     })
     // Return stripped profile even if save fails
     return { ...profile, mapping: undefined } as Profile
@@ -142,7 +142,7 @@ const saveProfiles = async (mappingData: MappingStructure): Promise<MappingFileS
     Logger.warn('Corrupted mapping data, resetting to default', {
       error: error as Error,
       function: 'saveProfiles',
-      source: 'FileHandler'
+      source: 'FileService'
     })
 
     await saveMappings(defaultData)
@@ -193,7 +193,7 @@ export const exportProfile = async (profile: ButtonMapping, filePath: string): P
     Logger.error('Failed to export profile', {
       error: error as Error,
       function: 'exportProfile',
-      source: 'FileHandler'
+      source: 'FileService'
     })
   }
 }

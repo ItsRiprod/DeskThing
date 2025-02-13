@@ -13,7 +13,7 @@ import {
   DeskThingType
 } from '@DeskThing/types'
 import Logger from '@server/utils/logger'
-import { getData, overwriteData, setData } from '@server/services/files/dataService'
+import { getData, overwriteData, setData } from '@server/services/files/dataFileService'
 import { isValidAppSettings, loadAndRunEnabledApps } from '@server/services/apps'
 import { ReplyFn, TaskReference, AppInstance } from '@shared/types'
 import { isValidStep, isValidTask } from '@server/services/task'
@@ -82,7 +82,7 @@ export class AppStore {
    */
   private async loadApps(): Promise<void> {
     Logger.info('Loading apps...', { source: 'AppStore', function: 'loadApps' })
-    const { getAppData } = await import('../services/files/appService')
+    const { getAppData } = await import('../services/files/appFileService')
 
     const data = await getAppData()
 
@@ -147,7 +147,7 @@ export class AppStore {
   }
 
   private async saveAppsToFile(): Promise<void> {
-    const { setAppsData } = await import('../services/files/appService')
+    const { setAppsData } = await import('../services/files/appFileService')
 
     if (this.functionTimeouts['server-saveApps']) {
       Logger.info(`Cancelling previous saveApps timeout and starting a new one`, {
@@ -169,7 +169,7 @@ export class AppStore {
   }
 
   private async saveAppToFile(name: string): Promise<void> {
-    const { setAppData } = await import('../services/files/appService')
+    const { setAppData } = await import('../services/files/appFileService')
     const { func: _func, ...app } = this.apps[name]
 
     // Clear any existing timeout for this app

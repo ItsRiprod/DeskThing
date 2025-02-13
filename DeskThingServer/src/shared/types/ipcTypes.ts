@@ -2,9 +2,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { BrowserWindow } from 'electron'
-import { Log, Settings } from './types'
+import { Log, Settings, SortedReleases } from './types'
 import { ButtonMapping } from './maps'
-import { Step, Task, Action, Key, App, AppManifest } from '@deskthing/types'
+import {
+  Step,
+  Task,
+  Action,
+  Key,
+  App,
+  AppManifest,
+  AppReleaseMeta,
+  AppReleaseCommunity
+} from '@deskthing/types'
 import { TaskList } from '@shared/types'
 
 export const IPC_HANDLERS = {
@@ -20,7 +29,6 @@ export type UTILITY_TYPES =
   | 'connections'
   | 'devices'
   | 'settings'
-  | 'github'
   | 'logs'
   | 'shutdown'
   | 'open-log-folder'
@@ -107,6 +115,39 @@ export interface UtilityIPCData extends UtilityIPCBase {
   payload: any
 }
 
+export type UtilityIPCGithub = {
+  type: 'github'
+} & (
+  | {
+      request: 'refreshApps'
+      payload: undefined
+    }
+  | {
+      request: 'refreshApp'
+      payload: string
+    }
+  | {
+      request: 'getApps'
+      payload: undefined
+    }
+  | {
+      request: 'getAppReferences'
+      payload: undefined
+    }
+  | {
+      request: 'addAppRepo'
+      payload: string
+    }
+  | {
+      request: 'removeAppRepo'
+      payload: string
+    }
+  | {
+      request: 'getClients'
+      payload: undefined
+    }
+)
+
 export type UtilityIPCTask = {
   type: 'task'
 } & (
@@ -143,9 +184,10 @@ export type IPCData =
   | (UtilityIPCData & { kind: 'utility'; type: UTILITY_TYPES })
   | (UtilityIPCTask & { kind: 'utility'; type: 'task' })
   | (UtilityIPCUpdate & { kind: 'utility'; type: 'update' })
+  | (UtilityIPCGithub & { kind: 'utility'; type: 'github' })
 
 /**
- * OUTGOING DATA TYPES FROM SERVER TO CLIENT
+ * OUTGOING DATA TYPES FROM SERVER BACKEND TO SERVER FRONTEND
  */
 export type ServerIPCData =
   | AppsListIPC
@@ -160,6 +202,7 @@ export type ServerIPCData =
   | UpdateProgressIPC
   | AppDataIPC
   | TasksIPC
+  | GithubIPC
 
 export type OutgoingIPCBase = {
   type: string
@@ -243,6 +286,22 @@ export interface TasksIPC extends OutgoingIPCBase {
   type: 'taskList'
   payload: TaskList
 }
+
+export type GithubIPC = OutgoingIPCBase &
+  (
+    | {
+        type: 'github-apps'
+        payload: AppReleaseMeta[]
+      }
+    | {
+        type: 'github-community'
+        payload: AppReleaseCommunity[]
+      }
+    | {
+        type: 'github-client'
+        payload: SortedReleases
+      }
+  )
 
 export interface LoggingData {
   status: boolean

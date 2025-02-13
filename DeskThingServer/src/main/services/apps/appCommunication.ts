@@ -17,7 +17,7 @@ import Logger from '@server/utils/logger'
 import { ipcMain } from 'electron'
 import { isValidStep, isValidTask } from '../task'
 import { isValidKey } from '../mappings/utilsMaps'
-import { isValidAppDataInterface } from '../files/appServiceUtils'
+import { isValidAppDataInterface } from './appUtils'
 
 type HandlerFunction = (app: string, appData: ToServerData) => Promise<void>
 

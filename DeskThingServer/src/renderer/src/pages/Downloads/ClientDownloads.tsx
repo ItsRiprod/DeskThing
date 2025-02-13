@@ -17,9 +17,18 @@ import Overlay from '@renderer/overlays/Overlay'
 import { useSearchParams } from 'react-router-dom'
 import useTaskStore from '@renderer/stores/taskStore'
 
+const extractReleaseDetails = (releaseName: string): { name: string; version: string } => {
+  const parts = releaseName.split('-')
+  const appDetails = {
+    name: parts[0],
+    version: parts[2] + (parts[3] ? '-' + parts[3] : '')
+  }
+  return appDetails
+}
+
 const ClientDownloads: React.FC = () => {
   const clientReleases = useGithubStore((githubStore) => githubStore.clientReleases)
-  const extractReleaseDetails = useGithubStore((githubStore) => githubStore.extractReleaseDetails)
+
   const installedClient = useClientStore((clientStore) => clientStore.clientManifest)
   const refreshClient = useClientStore((clientStore) => clientStore.requestClientManifest)
   const [clientRefreshing, setClientRefreshing] = useState(false)

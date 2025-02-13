@@ -8,7 +8,7 @@ import { handleAdbCommands } from './adbHandler'
 import { Client, ReplyData, ReplyFn } from '@shared/types'
 import { ClientManifest, LOGGING_LEVELS } from '@DeskThing/types'
 import settingsStore from '../stores/settingsStore'
-import { getLatestRelease } from './githubHandler'
+import { getLatestRelease } from '../services/github/githubService'
 
 /**
  * Handles device data received from the client.

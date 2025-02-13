@@ -156,11 +156,19 @@ const useAppStore = create<AppStoreState>((set, get) => ({
   },
 
   addApp: async (appPath: string): Promise<AppManifest | void> => {
-    const manifest = await window.electron.app.add(appPath)
-    if (manifest) {
-      set({ stagedManifest: manifest })
+    const loggingListener = async (_event: Electron.Event, reply: LoggingData): Promise<void> => {
+      set({ logging: reply })
+      if (reply.final === true || reply.status === false) {
+        removeListener()
+      }
     }
-    return manifest
+    const removeListener = window.electron.ipcRenderer.on('logging', loggingListener)
+
+    window.electron.app.add(appPath).then(async (manifest) => {
+      if (manifest) {
+        set({ stagedManifest: manifest })
+      }
+    })
   },
 
   runStagedApp: async (overwrite: boolean = false): Promise<void> => {

@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useGithubStore } from '../stores'
-import { Settings } from '@shared/types'
+import { SortedReleases } from '@shared/types'
+import { AppReleaseCommunity, AppReleaseMeta } from '@DeskThing/types'
 
 /**
  * A React component that listens for updates to the application's settings and fetches and caches GitHub repository data accordingly.
@@ -11,64 +12,31 @@ import { Settings } from '@shared/types'
  * - Handling errors that occur during the fetching of repository data.
  */
 const GithubDataListener = (): null => {
-  const fetchAppRepo = useGithubStore((state) => state.fetchAppRepo)
-  const fetchClientRepo = useGithubStore((state) => state.fetchClientRepo)
-  const cachedRepos = useGithubStore((state) => state.cachedRepos)
-
-  if (import.meta.hot) {
-    import.meta.hot.invalidate('Unable to update github data')
-  } else {
-    console.log('Refreshing github data')
-  }
-
-  const getInitialSettings = async (): Promise<void> => {
-    const settings = await window.electron.getSettings()
-
-    // Fetch and cache releases for initial app repos
-    if (settings.appRepos) {
-      for (const repoUrl of settings.appRepos) {
-        if (!cachedRepos.includes(repoUrl)) {
-          await fetchAppRepo(repoUrl)
-        }
-      }
-    }
-    if (settings.clientRepos) {
-      for (const repoUrl of settings.clientRepos) {
-        if (!cachedRepos.includes(repoUrl)) {
-          console.log('Fetching client repo:', repoUrl)
-          await fetchClientRepo(repoUrl)
-        }
-      }
-    }
-  }
-
-  getInitialSettings()
+  const setAppReleases = useGithubStore((state) => state.setAppReleases)
+  const setClientReleases = useGithubStore((state) => state.setClientReleases)
+  const setCommunityApps = useGithubStore((state) => state.setCommunityApps)
 
   useEffect(() => {
-    const handleSettingsUpdate = async (_event, settings: Settings): Promise<void> => {
-      // Fetch and cache releases for new app repos
-      if (settings.appRepos) {
-        for (const repoUrl of settings.appRepos) {
-          if (!cachedRepos.includes(repoUrl)) {
-            await fetchAppRepo(repoUrl)
-          }
-        }
-      }
-      if (settings.clientRepos) {
-        for (const repoUrl of settings.clientRepos) {
-          if (!cachedRepos.includes(repoUrl)) {
-            await fetchClientRepo(repoUrl)
-          }
-        }
-      }
+    const handleAppsUpdate = (_event, data: AppReleaseMeta[]): void => {
+      setAppReleases(data)
+    }
+    const handleCommunityUpdate = (_event, data: AppReleaseCommunity[]): void => {
+      setCommunityApps(data)
+    }
+    const handleClientUpdate = (_event, data: SortedReleases): void => {
+      setClientReleases(data)
     }
 
-    window.electron.ipcRenderer.on('settings-updated', handleSettingsUpdate)
+    window.electron.ipcRenderer.on('github-apps', handleAppsUpdate)
+    window.electron.ipcRenderer.on('github-community', handleCommunityUpdate)
+    window.electron.ipcRenderer.on('github-client', handleClientUpdate)
 
     return () => {
-      window.electron.ipcRenderer.removeAllListeners('settings-updated')
+      window.electron.ipcRenderer.removeAllListeners('github-apps')
+      window.electron.ipcRenderer.removeAllListeners('github-community')
+      window.electron.ipcRenderer.removeAllListeners('github-client')
     }
-  }, [fetchAppRepo, fetchClientRepo, cachedRepos])
+  }, [setAppReleases, setClientReleases, setCommunityApps])
 
   return null
 }

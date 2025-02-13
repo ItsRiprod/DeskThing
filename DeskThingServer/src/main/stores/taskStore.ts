@@ -2,15 +2,15 @@ import {
   isValidStep,
   isValidTask,
   isValidTaskList,
-  sanitizeTaskList,
-  sanitizeTaskListFile
+  sanitizeTaskList
 } from '@server/services/task/taskUtils'
 import defaultTaskList from '@server/static/defaultTasks'
-import { readFromFile, writeToFile } from '@server/utils/fileHandler'
 import { TaskReference, TaskList } from '@shared/types'
 import Logger from '@server/utils/logger'
 import { LOGGING_LEVELS, Step, Task } from '@DeskThing/types'
 import appStore from './appStore'
+import { readTasksFromFile, saveTaskList } from '@server/services/files/taskFileService'
+import defaultTask from '@server/static/defaultTasks'
 
 type TaskStoreEvents = {
   taskList: TaskList
@@ -124,33 +124,26 @@ class TaskStore {
     }
   }
   private fetchTaskList = async (): Promise<TaskList> => {
-    const taskList = await readFromFile<TaskList>('tasks.json')
-
-    if (!taskList) {
-      Logger.error('[fetchTaskList]: Failed to fetch tasks!', {
-        function: 'fetchTaskList',
-        source: 'taskStore'
-      })
-      return sanitizeTaskList(defaultTaskList)
-    }
-
     try {
-      isValidTaskList(taskList)
-      return sanitizeTaskList(taskList)
-    } catch (error) {
-      Logger.warn('[fetchTaskList]: Failed to fetch tasks! ', {
-        error: error as Error
-      })
-      // Return the default task data
-      try {
-        await this.saveTaskList(defaultTaskList)
-      } catch (error) {
-        Logger.error('Failed to save default tasks!', {
-          error: error as Error,
+      const taskList = await readTasksFromFile()
+
+      if (!taskList) {
+        Logger.error('[fetchTaskList]: Failed to fetch tasks!', {
           function: 'fetchTaskList',
           source: 'taskStore'
         })
+        await this.saveTaskList(defaultTaskList)
+        return sanitizeTaskList(defaultTaskList)
       }
+
+      return taskList
+    } catch (error) {
+      Logger.error('[fetchTaskList]: Failed to fetch tasks!', {
+        error: error as Error,
+        function: 'fetchTaskList',
+        source: 'taskStore'
+      })
+      await this.saveTaskList(defaultTask)
       return sanitizeTaskList(defaultTaskList)
     }
   }
@@ -172,10 +165,7 @@ class TaskStore {
 
     Logger.info('[saveTaskList] Saving the task list!')
     try {
-      isValidTaskList(this.taskList)
-      // Remove tasks and make TaskReferences
-      const sTaskList = sanitizeTaskListFile(this.taskList)
-      await writeToFile(sTaskList, 'tasks.json')
+      await saveTaskList(this.taskList)
       this.notify('taskList', this.taskList)
       return
     } catch (error) {
@@ -189,6 +179,7 @@ class TaskStore {
       this.taskList = await this.fetchTaskList()
     }
   }
+
   private async debouncedSave(): Promise<void> {
     try {
       if (!this.saveTimeout) {

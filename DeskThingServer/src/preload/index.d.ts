@@ -1,6 +1,12 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
-import { ActionReference, AppSettings, ClientManifest } from '@DeskThing/types'
-import { Profile, Client, ButtonMapping, Log } from '@shared/types'
+import {
+  ActionReference,
+  AppReleaseCommunity,
+  AppReleaseMeta,
+  AppSettings,
+  ClientManifest
+} from '@DeskThing/types'
+import { Profile, Client, ButtonMapping, Log, SortedReleases } from '@shared/types'
 
 type AppData = Record<string, string>
 
@@ -43,7 +49,15 @@ declare global {
       disconnectClient: (connectionId: string) => Promise<void>
       saveSettings: (settings: Settings) => Promise<void>
       getSettings: () => Promise<Settings>
-      fetchGithub: (url: string) => Promise<GithubRelease[]>
+      github: {
+        refreshApp: (repoUrl: string) => Promise<void>
+        refreshApps: () => Promise<void>
+        getApps: () => Promise<AppReleaseMeta[]>
+        getAppReferences: () => Promise<AppReleaseCommunity[]>
+        addAppRepo: (repoUrl: string) => Promise<AppReleaseMeta>
+        getClients: () => Promise<SortedReleases>
+        removeAppRepo: (repoUrl: string) => Promise<void>
+      }
       getLogs: () => Promise<Log[]>
       shutdown: () => Promise<void>
       openLogsFolder: () => Promise<void>

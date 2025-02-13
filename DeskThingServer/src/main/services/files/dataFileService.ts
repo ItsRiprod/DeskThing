@@ -9,13 +9,13 @@
  * The `purgeAppData` function removes the data for a specific application.
  */
 
-console.log('[Data Handler] Starting')
+console.log('[Data File Service] Starting')
 import { AppDataInterface } from '@DeskThing/types'
-import { deleteFile, readFromFile, writeToFile } from '../../utils/fileHandler'
+import { deleteFile, readFromFile, writeToFile } from './fileService'
 import { join } from 'path'
 import logger from '@server/utils/logger'
 
-// Updated function to read Data using the new fileHandler
+// Updated function to read Data using the new FileService
 const readAppData = async (name: string): Promise<AppDataInterface | undefined> => {
   const dataFilePath = join('data', `${name}.json`)
   try {
@@ -25,14 +25,14 @@ const readAppData = async (name: string): Promise<AppDataInterface | undefined> 
     logger.error('Error reading data:', {
       error: err as Error,
       function: 'readAppData',
-      source: 'DataService'
+      source: 'DataFileService'
     })
     throw err
   }
 }
 
 /**
- * Updated function to write Data using the new fileHandler
+ * Updated function to write Data using the new FileService
  * @throws {Error} If there is an error writing the data.
  */
 const writeAppData = async (name: string, data: AppDataInterface): Promise<void> => {
@@ -43,7 +43,7 @@ const writeAppData = async (name: string, data: AppDataInterface): Promise<void>
     logger.error('Error writing data:', {
       error: error as Error,
       function: 'writeAppData',
-      source: 'DataService'
+      source: 'DataFileService'
     })
     throw error
   }
@@ -56,7 +56,7 @@ export const overwriteData = async (name: string, data: AppDataInterface): Promi
     logger.error('Error overwriting data:', {
       error: err as Error,
       function: 'overwriteData',
-      source: 'DataService'
+      source: 'DataFileService'
     })
   }
 }
@@ -97,7 +97,7 @@ export const setData = async (
     logger.error('Error setting data:', {
       error: err as Error,
       function: 'setData',
-      source: 'DataService'
+      source: 'DataFileService'
     })
     if (value?.version != undefined) {
       const appData: AppDataInterface = {
@@ -112,7 +112,7 @@ export const setData = async (
         logger.error('Error writing default data:', {
           error: error as Error,
           function: 'writeAppData',
-          source: 'DataService'
+          source: 'DataFileService'
         })
       }
       return appData
@@ -133,7 +133,7 @@ export const getData = async (app: string): Promise<AppDataInterface | undefined
     logger.error('Error getting data:', {
       error: err as Error,
       function: 'getData',
-      source: 'DataService'
+      source: 'DataFileService'
     })
     return
   }
@@ -146,7 +146,7 @@ export const purgeAppData = async (appName: string): Promise<void> => {
     logger.error('Error deleting app data:', {
       error: error as Error,
       function: 'purgeAppData',
-      source: 'dataService'
+      source: 'DataFileService'
     })
   }
 }

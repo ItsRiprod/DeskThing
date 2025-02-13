@@ -32,7 +32,7 @@ class FileOperationQueue {
             Logger.error(`Failed to process operation after ${this.maxRetries} retries`, {
               error: error as Error,
               function: 'processQueue',
-              source: 'FileHandler'
+              source: 'FileService'
             })
             break
           }
@@ -75,7 +75,7 @@ const fileQueue = new FileOperationQueue()
  * @param filename - The name of the file to read.
  * @returns The parsed data from the file, or `false` if the file does not exist or an error occurs.
  */
-export const readFromFile = async <T>(filename: string): Promise<T | false> => {
+export const readFromFile = async <T>(filename: string): Promise<T | undefined> => {
   return fileQueue.enqueue(filename, async () => {
     const dataFilePath = join(app.getPath('userData'), filename)
     try {

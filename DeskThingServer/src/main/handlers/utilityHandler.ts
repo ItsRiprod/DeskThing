@@ -1,5 +1,5 @@
 console.log('[Utility Handler] Starting')
-import { Action, LOGGING_LEVELS, Key } from '@DeskThing/types'
+import { Action, LOGGING_LEVELS, Key, AppReleaseMeta, AppReleaseCommunity } from '@DeskThing/types'
 import {
   ReplyFn,
   UtilityIPCData,
@@ -13,10 +13,11 @@ import {
   UtilityIPCTask,
   UtilityIPCUpdate,
   IPCData,
-  TaskList
+  TaskList,
+  UtilityIPCGithub,
+  SortedReleases
 } from '@shared/types'
 import { connectionStore, settingsStore, mappingStore } from '@server/stores'
-import { getReleases } from './githubHandler'
 import Logger from '@server/utils/logger'
 import path from 'path'
 import { shell, app, dialog } from 'electron'
@@ -30,6 +31,7 @@ import {
 } from '@server/services/updater/autoUpdater'
 import { UpdateCheckResult } from 'electron-updater'
 import { FeedbackService } from '@server/services/feedbackService'
+import githubStore from '@server/stores/githubStore'
 
 /**
  * The `utilityHandler` object is an exported module that provides a set of utility functions for handling various tasks in the application. It is structured as a record type, where the keys correspond to the `UtilityIPCData['type']` union type, and the values are asynchronous functions that handle the corresponding request.
@@ -56,12 +58,17 @@ import { FeedbackService } from '@server/services/feedbackService'
  * Each function is responsible for handling a specific request type and returning the appropriate data or performing the requested action.
  */
 export const utilityHandler: Record<
-  UtilityIPCData['type'] | UtilityIPCTask['type'] | UtilityIPCUpdate['type'],
+  | UtilityIPCData['type']
+  | UtilityIPCTask['type']
+  | UtilityIPCUpdate['type']
+  | UtilityIPCGithub['type'],
   (
     data: IPCData & { kind: 'utility' },
     replyFn: ReplyFn
   ) => Promise<
     | void
+    | null
+    | undefined
     | string
     | Client[]
     | boolean
@@ -77,11 +84,14 @@ export const utilityHandler: Record<
     | ButtonMapping[]
     | ButtonMapping
     | MappingStructure
-    | null
     | Profile[]
     | Profile
     | UpdateCheckResult
     | TaskList
+    | AppReleaseMeta
+    | AppReleaseMeta[]
+    | AppReleaseCommunity[]
+    | SortedReleases
   >
 > = {
   ping: async () => {
@@ -123,16 +133,88 @@ export const utilityHandler: Record<
     }
   },
   github: async (data) => {
-    if (data.type != 'github') return
-    try {
-      return await getReleases(data.payload)
-    } catch (error) {
-      if (error instanceof Error) {
-        Logger.log(LOGGING_LEVELS.ERROR, error.message)
-      } else {
-        Logger.log(LOGGING_LEVELS.ERROR, String(error))
-      }
-      return []
+    switch (data.request) {
+      case 'refreshApp':
+        try {
+          await githubStore.addAppRepository(data.payload)
+          return
+        } catch (error) {
+          Logger.error('Unable to refresh repository!', {
+            error: error as Error,
+            function: 'github.refreshApp',
+            source: 'utilityHandler'
+          })
+          return
+        }
+      case 'refreshApps':
+        try {
+          await githubStore.refreshData()
+          return
+        } catch (error) {
+          Logger.error('Unable to refresh repositories!', {
+            error: error as Error,
+            function: 'github.refreshApps',
+            source: 'utilityHandler'
+          })
+          return
+        }
+      case 'getApps':
+        try {
+          return githubStore.getAppReleases()
+        } catch (error) {
+          Logger.error('Unable to get repositories!', {
+            error: error as Error,
+            function: 'github.getApps',
+            source: 'utilityHandler'
+          })
+          return
+        }
+      case 'getAppReferences':
+        try {
+          return githubStore.getAppReferences()
+        } catch (error) {
+          Logger.error('Unable to get app references!', {
+            error: error as Error,
+            function: 'github.getAppReferences',
+            source: 'utilityHandler'
+          })
+          return
+        }
+      case 'addAppRepo':
+        try {
+          return await githubStore.addAppRepository(data.payload)
+        } catch (error) {
+          Logger.error('Unable to add repository!', {
+            error: error as Error,
+            function: 'github.addAppRepo',
+            source: 'utilityHandler'
+          })
+          return
+        }
+      case 'removeAppRepo':
+        try {
+          return await githubStore.removeAppRelease(data.payload)
+        } catch (error) {
+          Logger.error('Unable to remove repository!', {
+            error: error as Error,
+            function: 'github.removeAppRepo',
+            source: 'utilityHandler'
+          })
+          return
+        }
+      case 'getClients':
+        try {
+          return githubStore.getClientReleases()
+        } catch (error) {
+          Logger.error('Unable to get client releases!', {
+            error: error as Error,
+            function: 'github.getClients',
+            source: 'utilityHandler'
+          })
+          return
+        }
+      default:
+        return
     }
   },
   logs: async (data) => {

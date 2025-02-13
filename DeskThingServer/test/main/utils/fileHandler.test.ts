@@ -8,7 +8,7 @@ import {
   writeToGlobalFile,
   deleteFile,
   addToFile
-} from '@server/utils/fileHandler'
+} from '@server/services/files/fileService'
 
 vi.mock('@server/utils/logger', () => ({
   default: {
@@ -42,7 +42,7 @@ vi.mock('node:fs', () => ({
   }
 }))
 
-describe('fileHandler', () => {
+describe('FileService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })

@@ -12,9 +12,9 @@ import { ReplyFn, AppInstance } from '@shared/types'
 import { getAppFilePath, getManifest } from './appUtils'
 import { existsSync, promises } from 'node:fs'
 import { handleDataFromApp } from './appCommunication'
-import { constructManifest } from '../files/appServiceUtils'
+import { constructManifest } from './appUtils'
 import appStore from '@server/stores/appStore'
-import { overwriteData } from '../files/dataService'
+import { overwriteData } from '../files/dataFileService'
 
 interface ExecuteStagedFileType {
   reply?: ReplyFn
@@ -191,7 +191,7 @@ export const stageAppFile = async (path: string, reply: ReplyFn): Promise<AppMan
 
     const response = await fetch(path)
 
-    const trackDownloadProgress = (received: number, total: number): void => {
+    const trackDownloadProgress = async (received: number, total: number): Promise<void> => {
       const progress = Math.round((received / total) * 100)
       reply('logging', { status: true, data: `Downloading... ${progress}%`, final: false })
     }
@@ -608,6 +608,9 @@ const getDeskThing = async (appName: string): Promise<DeskThingType | void> => {
   const appEntryPointJs = getAppFilePath(appName, 'index.js')
   const appEntryPointMjs = getAppFilePath(appName, 'index.mjs')
   const appEntryPointCjs = getAppFilePath(appName, 'index.cjs')
+  const serverEntryPointJs = getAppFilePath(appName, 'server/index.js')
+  const serverEntryPointMjs = getAppFilePath(appName, 'server/index.mjs')
+  const serverEntryPointCjs = getAppFilePath(appName, 'server/index.cjs')
   let appEntryPoint: string | undefined
   if (existsSync(appEntryPointJs)) {
     appEntryPoint = appEntryPointJs
@@ -615,10 +618,16 @@ const getDeskThing = async (appName: string): Promise<DeskThingType | void> => {
     appEntryPoint = appEntryPointMjs
   } else if (existsSync(appEntryPointCjs)) {
     appEntryPoint = appEntryPointCjs
+  } else if (existsSync(serverEntryPointJs)) {
+    appEntryPoint = serverEntryPointJs
+  } else if (existsSync(serverEntryPointMjs)) {
+    appEntryPoint = serverEntryPointMjs
+  } else if (existsSync(serverEntryPointCjs)) {
+    appEntryPoint = serverEntryPointCjs
   } else {
     Logger.log(
       LOGGING_LEVELS.ERROR,
-      `Entry point for app ${appName} not found. (Does it have an index.js file?)`
+      `Entry point for app ${appName} not found. (Does it have an index.js file in root or server directory?)`
     )
     return
   }

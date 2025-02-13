@@ -1,0 +1,37 @@
+import { TaskList } from '@shared/types'
+import { readFromFile, writeToFile } from './fileService'
+import { join } from 'node:path'
+import logger from '@server/utils/logger'
+import { isValidTaskList, sanitizeTaskList, sanitizeTaskListFile } from '../task'
+
+export const saveTaskList = async (taskList: TaskList): Promise<void> => {
+  try {
+    const sTaskList = sanitizeTaskListFile(taskList)
+    isValidTaskList(sTaskList)
+    const taskListPath = join('system', 'tasks.json')
+    await writeToFile(sTaskList, taskListPath)
+  } catch (error) {
+    logger.error(`Failed to save task list`, {
+      error: error as Error,
+      function: 'saveTaskList',
+      source: 'taskFileService'
+    })
+    throw new Error(`Failed to save task list: ${error}`)
+  }
+}
+
+export const readTasksFromFile = async (): Promise<TaskList | undefined> => {
+  try {
+    const taskListPath = join('system', 'tasks.json')
+    const taskList = await readFromFile<TaskList>(taskListPath)
+    isValidTaskList(taskList)
+    return sanitizeTaskList(taskList)
+  } catch (error) {
+    logger.error(`Failed to read task list`, {
+      error: error as Error,
+      function: 'readTasksFromFile',
+      source: 'taskFileService'
+    })
+    throw new Error(`Failed to read task list: ${error}`)
+  }
+}

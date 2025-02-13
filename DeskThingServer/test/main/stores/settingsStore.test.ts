@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import os from 'os'
 import { LOGGING_LEVEL, Settings } from '@DeskThing/types'
-import { writeToFile, readFromFile } from '@server/utils/fileHandler'
+import { writeToFile, readFromFile } from '@server/services/files/fileService'
 
 vi.mock('fs')
 vi.mock('os')
@@ -12,7 +12,7 @@ vi.mock('auto-launch', () => ({
   }))
 }))
 
-vi.mock('@server/utils/fileHandler')
+vi.mock('@server/utils/FileService')
 vi.mock('@server/utils/logger', () => ({
   default: {
     info: vi.fn(),

@@ -75,8 +75,8 @@ export async function purgeApp(appName: string): Promise<void> {
   try {
     Logger.info(`SERVER: Purging App ${appName}`)
 
-    const { purgeAppData } = await import('../files/dataService')
-    const { purgeAppConfig } = await import('../files/appService')
+    const { purgeAppData } = await import('../files/dataFileService')
+    const { purgeAppConfig } = await import('../files/appFileService')
     const { default: keyMapStore } = await import('@server/stores/mappingStore')
     const { default: taskStore } = await import('@server/stores/taskStore')
 

@@ -1,6 +1,12 @@
 // Ik this is bad practice but I don't have time to fix it right now
 
-import { LOGGING_LEVELS, Task } from '@deskthing/types'
+import {
+  AppReleaseCommunity,
+  AppReleaseMeta,
+  ClientReleaseMeta,
+  LOGGING_LEVELS,
+  Task
+} from '@deskthing/types'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export interface GithubRelease {
@@ -45,6 +51,23 @@ export interface GithubRelease {
 
 export interface SortedReleases {
   [key: string]: GithubAsset[]
+}
+
+export type AppReleaseFile = {
+  version: string
+  references: AppReleaseCommunity[]
+  releases: AppReleaseMeta[]
+  timestamp: number
+}
+
+/**
+ * Not currently in use!!
+ */
+export type ClientReleaseFile = {
+  version: string
+  repositories: string[]
+  releases: ClientReleaseMeta[]
+  timestamp: number
 }
 
 export type GithubAsset = {

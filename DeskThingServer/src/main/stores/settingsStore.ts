@@ -1,5 +1,5 @@
 console.log('[Settings Store] Starting')
-import { readFromFile, writeToFile } from '../utils/fileHandler'
+import { readFromFile, writeToFile } from '../services/files/fileService'
 import Logger from '@server/utils/logger'
 import os from 'os'
 import { LOGGING_LEVELS } from '@DeskThing/types'

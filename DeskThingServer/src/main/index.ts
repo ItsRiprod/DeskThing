@@ -354,7 +354,7 @@ async function setupIpcHandlers(): Promise<void> {
   })
 
   // Store listeners
-  import('./stores').then(({ mappingStore, appStore, connectionStore, taskStore }) => {
+  import('./stores').then(({ mappingStore, appStore, connectionStore, taskStore, githubStore }) => {
     mappingStore.addListener('action', (action) => {
       action &&
         sendIpcData({
@@ -406,6 +406,28 @@ async function setupIpcHandlers(): Promise<void> {
       sendIpcData({
         type: 'taskList',
         payload: taskList
+      })
+    })
+
+    githubStore.on('app', (app) => {
+      Logger.debug('[INDEX]: Sending updated app information with type github-apps')
+      sendIpcData({
+        type: 'github-apps',
+        payload: app
+      })
+    })
+    githubStore.on('client', (client) => {
+      Logger.debug('[INDEX]: Sending updated client information with type github-client')
+      sendIpcData({
+        type: 'github-client',
+        payload: client
+      })
+    })
+    githubStore.on('community', (community) => {
+      Logger.debug('[INDEX]: Sending updated community information with type github-community')
+      sendIpcData({
+        type: 'github-community',
+        payload: community
       })
     })
   })

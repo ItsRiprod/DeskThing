@@ -21,7 +21,11 @@ interface AssetComponentProps {
  * @param {AssetComponentProps} props - Component props
  * @returns {JSX.Element} Rendered component
  */
-const ReleaseComponent: React.FC<AssetComponentProps> = ({ asset, onClick, loading }) => {
+const ReleaseComponent: React.FC<AssetComponentProps> = ({
+  asset,
+  onClick,
+  loading
+}: AssetComponentProps): JSX.Element => {
   return (
     // Container with border and flex layout
     <div className="flex border-2 p-2 border-gray-500 items-center justify-between rounded-xl">

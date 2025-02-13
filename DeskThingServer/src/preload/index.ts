@@ -12,7 +12,9 @@ import {
   SocketData,
   Step,
   TaskList,
-  ToAppData
+  ToAppData,
+  AppReleaseCommunity,
+  AppReleaseMeta
 } from '@DeskThing/types'
 import {
   Profile,
@@ -22,9 +24,9 @@ import {
   AppReturnData,
   Button,
   FeedbackReport,
-  GithubRelease,
   IPC_HANDLERS,
-  IPCData
+  IPCData,
+  SortedReleases
 } from '@shared/types'
 
 // Custom APIs for renderer
@@ -309,15 +311,57 @@ const api = {
       request: 'get',
       payload: undefined
     }),
-
-  fetchGithub: async (url: string): Promise<GithubRelease[]> =>
-    await sendCommand('UTILITY', {
-      kind: 'utility',
-      type: 'github',
-      request: 'get',
-      payload: url
-    }),
-
+  github: {
+    refreshApp: async (repoUrl: string): Promise<void> =>
+      await sendCommand('UTILITY', {
+        kind: 'utility',
+        type: 'github',
+        request: 'refreshApp',
+        payload: repoUrl
+      }),
+    refreshApps: async (): Promise<void> =>
+      await sendCommand('UTILITY', {
+        kind: 'utility',
+        type: 'github',
+        request: 'refreshApps',
+        payload: undefined
+      }),
+    getApps: async (): Promise<AppReleaseMeta[]> =>
+      await sendCommand('UTILITY', {
+        kind: 'utility',
+        type: 'github',
+        request: 'getApps',
+        payload: undefined
+      }),
+    getAppReferences: async (): Promise<AppReleaseCommunity[]> =>
+      await sendCommand('UTILITY', {
+        kind: 'utility',
+        type: 'github',
+        request: 'getAppReferences',
+        payload: undefined
+      }),
+    addAppRepo: async (repoUrl: string): Promise<AppReleaseMeta | undefined> =>
+      await sendCommand('UTILITY', {
+        kind: 'utility',
+        type: 'github',
+        request: 'addAppRepo',
+        payload: repoUrl
+      }),
+    getClients: async (): Promise<SortedReleases> =>
+      await sendCommand('UTILITY', {
+        kind: 'utility',
+        type: 'github',
+        request: 'getClients',
+        payload: undefined
+      }),
+    removeAppRepo: async (repoUrl: string): Promise<void> =>
+      await sendCommand('UTILITY', {
+        kind: 'utility',
+        type: 'github',
+        request: 'removeAppRepo',
+        payload: repoUrl
+      })
+  },
   getLogs: async (): Promise<Log[]> =>
     await sendCommand('UTILITY', {
       kind: 'utility',

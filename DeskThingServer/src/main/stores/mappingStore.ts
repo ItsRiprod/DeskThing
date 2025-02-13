@@ -10,7 +10,7 @@ import {
 } from '@DeskThing/types'
 import { ButtonMapping, MappingStructure, Button, Profile } from '@shared/types'
 import Logger from '@server/utils/logger'
-import { writeToFile } from '@server/utils/fileHandler'
+import { writeToFile } from '@server/services/files/fileService'
 import { deepMerge } from '@server/utils/objectUtils'
 import { importProfile, loadMappings, saveMappings } from '@server/services/mappings/fileMaps'
 import {
