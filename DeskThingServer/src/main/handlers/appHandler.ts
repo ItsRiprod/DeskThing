@@ -8,8 +8,8 @@
  */
 console.log('[App Handler] Starting')
 import path from 'path'
-import { AppDataInterface, App, LOGGING_LEVELS, AppSettings, AppManifest } from '@DeskThing/types'
-import { AppIPCData, ReplyFn } from '@shared/types'
+import { App, LOGGING_LEVELS, AppSettings } from '@DeskThing/types'
+import { APP_TYPES, AppHandlerReturnType, AppIPCData, ReplyFn } from '@shared/types'
 import { appStore } from '@server/stores'
 import Logger from '@server/utils/logger'
 import { dialog, BrowserWindow } from 'electron'
@@ -28,26 +28,12 @@ import { dialog, BrowserWindow } from 'electron'
  *
  * The `url` function handles the processing of an app from a URL, extracting and processing the app using the `appStore.addURL` method.
  */
-export const appHandler: Record<
-  AppIPCData['type'],
-  (
-    data: AppIPCData,
+export const appHandler: {
+  [K in APP_TYPES]: (
+    data: Extract<AppIPCData, { type: K }>,
     replyFn: ReplyFn
-  ) => Promise<
-    | AppDataInterface
-    | boolean
-    | App[]
-    | undefined
-    | void
-    | AppManifest
-    | null
-    | AppSettings
-    | App
-    | string
-    | Record<string, string>
-    | { path: string; name: string }
-  >
-> = {
+  ) => Promise<AppHandlerReturnType<K> | undefined>
+} = {
   /**
    * Handles the 'app' IPC data request, returning the list of available apps when the 'get' request is made.
    *
@@ -57,10 +43,11 @@ export const appHandler: Record<
    */
   app: async (data, replyFn) => {
     if (data.request == 'get') {
-      return await getApps(replyFn)
+      return getApps(replyFn)
     }
     return
   },
+
   /**
    * Handles various app-related data requests, including getting and setting app data.
    *
@@ -79,7 +66,8 @@ export const appHandler: Record<
       case 'get':
         return await getAppData(replyFn, data.payload)
       case 'set':
-        return await setAppData(replyFn, data.payload.appId, data.payload.data)
+        await setAppData(replyFn, data.payload.appId, data.payload.data)
+        return
       default:
         return
     }
@@ -89,7 +77,8 @@ export const appHandler: Record<
       case 'get':
         return await getAppSettings(replyFn, data.payload)
       case 'set':
-        return await setAppSettings(replyFn, data.payload.appId, data.payload.settings)
+        await setAppSettings(replyFn, data.payload.appId, data.payload.settings)
+        return
       default:
         return
     }
@@ -197,7 +186,11 @@ export const appHandler: Record<
   add: async (data, replyFn) => {
     replyFn('logging', { status: true, data: 'Handling app from URL...', final: false })
 
-    return await appStore.addApp(data.payload, replyFn)
+    return await appStore.addApp({
+      filePath: data.payload.filePath,
+      releaseMeta: data.payload.meta,
+      reply: replyFn
+    })
   },
 
   staged: async (data, reply) => {
@@ -227,7 +220,10 @@ export const appHandler: Record<
     return { path: filePath, name: path.basename(filePath) }
   },
   'dev-add-app': async (data, replyFn) => {
-    Logger.log(LOGGING_LEVELS.ERROR, 'Developer App Not implemented Yet ', data.payload.appPath)
+    Logger.error('Developer App Not implemented Yet ' + data.payload.appPath, {
+      function: 'dev-add-app',
+      source: 'appHandler'
+    })
     // await appStore.run('developer-app', appPath)
     replyFn('logging', { status: true, data: 'Finished', final: true })
   },
@@ -239,6 +235,12 @@ export const appHandler: Record<
   'app-order': async (data, replyFn) => {
     appStore.reorder(data.payload)
     replyFn('logging', { status: true, data: 'Finished', final: true })
+  },
+
+  icon: async (data) => {
+    const { appStore } = await import('@server/stores')
+    const { appId, icon } = data.payload
+    return appStore.getIcon(appId, icon)
   }
 }
 
@@ -292,7 +294,7 @@ const setAppData = async (
  * @param payload - The payload containing the data needed to retrieve the app settings.
  * @returns A Promise that resolves to the app settings, or null if an error occurs.
  */
-const getAppSettings = async (replyFn, payload): Promise<AppSettings | null> => {
+const getAppSettings = async (replyFn: ReplyFn, payload: string): Promise<AppSettings | null> => {
   try {
     const { appStore } = await import('@server/stores')
     const data = await appStore.getSettings(payload)
@@ -301,7 +303,12 @@ const getAppSettings = async (replyFn, payload): Promise<AppSettings | null> => 
   } catch (error) {
     Logger.log(LOGGING_LEVELS.ERROR, '[getAppSettings]: Error getting settings' + error)
     console.error('Error setting app settings:', error)
-    replyFn('logging', { status: false, data: 'Unfinished', error: error, final: true })
+    replyFn('logging', {
+      status: false,
+      data: 'Unfinished',
+      error: error instanceof Error ? error.message : 'Unknown',
+      final: true
+    })
     return null
   }
 }
@@ -312,16 +319,27 @@ const getAppSettings = async (replyFn, payload): Promise<AppSettings | null> => 
  * @param payload - The payload containing the data needed to retrieve the app data.
  * @returns A Promise that resolves to the app data, or null if an error occurs.
  */
-const getAppData = async (replyFn, payload): Promise<Record<string, string> | null> => {
+const getAppData = async (
+  replyFn: ReplyFn,
+  payload: string
+): Promise<Record<string, string> | null> => {
   try {
     const { appStore } = await import('@server/stores')
     const data = await appStore.getData(payload)
     replyFn('logging', { status: true, data: 'Finished', final: true })
     return data || null
   } catch (error) {
-    Logger.log(LOGGING_LEVELS.ERROR, '[getAppData]: Error getting app data' + error)
-    console.error('Error setting app settings:', error)
-    replyFn('logging', { status: false, data: 'Unfinished', error: error, final: true })
+    Logger.log(LOGGING_LEVELS.ERROR, '[getAppData]: Error getting app data', {
+      error: error as Error,
+      function: 'getAppData',
+      source: 'AppHandler'
+    })
+    replyFn('logging', {
+      status: false,
+      data: 'Unfinished',
+      error: error instanceof Error ? error.message : 'Unknown',
+      final: true
+    })
     return null
   }
 }

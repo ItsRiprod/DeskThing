@@ -8,7 +8,7 @@ import {
   EventPayload,
   LOGGING_LEVELS
 } from '@DeskThing/types'
-import { ButtonMapping, MappingStructure, Button, Profile } from '@shared/types'
+import { ButtonMapping, MappingStructure, Button, Profile, CacheableStore } from '@shared/types'
 import Logger from '@server/utils/logger'
 import { writeToFile } from '@server/services/files/fileService'
 import { deepMerge } from '@server/utils/objectUtils'
@@ -22,14 +22,14 @@ import {
   validMappingExists,
   isValidButtonMapping
 } from '@server/services/mappings/utilsMaps'
-import { defaultData, defaultProfile } from '@server/static/defaultMapping'
+import { defaultProfile } from '@server/static/defaultMapping'
 
 type ListeningTypes = 'key' | 'profile' | 'action' | 'update'
 
 type Listener = (data?: Key[] | ButtonMapping | Action[]) => void
 
-export class MappingState {
-  private _mappings: MappingStructure
+export class MappingState implements CacheableStore {
+  private mappings: MappingStructure | null = null
   private static instance: MappingState
   private listeners: Record<ListeningTypes, Set<Listener>> = {
     key: new Set(),
@@ -39,8 +39,20 @@ export class MappingState {
   }
 
   constructor() {
-    this._mappings = defaultData
     this.fetchMappings()
+  }
+
+  /**
+   * @implements CacheableStore
+   */
+  clearCache = async (): Promise<void> => {
+    this.mappings = null
+  }
+  /**
+   * @implements CacheableStore
+   */
+  saveToFile = async (): Promise<void> => {
+    await this.saveMapping()
   }
 
   static getInstance(): MappingState {
@@ -49,54 +61,58 @@ export class MappingState {
     }
     return this.instance
   }
-  /**
-   * Gets the mappings from the file if they dont exist in cache
-   */
-  get mappings(): MappingStructure {
-    if (!this._mappings || this._mappings == undefined) {
-      this.fetchMappings()
-      return defaultData
-    }
-
-    return this._mappings
-  }
 
   /**
    * Sets the mappings and saves them to the file
    */
-  set mappings(value: MappingStructure) {
+  private async saveMapping(value?: MappingStructure, notify: boolean = true): Promise<void> {
     Logger.log(LOGGING_LEVELS.DEBUG, `[MappingStore]: Saving mappings to file`)
-    if (value.keys != this._mappings?.keys) {
+    if (!value && this.mappings) {
+      return await saveMappings(this.mappings)
+    } else if (!value) {
+      Logger.warn(`[MappingStore]: No mappings to save`)
+      return
+    }
+
+    if (notify && value.keys != this.mappings?.keys) {
       this.notifyListeners('key', value.keys)
     }
     if (
+      notify &&
       value.profiles[value.selected_profile.id] !=
-      this._mappings?.profiles[this._mappings.selected_profile.id]
+        this.mappings?.profiles[this.mappings.selected_profile.id]
     ) {
       this.notifyListeners('profile', value.profiles[value.selected_profile.id])
     }
-    if (value.actions != this._mappings?.actions) {
+    if (notify && value.actions != this.mappings?.actions) {
       this.notifyListeners('action', value.actions)
     }
 
-    this._mappings = value
-    saveMappings(value)
+    this.mappings = value
+    await saveMappings(value)
+  }
+
+  private async getMappings(): Promise<MappingStructure> {
+    if (!this.mappings) {
+      return await this.fetchMappings()
+    }
+    return this.mappings
   }
 
   private async fetchMappings(): Promise<MappingStructure> {
     const mappings = await loadMappings()
 
-    if (!this._mappings) {
-      this._mappings = mappings
+    if (!this.mappings) {
+      this.mappings = mappings
     } else {
-      this._mappings = deepMerge(this._mappings, mappings)
+      this.mappings = deepMerge(this.mappings, mappings)
     }
 
     return mappings
   }
 
   async setMappings(mappings: MappingStructure): Promise<void> {
-    this._mappings = mappings
+    this.mappings = mappings
   }
 
   /**
@@ -147,6 +163,7 @@ export class MappingState {
    * @param profile - default is 'default'
    */
   addButton = async (button: Button): Promise<void> => {
+    const mapping = await this.getMappings()
     try {
       validMappingExists(this.mappings)
     } catch (error) {
@@ -158,7 +175,7 @@ export class MappingState {
       return
     }
 
-    const mappingProfile = this.mappings?.profiles[button.profile || 'default']
+    const mappingProfile = mapping.profiles[button.profile || 'default']
     if (!mappingProfile) {
       Logger.log(
         LOGGING_LEVELS.ERROR,
@@ -167,7 +184,7 @@ export class MappingState {
       return
     }
 
-    const mappingKey = this.mappings?.keys.find((searchKey) => searchKey.id === button.key)
+    const mappingKey = mapping?.keys.find((searchKey) => searchKey.id === button.key)
 
     if (!mappingKey?.modes?.includes(button.mode)) {
       Logger.log(
@@ -177,9 +194,7 @@ export class MappingState {
       return
     }
 
-    const mappingAction = this.mappings?.actions.find(
-      (searchAction) => searchAction.id == button.action
-    )
+    const mappingAction = mapping.actions.find((searchAction) => searchAction.id == button.action)
 
     if (!mappingAction) {
       Logger.log(LOGGING_LEVELS.ERROR, `[MappingStore]: Action ${button.action} does not exist!`)
@@ -201,10 +216,11 @@ export class MappingState {
       mappingProfile[button.key][button.mode] = action
 
       // Save the mappings to file
-      this.mappings.profiles[button.profile || 'default'] = mappingProfile
+      mapping.profiles[button.profile || 'default'] = mappingProfile
 
       this.notifyListeners('profile', mappingProfile)
-      await saveMappings(this.mappings)
+      // Circumvent the listener notification
+      await this.saveMapping(mapping, false)
     } catch (error) {
       Logger.error('Unable to verify action reference', {
         function: 'addButton',
@@ -221,8 +237,9 @@ export class MappingState {
    * @param profile - default is 'default'
    */
   removeButton = async (button: Button): Promise<void> => {
+    const mapping = await this.getMappings()
     try {
-      validMappingExists(this.mappings)
+      validMappingExists(mapping)
     } catch (error) {
       Logger.error('Unable to remove button', {
         function: 'removeButton',
@@ -232,7 +249,7 @@ export class MappingState {
       return
     }
 
-    const mappingsProfile = this.mappings.profiles[button.profile || 'default']
+    const mappingsProfile = mapping.profiles[button.profile || 'default']
     if (!mappingsProfile) {
       Logger.log(
         LOGGING_LEVELS.ERROR,
@@ -270,7 +287,8 @@ export class MappingState {
     }
 
     // Save the mappings to file
-    this.mappings.profiles[button.profile || 'default'] = mappingsProfile
+    mapping.profiles[button.profile || 'default'] = mappingsProfile
+    await this.saveMapping(mapping)
     Logger.log(
       LOGGING_LEVELS.LOG,
       `[MappingStore]: Button ${button.key} removed from profile ${button.profile || 'default'}`
@@ -284,7 +302,8 @@ export class MappingState {
    * @returns A Promise that resolves when the key has been added or updated.
    */
   addKey = async (key: Key): Promise<void> => {
-    if (!this.mappings) {
+    const mapping = await this.getMappings()
+    if (!mapping) {
       Logger.error('Unable to add key', {
         function: 'addKey',
         error: new Error('No mappings found'),
@@ -292,7 +311,7 @@ export class MappingState {
       })
       return
     }
-    const keys = this.mappings.keys
+    const keys = mapping.keys
     // Validate key structure
     try {
       isValidKey(key)
@@ -308,7 +327,8 @@ export class MappingState {
         Logger.log(LOGGING_LEVELS.LOG, `[MappingStore]: Key ${key.id} added`)
       }
       // Save the mappings
-      this.mappings.keys = keys
+      mapping.keys = keys
+      await this.saveMapping(mapping)
     } catch (error) {
       Logger.error('Unable to add key', {
         function: 'addKey',
@@ -319,8 +339,9 @@ export class MappingState {
   }
 
   removeKey = async (keyId: string): Promise<void> => {
+    const mapping = await this.getMappings()
     try {
-      validMappingExists(this.mappings)
+      validMappingExists(mapping)
     } catch (error) {
       Logger.error('Unable to remove key', {
         function: 'removeKey',
@@ -329,7 +350,7 @@ export class MappingState {
       })
       return
     }
-    const keys = this.mappings.keys
+    const keys = mapping.keys
     // Find the index of the key to remove
     const keyIndex = keys.findIndex((key) => key.id === keyId)
     if (keyIndex !== -1) {
@@ -340,7 +361,8 @@ export class MappingState {
       Logger.log(LOGGING_LEVELS.ERROR, `[MappingStore]: Key ${keyId} not found`)
     }
     // Save the mappings
-    this.mappings.keys = keys
+    mapping.keys = keys
+    await this.saveMapping(mapping)
   }
 
   /**
@@ -349,9 +371,10 @@ export class MappingState {
    * @param keyId - The ID of the key to check.
    * @returns `true` if the key exists, `false` otherwise.
    */
-  keyExists = (keyId: string): boolean => {
+  keyExists = async (keyId: string): Promise<boolean> => {
+    const mapping = await this.getMappings()
     try {
-      validMappingExists(this.mappings)
+      validMappingExists(mapping)
     } catch (error) {
       Logger.error('Unable to add key', {
         function: 'addKey',
@@ -360,8 +383,7 @@ export class MappingState {
       })
       return false
     }
-    const mappings = this.mappings
-    return mappings.keys.some((key) => key.id === keyId)
+    return mapping.keys.some((key) => key.id === keyId)
   }
 
   /**
@@ -370,9 +392,9 @@ export class MappingState {
    * @param actionId - The ID of the action to check.
    * @returns `true` if the action exists, `false` otherwise.
    */
-  actionExists = (actionId: string): boolean => {
-    const mappings = this.mappings
-    return mappings?.actions.some((action) => action.id === actionId) || false
+  actionExists = async (actionId: string): Promise<boolean> => {
+    const mapping = await this.getMappings()
+    return mapping?.actions.some((action) => action.id === actionId) || false
   }
 
   /**
@@ -382,33 +404,24 @@ export class MappingState {
    * @returns A Promise that resolves when the action has been added or updated.
    */
   addAction = async (action: Action): Promise<void> => {
+    const mapping = await this.getMappings()
+
     try {
-      validMappingExists(this.mappings)
-    } catch (error) {
-      Logger.error('Unable to add Action', {
-        function: 'addAction',
-        error: error as Error,
-        source: 'mappingStore'
-      })
-      return
-    }
-    try {
-      const mappings = this.mappings
       // Validate action structure
       isValidAction(action)
       // Check if the action already exists
-      const existingActionIndex = mappings.actions.findIndex((a) => a.id === action.id)
+      const existingActionIndex = mapping.actions.findIndex((a) => a.id === action.id)
       if (existingActionIndex !== -1) {
         // Replace the existing action
-        mappings.actions[existingActionIndex] = action
+        mapping.actions[existingActionIndex] = action
         Logger.log(LOGGING_LEVELS.LOG, `[MappingStore]: Action ${action.id} updated`)
       } else {
         // Add the new action
-        mappings.actions.push(action)
+        mapping.actions.push(action)
         Logger.log(LOGGING_LEVELS.LOG, `[MappingStore]: Action ${action.id} added`)
       }
       // Save the mappings
-      this.mappings = mappings
+      await this.saveMapping(mapping)
     } catch (error) {
       Logger.error('Unable to add action', {
         function: 'addAction',
@@ -425,8 +438,9 @@ export class MappingState {
    * @returns A Promise that resolves when the action has been removed.
    */
   removeAction = async (actionId: string): Promise<void> => {
+    const mapping = await this.getMappings()
     try {
-      validMappingExists(this.mappings)
+      validMappingExists(mapping)
     } catch (error) {
       Logger.error('Unable to remove Action', {
         function: 'removeAction',
@@ -435,16 +449,15 @@ export class MappingState {
       })
       return
     }
-    const mappings = this.mappings
 
     // Remove the action from global actions
-    const actionIndex = mappings.actions.findIndex((action) => action.id === actionId)
+    const actionIndex = mapping.actions.findIndex((action) => action.id === actionId)
     if (actionIndex !== -1) {
-      mappings.actions.splice(actionIndex, 1)
+      mapping.actions.splice(actionIndex, 1)
       Logger.log(LOGGING_LEVELS.LOG, `[MappingStore]: Action ${actionId} removed`)
 
       // Remove this action from all profile mappings
-      Object.values(mappings.profiles).forEach(async (profile) => {
+      Object.values(mapping.profiles).forEach(async (profile) => {
         try {
           isValidButtonMapping(profile)
         } catch (error) {
@@ -475,7 +488,7 @@ export class MappingState {
     }
 
     // Save the updated mappings
-    this.mappings = mappings
+    await this.saveMapping(mapping)
   }
 
   /**
@@ -483,8 +496,9 @@ export class MappingState {
    * @param sourceId - The ID of the source to remove.
    */
   removeSource = async (sourceId: string): Promise<void> => {
+    const mappings = await this.getMappings()
     try {
-      validMappingExists(this.mappings)
+      validMappingExists(mappings)
     } catch (error) {
       Logger.error('Unable to remove Action', {
         function: 'removeAction',
@@ -493,7 +507,6 @@ export class MappingState {
       })
       return
     }
-    const mappings = this.mappings
 
     // Update all profiles
     const disableSourceActions = (
@@ -524,6 +537,9 @@ export class MappingState {
     // Remove keys with the specified source
     mappings.keys = mappings.keys.filter((key) => key.source !== sourceId)
 
+    /// Save the updated mappings
+    await this.saveMapping(mappings)
+
     Logger.info(
       `Actions for source ${sourceId} disabled in all profiles, global actions, and keys`,
       {
@@ -538,7 +554,7 @@ export class MappingState {
    * @param sourceId - The ID of the source to add.
    */
   addSource = async (sourceId: string): Promise<void> => {
-    const mappings = this.mappings
+    const mappings = await this.getMappings()
 
     // Update all profiles
     Object.values(mappings.profiles).forEach((profile) => {
@@ -566,6 +582,8 @@ export class MappingState {
       }
     })
 
+    await this.saveMapping(mappings)
+
     Logger.log(
       LOGGING_LEVELS.LOG,
       `[MappingStore]: Actions for source ${sourceId} disabled in all profiles, global actions, and keys`
@@ -577,23 +595,26 @@ export class MappingState {
    * @param actionId - The ID of the action to update.
    * @param icon - The new icon to set for the action.
    */
-  updateIcon = (actionId: string, icon: string): void => {
-    const action = this.mappings.actions.find((action) => action.id === actionId)
+  updateIcon = async (actionId: string, icon: string): Promise<void> => {
+    const mapping = await this.getMappings()
     // Find the index of the action to update
-    if (action && action.icon != icon) {
+    const actionIndex = mapping.actions.findIndex((action) => action.id === actionId)
+    if (actionIndex !== -1) {
       // Update the icon
-      action.icon = icon
+      mapping.actions[actionIndex].icon = icon
+      await this.saveMapping(mapping)
       Logger.log(LOGGING_LEVELS.LOG, `[MappingStore]: Icon for action ${actionId} updated`)
+    } else {
+      Logger.log(LOGGING_LEVELS.ERROR, `[MappingStore]: Action ${actionId} not found`)
     }
   }
-
   /**
    * Retrieves an action by its ID from the mappings.
    * @param actionId - The ID of the action to retrieve.
    * @returns The action with the specified ID, or null if not found.
    */
-  getAction = (actionId: string): Action | null => {
-    const mappings = this.mappings
+  getAction = async (actionId: string): Promise<Action | null> => {
+    const mappings = await this.getMappings()
     // Find the index of the action to update
     const actionIndex = mappings.actions.findIndex((action) => action.id === actionId)
     if (actionIndex !== -1) {
@@ -610,13 +631,9 @@ export class MappingState {
    * @returns The current actions, or null if not found.
    */
   getActions = async (): Promise<Action[] | null> => {
+    const mapping = await this.getMappings()
     try {
-      let mappings = this.mappings || this._mappings
-      if (!mappings) {
-        Logger.log(LOGGING_LEVELS.WARN, '[[MappingStore].getActions]: Mappings object is null')
-        mappings = await this.fetchMappings()
-      }
-      return mappings?.actions
+      return mapping.actions
     } catch (error) {
       Logger.log(
         LOGGING_LEVELS.ERROR,
@@ -631,35 +648,31 @@ export class MappingState {
    * @returns The current button mapping.
    */
   getMapping = async (): Promise<ButtonMapping | null> => {
+    const mapping = await this.getMappings()
     try {
-      if (!this.mappings) {
-        Logger.log(LOGGING_LEVELS.WARN, '[[MappingStore].getMapping]: Mappings object is null')
-        await this.fetchMappings()
-      }
-
       Logger.log(
         LOGGING_LEVELS.LOG,
-        `[[MappingStore]]: Getting map from the profile: ${this.mappings.selected_profile}`
+        `[[MappingStore]]: Getting map from the profile: ${mapping.selected_profile}`
       )
 
-      if (!this.mappings.profiles) {
+      if (!mapping.profiles) {
         Logger.log(LOGGING_LEVELS.ERROR, '[[MappingStore]]: Profiles object is null')
         return null
       }
 
-      if (!this.mappings.selected_profile) {
-        if (!this.mappings.profiles.default) {
+      if (!mapping.selected_profile) {
+        if (!mapping.profiles.default) {
           Logger.log(LOGGING_LEVELS.ERROR, '[[MappingStore]]: Default profile is null')
           return null
         }
-        return this.mappings.profiles.default
+        return mapping.profiles.default
       }
 
-      const profile = this.mappings.profiles[this.mappings.selected_profile.id]
+      const profile = mapping.profiles[mapping.selected_profile.id]
       if (!profile) {
         Logger.log(
           LOGGING_LEVELS.ERROR,
-          `[[MappingStore]]: Profile ${this.mappings.selected_profile.id} not found`
+          `[[MappingStore]]: Profile ${mapping.selected_profile.id} not found`
         )
         return null
       }
@@ -671,16 +684,18 @@ export class MappingState {
     }
   }
 
-  getKeys = (): Key[] | null => {
-    return this.mappings.keys
+  getKeys = async (): Promise<Key[] | null> => {
+    const mapping = await this.getMappings()
+    return mapping.keys
   }
 
   /**
    * Retrieves an array of all the profiles defined in the mappings.
    * @returns An array of Profile objects, with the `mapping` property set to `null`.
    */
-  getProfiles(): Profile[] {
-    const profiles = Object.values(this.mappings.profiles).map((profile) => ({
+  getProfiles = async (): Promise<Profile[]> => {
+    const mapping = await this.getMappings()
+    const profiles = Object.values(mapping.profiles).map((profile) => ({
       ...profile,
       mapping: null
     }))
@@ -692,16 +707,18 @@ export class MappingState {
    * @param profileName - The name of the profile to retrieve the mapping for.
    * @returns The button mapping for the specified profile, or `null` if the profile is not found.
    */
-  getProfile(profileName: string): ButtonMapping | null {
-    return this.mappings.profiles[profileName]
+  getProfile = async (profileName: string): Promise<ButtonMapping | null> => {
+    const mapping = await this.getMappings()
+    return mapping.profiles[profileName]
   }
 
   /**
    * Retrieves the currently selected profile.
    * @returns The currently selected profile.
    */
-  getCurrentProfile = (): Profile => {
-    return this.mappings.selected_profile
+  getCurrentProfile = async (): Promise<Profile> => {
+    const mapping = await this.getMappings()
+    return mapping.selected_profile
   }
 
   /**
@@ -710,11 +727,11 @@ export class MappingState {
    * @returns A Promise that resolves when the profile has been set.
    */
   setCurrentProfile = async (profile: Profile): Promise<void> => {
-    console.log('Setting profile to: ', profile)
-    if (this.mappings.profiles[profile.id]) {
-      this.mappings.selected_profile = profile
+    const mapping = await this.getMappings()
+    if (mapping.profiles[profile.id]) {
+      mapping.selected_profile = profile
       this.notifyListeners('update')
-      await saveMappings(this.mappings)
+      await this.saveMapping(mapping, false)
     } else {
       Logger.log(
         LOGGING_LEVELS.ERROR,
@@ -729,6 +746,7 @@ export class MappingState {
    * @param baseProfile - Optional. The name of an existing profile to clone as the base for the new profile.
    */
   addProfile = async (profile: Profile): Promise<void> => {
+    const mappings = await this.getMappings()
     if (profile.id == 'default') {
       Logger.log(
         LOGGING_LEVELS.WARN,
@@ -736,8 +754,6 @@ export class MappingState {
       )
       return
     }
-
-    const mappings = this.mappings
 
     // Check if the profile name already exists
     if (mappings.profiles[profile.id]) {
@@ -777,7 +793,7 @@ export class MappingState {
     // mappings.selected_profile = profileName
 
     // Save the updated mappings
-    this.mappings = mappings
+    await this.saveMapping(mappings)
 
     Logger.log(LOGGING_LEVELS.LOG, `[MappingStore]: Profile "${profile.name}" added successfully.`)
   }
@@ -787,7 +803,7 @@ export class MappingState {
    * @param profileName - The name of the profile to remove.
    */
   removeProfile = async (profileName: string): Promise<void> => {
-    const mappings = this.mappings
+    const mappings = await this.getMappings()
 
     // Prevent removal of the default profile
     if (profileName === 'default') {
@@ -814,7 +830,7 @@ export class MappingState {
     }
 
     // Save the updated mappings
-    this.mappings = mappings
+    await this.saveMapping(mappings)
 
     Logger.log(LOGGING_LEVELS.LOG, `[MappingStore]: Profile "${profileName}" removed successfully.`)
   }
@@ -825,7 +841,7 @@ export class MappingState {
    * @param filePath - The path where the profile should be saved.
    */
   exportProfile = async (profile: string, filePath: string): Promise<void> => {
-    const mappings = this.mappings
+    const mappings = await this.getMappings()
 
     if (!mappings.profiles[profile]) {
       Logger.log(
@@ -854,14 +870,16 @@ export class MappingState {
    * @param profileName - The name to assign to the imported profile.
    */
   importProfile = async (filePath: string, profileName: string): Promise<void> => {
+    const mapping = await this.getMappings()
     const buttonMapping = await importProfile(filePath, profileName)
 
     if (buttonMapping) {
-      this.mappings.profiles[profileName] = buttonMapping
+      mapping.profiles[profileName] = buttonMapping
       Logger.log(
         LOGGING_LEVELS.LOG,
         `[MappingStore]: Profile ${profileName} imported from ${filePath}`
       )
+      await this.saveMapping(mapping)
     } else {
       Logger.log(LOGGING_LEVELS.WARN, `MAPSTORE: Profile ${profileName} not found at ${filePath}`)
     }
@@ -928,7 +946,7 @@ export class MappingState {
       return await FetchIcon(action as Action)
     } catch {
       if (!action || action.id) return null
-      const actualAction = this.getAction(action.id)
+      const actualAction = await this.getAction(action.id)
       return actualAction ? await FetchIcon(actualAction) : null
     }
   }
@@ -964,7 +982,8 @@ export class MappingState {
     profileName: string,
     updatedProfile: Partial<ButtonMapping>
   ): Promise<void> => {
-    const profile = this.mappings.profiles[profileName]
+    const mapping = await this.getMappings()
+    const profile = mapping.profiles[profileName]
     if (!profile) {
       Logger.log(LOGGING_LEVELS.ERROR, `[MappingStore]: Profile ${profileName} does not exist!`)
       return
@@ -973,9 +992,10 @@ export class MappingState {
     // Update the profile with the provided data
     deepMerge(profile, updatedProfile)
 
-    this.mappings.profiles[profileName] = profile
+    mapping.profiles[profileName] = profile
     Logger.log(LOGGING_LEVELS.LOG, `[MappingStore]: Profile ${profileName} updated successfully.`)
     this.notifyListeners('profile', profile)
+    this.saveMapping(mapping, false)
   }
 }
 

@@ -17,6 +17,7 @@ import MainElement from '@renderer/nav/MainElement'
 import DownloadNotification from '@renderer/overlays/DownloadNotification'
 import { SuccessNotification } from '@renderer/overlays/SuccessNotification'
 import { AppReleaseCommunity, AppReleaseMeta, AppReleaseSingleMeta } from '@DeskThing/types'
+import AddRepoOverlay from '@renderer/overlays/AddRepoOverlay'
 
 /**
  * The `AppDownloads` component is responsible for rendering the downloads page of the application. It displays a list of available app downloads, allows users to upload their own app, and provides a link to the client downloads page.
@@ -49,6 +50,7 @@ const AppDownloads: React.FC = () => {
   const [showLogging, setShowLogging] = useState(false)
   const [selectingFile, setSelectingFile] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [addAppRepoOverlay, setAddAppRepoOverlay] = useState(false)
 
   const setPage = usePageStore((pageStore) => pageStore.setPage)
 
@@ -76,7 +78,7 @@ const AppDownloads: React.FC = () => {
       setShowLogging(true)
       setLoading(true)
       try {
-        await addApp(file)
+        await addApp({ appPath: file })
       } catch (error) {
         setShowLogging(false)
         setLoading(false)
@@ -84,11 +86,11 @@ const AppDownloads: React.FC = () => {
     }
   }
 
-  const handleDownloadClick = async (url: string): Promise<void> => {
+  const handleDownloadClick = async (releaseMeta: AppReleaseSingleMeta): Promise<void> => {
     setShowLogging(true)
     setLoading(true)
     try {
-      await addApp(url)
+      await addApp({ releaseMeta: releaseMeta })
     } catch (error) {
       await setTimeout(() => {
         setShowLogging(false)
@@ -106,7 +108,7 @@ const AppDownloads: React.FC = () => {
   }
 
   const handleDownloadLatestClick = async (app: AppReleaseSingleMeta): Promise<void> => {
-    handleDownloadClick(app.updateUrl)
+    handleDownloadClick(app)
   }
 
   const handleToggleCommunityApps = (): void => {
@@ -116,15 +118,24 @@ const AppDownloads: React.FC = () => {
     }))
   }
 
+  const handleToggleAddRepo = (): void => {
+    setAddAppRepoOverlay((state) => !state)
+  }
+
   return (
     <div className="flex h-full w-full">
       {logging && showLogging && (
         <DownloadNotification loggingData={logging} onClose={handleDownloadFinalized} />
       )}
+      {addAppRepoOverlay && <AddRepoOverlay onClose={handleToggleAddRepo} onAdd={addRepo} />}
       {stagedAppManifest && <SuccessNotification />}
       <Sidebar className="flex justify-end flex-col h-full max-h-full md:items-stretch xs:items-center">
         <div>
           <div className="flex flex-col gap-2">
+            <Button onClick={handleToggleAddRepo} className="hover:bg-zinc-900">
+              <IconPlus strokeWidth={1.5} />
+              <p className="md:block xs:hidden xs:text-center flex-grow">Add App</p>
+            </Button>
             <Button onClick={handleUploadClick} className="hover:bg-zinc-900">
               {selectingFile ? <IconLoading strokeWidth={1.5} /> : <IconUpload strokeWidth={1.5} />}
               <p className="md:block xs:hidden xs:text-center flex-grow">Upload App</p>
@@ -146,23 +157,23 @@ const AppDownloads: React.FC = () => {
                     key={appRelease.id}
                     appRelease={appRelease}
                     loading={loading}
-                    onDownoadLatestClick={handleDownloadLatestClick}
+                    onDownloadLatestClick={handleDownloadLatestClick}
                   />
                 ) : appRelease.type === 'multi' ? (
                   <div
-                    className="border-l flex flex-col px-5 border-gray-500 gap-2"
+                    className="border-l flex flex-col px-5 border-gray-700 gap-2"
                     key={appRelease.id}
                   >
                     <div className="w-full flex justify-between items-center">
-                      <p>{appRelease.id}</p>
-                      <p>{appRelease.version}</p>
+                      <p className="text-gray-400">Repository: {appRelease.id}</p>
+                      <p className="text-gray-400">{appRelease.version}</p>
                     </div>
                     {appRelease.releases.map((release) => (
                       <AppDownloadComponent
                         key={release.id}
                         appRelease={release}
                         loading={loading}
-                        onDownoadLatestClick={handleDownloadLatestClick}
+                        onDownloadLatestClick={handleDownloadLatestClick}
                       />
                     ))}
                   </div>
@@ -227,7 +238,7 @@ const AppDownloadCommunityComponent: React.FC<{
           <img src={appRelease.icon} alt={appRelease.label} className="w-12 h-12 rounded" />
         ) : (
           <div className="w-12 h-12 rounded items-center flex justify-center">
-            <IconLogoGear className="text-black w-12 h-12" />
+            <IconLogoGear className="text-white w-12 h-12" />
           </div>
         )}
         <div>
@@ -262,9 +273,19 @@ const AppDownloadCommunityComponent: React.FC<{
 
 const AppDownloadComponent: React.FC<{
   appRelease: AppReleaseSingleMeta
-  onDownoadLatestClick: (appRelease: AppReleaseSingleMeta) => void
+  onDownloadLatestClick: (appRelease: AppReleaseSingleMeta) => void
   loading: boolean
-}> = ({ appRelease, onDownoadLatestClick, loading }) => {
+}> = ({ appRelease, onDownloadLatestClick, loading }) => {
+  const formatSize = (size: number): string => {
+    if (size < 1024) {
+      return `${size} B`
+    } else if (size < 1024 * 1024) {
+      return `${(size / 1024).toFixed(2)} KB`
+    } else {
+      return `${(size / (1024 * 1024)).toFixed(2)} MB`
+    }
+  }
+
   return (
     <div
       key={appRelease.id}
@@ -272,10 +293,10 @@ const AppDownloadComponent: React.FC<{
     >
       <div className="flex gap-4 items-center">
         {appRelease.icon ? (
-          <img src={appRelease.icon} alt={appRelease.label} className="w-12 h-12 rounded" />
+          <img src={appRelease.icon} alt={appRelease.label} className="w-12 h-12 rounded invert" />
         ) : (
           <div className="w-12 h-12 rounded items-center flex justify-center">
-            <IconLogoGear className="text-black w-12 h-12" />
+            <IconLogoGear className="text-white w-12 h-12" />
           </div>
         )}
         <div>
@@ -294,9 +315,11 @@ const AppDownloadComponent: React.FC<{
         <Button
           className={`${loading ? 'text-gray-600' : 'group'} gap-2`}
           disabled={loading}
-          onClick={() => onDownoadLatestClick(appRelease)}
+          onClick={() => onDownloadLatestClick(appRelease)}
         >
-          <p className="group-hover:block hidden text-center flex-grow">Download Latest</p>
+          <p className="group-hover:block hidden text-center flex-grow text-nowrap">
+            Download Latest ({formatSize(appRelease.size)})
+          </p>
           <IconDownload className="group-hover:stroke-2 stroke-1" />
         </Button>
       </div>

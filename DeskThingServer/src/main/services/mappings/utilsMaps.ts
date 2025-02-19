@@ -3,6 +3,9 @@ import Logger from '@server/utils/logger'
 import { Action, ActionReference, EventMode, Key, LOGGING_LEVELS } from '@DeskThing/types'
 import { ButtonMapping, MappingFileStructure, Profile, LoggingOptions } from '@shared/types'
 import { getAppFilePath } from '../apps'
+import path from 'node:path'
+import { app } from 'electron'
+import { readFile } from 'node:fs/promises'
 
 export const validMappingExists: (
   mapping: MappingFileStructure | unknown,
@@ -344,9 +347,6 @@ export const isValidKey: (key: unknown) => asserts key is Key = (key) => {
 }
 export const FetchIcon = async (action: Action): Promise<string | null> => {
   if (!action) return null
-  const { app } = require('electron')
-  const fs = require('fs').promises
-  const path = require('path')
 
   if (!action.source) {
     Logger.warn('Unable to fetch icon for action: source is not defined', {
@@ -361,7 +361,7 @@ export const FetchIcon = async (action: Action): Promise<string | null> => {
         ? path.join(app.getPath('userData'), 'webapp', 'icons', `${action.icon || action.id}.svg`)
         : path.join(getAppFilePath(action.source), 'icons', `${action.icon || action.id}.svg`)
 
-    return await fs.readFile(iconPath, 'utf8')
+    return await readFile(iconPath, 'utf8')
   } catch (error) {
     return null
   }

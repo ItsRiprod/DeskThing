@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { Client } from '@DeskThing/types'
+import { Client } from '@shared/types'
 import connectionStore from '@server/stores/connectionsStore'
 
 vi.mock('@server/utils/logger', () => ({

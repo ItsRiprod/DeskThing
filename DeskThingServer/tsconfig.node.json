@@ -5,6 +5,7 @@
     "src/main/**/*",
     "src/preload/**/*",
     "src/shared/**/*.ts",
+    "src/main/utilities/**/*",
     "test/**/*.ts"
   ],
   "compilerOptions": {
@@ -20,6 +21,7 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
+      "@utilities/*": ["src/main/utilities/*"],
       "@server/*": ["src/main/*"],
       "@shared/*": ["src/shared/*"],
     },

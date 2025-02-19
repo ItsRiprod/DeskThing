@@ -3,14 +3,14 @@ import { readFromFile, writeToFile } from '../services/files/fileService'
 import Logger from '@server/utils/logger'
 import os from 'os'
 import { LOGGING_LEVELS } from '@DeskThing/types'
-import { Settings, LOG_FILTER } from '@shared/types'
+import { Settings, LOG_FILTER, CacheableStore } from '@shared/types'
 const settingsVersion = '0.9.2'
 const version_code = 9.2
 
 type SettingsStoreListener = (settings: Settings) => void
 
-class SettingsStore {
-  private settings: Settings
+class SettingsStore implements CacheableStore {
+  private settings: Settings | null
   private settingsFilePath: string = 'settings.json'
   private static instance: SettingsStore
   private listeners: SettingsStoreListener[] = []
@@ -18,6 +18,19 @@ class SettingsStore {
   constructor() {
     this.settings = this.getDefaultSettings()
     this.setupSettings()
+  }
+
+  /**
+   * @implements CacheableStore
+   */
+  clearCache = async (): Promise<void> => {
+    this.settings = null
+  }
+  /**
+   * @implements CacheableStore
+   */
+  saveToFile = async (): Promise<void> => {
+    await this.saveSettings()
   }
 
   private setupSettings = async (): Promise<void> => {
@@ -54,16 +67,18 @@ class SettingsStore {
    * This method is called internally whenever the settings are updated.
    */
   private async notifyListeners(): Promise<void> {
-    this.listeners.forEach((listener) => {
-      listener(this.settings)
-    })
+    if (!this.settings) {
+      // Ensures settings are loaded
+      await this.getSettings()
+    }
+
+    await Promise.all(this.listeners.map((listener) => listener(this.settings as Settings)))
   }
 
   public async getSettings(): Promise<Settings> {
     if (this.settings) {
       return this.settings
     } else {
-      console.log('SETTINGS: Settings not initialized. Loading settings...')
       return await this.loadSettings()
     }
   }
@@ -75,8 +90,17 @@ class SettingsStore {
    */
   public async updateSetting(
     key: string,
-    value: boolean | undefined | string | number | string[]
+    value: boolean | undefined | string | number | string[],
+    atmps: number = 0
   ): Promise<void> {
+    if (!this.settings) {
+      await this.getSettings()
+      // call update setting again to avoid null check
+      if (atmps < 3) {
+        return await this.updateSetting(key, value, atmps + 1)
+      } else return
+    }
+
     if (key === 'autoStart' && typeof value === 'boolean') {
       this.updateAutoLaunch(value)
     }

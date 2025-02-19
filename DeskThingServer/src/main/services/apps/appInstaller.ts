@@ -1,20 +1,27 @@
 console.log('[AppInst Service] Starting')
-import { resolve } from 'path'
 import Logger from '@server/utils/logger'
 import {
   Response,
   AppManifest,
   LOGGING_LEVELS,
   DeskThingType,
-  EventPayload
+  EventPayload,
+  AppReleaseSingleMeta
 } from '@DeskThing/types'
-import { ReplyFn, AppInstance } from '@shared/types'
-import { getAppFilePath, getManifest } from './appUtils'
+import { ReplyFn, AppInstance, StagedAppManifest } from '@shared/types'
+import {
+  constructManifest,
+  getAppFilePath,
+  getManifest,
+  getStandardizedFilename,
+  validateSha512
+} from './appUtils'
 import { existsSync, promises } from 'node:fs'
 import { handleDataFromApp } from './appCommunication'
-import { constructManifest } from './appUtils'
 import appStore from '@server/stores/appStore'
 import { overwriteData } from '../files/dataFileService'
+import path, { resolve } from 'node:path'
+import logger from '@server/utils/logger'
 
 interface ExecuteStagedFileType {
   reply?: ReplyFn
@@ -29,111 +36,185 @@ export const executeStagedFile = async ({
   appId,
   run = false
 }: ExecuteStagedFileType): Promise<void> => {
-  const tempZipPath = getAppFilePath('staged', 'temp.zip')
-  const extractedPath = getAppFilePath('staged', 'extracted')
-  const appManifestData = await getManifest(extractedPath)
-  // get the app id
-  if (!appManifestData) {
-    Logger.error(`SERVER: Error getting manifest from ${extractedPath}`, {
-      function: 'executeStagedFile',
-      source: 'executeStagedFile',
-      error: new Error('Error getting manifest from tempPath')
-    })
-    reply && reply('logging', { status: false, data: 'Error getting manifest', final: true })
-    return
-  }
-
-  if (!appId) {
-    appId = appManifestData.id
-  }
-  if (overwrite) {
-    Logger.info(`[executeStagedFile] Overwriting existing app (overwrite is enabled)...`)
-    await appStore.purge(appId)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    await overwriteData(appId, { version: appManifestData.version })
-  }
-
-  const appPath = getAppFilePath(appId)
-
-  // Delete the app directory if it exists
-  if (existsSync(appPath)) {
-    reply &&
-      reply('logging', {
-        status: true,
-        data: 'Deleting existing app directory...',
-        final: false
-      })
-    await promises.rm(appPath, { recursive: true })
-    reply &&
-      reply('logging', { status: true, data: 'Deleted existing app directory', final: false })
-    Logger.info(`[executeStagedFile] Deleting existing app directory... ${appPath}`, {
-      function: 'executeStagedFile',
-      source: 'executeStagedFile'
-    })
-  }
-
-  // Get the app store
-
-  const app = appStore.get(appId)
-
-  if (app && !overwrite) {
-    // If the app already exists in the app store
-    Logger.info(`[executeStagedFile] Disabling existing app (Overwrite is disabled)...`)
-    // Check if the app exists and disable it if it does
-    const app = appStore.get(appId)
-    if (app?.enabled || app?.running) {
-      await appStore.disable(appId)
-    }
-  } else {
-    // If the app is new
-    Logger.info(`[executeStagedFile] Adding app to store...`)
-    const App: AppInstance = {
-      name: appId,
-      enabled: false,
-      running: false,
-      timeStarted: 0,
-      prefIndex: 10,
-      meta: {
-        version: '0.0.0',
-        verified: false,
-        verifiedManifest: false,
-        updateAvailable: false,
-        updateChecked: false
-      }
-    }
-    appStore.add(App)
-  }
-
-  Logger.info(`[executeStagedFile] Deleting temp zip path...`)
-  // Delete temp.zip if it exists
   try {
-    await promises.stat(tempZipPath)
-    await promises.unlink(tempZipPath)
-  } catch {
-    // File doesn't exist, no need to delete
-    Logger.info(`[executeStagedFile] No temp zip file to delete`)
-  }
-
-  Logger.info(`[executeStagedFile] Renaming the staged directory to app id...`)
-  // Rename staged directory to appId
-  try {
-    await promises.rename(extractedPath, appPath)
-  } catch (error) {
-    if (error instanceof Error) {
-      Logger.error(`[executeStagedFile] Failed to rename directory: ${error.message}`, {
+    const tempZipPath = getAppFilePath('staged', 'temp.zip')
+    const extractedPath = getAppFilePath('staged', 'extracted')
+    const appManifestData = await getManifest(extractedPath)
+    // get the app id
+    if (!appManifestData) {
+      Logger.error(`SERVER: Error getting manifest from ${extractedPath}`, {
         function: 'executeStagedFile',
         source: 'executeStagedFile',
-        error
+        error: new Error('Error getting manifest from tempPath')
       })
-      throw new Error(`Failed to rename staged directory to app directory: ${error.message}`)
+      reply && reply('logging', { status: false, data: 'Error getting manifest', final: true })
+      return
     }
+
+    if (!appId) {
+      appId = appManifestData.id
+    }
+    if (overwrite) {
+      Logger.info(`[executeStagedFile] Overwriting existing app (overwrite is enabled)...`)
+      await appStore.purge(appId)
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      await overwriteData(appId, { version: appManifestData.version })
+    }
+
+    const appPath = getAppFilePath(appId)
+
+    // Delete the app directory if it exists
+    if (existsSync(appPath)) {
+      reply &&
+        reply('logging', {
+          status: true,
+          data: 'Deleting existing app directory...',
+          final: false
+        })
+      await promises.rm(appPath, { recursive: true })
+      reply &&
+        reply('logging', { status: true, data: 'Deleted existing app directory', final: false })
+      Logger.info(`[executeStagedFile] Deleting existing app directory... ${appPath}`, {
+        function: 'executeStagedFile',
+        source: 'executeStagedFile'
+      })
+    }
+
+    // Get the app store
+
+    const app = appStore.get(appId)
+
+    if (app && !overwrite) {
+      // If the app already exists in the app store
+      Logger.info(`[executeStagedFile] Disabling existing app (Overwrite is disabled)...`)
+      // Check if the app exists and disable it if it does
+      const app = appStore.get(appId)
+      if (app?.enabled || app?.running) {
+        await appStore.disable(appId)
+      }
+    } else {
+      // If the app is new
+      Logger.info(`[executeStagedFile] Adding app to store...`)
+      const App: AppInstance = {
+        name: appId,
+        enabled: false,
+        running: false,
+        timeStarted: 0,
+        prefIndex: 10,
+        meta: {
+          version: '0.0.0',
+          verified: false,
+          verifiedManifest: false,
+          updateAvailable: false,
+          updateChecked: false
+        },
+        manifest: undefined
+      }
+      appStore.add(App)
+    }
+
+    Logger.info(`[executeStagedFile] Deleting temp zip path...`)
+    // Delete temp.zip if it exists
+    try {
+      await promises.stat(tempZipPath)
+      await promises.unlink(tempZipPath)
+    } catch {
+      // File doesn't exist, no need to delete
+      Logger.info(`[executeStagedFile] No temp zip file to delete`)
+    }
+
+    Logger.info(`[executeStagedFile] Renaming the staged directory to app id...`)
+    // Rename staged directory to appId
+    try {
+      await promises.rename(extractedPath, appPath)
+    } catch (error) {
+      if (error instanceof Error) {
+        Logger.error(`[executeStagedFile] Failed to rename directory: ${error.message}`, {
+          function: 'executeStagedFile',
+          source: 'executeStagedFile',
+          error
+        })
+        throw new Error(`Failed to rename staged directory to app directory: ${error.message}`)
+      }
+      throw error
+    }
+
+    if (run) {
+      Logger.info(`[executeStagedFile] Running app automatically...`)
+      await appStore.run(appId)
+    }
+  } catch (error) {
+    logger.error(`Error executing staged file: ${error}`, {
+      function: 'executeStagedFile',
+      source: 'appInstaller',
+      error: error as Error
+    })
+
     throw error
   }
+}
 
-  if (run) {
-    Logger.info(`[executeStagedFile] Running app automatically...`)
-    await appStore.run(appId)
+/**
+ * @depreciated - This is not needed as the run staged will use the already-extracted data
+ */
+export const findTempZipPath = async (
+  tempPath: string,
+  { releaseMeta, appId }: { releaseMeta?: AppReleaseSingleMeta; appId?: string }
+): Promise<string> => {
+  if (releaseMeta) {
+    logger.info(`Using releaseMeta to find temp zip path...`, {
+      function: 'findTempZipPath',
+      source: 'appInstaller'
+    })
+    const standardizedFileName = getStandardizedFilename(releaseMeta.id, releaseMeta.version)
+    const standardizedPath = path.join(tempPath, standardizedFileName)
+    if (
+      await promises
+        .access(standardizedPath)
+        .then(() => true)
+        .catch(() => false)
+    )
+      return standardizedPath
   }
+
+  if (appId) {
+    logger.info(`Using appId to find temp zip path...`, {
+      function: 'findTempZipPath',
+      source: 'appInstaller'
+    })
+    const files = await promises.readdir(tempPath)
+    const appZip = files.find((file) => file.includes(appId) && file.endsWith('.zip'))
+    if (appZip) return path.join(tempPath, appZip)
+  }
+
+  logger.info(`Using default temp zip path...`, {
+    function: 'findTempZipPath',
+    source: 'appInstaller'
+  })
+  const tempZipPath = path.join(tempPath, 'temp.zip')
+  if (
+    await promises
+      .access(tempZipPath)
+      .then(() => true)
+      .catch(() => false)
+  )
+    return tempZipPath
+
+  throw new Error('No matching zip file found in temp directory')
+}
+
+const getTempZipPath = (tempPath, releaseMeta?: AppReleaseSingleMeta): string => {
+  if (releaseMeta) {
+    const standardizedFileName = getStandardizedFilename(releaseMeta.id, releaseMeta.version)
+    return path.join(tempPath, standardizedFileName)
+  }
+  return path.join(tempPath, 'temp.zip')
+}
+
+export interface stageAppFileType {
+  filePath?: string
+  releaseMeta?: AppReleaseSingleMeta
+  reply: ReplyFn
 }
 
 /**
@@ -142,9 +223,23 @@ export const executeStagedFile = async ({
  * @param reply
  * @returns
  */
-export const stageAppFile = async (path: string, reply: ReplyFn): Promise<AppManifest | void> => {
+export const stageAppFile = async ({
+  filePath,
+  releaseMeta,
+  reply
+}: stageAppFileType): Promise<StagedAppManifest | void> => {
+  if (!filePath && !releaseMeta) {
+    reply('logging', { status: false, data: 'No file path or release meta provided', final: true })
+    return
+  } else if (!filePath && releaseMeta) {
+    filePath = releaseMeta.updateUrl
+  } else {
+    // filePath exists. This asserts that
+    filePath = filePath as string
+    return
+  }
   const tempPath = getAppFilePath('staged')
-  const tempZipPath = getAppFilePath('staged', 'temp.zip')
+  const tempZipPath = getTempZipPath(tempPath, releaseMeta)
   const extractedPath = getAppFilePath('staged', 'extracted')
 
   // Check if the path exists
@@ -185,11 +280,12 @@ export const stageAppFile = async (path: string, reply: ReplyFn): Promise<AppMan
   await promises.mkdir(tempPath, { recursive: true })
 
   // Check if the path is a URL
-  if (path.startsWith('http://') || path.startsWith('https://')) {
+  if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
     Logger.info(`[handleZipFromUrl] URL Detected!`)
+
     reply('logging', { status: true, data: 'Fetching...', final: false })
 
-    const response = await fetch(path)
+    const response = await fetch(filePath)
 
     const trackDownloadProgress = async (received: number, total: number): Promise<void> => {
       const progress = Math.round((received / total) * 100)
@@ -240,16 +336,16 @@ export const stageAppFile = async (path: string, reply: ReplyFn): Promise<AppMan
     Logger.info(`[handleZipFromUrl] Local File Detected!`)
     // Handle case where it's a local file upload
     try {
-      if (!existsSync(path)) {
+      if (!existsSync(filePath)) {
         reply('logging', {
           status: false,
           data: 'File not found!',
-          error: path,
+          error: filePath,
           final: true
         })
         throw new Error(`Local file not found: ${path}`)
       }
-      if (!path.toLowerCase().endsWith('.zip')) {
+      if (!filePath.toLowerCase().endsWith('.zip')) {
         reply('logging', {
           status: false,
           data: 'File must be a .zip file',
@@ -259,7 +355,7 @@ export const stageAppFile = async (path: string, reply: ReplyFn): Promise<AppMan
       }
       // Copy the zip file to the extractedPath from the provided path
       Logger.info(`[handleZipFromUrl] Copying ${path} to ${extractedPath}!`)
-      await promises.copyFile(path, tempZipPath)
+      await promises.copyFile(filePath, tempZipPath)
     } catch (error) {
       // handle errors
       if (error instanceof Error) {
@@ -327,11 +423,12 @@ export const stageAppFile = async (path: string, reply: ReplyFn): Promise<AppMan
       `[handleZip] Error getting manifest from ${extractedPath}. Returning placeholder data...`
     )
     reply && reply('logging', { status: true, data: 'Error getting manifest!', final: false })
+    return
   }
 
-  const returnData = constructManifest(manifestData)
+  const isValidated = await validateSha512(tempZipPath, releaseMeta)
 
-  return returnData
+  return { checksumValidated: isValidated, ...manifestData }
 }
 
 /**
@@ -570,7 +667,7 @@ const handleManifest = async (
 ): Promise<AppManifest | void> => {
   if (manifestResponse.status == 200) {
     // Manifest returned correctly
-    return manifestResponse.data
+    return constructManifest(manifestResponse.data)
   } else if (manifestResponse.status == 500) {
     // Manifest not found, searching manually
     Logger.log(LOGGING_LEVELS.ERROR, `Manifest for app ${appName} not found! Searching manually`)
@@ -584,7 +681,7 @@ const handleManifest = async (
       })
     }
 
-    return constructManifest(manifest)
+    return manifest
   } else {
     // Critical error
     Logger.error(

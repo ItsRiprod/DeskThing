@@ -5,7 +5,7 @@ import {
   sanitizeTaskList
 } from '@server/services/task/taskUtils'
 import defaultTaskList from '@server/static/defaultTasks'
-import { TaskReference, TaskList } from '@shared/types'
+import { TaskReference, TaskList, CacheableStore } from '@shared/types'
 import Logger from '@server/utils/logger'
 import { LOGGING_LEVELS, Step, Task } from '@DeskThing/types'
 import appStore from './appStore'
@@ -27,7 +27,7 @@ type TaskStoreListeners = {
   [K in keyof TaskStoreEvents]: TaskStoreListener<K>[]
 }
 
-class TaskStore {
+class TaskStore implements CacheableStore {
   private saveTimeout: NodeJS.Timeout | null = null
   private readonly SAVE_DELAY = 100 // Delay a second before saving to file
   private static instance: TaskStore
@@ -41,6 +41,37 @@ class TaskStore {
 
   private constructor() {
     this.initializeTaskList()
+  }
+
+  /**
+   * @implements CacheableStore
+   */
+  clearCache = async (): Promise<void> => {
+    // Make all of the tasks references and stop them
+    this.taskList.tasks = Object.entries(this.taskList.tasks).reduce(
+      (acc, [id, task]) => {
+        acc[id] = {
+          id: task.id,
+          source: task.source,
+          version: task.version,
+          available: task.available,
+          completed: task.completed,
+          label: task.label,
+          started: false,
+          description: task.description
+        }
+        return acc
+      },
+      {} as Record<string, TaskReference>
+    )
+    await this.debouncedSave()
+    this.saveTimeout && clearTimeout(this.saveTimeout)
+  }
+  /**
+   * @implements CacheableStore
+   */
+  saveToFile = async (): Promise<void> => {
+    await this.saveTaskList()
   }
 
   private initializeTaskList = async (): Promise<void> => {

@@ -1,20 +1,20 @@
-import { contextBridge, ipcRenderer, Settings, Task } from 'electron'
+import { contextBridge, ipcRenderer, Task } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import {
   App,
   Action,
   ActionReference,
   AppDataInterface,
-  AppManifest,
   AppSettings,
   ClientManifest,
   Key,
   SocketData,
   Step,
   TaskList,
-  ToAppData,
   AppReleaseCommunity,
-  AppReleaseMeta
+  AppReleaseMeta,
+  EventPayload,
+  AppReleaseSingleMeta
 } from '@DeskThing/types'
 import {
   Profile,
@@ -25,9 +25,15 @@ import {
   Button,
   FeedbackReport,
   IPC_HANDLERS,
+  Settings,
   IPCData,
-  SortedReleases
+  SortedReleases,
+  StagedAppManifest,
+  SystemInfo,
+  UTILITY_TYPES,
+  APP_TYPES
 } from '@shared/types'
+import { platform } from 'os'
 
 // Custom APIs for renderer
 const api = {
@@ -38,15 +44,14 @@ const api = {
   getApps: async (): Promise<App[]> =>
     await sendCommand('APPS', {
       kind: 'app',
-      type: 'app',
-      request: 'get',
-      payload: null
+      type: APP_TYPES.APP,
+      request: 'get'
     }),
 
   getAppData: async (appId: string): Promise<AppDataInterface | null> =>
     await sendCommand<AppDataInterface | null>('APPS', {
       kind: 'app',
-      type: 'data',
+      type: APP_TYPES.DATA,
       request: 'get',
       payload: appId
     }),
@@ -54,7 +59,7 @@ const api = {
   setAppData: async (appId: string, data: Record<string, string>): Promise<void> =>
     await sendCommand('APPS', {
       kind: 'app',
-      type: 'data',
+      type: APP_TYPES.DATA,
       request: 'set',
       payload: { appId, data }
     }),
@@ -62,7 +67,7 @@ const api = {
   getAppSettings: async (appId: string): Promise<AppSettings | null> =>
     await sendCommand<AppSettings | null>('APPS', {
       kind: 'app',
-      type: 'settings',
+      type: APP_TYPES.SETTINGS,
       request: 'get',
       payload: appId
     }),
@@ -70,7 +75,7 @@ const api = {
   setAppSettings: async (appId: string, settings: AppSettings): Promise<void> =>
     await sendCommand('APPS', {
       kind: 'app',
-      type: 'settings',
+      type: APP_TYPES.SETTINGS,
       request: 'set',
       payload: { appId, settings }
     }),
@@ -78,108 +83,106 @@ const api = {
   stopApp: async (appId: string): Promise<void> =>
     await sendCommand('APPS', {
       kind: 'app',
-      type: 'stop',
-      request: 'set',
+      type: APP_TYPES.STOP,
       payload: appId
     }),
 
   disableApp: async (appId: string): Promise<void> =>
     await sendCommand('APPS', {
       kind: 'app',
-      type: 'disable',
-      request: 'set',
+      type: APP_TYPES.DISABLE,
       payload: appId
     }),
 
   enableApp: async (appId: string): Promise<void> =>
     await sendCommand('APPS', {
       kind: 'app',
-      type: 'enable',
-      request: 'set',
+      type: APP_TYPES.ENABLE,
       payload: appId
     }),
 
   runApp: async (appId: string): Promise<void> =>
     await sendCommand('APPS', {
       kind: 'app',
-      type: 'run',
-      request: 'set',
+      type: APP_TYPES.RUN,
       payload: appId
     }),
 
   purgeApp: async (appId: string): Promise<void> =>
     await sendCommand('APPS', {
       kind: 'app',
-      type: 'purge',
-      request: 'set',
+      type: APP_TYPES.PURGE,
       payload: appId
     }),
 
   handleAppZip: async (path: string): Promise<AppReturnData | null> =>
     await sendCommand('APPS', {
       kind: 'app',
-      type: 'zip',
-      request: 'set',
+      type: APP_TYPES.ZIP,
       payload: path
     }),
 
   handleAppUrl: async (url: string): Promise<AppReturnData | null> =>
     await sendCommand('APPS', {
       kind: 'app',
-      type: 'url',
-      request: 'set',
+      type: APP_TYPES.URL,
       payload: url
     }),
 
   app: {
-    add: async (appPath: string): Promise<AppManifest | void> =>
+    add: async ({
+      appPath,
+      releaseMeta
+    }: {
+      appPath?: string
+      releaseMeta?: AppReleaseSingleMeta
+    }): Promise<StagedAppManifest | void> =>
       await sendCommand('APPS', {
         kind: 'app',
-        type: 'add',
-        request: 'set',
-        payload: appPath
+        type: APP_TYPES.ADD,
+        payload: { filePath: appPath, meta: releaseMeta }
+      }),
+    getIcon: async (appId: string, icon?: string): Promise<string | null> =>
+      await sendCommand('APPS', {
+        kind: 'app',
+        type: APP_TYPES.ICON,
+        payload: { appId, icon }
       }),
     runStaged: async (appId: string, overwrite: boolean): Promise<void> =>
       await sendCommand('APPS', {
         kind: 'app',
-        type: 'staged',
-        request: 'set',
+        type: APP_TYPES.STAGED,
         payload: { appId, overwrite }
       })
   },
 
-  handleResponseToUserData: async (requestId: string, payload: ToAppData): Promise<void> =>
+  handleResponseToUserData: async (requestId: string, payload: EventPayload): Promise<void> =>
     await sendCommand('APPS', {
       kind: 'app',
-      type: 'user-data-response',
-      request: 'set',
+      type: APP_TYPES.USER_DATA_RESPONSE,
       payload: { requestId, response: payload }
     }),
 
   handleDeAppZip: async (path: string): Promise<void> =>
     await sendCommand('APPS', {
       kind: 'app',
-      type: 'dev-add-app',
-      request: 'set',
+      type: APP_TYPES.DEV_ADD_APP,
       payload: { appPath: path }
     }),
 
-  sendDataToApp: async (data: SocketData): Promise<void> =>
+  sendDataToApp: async (data: EventPayload & { app: string }): Promise<void> =>
     await sendCommand('APPS', {
       kind: 'app',
-      type: 'send-to-app',
-      request: 'set',
+      type: APP_TYPES.SEND_TO_APP,
       payload: data
     }),
 
   orderApps: async (data: string[]): Promise<void> =>
     await sendCommand('APPS', {
       kind: 'app',
-      type: 'app-order',
-      request: 'set',
+      type: APP_TYPES.APP_ORDER,
       payload: data
     }),
-
   // Clients
 
   pingClient: async (clientId: string): Promise<string | null> =>
@@ -267,31 +270,26 @@ const api = {
   ping: async (): Promise<void> =>
     await sendCommand('UTILITY', {
       kind: 'utility',
-      type: 'ping',
-      request: 'set',
-      payload: undefined
+      type: UTILITY_TYPES.PING
     }),
 
   getConnections: async (): Promise<Client[]> =>
     await sendCommand<Client[]>('UTILITY', {
       kind: 'utility',
-      type: 'connections',
-      request: 'get',
-      payload: undefined
+      type: UTILITY_TYPES.CONNECTIONS,
+      request: 'get'
     }),
 
   getDevices: async (): Promise<string[]> =>
     await sendCommand<string[]>('UTILITY', {
       kind: 'utility',
-      type: 'devices',
-      request: 'get',
-      payload: undefined
+      type: UTILITY_TYPES.DEVICES
     }),
 
   disconnectClient: async (connectionId: string): Promise<void> =>
     await sendCommand('UTILITY', {
       kind: 'utility',
-      type: 'connections',
+      type: UTILITY_TYPES.CONNECTIONS,
       request: 'delete',
       payload: connectionId
     }),
@@ -299,7 +297,7 @@ const api = {
   saveSettings: async (settings: Settings): Promise<void> =>
     await sendCommand('UTILITY', {
       kind: 'utility',
-      type: 'settings',
+      type: UTILITY_TYPES.SETTINGS,
       request: 'set',
       payload: settings
     }),
@@ -307,57 +305,56 @@ const api = {
   getSettings: async (): Promise<Settings> =>
     await sendCommand('UTILITY', {
       kind: 'utility',
-      type: 'settings',
-      request: 'get',
-      payload: undefined
+      type: UTILITY_TYPES.SETTINGS,
+      request: 'get'
     }),
   github: {
     refreshApp: async (repoUrl: string): Promise<void> =>
       await sendCommand('UTILITY', {
         kind: 'utility',
-        type: 'github',
+        type: UTILITY_TYPES.GITHUB,
         request: 'refreshApp',
         payload: repoUrl
       }),
     refreshApps: async (): Promise<void> =>
       await sendCommand('UTILITY', {
         kind: 'utility',
-        type: 'github',
+        type: UTILITY_TYPES.GITHUB,
         request: 'refreshApps',
         payload: undefined
       }),
     getApps: async (): Promise<AppReleaseMeta[]> =>
       await sendCommand('UTILITY', {
         kind: 'utility',
-        type: 'github',
+        type: UTILITY_TYPES.GITHUB,
         request: 'getApps',
         payload: undefined
       }),
     getAppReferences: async (): Promise<AppReleaseCommunity[]> =>
       await sendCommand('UTILITY', {
         kind: 'utility',
-        type: 'github',
+        type: UTILITY_TYPES.GITHUB,
         request: 'getAppReferences',
         payload: undefined
       }),
     addAppRepo: async (repoUrl: string): Promise<AppReleaseMeta | undefined> =>
       await sendCommand('UTILITY', {
         kind: 'utility',
-        type: 'github',
+        type: UTILITY_TYPES.GITHUB,
         request: 'addAppRepo',
         payload: repoUrl
       }),
     getClients: async (): Promise<SortedReleases> =>
       await sendCommand('UTILITY', {
         kind: 'utility',
-        type: 'github',
+        type: UTILITY_TYPES.GITHUB,
         request: 'getClients',
         payload: undefined
       }),
     removeAppRepo: async (repoUrl: string): Promise<void> =>
       await sendCommand('UTILITY', {
         kind: 'utility',
-        type: 'github',
+        type: UTILITY_TYPES.GITHUB,
         request: 'removeAppRepo',
         payload: repoUrl
       })
@@ -365,63 +362,50 @@ const api = {
   getLogs: async (): Promise<Log[]> =>
     await sendCommand('UTILITY', {
       kind: 'utility',
-      type: 'logs',
-      request: 'get',
-      payload: undefined
+      type: UTILITY_TYPES.LOGS
     }),
 
   shutdown: async (): Promise<void> =>
     await sendCommand('UTILITY', {
       kind: 'utility',
-      type: 'shutdown',
-      request: 'set',
-      payload: undefined
+      type: UTILITY_TYPES.SHUTDOWN
     }),
 
   openLogsFolder: async (): Promise<void> =>
     await sendCommand('UTILITY', {
       kind: 'utility',
-      type: 'open-log-folder',
-      request: 'set',
-      payload: undefined
+      type: UTILITY_TYPES.OPEN_LOG_FOLDER
     }),
 
   selectZipFile: async (): Promise<string | undefined> =>
     await sendCommand('UTILITY', {
       kind: 'utility',
-      type: 'zip',
-      request: 'get',
-      payload: undefined
+      type: UTILITY_TYPES.ZIP
     }),
 
   refreshFirewall: async (): Promise<void> =>
     await sendCommand('UTILITY', {
       kind: 'utility',
-      type: 'refresh-firewall',
-      request: 'set',
-      payload: undefined
+      type: UTILITY_TYPES.REFRESH_FIREWALL
     }),
 
   restartServer: async (): Promise<void> =>
     await sendCommand('UTILITY', {
       kind: 'utility',
-      type: 'restart-server',
-      request: 'set',
-      payload: undefined
+      type: UTILITY_TYPES.RESTART_SERVER
     }),
 
   getActions: async (): Promise<Action[]> =>
     await sendCommand('UTILITY', {
       kind: 'utility',
-      type: 'actions',
-      request: 'get',
-      payload: undefined
+      type: UTILITY_TYPES.ACTIONS,
+      request: 'get'
     }),
 
   addAction: async (action: Action): Promise<void> =>
     await sendCommand('UTILITY', {
       kind: 'utility',
-      type: 'actions',
+      type: UTILITY_TYPES.ACTIONS,
       request: 'set',
       payload: action
     }),
@@ -429,7 +413,7 @@ const api = {
   deleteAction: async (actionId: string): Promise<void> =>
     await sendCommand('UTILITY', {
       kind: 'utility',
-      type: 'actions',
+      type: UTILITY_TYPES.ACTIONS,
       request: 'delete',
       payload: actionId
     }),
@@ -437,15 +421,15 @@ const api = {
   addButton: async (button: Button): Promise<void> =>
     await sendCommand('UTILITY', {
       kind: 'utility',
-      type: 'buttons',
+      type: UTILITY_TYPES.BUTTONS,
       request: 'set',
       payload: button
     }),
 
-  deleteButton: async (button: Exclude<'action', Button>): Promise<void> =>
+  deleteButton: async (button: Exclude<Button, 'action'>): Promise<void> =>
     await sendCommand('UTILITY', {
       kind: 'utility',
-      type: 'buttons',
+      type: UTILITY_TYPES.BUTTONS,
       request: 'delete',
       payload: button
     }),
@@ -453,15 +437,14 @@ const api = {
   getKeys: async (): Promise<Key[]> =>
     await sendCommand('UTILITY', {
       kind: 'utility',
-      type: 'keys',
-      request: 'get',
-      payload: undefined
+      type: UTILITY_TYPES.KEYS,
+      request: 'get'
     }),
 
   addKey: async (key: Key): Promise<void> =>
     await sendCommand('UTILITY', {
       kind: 'utility',
-      type: 'keys',
+      type: UTILITY_TYPES.KEYS,
       request: 'set',
       payload: key
     }),
@@ -469,7 +452,7 @@ const api = {
   deleteKey: async (keyId: string): Promise<void> =>
     await sendCommand('UTILITY', {
       kind: 'utility',
-      type: 'keys',
+      type: UTILITY_TYPES.KEYS,
       request: 'delete',
       payload: keyId
     }),
@@ -477,7 +460,7 @@ const api = {
   getProfiles: async (): Promise<Profile[]> =>
     await sendCommand('UTILITY', {
       kind: 'utility',
-      type: 'profiles',
+      type: UTILITY_TYPES.PROFILES,
       request: 'get',
       payload: undefined
     }),
@@ -485,7 +468,7 @@ const api = {
   getProfile: async (profileName: string): Promise<ButtonMapping> =>
     await sendCommand('UTILITY', {
       kind: 'utility',
-      type: 'profiles',
+      type: UTILITY_TYPES.PROFILES,
       request: 'get',
       payload: profileName
     }),
@@ -501,7 +484,7 @@ const api = {
   saveProfile: async (profile: ButtonMapping): Promise<void> =>
     await sendCommand('UTILITY', {
       kind: 'utility',
-      type: 'profiles',
+      type: UTILITY_TYPES.PROFILES,
       request: 'set',
       payload: profile
     }),
@@ -509,7 +492,7 @@ const api = {
   addProfile: async (profile: Profile): Promise<void> =>
     await sendCommand('UTILITY', {
       kind: 'utility',
-      type: 'profiles',
+      type: UTILITY_TYPES.PROFILES,
       request: 'set',
       payload: profile
     }),
@@ -517,7 +500,7 @@ const api = {
   deleteProfile: async (profileName: string): Promise<void> =>
     await sendCommand('UTILITY', {
       kind: 'utility',
-      type: 'profiles',
+      type: UTILITY_TYPES.PROFILES,
       request: 'delete',
       payload: profileName
     }),
@@ -525,15 +508,14 @@ const api = {
   getCurrentProfile: async (): Promise<Profile> =>
     await sendCommand('UTILITY', {
       kind: 'utility',
-      type: 'map',
-      request: 'get',
-      payload: undefined
+      type: UTILITY_TYPES.MAP,
+      request: 'get'
     }),
 
   setCurrentProfile: async (profile: Profile): Promise<void> =>
     await sendCommand('UTILITY', {
       kind: 'utility',
-      type: 'map',
+      type: UTILITY_TYPES.MAP,
       request: 'set',
       payload: profile
     }),
@@ -541,8 +523,7 @@ const api = {
   runAction: async (action: Action | ActionReference): Promise<void> =>
     await sendCommand('UTILITY', {
       kind: 'utility',
-      type: 'run',
-      request: 'set',
+      type: UTILITY_TYPES.RUN,
       payload: action
     }),
 
@@ -551,14 +532,14 @@ const api = {
     getTaskList: async (): Promise<TaskList> =>
       await sendCommand('UTILITY', {
         kind: 'utility',
-        type: 'task',
+        type: UTILITY_TYPES.TASK,
         request: 'get'
       }),
 
     stopTask: async (taskId: string): Promise<void> =>
       await sendCommand('UTILITY', {
         kind: 'utility',
-        type: 'task',
+        type: UTILITY_TYPES.TASK,
         request: 'stop',
         payload: taskId
       }),
@@ -566,7 +547,7 @@ const api = {
     startTask: async (taskId: string): Promise<void> =>
       await sendCommand('UTILITY', {
         kind: 'utility',
-        type: 'task',
+        type: UTILITY_TYPES.TASK,
         request: 'start',
         payload: taskId
       }),
@@ -574,7 +555,7 @@ const api = {
     completeStep: async (taskId: string, stepId: string): Promise<void> =>
       await sendCommand('UTILITY', {
         kind: 'utility',
-        type: 'task',
+        type: UTILITY_TYPES.TASK,
         request: 'complete',
         payload: [taskId, stepId]
       }),
@@ -582,7 +563,7 @@ const api = {
     completeTask: async (taskId: string): Promise<void> =>
       await sendCommand('UTILITY', {
         kind: 'utility',
-        type: 'task',
+        type: UTILITY_TYPES.TASK,
         request: 'complete_task',
         payload: taskId
       }),
@@ -590,14 +571,14 @@ const api = {
     pauseTask: async (): Promise<void> =>
       await sendCommand('UTILITY', {
         kind: 'utility',
-        type: 'task',
+        type: UTILITY_TYPES.TASK,
         request: 'pause'
       }),
 
     nextStep: async (taskId: string): Promise<void> =>
       await sendCommand('UTILITY', {
         kind: 'utility',
-        type: 'task',
+        type: UTILITY_TYPES.TASK,
         request: 'next',
         payload: taskId
       }),
@@ -605,7 +586,7 @@ const api = {
     prevStep: async (taskId: string): Promise<void> =>
       await sendCommand('UTILITY', {
         kind: 'utility',
-        type: 'task',
+        type: UTILITY_TYPES.TASK,
         request: 'previous',
         payload: taskId
       }),
@@ -613,7 +594,7 @@ const api = {
     restartTask: async (taskId: string): Promise<void> =>
       await sendCommand('UTILITY', {
         kind: 'utility',
-        type: 'task',
+        type: UTILITY_TYPES.TASK,
         request: 'restart',
         payload: taskId
       }),
@@ -621,7 +602,7 @@ const api = {
     updateStep: async (taskId: string, step: Partial<Step>): Promise<void> =>
       await sendCommand('UTILITY', {
         kind: 'utility',
-        type: 'task',
+        type: UTILITY_TYPES.TASK,
         request: 'update-step',
         payload: [taskId, step]
       }),
@@ -629,7 +610,7 @@ const api = {
     updateTask: async (task: Partial<Task>): Promise<void> =>
       await sendCommand('UTILITY', {
         kind: 'utility',
-        type: 'task',
+        type: UTILITY_TYPES.TASK,
         request: 'update-task',
         payload: task
       })
@@ -638,7 +619,7 @@ const api = {
     check: async (): Promise<void> =>
       await sendCommand('UTILITY', {
         kind: 'utility',
-        type: 'update',
+        type: UTILITY_TYPES.UPDATE,
         request: 'check',
         payload: ''
       }),
@@ -646,7 +627,7 @@ const api = {
     download: async (): Promise<void> =>
       await sendCommand('UTILITY', {
         kind: 'utility',
-        type: 'update',
+        type: UTILITY_TYPES.UPDATE,
         request: 'download',
         payload: ''
       }),
@@ -654,7 +635,7 @@ const api = {
     install: async (): Promise<void> =>
       await sendCommand('UTILITY', {
         kind: 'utility',
-        type: 'update',
+        type: UTILITY_TYPES.UPDATE,
         request: 'restart',
         payload: ''
       })
@@ -663,20 +644,18 @@ const api = {
     submit: async (feedback: FeedbackReport): Promise<void> =>
       await sendCommand('UTILITY', {
         kind: 'utility',
-        type: 'feedback',
+        type: UTILITY_TYPES.FEEDBACK,
         request: 'set',
         payload: feedback
       }),
-    getForumData: async (): Promise<void> =>
+    getSysInfo: async (): Promise<SystemInfo> =>
       await sendCommand('UTILITY', {
         kind: 'utility',
-        type: 'feedback',
-        request: 'get',
-        payload: ''
+        type: UTILITY_TYPES.FEEDBACK,
+        request: 'get'
       })
   }
 }
-
 const sendCommand = <T>(handler: keyof typeof IPC_HANDLERS, payload: IPCData): Promise<T> =>
   ipcRenderer.invoke(handler, payload)
 // Use `contextBridge` APIs to expose Electron APIs to
@@ -687,6 +666,9 @@ if (process.contextIsolated) {
     contextBridge.exposeInMainWorld('electron', {
       ...electronAPI,
       ...api
+    })
+    contextBridge.exposeInMainWorld('electronAPI', {
+      platform: platform()
     })
   } catch (error) {
     console.error(error)

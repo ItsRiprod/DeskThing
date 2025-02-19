@@ -1,5 +1,5 @@
 // Ik this is bad practice but I don't have time to fix it right now
-import { DeskThingType, ToAppData, App } from '@deskthing/types'
+import { DeskThingType, ToAppData, App, AppManifest } from '@deskthing/types'
 
 /**
  * The AppInstance interface represents an instance of an app.
@@ -42,4 +42,8 @@ export interface AppReturnData {
 export interface ReleaseDetails {
   name: string
   version: string
+}
+
+export type StagedAppManifest = AppManifest & {
+  checksumValidated: boolean
 }

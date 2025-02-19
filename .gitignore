@@ -37,3 +37,4 @@ CommunityApps
 *.zip
 /DeskThingServer/src/renderer/srcBackup
 /DeskThingServer/docs
+DeskThingServer/.env.production

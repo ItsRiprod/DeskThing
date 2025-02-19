@@ -5,13 +5,13 @@
  */
 console.log('[Connection Store] Starting')
 import { LOGGING_LEVELS } from '@DeskThing/types'
-import { Client } from '@shared/types'
+import { CacheableStore, Client } from '@shared/types'
 import { settingsStore } from '.'
 import Logger from '@server/utils/logger'
 type ClientListener = (client: Client[]) => void
 type DeviceListener = (device: string[]) => void
 
-class ConnectionStore {
+class ConnectionStore implements CacheableStore {
   private clients: Client[] = []
   private devices: string[] = []
   private static instance: ConnectionStore
@@ -22,6 +22,17 @@ class ConnectionStore {
 
   constructor() {
     this.setupConnectionListeners()
+  }
+
+  public clearCache = async (): Promise<void> => {
+    this.clearTimeout && clearTimeout(this.clearTimeout)
+
+    this.devices = []
+  }
+  public saveToFile = async (): Promise<void> => {
+    /**
+     * Nothing to save to file for this store
+     */
   }
 
   private setupConnectionListeners = async (): Promise<void> => {

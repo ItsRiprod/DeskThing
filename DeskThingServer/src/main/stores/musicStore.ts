@@ -7,13 +7,13 @@ console.log('[Music Handler] Starting')
 import { settingsStore, appStore } from '.'
 import Logger from '@server/utils/logger'
 import { SocketData, LOGGING_LEVELS, SongData, ServerEvent, EventPayload } from '@DeskThing/types'
-import { Settings } from '@shared/types'
+import { CacheableStore, Settings } from '@shared/types'
 import { getAppByName } from '../services/files/appFileService'
 import { sendMessageToClients } from '../services/client/clientCom'
 import { getColorFromImage } from '../services/music/musicUtils'
 // import { getNowPlaying } from '../services/music/musicController'
 
-export class MusicStore {
+export class MusicStore implements CacheableStore {
   private static instance: MusicStore
   private refreshInterval: NodeJS.Timeout | null = null
   private currentApp: string | null = null
@@ -22,6 +22,23 @@ export class MusicStore {
     setTimeout(() => {
       this.initializeRefreshInterval()
     }, 3000)
+  }
+
+  /**
+   * @implements CacheableStore
+   */
+  clearCache = async (): Promise<void> => {
+    /**
+     * Clear cache logic here if needed
+     */
+  }
+  /**
+   * @implements CacheableStore
+   */
+  saveToFile = async (): Promise<void> => {
+    /**
+     * Save to file logic here if needed
+     */
   }
 
   public static getInstance(): MusicStore {

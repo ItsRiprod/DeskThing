@@ -1,16 +1,22 @@
-import { App, AppManifest, AppSettings } from '@DeskThing/types'
-import { LoggingData } from '@shared/types'
+import { App, AppReleaseSingleMeta, AppSettings } from '@DeskThing/types'
+import { LoggingData, StagedAppManifest } from '@shared/types'
 import { create } from 'zustand'
+import useSettingsStore from './settingsStore'
 
 interface AppStoreState {
   appsList: App[]
   order: string[]
   logging: LoggingData | null
-  stagedManifest: AppManifest | null
+  stagedManifest: StagedAppManifest | null
+  iconCache: Record<string, string>
 
+  clearIconCache: () => void
   requestApps: () => void
   removeAppFromList: (appName: string) => void
-  addApp: (path: string) => Promise<AppManifest | void>
+  addApp: (data: {
+    appPath?: string
+    releaseMeta?: AppReleaseSingleMeta
+  }) => Promise<StagedAppManifest | void>
   runStagedApp: (overwrite?: boolean) => Promise<void>
   setOrder: (order: string[]) => void
   addAppToList: (appName: string) => void
@@ -23,6 +29,8 @@ interface AppStoreState {
   getAppSettings: (appName: string) => Promise<AppSettings | null>
   setAppSettings: (appName: string, settings: AppSettings) => void
   setAppList: (apps: App[]) => void
+  getIcon: (appName: string, icon?: string) => Promise<string | null>
+  getIconUrl: (appName: string, icon?: string) => string
 }
 
 /**
@@ -50,11 +58,12 @@ const useAppStore = create<AppStoreState>((set, get) => ({
   order: [],
   logging: null,
   stagedManifest: null,
+  iconCache: {},
 
   // Requests the apps from Electron via IPC
   requestApps: async (): Promise<void> => {
     const apps = await window.electron.getApps() // Assuming this is wrapped in a promise
-    set({ appsList: apps, order: apps.map((app) => app.name) })
+    set({ appsList: apps, order: apps.map((app) => app.name), iconCache: {} })
   },
 
   // Sets the entire list of apps
@@ -155,7 +164,13 @@ const useAppStore = create<AppStoreState>((set, get) => ({
     window.electron.setAppSettings(appName, settings)
   },
 
-  addApp: async (appPath: string): Promise<AppManifest | void> => {
+  addApp: async ({
+    appPath,
+    releaseMeta
+  }: {
+    appPath?: string
+    releaseMeta?: AppReleaseSingleMeta
+  }): Promise<StagedAppManifest | void> => {
     const loggingListener = async (_event: Electron.Event, reply: LoggingData): Promise<void> => {
       set({ logging: reply })
       if (reply.final === true || reply.status === false) {
@@ -164,7 +179,7 @@ const useAppStore = create<AppStoreState>((set, get) => ({
     }
     const removeListener = window.electron.ipcRenderer.on('logging', loggingListener)
 
-    window.electron.app.add(appPath).then(async (manifest) => {
+    window.electron.app.add({ appPath, releaseMeta }).then(async (manifest) => {
       if (manifest) {
         set({ stagedManifest: manifest })
       }
@@ -180,6 +195,37 @@ const useAppStore = create<AppStoreState>((set, get) => ({
       console.error('No staged manifest found! Please download an app first')
       set({ stagedManifest: null })
     }
+  },
+
+  getIcon: async (appName: string, icon?: string): Promise<string | null> => {
+    const cacheKey = `${appName}-${icon || appName}`
+    const { iconCache } = get()
+
+    // Return cached icon if available
+    if (iconCache[cacheKey]) {
+      return iconCache[cacheKey]
+    }
+
+    // Fetch and cache new icon
+    const iconContent = await window.electron.app.getIcon(appName, icon)
+    if (iconContent) {
+      set((state) => ({
+        iconCache: {
+          ...state.iconCache,
+          [cacheKey]: iconContent
+        }
+      }))
+    }
+    return iconContent
+  },
+  clearIconCache: (): void => {
+    set({ iconCache: {} })
+  },
+
+  getIconUrl: (appName: string, icon?: string): string => {
+    const settings = useSettingsStore.getState().settings
+    const url = `http://localhost:${settings.devicePort}/icons/${appName}/icons/${icon || appName}.svg`
+    return url
   }
 }))
 

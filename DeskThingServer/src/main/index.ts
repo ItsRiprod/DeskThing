@@ -15,11 +15,27 @@
 import Logger from './utils/logger'
 Logger.info('[Index] Starting', { domain: 'server', source: 'index' })
 
-import { AppIPCData, Client, UtilityIPCData, ServerIPCData } from '@shared/types'
+import {
+  AppIPCData,
+  UtilityIPCData,
+  ServerIPCData,
+  ClientIPCData,
+  IPCData,
+  UTILITY_TYPES
+} from '@shared/types'
 import { App, AuthScopes } from '@deskthing/types'
 import { app, shell, BrowserWindow, ipcMain, Tray, Menu, nativeImage } from 'electron'
-import { join, resolve } from 'path'
+import { join, resolve, dirname } from 'node:path'
 import icon from '../../resources/icon.png?asset'
+import dotenv from 'dotenv'
+
+if (process.env.NODE_ENV === 'development') {
+  dotenv.config()
+} else {
+  const userDataPath = dirname(app.getPath('exe'))
+  const envPath = join(userDataPath, '.env.production')
+  dotenv.config({ path: envPath })
+}
 
 // Global window and tray references to prevent garbage collection
 let mainWindow: BrowserWindow | null = null
@@ -146,6 +162,18 @@ function createClientWindow(port: number): BrowserWindow {
     `)
   })
 
+  // Set up CORS for localhost:8891
+  window.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Access-Control-Allow-Origin': ['*'],
+        'Access-Control-Allow-Methods': ['GET, POST, OPTIONS'],
+        'Access-Control-Allow-Headers': ['Content-Type']
+      }
+    })
+  })
+
   // Show window when ready
   window.on('ready-to-show', () => {
     window.show()
@@ -160,7 +188,6 @@ function createClientWindow(port: number): BrowserWindow {
   window.loadURL(`http://localhost:${port}/`, {})
   return window
 }
-
 /**
  * Initializes the system tray icon and menu
  */
@@ -262,10 +289,9 @@ async function initializeDoc(): Promise<void> {
  */
 async function setupIpcHandlers(): Promise<void> {
   // Import required stores
-  const { default: settingsStore } = await import('./stores/settingsStore')
   const { default: Logger, ResponseLogger } = await import('./utils/logger')
   // Default handler for unimplemented IPC messages
-  const defaultHandler = async (data: AppIPCData): Promise<void> => {
+  const defaultHandler = async (data: IPCData): Promise<void> => {
     Logger.error(`No handler implemented for type: ${data.type}`, {
       domain: 'server',
       source: 'ipcHandlers',
@@ -281,7 +307,7 @@ async function setupIpcHandlers(): Promise<void> {
     const replyFn = ResponseLogger(event.sender.send.bind(event.sender))
     try {
       if (handler) {
-        return await handler(data, replyFn)
+        return await handler(data as Extract<AppIPCData, { type: keyof UTILITY_TYPES }>, replyFn)
       } else {
         Logger.error(`No handler found for type: ${data.type}`, {
           domain: 'server',
@@ -301,7 +327,7 @@ async function setupIpcHandlers(): Promise<void> {
   })
 
   // Handle client-related IPC messages
-  ipcMain.handle('CLIENT', async (event, data: AppIPCData) => {
+  ipcMain.handle('CLIENT', async (event, data: ClientIPCData) => {
     const { clientHandler } = await import('./handlers/clientHandler')
     const handler = clientHandler[data.type] || defaultHandler
     const replyFn = ResponseLogger(event.sender.send.bind(event.sender))
@@ -329,12 +355,15 @@ async function setupIpcHandlers(): Promise<void> {
   // Handle utility-related IPC messages
   ipcMain.handle('UTILITY', async (event, data: UtilityIPCData) => {
     const { utilityHandler } = await import('./handlers/utilityHandler')
-    const handler = utilityHandler[data.type] || defaultHandler
     const replyFn = ResponseLogger(event.sender.send.bind(event.sender))
+    const handler = utilityHandler[data.type]
 
     try {
       if (handler) {
-        return await handler(data, replyFn)
+        return await handler(
+          data as Extract<UtilityIPCData, { type: keyof UTILITY_TYPES }>,
+          replyFn
+        )
       } else {
         Logger.error(`No handler found for type: ${data.type}`, {
           domain: 'server',
@@ -353,98 +382,11 @@ async function setupIpcHandlers(): Promise<void> {
     }
   })
 
-  // Store listeners
-  import('./stores').then(({ mappingStore, appStore, connectionStore, taskStore, githubStore }) => {
-    mappingStore.addListener('action', (action) => {
-      action &&
-        sendIpcData({
-          type: 'action',
-          payload: action
-        })
-    })
-    mappingStore.addListener('key', (key) => {
-      key &&
-        sendIpcData({
-          type: 'key',
-          payload: key
-        })
-    })
-    mappingStore.addListener('profile', (profile) => {
-      profile &&
-        sendIpcData({
-          type: 'profile',
-          payload: profile
-        })
-    })
-
-    connectionStore.on((clients: Client[]) => {
-      sendIpcData({
-        type: 'connections',
-        payload: { status: true, data: clients.length, final: true }
-      })
-      sendIpcData({
-        type: 'clients',
-        payload: { status: true, data: clients, final: true }
-      })
-    })
-    connectionStore.onDevice((devices: string[]) => {
-      sendIpcData({
-        type: 'adbdevices',
-        payload: { status: true, data: devices, final: true }
-      })
-    })
-
-    appStore.on('apps', (apps: App[]) => {
-      Logger.debug('[INDEX]: Sending updated app information with type app-data')
-      sendIpcData({
-        type: 'app-data',
-        payload: apps
-      })
-    })
-
-    taskStore.on('taskList', (taskList) => {
-      sendIpcData({
-        type: 'taskList',
-        payload: taskList
-      })
-    })
-
-    githubStore.on('app', (app) => {
-      Logger.debug('[INDEX]: Sending updated app information with type github-apps')
-      sendIpcData({
-        type: 'github-apps',
-        payload: app
-      })
-    })
-    githubStore.on('client', (client) => {
-      Logger.debug('[INDEX]: Sending updated client information with type github-client')
-      sendIpcData({
-        type: 'github-client',
-        payload: client
-      })
-    })
-    githubStore.on('community', (community) => {
-      Logger.debug('[INDEX]: Sending updated community information with type github-community')
-      sendIpcData({
-        type: 'github-community',
-        payload: community
-      })
-    })
-  })
-
   // Set up logging store listener
   Logger.addListener((logData) => {
     sendIpcData({
       type: 'log',
       payload: logData
-    })
-  })
-
-  // Set up settings store listener
-  settingsStore.addListener((newSettings) => {
-    sendIpcData({
-      type: 'settings-updated',
-      payload: newSettings
     })
   })
 
@@ -516,11 +458,13 @@ if (!app.requestSingleInstanceLock()) {
   })
 
   // Handle window closure
-  app.on('window-all-closed', () => {
+  app.on('window-all-closed', async () => {
     import('./stores/settingsStore').then(({ default: settingsStore }) => {
-      settingsStore.getSettings().then((settings) => {
+      settingsStore.getSettings().then(async (settings) => {
         if (settings.minimizeApp) {
-          // Do nothing, prevent default behavior
+          // Clear cache from everywhere
+          const { default: cacheManager } = await import('./services/cache/cacheManager')
+          await cacheManager.hibernateAll()
         } else {
           app.quit()
         }
@@ -554,13 +498,15 @@ async function openAuthWindow(url: string): Promise<void> {
 }
 async function loadModules(): Promise<void> {
   try {
+    // Store listeners
+    const { initializeStores } = await import('./services/cache/storeInitializer')
+    await initializeStores()
+
     import('./handlers/authHandler')
 
     import('./services/client/websocket').then(({ restartServer }) => {
       restartServer()
     })
-
-    import('./stores/musicStore')
   } catch (error) {
     Logger.error('Error loading modules:', {
       domain: 'server',

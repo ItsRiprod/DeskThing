@@ -9,10 +9,19 @@ const packageJson = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 
 export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin()],
+    build: {
+      rollupOptions: {
+        input: {
+          index: resolve(__dirname, 'src/main/index.ts'),
+          expressProcess: resolve(__dirname, 'src/main/utilities/expressProcess.ts')
+        }
+      }
+    },
     resolve: {
       alias: {
         '@shared': resolve('src/shared'),
-        '@server': resolve('src/main')
+        '@server': resolve('src/main'),
+        '@utilities': resolve('src/main/utilities')
       }
     }
   },

@@ -14,9 +14,16 @@ import {
 } from '@DeskThing/types'
 import Logger from '@server/utils/logger'
 import { getData, overwriteData, setData } from '@server/services/files/dataFileService'
-import { isValidAppSettings, loadAndRunEnabledApps } from '@server/services/apps'
-import { ReplyFn, TaskReference, AppInstance } from '@shared/types'
+import { isValidAppSettings, loadAndRunEnabledApps, stageAppFileType } from '@server/services/apps'
+import {
+  ReplyFn,
+  TaskReference,
+  AppInstance,
+  StagedAppManifest,
+  CacheableStore
+} from '@shared/types'
 import { isValidStep, isValidTask } from '@server/services/task'
+import logger from '@server/utils/logger'
 
 type AppsListener = (data: App[]) => void
 type AppSettingsListener = (appId: string, data: AppSettings) => void
@@ -28,7 +35,7 @@ type AppStoreListeners = {
 
 type ListenerEvents = 'settings' | 'apps'
 
-export class AppStore {
+export class AppStore implements CacheableStore {
   public static instance: AppStore
   private apps: Record<string, AppInstance> = {}
   private order: string[] = []
@@ -45,6 +52,26 @@ export class AppStore {
   constructor() {
     this.loadApps()
     this.setupListeners()
+  }
+
+  /**
+   * @implements CacheableStore
+   */
+  clearCache = async (): Promise<void> => {
+    // Clear any pending timeouts
+    Object.values(this.functionTimeouts).forEach((timeout) => {
+      clearTimeout(timeout)
+    })
+    this.functionTimeouts = {}
+  }
+
+  /**
+   * @implements CacheableStore
+   */
+  saveToFile = async (): Promise<void> => {
+    await this.saveAppsToFile()
+    const savePromises = Object.keys(this.apps).map((appName) => this.saveAppToFile(appName))
+    await Promise.all(savePromises)
   }
 
   private async setupListeners(): Promise<void> {
@@ -102,7 +129,7 @@ export class AppStore {
         this.order.push(app.name)
       }
     })
-    loadAndRunEnabledApps()
+    await loadAndRunEnabledApps()
   }
 
   async notifyApps(apps?: App[]): Promise<void> {
@@ -851,16 +878,34 @@ export class AppStore {
     run?: boolean
   }): Promise<void> {
     const { executeStagedFile } = await import('../services/apps/appInstaller')
-    return await executeStagedFile({ reply, overwrite, appId, run })
+    try {
+      return await executeStagedFile({ reply, overwrite, appId, run })
+    } catch (error) {
+      logger.error('Error while trying to run staged app', {
+        function: 'runStagedApp',
+        source: 'AppStore',
+        error: error as Error
+      })
+      reply &&
+        reply('logging', {
+          status: false,
+          data: 'Error while trying to run staged app',
+          final: true
+        })
+    }
   }
 
   /**
    * Adds an app to the app store
-   * @param appPath The app path (url or local path) to add
+   * @param filePath The app path (url or local path) to add
    * @returns The app manifest that was added
    */
-  async addApp(appPath: string, reply: ReplyFn): Promise<AppManifest | undefined> {
-    Logger.log(LOGGING_LEVELS.LOG, `[store.addApp]: Running addApp for ${appPath}`)
+  async addApp({
+    filePath,
+    releaseMeta,
+    reply
+  }: stageAppFileType): Promise<StagedAppManifest | undefined> {
+    Logger.log(LOGGING_LEVELS.LOG, `[store.addApp]: Running addApp for ${filePath}`)
     const { stageAppFile } = await import('../services/apps/appInstaller')
 
     try {
@@ -870,7 +915,7 @@ export class AppStore {
           data: 'Staging file...',
           final: false
         })
-      const newAppManifest = await stageAppFile(appPath, reply)
+      const newAppManifest = await stageAppFile({ filePath, releaseMeta, reply })
 
       if (!newAppManifest) {
         reply &&
@@ -925,6 +970,14 @@ export class AppStore {
       this.apps[appName].manifest = manifest
     }
     await this.saveAppToFile(appName)
+  }
+
+  /**
+   * Fetches the icon.svg from the file system and returns the file:// path for it
+   */
+  async getIcon(appName: string, icon?: string): Promise<string | null> {
+    const { getIcon } = await import('../services/apps/appUtils')
+    return await getIcon(appName, icon)
   }
 }
 

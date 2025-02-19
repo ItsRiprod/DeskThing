@@ -2,8 +2,8 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import fs from 'fs'
 import Logger, { ResponseLogger } from '@server/utils/logger'
-import { MESSAGE_TYPES, LOGGING_LEVEL } from '@DeskThing/types'
-
+import { LOGGING_LEVELS } from '@DeskThing/types'
+import { LOG_FILTER } from '@shared/types'
 vi.mock('fs')
 vi.mock('electron', () => ({
   app: {
@@ -32,23 +32,23 @@ describe('Logger', () => {
   describe('Log Level Filtering', () => {
     it('should not log LOGGING messages when logLevel is PRODUCTION', async () => {
       const store = Logger
-      store.setLogLevel(LOGGING_LEVEL.PRODUCTION)
+      store.setLogLevel(LOG_FILTER.PRODUCTION)
       const consoleSpy = vi.spyOn(console, 'log')
 
-      await store.log(MESSAGE_TYPES.LOGGING, 'test message', { domain: 'test' })
+      await store.log(LOGGING_LEVELS.LOG, 'test message', { domain: 'test' })
 
       expect(consoleSpy).not.toHaveBeenCalled()
     })
 
     it('should log non-LOGGING messages in PRODUCTION mode', async () => {
       const store = Logger
-      store.setLogLevel(LOGGING_LEVEL.PRODUCTION)
+      store.setLogLevel(LOG_FILTER.PRODUCTION)
       const consoleSpy = vi.spyOn(console, 'warn')
 
       vi.spyOn(fs.promises, 'writeFile').mockResolvedValue(undefined)
       vi.spyOn(fs.promises, 'appendFile').mockResolvedValue(undefined)
 
-      await store.log(MESSAGE_TYPES.WARNING, 'test warning')
+      await store.log(LOGGING_LEVELS.WARN, 'test warning')
 
       expect(consoleSpy).toHaveBeenCalledWith(
         '\x1b[33m%s\x1b[0m',
@@ -65,7 +65,7 @@ describe('Logger', () => {
       vi.spyOn(fs.promises, 'writeFile').mockRejectedValue(mockError)
       const consoleSpy = vi.spyOn(console, 'error')
 
-      await expect(Logger.log(MESSAGE_TYPES.ERROR, 'test error')).rejects.toThrow('Write error')
+      await expect(Logger.log(LOGGING_LEVELS.ERROR, 'test error')).rejects.toThrow('Write error')
 
       expect(consoleSpy).toHaveBeenCalledWith('Failed to write to log file:', mockError)
     })
@@ -90,7 +90,7 @@ describe('Logger', () => {
 
       store.addListener(listener1)
       store.addListener(listener2)
-      await store.log(MESSAGE_TYPES.ERROR, 'test')
+      await store.log(LOGGING_LEVELS.ERROR, 'test')
 
       expect(listener1).toHaveBeenCalled()
       expect(listener2).toHaveBeenCalled()

@@ -2,8 +2,8 @@ import { describe, expect, it, vi, beforeEach, afterEach, Mock } from 'vitest'
 import { clearCache, purgeApp } from '@server/services/apps/appManager'
 import fs from 'node:fs'
 import Logger from '@server/utils/logger'
-import { MESSAGE_TYPES, AppInstance } from '@DeskThing/types'
-
+import { LOGGING_LEVELS, Response, startData } from '@DeskThing/types'
+import { AppInstance } from '@shared/types'
 vi.mock('../files/dataService', () => ({
   purgeAppData: vi.fn()
 }))
@@ -93,7 +93,20 @@ vi.mock('@server/services/apps/appState', () => ({
           running: false,
           prefIndex: 0,
           func: {
-            toClient: async (): Promise<void> => {}
+            toClient: async (): Promise<void> => {},
+            start: function ({ toServer, SysEvents }: startData): Promise<Response> {
+              console.log(toServer, SysEvents)
+              throw new Error('Function not implemented.')
+            },
+            stop: function (): Promise<Response> {
+              throw new Error('Function not implemented.')
+            },
+            purge: function (): Promise<Response> {
+              throw new Error('Function not implemented.')
+            },
+            getManifest: function (): Promise<Response> {
+              throw new Error('Function not implemented.')
+            }
           }
         }
       }
@@ -116,7 +129,7 @@ describe('AppManager', () => {
       vi.spyOn(fs, 'readdirSync').mockReturnValue([])
       await clearCache('testApp')
       expect(Logger.log).toHaveBeenCalledWith(
-        MESSAGE_TYPES.WARNING,
+        LOGGING_LEVELS.WARN,
         'SERVER: Directory /mock/path is empty'
       )
     })
@@ -150,7 +163,7 @@ describe('AppManager', () => {
 
       await clearCache('testApp')
       expect(Logger.log).toHaveBeenCalledWith(
-        MESSAGE_TYPES.WARNING,
+        LOGGING_LEVELS.WARN,
         'SERVER: Directory /mock/path is empty'
       )
     })

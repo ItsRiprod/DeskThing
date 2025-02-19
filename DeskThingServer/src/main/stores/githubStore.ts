@@ -4,13 +4,19 @@
  * Holds the AppReleaseMeta information and properly stores it when needed
  */
 console.log('[Github Store] Starting')
-import { AppReleaseFile, GithubAsset, GithubRelease, SortedReleases } from '@shared/types'
+import {
+  AppReleaseFile,
+  CacheableStore,
+  GithubAsset,
+  GithubRelease,
+  SortedReleases
+} from '@shared/types'
 import {
   fetchAssetContent,
   getLatestRelease,
   getReleases
 } from '@server/services/github/githubService'
-import { AppReleaseCommunity, AppReleaseMeta } from '@deskthing/types'
+import { AppReleaseCommunity, AppReleaseMeta, AppReleaseSingleMeta } from '@deskthing/types'
 import logger from '@server/utils/logger'
 import { defaultReleaseFile } from '@server/static/defaultRepos'
 import { isValidAppReleaseMeta } from '@server/services/github/githubUtils'
@@ -46,11 +52,11 @@ type GithubStoreListeners = {
  *
  * Holds the AppReleaseMeta information and properly stores it when needed
  */
-class GithubStore {
+class GithubStore implements CacheableStore {
   private cache: Map<string, CacheEntry>
   private assetCache: Map<string, AssetCacheEntry>
-  private appReleases: AppReleaseFile
-  private clientReleases: SortedReleases
+  private appReleases: AppReleaseFile | null
+  private clientReleases: SortedReleases | null
   private cachedRepos: string[]
   private static instance: GithubStore
 
@@ -74,7 +80,19 @@ class GithubStore {
     // not fully implemented yet
     this.clientReleases = {}
 
-    this.refreshData()
+    // Ensure that nothing is fetched at startup and blocking the main thread
+    setTimeout(this.refreshData, 10)
+  }
+
+  clearCache = async (): Promise<void> => {
+    this.cache.clear()
+    this.assetCache.clear()
+    this.cachedRepos = []
+    this.appReleases = null
+    this.clientReleases = null
+  }
+  saveToFile = async (): Promise<void> => {
+    await this.saveAppReleaseFile()
   }
 
   static getInstance(): GithubStore {
@@ -113,7 +131,10 @@ class GithubStore {
     await this.updateAppReleaseFile()
   }
 
-  private saveAppReleaseFile = async (): Promise<void> => {
+  private saveAppReleaseFile = async (appReleaseFile?: AppReleaseFile): Promise<void> => {
+    if (!this.appReleases) {
+      this.appReleases = appReleaseFile ?? defaultReleaseFile
+    }
     try {
       await saveAppReleaseData(this.appReleases)
       this.notifyListeners('app', this.appReleases.releases)
@@ -127,13 +148,11 @@ class GithubStore {
     }
   }
 
-  private getAppReleaseFile = async (): Promise<AppReleaseFile | undefined> => {
-    if (!this.appReleases.timestamp || !this.isCacheValid(this.appReleases)) {
+  private getAppReleaseFile = async (): Promise<AppReleaseFile> => {
+    if (!this.appReleases || !this.appReleases.timestamp || !this.isCacheValid(this.appReleases)) {
       try {
         const updatedReleaseData = await readAppReleaseData()
-        if (updatedReleaseData) {
-          this.appReleases = updatedReleaseData
-        }
+        this.appReleases = updatedReleaseData ?? defaultReleaseFile
       } catch (error) {
         logger.error('Failed to update app release data:', {
           error: error as Error,
@@ -160,6 +179,8 @@ class GithubStore {
       latestRelease.assets.find((a) => a.name === 'latest.json')
     )
 
+    const appReleases = await this.getAppReleaseFile()
+
     try {
       logger.info('Updating community file...', {
         function: 'updateAppReleaseFile',
@@ -176,17 +197,15 @@ class GithubStore {
       isValidAppReleaseMeta(communityJson)
 
       if (communityJson.type === 'external') {
-        this.appReleases.references = [
+        appReleases.references = [
           ...communityJson.releases,
-          ...this.appReleases.references.filter(
+          ...appReleases.references.filter(
             (r) => !communityJson.releases.some((c) => c.id === r.id)
           )
         ]
 
-        this.appReleases.references = this.appReleases.references.map((r) =>
-          this.appReleases.releases.some(
-            (c) => c.type != 'external' && c.repository == r.repository
-          )
+        appReleases.references = appReleases.references.map((r) =>
+          appReleases.releases.some((c) => c.type != 'external' && c.repository == r.repository)
             ? { ...r, added: true }
             : r
         )
@@ -211,14 +230,14 @@ class GithubStore {
       isValidAppReleaseMeta(latestJson)
 
       if (latestJson.type == 'multi') {
-        this.appReleases.version = latestJson.version
-        this.appReleases.releases = [
+        appReleases.version = latestJson.version
+        appReleases.releases = [
           latestJson,
-          ...this.appReleases.releases.filter((r) => r.id !== latestJson.id)
+          ...appReleases.releases.filter((r) => r.id !== latestJson.id)
         ]
       }
 
-      for (const release of this.appReleases.releases) {
+      for (const release of appReleases.releases) {
         try {
           const newRelease = this.updateAppRelease(release)
 
@@ -246,8 +265,8 @@ class GithubStore {
       source: 'GithubStore'
     })
 
-    this.appReleases.timestamp = Date.now()
-    this.saveAppReleaseFile()
+    appReleases.timestamp = Date.now()
+    this.saveAppReleaseFile(appReleases)
   }
 
   private updateAppRelease = async (
@@ -255,49 +274,139 @@ class GithubStore {
   ): Promise<AppReleaseMeta | undefined> => {
     try {
       if (!release) throw new Error('[updateAppRelease] Release does not exist')
+      if (typeof release !== 'string' && !['single', 'multi'].includes(release.type)) {
+        throw new Error('[updateAppRelease] Invalid release type')
+      }
 
+      let releaseUrl: string = ''
       if (typeof release !== 'string') {
         if (!release || (release.type !== 'single' && release.type !== 'multi'))
           throw new Error('[updateAppRelease] Invalid release (release is not single or multi)')
-        release = release.repository
+        releaseUrl = release.repository
+      } else {
+        releaseUrl = release
       }
 
-      const repoReleases = await this.fetchLatestRelease(release)
+      const repoReleases = await this.fetchLatestRelease(releaseUrl)
       const latest = repoReleases[0]
+
       const latestJson = await this.fetchAssetContent(
         latest.assets.find((a) => a.name === 'latest.json')
       )
 
       if (latestJson && latestJson.type == 'multi') {
-        latestJson.releases = latestJson.releases.map((meta) => {
-          const releaseFiles = latest.assets
-            .filter((a) => a.name.toLowerCase().includes(meta.id.toLowerCase()))
-            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-          const releaseFile = releaseFiles.reduce(
-            (acc, curr) => ({
-              ...curr,
-              download_count: (acc?.download_count || 0) + (curr.download_count || 0),
-              created_at: acc?.created_at || curr.created_at,
-              browser_download_url: acc?.browser_download_url || curr.browser_download_url
-            }),
-            releaseFiles[0]
-          )
-          return {
-            ...meta,
-            downloads: releaseFile?.download_count || 0,
-            createdAt: new Date(releaseFile?.created_at || '').getTime(),
-            updateUrl: releaseFile?.browser_download_url || ''
-          }
-        })
+        latestJson.releases = await Promise.all(
+          latestJson.releases.map(async (meta) => {
+            const releaseFiles = latest.assets
+              .filter((a) => a.name.toLowerCase().includes(meta.id.toLowerCase()))
+              .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            const releaseFile = releaseFiles.reduce(
+              (acc, curr) => ({
+                ...curr,
+                download_count: (acc?.download_count || 0) + (curr.download_count || 0),
+                created_at: acc?.created_at || curr.created_at,
+                browser_download_url: acc?.browser_download_url || curr.browser_download_url
+              }),
+              releaseFiles[0]
+            )
+            return {
+              ...meta,
+              downloads: releaseFile?.download_count || 0,
+              createdAt: new Date(releaseFile?.created_at || '').getTime(),
+              updateUrl: releaseFile?.browser_download_url || ''
+            }
+          })
+        )
       } else if (latestJson && latestJson.type == 'single') {
         const releaseFile = latest.assets.find((a) => a.name.includes(latestJson.id))
         latestJson.downloads = releaseFile?.download_count || 0
         latestJson.createdAt = new Date(releaseFile?.created_at || '').getTime()
         latestJson.updateUrl = releaseFile?.browser_download_url || ''
       } else {
-        throw new Error(
-          '[updateAppRelease] Invalid latest.json returned (not type single or multi)'
-        )
+        const repoMatch = releaseUrl.match(/github\.com\/([^/]+)\/([^/]+)/)
+
+        const releaseFile =
+          (repoMatch?.[2] && latest.assets.find((a) => a.name.includes(repoMatch[2]))) ||
+          latest.assets.find((a) => a.name.endsWith('.zip'))
+
+        const references = await this.getAppReferences()
+        const reference = references?.find((r) => r.repository == releaseUrl)
+
+        // Attempts to find the download URL that will be used to download the app
+        const downloadUrl = async (): Promise<string> => {
+          // Early return with the browser_download_url (best case scenario)
+          if (releaseFile?.browser_download_url) {
+            return releaseFile.browser_download_url
+          } else {
+            // Check if the release is a reference
+            if (typeof release != 'string' && release.type == 'single') {
+              return release.updateUrl
+            }
+
+            // Fallback to check if the app has a reference
+            if (reference) {
+              // Attempt tagged release
+              const potentialUrl = `https://github.com/${repoMatch?.[1] + '/' + repoMatch?.[2]}/releases/download/${reference.version}/${reference.id}.zip`
+              const response = await fetch(potentialUrl)
+              if (response.status == 200) {
+                return potentialUrl
+              } else {
+                // Attempt latest release
+                const secondPotentialUrl = `https://github.com/${repoMatch?.[1] + '/' + repoMatch?.[2]}/releases/download/latest/${reference?.id}.zip`
+                const secondResponse = await fetch(secondPotentialUrl)
+                if (secondResponse.status == 200) {
+                  return secondPotentialUrl
+                } else {
+                  // Fallback to the default URL
+                  return `https://github.com/${repoMatch?.[1] + '/' + repoMatch?.[2]}/releases/download/latest/${reference?.id}.zip`
+                }
+              }
+            } else {
+              return ''
+            }
+          }
+        }
+
+        return {
+          type: 'single',
+          id:
+            reference?.id ||
+            releaseFile?.name.trim().replaceAll(' ', '-') ||
+            repoMatch?.[2] ||
+            'Unknown',
+          label:
+            reference?.label ||
+            releaseFile?.name.replace('.zip', '') ||
+            repoMatch?.[2] ||
+            'Unknown App',
+          version:
+            reference?.version.replaceAll('v', '') ||
+            latest?.tag_name.replaceAll('v', '') ||
+            '0.0.0',
+          description: reference?.description || latest.body || 'No description available',
+          author:
+            reference?.author ||
+            releaseFile?.uploader.login ||
+            latest.author.login ||
+            repoMatch?.[1] ||
+            'Unknown Author',
+          platforms: [],
+          homepage: reference?.homepage || releaseUrl,
+          repository: releaseUrl,
+          updateUrl: await downloadUrl(),
+          tags: [],
+          requiredVersions: {
+            server: '>=0.0.0',
+            client: '>=0.0.0'
+          },
+          icon: '',
+          size: releaseFile?.size || 0,
+          hash: '',
+          hashAlgorithm: 'sha512',
+          downloads: releaseFile?.download_count || 0,
+          updatedAt: Date.now(),
+          createdAt: new Date(releaseFile?.created_at || '').getTime()
+        }
       }
 
       return latestJson
@@ -528,12 +637,42 @@ class GithubStore {
     return appDetails
   }
 
-  public getAppReferences(): AppReleaseCommunity[] | undefined {
-    return this.appReleases.references
+  public async getAppReferences(): Promise<AppReleaseCommunity[] | undefined> {
+    return this.appReleases?.references || (await this.getAppReleaseFile()).references
   }
 
-  public getAppReleases(): AppReleaseMeta[] | undefined {
-    return this.appReleases.releases
+  public async getAppReleases(): Promise<AppReleaseMeta[] | undefined> {
+    return this.appReleases?.releases || (await this.getAppReleaseFile()).releases
+  }
+
+  public async getAppRelease(
+    appId: string
+  ): Promise<(AppReleaseSingleMeta & { type?: string }) | undefined> {
+    const releases = await this.getAppReleases()
+
+    if (!releases) {
+      return undefined
+    }
+
+    const release = releases.find((release) => {
+      if (release.type === 'single') {
+        return release.id === appId
+      }
+      if (release.type === 'multi') {
+        return release.releases.some((subRelease) => subRelease.id === appId)
+      }
+      return false
+    })
+
+    if (release?.type === 'multi') {
+      return release.releases.find((subRelease) => subRelease.id === appId)
+    }
+
+    if (release?.type === 'single') {
+      return release
+    }
+
+    return undefined
   }
 
   /**
@@ -553,6 +692,10 @@ class GithubStore {
           source: 'GithubStore'
         })
         return
+      }
+
+      if (!this.appReleases) {
+        this.appReleases = await this.getAppReleaseFile()
       }
 
       this.appReleases.releases = [
@@ -586,6 +729,10 @@ class GithubStore {
 
   public removeAppRelease = async (repoUrl: string): Promise<void> => {
     try {
+      if (!this.appReleases) {
+        this.appReleases = await this.getAppReleaseFile()
+      }
+
       this.appReleases.releases = this.appReleases.releases.filter(
         (release) =>
           !(release.type === 'multi' || release.type === 'single') || release.repository !== repoUrl

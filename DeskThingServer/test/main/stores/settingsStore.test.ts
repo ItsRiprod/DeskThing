@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import os from 'os'
-import { LOGGING_LEVEL, Settings } from '@DeskThing/types'
 import { writeToFile, readFromFile } from '@server/services/files/fileService'
+import { LOG_FILTER, Settings } from '@shared/types'
 
 vi.mock('fs')
 vi.mock('os')
@@ -33,7 +33,7 @@ describe('settingsStore', () => {
     callbackPort: 8888,
     devicePort: 8891,
     address: '0.0.0.0',
-    LogLevel: LOGGING_LEVEL.PRODUCTION,
+    LogLevel: LOG_FILTER.PRODUCTION,
     autoStart: false,
     autoConfig: false,
     minimizeApp: true,

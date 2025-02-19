@@ -17,15 +17,17 @@ import {
   App,
   AppDataInterface,
   PlatformTypes,
-  TagTypes
+  TagTypes,
+  AppReleaseSingleMeta
 } from '@deskthing/types'
 import { AppData, LegacyAppData } from '@shared/types'
 import Logger from '@server/utils/logger'
 import { join } from 'path'
-import { existsSync, promises } from 'node:fs'
+import { existsSync, promises, statSync } from 'node:fs'
 import { app } from 'electron'
 import { isValidTask } from '../task'
 import { isValidAction, isValidKey } from '../mappings/utilsMaps'
+import { access, readFile } from 'node:fs/promises'
 
 /**
  * Retrieves and parses the manifest file for an app.
@@ -433,6 +435,20 @@ export const sanitizeAppMeta: (
  * Constructs the app's manifest and fills in any information that may be missing
  */
 export const constructManifest = (manifestData?: Partial<AppManifest>): AppManifest => {
+  const getTags = (): TagTypes[] => {
+    return [
+      ...(manifestData?.tags || []),
+      ...(manifestData?.isAudioSource ? [TagTypes.AUDIO_SOURCE] : []),
+      ...(manifestData?.isScreenSaver ? [TagTypes.SCREEN_SAVER] : []),
+      ...(manifestData?.isWebApp ? [TagTypes.WEB_APP_ONLY] : []),
+      ...(manifestData?.isLocalApp ? [TagTypes.UTILITY_ONLY] : [])
+    ]
+  }
+
+  console.log(
+    `--------------------- Constructing manifest for ${manifestData?.id} -------------------------`
+  )
+
   const returnData: AppManifest = {
     id: manifestData?.id || 'unknown',
     requires: manifestData?.requires || [],
@@ -444,14 +460,7 @@ export const constructManifest = (manifestData?: Partial<AppManifest>): AppManif
     homepage: manifestData?.homepage || '',
     repository: manifestData?.repository || '',
     updateUrl: manifestData?.updateUrl || manifestData?.repository || '',
-    tags:
-      manifestData?.tags ||
-      ([] as TagTypes[]).concat(
-        manifestData?.isAudioSource ? [TagTypes.AUDIO_SOURCE] : [],
-        manifestData?.isScreenSaver ? [TagTypes.SCREEN_SAVER] : [],
-        manifestData?.isWebApp ? [TagTypes.WEB_APP_ONLY] : [],
-        manifestData?.isLocalApp ? [TagTypes.UTILITY_ONLY] : []
-      ),
+    tags: getTags(),
     requiredVersions: {
       client: manifestData?.requiredVersions?.client || '>=0.0.0',
       server: manifestData?.requiredVersions?.server || '>=0.0.0'
@@ -465,5 +474,84 @@ export const constructManifest = (manifestData?: Partial<AppManifest>): AppManif
     isScreenSaver: manifestData?.isScreenSaver || false,
     isLocalApp: manifestData?.isLocalApp || false
   }
+
+  console.log(returnData)
   return returnData
+}
+
+export const validateSha512 = async (
+  zipLocation: string,
+  app?: AppReleaseSingleMeta
+): Promise<boolean> => {
+  if (!app) {
+    Logger.warn(`Could not find release for app ${zipLocation}`, {
+      source: 'validateSha512'
+    })
+    return false
+  }
+  const { createHash } = await import('crypto')
+  const { readFileSync } = await import('node:fs')
+
+  Logger.info(`Validating the checksum for ${app.id}`, {
+    source: 'validateSha512'
+  })
+
+  if (app.hash.length === 0) {
+    Logger.warn(`Could not find release for app ${app.id}`, {
+      source: 'validateSha512'
+    })
+    return false
+  }
+
+  try {
+    statSync(zipLocation)
+  } catch (err) {
+    Logger.error(`File not found or not readable: ${zipLocation}`)
+    return false
+  }
+
+  try {
+    const fileBuffer = readFileSync(zipLocation)
+    const hashSum = createHash('sha512')
+    hashSum.update(fileBuffer)
+    const fileHash = hashSum.digest('hex')
+
+    Logger.info(`Validated checksum for ${app.id}. Result is ${fileHash === app.hash}`, {
+      source: 'validateSha512'
+    })
+    Logger.debug(`Expected hash: ${app.hash}`, {
+      source: 'validateSha512'
+    })
+    Logger.debug(`Calculated hash: ${fileHash}`, {
+      source: 'validateSha512'
+    })
+
+    return fileHash === app.hash
+  } catch (err) {
+    Logger.warn(`Could not validate hash for package file`, {
+      source: 'validateSha512'
+    })
+    return false
+  }
+}
+
+export const getStandardizedFilename = (appId: string, version: string): string => {
+  return `${appId}-v${version}.zip`
+}
+
+export const getIcon = async (appName: string, icon?: string): Promise<string | null> => {
+  const iconPath = join(getAppFilePath(appName), 'icons', icon || `${appName}.svg`)
+  try {
+    await access(iconPath)
+
+    const svgContent = await readFile(iconPath, 'utf-8')
+    // Return file protocol URL that Electron can load directly
+    return svgContent
+  } catch (error) {
+    Logger.error(`Error accessing icon for ${appName}:`, {
+      source: 'getIcon',
+      error: error as Error
+    })
+    return null
+  }
 }

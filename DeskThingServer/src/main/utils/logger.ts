@@ -4,42 +4,64 @@
  * The log level can be configured through the `Settings` store.
  */
 console.log('[Logging Store] Starting')
-import fs from 'fs'
+import fs, { existsSync } from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
 import { LOGGING_LEVELS } from '@DeskThing/types'
 import { Log, LOG_FILTER, ReplyData, Settings, ReplyFn, LoggingOptions } from '@shared/types'
+import { access, mkdir, readFile, rename, writeFile } from 'fs/promises'
 
 // Logger configuration
 const logFile = join(app.getPath('userData'), 'logs', 'application.log.json')
 const readableLogFile = join(app.getPath('userData'), 'logs', 'readable.log')
-
 // Ensure log directory exists
 const logDir = join(app.getPath('userData'), 'logs')
-if (!fs.existsSync(logDir)) {
-  fs.mkdirSync(logDir, { recursive: true })
-}
 
 class Logger {
   private static instance: Logger
   private listeners: ((data: Log) => void)[] = []
   private logs: Log[] = []
   private logLevel: LOG_FILTER = LOG_FILTER.SYSTEM
+  private filesSetup = false
+  private saveTimeout: NodeJS.Timeout | null = null
 
   private constructor() {
-    // Rename existing log files if they exist
-    if (fs.existsSync(logFile)) {
-      fs.renameSync(logFile, `${logFile}.old`)
-    }
-    if (fs.existsSync(readableLogFile)) {
-      fs.renameSync(readableLogFile, `${readableLogFile}.old`)
-    }
-
-    fs.writeFileSync(logFile, '[]')
-    fs.writeFileSync(readableLogFile, '')
+    this.setupFiles()
     import('@server/stores/settingsStore').then(({ default: settingsStore }) => {
       settingsStore.addListener(this.settingsStoreListener.bind(this))
     })
+  }
+
+  private setupFiles = async (): Promise<void> => {
+    await mkdir(logDir, { recursive: true })
+
+    const rotateFile = async (filePath: string): Promise<void> => {
+      if (existsSync(filePath)) {
+        const timestamp = new Date().toISOString().replace(/:/g, '-')
+        await rename(filePath, `${filePath}.${timestamp}`)
+      }
+    }
+
+    const initializeFile = async (filePath: string, initialContent: string): Promise<void> => {
+      await writeFile(filePath, initialContent, {
+        encoding: 'utf-8',
+        mode: 0o644 // Readable by user, read-only for others
+      })
+    }
+
+    try {
+      await Promise.all([rotateFile(logFile), rotateFile(readableLogFile)])
+
+      await Promise.all([initializeFile(logFile, '[]'), initializeFile(readableLogFile, '')])
+
+      this.filesSetup = true
+    } catch (error) {
+      console.error('Failed to set up log files:', {
+        error: error as Error,
+        source: 'Logger',
+        function: 'setupFiles'
+      })
+    }
   }
 
   /**
@@ -47,7 +69,7 @@ class Logger {
    * @param settings - The updated settings from the `SettingsStore`.
    */
   private settingsStoreListener(settings: Settings): void {
-    this.logLevel = settings.logLevel
+    this.logLevel = settings?.logLevel || LOG_FILTER.SYSTEM
   }
 
   // Singleton instance
@@ -61,6 +83,37 @@ class Logger {
       Logger.instance = new Logger()
     }
     return Logger.instance
+  }
+
+  private saveLogs = async (): Promise<void> => {
+    if (!this.filesSetup) return
+
+    try {
+      access(logFile)
+      const fileLogs = await readFile(logFile, 'utf8')
+      const logs = JSON.parse(fileLogs)
+
+      const combinedLogs = [...this.logs, ...logs]
+
+      await writeFile(logFile, JSON.stringify(combinedLogs, null, 2))
+      this.logs = []
+    } catch (error) {
+      try {
+        await writeFile(logFile, JSON.stringify(this.logs, null, 2))
+        this.logs = []
+      } catch (error) {
+        console.error('Failed to save logs:', error)
+      }
+    }
+  }
+
+  private debouncedSaveLogs = async (): Promise<void> => {
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout)
+    }
+    this.saveTimeout = setTimeout(async () => {
+      await this.saveLogs()
+    }, 4000)
   }
 
   /**
@@ -166,12 +219,7 @@ class Logger {
           console.log('\x1b[0m%s', readableMessage) // Default color for other types
       }
 
-      try {
-        await fs.promises.writeFile(logFile, JSON.stringify(this.logs, null, 2))
-      } catch (err) {
-        console.error('Failed to write to log file:', err)
-        throw err
-      }
+      this.debouncedSaveLogs()
       try {
         await fs.promises.appendFile(readableLogFile, readableMessage)
       } catch (appendErr) {

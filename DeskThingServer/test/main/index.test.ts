@@ -7,7 +7,7 @@ import {
   openAuthWindow,
   sendIpcData
 } from '../../src/main'
-import { ServerIPCData } from '@DeskThing/types'
+import { ServerIPCData } from '@shared/types'
 
 // Mock electron modules
 vi.mock('electron', () => {

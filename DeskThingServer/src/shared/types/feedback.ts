@@ -13,7 +13,7 @@ export interface SystemInfo {
     version: string
     running: boolean
     enabled: boolean
-    runningDuration: number
+    runningDuration: string
   }>
   clients?: Array<{
     name: string
@@ -23,8 +23,12 @@ export interface SystemInfo {
   }>
   os?: string
   cpu?: string
+  ram?: string
   page?: string
   uptime?: number
+  freeRam?: string
+  arch?: string
+  loadAverage?: number[]
 }
 
 interface DetailedFeedback extends BaseFeedback {

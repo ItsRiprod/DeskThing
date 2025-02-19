@@ -6,12 +6,22 @@ import {
   AppSettings,
   ClientManifest
 } from '@DeskThing/types'
-import { Profile, Client, ButtonMapping, Log, SortedReleases } from '@shared/types'
+import {
+  Profile,
+  Client,
+  ButtonMapping,
+  Log,
+  SortedReleases,
+  StagedAppManifest
+} from '@shared/types'
 
 type AppData = Record<string, string>
 
 declare global {
   interface Window {
+    electronAPI: {
+      platform: NodeJS.Platform
+    }
     electron: ElectronAPI & {
       ping: () => Promise<string>
       pingClient: (clientId: string) => Promise<string | null>
@@ -26,7 +36,11 @@ declare global {
       enableApp: (appId: string) => Promise<void>
       purgeApp: (appId: string) => Promise<void>
       app: {
-        add: (appPath: string) => Promise<manifest>
+        add: (data: {
+          appPath?: string
+          releaseMeta?: AppReleaseSingleMeta
+        }) => Promise<StagedAppManifest>
+        getIcon: (appId: string, icon?: string) => Promise<string | null>
         runStaged: (appId: string, overwrite: boolean) => Promise<void>
       }
 
@@ -109,7 +123,7 @@ declare global {
       }
       feedback: {
         submit: (feedback: FeedbackReport) => Promise<void>
-        getForumData: () => Promise<void>
+        getSysInfo: () => Promise<getSysInfo>
       }
     }
     api: unknown // Or define `api` more specifically if you have a shape for it

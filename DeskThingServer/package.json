@@ -14,7 +14,7 @@
     "start": "electron-vite preview",
     "dev": "electron-vite dev",
     "debug": "electron-vite dev --inspect=8893",
-    "build": "npm run typecheck && electron-vite build && electron-builder",
+    "build": "node electron-builder.env.js && npm run typecheck && electron-vite build && electron-builder",
     "postinstall": "electron-builder install-app-deps && electron-rebuild",
     "build:unpack": "npm run build && electron-builder --dir",
     "test": "vitest"
@@ -33,6 +33,7 @@
     "cors": "^2.8.5",
     "cross-unzip": "^0.2.1",
     "dompurify": "^3.2.3",
+    "dotenv": "^16.4.7",
     "electron-log": "^5.2.4",
     "electron-updater": "^6.1.7",
     "express": "^4.21.0",
@@ -93,8 +94,14 @@
       "!src/*",
       "!electron.vite.config.{js,ts,mjs,cjs}",
       "!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}",
-      "!{.env,.env.*,.npmrc,pnpm-lock.yaml}",
+      "!{.env,.npmrc,pnpm-lock.yaml}",
       "!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}"
+    ],
+    "extraFiles": [
+      {
+        "from": ".env.production",
+        "to": ".env.production"
+      }
     ],
     "asarUnpack": [
       "resources/**",

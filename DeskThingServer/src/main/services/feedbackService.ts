@@ -1,12 +1,18 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { getClientManifest } from '@server/handlers/deviceHandler'
 import { appStore, connectionStore } from '@server/stores'
+import logger from '@server/utils/logger'
 import { FeedbackReport, FeedbackType, SystemInfo } from '@shared/types'
 import os from 'os'
 
 export class FeedbackService {
-  private static readonly WEBHOOK_URL =
-    'https://canary.discord.com/api/webhooks/1333299869846339646/rXI5WwBg8EZMztU0XhvuPhd1GG3K_09U_anoJvK0QN4Kc5bSSMN2nwBvkNQU2G-_74k0'
+  private static readonly SUBMISSION_ID = Math.floor(Math.random() * 900) + 100
+
+  /**
+   * This will be updated later for an actual webhook edge server smth smth fancy instead of directly to the discord channel
+   * If you could be a real one and not abuse this, that would be awesome. Thanks!
+   */
+  private static readonly WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || 'fallback-webhook-url'
 
   private static readonly TYPE_COLORS: Record<FeedbackType, number> = {
     bug: 0xff0000,
@@ -21,13 +27,13 @@ export class FeedbackService {
     const enrichedReport = await this.enrichFeedbackData(report)
 
     const message = {
-      content: '**New Feedback Received**',
+      content: `[${this.SUBMISSION_ID}] **New Feedback Received** 🎉`,
       embeds: [
         {
           title: `${enrichedReport.feedback.title} - ${enrichedReport.type.toUpperCase()}`,
           description: enrichedReport.feedback.feedback,
           color: this.TYPE_COLORS[enrichedReport.type],
-          fields: this.generateFields(enrichedReport, systemInfo),
+          fields: await this.generateFields(enrichedReport, systemInfo),
           timestamp: new Date().toISOString()
         }
       ]
@@ -46,7 +52,7 @@ export class FeedbackService {
         throw new Error(`Failed to send feedback: ${response.statusText}`)
       }
     } catch (error) {
-      console.error('Error sending feedback:', error)
+      logger.error('Error sending feedback:', { source: 'feedbackService', error: error as Error })
       throw error
     }
   }
@@ -57,37 +63,24 @@ export class FeedbackService {
 
     // System information
     if (report.type === 'bug' || report.type === 'other') {
+      const sysInfo = await this.collectSystemInfo()
+
       report.feedback.serverVersion =
-        report.feedback.serverVersion || 'v' + process.env.npm_package_version || '0.0.0'
+        report.feedback.serverVersion || sysInfo.serverVersion || '0.0.0'
       report.feedback.clientVersion =
-        report.feedback.clientVersion || (await getClientManifest())?.version || '0.0.0'
-      report.feedback.os = report.feedback.os || `${os.platform()} ${os.release()}`
-      report.feedback.cpu = report.feedback.cpu || os.cpus()[0].model
-      report.feedback.uptime = report.feedback.uptime || Math.floor(process.uptime())
+        report.feedback.clientVersion || sysInfo.clientVersion || '0.0.0'
+      report.feedback.os = report.feedback.os || sysInfo.os
+      report.feedback.cpu = report.feedback.cpu || sysInfo.cpu
+      report.feedback.uptime = report.feedback.uptime || sysInfo.uptime
 
       // Get running apps information
       if (!report.feedback.apps || report.feedback.apps.length === 0) {
-        const runningApps = await appStore.getAllBase()
-        report.feedback.apps = runningApps.map((app) => ({
-          name: app.name,
-          version: app.manifest?.version || '0.0.0',
-          running: app.running || false,
-          enabled: app.enabled || false,
-          runningDuration: app.timeStarted ? Date.now() - app.timeStarted : 0
-        }))
+        report.feedback.apps = sysInfo.apps
       }
 
       // Get connected clients
       if (!report.feedback.clients || report.feedback.clients.length === 0) {
-        const connectedClients = await connectionStore.getClients()
-        report.feedback.clients = connectedClients.map((client) => ({
-          name: client.client_name || 'Unknown Device',
-          connectionType: client.ip || 'direct',
-          deviceType: client.device_type?.name || 'unknown',
-          connectionDuration: client.timestamp
-            ? this.formatDuration(Date.now() - client.timestamp)
-            : 'unknown'
-        }))
+        report.feedback.clients = sysInfo.clients
       }
 
       // Set default reproduce steps if none provided
@@ -99,6 +92,46 @@ export class FeedbackService {
     return report
   }
 
+  static async collectSystemInfo(): Promise<SystemInfo> {
+    const systemInfo: SystemInfo = {
+      serverVersion: 'v' + process.env.PACKAGE_VERSION || '0.0.0',
+      clientVersion: (await getClientManifest())?.version || '0.0.0',
+      os: `${os.platform()} ${os.release()}`,
+      cpu: os.cpus()[0].model,
+      ram: Math.round(os.totalmem() / (1024 * 1024)) + ' MB',
+      uptime: Math.floor(process.uptime()),
+      freeRam: Math.round(os.freemem() / (1024 * 1024)) + ' MB',
+      arch: os.arch(),
+      loadAverage: os.loadavg(),
+      apps: [],
+      clients: []
+    }
+
+    const runningApps = await appStore.getAllBase()
+    systemInfo.apps = runningApps.map((app) => ({
+      name: app.name,
+      version: app.manifest?.version || '0.0.0',
+      running: app.running || false,
+      enabled: app.enabled || false,
+      runningDuration: app.timeStarted
+        ? this.formatDuration(Date.now() - app.timeStarted)
+        : 'unknown'
+    }))
+
+    // Get connected clients
+    const connectedClients = await connectionStore.getClients()
+    systemInfo.clients = connectedClients.map((client) => ({
+      name: client.client_name || 'Unknown Device',
+      connectionType: client.ip || 'direct',
+      deviceType: client.device_type?.name || 'unknown',
+      connectionDuration: client.timestamp
+        ? this.formatDuration(Date.now() - client.timestamp)
+        : 'unknown'
+    }))
+
+    return systemInfo
+  }
+
   private static formatDuration(ms: number): string {
     const seconds = Math.floor(ms / 1000)
     const minutes = Math.floor(seconds / 60)
@@ -106,10 +139,12 @@ export class FeedbackService {
     return hours > 0 ? `${hours}h` : minutes > 0 ? `${minutes}m` : `${seconds}s`
   }
 
-  private static generateFields(
+  private static async generateFields(
     report: FeedbackReport,
-    systemInfo: SystemInfo | null
-  ): Array<{ name: string; value: string; inline: boolean }> {
+    feedbackSysInfo: SystemInfo | null
+  ): Promise<Array<{ name: string; value: string; inline: boolean }>> {
+    const systemInfo = { ...(await this.collectSystemInfo()), ...feedbackSysInfo }
+
     const fields = [
       {
         name: 'Timestamp',
@@ -159,6 +194,10 @@ export class FeedbackService {
             `Client Version: ${systemInfo.clientVersion}`,
             `OS: ${systemInfo.os}`,
             `CPU: ${systemInfo.cpu}`,
+            `RAM: ${systemInfo.ram}`,
+            `Free RAM: ${systemInfo.freeRam}`,
+            `Architecture: ${systemInfo.arch}`,
+            `Load Average: ${systemInfo.loadAverage?.join(', ')}`,
             `Page: ${systemInfo.page}`,
             `Uptime: ${systemInfo.uptime}s`
           ].join('\n'),
@@ -171,7 +210,7 @@ export class FeedbackService {
               systemInfo.apps
                 .map(
                   (app) =>
-                    `${app.name} v${app.version} (${app.running ? 'Running' : 'Stopped'}, ${app.enabled ? 'Enabled' : 'Disabled'}, ${app.runningDuration}ms)`
+                    `${app.name} v${app.version} (${app.running ? 'Running' : 'Stopped'}, ${app.enabled ? 'Enabled' : 'Disabled'}, ${app.runningDuration})`
                 )
                 .join('\n') || 'No apps',
             inline: false

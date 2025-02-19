@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { loadAndRunEnabledApps } from '@server/services/apps/appRunner'
-import { MESSAGE_TYPES } from '@DeskThing/types'
+import { LOGGING_LEVELS } from '@DeskThing/types'
 import Logger from '@server/utils/logger'
 
 vi.mock('@server/utils/logger', () => ({
@@ -84,7 +84,7 @@ describe('appRunner', () => {
     await loadAndRunEnabledApps()
 
     expect(Logger.log).toHaveBeenCalledWith(
-      MESSAGE_TYPES.ERROR,
+      LOGGING_LEVELS.ERROR,
       'SERVER: Error loading and running enabled apps',
       {
         source: 'loadAndRunEnabledApps',
@@ -102,7 +102,7 @@ describe('appRunner', () => {
 
     expect(mockAppStore.run).toHaveBeenCalledWith('app1')
     expect(Logger.log).toHaveBeenCalledWith(
-      MESSAGE_TYPES.ERROR,
+      LOGGING_LEVELS.ERROR,
       'SERVER: Error loading and running enabled apps',
       {
         source: 'loadAndRunEnabledApps',

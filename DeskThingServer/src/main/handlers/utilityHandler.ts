@@ -1,21 +1,12 @@
 console.log('[Utility Handler] Starting')
-import { Action, LOGGING_LEVELS, Key, AppReleaseMeta, AppReleaseCommunity } from '@DeskThing/types'
+import { LOGGING_LEVELS } from '@DeskThing/types'
 import {
   ReplyFn,
   UtilityIPCData,
-  ButtonMapping,
   Client,
-  GithubRelease,
-  Log,
   Settings,
-  MappingStructure,
-  Profile,
-  UtilityIPCTask,
-  UtilityIPCUpdate,
-  IPCData,
-  TaskList,
-  UtilityIPCGithub,
-  SortedReleases
+  UtilityHandlerReturnType,
+  UTILITY_TYPES
 } from '@shared/types'
 import { connectionStore, settingsStore, mappingStore } from '@server/stores'
 import Logger from '@server/utils/logger'
@@ -29,7 +20,6 @@ import {
   quitAndInstall,
   startDownload
 } from '@server/services/updater/autoUpdater'
-import { UpdateCheckResult } from 'electron-updater'
 import { FeedbackService } from '@server/services/feedbackService'
 import githubStore from '@server/stores/githubStore'
 
@@ -54,85 +44,46 @@ import githubStore from '@server/stores/githubStore'
  * - Managing profiles (getting, setting, deleting)
  * - Setting and getting the current profile
  * - Running actions
- *
  * Each function is responsible for handling a specific request type and returning the appropriate data or performing the requested action.
+ *
  */
-export const utilityHandler: Record<
-  | UtilityIPCData['type']
-  | UtilityIPCTask['type']
-  | UtilityIPCUpdate['type']
-  | UtilityIPCGithub['type'],
-  (
-    data: IPCData & { kind: 'utility' },
+export const utilityHandler: {
+  [K in UTILITY_TYPES]: (
+    data: Extract<UtilityIPCData, { type: K }>,
     replyFn: ReplyFn
-  ) => Promise<
-    | void
-    | null
-    | undefined
-    | string
-    | Client[]
-    | boolean
-    | string[]
-    | Settings
-    | GithubRelease[]
-    | ButtonMapping
-    | Log[]
-    | Action
-    | Action[]
-    | Key
-    | Key[]
-    | ButtonMapping[]
-    | ButtonMapping
-    | MappingStructure
-    | Profile[]
-    | Profile
-    | UpdateCheckResult
-    | TaskList
-    | AppReleaseMeta
-    | AppReleaseMeta[]
-    | AppReleaseCommunity[]
-    | SortedReleases
-  >
-> = {
+  ) => Promise<UtilityHandlerReturnType<K> | undefined>
+} = {
   ping: async () => {
     Logger.info('Pinged! pong')
-    return 'pong'
+    return ''
   },
-  zip: async (data): Promise<string | undefined> => {
-    if (data.request == 'get') {
-      return await selectZipFile()
-    }
-    return
+  [UTILITY_TYPES.ZIP]: async (): Promise<string | undefined> => {
+    return await selectZipFile()
   },
-  connections: async (data, replyFn) => {
+  [UTILITY_TYPES.CONNECTIONS]: async (data, replyFn) => {
     switch (data.request) {
       case 'get':
         return await getConnection(replyFn)
       case 'delete':
-        return await deleteConnection(data, replyFn)
+        await deleteConnection(data.payload, replyFn)
+        return
       default:
         return
     }
   },
-  devices: async (data) => {
-    switch (data.request) {
-      case 'get':
-        return await connectionStore.getDevices()
-      default:
-        return
-    }
+  [UTILITY_TYPES.DEVICES]: async () => {
+    return await connectionStore.getDevices()
   },
-  settings: async (data) => {
+  [UTILITY_TYPES.SETTINGS]: async (data) => {
     switch (data.request) {
       case 'get':
         return await settingsStore.getSettings()
       case 'set':
-        return await settingsStore.saveSettings(data.payload)
-      default:
+        await settingsStore.saveSettings(data.payload)
         return
     }
   },
-  github: async (data) => {
+  [UTILITY_TYPES.GITHUB]: async (data) => {
     switch (data.request) {
       case 'refreshApp':
         try {
@@ -160,7 +111,7 @@ export const utilityHandler: Record<
         }
       case 'getApps':
         try {
-          return githubStore.getAppReleases()
+          return await githubStore.getAppReleases()
         } catch (error) {
           Logger.error('Unable to get repositories!', {
             error: error as Error,
@@ -171,7 +122,7 @@ export const utilityHandler: Record<
         }
       case 'getAppReferences':
         try {
-          return githubStore.getAppReferences()
+          return await githubStore.getAppReferences()
         } catch (error) {
           Logger.error('Unable to get app references!', {
             error: error as Error,
@@ -217,43 +168,38 @@ export const utilityHandler: Record<
         return
     }
   },
-  logs: async (data) => {
-    switch (data.request) {
-      case 'get':
-        return await Logger.getLogs()
-      default:
-        return
-    }
+  [UTILITY_TYPES.LOGS]: async () => {
+    return await Logger.getLogs()
   },
-  shutdown: async () => {
+  [UTILITY_TYPES.SHUTDOWN]: async () => {
     app.quit()
   },
-  'open-log-folder': async () => {
+  [UTILITY_TYPES.OPEN_LOG_FOLDER]: async () => {
     const logPath = path.join(app.getPath('userData'))
     await shell.openPath(logPath)
   },
-  'refresh-firewall': async (_data, replyFn) => {
+  [UTILITY_TYPES.REFRESH_FIREWALL]: async (_data, replyFn) => {
     refreshFirewall(replyFn)
   },
 
-  'restart-server': async (_data, replyFn) => {
+  [UTILITY_TYPES.RESTART_SERVER]: async (_data, replyFn) => {
     replyFn('logging', { status: true, data: 'Restarting server...', final: false })
     await restartServer()
     replyFn('logging', { status: true, data: 'Server Restarted', final: true })
   },
-  actions: async (data) => {
+  [UTILITY_TYPES.ACTIONS]: async (data) => {
     switch (data.request) {
       case 'get':
         return await mappingStore.getActions()
       case 'set':
-        return await mappingStore.addAction(data.payload as Action)
+        return await mappingStore.addAction(data.payload)
       case 'delete':
         return await mappingStore.removeAction(data.payload)
       default:
         return
     }
   },
-  buttons: async (data) => {
+  [UTILITY_TYPES.BUTTONS]: async (data) => {
     switch (data.request) {
       case 'set': {
         const { action, key, mode, profile } = data.payload
@@ -303,19 +249,21 @@ export const utilityHandler: Record<
         return
     }
   },
-  keys: async (data) => {
+  [UTILITY_TYPES.KEYS]: async (data) => {
     switch (data.request) {
       case 'get':
         return await mappingStore.getKeys()
       case 'set':
-        return await mappingStore.addKey(data.payload)
+        await mappingStore.addKey(data.payload)
+        return
       case 'delete':
-        return await mappingStore.removeKey(data.payload)
+        await mappingStore.removeKey(data.payload)
+        return
       default:
         return
     }
   },
-  profiles: async (data) => {
+  [UTILITY_TYPES.PROFILES]: async (data) => {
     if (data.type != 'profiles') return
     switch (data.request) {
       case 'get':
@@ -326,40 +274,39 @@ export const utilityHandler: Record<
         }
       case 'set':
         if (data.payload) {
-          return await mappingStore.addProfile(data.payload)
+          await mappingStore.addProfile(data.payload)
+          return
         } else {
           Logger.log(LOGGING_LEVELS.ERROR, 'UtilityHandler: Missing profile name!')
           return
         }
       case 'delete':
-        return await mappingStore.removeProfile(data.payload)
-      default:
+        await mappingStore.removeProfile(data.payload)
         return
     }
   },
-  map: async (data) => {
+  [UTILITY_TYPES.MAP]: async (data) => {
     switch (data.request) {
       case 'get':
         return await mappingStore.getCurrentProfile()
       case 'set':
         console.log('Setting current profile to', data.payload)
-        return await mappingStore.setCurrentProfile(data.payload)
+        await mappingStore.setCurrentProfile(data.payload)
+        return
       default:
         return
     }
   },
-  run: async (data) => {
-    if (data.type !== 'run') return
-    const action = data.payload as Action
-    if (action.source !== 'server' && action.enabled) {
-      return await mappingStore.runAction(action)
+  [UTILITY_TYPES.RUN]: async (data) => {
+    if (data.payload.source !== 'server' && data.payload.enabled) {
+      return await mappingStore.runAction(data.payload)
     } else {
       Logger.log(LOGGING_LEVELS.ERROR, 'UtilityHandler: Action not enabled or does not exist!')
     }
   },
 
   // Tasks
-  task: async (data) => {
+  [UTILITY_TYPES.TASK]: async (data) => {
     if (data.type != 'task') return
 
     const { taskStore } = await import('@server/stores')
@@ -368,31 +315,39 @@ export const utilityHandler: Record<
       case 'get':
         return await taskStore.getTaskList()
       case 'stop':
-        return await taskStore.stopTask(data.payload)
+        await taskStore.stopTask(data.payload)
+        return
       case 'complete':
-        return await taskStore.completeStep(data.payload[0], data.payload[1])
+        await taskStore.completeStep(data.payload[0], data.payload[1])
+        return
       case 'start':
-        return await taskStore.startTask(data.payload)
+        await taskStore.startTask(data.payload)
+        return
       case 'pause':
-        return await taskStore.pauseTask()
+        await taskStore.pauseTask()
+        return
       case 'restart':
-        return await taskStore.restartTask(data.payload)
+        await taskStore.restartTask(data.payload)
+        return
       case 'complete_task':
-        return await taskStore.completeTask(data.payload)
+        await taskStore.completeTask(data.payload)
+        return
       case 'next':
-        return await taskStore.nextStep(data.payload)
+        await taskStore.nextStep(data.payload)
+        return
       case 'previous':
-        return await taskStore.prevStep(data.payload)
+        await taskStore.prevStep(data.payload)
+        return
       case 'update-task':
-        return await taskStore.updateTask(data.payload)
+        await taskStore.updateTask(data.payload)
+        return
       case 'update-step':
-        return await taskStore.updateStep(data.payload[0], data.payload[1])
-      default:
+        await taskStore.updateStep(data.payload[0], data.payload[1])
         return
     }
   },
   // Updates
-  update: async (data) => {
+  [UTILITY_TYPES.UPDATE]: async (data) => {
     if (data.type != 'update') return
     switch (data.request) {
       case 'check': // Check for update
@@ -405,17 +360,16 @@ export const utilityHandler: Record<
         return
     }
   },
-  feedback: async (data) => {
+  [UTILITY_TYPES.FEEDBACK]: async (data) => {
     if (data.type != 'feedback') return
     switch (data.request) {
       case 'set':
         return await FeedbackService.sendFeedback(data.payload)
       case 'get':
-        break
+        return await FeedbackService.collectSystemInfo()
     }
   }
 }
-
 /**
  * Get the list of currently connected clients
  * @param replyFn
@@ -428,8 +382,8 @@ const getConnection = async (replyFn: ReplyFn): Promise<Client[]> => {
   return clients
 }
 
-const deleteConnection = async (data: UtilityIPCData, replyFn: ReplyFn): Promise<boolean> => {
-  disconnectClient(data.payload)
+const deleteConnection = async (connectionId: string, replyFn: ReplyFn): Promise<boolean> => {
+  disconnectClient(connectionId)
   replyFn('logging', { status: true, data: 'Finished', final: true })
   return true
 }

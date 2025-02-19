@@ -8,14 +8,20 @@ import { usePageStore } from '@renderer/stores'
 type FeedbackButtonProps = {
   showText?: boolean
   className?: string
+  onClick?: () => void
 }
 
-export const FeedbackButton: FC<FeedbackButtonProps> = ({ showText = true, className }) => {
+export const FeedbackButton: FC<FeedbackButtonProps> = ({
+  showText = true,
+  className,
+  onClick
+}) => {
   const [searchParams, setSearchParams] = useSearchParams()
   const currentPage = usePageStore((page) => page.currentPage)
   const addSystemData = useFeedbackStore((store) => store.addSystemData)
 
   const handleOpenFeedback = (): void => {
+    onClick?.()
     addSystemData({ page: currentPage + '?' + searchParams.get('page') })
     setSearchParams({ feedback: 'true' })
   }

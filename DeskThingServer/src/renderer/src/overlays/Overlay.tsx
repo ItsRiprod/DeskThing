@@ -7,10 +7,16 @@ import React, { useRef, useEffect } from 'react'
 interface DownloadConfirmationProps {
   onClose: () => void
   className?: string
+  showFeedbackButton?: boolean
   children: React.ReactNode
 }
 
-const Overlay: React.FC<DownloadConfirmationProps> = ({ onClose, className, children }) => {
+const Overlay: React.FC<DownloadConfirmationProps> = ({
+  onClose,
+  className,
+  children,
+  showFeedbackButton = true
+}) => {
   const overlayRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -30,7 +36,13 @@ const Overlay: React.FC<DownloadConfirmationProps> = ({ onClose, className, chil
     <div className="fixed animate-fade inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div ref={overlayRef} className={`relative bg-black rounded-lg ${className}`}>
         <div className="first:absolute top-2 right-2 w-fit h-fit flex">
-          <FeedbackButton className={'hover:bg-black bg-zinc-900'} showText={false} />
+          {showFeedbackButton && (
+            <FeedbackButton
+              onClick={onClose}
+              className={'hover:bg-black bg-zinc-900'}
+              showText={false}
+            />
+          )}
           <Button title="Close Window" className="hover:bg-black bg-zinc-900" onClick={onClose}>
             <IconX />
           </Button>

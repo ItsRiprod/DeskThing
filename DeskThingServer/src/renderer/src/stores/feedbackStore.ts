@@ -12,6 +12,7 @@ interface FeedbackStoreState {
   feedback: Partial<FeedbackReport> | null
   addFeedbackData: (data: Partial<FeedbackReport>) => void
   submitFeedback: (feedback: Partial<FeedbackReport>) => void
+  fetchSystemInfo: () => Promise<void>
   addSystemData: (data: Partial<SystemInfo>) => void
 }
 
@@ -21,7 +22,7 @@ const useFeedbackStore = create<FeedbackStoreState>()((set) => ({
 
   addSystemData: (data): void => {
     set((sysData) => ({
-      systemData: { ...sysData, ...data }
+      systemData: { ...sysData.systemData, ...data }
     }))
   },
 
@@ -31,8 +32,15 @@ const useFeedbackStore = create<FeedbackStoreState>()((set) => ({
     }))
   },
 
+  fetchSystemInfo: async (): Promise<void> => {
+    const systemInfo = await window.electron.feedback.getSysInfo()
+    set((sysData) => ({
+      systemData: { ...sysData.systemData, ...systemInfo }
+    }))
+  },
+
   submitFeedback: (feedback): void => {
-    set({ feedback })
+    set({ feedback: null, systemData: {} })
     window.electron.feedback.submit(feedback as FeedbackReport)
   }
 }))
