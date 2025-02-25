@@ -2,7 +2,8 @@ import {
   isValidStep,
   isValidTask,
   isValidTaskList,
-  sanitizeTaskList
+  sanitizeTaskList,
+  sanitizeTaskListFile
 } from '@server/services/task/taskUtils'
 import defaultTaskList from '@server/static/defaultTasks'
 import { TaskReference, TaskList, CacheableStore } from '@shared/types'
@@ -48,22 +49,8 @@ class TaskStore implements CacheableStore {
    */
   clearCache = async (): Promise<void> => {
     // Make all of the tasks references and stop them
-    this.taskList.tasks = Object.entries(this.taskList.tasks).reduce(
-      (acc, [id, task]) => {
-        acc[id] = {
-          id: task.id,
-          source: task.source,
-          version: task.version,
-          available: task.available,
-          completed: task.completed,
-          label: task.label,
-          started: false,
-          description: task.description
-        }
-        return acc
-      },
-      {} as Record<string, TaskReference>
-    )
+    this.taskList = sanitizeTaskListFile(this.taskList.tasks)
+
     await this.debouncedSave()
     this.saveTimeout && clearTimeout(this.saveTimeout)
   }
@@ -123,6 +110,19 @@ class TaskStore implements CacheableStore {
   }
 
   private fetchTask = async (taskReference: TaskReference | Task): Promise<Task | undefined> => {
+    if (taskReference.source == 'server') {
+      try {
+        const task = this.getTask(taskReference.id)
+        isValidTask(task)
+        return { ...task, started: true }
+      } catch (error) {
+        Logger.warn(`Server Task ${taskReference.id} is invalid`, {
+          function: 'fetchTask',
+          source: 'taskStore'
+        })
+      }
+    }
+
     try {
       const tasks = await appStore.getTasks(taskReference.source)
       if (!tasks) {
@@ -139,7 +139,7 @@ class TaskStore implements CacheableStore {
         isValidTask(task)
         return task
       } catch (error) {
-        Logger.warn(`Task ${taskReference.id} is invalid`, {
+        Logger.warn(`App Task ${taskReference.id} is invalid`, {
           function: 'fetchTask',
           source: 'taskStore'
         })
@@ -361,6 +361,10 @@ class TaskStore implements CacheableStore {
       Logger.warn(`[resolveTask]: Task ${taskId} does not exist`)
       return
     }
+
+    // Early break if the task is already completed
+    if (task.completed) return
+
     if (!task.started) {
       Logger.info(`[resolveTask]: Task ${taskId} has not been started`)
       return
@@ -677,11 +681,16 @@ class TaskStore implements CacheableStore {
     if (typeof task === 'string') {
       const newTask = this.getTask(task)
       if (!newTask || !newTask.started) {
-        Logger.warn(`[getNextStep]: Task ${task} does not exist`)
-        return
+        if (newTask && newTask.source == 'server') {
+          // Override for server tasks
+          task = newTask as Task
+        } else {
+          Logger.warn(`[getNextStep]: Task ${task} does not exist`)
+          return
+        }
+      } else {
+        task = newTask
       }
-
-      task = newTask
     }
 
     if (!task.steps) {
@@ -712,6 +721,10 @@ class TaskStore implements CacheableStore {
 
   async completeStep(taskId: string, stepId: string): Promise<void> {
     let task = this.getTask(taskId)
+
+    // Check if the task is completed for an early return
+    if (task?.completed) return
+
     if (!task) {
       Logger.warn(`[completeStep]: Task ${taskId} does not exist`)
       return
@@ -729,6 +742,8 @@ class TaskStore implements CacheableStore {
         })
         return
       }
+      // Check if the fetched task is already completed
+      if (task.completed) return
     }
     if (!task.steps) {
       Logger.warn(`[completeStep]: Task ${taskId} does not have any steps`)
@@ -764,7 +779,8 @@ class TaskStore implements CacheableStore {
     this.notify('step', { taskId: task.id, source: task.source, step: task.steps[stepId] })
 
     // Potentially handle server action resolutions
-    const allStepsCompleted = Object.values(task.steps).every((step) => step.completed)
+    const allStepsCompleted =
+      Object.values(task.steps).every((step) => step.completed) || task.currentStep == undefined
 
     if (allStepsCompleted) {
       this.completeTask(taskId)

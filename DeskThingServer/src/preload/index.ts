@@ -31,7 +31,8 @@ import {
   StagedAppManifest,
   SystemInfo,
   UTILITY_TYPES,
-  APP_TYPES
+  APP_TYPES,
+  ADBClient
 } from '@shared/types'
 import { platform } from 'os'
 
@@ -273,15 +274,16 @@ const api = {
       type: UTILITY_TYPES.PING
     }),
 
+  // These should be moved from 'utility' to 'client' due to them technically being a client-related function
   getConnections: async (): Promise<Client[]> =>
-    await sendCommand<Client[]>('UTILITY', {
+    await sendCommand('UTILITY', {
       kind: 'utility',
       type: UTILITY_TYPES.CONNECTIONS,
       request: 'get'
     }),
 
-  getDevices: async (): Promise<string[]> =>
-    await sendCommand<string[]>('UTILITY', {
+  getDevices: async (): Promise<ADBClient[]> =>
+    await sendCommand('UTILITY', {
       kind: 'utility',
       type: UTILITY_TYPES.DEVICES
     }),

@@ -25,7 +25,8 @@ export const readTasksFromFile = async (): Promise<TaskList | undefined> => {
     const taskListPath = join('system', 'tasks.json')
     const taskList = await readFromFile<TaskList>(taskListPath)
     isValidTaskList(taskList)
-    return sanitizeTaskList(taskList)
+    const sTaskList = sanitizeTaskList(taskList)
+    return sTaskList
   } catch (error) {
     logger.error(`Failed to read task list`, {
       error: error as Error,

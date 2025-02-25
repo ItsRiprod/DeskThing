@@ -36,7 +36,7 @@ const ADBSettings: React.FC = () => {
     setLoading(false)
   }
 
-  const handleRestarServer = async (): Promise<void> => {
+  const handleRestartServer = async (): Promise<void> => {
     setLoading(true)
     setRestarting(true)
     setResponse('Killing Server...')
@@ -75,7 +75,7 @@ const ADBSettings: React.FC = () => {
         </Button>
         <Button
           disabled={loading}
-          onClick={handleRestarServer}
+          onClick={handleRestartServer}
           className={restarting ? 'text-gray-300' : 'hover:bg-zinc-900'}
         >
           <IconReload
@@ -110,8 +110,8 @@ const ADBSettings: React.FC = () => {
               onChange={(e) => setAdbDevice(e.target.value)}
             >
               {adbDevices.map((device) => (
-                <option key={device} value={device}>
-                  {device}
+                <option key={device.adbId} value={device.adbId}>
+                  {device.adbId}
                 </option>
               ))}
               <option value="None">None</option>

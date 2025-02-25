@@ -189,50 +189,53 @@ export const sanitizeStep = (step: Partial<Step>): Step => {
   if (!step.type) {
     throw new Error('Step must have a type')
   }
-
+  const newStep: Step = {
+    id: step.id || '',
+    parentId: step.parentId,
+    completed: step.completed ?? false,
+    debug: step.debug,
+    strict: step.strict,
+    label: step.label,
+    instructions: step.instructions,
+    debugging: step.debugging,
+    type: STEP_TYPES.STEP
+  }
   switch (step.type) {
     case STEP_TYPES.ACTION:
       return {
-        id: step.id || '',
+        ...newStep,
         type: STEP_TYPES.ACTION,
         // Should be fixed with a sanitized action but that does not exist yet
-        action: step.action ? step.action : undefined,
-        label: step.label || ''
+        action: step.action ? step.action : undefined
       } as TaskAction
     case STEP_TYPES.SHORTCUT:
       return {
-        id: step.id || '',
+        ...newStep,
         type: STEP_TYPES.SHORTCUT,
-        destination: step.destination || '',
-        label: step.label || ''
+        destination: step.destination || ''
       } as TaskShortcut
     case STEP_TYPES.SETTING:
       return {
-        id: step.id || '',
+        ...newStep,
         type: STEP_TYPES.SETTING,
         // Should be fixed with a sanitized setting but that does not exist yet
-        setting: step.setting ? step.setting : undefined,
-        label: step.label || ''
+        setting: step.setting ? step.setting : undefined
       } as TaskSetting
     case STEP_TYPES.TASK:
       return {
-        id: step.id || '',
+        ...newStep,
         type: STEP_TYPES.TASK,
-        taskId: step.taskId || '',
-        completed: step.completed ?? false,
-        label: step.label || ''
+        taskId: step.taskId || ''
       } as TaskTask
     case STEP_TYPES.EXTERNAL:
       return {
-        id: step.id || '',
-        type: STEP_TYPES.EXTERNAL,
-        label: step.label || ''
+        ...newStep,
+        type: STEP_TYPES.EXTERNAL
       } as TaskExternal
     case STEP_TYPES.STEP:
       return {
-        id: step.id || '',
-        type: STEP_TYPES.STEP,
-        label: step.label || ''
+        ...newStep,
+        type: STEP_TYPES.STEP
       } as TaskStep
     default:
       throw new Error(`Invalid step type: ${step.type}`)

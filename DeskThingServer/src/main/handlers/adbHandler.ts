@@ -8,7 +8,7 @@ import { ReplyFn } from '@shared/types'
 
 const isDevelopment = process.env.NODE_ENV === 'development'
 const execPath = isDevelopment
-  ? path.join(__dirname, '..', '..', 'adb_source', getPlatform())
+  ? path.join(__dirname, '..', '..', '..', 'adb_source', getPlatform())
   : path.join(process.resourcesPath, getPlatform())
 
 const adbExecutableName = process.platform === 'win32' ? 'adb.exe' : 'adb'

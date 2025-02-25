@@ -60,6 +60,7 @@ export const sendMessageToClients = async (data: SocketData): Promise<void> => {
 export const disconnectClient = (connectionId: string): void => {
   const client = Clients.find((c) => c.client.connectionId === connectionId)
 
+  connectionStore.removeClient(connectionId)
   if (client && server) {
     client.socket.terminate()
     Clients.splice(Clients.indexOf(client), 1)
@@ -67,12 +68,12 @@ export const disconnectClient = (connectionId: string): void => {
       source: 'clientCom',
       function: 'disconnectClient'
     })
-    connectionStore.removeClient(connectionId)
   } else {
     Logger.info(`Client not found or server not running: ${connectionId}`, {
       source: 'clientCom',
       function: 'disconnectClient'
     })
+    console.log(Clients)
   }
 }
 

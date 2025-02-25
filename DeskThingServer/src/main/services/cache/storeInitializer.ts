@@ -1,4 +1,4 @@
-import { Client } from '@shared/types'
+import { ADBClient, Client } from '@shared/types'
 import { sendIpcData } from '../../index'
 import { App } from '@deskthing/types'
 import Logger from '../../utils/logger'
@@ -41,10 +41,10 @@ export async function initializeStores(): Promise<void> {
     })
   })
 
-  stores.connectionStore.onDevice((devices: string[]) => {
+  stores.connectionStore.onDevice((devices: ADBClient[]) => {
     sendIpcData({
       type: 'adbdevices',
-      payload: { status: true, data: devices, final: true }
+      payload: devices
     })
   })
 

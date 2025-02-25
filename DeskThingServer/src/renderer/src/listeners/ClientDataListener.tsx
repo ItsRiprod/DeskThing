@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useClientStore } from '../stores'
+import { ADBClient } from '@shared/types'
 
 /**
  * Listens for client data events and updates the client store accordingly.
@@ -34,8 +35,8 @@ const ClientDataListener = (): null => {
       setConnections(data.data)
     })
 
-    window.electron.ipcRenderer.on('adbdevices', async (_event, data) => {
-      setAdbDevices(data.data)
+    window.electron.ipcRenderer.on('adbdevices', async (_event, data: ADBClient[]) => {
+      setAdbDevices(data)
     })
 
     // Cleanup listeners on unmount

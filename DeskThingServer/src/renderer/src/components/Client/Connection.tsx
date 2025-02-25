@@ -1,8 +1,6 @@
 import {
   IconCarThingSmall,
   IconComputer,
-  IconConfig,
-  IconLoading,
   IconLogs,
   IconMobile,
   IconPing,
@@ -10,13 +8,11 @@ import {
   IconX
 } from '@renderer/assets/icons'
 import { Client, LoggingData } from '@shared/types'
-import React, { useEffect, useState } from 'react'
-import Button from './Button'
+import React, { useState } from 'react'
+import Button from '../Button'
 // import { useSettingsStore } from '@renderer/stores'
 import ClientDetailsOverlay from '@renderer/overlays/ClientDetailsOverlay'
 import DownloadNotification from '@renderer/overlays/DownloadNotification'
-import { useClientStore, useSettingsStore } from '@renderer/stores'
-import useTaskStore from '@renderer/stores/taskStore'
 
 interface ConnectionComponentProps {
   client: Client
@@ -29,19 +25,6 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
   const [logging, setLogging] = useState<LoggingData | null>()
   const [enabled, setEnabled] = useState(false)
   const [showLogging, setShowLogging] = useState(false)
-  const [offline, setOffline] = useState(false)
-  const refreshADbClients = useClientStore((store) => store.requestADBDevices)
-  const requestClientManifest = useClientStore((store) => store.requestClientManifest)
-  const devicePort = useSettingsStore((store) => store.settings.devicePort)
-  const resolveStep = useTaskStore((state) => state.resolveStep)
-
-  useEffect(() => {
-    if (client.adbId?.includes('offline')) {
-      setOffline(true)
-    } else {
-      setOffline(false)
-    }
-  }, [client])
 
   const renderIcon = (): JSX.Element => {
     if (!client.device_type) return <IconComputer iconSize={128} />
@@ -93,32 +76,6 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
     setShowLogging(false)
   }
 
-  const configureDevice = async (): Promise<void> => {
-    setShowLogging(true)
-    if (!client.adbId) {
-      setLogging({ status: true, final: true, data: 'No Device Detected' })
-      return
-    }
-
-    try {
-      setLogging({ status: true, final: false, data: 'Configuring Device' })
-      setLoading(true)
-      window.electron.configureDevice(client.adbId.split(' ')[0])
-      const unsubscribe = window.electron.ipcRenderer.on('logging', (_event, reply) => {
-        console.log(reply)
-        setLogging(reply)
-        if (reply.final) {
-          resolveStep('device', 'configure')
-          unsubscribe()
-          requestClientManifest()
-        }
-      })
-    } catch (error) {
-      setLoading(false)
-      console.log(error)
-    }
-  }
-
   const restartChromium = async (): Promise<void> => {
     if (!client.adbId) return
 
@@ -166,18 +123,6 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
     window.electron.disconnectClient(client.connectionId)
   }
 
-  const handleConnectOffline = async (): Promise<void> => {
-    setLoading(true)
-    await window.electron.handleClientADB('reconnect offline')
-    await setTimeout(() => refreshADbClients, 5000)
-    if (client.adbId) {
-      await window.electron.handleClientADB(
-        `-s ${client.adbId.replace('offline', '').split(' ')[0]} reverse tcp:${devicePort} tcp:${devicePort}`
-      )
-    }
-    setLoading(false)
-  }
-
   return (
     <div className="w-full p-4 border rounded-xl border-zinc-900 flex flex-col lg:flex-row gap-4 justify-center items-center lg:justify-between bg-zinc-950">
       {enabled && <ClientDetailsOverlay client={client} onClose={() => setEnabled(false)} />}
@@ -199,12 +144,7 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
         </div>
       </div>
       <div className="flex gap-2 items-center">
-        {!client.connected && offline ? (
-          <p className="text-red-500 italic">Device Offline!</p>
-        ) : (
-          !client.connected && <p className="text-red-500 italic">Not Connected!</p>
-        )}
-        {client.adbId && !offline && (
+        {client.adbId && (
           <>
             <Button
               title="Restart Chromium on the Device"
@@ -223,66 +163,29 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
                 Restart <span className="hidden lg:inline">Chromium</span>
               </p>
             </Button>
-            {!client.connected && (
-              <Button
-                title="Reconnect Offline Device"
-                className="group relative hover:bg-zinc-900 gap-2"
-                onClick={configureDevice}
-                disabled={loading}
-              >
-                <div className="absolute inset-0 w-full h-full border-blue-500 border animate-pulse rounded-lg"></div>
-                <IconConfig />
-                <p className="hidden group-hover:block lg:block">
-                  Config<span className="hidden lg:inline">ure</span>
-                </p>
-              </Button>
-            )}
           </>
         )}
-        {offline && (
-          <Button
-            title="Reconnect Device"
-            className="group hover:bg-red-900 gap-2 border-red-500 border"
-            onClick={handleConnectOffline}
-            disabled={loading}
-          >
-            {loading ? <IconLoading /> : <IconConfig />}
-            <p className="">
-              Reconnect<span className="hidden lg:inline"> Device</span>
-            </p>
-          </Button>
-        )}
-        {!offline && (
-          <Button
-            title="Client Details and Settings"
-            className="group hover:bg-zinc-900 gap-2"
-            onClick={() => setEnabled(true)}
-          >
-            <IconLogs />
-            <p className="hidden group-hover:block">Details</p>
-          </Button>
-        )}
-        {client.connected && !offline && (
-          <>
-            <Button
-              title="Ping Client"
-              className="group hover:bg-zinc-900 gap-2"
-              onClick={handlePing}
-            >
-              <IconPing className={animatingIcons.ping ? 'animate-ping' : ''} />
-              <p className="hidden group-hover:block">Ping</p>
-            </Button>
-            <Button
-              title="Disconnect Client"
-              className="group bg-red-700 gap-2"
-              disabled={loading}
-              onClick={handleDisconnect}
-            >
-              <IconX />
-              <p className="hidden group-hover:block">Disconnect</p>
-            </Button>
-          </>
-        )}
+        <Button
+          title="Client Details and Settings"
+          className="group hover:bg-zinc-900 gap-2"
+          onClick={() => setEnabled(true)}
+        >
+          <IconLogs />
+          <p className="hidden group-hover:block">Details</p>
+        </Button>
+        <Button title="Ping Client" className="group hover:bg-zinc-900 gap-2" onClick={handlePing}>
+          <IconPing className={animatingIcons.ping ? 'animate-ping' : ''} />
+          <p className="hidden group-hover:block">Ping</p>
+        </Button>
+        <Button
+          title="Disconnect Client"
+          className="group bg-red-700 gap-2"
+          disabled={loading}
+          onClick={handleDisconnect}
+        >
+          <IconX />
+          <p className="hidden group-hover:block">Disconnect</p>
+        </Button>
       </div>
     </div>
   )

@@ -37,7 +37,7 @@ export async function getLatestRelease(repoUrl: string): Promise<GithubRelease> 
     const release = await response.json()
     return release
   } catch (error) {
-    logger.error('Error while getting latest release!', {
+    logger.warn('Error while getting latest release!', {
       error: error as Error,
       function: 'getLatestRelease',
       source: 'githubService'

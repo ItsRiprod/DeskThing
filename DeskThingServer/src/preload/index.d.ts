@@ -12,7 +12,8 @@ import {
   ButtonMapping,
   Log,
   SortedReleases,
-  StagedAppManifest
+  StagedAppManifest,
+  ADBClient
 } from '@shared/types'
 
 type AppData = Record<string, string>
@@ -59,7 +60,7 @@ declare global {
       handleClientCommand: (command: SocketData) => Promise<void>
       ping: () => Promise<void>
       getConnections: () => Promise<Client[]>
-      getDevices: () => Promise<string[]>
+      getDevices: () => Promise<ADBClient[]>
       disconnectClient: (connectionId: string) => Promise<void>
       saveSettings: (settings: Settings) => Promise<void>
       getSettings: () => Promise<Settings>

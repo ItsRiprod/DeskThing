@@ -10,7 +10,7 @@ import * as fs from 'fs'
 
 const isDevelopment = process.env.NODE_ENV === 'development'
 const staticPath = isDevelopment
-  ? join(__dirname, '..', '..', 'resources', 'static')
+  ? join(__dirname, '..', '..', '..', 'resources', 'static')
   : join(process.resourcesPath, 'static')
 
 /**
@@ -103,6 +103,7 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
   expressApp.use('/:root', async (req: Request, res: Response, next: NextFunction) => {
     const root = req.params.root
 
+    // Catch all for if the client is trying to access an invalid route
     if (
       root != 'client' &&
       root != 'fetch' &&
@@ -127,20 +128,27 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
     console.log('Got an app request', req.path)
     const appName = req.params.appName
 
+    // Break if it is trying to access the client
     if (appName === 'client' || appName == null) {
       handleClientConnection(appName, req, res, next)
     } else {
       const appPath = getAppFilePath(appName, 'client')
-      Logger.log(LOGGING_LEVELS.LOG, `WEBSOCKET: Serving ${appName} from ${appPath}`)
+      const legacyAppPath = getAppFilePath(appName)
+      Logger.info(`Serving ${appName} from ${appPath}`, {
+        function: '/app/:appName',
+        source: 'expressServer'
+      })
 
       if (fs.existsSync(appPath)) {
         express.static(appPath)(req, res, next)
+      } else if (fs.existsSync(legacyAppPath)) {
+        express.static(legacyAppPath)(req, res, next)
       } else {
         Logger.log(
           LOGGING_LEVELS.WARN,
           `WEBSOCKET: Client may not updated! Ensure it is on version v0.10.0 or later`
         )
-        const ErrorPage = fs.readFileSync(join(staticPath, 'Error.html'), 'utf-8')
+        const ErrorPage = await fs.promises.readFile(join(staticPath, 'Error.html'), 'utf-8')
 
         res.status(404).send(ErrorPage)
       }

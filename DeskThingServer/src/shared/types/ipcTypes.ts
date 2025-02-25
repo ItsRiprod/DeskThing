@@ -2,8 +2,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { BrowserWindow } from 'electron'
-import { Client, Log, Settings, SortedReleases } from './types'
-import { Button, ButtonMapping, MappingStructure, Profile } from './maps'
+import {
+  Log,
+  Settings,
+  SortedReleases,
+  Button,
+  ButtonMapping,
+  MappingStructure,
+  Profile,
+  Client,
+  ADBClient
+} from '.'
 import {
   Step,
   Task,
@@ -339,7 +348,7 @@ export type UtilityHandlerReturnMap = {
   [UTILITY_TYPES.PING]: string
   [UTILITY_TYPES.ZIP]: string | undefined
   [UTILITY_TYPES.CONNECTIONS]: Client[]
-  [UTILITY_TYPES.DEVICES]: string[]
+  [UTILITY_TYPES.DEVICES]: ADBClient[]
   [UTILITY_TYPES.SETTINGS]: Settings
   [UTILITY_TYPES.LOGS]: Log[]
   [UTILITY_TYPES.SHUTDOWN]: void
@@ -514,7 +523,7 @@ export interface SettingsIPC extends OutgoingIPCBase {
 
 export interface AdbDevicesIPC extends OutgoingIPCBase {
   type: 'adbdevices'
-  payload: ReplyData
+  payload: ADBClient[]
 }
 
 export interface ClientsIPC extends OutgoingIPCBase {

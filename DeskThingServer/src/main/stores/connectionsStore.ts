@@ -5,15 +5,16 @@
  */
 console.log('[Connection Store] Starting')
 import { LOGGING_LEVELS } from '@DeskThing/types'
-import { CacheableStore, Client } from '@shared/types'
-import { settingsStore } from '.'
+import { ADBClient, CacheableStore, Client } from '@shared/types'
+import { settingsStore, taskStore } from '.'
 import Logger from '@server/utils/logger'
+import { configureDevice } from '@server/handlers/deviceHandler'
 type ClientListener = (client: Client[]) => void
-type DeviceListener = (device: string[]) => void
+type DeviceListener = (device: ADBClient[]) => void
 
 class ConnectionStore implements CacheableStore {
   private clients: Client[] = []
-  private devices: string[] = []
+  private devices: ADBClient[] = []
   private static instance: ConnectionStore
   private clientListeners: ClientListener[] = []
   private deviceListeners: DeviceListener[] = []
@@ -119,8 +120,8 @@ class ConnectionStore implements CacheableStore {
     return this.clients
   }
 
-  getDevices(): string[] {
-    return this.devices
+  getDevices(): Promise<ADBClient[]> {
+    return this.getAdbDevices()
   }
 
   async addClient(client: Client): Promise<void> {
@@ -166,28 +167,99 @@ class ConnectionStore implements CacheableStore {
     this.deviceListeners.forEach((listener) => listener(this.devices))
   }
 
-  async getAdbDevices(): Promise<string[]> {
-    const { handleAdbCommands } = await import('../handlers/adbHandler')
-    return handleAdbCommands('devices')
-      .then((result) => {
-        const parseADBDevices = (response: string): string[] => {
-          return response
-            .split('\n')
-            .filter(
-              (line) => line && !line.startsWith('List of devices attached') && line.trim() !== ''
-            )
-            .map((line) => line.replace('device', '').trim())
+  private parseADBDevices = (response: string): ADBClient[] => {
+    const lines = response
+      .split('\n')
+      .filter((line) => line && !line.startsWith('List of devices attached') && line.trim() !== '')
+
+    // Get all of the adb ids that are connected for use later
+    const connectedAdbIds = this.clients.reduce(
+      (acc, client) => (client.adbId ? [...acc, client.adbId] : acc),
+      [] as string[]
+    )
+
+    // Filter out the 'device' keywords but only include lines with the device keyword
+    const adbDevices: ADBClient[] = lines.reduce((acc, line) => {
+      if (line.includes('device')) {
+        const deviceId = line.replace('device', '').trim()
+
+        const adbClient: ADBClient = {
+          // the device id
+          adbId: deviceId.split(' ')[0],
+          // if the device is offline
+          offline: deviceId.includes('offline'),
+          // If the device is in the connected list
+          connected: connectedAdbIds.includes(deviceId),
+
+          // If there is more than one "section" then that means there is some type of error
+          error: deviceId.split(' ').length > 0 ? deviceId : ''
         }
-        const newDevices = parseADBDevices(result) || []
-        this.devices = newDevices
-        this.notifyDeviceListeners()
-        Logger.log(LOGGING_LEVELS.LOG, 'ADB Device found!')
-        return newDevices
+
+        return [...acc, adbClient]
+      } else {
+        return acc
+      }
+    }, [] as ADBClient[])
+
+    return adbDevices
+  }
+
+  async getAdbDevices(): Promise<ADBClient[]> {
+    const { handleAdbCommands } = await import('../handlers/adbHandler')
+    try {
+      const result = await handleAdbCommands('devices')
+
+      const newDevices = this.parseADBDevices(result) || []
+
+      if (newDevices.length > 0) {
+        taskStore.completeStep('device', 'detect')
+        if (newDevices.some((device) => device.connected)) {
+          taskStore.completeStep('device', 'configure')
+        }
+      }
+
+      this.devices = newDevices
+
+      this.notifyDeviceListeners()
+      Logger.info('ADB Device found!', {
+        function: 'getAdbDevices',
+        source: 'ConnectionsStore'
       })
-      .catch((error) => {
-        console.error('Error auto-detecting ADB devices:', error)
-        return []
+
+      try {
+        // Automatically config the devices if it is both not offline and not connected
+        const settings = await settingsStore.getSettings()
+        if (settings.autoConfig && newDevices.some((device) => !device.connected)) {
+          // Wait for all of the devices to configure
+          Logger.info('Automatically configuring disconnected devices', {
+            function: 'getAdbDevices',
+            source: 'connectionsStore'
+          })
+          await Promise.all(
+            newDevices.map(async (device) => {
+              if (!device.connected && !device.offline) {
+                await configureDevice(device.adbId)
+              }
+            })
+          )
+        }
+      } catch (error) {
+        Logger.error('Error auto-configuring devices!', {
+          error: error as Error,
+          function: 'getAdbDevices',
+          source: 'ConnectionsStore'
+        })
+      }
+
+      return newDevices
+    } catch (error) {
+      Logger.error('Error detecting ADB devices!', {
+        error: error as Error,
+        function: 'getAdbDevices',
+        source: 'ConnectionsStore'
       })
+      return []
+    }
   }
 
   async checkAutoDetectADB(): Promise<void> {
