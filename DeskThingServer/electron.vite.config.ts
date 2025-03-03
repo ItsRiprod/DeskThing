@@ -3,6 +3,11 @@ import { resolve } from 'path'
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 import { readFileSync } from 'fs'
+import { fileURLToPath } from 'url'
+import { dirname } from 'path'
+
+const _filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(_filename)
 
 const packageJson = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf-8'))
 

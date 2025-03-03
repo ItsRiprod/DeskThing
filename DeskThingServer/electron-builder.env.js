@@ -1,8 +1,9 @@
 // Builds environment variables into production .env file
-const { writeFileSync } = require('fs')
-const path = require('path')
+import { writeFileSync } from 'fs'
+import path from 'path'
+import { config } from 'dotenv'
+import { fileURLToPath } from 'url'
 
-const { config } = require('dotenv')
 config()
 
 const env = {
@@ -10,6 +11,8 @@ const env = {
 }
 
 // Write env file
+const _filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(_filename)
 const envPath = path.resolve(__dirname, '.env.production')
 
 writeFileSync(

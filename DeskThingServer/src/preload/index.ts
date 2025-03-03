@@ -36,6 +36,8 @@ import {
 } from '@shared/types'
 import { platform } from 'os'
 
+console.log('In the preload')
+
 // Custom APIs for renderer
 const api = {
   // Updated Commands
