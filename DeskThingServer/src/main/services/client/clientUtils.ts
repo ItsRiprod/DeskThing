@@ -1,4 +1,5 @@
 console.log('[ClientUtils Service] Starting')
+import { ClientDeviceType } from '@deskthing/types'
 import { sendMessageToClients } from './clientCom'
 
 /**
@@ -17,20 +18,34 @@ const getDelayToNextMinute = async (): Promise<number> => {
  * @param userAgent - The user agent string to analyze.
  * @returns An object with the device type ID and name.
  */
-export const getDeviceType = (userAgent: string | undefined): { id: number; name: string } => {
-  if (!userAgent) return { id: 0, name: 'unknown' }
-  userAgent = userAgent.toLowerCase()
-  if (userAgent.includes('iphone')) return { id: 3, name: 'iphone' }
-  if (userAgent.includes('win')) return { id: 1, name: 'windows' }
-  if (userAgent.includes('ipad')) return { id: 2, name: 'tablet' }
-  if (userAgent.includes('mac')) return { id: 1, name: 'mac' }
-  if (userAgent.includes('android')) {
-    if (userAgent.includes('mobile')) return { id: 3, name: 'android' }
-    return { id: 2, name: 'tablet' }
-  }
-  return { id: 0, name: 'unknown' }
-}
+export const getDeviceType = (userAgent: string | undefined): ClientDeviceType => {
+  if (!userAgent) return { method: 1, id: 0, name: 'unknown' }
 
+  userAgent = userAgent.toLowerCase()
+  // Desktops
+  if (userAgent.includes('linux')) return { method: 1, id: 1, name: 'linux' }
+  if (userAgent.includes('win')) return { method: 1, id: 1, name: 'windows' }
+  if (userAgent.includes('mac')) return { method: 1, id: 1, name: 'mac' }
+  if (userAgent.includes('chromebook')) return { method: 1, id: 1, name: 'chromebook' }
+
+  // Tablets
+  if (userAgent.includes('ipad')) return { method: 1, id: 2, name: 'tablet' }
+  if (userAgent.includes('webos')) return { method: 1, id: 2, name: 'webos' }
+  if (userAgent.includes('kindle')) return { method: 1, id: 2, name: 'kindle' }
+
+  // Mobile
+  if (userAgent.includes('iphone')) return { method: 1, id: 3, name: 'iphone' }
+  if (userAgent.includes('android')) {
+    if (userAgent.includes('mobile')) return { method: 1, id: 3, name: 'android' }
+    return { method: 1, id: 2, name: 'tablet' }
+  }
+  if (userAgent.includes('firefox os')) return { method: 1, id: 3, name: 'firefox-os' }
+  if (userAgent.includes('blackberry')) return { method: 1, id: 3, name: 'blackberry' }
+  if (userAgent.includes('windows phone')) return { method: 1, id: 3, name: 'windows-phone' }
+
+  // Default to unknown
+  return { method: 1, id: 0, name: 'unknown' }
+}
 /**
  * Sends the current time to connected clients.
  * This function retrieves the current UTC time and the server's timezone offset,

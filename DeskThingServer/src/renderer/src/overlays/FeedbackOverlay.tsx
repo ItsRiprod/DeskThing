@@ -13,7 +13,7 @@ const FeedbackOverlay: FC = () => {
   const fetchSystemInfo = useFeedbackStore((state) => state.fetchSystemInfo)
   const rawFeedback = useFeedbackStore((state) => state.feedback)
   const systemInfo = useFeedbackStore((state) => state.systemData)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   const [feedback, setFeedback] = useState<Partial<FeedbackReport>>(
     rawFeedback || {
       type: 'bug',

@@ -14,7 +14,8 @@ import {
   AppReleaseCommunity,
   AppReleaseMeta,
   EventPayload,
-  AppReleaseSingleMeta
+  AppReleaseSingleMeta,
+  ClientReleaseMeta
 } from '@DeskThing/types'
 import {
   Profile,
@@ -27,7 +28,6 @@ import {
   IPC_HANDLERS,
   Settings,
   IPCData,
-  SortedReleases,
   StagedAppManifest,
   SystemInfo,
   UTILITY_TYPES,
@@ -346,7 +346,7 @@ const api = {
         request: 'addAppRepo',
         payload: repoUrl
       }),
-    getClients: async (): Promise<SortedReleases> =>
+    getClients: async (): Promise<ClientReleaseMeta[]> =>
       await sendCommand('UTILITY', {
         kind: 'utility',
         type: UTILITY_TYPES.GITHUB,

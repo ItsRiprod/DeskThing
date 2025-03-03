@@ -97,7 +97,7 @@ class Logger {
 
       await writeFile(logFile, JSON.stringify(combinedLogs, null, 2))
       this.logs = []
-    } catch (error) {
+    } catch {
       try {
         await writeFile(logFile, JSON.stringify(this.logs, null, 2))
         this.logs = []

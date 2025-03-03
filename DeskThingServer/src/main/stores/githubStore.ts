@@ -7,35 +7,50 @@ console.log('[Github Store] Starting')
 import {
   AppReleaseFile,
   CacheableStore,
+  ClientReleaseFile,
   GithubAsset,
-  GithubRelease,
-  SortedReleases
+  GithubRelease
 } from '@shared/types'
+import { fetchAssetContent, getLatestRelease } from '@server/services/github/githubService'
 import {
-  fetchAssetContent,
-  getLatestRelease,
-  getReleases
-} from '@server/services/github/githubService'
-import { AppReleaseCommunity, AppReleaseMeta, AppReleaseSingleMeta } from '@deskthing/types'
+  AppReleaseCommunity,
+  AppReleaseMeta,
+  AppReleaseSingleMeta,
+  ClientReleaseMeta
+} from '@deskthing/types'
 import logger from '@server/utils/logger'
-import { defaultReleaseFile } from '@server/static/defaultRepos'
-import { isValidAppReleaseMeta } from '@server/services/github/githubUtils'
-import { readAppReleaseData, saveAppReleaseData } from '@server/services/files/releaseFileService'
+import { defaultClientReleaseFile, defaultAppReleaseData } from '@server/static/defaultRepos'
+import {
+  isValidAppReleaseMeta,
+  isValidClientReleaseFile
+} from '@server/services/github/githubUtils'
+import {
+  readAppReleaseData,
+  readClientReleaseData,
+  saveAppReleaseData,
+  saveClientReleaseData
+} from '@server/services/files/releaseFileService'
 
 interface CacheEntry {
   timestamp: number
-  data: GithubRelease[]
+  data: GithubRelease[] | Promise<GithubRelease[]>
+  isError?: boolean
 }
 
-interface AssetCacheEntry {
+interface AssetAppCacheEntry {
   timestamp: number
   data: AppReleaseMeta
+}
+
+interface AssetClientCacheEntry {
+  timestamp: number
+  data: ClientReleaseMeta
 }
 
 type GithubListenerEvents = {
   app: AppReleaseMeta[]
   community: AppReleaseCommunity[]
-  client: SortedReleases
+  client: ClientReleaseMeta[]
 }
 
 // Create listener types automatically from event map
@@ -54,9 +69,10 @@ type GithubStoreListeners = {
  */
 class GithubStore implements CacheableStore {
   private cache: Map<string, CacheEntry>
-  private assetCache: Map<string, AssetCacheEntry>
+  private assetAppCache: Map<string, AssetAppCacheEntry>
+  private assetClientCache: Map<string, AssetClientCacheEntry>
   private appReleases: AppReleaseFile | null
-  private clientReleases: SortedReleases | null
+  private clientReleases: ClientReleaseFile | null
   private cachedRepos: string[]
   private static instance: GithubStore
 
@@ -69,16 +85,17 @@ class GithubStore implements CacheableStore {
   constructor() {
     // Cache of github responses
     this.cache = new Map()
-    this.assetCache = new Map()
+    this.assetAppCache = new Map()
+    this.assetClientCache = new Map()
 
     // Cache of repos that have been fetched
     this.cachedRepos = []
 
     // app references
-    this.appReleases = defaultReleaseFile
+    this.appReleases = defaultAppReleaseData
 
     // not fully implemented yet
-    this.clientReleases = {}
+    this.clientReleases = defaultClientReleaseFile
 
     // Ensure that nothing is fetched at startup and blocking the main thread
     setTimeout(this.refreshData, 10)
@@ -86,13 +103,20 @@ class GithubStore implements CacheableStore {
 
   clearCache = async (): Promise<void> => {
     this.cache.clear()
-    this.assetCache.clear()
+    this.assetAppCache.clear()
+    this.assetClientCache.clear()
     this.cachedRepos = []
     this.appReleases = null
     this.clientReleases = null
   }
+
   saveToFile = async (): Promise<void> => {
-    await this.saveAppReleaseFile()
+    if (this.appReleases) {
+      await this.saveAppReleaseFile()
+    }
+    if (this.clientReleases) {
+      await this.saveClientReleaseFile()
+    }
   }
 
   static getInstance(): GithubStore {
@@ -120,7 +144,7 @@ class GithubStore implements CacheableStore {
     ) as GithubStoreListeners[K]
   }
 
-  public refreshData = async (): Promise<void> => {
+  public refreshData = async (force = false): Promise<void> => {
     logger.info('Refreshing data...', {
       function: 'refreshData',
       source: 'GithubStore'
@@ -128,12 +152,12 @@ class GithubStore implements CacheableStore {
     this.cache.clear()
     this.cachedRepos = []
     await this.getAppReleaseFile()
-    await this.updateAppReleaseFile()
+    await Promise.all([this.getAppLatestJsonFile(force), this.getClientLatestJsonFile(force)])
   }
 
   private saveAppReleaseFile = async (appReleaseFile?: AppReleaseFile): Promise<void> => {
     if (!this.appReleases) {
-      this.appReleases = appReleaseFile ?? defaultReleaseFile
+      this.appReleases = appReleaseFile ?? defaultAppReleaseData
     }
     try {
       await saveAppReleaseData(this.appReleases)
@@ -148,18 +172,34 @@ class GithubStore implements CacheableStore {
     }
   }
 
+  private saveClientReleaseFile = async (clientReleaseFile?: ClientReleaseFile): Promise<void> => {
+    if (!this.clientReleases) {
+      this.clientReleases = clientReleaseFile ?? defaultClientReleaseFile
+    }
+    try {
+      await saveClientReleaseData(this.clientReleases)
+      this.notifyListeners('client', this.clientReleases.releases)
+    } catch (error) {
+      logger.error('Failed to save app release data:', {
+        error: error as Error,
+        function: 'saveAppReleaseFile',
+        source: 'GithubStore'
+      })
+    }
+  }
+
   private getAppReleaseFile = async (): Promise<AppReleaseFile> => {
     if (!this.appReleases || !this.appReleases.timestamp || !this.isCacheValid(this.appReleases)) {
       try {
         const updatedReleaseData = await readAppReleaseData()
-        this.appReleases = updatedReleaseData ?? defaultReleaseFile
+        this.appReleases = updatedReleaseData ?? defaultAppReleaseData
       } catch (error) {
         logger.error('Failed to update app release data:', {
           error: error as Error,
           function: 'getAppReleaseFile',
           source: 'GithubStore'
         })
-        this.appReleases = this.appReleases || defaultReleaseFile
+        this.appReleases = this.appReleases || defaultAppReleaseData
         await this.saveAppReleaseFile()
         return this.appReleases
       }
@@ -167,121 +207,215 @@ class GithubStore implements CacheableStore {
     return this.appReleases
   }
 
+  private getClientReleaseFile = async (): Promise<ClientReleaseFile> => {
+    if (
+      !this.clientReleases ||
+      !this.clientReleases.timestamp ||
+      !this.isCacheValid(this.clientReleases)
+    ) {
+      try {
+        const updatedReleaseData = await readClientReleaseData()
+        isValidClientReleaseFile(updatedReleaseData)
+        this.clientReleases = updatedReleaseData ?? defaultClientReleaseFile
+      } catch (error) {
+        logger.error('Failed to update client release data:', {
+          error: error as Error,
+          function: 'getClientReleaseFile',
+          source: 'GithubStore'
+        })
+        this.clientReleases = this.clientReleases || defaultClientReleaseFile
+        await this.saveClientReleaseFile()
+        return this.clientReleases
+      }
+    }
+    return this.clientReleases
+  }
+
   /**
    * Updates the application release file by fetching the latest release information from the GitHub API.
    * This method retrieves the latest release from the main repository, fetches the 'latest.json' and 'community.json'
    * assets, and updates the application release file accordingly.
    */
-  private async updateAppReleaseFile(): Promise<void> {
-    const mainRepoReleases = await this.fetchLatestRelease('github.com/itsriprod/deskthing-apps')
-    const latestRelease = mainRepoReleases[0]
-    const latestJson = await this.fetchAssetContent(
-      latestRelease.assets.find((a) => a.name === 'latest.json')
-    )
-
-    const appReleases = await this.getAppReleaseFile()
-
+  private async getAppLatestJsonFile(force = false): Promise<void> {
     try {
-      logger.info('Updating community file...', {
-        function: 'updateAppReleaseFile',
-        source: 'GithubStore'
-      })
+      const appReleases = await this.getAppReleaseFile()
 
-      const communityJson = await this.fetchAssetContent(
-        latestRelease.assets.find((a) => a.name === 'community.json')
+      // Early break if the cache is valid still
+      if (this.isCacheValid(appReleases) && force === false) {
+        return
+      }
+
+      const mainRepoReleases = await this.fetchLatestRelease('github.com/itsriprod/deskthing-apps')
+      const latestRelease = mainRepoReleases[0]
+      const latestJson = await this.fetchAppAssetContent(
+        latestRelease.assets.find((a) => a.name === 'latest.json')
       )
-      if (!communityJson) {
-        throw new Error('Invalid community.json')
-      }
 
-      isValidAppReleaseMeta(communityJson)
+      try {
+        logger.info('Updating community file...', {
+          function: 'getAppLatestJsonFile',
+          source: 'GithubStore'
+        })
 
-      if (communityJson.type === 'external') {
-        appReleases.references = [
-          ...communityJson.releases,
-          ...appReleases.references.filter(
-            (r) => !communityJson.releases.some((c) => c.id === r.id)
-          )
-        ]
-
-        appReleases.references = appReleases.references.map((r) =>
-          appReleases.releases.some((c) => c.type != 'external' && c.repository == r.repository)
-            ? { ...r, added: true }
-            : r
+        const communityJson = await this.fetchAppAssetContent(
+          latestRelease.assets.find((a) => a.name === 'community.json')
         )
+
+        if (!communityJson) {
+          throw new Error('Invalid community.json')
+        }
+
+        isValidAppReleaseMeta(communityJson)
+
+        if (communityJson.type === 'external') {
+          appReleases.references = [
+            ...communityJson.releases,
+            ...appReleases.references.filter(
+              (r) => !communityJson.releases.some((c) => c.id === r.id)
+            )
+          ]
+
+          appReleases.references = appReleases.references.map((r) =>
+            appReleases.releases.some((c) => c.type != 'external' && c.repository == r.repository)
+              ? { ...r, added: true }
+              : r
+          )
+        }
+      } catch (error) {
+        logger.error('Error fetching community.json:', {
+          function: 'getAppLatestJsonFile',
+          source: 'GithubStore',
+          error: error as Error
+        })
       }
-    } catch (error) {
-      logger.error('Error fetching community.json:', {
-        function: 'updateAppReleaseFile',
-        source: 'GithubStore',
-        error: error as Error
-      })
-    }
 
-    try {
-      logger.info('Updating app release file...', {
-        function: 'updateAppReleaseFile',
-        source: 'GithubStore'
-      })
+      try {
+        logger.info('Updating app release file...', {
+          function: 'getAppLatestJsonFile',
+          source: 'GithubStore'
+        })
 
-      if (!latestJson) {
-        throw new Error('[updateAppReleaseFile] Invalid latest.json')
-      }
-      isValidAppReleaseMeta(latestJson)
+        if (!latestJson) {
+          throw new Error('[getAppLatestJsonFile] Invalid latest.json. Not found')
+        }
+        isValidAppReleaseMeta(latestJson)
 
-      if (latestJson.type == 'multi') {
-        appReleases.version = latestJson.version
+        // Merge it as multi
         appReleases.releases = [
           latestJson,
           ...appReleases.releases.filter((r) => r.id !== latestJson.id)
         ]
-      }
 
-      for (const release of appReleases.releases) {
-        try {
-          const newRelease = this.updateAppRelease(release)
+        // For every release
+        for (const release of appReleases.releases) {
+          try {
+            // Get the latest.json from the release
+            const newRelease = this.getAppLatestJson(release)
 
-          Object.assign(release, newRelease)
-        } catch (error) {
-          const releaseId = release.type == 'multi' ? release.repository : release.id
+            Object.assign(release, newRelease)
+          } catch (error) {
+            const releaseId = release.type == 'multi' ? release.repository : release.id
 
-          logger.error(`Error fetching latest.json for ${releaseId}`, {
-            function: 'updateAppReleaseFile',
-            source: 'GithubStore',
-            error: error as Error
-          })
+            logger.error(`Error fetching latest.json for ${releaseId}`, {
+              function: 'getAppLatestJsonFile',
+              source: 'GithubStore',
+              error: error as Error
+            })
+          }
         }
+      } catch (error) {
+        logger.error('Error fetching latest.json:', {
+          function: 'getAppLatestJsonFile',
+          source: 'GithubStore',
+          error: error as Error
+        })
       }
+
+      logger.info('Update Successful!', {
+        function: 'getAppLatestJsonFile',
+        source: 'GithubStore'
+      })
+
+      appReleases.timestamp = Date.now()
+      this.saveAppReleaseFile(appReleases)
+    } catch (error) {
+      logger.error('Error updating app release file:', {
+        function: 'getAppLatestJsonFile',
+        source: 'GithubStore',
+        error: error as Error
+      })
+    }
+  }
+
+  private async getClientLatestJsonFile(force = false): Promise<void> {
+    const clientReleaseFile = await this.getClientReleaseFile()
+
+    // Early break if the cache is valid still
+    if (this.isCacheValid(clientReleaseFile) && force === false) {
+      return
+    }
+
+    try {
+      logger.info('Updating app release file...', {
+        function: 'getAppLatestJsonFile',
+        source: 'GithubStore'
+      })
+
+      const repositories = [
+        ...new Set([
+          ...clientReleaseFile.releases.map((r) => r.repository.toLowerCase()),
+          ...clientReleaseFile.repositories.map((r) => r.toLowerCase())
+        ])
+      ]
+
+      // Awaits for all of hte getClientLatestJsons to run an then filters out any that failed
+      clientReleaseFile.releases = (
+        await Promise.all(
+          repositories.map(async (repo) => {
+            try {
+              const newRelease = await this.getClientLatestJson(repo)
+              return newRelease
+            } catch (error) {
+              logger.error(`Error fetching latest.json for ${repo}`, {
+                function: 'getClientLatestJsonFile',
+                source: 'GithubStore',
+                error: error as Error
+              })
+              return undefined
+            }
+          })
+        )
+      ).filter((release): release is ClientReleaseMeta => release !== undefined)
     } catch (error) {
       logger.error('Error fetching latest.json:', {
-        function: 'updateAppReleaseFile',
+        function: 'getClientLatestJsonFile',
         source: 'GithubStore',
         error: error as Error
       })
     }
 
     logger.info('Update Successful!', {
-      function: 'updateAppReleaseFile',
+      function: 'getClientLatestJsonFile',
       source: 'GithubStore'
     })
 
-    appReleases.timestamp = Date.now()
-    this.saveAppReleaseFile(appReleases)
+    clientReleaseFile.timestamp = Date.now()
+    this.saveClientReleaseFile(clientReleaseFile)
   }
 
-  private updateAppRelease = async (
+  private getAppLatestJson = async (
     release: AppReleaseMeta | string
   ): Promise<AppReleaseMeta | undefined> => {
     try {
-      if (!release) throw new Error('[updateAppRelease] Release does not exist')
+      if (!release) throw new Error('[getAppLatestJson] Release does not exist')
       if (typeof release !== 'string' && !['single', 'multi'].includes(release.type)) {
-        throw new Error('[updateAppRelease] Invalid release type')
+        throw new Error('[getAppLatestJson] Invalid release type')
       }
 
       let releaseUrl: string = ''
       if (typeof release !== 'string') {
         if (!release || (release.type !== 'single' && release.type !== 'multi'))
-          throw new Error('[updateAppRelease] Invalid release (release is not single or multi)')
+          throw new Error('[getAppLatestJson] Invalid release (release is not single or multi)')
         releaseUrl = release.repository
       } else {
         releaseUrl = release
@@ -290,7 +424,7 @@ class GithubStore implements CacheableStore {
       const repoReleases = await this.fetchLatestRelease(releaseUrl)
       const latest = repoReleases[0]
 
-      const latestJson = await this.fetchAssetContent(
+      const latestJson = await this.fetchAppAssetContent(
         latest.assets.find((a) => a.name === 'latest.json')
       )
 
@@ -323,6 +457,13 @@ class GithubStore implements CacheableStore {
         latestJson.createdAt = new Date(releaseFile?.created_at || '').getTime()
         latestJson.updateUrl = releaseFile?.browser_download_url || ''
       } else {
+        logger.warn(
+          `Unable to determine the latest.json file for ${releaseUrl}. Attempting to reconstruct it`,
+          {
+            function: 'getAppLatestJson',
+            source: 'GithubStore'
+          }
+        )
         const repoMatch = releaseUrl.match(/github\.com\/([^/]+)\/([^/]+)/)
 
         const releaseFile =
@@ -412,14 +553,14 @@ class GithubStore implements CacheableStore {
       return latestJson
     } catch (error) {
       logger.error(`Error fetching latest.json for ${release}`, {
-        function: 'updateAppRelease',
+        function: 'getAppLatestJson',
         source: 'GithubStore',
         error: error as Error
       })
 
       if (typeof release !== 'string') {
         if (!release || (release.type !== 'single' && release.type !== 'multi'))
-          throw new Error('[updateAppRelease] Invalid release (release is not single or multi)')
+          throw new Error('[getAppLatestJson] Invalid release (release is not single or multi)')
         return release
       }
 
@@ -435,7 +576,7 @@ class GithubStore implements CacheableStore {
         platforms: [],
         homepage: release,
         repository: release,
-        updateUrl: release,
+        updateUrl: '',
         tags: [],
         requiredVersions: {
           server: '>=0.0.0',
@@ -454,6 +595,85 @@ class GithubStore implements CacheableStore {
     }
   }
 
+  private getClientLatestJson = async (
+    release: ClientReleaseMeta | string
+  ): Promise<ClientReleaseMeta | undefined> => {
+    try {
+      if (!release) throw new Error('[getClientLatestJson] Release does not exist')
+
+      let releaseUrl: string = ''
+      if (typeof release !== 'string') {
+        releaseUrl = release.updateUrl
+      } else {
+        releaseUrl = release
+      }
+
+      // Get the initial release for the client
+      const repoReleases = await this.fetchLatestRelease(releaseUrl)
+      const latest = repoReleases[0]
+
+      const latestJson = await this.fetchClientAssetContent(
+        latest.assets.find((a) => a.name === 'latest.json')
+      )
+
+      if (latestJson) {
+        const releaseFile = latest.assets.find((a) => a.name.includes(latestJson.id))
+        if (!releaseFile) {
+          logger.error(`Error finding the latest release for ${release}`, {
+            function: 'getClientLatestJson',
+            source: 'GithubStore',
+            error: new Error('latest release not found')
+          })
+        }
+        latestJson.downloads = releaseFile?.download_count || 0
+        latestJson.createdAt = new Date(releaseFile?.created_at || '').getTime()
+        latestJson.updateUrl = releaseFile?.browser_download_url || ''
+      } else {
+        logger.error(`Error fetching latest.json for ${release}`, {
+          function: 'getClientLatestJson',
+          source: 'GithubStore',
+          error: new Error('latest  not found')
+        })
+      }
+
+      return latestJson
+    } catch (error) {
+      logger.error(`Error fetching latest.json for ${release}`, {
+        function: 'getClientLatestJson',
+        source: 'GithubStore',
+        error: error as Error
+      })
+
+      if (typeof release !== 'string') {
+        return release
+      }
+
+      const repoMatch = release.match(/github\.com\/([^/]+)\/([^/]+)/)
+
+      const rebuiltClientMeta: ClientReleaseMeta = {
+        id: repoMatch?.[2] || 'Unknown',
+        label: repoMatch?.[2] || 'Unknown App',
+        version: '0.0.0',
+        description: 'No description available',
+        author: repoMatch?.[1] || 'Unknown Author',
+        updateUrl: release,
+        repository: release,
+        requiredServer: '>=0.0.0',
+        icon: '',
+        size: 0,
+        hash: '',
+        hashAlgorithm: 'sha512',
+        downloads: 0,
+        updatedAt: Date.now(),
+        createdAt: Date.now(),
+        short_name: 'unknown',
+        builtFor: 'unknown'
+      }
+
+      return rebuiltClientMeta
+    }
+  }
+
   /**
    * Fetches the content of a GitHub asset, either from a cached version or by fetching it from the GitHub API.
    * If the asset is not found or an error occurs during the fetch, this method returns `undefined`.
@@ -461,19 +681,23 @@ class GithubStore implements CacheableStore {
    * @param asset The GitHub asset to fetch the content for, or `undefined` if no asset is available.
    * @returns The content of the asset as an `AppReleaseMeta` object, or `undefined` if the content could not be fetched.
    */
-  private async fetchAssetContent(
+  private async fetchAppAssetContent(
     asset: GithubAsset | undefined
   ): Promise<AppReleaseMeta | undefined> {
     if (!asset) return undefined
-    const cached = this.assetCache.get(asset.browser_download_url)
+    const cached = this.assetAppCache.get(asset.browser_download_url.toLowerCase())
 
     if (cached && this.isCacheValid(cached)) {
+      logger.info(`Using cached asset content for ${asset.browser_download_url}`, {
+        function: 'fetchAppAssetContent',
+        source: 'GithubStore'
+      })
       return cached.data
     }
 
     try {
       logger.info(`Fetching asset content for ${asset.browser_download_url}`, {
-        function: 'fetchAssetContent',
+        function: 'fetchAppAssetContent',
         source: 'GithubStore'
       })
       const assetData = await fetchAssetContent<AppReleaseMeta>(asset)
@@ -482,20 +706,73 @@ class GithubStore implements CacheableStore {
         return undefined
       }
 
-      this.assetCache.set(asset.browser_download_url, {
+      this.assetAppCache.set(asset.browser_download_url.toLowerCase(), {
         timestamp: Date.now(),
         data: assetData
       })
 
       logger.info(`Successfully fetched asset content for ${asset.browser_download_url}`, {
-        function: 'fetchAssetContent',
+        function: 'fetchAppAssetContent',
         source: 'GithubStore'
       })
 
       return assetData
     } catch (error) {
       logger.error('Error fetching asset content:', {
-        function: 'fetchAssetContent',
+        function: 'fetchAppAssetContent',
+        source: 'GithubStore',
+        error: error as Error
+      })
+      return undefined
+    }
+  }
+
+  /**
+   * Fetches the content of a GitHub asset, either from a cached version or by fetching it from the GitHub API.
+   * If the asset is not found or an error occurs during the fetch, this method returns `undefined`.
+   *
+   * @param asset The GitHub asset to fetch the content for, or `undefined` if no asset is available.
+   * @returns The content of the asset as an `AppReleaseMeta` object, or `undefined` if the content could not be fetched.
+   */
+  private async fetchClientAssetContent(
+    asset: GithubAsset | undefined
+  ): Promise<ClientReleaseMeta | undefined> {
+    if (!asset) return undefined
+    const cached = this.assetClientCache.get(asset.browser_download_url.toLowerCase())
+
+    if (cached && this.isCacheValid(cached)) {
+      logger.info(`Using cached asset content for ${asset.browser_download_url}`, {
+        function: 'fetchAppAssetContent',
+        source: 'GithubStore'
+      })
+      return cached.data
+    }
+
+    try {
+      logger.info(`Fetching asset content for ${asset.browser_download_url}`, {
+        function: 'fetchClientAssetContent',
+        source: 'GithubStore'
+      })
+      const assetData = await fetchAssetContent<ClientReleaseMeta>(asset)
+
+      if (!assetData) {
+        return undefined
+      }
+
+      this.assetClientCache.set(asset.browser_download_url.toLowerCase(), {
+        timestamp: Date.now(),
+        data: assetData
+      })
+
+      logger.info(`Successfully fetched asset content for ${asset.browser_download_url}`, {
+        function: 'fetchClientAssetContent',
+        source: 'GithubStore'
+      })
+
+      return assetData
+    } catch (error) {
+      logger.error('Error fetching asset content:', {
+        function: 'fetchClientAssetContent',
         source: 'GithubStore',
         error: error as Error
       })
@@ -520,46 +797,30 @@ class GithubStore implements CacheableStore {
   /**
    * Fetches the releases from the github api or returns the cached data if it is still valid
    * @param repoUrl
-   * @returns
-   */
-  private async fetchReleases(repoUrl: string): Promise<GithubRelease[]> {
-    const cacheEntry = this.cache.get(repoUrl)
-
-    if (cacheEntry && this.isCacheValid(cacheEntry)) {
-      logger.info('Returning cached data', {
-        source: 'GithubStore',
-        function: 'fetchReleases'
-      })
-      return cacheEntry.data
-    }
-
-    console.log('Fetching data from github')
-    const releases = await getReleases(repoUrl)
-
-    this.cache.set(repoUrl, { timestamp: Date.now(), data: releases })
-    if (!this.cachedRepos.includes(repoUrl)) {
-      this.cachedRepos.push(repoUrl)
-    }
-
-    return releases
-  }
-
-  /**
-   * Fetches the releases from the github api or returns the cached data if it is still valid
-   * @param repoUrl
-   * @returns
+   * @returns Promise<GithubRelease[]>
+   * @throws Error when the request fails
    */
   private async fetchLatestRelease(repoUrl: string): Promise<GithubRelease[]> {
-    const cacheEntry = this.cache.get(repoUrl)
+    const normalizedUrl = repoUrl.toLowerCase()
 
-    if (cacheEntry && this.isCacheValid(cacheEntry)) {
+    const cacheEntry = this.cache.get(normalizedUrl)
+
+    if (cacheEntry && this.isCacheValid(cacheEntry) && !cacheEntry.isError) {
       logger.info('Returning cached data', {
         source: 'GithubStore',
         function: 'fetchReleases'
       })
-      return cacheEntry.data
+      return await cacheEntry.data
     }
 
+    const fetchOperation = this.doFetchRelease(normalizedUrl)
+
+    this.cache.set(repoUrl.toLowerCase(), { timestamp: Date.now(), data: fetchOperation })
+
+    return fetchOperation
+  }
+
+  private doFetchRelease = async (repoUrl: string): Promise<GithubRelease[]> => {
     try {
       logger.info(`Fetching latest release for ${repoUrl} from github`, {
         function: 'fetchLatestRelease',
@@ -567,7 +828,6 @@ class GithubStore implements CacheableStore {
       })
       const release = await getLatestRelease(repoUrl)
 
-      this.cache.set(repoUrl, { timestamp: Date.now(), data: [release] })
       if (!this.cachedRepos.includes(repoUrl)) {
         this.cachedRepos.push(repoUrl)
       }
@@ -577,66 +837,28 @@ class GithubStore implements CacheableStore {
         source: 'GithubStore'
       })
 
+      this.cache.set(repoUrl, {
+        timestamp: Date.now(),
+        data: [release]
+      })
+
       return [release]
     } catch (error) {
-      logger.error('Error fetching latest release:', {
+      logger.error(`Error fetching latest release: ${repoUrl}`, {
         function: 'fetchLatestRelease',
         source: 'GithubStore',
         error: error as Error
       })
+
+      this.cache.set(repoUrl, {
+        timestamp: Date.now(),
+        data: [],
+        isError: true
+      })
+
       throw new Error('Error fetching latest release', { cause: error })
     }
   }
-
-  public async fetchClientRepo(repoUrl: string): Promise<SortedReleases | undefined> {
-    try {
-      const releases = await this.fetchReleases(repoUrl)
-      const updatedClientReleases: SortedReleases = { ...this.clientReleases }
-
-      releases.forEach((release) => {
-        release.assets.forEach((asset) => {
-          if (!asset.name.includes('-client')) return
-          const clientDetails = this.extractReleaseDetails(asset.name)
-          if (!updatedClientReleases[clientDetails.name]) {
-            updatedClientReleases[clientDetails.name] = []
-          }
-          const assetExists = updatedClientReleases[clientDetails.name].some(
-            (existingAsset) => existingAsset.updated_at === asset.updated_at
-          )
-          if (!assetExists) {
-            updatedClientReleases[clientDetails.name].push(asset)
-          }
-        })
-      })
-
-      Object.keys(updatedClientReleases).forEach((clientName) => {
-        updatedClientReleases[clientName].sort(
-          (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-        )
-      })
-
-      this.clientReleases = updatedClientReleases
-      this.notifyListeners('client', updatedClientReleases)
-      return updatedClientReleases
-    } catch (error) {
-      logger.error('Error fetching client repo:', {
-        function: 'fetchClientRepo',
-        source: 'GithubStore',
-        error: error as Error
-      })
-      throw new Error('Error fetching client repo', { cause: error })
-    }
-  }
-
-  private extractReleaseDetails(releaseName: string): { name: string; version: string } {
-    const parts = releaseName.split('-')
-    const appDetails = {
-      name: parts[0],
-      version: parts[2] + (parts[3] ? '-' + parts[3] : '')
-    }
-    return appDetails
-  }
-
   public async getAppReferences(): Promise<AppReleaseCommunity[] | undefined> {
     return this.appReleases?.references || (await this.getAppReleaseFile()).references
   }
@@ -684,7 +906,7 @@ class GithubStore implements CacheableStore {
    */
   public addAppRepository = async (repoUrl: string): Promise<AppReleaseMeta | undefined> => {
     try {
-      const appReleaseMeta = await this.updateAppRelease(repoUrl)
+      const appReleaseMeta = await this.getAppLatestJson(repoUrl)
 
       if (!appReleaseMeta) {
         logger.warn('Failed to update app release', {
@@ -760,12 +982,8 @@ class GithubStore implements CacheableStore {
     }
   }
 
-  public getClientReleases = async (): Promise<SortedReleases | undefined> => {
-    if (!this.clientReleases) {
-      const clientRepo = await this.fetchClientRepo('https://github.com/itsriprod/deskthing-client')
-      return clientRepo
-    }
-    return this.clientReleases
+  public getClientReleases = async (): Promise<ClientReleaseMeta[] | undefined> => {
+    return this.clientReleases?.releases || (await this.getClientReleaseFile()).releases
   }
 }
 

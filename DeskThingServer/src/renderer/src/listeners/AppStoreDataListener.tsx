@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useAppStore } from '../stores'
-import { App } from '@DeskThing/types'
+import { App, AppSettings } from '@DeskThing/types'
 
 /**
  * Listens for app data events and updates the app list in the application store.
@@ -12,6 +12,7 @@ import { App } from '@DeskThing/types'
  */
 const AppStoreDataListener = (): null => {
   const setAppList = useAppStore((state) => state.setAppList)
+  const setAppSettings = useAppStore((state) => state.setAppSettings)
 
   const initialRequest = async (): Promise<void> => {
     const appsList = await window.electron.getApps()
@@ -25,11 +26,20 @@ const AppStoreDataListener = (): null => {
       setAppList(response)
     }
 
+    const handleAppSettings = async (
+      _event,
+      appData: { appId: string; data: AppSettings }
+    ): Promise<void> => {
+      setAppSettings(appData.appId, appData.data)
+    }
+
     // Listen for IPC events
     window.electron.ipcRenderer.on('app-data', handleAppData)
+    window.electron.ipcRenderer.on('app-settings', handleAppSettings)
     // Clean up the IPC listener when the component unmounts
     return () => {
       window.electron.ipcRenderer.removeAllListeners('app-data')
+      window.electron.ipcRenderer.removeAllListeners('app-settings')
     }
   }, [setAppList])
 

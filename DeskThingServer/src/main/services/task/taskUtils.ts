@@ -166,10 +166,10 @@ export const sanitizeTaskReference = (task: Partial<TaskReference | Task>): Task
   return updatedTask as TaskReference
 }
 
-export const sanitizeTask = (task: Partial<Task>): Task => {
+export const sanitizeTask = (task: Partial<Task>, source?: string): Task => {
   const updatedTask = {
     id: task.id || '',
-    source: task.source || '',
+    source: source || task.source || '',
     version: task.version || '1.0.0',
     available: task.available ?? false,
     completed: task.completed ?? false,

@@ -66,7 +66,7 @@ export type AppReleaseFile = {
 }
 
 /**
- * Not currently in use!!
+ * Not currently in use!
  */
 export type ClientReleaseFile = {
   version: string

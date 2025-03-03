@@ -1,9 +1,9 @@
+import { ClientManifest } from '@deskthing/types'
+
 /**
  * The client object that keeps track of connected clients
  */
-export interface Client {
-  ip: string
-  port?: number
+export interface Client extends Partial<ClientManifest> {
   hostname?: string
   headers?: Record<string, string>
   userAgent?: string
@@ -12,12 +12,8 @@ export interface Client {
   adbId?: string
   timestamp: number
   currentApp?: string
-  version?: string
-  client_name?: string
-  description?: string
-  device_type?: { id: number; name: string }
-  default_view?: string
   miniplayer?: string
+  default_view?: string
 }
 
 export interface ADBClient {

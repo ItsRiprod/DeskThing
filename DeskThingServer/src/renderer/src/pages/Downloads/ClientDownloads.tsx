@@ -6,32 +6,24 @@ import {
   IconLink,
   IconUpload,
   IconDownload,
-  IconLogs,
   IconLoading,
   IconRefresh
 } from '@renderer/assets/icons'
 import { useClientStore, useGithubStore, usePageStore } from '@renderer/stores'
 import MainElement from '@renderer/nav/MainElement'
 import DownloadNotification from '@renderer/overlays/DownloadNotification'
-import Overlay from '@renderer/overlays/Overlay'
 import { useSearchParams } from 'react-router-dom'
 import useTaskStore from '@renderer/stores/taskStore'
-
-const extractReleaseDetails = (releaseName: string): { name: string; version: string } => {
-  const parts = releaseName.split('-')
-  const appDetails = {
-    name: parts[0],
-    version: parts[2] + (parts[3] ? '-' + parts[3] : '')
-  }
-  return appDetails
-}
+import { ClientReleaseMeta } from '@DeskThing/types'
 
 const ClientDownloads: React.FC = () => {
   const clientReleases = useGithubStore((githubStore) => githubStore.clientReleases)
+  const refresh = useGithubStore((githubStore) => githubStore.refreshData)
 
   const installedClient = useClientStore((clientStore) => clientStore.clientManifest)
   const refreshClient = useClientStore((clientStore) => clientStore.requestClientManifest)
   const [clientRefreshing, setClientRefreshing] = useState(false)
+
   // Running clients
   const loadClientUrl = useClientStore((clientStore) => clientStore.loadClientUrl)
   const loadClientZip = useClientStore((clientStore) => clientStore.loadClientZip)
@@ -45,9 +37,6 @@ const ClientDownloads: React.FC = () => {
   const [showLogging, setShowLogging] = useState(false)
   const [selectingFile, setSelectingFile] = useState(false)
   const [loading, setLoading] = useState(false)
-
-  // Displaying available downloads
-  const [clientDownloads, setClientDownloads] = useState<string | null>(null)
 
   // Navigation
   const setPage = usePageStore((pageStore) => pageStore.setPage)
@@ -67,7 +56,7 @@ const ClientDownloads: React.FC = () => {
       setShowLogging(true)
       try {
         await loadClientZip(file)
-      } catch (error) {
+      } catch {
         // Handle error
       } finally {
         setTimeout(() => {
@@ -85,40 +74,18 @@ const ClientDownloads: React.FC = () => {
   const handleDownloadClick = async (url: string): Promise<void> => {
     setShowLogging(true)
     setLoading(true)
-    setClientDownloads(null)
     try {
       await loadClientUrl(url)
       setTimeout(() => {
         setLoading(false)
         resolveStep('client', 'download')
       }, 2000)
-    } catch (error) {
+    } catch {
       setTimeout(() => {
         setLoading(false)
         setShowLogging(false)
       }, 2000)
     }
-  }
-
-  const handleDownloadLatestClick = async (name: string): Promise<void> => {
-    if (clientReleases[name] && clientReleases[name].length > 0) {
-      const latest = clientReleases[name].reduce((latest, current) =>
-        new Date(current.updated_at) > new Date(latest.updated_at) ? current : latest
-      )
-      handleDownloadClick(latest.browser_download_url)
-    }
-  }
-
-  const handleMoreDownloadsClick = (name: string): void => {
-    setClientDownloads(name)
-  }
-
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
   const onRefreshClick = async (): Promise<void> => {
@@ -134,6 +101,10 @@ const ClientDownloads: React.FC = () => {
     setSearchParams(searchParams)
   }
 
+  const handleDownloadLatestClick = async (release: ClientReleaseMeta): Promise<void> => {
+    handleDownloadClick(release.updateUrl)
+  }
+
   return (
     <div className="flex h-full w-full">
       {logging && showLogging && (
@@ -142,60 +113,6 @@ const ClientDownloads: React.FC = () => {
           loggingData={logging}
           onClose={handleDownloadFinalized}
         />
-      )}
-      {clientDownloads && (
-        <Overlay
-          onClose={() => setClientDownloads(null)}
-          className="border border-gray-500 w-4/5 lg:w-[960px] h-5/6 p-5 flex flex-col"
-        >
-          <div className="text-2xl py-5">
-            {clientDownloads.charAt(0).toUpperCase() + clientDownloads.slice(1).toLowerCase()}{' '}
-            Client Downloads
-          </div>
-          <div className="w-full h-full overflow-y-auto">
-            <div className="w-full h-full flex flex-col gap-2">
-              {clientReleases[clientDownloads] &&
-                clientReleases[clientDownloads].map((release, index) => {
-                  const clientDetails = extractReleaseDetails(release.name)
-                  const fileSize = formatFileSize(release.size)
-
-                  return (
-                    <div
-                      className="flex flex-row justify-between items-center bg-zinc-900 px-3 p-2 rounded"
-                      key={index}
-                    >
-                      <div className="">
-                        <div className="flex items-center">
-                          <h1 className="text-2xl font-semibold">
-                            {clientDetails.name.charAt(0).toUpperCase() +
-                              clientDetails.name.slice(1).toLowerCase()}
-                          </h1>
-                          <p className="italic text-gray-500">
-                            {clientDetails.version.replace('.zip', '')}
-                          </p>
-                        </div>
-                        <p className="text-xs text-gray-500">{release.download_count} Downloads</p>
-                        <p className="text-xs text-gray-500">
-                          Uploaded {new Date(release.created_at).toDateString()}
-                        </p>
-                      </div>
-                      <div>
-                        <Button
-                          className="group gap-2"
-                          onClick={() => handleDownloadClick(release.browser_download_url)}
-                        >
-                          <p className="group-hover:block hidden text-center flex-grow">
-                            Download {fileSize}
-                          </p>
-                          <IconDownload className="group-hover:stroke-2 stroke-1" />
-                        </Button>
-                      </div>
-                    </div>
-                  )
-                })}
-            </div>
-          </div>
-        </Overlay>
       )}
       <Sidebar className="flex justify-between flex-col h-full max-h-full md:items-stretch xs:items-center">
         <div className="flex flex-col gap-2 items-center justify-center">
@@ -247,24 +164,20 @@ const ClientDownloads: React.FC = () => {
       <MainElement className="p-4">
         <div className="w-full h-full relative overflow-y-auto flex flex-col">
           <div className="absolute inset w-full h-full flex flex-col gap-2">
-            {Object.keys(clientReleases).length > 0 ? (
-              Object.keys(clientReleases).map((name) => (
+            {clientReleases.length > 0 ? (
+              clientReleases.map((release) => (
                 <div
-                  key={name}
+                  key={release.id}
                   className="flex bg-zinc-900 rounded-lg justify-between items-center p-2"
                 >
                   <div>
-                    <h1 className="text-xl">
-                      {name.charAt(0).toUpperCase() + name.slice(1).toLowerCase()} Client
-                    </h1>
-                    <p className="text-sm text-gray-500">
-                      {clientReleases[name].length} available downloads
-                    </p>
+                    <h1 className="text-xl">{release.label}</h1>
+                    <p className="text-sm text-gray-500">{release.downloads} downloads</p>
                   </div>
                   <div className="flex gap-2">
                     <Button
                       className="group gap-2"
-                      onClick={() => handleDownloadLatestClick(name)}
+                      onClick={() => handleDownloadLatestClick(release)}
                       disabled={loading}
                     >
                       <p className="group-hover:block hidden text-center flex-grow">
@@ -276,16 +189,6 @@ const ClientDownloads: React.FC = () => {
                         <IconDownload className="group-hover:stroke-2 stroke-1" />
                       )}
                     </Button>
-                    <Button
-                      className="group gap-2"
-                      onClick={() => handleMoreDownloadsClick(name)}
-                      disabled={loading}
-                    >
-                      <p className="group-hover:block hidden text-center flex-grow">
-                        More Downloads
-                      </p>
-                      <IconLogs className="group-hover:stroke-2 stroke-1" />
-                    </Button>
                   </div>
                 </div>
               ))
@@ -293,6 +196,10 @@ const ClientDownloads: React.FC = () => {
               <div className="w-full h-full flex flex-col justify-center items-center">
                 <h1 className="text-2xl font-semibold">Uh oh-</h1>
                 <p>Unable to find or fetch releases</p>
+                <Button onClick={refresh} className="p-2 bg-zinc-800 hover:bg-zinc-900 gap-2">
+                  <IconRefresh className="stroke-2" />
+                  <p>Attempt to retrieve clients again</p>
+                </Button>
                 <p className="text-sm text-gray-500 italic text-center">
                   Check the logs for a potential reason. You might have hit the Github API limit.
                   Try again later or add a repo in settings!

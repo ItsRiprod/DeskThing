@@ -9,7 +9,6 @@ import {
   SocketData,
   Action,
   SettingsType,
-  AppSettings,
   ServerEvent,
   EventPayload
 } from '@DeskThing/types'
@@ -354,6 +353,13 @@ const handleServerMessage = async (
               source: 'client'
             })
             break
+          case 'log':
+            Logger.log(messageData.payload.type, `${messageData.payload.payload}`, {
+              domain: client.connectionId,
+              function: messageData.payload.app,
+              source: 'client'
+            })
+            break
           case 'device':
             HandleDeviceData(messageData.payload as string)
             break
@@ -378,7 +384,7 @@ const handleServerMessage = async (
 
               // Update the client to the new one
               client.connected = true
-              client.client_name = manifest.name
+              client.name = manifest.name
               client.version = manifest.version
               client.description = manifest.description
 
@@ -462,13 +468,16 @@ const setupListeners = async (): Promise<void> => {
       sendMessageToClients(SocketData)
     })
 
-    appStore.on('apps', (updatedApps) => {
-      const filteredAppData = updatedApps.filter((app) => app.manifest?.isWebApp !== false)
+    appStore.on('apps', ({ data }) => {
+      const filteredAppData = data.filter((app) => app.manifest?.isWebApp !== false)
       sendMessageToClient(undefined, { app: 'client', type: 'config', payload: filteredAppData })
     })
 
-    appStore.on('settings', async (app: string, settings: AppSettings) => {
-      sendSettingData(app, settings)
+    appStore.on('settings', async (settingData) => {
+      // handle potentially empty settings
+      if (!settingData) return
+
+      sendSettingData(settingData.appId, settingData.data)
     })
   }, 500)
 }

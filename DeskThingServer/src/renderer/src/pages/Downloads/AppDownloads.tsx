@@ -9,6 +9,7 @@ import {
   IconLoading,
   IconLogoGear,
   IconPlus,
+  IconRefresh,
   IconStop,
   IconUpload
 } from '@renderer/assets/icons'
@@ -38,13 +39,14 @@ const AppDownloads: React.FC = () => {
   const getAppReferences = useGithubStore((githubStore) => githubStore.getAppReferences)
   const addRepo = useGithubStore((githubStore) => githubStore.addAppRepo)
   const removeRepo = useGithubStore((githubStore) => githubStore.removeAppRepo)
-  const refresh = useGithubStore((githubStore) => githubStore.refreshApps)
+  const refresh = useGithubStore((githubStore) => githubStore.refreshData)
   const addApp = useAppStore((appStore) => appStore.addApp)
   const stagedAppManifest = useAppStore((appStore) => appStore.stagedManifest)
   const logging = useAppStore((appStore) => appStore.logging)
 
   const [uiState, setUiState] = useState({
-    showCommunity: false
+    showCommunity: false,
+    refreshingApps: false
   })
 
   const [showLogging, setShowLogging] = useState(false)
@@ -79,7 +81,7 @@ const AppDownloads: React.FC = () => {
       setLoading(true)
       try {
         await addApp({ appPath: file })
-      } catch (error) {
+      } catch {
         setShowLogging(false)
         setLoading(false)
       }
@@ -91,7 +93,7 @@ const AppDownloads: React.FC = () => {
     setLoading(true)
     try {
       await addApp({ releaseMeta: releaseMeta })
-    } catch (error) {
+    } catch {
       await setTimeout(() => {
         setShowLogging(false)
         setLoading(false)
@@ -116,6 +118,25 @@ const AppDownloads: React.FC = () => {
       ...prev,
       showCommunity: !prev.showCommunity
     }))
+  }
+
+  const handleRefreshData = async (): Promise<void> => {
+    if (!uiState.refreshingApps) {
+      setUiState((prev) => ({
+        ...prev,
+        refreshingApps: true
+      }))
+      await refresh()
+      setTimeout(
+        () => {
+          setUiState((prev) => ({
+            ...prev,
+            refreshingApps: false
+          }))
+        },
+        Math.random() * 2000 + 1500
+      )
+    }
   }
 
   const handleToggleAddRepo = (): void => {
@@ -189,9 +210,6 @@ const AppDownloads: React.FC = () => {
                   Check the logs for a potential reason. You might have hit the Github API limit.
                   Try again later or add a repo in settings!
                 </p>
-                <Button onClick={refresh} className="mt-2">
-                  <p>Refresh</p>
-                </Button>
               </div>
             )}
             <div className="flex flex-col gap-2">
@@ -218,6 +236,20 @@ const AppDownloads: React.FC = () => {
                     <h1 className="text-2xl font-semibold">Uh oh-</h1>
                   </div>
                 ))}
+            </div>
+            <div className="w-full border h-24 rounded border-gray-500 flex shrink-0 items-center justify-center">
+              <Button
+                disabled={uiState.refreshingApps}
+                onClick={handleRefreshData}
+                className="p-2 group disabled:bg-zinc-900 bg-zinc-800 disabled:font-normal hover:bg-zinc-900 gap-2"
+              >
+                <IconRefresh
+                  className={`${uiState.refreshingApps ? 'animate-spin-smooth' : ''}`}
+                  strokeWidth={1.5}
+                />
+                <p className="hidden group-disabled:block">Refreshing Data</p>
+                <p className="block group-disabled:hidden">Refresh Data</p>
+              </Button>
             </div>
           </div>
         </div>

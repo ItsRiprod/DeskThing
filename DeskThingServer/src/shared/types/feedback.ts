@@ -39,9 +39,9 @@ interface DetailedFeedback extends BaseFeedback {
 
 interface BugFeedback extends DetailedFeedback, SystemInfo {}
 
-interface FeatureFeedback extends BaseFeedback {}
+type FeatureFeedback = BaseFeedback
 
-interface QuestionFeedback extends BaseFeedback {}
+type QuestionFeedback = BaseFeedback
 
 interface OtherFeedback extends DetailedFeedback, SystemInfo {}
 

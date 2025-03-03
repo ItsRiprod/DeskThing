@@ -4,17 +4,10 @@ import {
   AppReleaseCommunity,
   AppReleaseMeta,
   AppSettings,
-  ClientManifest
+  ClientManifest,
+  ClientReleaseMeta
 } from '@DeskThing/types'
-import {
-  Profile,
-  Client,
-  ButtonMapping,
-  Log,
-  SortedReleases,
-  StagedAppManifest,
-  ADBClient
-} from '@shared/types'
+import { Profile, Client, ButtonMapping, Log, StagedAppManifest, ADBClient } from '@shared/types'
 
 type AppData = Record<string, string>
 
@@ -70,7 +63,7 @@ declare global {
         getApps: () => Promise<AppReleaseMeta[]>
         getAppReferences: () => Promise<AppReleaseCommunity[]>
         addAppRepo: (repoUrl: string) => Promise<AppReleaseMeta>
-        getClients: () => Promise<SortedReleases>
+        getClients: () => Promise<ClientReleaseMeta[]>
         removeAppRepo: (repoUrl: string) => Promise<void>
       }
       getLogs: () => Promise<Log[]>

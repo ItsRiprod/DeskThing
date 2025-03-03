@@ -331,7 +331,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
         />
       )}
       <div className="w-full px-1 py-4 flex items-center gap-2">
-        <h1 className="font-semibold text-2xl">{client.device_type?.name || client.client_name}</h1>
+        <h1 className="font-semibold text-2xl">{client.device_type?.name || client.name}</h1>
         <p className="text-gray-500 text-lg">{client.adbId || client.connectionId}</p>
       </div>
       <div className="w-full px-1 gap-1 flex items-center justify-evenly">
@@ -483,7 +483,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
         )}
         <div className="my-4">
           <p className="text-xs font-geistMono text-gray-500">{client.version}</p>
-          <h3 className="text-xl">{client.client_name}</h3>
+          <h3 className="text-xl">{client.name}</h3>
           <p className="text-xs font-geistMono text-gray-500">{client.description}</p>
         </div>
         <div className="my-4">

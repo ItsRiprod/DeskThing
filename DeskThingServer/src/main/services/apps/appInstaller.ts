@@ -287,9 +287,14 @@ export const stageAppFile = async ({
 
     const response = await fetch(filePath)
 
+    let prevPercentage = 0
+
     const trackDownloadProgress = async (received: number, total: number): Promise<void> => {
       const progress = Math.round((received / total) * 100)
-      reply('logging', { status: true, data: `Downloading... ${progress}%`, final: false })
+      if (progress > prevPercentage) {
+        prevPercentage = progress
+        reply('logging', { status: true, data: `Downloading... ${progress}%`, final: false })
+      }
     }
 
     // Check if error

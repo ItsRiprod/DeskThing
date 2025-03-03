@@ -432,8 +432,8 @@ if (!app.requestSingleInstanceLock()) {
     app.setAppUserModelId('com.deskthing')
 
     // Set up window optimization
-    app.on('browser-window-created', (_, window) => {
-      const { optimizer } = require('@electron-toolkit/utils')
+    app.on('browser-window-created', async (_, window) => {
+      const { optimizer } = await import('@electron-toolkit/utils')
       optimizer.watchWindowShortcuts(window)
     })
 

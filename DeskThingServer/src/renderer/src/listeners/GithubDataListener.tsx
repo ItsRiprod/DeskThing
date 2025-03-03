@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import { useGithubStore } from '../stores'
-import { SortedReleases } from '@shared/types'
-import { AppReleaseCommunity, AppReleaseMeta } from '@DeskThing/types'
+import { AppReleaseCommunity, AppReleaseMeta, ClientReleaseMeta } from '@DeskThing/types'
 
 /**
  * A React component that listens for updates to the application's settings and fetches and caches GitHub repository data accordingly.
@@ -23,7 +22,7 @@ const GithubDataListener = (): null => {
     const handleCommunityUpdate = (_event, data: AppReleaseCommunity[]): void => {
       setCommunityApps(data)
     }
-    const handleClientUpdate = (_event, data: SortedReleases): void => {
+    const handleClientUpdate = (_event, data: ClientReleaseMeta[]): void => {
       setClientReleases(data)
     }
 

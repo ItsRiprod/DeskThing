@@ -2,6 +2,10 @@ console.log('[Github Handler] Starting')
 import logger from '@server/utils/logger'
 import { GithubAsset, GithubRelease } from '@shared/types'
 
+// Debugging rate limiting
+let totalFetches = 0
+const repos: string[] = []
+
 /**
  * Fetches the latest release information for the specified GitHub repository.
  *
@@ -27,6 +31,11 @@ export async function getLatestRelease(repoUrl: string): Promise<GithubRelease> 
 
     const apiUrl = `https://api.github.com/repos/${owner}/${repo}/releases/latest`
     const response = await fetch(apiUrl)
+    if (process.env.NODE_ENV === 'development') {
+      totalFetches++
+      repos.push(apiUrl)
+      console.log(`\n\n Total Fetches: ${totalFetches}\nFetched\n${repos.join('\n')}\n\n `)
+    }
 
     if (!response.ok) {
       throw new Error(
@@ -37,7 +46,7 @@ export async function getLatestRelease(repoUrl: string): Promise<GithubRelease> 
     const release = await response.json()
     return release
   } catch (error) {
-    logger.warn('Error while getting latest release!', {
+    logger.warn(`Error while getting latest release for ${repoUrl}!`, {
       error: error as Error,
       function: 'getLatestRelease',
       source: 'githubService'
@@ -66,6 +75,11 @@ export async function getReleases(repoUrl: string): Promise<GithubRelease[]> {
 
     const apiUrl = `https://api.github.com/repos/${owner}/${repo}/releases`
     const response = await fetch(apiUrl)
+    if (process.env.NODE_ENV === 'development') {
+      totalFetches++
+      repos.push(apiUrl)
+      console.log(`\n\n Total Fetches: ${totalFetches}\nFetched\n${repos.join('\n')}\n\n `)
+    }
 
     if (!response.ok) {
       throw new Error(
@@ -91,6 +105,11 @@ export async function fetchAssetContent<T>(asset: GithubAsset | undefined): Prom
     throw new Error('Asset not found')
   }
   const response = await fetch(asset.browser_download_url)
+  if (process.env.NODE_ENV === 'development') {
+    totalFetches++
+    repos.push(asset.browser_download_url)
+    console.log(`\n\n Total Fetches: ${totalFetches}\nFetched\n${repos.join('\n')}\n\n `)
+  }
   if (!response.ok) {
     throw new Error(
       `HTTP error while fetching Asset Content ${response.status}! status: ${response.statusText}`

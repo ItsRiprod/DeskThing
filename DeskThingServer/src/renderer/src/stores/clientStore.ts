@@ -52,7 +52,7 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
       addIssue({
         title: 'Client Is Not Installed!',
         description:
-          'The client wasnt found! Please install the Client in order to finish setting up the server!',
+          "The client wasn't found! Please install the Client in order to finish setting up the server!",
         id: `client-manifest-missing`,
         status: 'error',
         complete: false,

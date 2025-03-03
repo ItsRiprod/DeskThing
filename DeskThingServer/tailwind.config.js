@@ -41,6 +41,7 @@ module.exports = {
         }
       },
       animation: {
+        'spin-smooth': 'spin 1.3s ease-in-out infinite;',
         'fade-in-down': 'fade-in-down 0.5s ease-out',
         fade: 'fade 0.2s ease-out'
       }

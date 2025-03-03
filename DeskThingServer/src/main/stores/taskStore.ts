@@ -118,7 +118,8 @@ class TaskStore implements CacheableStore {
       } catch (error) {
         Logger.warn(`Server Task ${taskReference.id} is invalid`, {
           function: 'fetchTask',
-          source: 'taskStore'
+          source: 'taskStore',
+          error: error as Error
         })
       }
     }
@@ -141,7 +142,8 @@ class TaskStore implements CacheableStore {
       } catch (error) {
         Logger.warn(`App Task ${taskReference.id} is invalid`, {
           function: 'fetchTask',
-          source: 'taskStore'
+          source: 'taskStore',
+          error: error as Error
         })
         return
       }
@@ -184,7 +186,7 @@ class TaskStore implements CacheableStore {
       try {
         isValidTaskList(this.taskList)
         return sanitizeTaskList(this.taskList)
-      } catch (error) {
+      } catch {
         return await this.fetchTaskList()
       }
     }

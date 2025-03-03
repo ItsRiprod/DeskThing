@@ -5,7 +5,6 @@ import { BrowserWindow } from 'electron'
 import {
   Log,
   Settings,
-  SortedReleases,
   Button,
   ButtonMapping,
   MappingStructure,
@@ -25,7 +24,8 @@ import {
   AppSettings,
   EventPayload,
   ActionReference,
-  AppReleaseSingleMeta
+  AppReleaseSingleMeta,
+  ClientReleaseMeta
 } from '@deskthing/types'
 import { FeedbackReport, StagedAppManifest, SystemInfo, TaskList } from '@shared/types'
 
@@ -365,7 +365,7 @@ export type UtilityHandlerReturnMap = {
   [UTILITY_TYPES.TASK]: Task | Task[] | TaskList
   [UTILITY_TYPES.UPDATE]: void
   [UTILITY_TYPES.GITHUB]:
-    | SortedReleases
+    | ClientReleaseMeta[]
     | AppReleaseCommunity[]
     | AppReleaseMeta[]
     | AppReleaseMeta
@@ -450,6 +450,7 @@ export type ServerIPCData =
   | UpdateStatusIPC
   | UpdateProgressIPC
   | AppDataIPC
+  | AppSettingsIPC
   | TasksIPC
   | GithubIPC
 
@@ -462,6 +463,11 @@ export type OutgoingIPCBase = {
 export interface AppDataIPC extends OutgoingIPCBase {
   type: 'app-data'
   payload: App[]
+}
+
+export interface AppSettingsIPC extends OutgoingIPCBase {
+  type: 'app-settings'
+  payload: { appId: string; data: AppSettings }
 }
 export interface VersionStatusIPC extends OutgoingIPCBase {
   type: 'version-status'
@@ -548,7 +554,7 @@ export type GithubIPC = OutgoingIPCBase &
       }
     | {
         type: 'github-client'
-        payload: SortedReleases
+        payload: ClientReleaseMeta[]
       }
   )
 

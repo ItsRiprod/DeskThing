@@ -25,21 +25,33 @@ import {
 import { isValidStep, isValidTask } from '@server/services/task'
 import logger from '@server/utils/logger'
 
-type AppsListener = (data: App[]) => void
-type AppSettingsListener = (appId: string, data: AppSettings) => void
-
-type AppStoreListeners = {
-  apps?: AppsListener[]
-  settings?: AppSettingsListener[]
+type addSettingsOptions = {
+  notifyApp?: boolean
+  notifyServer?: boolean
 }
 
-type ListenerEvents = 'settings' | 'apps'
+type AppStoreListenerEvents = {
+  apps: { data: App[] }
+  settings: { appId: string; data: AppSettings }
+}
+
+// Create listener types automatically from event map
+type Listener<T> = (payload: T) => void
+type AppStoreListener<K extends keyof AppStoreListenerEvents> = Listener<AppStoreListenerEvents[K]>
+
+// Create listeners collection type automatically
+type AppStoreListeners = {
+  [K in keyof AppStoreListenerEvents]: AppStoreListener<K>[]
+}
 
 export class AppStore implements CacheableStore {
   public static instance: AppStore
   private apps: Record<string, AppInstance> = {}
   private order: string[] = []
-  private listeners: AppStoreListeners = {}
+  private listeners: AppStoreListeners = {
+    apps: [],
+    settings: []
+  }
   private functionTimeouts: Record<string, NodeJS.Timeout> = {}
 
   public static getInstance(): AppStore {
@@ -147,29 +159,56 @@ export class AppStore implements CacheableStore {
       Logger.debug(`Notifying apps listeners with ${apps.length} apps`, {
         source: 'AppStore'
       })
-      if (this.listeners.apps) {
-        await Promise.all(this.listeners.apps.map((listener) => listener(apps)))
-      }
+      await this.notifyListeners('apps', { data: apps })
     }, 500)
   }
 
-  async notifySettings(appId: string, settings: AppSettings): Promise<void> {
-    if (this.listeners.settings) {
-      await Promise.all(this.listeners.settings.map((listener) => listener(appId, settings)))
+  async notifySettings(
+    appId: string,
+    settings: AppSettings,
+    { notifyApp = true, notifyServer = true }: addSettingsOptions = {
+      notifyApp: true,
+      notifyServer: true
+    }
+  ): Promise<void> {
+    notifyServer && this.notifyListeners('settings', { appId, data: settings })
+    notifyApp && this.notifyAppsOfSettings(appId, settings)
+  }
+
+  private notifyListeners = async <K extends keyof AppStoreListenerEvents>(
+    event: K,
+    payload: AppStoreListenerEvents[K]
+  ): Promise<void> => {
+    if (this.listeners[event]) {
+      await Promise.all(this.listeners[event].map((listener) => listener(payload)))
     }
   }
 
-  on(event: ListenerEvents, listener: AppsListener | AppSettingsListener): void {
+  /**
+   * Notifies the app directly of a change in its settings
+   */
+  private async notifyAppsOfSettings(
+    appId: string,
+    setting: Record<string, SettingsType>
+  ): Promise<void> {
+    this.sendDataToApp(appId, {
+      type: ServerEvent.SETTINGS,
+      payload: setting
+    })
+  }
+
+  on<K extends keyof AppStoreListenerEvents>(event: K, listener: AppStoreListener<K>): () => void {
     if (!this.listeners[event]) {
       this.listeners[event] = []
     }
-    ;(this.listeners[event] as (AppsListener | AppSettingsListener)[]).push(listener)
+    this.listeners[event].push(listener)
+    return () => this.off(event, listener)
   }
-  off(event: ListenerEvents, listener: AppsListener | AppSettingsListener): void {
+  off<K extends keyof AppStoreListenerEvents>(event: K, listener: AppStoreListener<K>): void {
     if (this.listeners[event]) {
-      this.listeners[event] = (
-        this.listeners[event] as (AppsListener | AppSettingsListener)[]
-      ).filter((l) => l !== listener) as AppSettingsListener[] & AppsListener[]
+      this.listeners[event] = this.listeners[event].filter(
+        (l) => l !== listener
+      ) as AppStoreListeners[K]
     }
   }
 
@@ -532,7 +571,14 @@ export class AppStore implements CacheableStore {
   }
 
   // merge with existing settings
-  async addSettings(app: string, settings: AppSettings): Promise<void> {
+  addSettings = async (
+    app: string,
+    settings: AppSettings,
+    { notifyApp = true, notifyServer = true }: addSettingsOptions = {
+      notifyApp: true,
+      notifyServer: true
+    }
+  ): Promise<void> => {
     Logger.info('Adding settings to app', {
       source: 'AppStore',
       domain: app,
@@ -551,6 +597,8 @@ export class AppStore implements CacheableStore {
       })
       return
     }
+
+    await this.notifySettings(app, settings, { notifyServer, notifyApp })
 
     const result = await setData(app, { settings: settings })
 
@@ -707,6 +755,9 @@ export class AppStore implements CacheableStore {
         [id]: setting
       }
     }
+
+    // Notify of the updated setting
+    await this.notifySettings(app, { [id]: setting })
 
     const result = await setData(app, appData)
 

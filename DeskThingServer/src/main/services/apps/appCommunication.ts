@@ -15,7 +15,7 @@ import {
 import { TaskReference } from '@shared/types'
 import Logger from '@server/utils/logger'
 import { ipcMain } from 'electron'
-import { isValidStep, isValidTask } from '../task'
+import { isValidStep, isValidTask, sanitizeTask } from '../task'
 import { isValidKey } from '../mappings/utilsMaps'
 import { isValidAppDataInterface } from './appUtils'
 
@@ -30,7 +30,10 @@ const wrapHandler =
   (handler: HandlerFunction) =>
   async (app: string, data: ToServerData): Promise<void> => {
     try {
-      Logger.info(`Handling ${data.type} from ${app}`, { domain: 'SERVER.' + app.toUpperCase() })
+      Logger.info(`Handling type ${data.type} req ${data.request} from ${app}`, {
+        function: 'wrapHandler',
+        domain: 'SERVER.' + app.toUpperCase()
+      })
       await handler(app, data)
     } catch (error) {
       Logger.error(`Handler failed`, {
@@ -49,17 +52,12 @@ const wrapHandler =
  */
 export async function handleDataFromApp(app: string, appData: ToServerData): Promise<void> {
   if (Object.values(SEND_TYPES).includes(appData.type)) {
-    Logger.debug(
-      `[handleDataFromApp] Handling data from ${app} with type "${appData.type}" and request "${appData.request}"`,
-      { domain: 'SERVER.' + app.toUpperCase() }
-    )
     try {
       handleData[appData.type || 'default'][appData.request || 'default'](app, appData)
     } catch (error) {
-      Logger.log(
-        LOGGING_LEVELS.WARN,
-        `[handleDataFromApp]: Function "${appData.type}" and "${appData.request}" not found. Defaulting to legacy`,
-        { domain: 'SERVER.' + app.toUpperCase() }
+      Logger.warn(
+        `[handleDataFromApp] Handling Legacy Data from ${app} with type "${appData.type}" and request "${appData.request}"`,
+        { function: 'handleDataFromApp', domain: 'SERVER.' + app.toUpperCase() }
       )
       await handleLegacyCommunication(app, appData)
     }
@@ -89,7 +87,8 @@ const handleRequestMissing: HandlerFunction = async (app: string, appData: ToSer
 
 const handleRequestSetSettings: HandlerFunction = async (app, appData) => {
   const { appStore } = await import('@server/stores')
-  appStore.addSettings(app, appData.payload as AppSettings)
+  // Don't notify the app to prevent a loop
+  appStore.addSettings(app, appData.payload as AppSettings, { notifyApp: false })
 }
 
 const handleRequestSetData: HandlerFunction = async (app, appData) => {
@@ -551,9 +550,11 @@ const handleRequestInitTasks: HandlerFunction = async (app, appData): Promise<vo
       Record<string, Task>
     >((acc, [id, task]) => {
       try {
+        console.log('Adding Task', task)
         isValidTask(task)
+        const sanitizedTask = sanitizeTask(task, app)
         if (!existingTasks[id]) {
-          acc[id] = task
+          acc[id] = sanitizedTask
         }
         return acc
       } catch (error) {
@@ -608,6 +609,7 @@ const handleRequestGetTask: HandlerFunction = async (app): Promise<void> => {
     })
   }
 }
+
 const handleRequestUpdateTask: HandlerFunction = async (app, appData): Promise<void> => {
   const { taskStore } = await import('@server/stores')
   if (!appData.payload.task || appData.payload.task.id) {
@@ -627,7 +629,8 @@ const handleRequestAddTask: HandlerFunction = async (app, appData): Promise<void
   const { taskStore } = await import('@server/stores')
   try {
     isValidTask(appData.payload.task)
-    return taskStore.addTask(appData.payload.task)
+    const sanitizedTask = sanitizeTask(appData.payload.task, app)
+    return taskStore.addTask(sanitizedTask)
   } catch (error) {
     Logger.error(`Invalid task`, {
       domain: 'SERVER.' + app.toUpperCase(),
@@ -844,10 +847,7 @@ const handleLegacyCommunication = async (app: string, appData: ToServerData): Pr
       switch (appData.request) {
         case 'data':
           {
-            appStore.sendDataToApp(app, {
-              type: ServerEvent.DATA,
-              payload: (await appStore.getData(app)) as Record<string, string>
-            })
+            handleRequestGetData(app, appData)
           }
           break
         case 'config':

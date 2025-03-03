@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { getClientManifest } from '@server/handlers/deviceHandler'
 import { appStore, connectionStore } from '@server/stores'
 import logger from '@server/utils/logger'

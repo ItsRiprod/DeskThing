@@ -28,7 +28,7 @@ const ActionElement = ({
   }
   const handleRunAction = (): void => {
     runAction(action)
-    onTrigger && onTrigger(action.value)
+    if (onTrigger) onTrigger(action.value)
   }
 
   return (

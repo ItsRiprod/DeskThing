@@ -1,6 +1,5 @@
 import { ADBClient, Client } from '@shared/types'
 import { sendIpcData } from '../../index'
-import { App } from '@deskthing/types'
 import Logger from '../../utils/logger'
 
 export async function initializeStores(): Promise<void> {
@@ -48,11 +47,19 @@ export async function initializeStores(): Promise<void> {
     })
   })
 
-  stores.appStore.on('apps', (apps: App[]) => {
+  stores.appStore.on('settings', (data) => {
+    Logger.debug('[INDEX]: Sending updated setting information with type app-data')
+    sendIpcData({
+      type: 'app-settings',
+      payload: data
+    })
+  })
+
+  stores.appStore.on('apps', ({ data }) => {
     Logger.debug('[INDEX]: Sending updated app information with type app-data')
     sendIpcData({
       type: 'app-data',
-      payload: apps
+      payload: data
     })
   })
 

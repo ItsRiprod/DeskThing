@@ -363,6 +363,7 @@ export const FetchIcon = async (action: Action): Promise<string | null> => {
 
     return await readFile(iconPath, 'utf8')
   } catch (error) {
+    Logger.error('Error reading icon file', { error: error as Error })
     return null
   }
 }

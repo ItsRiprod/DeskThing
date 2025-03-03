@@ -6,9 +6,9 @@ import * as fs from 'fs'
 import { app, net } from 'electron'
 import { handleAdbCommands } from './adbHandler'
 import { Client, ReplyData, ReplyFn } from '@shared/types'
-import { ClientManifest, LOGGING_LEVELS } from '@DeskThing/types'
+import { ClientConnectionMethod, ClientManifest, LOGGING_LEVELS } from '@DeskThing/types'
 import settingsStore from '../stores/settingsStore'
-import { getLatestRelease } from '../services/github/githubService'
+import { githubStore } from '@server/stores'
 
 /**
  * Handles device data received from the client.
@@ -89,7 +89,7 @@ export const configureDevice = async (deviceId: string, reply?: ReplyFn): Promis
           reply
         )
         reply && reply('logging', { status: true, data: response || 'Port Opened', final: false })
-      } catch (error) {
+      } catch {
         reply && reply('logging', { status: false, data: 'Unable to open port!', final: false })
       }
     } else {
@@ -119,27 +119,17 @@ export const configureDevice = async (deviceId: string, reply?: ReplyFn): Promis
     const clientExists = await checkForClient(reply)
 
     if (!clientExists) {
-      // Download it from github
-      const repos = settings.clientRepos
       reply && reply('logging', { status: true, data: 'Fetching Latest Client...', final: false })
-      const latestReleases = await Promise.all(
-        repos.map(async (repo) => {
-          return await getLatestRelease(repo)
-        })
-      )
+      const clientReleases = await githubStore.getClientReleases()
 
-      // Sort releases by date and get the latest one
-      const clientAsset = latestReleases
-        .flatMap((release) =>
-          release.assets.map((asset) => ({ ...asset, created_at: release.created_at }))
-        )
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .find((asset) => asset.name.includes('-client'))
+      const latestRelease = clientReleases?.sort(
+        (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+      )[0]
 
       // Download it
-      if (clientAsset) {
+      if (latestRelease) {
         reply && reply('logging', { status: true, data: 'Downloading Client...', final: false })
-        await HandleWebappZipFromUrl(reply, clientAsset.browser_download_url)
+        await HandleWebappZipFromUrl(reply, latestRelease.updateUrl)
 
         await new Promise((resolve) => {
           setTimeout(async () => {
@@ -327,7 +317,10 @@ export const HandlePushWebApp = async (
       reply('logging', { status: true, data: response || 'Pushing client ID...', final: false })
     try {
       await handleClientManifestUpdate(
-        { adbId: deviceId, device_type: { name: 'Car Thing', id: 4 } },
+        {
+          adbId: deviceId,
+          device_type: { method: ClientConnectionMethod.ADB, name: 'Car Thing', id: 4 }
+        },
         reply
       )
     } catch (error) {
@@ -358,7 +351,10 @@ export const HandlePushWebApp = async (
       reply('logging', { status: true, data: response || 'Cleaning up device ID...', final: false })
     try {
       await handleClientManifestUpdate(
-        { adbId: undefined, device_type: { name: 'Unknown', id: 0 } },
+        {
+          adbId: undefined,
+          device_type: { method: ClientConnectionMethod.Unknown, name: 'Unknown', id: 0 }
+        },
         reply
       )
     } catch (error) {

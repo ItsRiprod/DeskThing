@@ -5,34 +5,33 @@
  * @version 0.10.4
  */
 import { create } from 'zustand'
-import { SortedReleases } from '@shared/types'
-import { AppReleaseCommunity, AppReleaseMeta } from '@DeskThing/types'
+import { AppReleaseCommunity, AppReleaseMeta, ClientReleaseMeta } from '@DeskThing/types'
 
 interface GithubStoreState {
   appReleases: AppReleaseMeta[]
   communityApps: AppReleaseCommunity[]
-  clientReleases: SortedReleases
+  clientReleases: ClientReleaseMeta[]
   refreshApp: (repoUrl: string) => Promise<void>
-  refreshApps: () => Promise<void>
+  refreshData: () => Promise<void>
   getApps: () => Promise<AppReleaseMeta[]>
   getAppReferences: () => Promise<AppReleaseCommunity[]>
   addAppRepo: (repoUrl: string) => Promise<AppReleaseMeta>
   removeAppRepo: (repoUrl: string) => Promise<void>
-  getClients: () => Promise<SortedReleases>
+  getClients: () => Promise<ClientReleaseMeta[]>
   setAppReleases: (releases: AppReleaseMeta[]) => void
-  setClientReleases: (releases: SortedReleases) => void
+  setClientReleases: (releases: ClientReleaseMeta[]) => void
   setCommunityApps: (apps: AppReleaseCommunity[]) => void
 }
 
 const useGithubStore = create<GithubStoreState>(
   (set): GithubStoreState => ({
     appReleases: [],
-    clientReleases: {},
+    clientReleases: [],
     communityApps: [],
     refreshApp: async (repoUrl: string): Promise<void> => {
       await window.electron.github.refreshApp(repoUrl)
     },
-    refreshApps: async (): Promise<void> => {
+    refreshData: async (): Promise<void> => {
       await window.electron.github.refreshApps()
     },
     getApps: async (): Promise<AppReleaseMeta[]> => {
@@ -52,7 +51,7 @@ const useGithubStore = create<GithubStoreState>(
     removeAppRepo: async (repoUrl: string): Promise<void> => {
       await window.electron.github.removeAppRepo(repoUrl)
     },
-    getClients: async (): Promise<SortedReleases> => {
+    getClients: async (): Promise<ClientReleaseMeta[]> => {
       const clients = await window.electron.github.getClients()
       set({ clientReleases: clients })
       return clients
@@ -60,7 +59,7 @@ const useGithubStore = create<GithubStoreState>(
     setAppReleases: (releases: AppReleaseMeta[]): void => {
       set({ appReleases: releases })
     },
-    setClientReleases: (releases: SortedReleases): void => {
+    setClientReleases: (releases: ClientReleaseMeta[]): void => {
       set({ clientReleases: releases })
     },
     setCommunityApps: (apps: AppReleaseCommunity[]): void => {

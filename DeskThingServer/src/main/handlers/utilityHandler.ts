@@ -99,7 +99,7 @@ export const utilityHandler: {
         }
       case 'refreshApps':
         try {
-          await githubStore.refreshData()
+          await githubStore.refreshData(true)
           return
         } catch (error) {
           Logger.error('Unable to refresh repositories!', {

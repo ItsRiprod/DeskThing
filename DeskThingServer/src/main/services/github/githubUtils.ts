@@ -1,5 +1,10 @@
-import { AppReleaseCommunity, AppReleaseMeta, AppReleaseSingleMeta } from '@deskthing/types'
-import { AppReleaseFile } from '@shared/types'
+import {
+  AppReleaseCommunity,
+  AppReleaseMeta,
+  AppReleaseSingleMeta,
+  ClientReleaseMeta
+} from '@deskthing/types'
+import { AppReleaseFile, ClientReleaseFile } from '@shared/types'
 
 export const isValidAppReleaseFile: (
   releaseFile: unknown
@@ -162,5 +167,45 @@ export const isValidCommunityRelease: (
   }
   if ('icon' in reference && typeof reference.icon !== 'string') {
     throw new Error('[isValidCommunityRelease] Icon must be a string when provided')
+  }
+}
+
+export const isValidClientReleaseFile: (
+  releaseFile: unknown
+) => asserts releaseFile is ClientReleaseFile = (releaseFile) => {
+  if (!releaseFile) {
+    throw new Error('[isValidClientReleaseFile] Invalid release file')
+  }
+  if (typeof releaseFile !== 'object') {
+    throw new Error('[isValidClientReleaseFile] Release file is not an object')
+  }
+  if (!('version' in releaseFile) || typeof releaseFile.version !== 'string') {
+    throw new Error('[isValidClientReleaseFile] Release file version must be a string')
+  }
+  if (!('repositories' in releaseFile) || !Array.isArray(releaseFile.repositories)) {
+    throw new Error('[isValidClientReleaseFile] repositories must be an array')
+  }
+  if (!('releases' in releaseFile) || !Array.isArray(releaseFile.releases)) {
+    throw new Error('[isValidClientReleaseFile] files must be an array')
+  }
+  releaseFile.releases.forEach((release) => {
+    isValidClientReleaseMeta(release)
+  })
+}
+
+export const isValidClientReleaseMeta: (
+  release: unknown
+) => asserts release is ClientReleaseMeta = (release) => {
+  if (!release) {
+    throw new Error('[isValidClientReleaseMeta] Invalid release')
+  }
+  if (typeof release !== 'object') {
+    throw new Error('[isValidClientReleaseMeta] Release is not an object')
+  }
+  if (!('version' in release) || typeof release.version !== 'string') {
+    throw new Error('[isValidClientReleaseMeta] Release version must be a string')
+  }
+  if (!('updateUrl' in release) || typeof release.updateUrl !== 'string') {
+    throw new Error('[isValidClientReleaseMeta] Release URL must be a string')
   }
 }
