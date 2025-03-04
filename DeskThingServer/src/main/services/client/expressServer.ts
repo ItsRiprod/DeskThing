@@ -92,7 +92,12 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
   }
 
   expressApp.use(['/', '/client/'], async (req: Request, res: Response, next: NextFunction) => {
-    if (req.path.startsWith('/icon') || req.path.startsWith('/app')) {
+    if (
+      req.path.startsWith('/icon') ||
+      req.path.startsWith('/app') ||
+      req.path.startsWith('/gen') ||
+      req.path.startsWith('/images')
+    ) {
       next()
       return
     }
@@ -109,6 +114,7 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
       root != 'fetch' &&
       root != 'icons' &&
       root != 'image' &&
+      root != 'gen' &&
       root != 'app'
     ) {
       Logger.info(`WEBSOCKET: Client is not updated! Please update to v0.9.1 or later ${root}`, {
@@ -152,6 +158,33 @@ export const setupExpressServer = async (expressApp: express.Application): Promi
 
         res.status(404).send(ErrorPage)
       }
+    }
+  })
+
+  // Points to server-specific files
+  expressApp.use('/gen/:appName', async (req: Request, res: Response, next: NextFunction) => {
+    console.log('Got an app request', req.path)
+    const appName = req.params.appName
+
+    const appPath = getAppFilePath(appName, 'server')
+    const legacyAppPath = getAppFilePath(appName)
+    Logger.info(`Serving ${appName} from ${appPath}`, {
+      function: '/gen/:appName',
+      source: 'expressServer'
+    })
+
+    if (fs.existsSync(appPath)) {
+      express.static(appPath)(req, res, next)
+    } else if (fs.existsSync(legacyAppPath)) {
+      express.static(legacyAppPath)(req, res, next)
+    } else {
+      Logger.log(
+        LOGGING_LEVELS.WARN,
+        `WEBSOCKET: Client may not updated! Ensure it is on version v0.10.0 or later`
+      )
+      res
+        .status(404)
+        .json({ error: 'App not found. Please ensure client is on version v0.10.0 or later' })
     }
   })
 

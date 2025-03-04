@@ -57,7 +57,11 @@ export async function handleDataFromApp(app: string, appData: ToServerData): Pro
     } catch (error) {
       Logger.warn(
         `[handleDataFromApp] Handling Legacy Data from ${app} with type "${appData.type}" and request "${appData.request}"`,
-        { function: 'handleDataFromApp', domain: 'SERVER.' + app.toUpperCase() }
+        {
+          function: 'handleDataFromApp',
+          domain: 'SERVER.' + app.toUpperCase(),
+          error: error as Error
+        }
       )
       await handleLegacyCommunication(app, appData)
     }
@@ -363,6 +367,11 @@ const handleRequestGetData: HandlerFunction = async (app): Promise<void> => {
 
   const data = await appStore.getData(app)
   if (data) {
+    Logger.info('Sending data to app', {
+      source: 'AppStore',
+      domain: app,
+      function: 'handleRequestGetData'
+    })
     appStore.sendDataToApp(app, { type: ServerEvent.DATA, payload: data })
   } else {
     Logger.error(`[handleData]: App ${app} failed to provide data`, {
@@ -435,6 +444,11 @@ const handleRequestGetSettings: HandlerFunction = async (app): Promise<void> => 
   const { appStore } = await import('@server/stores')
   const settings = await appStore.getSettings(app)
   if (settings) {
+    Logger.info(`App ${app} has requested settings`, {
+      source: 'AppStore',
+      domain: app,
+      function: 'handleRequestGetSettings'
+    })
     appStore.sendDataToApp(app, { type: ServerEvent.SETTINGS, payload: settings })
   } else {
     Logger.error(`[handleAppData]: App ${app} failed to provide settings`, {

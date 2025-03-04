@@ -1,4 +1,4 @@
-import { IconCarThingSmall, IconConfig, IconLoading, IconRefresh } from '@renderer/assets/icons'
+import { IconCarThingSmall, IconConfig, IconLoading, IconRefresh, IconUpload } from '@renderer/assets/icons'
 import { ADBClient, LoggingData } from '@shared/types'
 import React, { useState } from 'react'
 import Button from '../Button'
@@ -90,6 +90,32 @@ const ADBDevice: React.FC<ADBComponentProps> = ({ adbDevice }) => {
     setLoading(false)
   }
 
+  const handlePushStaged = (): void => {
+    setShowLogging(true)
+
+    try {
+      setLogging({ status: true, final: false, data: 'Pushing App' })
+      setLoading(true)
+      window.electron.pushStagedApp(adbDevice.adbId)
+      const unsubscribe = window.electron.ipcRenderer.on('logging', (_event, reply) => {
+        console.log(reply)
+        setLogging(reply)
+        if (reply.final) {
+          unsubscribe()
+        }
+        if (!reply.status) {
+          unsubscribe()
+        }
+      })
+    } catch (error) {
+      setLoading(false)
+      console.log(error)
+    } finally {
+      setLoading(false)
+      setShowLogging(false)
+    }
+  }
+
   return (
     <div className="w-full p-4 border rounded-xl border-zinc-900 flex flex-col lg:flex-row gap-4 justify-center items-center lg:justify-between bg-zinc-950">
       {logging && showLogging && (
@@ -127,6 +153,20 @@ const ADBDevice: React.FC<ADBComponentProps> = ({ adbDevice }) => {
               </Button>
             )}
             <Button
+              title="Push staged client"
+              className="group hover:bg-zinc-900 gap-2"
+              onClick={handlePushStaged}
+              disabled={loading}
+            >
+              <IconUpload
+                className={
+                  animatingIcons.chromium
+                    ? 'rotate-[360deg] transition-transform duration-1000'
+                    : ''
+                }
+              />
+            </Button>
+            <Button
               title="Restart Chromium on the Device"
               className="group hover:bg-zinc-900 gap-2"
               onClick={restartChromium}
@@ -139,9 +179,6 @@ const ADBDevice: React.FC<ADBComponentProps> = ({ adbDevice }) => {
                     : ''
                 }
               />
-              <p className="hidden group-hover:block">
-                Restart <span className="hidden lg:inline">Chromium</span>
-              </p>
             </Button>
           </>
         )}

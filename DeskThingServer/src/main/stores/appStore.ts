@@ -191,6 +191,12 @@ export class AppStore implements CacheableStore {
     appId: string,
     setting: Record<string, SettingsType>
   ): Promise<void> {
+    console.log(new Error().stack)
+    Logger.info('Sending settings to app', {
+      source: 'AppStore',
+      domain: appId,
+      function: 'notifyAppsOfSettings'
+    })
     this.sendDataToApp(appId, {
       type: ServerEvent.SETTINGS,
       payload: setting
@@ -800,7 +806,7 @@ export class AppStore implements CacheableStore {
       }
     } catch (e) {
       if (e instanceof Error) {
-        Logger.error(e.message, {
+        Logger.error('Got error trying to send data: ' + e.message, {
           source: 'AppStore',
           domain: name,
           error: e as Error,

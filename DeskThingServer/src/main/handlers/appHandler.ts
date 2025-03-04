@@ -229,6 +229,11 @@ export const appHandler: {
   },
   'send-to-app': async (data, replyFn) => {
     const { appStore } = await import('@server/stores')
+    Logger.info('Sending data to app', {
+      source: 'AppHandler',
+      domain: data.payload?.app || 'unknown',
+      function: 'send-to-app'
+    })
     await appStore.sendDataToApp(data.payload.app, data.payload)
     replyFn('logging', { status: true, data: 'Finished', final: true })
   },

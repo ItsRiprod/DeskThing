@@ -236,7 +236,6 @@ export const stageAppFile = async ({
   } else {
     // filePath exists. This asserts that
     filePath = filePath as string
-    return
   }
   const tempPath = getAppFilePath('staged')
   const tempZipPath = getTempZipPath(tempPath, releaseMeta)
