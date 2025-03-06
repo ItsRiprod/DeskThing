@@ -19,7 +19,7 @@ const TaskComponent: FC<TaskComponentProps> = ({ task, onClose }) => {
   const acceptTask = useTaskStore((state) => state.acceptTask)
   const rejectTask = useTaskStore((state) => state.rejectTask)
   const restartTask = useTaskStore((state) => state.restartTask)
-  const currentTask = useTaskStore((state) => state.taskList.currentTaskId)
+  const currentTask = useTaskStore((state) => state.currentTask)
 
   const stepCount = task.started && useMemo(() => Object.values(task.steps).length, [task.steps])
   const currentStepNumber =
@@ -44,7 +44,7 @@ const TaskComponent: FC<TaskComponentProps> = ({ task, onClose }) => {
 
   return (
     <div
-      className={`w-full ${task.id == currentTask ? 'border border-cyan-500' : ''} ${task.available ? 'bg-zinc-900 p-4 hover:bg-zinc-800' : 'text-gray-500 hover:text-gray-300 bg-zinc-950 p-4 hover:bg-zinc-900 '} transition-colors rounded-lg mb-4 flex flex-col`}
+      className={`w-full ${task.id == currentTask?.id ? 'border border-cyan-500' : ''} ${task.available ? 'bg-zinc-900 p-4 hover:bg-zinc-800' : 'text-gray-500 hover:text-gray-300 bg-zinc-950 p-4 hover:bg-zinc-900 '} transition-colors rounded-lg mb-4 flex flex-col`}
     >
       <div className="flex justify-between items-center">
         <div className="items-start flex flex-col">

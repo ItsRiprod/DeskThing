@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useGithubStore } from '../stores'
-import { AppReleaseCommunity, AppReleaseMeta, ClientReleaseMeta } from '@DeskThing/types'
+import { IpcRendererCallback } from '@shared/types'
 
 /**
  * A React component that listens for updates to the application's settings and fetches and caches GitHub repository data accordingly.
@@ -16,13 +16,13 @@ const GithubDataListener = (): null => {
   const setCommunityApps = useGithubStore((state) => state.setCommunityApps)
 
   useEffect(() => {
-    const handleAppsUpdate = (_event, data: AppReleaseMeta[]): void => {
+    const handleAppsUpdate: IpcRendererCallback<'github-apps'> = (_event, data): void => {
       setAppReleases(data)
     }
-    const handleCommunityUpdate = (_event, data: AppReleaseCommunity[]): void => {
+    const handleCommunityUpdate: IpcRendererCallback<'github-community'> = (_event, data): void => {
       setCommunityApps(data)
     }
-    const handleClientUpdate = (_event, data: ClientReleaseMeta[]): void => {
+    const handleClientUpdate: IpcRendererCallback<'github-client'> = (_event, data): void => {
       setClientReleases(data)
     }
 

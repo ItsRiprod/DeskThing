@@ -2,6 +2,14 @@ console.log('[AppMangr Service] Starting')
 import { rmSync, readdirSync, statSync, existsSync } from 'node:fs'
 import Logger from '@server/utils/logger'
 import { LOGGING_LEVELS } from '@DeskThing/types'
+import { storeProvider } from '@server/stores'
+
+/**
+ * Clears the cache for an app
+ * @param appName
+ * @depreciated Apps were migrated to threads - no longer needed
+ * @returns
+ */
 export async function clearCache(appName: string): Promise<void> {
   try {
     const { join } = await import('path')
@@ -66,6 +74,7 @@ export async function clearCache(appName: string): Promise<void> {
 /**
  * Purges an app by its name, stopping it and removing its configuration and data.
  *
+ * @deprecated No longer needed - apps are now handled by threads and stores
  * @param {string} appName - The name of the app to purge.
  * @throws {Error} If an error occurs during the purge process.
  */
@@ -77,8 +86,7 @@ export async function purgeApp(appName: string): Promise<void> {
 
     const { purgeAppData } = await import('../files/dataFileService')
     const { purgeAppConfig } = await import('../files/appFileService')
-    const { default: keyMapStore } = await import('@server/stores/mappingStore')
-    const { default: taskStore } = await import('@server/stores/taskStore')
+    const keyMapStore = storeProvider.getStore('mappingStore')
 
     // Purge App Data
     try {
@@ -99,14 +107,6 @@ export async function purgeApp(appName: string): Promise<void> {
     // Remove buttons / keys associated with app
     try {
       await keyMapStore.removeSource(appName)
-    } catch (e) {
-      errors.push(e instanceof Error ? e : new Error(String(e)))
-      Logger.error(`Failed to remove key mappings for ${appName}:`, { error: e as Error })
-    }
-
-    // Remove buttons / keys associated with app
-    try {
-      await taskStore.removeSource(appName)
     } catch (e) {
       errors.push(e instanceof Error ? e : new Error(String(e)))
       Logger.error(`Failed to remove key mappings for ${appName}:`, { error: e as Error })

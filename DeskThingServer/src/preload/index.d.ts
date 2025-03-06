@@ -98,16 +98,16 @@ declare global {
 
       tasks: {
         getTaskList: () => Promise<TaskList>
-        stopTask: (taskId: string) => Promise<void>
-        startTask: (taskId: string) => Promise<void>
-        completeStep: (taskId: string, stepId: string) => Promise<void>
-        completeTask: (taskId: string) => Promise<void>
-        restartTask: (taskId: string) => Promise<void>
+        stopTask: (taskId: string, source?: string) => Promise<void>
+        startTask: (taskId: string, source?: string) => Promise<void>
+        completeStep: (taskId: string, stepId: string, source?: string) => Promise<void>
+        completeTask: (taskId: string, source?: string) => Promise<void>
+        restartTask: (taskId: string, source?: string) => Promise<void>
         pauseTask: () => Promise<void>
-        nextStep: (taskId: string) => Promise<void>
-        prevStep: (taskId: string) => Promise<void>
-        updateStep: (taskId: string, step: Partial<Step>) => Promise<void>
-        updateTask: (task: Partial<Task>) => Promise<void>
+        nextStep: (taskId: string, source?: string) => Promise<void>
+        prevStep: (taskId: string, source?: string) => Promise<void>
+        updateStep: (taskId: string, newStep: Partial<Step>, source?: string) => Promise<void>
+        updateTask: (newTask: Partial<Task>, source?: string) => Promise<void>
       }
 
       update: {

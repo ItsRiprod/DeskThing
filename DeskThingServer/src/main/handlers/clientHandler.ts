@@ -12,7 +12,7 @@ import {
   SetupProxy
 } from './deviceHandler'
 import { sendMessageToClient, sendMessageToClients } from '../services/client/clientCom'
-import mappingStore from '@server/stores/mappingStore'
+import { storeProvider } from '@server/stores/storeProvider'
 
 /**
  * The `clientHandler` object is a mapping of client IPC (Inter-Process Communication) data types to handler functions. These handlers are responsible for processing various client-related requests, such as pinging clients, handling URL-based web app downloads, configuring devices, managing client manifests, and more.
@@ -144,6 +144,7 @@ export const clientHandler: Record<
     }
   },
   'run-device-command': async (data, replyFn) => {
+    const platformStore = storeProvider.getStore('platformStore')
     const payload = data.payload.payload as string
 
     const message: SocketData = {
@@ -153,9 +154,10 @@ export const clientHandler: Record<
       payload: !payload.includes('{') ? data.payload.payload : JSON.parse(data.payload.payload)
     }
     replyFn('logging', { status: true, data: 'Finished', final: true })
-    return await sendMessageToClients(message)
+    return await platformStore.broadcastToClients(message)
   },
   icon: async (data) => {
+    const mappingStore = storeProvider.getStore('mappingStore')
     switch (data.request) {
       case 'get':
         return await mappingStore.fetchActionIcon(data.payload)

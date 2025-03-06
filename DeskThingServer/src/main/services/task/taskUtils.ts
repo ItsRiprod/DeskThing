@@ -10,11 +10,11 @@ import {
   TaskStep,
   TaskTask
 } from '@DeskThing/types'
-import { TaskReference, TaskList } from '@shared/types'
+import { TaskReference, FullTaskList } from '@shared/types'
 
-export function isValidTaskList(taskList: unknown): asserts taskList is TaskList {
+export function isValidTaskList(taskList: unknown): asserts taskList is FullTaskList {
   if (!taskList || typeof taskList !== 'object') throw new Error('TaskList must be an object')
-  const t = taskList as Partial<TaskList>
+  const t = taskList as Partial<FullTaskList>
   if (!t.version) {
     throw new Error('[ValidateTaskList] TaskList must have a version')
   }
@@ -123,7 +123,7 @@ export function isValidStep(step: unknown): asserts step is Step {
   }
 }
 
-export const sanitizeTaskList = (taskList: Partial<TaskList>): TaskList => {
+export const sanitizeTaskList = (taskList: Partial<FullTaskList>): FullTaskList => {
   const updatedTaskList = {
     version: taskList.version || '1.0.0',
     tasks: taskList.tasks
@@ -133,10 +133,16 @@ export const sanitizeTaskList = (taskList: Partial<TaskList>): TaskList => {
       : {},
     currentTaskId: taskList.currentTaskId || ''
   }
-  return updatedTaskList as TaskList
+  return updatedTaskList as FullTaskList
 }
 
-export const sanitizeTaskListFile = (taskList: Partial<TaskList>): TaskList => {
+/**
+ * Do not use this - its depreciated and should never be implemented
+ * @param taskList
+ * @returns
+ * @deprecated - The task list is never saved as a global file
+ */
+export const sanitizeTaskListFile = (taskList: Partial<FullTaskList>): FullTaskList => {
   const updatedTaskList = {
     version: taskList.version || '1.0.0',
     tasks: taskList.tasks
@@ -149,7 +155,7 @@ export const sanitizeTaskListFile = (taskList: Partial<TaskList>): TaskList => {
       : {},
     currentTaskId: ''
   }
-  return updatedTaskList as TaskList
+  return updatedTaskList as unknown as FullTaskList
 }
 
 export const sanitizeTaskReference = (task: Partial<TaskReference | Task>): TaskReference => {

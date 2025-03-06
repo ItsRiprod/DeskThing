@@ -8,20 +8,17 @@ import {
   UtilityHandlerReturnType,
   UTILITY_TYPES
 } from '@shared/types'
-import { connectionStore, settingsStore, mappingStore } from '@server/stores'
 import Logger from '@server/utils/logger'
 import path from 'path'
 import { shell, app, dialog } from 'electron'
 import { setupFirewall } from './firewallHandler'
-import { disconnectClient } from '../services/client/clientCom'
-import { restartServer } from '../services/client/websocket'
 import {
   checkForUpdates,
   quitAndInstall,
   startDownload
 } from '@server/services/updater/autoUpdater'
 import { FeedbackService } from '@server/services/feedbackService'
-import githubStore from '@server/stores/githubStore'
+import { storeProvider } from '@server/stores/storeProvider'
 
 /**
  * The `utilityHandler` object is an exported module that provides a set of utility functions for handling various tasks in the application. It is structured as a record type, where the keys correspond to the `UtilityIPCData['type']` union type, and the values are asynchronous functions that handle the corresponding request.
@@ -72,9 +69,11 @@ export const utilityHandler: {
     }
   },
   [UTILITY_TYPES.DEVICES]: async () => {
+    const connectionStore = storeProvider.getStore('connectionsStore')
     return await connectionStore.getDevices()
   },
   [UTILITY_TYPES.SETTINGS]: async (data) => {
+    const settingsStore = storeProvider.getStore('settingsStore')
     switch (data.request) {
       case 'get':
         return await settingsStore.getSettings()
@@ -84,6 +83,7 @@ export const utilityHandler: {
     }
   },
   [UTILITY_TYPES.GITHUB]: async (data) => {
+    const githubStore = storeProvider.getStore('githubStore')
     switch (data.request) {
       case 'refreshApp':
         try {
@@ -183,11 +183,13 @@ export const utilityHandler: {
   },
 
   [UTILITY_TYPES.RESTART_SERVER]: async (_data, replyFn) => {
+    const platformStore = storeProvider.getStore('platformStore')
     replyFn('logging', { status: true, data: 'Restarting server...', final: false })
-    await restartServer()
+    await platformStore.restartPlatform('websocket')
     replyFn('logging', { status: true, data: 'Server Restarted', final: true })
   },
   [UTILITY_TYPES.ACTIONS]: async (data) => {
+    const mappingStore = storeProvider.getStore('mappingStore')
     switch (data.request) {
       case 'get':
         return await mappingStore.getActions()
@@ -200,6 +202,7 @@ export const utilityHandler: {
     }
   },
   [UTILITY_TYPES.BUTTONS]: async (data) => {
+    const mappingStore = storeProvider.getStore('mappingStore')
     switch (data.request) {
       case 'set': {
         const { action, key, mode, profile } = data.payload
@@ -250,6 +253,7 @@ export const utilityHandler: {
     }
   },
   [UTILITY_TYPES.KEYS]: async (data) => {
+    const mappingStore = storeProvider.getStore('mappingStore')
     switch (data.request) {
       case 'get':
         return await mappingStore.getKeys()
@@ -264,6 +268,7 @@ export const utilityHandler: {
     }
   },
   [UTILITY_TYPES.PROFILES]: async (data) => {
+    const mappingStore = storeProvider.getStore('mappingStore')
     if (data.type != 'profiles') return
     switch (data.request) {
       case 'get':
@@ -286,6 +291,7 @@ export const utilityHandler: {
     }
   },
   [UTILITY_TYPES.MAP]: async (data) => {
+    const mappingStore = storeProvider.getStore('mappingStore')
     switch (data.request) {
       case 'get':
         return await mappingStore.getCurrentProfile()
@@ -298,6 +304,7 @@ export const utilityHandler: {
     }
   },
   [UTILITY_TYPES.RUN]: async (data) => {
+    const mappingStore = storeProvider.getStore('mappingStore')
     if (data.payload.source !== 'server' && data.payload.enabled) {
       return await mappingStore.runAction(data.payload)
     } else {
@@ -308,41 +315,45 @@ export const utilityHandler: {
   // Tasks
   [UTILITY_TYPES.TASK]: async (data) => {
     if (data.type != 'task') return
+    const taskStore = storeProvider.getStore('taskStore')
 
-    const { taskStore } = await import('@server/stores')
+    Logger.debug(`Handling task data with request: ${data.request}`, {
+      source: 'utilityHandler',
+      function: 'task'
+    })
 
     switch (data.request) {
       case 'get':
         return await taskStore.getTaskList()
       case 'stop':
-        await taskStore.stopTask(data.payload)
+        await taskStore.stopTask(data.payload.source, data.payload.taskId)
         return
       case 'complete':
-        await taskStore.completeStep(data.payload[0], data.payload[1])
+        await taskStore.completeStep(data.payload.source, data.payload.taskId, data.payload.stepId)
         return
       case 'start':
-        await taskStore.startTask(data.payload)
+        await taskStore.startTask(data.payload.source, data.payload.taskId)
         return
       case 'pause':
         await taskStore.pauseTask()
         return
       case 'restart':
-        await taskStore.restartTask(data.payload)
+        await taskStore.restartTask(data.payload.source, data.payload.taskId)
         return
       case 'complete_task':
-        await taskStore.completeTask(data.payload)
+        await taskStore.completeTask(data.payload.source, data.payload.taskId)
         return
       case 'next':
-        await taskStore.nextStep(data.payload)
+        await taskStore.nextStep(data.payload.source, data.payload.taskId)
         return
       case 'previous':
-        await taskStore.prevStep(data.payload)
+        await taskStore.prevStep(data.payload.source, data.payload.taskId)
         return
       case 'update-task':
-        await taskStore.updateTask(data.payload)
+        await taskStore.updateTask(data.payload.source, data.payload.newTask)
         return
       case 'update-step':
-        await taskStore.updateStep(data.payload[0], data.payload[1])
+        await taskStore.updateStep(data.payload.source, data.payload.taskId, data.payload.newStep)
         return
     }
   },
@@ -376,14 +387,20 @@ export const utilityHandler: {
  * @returns
  */
 const getConnection = async (replyFn: ReplyFn): Promise<Client[]> => {
-  const clients = await connectionStore.getClients()
+  const connectionStore = storeProvider.getStore('connectionsStore')
+  Logger.info('Getting clients', {
+    source: 'utilityHandler',
+    function: 'getConnection'
+  })
+  const clients = connectionStore.getClients()
   replyFn('connections', { status: true, data: clients.length, final: false })
   replyFn('clients', { status: true, data: clients, final: true })
   return clients
 }
 
 const deleteConnection = async (connectionId: string, replyFn: ReplyFn): Promise<boolean> => {
-  disconnectClient(connectionId)
+  const connectionStore = storeProvider.getStore('connectionsStore')
+  await connectionStore.removeClient(connectionId)
   replyFn('logging', { status: true, data: 'Finished', final: true })
   return true
 }
@@ -398,6 +415,7 @@ const selectZipFile = async (): Promise<string | undefined> => {
 }
 
 const refreshFirewall = async (replyFn: ReplyFn): Promise<void> => {
+  const settingsStore = storeProvider.getStore('settingsStore')
   try {
     replyFn('logging', { status: true, data: 'Refreshing Firewall', final: false })
     const payload = (await settingsStore.getSettings()) as Settings

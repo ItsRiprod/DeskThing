@@ -1,27 +1,13 @@
 console.log('[AppInst Service] Starting')
 import Logger from '@server/utils/logger'
-import {
-  Response,
-  AppManifest,
-  LOGGING_LEVELS,
-  DeskThingType,
-  EventPayload,
-  AppReleaseSingleMeta
-} from '@DeskThing/types'
+import { LOGGING_LEVELS, AppReleaseSingleMeta } from '@DeskThing/types'
 import { ReplyFn, AppInstance, StagedAppManifest } from '@shared/types'
-import {
-  constructManifest,
-  getAppFilePath,
-  getManifest,
-  getStandardizedFilename,
-  validateSha512
-} from './appUtils'
+import { getAppFilePath, getManifest, getStandardizedFilename, validateSha512 } from './appUtils'
 import { existsSync, promises } from 'node:fs'
-import { handleDataFromApp } from './appCommunication'
-import appStore from '@server/stores/appStore'
 import { overwriteData } from '../files/dataFileService'
-import path, { resolve } from 'node:path'
+import path from 'node:path'
 import logger from '@server/utils/logger'
+import { storeProvider } from '@server/stores'
 
 interface ExecuteStagedFileType {
   reply?: ReplyFn
@@ -36,6 +22,7 @@ export const executeStagedFile = async ({
   appId,
   run = false
 }: ExecuteStagedFileType): Promise<void> => {
+  const appStore = storeProvider.getStore('appStore')
   try {
     const tempZipPath = getAppFilePath('staged', 'temp.zip')
     const extractedPath = getAppFilePath('staged', 'extracted')
@@ -95,7 +82,7 @@ export const executeStagedFile = async ({
     } else {
       // If the app is new
       Logger.info(`[executeStagedFile] Adding app to store...`)
-      const App: AppInstance = {
+      const App: App = {
         name: appId,
         enabled: false,
         running: false,
@@ -442,7 +429,10 @@ export const stageAppFile = async ({
  *
  * If the app already exists, it just initializes the app and runs it
  * @param {AppInstance} app - The name of the app to run.
+ * @deprecated - use appStore instead
  */
+
+/*
 export const run = async (app: AppInstance): Promise<void> => {
   try {
     if (
@@ -456,7 +446,7 @@ export const run = async (app: AppInstance): Promise<void> => {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         SysEvents: (_event: string, _listener: (...args: string[]) => void) => {
           return () => {
-            /* do something with this to let apps listen for server events like apps being added or settings being changed */
+            // do something with this to let apps listen for server events like apps being added or settings being changed
           }
         }
       })
@@ -531,12 +521,15 @@ export const run = async (app: AppInstance): Promise<void> => {
     })
   }
 }
+*/
 
 /**
  * Starts the app assuming it exists in appState
  * @param appName
  * @returns
+ * @deprecated - use appStore instead
  */
+/*
 export const start = async (appInstance: string | AppInstance): Promise<boolean> => {
   if (typeof appInstance == 'string') {
     appInstance = appStore.get(appInstance) as AppInstance
@@ -583,7 +576,7 @@ export const start = async (appInstance: string | AppInstance): Promise<boolean>
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         SysEvents: (_event: string, _listener: (...args: string[]) => void) => {
           return () => {
-            /* do something with this to let apps listen for server events like apps being added or settings being changed */
+            // do something with this to let apps listen for server events like apps being added or settings being changed
           }
         }
       })
@@ -610,13 +603,16 @@ export const start = async (appInstance: string | AppInstance): Promise<boolean>
   }
   return false
 }
+*/
 
 /**
  * Sets up the functions in the appState from the DeskThing object
  * @param appName
  * @param DeskThing
+ * @deprecated - use appStore instead
  * @returns
  */
+/*
 const setupFunctions = async (
   appInstance: AppInstance,
   DeskThing: DeskThingType
@@ -639,7 +635,7 @@ const setupFunctions = async (
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         SysEvents: (_event: string, _listener: (...args: string[]) => void) => {
           return () => {
-            /* do something with this to let apps listen for server events like apps being added or settings being changed */
+            // do something with this to let apps listen for server events like apps being added or settings being changed
           }
         }
       })
@@ -659,12 +655,16 @@ const setupFunctions = async (
     })
   }
 }
+*/
+
 /**
  * Attempts to get the manifest from the DeskThing object and resorts to manually searching
  * @param appName The name of the app
  * @param manifestResponse The response from the DeskThing object
+ * @deprecated - use appStore instead
  * @returns
  */
+/*
 const handleManifest = async (
   appName: string,
   manifestResponse: Response
@@ -699,12 +699,15 @@ const handleManifest = async (
     return
   }
 }
+*/
 
 /**
  * Gets the DeskThing object from the appEntryPoint
  * @param appName
+ * @deprecated - use AppStore
  * @returns
  */
+/*
 const getDeskThing = async (appName: string): Promise<DeskThingType | void> => {
   const appEntryPointJs = getAppFilePath(appName, 'index.js')
   const appEntryPointMjs = getAppFilePath(appName, 'index.mjs')
@@ -734,8 +737,9 @@ const getDeskThing = async (appName: string): Promise<DeskThingType | void> => {
   }
   if (existsSync(appEntryPoint)) {
     // TODO: Should verify the deskthing structure to ensure it is from the connector
-    const { DeskThing } = await import(`file://${resolve(appEntryPoint)}?cacheBust=${Date.now()}`)
+    const { DeskThing } = await import(`file://${appEntryPoint}?cacheBust=${Date.now()}`)
     return DeskThing as DeskThingType
   }
   return
 }
+*/

@@ -1,7 +1,1 @@
-export { default as connectionStore } from './connectionsStore'
-export { default as appStore } from './appStore'
-export { default as mappingStore } from './mappingStore'
-export { default as musicStore } from './musicStore'
-export { default as settingsStore } from './settingsStore'
-export { default as taskStore } from './taskStore'
-export { default as githubStore } from './githubStore'
+export * from './storeProvider'

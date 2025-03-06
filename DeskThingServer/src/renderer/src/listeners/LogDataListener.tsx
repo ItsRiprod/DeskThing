@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useLogStore, useNotificationStore } from '../stores'
-import { Log } from '@shared/types'
+import { IpcRendererCallback } from '@shared/types'
 
 /**
  * A React component that listens for 'log' events from the Electron IPC and updates the log and notification stores accordingly.
@@ -12,7 +12,7 @@ const LogDataListener = (): null => {
   const addLogs = useNotificationStore((state) => state.addLog)
 
   useEffect(() => {
-    const handleLog = async (_event, log: Log): Promise<void> => {
+    const handleLog: IpcRendererCallback<'log'> = async (_event, log): Promise<void> => {
       addLog(log)
       addLogs(log)
     }

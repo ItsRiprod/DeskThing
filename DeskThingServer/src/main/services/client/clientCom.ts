@@ -1,8 +1,7 @@
 console.log('[ClientCom Service] Starting')
 import { SocketData, SongData, AppSettings } from '@DeskThing/types'
-import { server, Clients } from './websocket'
-import { connectionStore, appStore } from '@server/stores/'
 import Logger from '@server/utils/logger'
+import { storeProvider } from '@server/stores'
 /**
  * Handles a client message by dispatching the message to the appropriate handler based on the message type.
  * If the message type is 'song', it calls the `handleMusicMessage` function from the `musicHandler` module.
@@ -13,10 +12,10 @@ import Logger from '@server/utils/logger'
  */
 export const handleClientMessage = async (data: SocketData): Promise<void> => {
   const { type, payload } = data
-  const musicHandler = await import('../../stores/musicStore')
+  const musicStore = storeProvider.getStore('musicStore')
   switch (type) {
     case 'song':
-      musicHandler.default.handleMusicMessage(payload as SongData)
+      musicStore.handleMusicMessage(payload as SongData)
       break
     default:
       sendMessageToClients(data)
@@ -28,27 +27,11 @@ export const handleClientMessage = async (data: SocketData): Promise<void> => {
  *
  * @param data - The socket data to be sent to the clients.
  * @returns - A Promise that resolves when the message has been sent to all clients.
+ * @depreciated - use broadcastToClients instead
  */
 export const sendMessageToClients = async (data: SocketData): Promise<void> => {
-  Logger.info(
-    `Sending message to clients: ${data.payload ? (JSON.stringify(data.payload).length > 1000 ? '[Large Payload]' : JSON.stringify(data.payload)) : 'undefined'}`,
-    {
-      source: 'clientCom',
-      function: 'sendMessageToClients'
-    }
-  )
-  if (server) {
-    server.clients.forEach((client) => {
-      if (client.readyState === 1) {
-        client.send(JSON.stringify(data))
-      }
-    })
-  } else {
-    Logger.warn('WSOCKET: No server running - setting one up', {
-      source: 'clientCom',
-      function: 'sendMessageToClients'
-    })
-  }
+  const platformStore = storeProvider.getStore('platformStore')
+  platformStore.broadcastToClients(data)
 }
 
 /**
@@ -56,25 +39,11 @@ export const sendMessageToClients = async (data: SocketData): Promise<void> => {
  *
  * @param connectionId - The connection ID of the client to be disconnected.
  * @returns - Void.
+ * @depreciated - use connectionStore.removeClient instead
  */
 export const disconnectClient = (connectionId: string): void => {
-  const client = Clients.find((c) => c.client.connectionId === connectionId)
-
+  const connectionStore = storeProvider.getStore('connectionsStore')
   connectionStore.removeClient(connectionId)
-  if (client && server) {
-    client.socket.terminate()
-    Clients.splice(Clients.indexOf(client), 1)
-    Logger.info(`Forcibly disconnected client: ${connectionId}`, {
-      source: 'clientCom',
-      function: 'disconnectClient'
-    })
-  } else {
-    Logger.info(`Client not found or server not running: ${connectionId}`, {
-      source: 'clientCom',
-      function: 'disconnectClient'
-    })
-    console.log(Clients)
-  }
 }
 
 /**
@@ -83,21 +52,18 @@ export const disconnectClient = (connectionId: string): void => {
  *
  * @param clientId - The connection ID of the client to send the message to. If not provided, the message will be sent to all connected clients.
  * @param data - The socket data to be sent to the client(s).
+ * @deprecated - use broadcastToClients instead
  * @returns - Void.
  */
 export const sendMessageToClient = (clientId: string | undefined, data: SocketData): void => {
-  const client = Clients.find((client) => client.client.connectionId === clientId)
-  if (client) {
-    client.socket.send(JSON.stringify(data))
-  } else if (server && server.clients.size > 0) {
-    // Burst the message if there is no client provided
-    sendMessageToClients(data)
+  const platformStore = storeProvider.getStore('platformStore')
+
+  if (clientId) {
+    platformStore.sendDataToClient(clientId, data)
   } else {
-    Logger.info('No clients connected or server running', {
-      source: 'clientCom',
-      function: 'sendMessageToClient'
-    })
+    platformStore.broadcastToClients(data)
   }
+
 }
 
 /**
@@ -127,6 +93,7 @@ export const sendError = async (clientId: string | undefined, error: string): Pr
  */
 export const sendConfigData = async (clientId?: string): Promise<void> => {
   try {
+    const appStore = storeProvider.getStore('appStore')
     const appData = await appStore.getAllBase()
 
     const filteredAppData = appData.filter((app) => app.manifest?.isWebApp !== false)
@@ -147,6 +114,8 @@ export const sendConfigData = async (clientId?: string): Promise<void> => {
  */
 export const sendSettingsData = async (clientId?: string): Promise<void> => {
   try {
+    const appStore = storeProvider.getStore('appStore')
+    const appDataStore = storeProvider.getStore('appDataStore')
     const appData = appStore.getAllBase()
 
     if (!appData) {
@@ -158,7 +127,7 @@ export const sendSettingsData = async (clientId?: string): Promise<void> => {
       await Promise.all(
         appData.map(async (app) => {
           if (app) {
-            const appSettings = await appStore.getSettings(app.name)
+            const appSettings = await appDataStore.getSettings(app.name)
             if (appSettings) {
               settings[app.name] = appSettings
             }
@@ -209,9 +178,9 @@ export const sendSettingData = async (app: string, setting: AppSettings): Promis
  */
 export const sendMappings = async (clientId?: string): Promise<void> => {
   try {
-    const { default: keyMapStore } = await import('@server/stores/mappingStore')
-    const mappings = await keyMapStore.getMapping()
-    const actions = await keyMapStore.getActions()
+    const mappingStore = storeProvider.getStore('mappingStore')
+    const mappings = await mappingStore.getMapping()
+    const actions = await mappingStore.getActions()
 
     if (!mappings) {
       Logger.warn('No mappings found!', {

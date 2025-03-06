@@ -18,7 +18,8 @@ export default defineConfig({
       rollupOptions: {
         input: {
           index: resolve(__dirname, 'src/main/index.ts'),
-          expressProcess: resolve(__dirname, 'src/main/utilities/expressProcess.ts')
+          expressProcess: resolve(__dirname, 'src/main/utilities/expressProcess.ts'),
+          appProcess: resolve(__dirname, 'src/main/utilities/appProcess.ts')
         }
       }
     },

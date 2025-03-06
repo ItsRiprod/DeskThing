@@ -2,9 +2,8 @@ console.log('[Auth Handler] Starting')
 import { getAppData } from '../services/files/appFileService'
 import http from 'http'
 import url from 'url'
-import settingsStore from '../stores/settingsStore'
+import { storeProvider } from '@server/stores/storeProvider'
 import Logger from '@server/utils/logger'
-import { Settings } from '@shared/types'
 import { LOGGING_LEVELS, ServerEvent } from '@DeskThing/types'
 
 const successView = '<h1>Success</h1><p>You can now close this window.</p>'
@@ -44,9 +43,8 @@ async function handleCallback(req: http.IncomingMessage, res: http.ServerRespons
   }
 
   const code = parsedUrl.query.code as string
-  import('@server/stores').then(({ appStore }) => {
-    appStore.sendDataToApp(appName, { type: ServerEvent.CALLBACK_DATA, payload: code })
-  })
+  const appStore = storeProvider.getStore('appStore')
+  appStore.sendDataToApp(appName, { type: ServerEvent.CALLBACK_DATA, payload: code })
 
   res.writeHead(200, { 'Content-Type': 'text/html' })
   res.end(successView)
@@ -94,7 +92,8 @@ const startServer = async (): Promise<void> => {
  */
 const initializeServer = async (): Promise<void> => {
   try {
-    const settings = (await settingsStore.getSettings()) as Settings
+    const settingsStore = storeProvider.getStore('settingsStore')
+    const settings = await settingsStore.getSettings()
     callBackPort = settings.callbackPort
     await startServer()
   } catch (error) {
@@ -112,26 +111,30 @@ const initializeServer = async (): Promise<void> => {
  * If the callback port does not change, it logs a message indicating that the server is not being restarted.
  * If there is an error updating the server configuration, it logs an error message.
  */
-settingsStore.addListener((newSettings) => {
-  try {
-    if (newSettings.callbackPort != callBackPort) {
-      callBackPort = newSettings.callbackPort
-      startServer()
-    } else {
-      Logger.info('Not starting - port is not changed', {
-        source: 'authHandler',
-        function: 'settingsListener'
-      })
-    }
-  } catch (error) {
-    if (error instanceof Error) {
-      Logger.error('Error updating with settings', {
-        error,
-        source: 'authHandler',
-        function: 'settingsListener'
-      })
-    }
-  }
-})
+const setupListeners = (): void => {
+  const settingsStore = storeProvider.getStore('settingsStore')
 
+  settingsStore.addListener(async (newSettings) => {
+    try {
+      if (newSettings.callbackPort != callBackPort) {
+        callBackPort = newSettings.callbackPort
+        startServer()
+      } else {
+        Logger.info('Not starting - port is not changed', {
+          source: 'authHandler',
+          function: 'settingsListener'
+        })
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        Logger.error('Error updating with settings', {
+          error,
+          source: 'authHandler',
+          function: 'settingsListener'
+        })
+      }
+    }
+  })
+}
+setupListeners()
 initializeServer()

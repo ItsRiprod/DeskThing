@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
 import { useClientStore } from '../stores'
-import { ADBClient } from '@shared/types'
+import { IpcRendererCallback } from '@shared/types'
+
+let mounted = false
 
 /**
  * Listens for client data events and updates the client store accordingly.
@@ -18,26 +20,35 @@ const ClientDataListener = (): null => {
   const requestConnections = useClientStore((state) => state.requestConnections)
   const requestClientManifest = useClientStore((state) => state.requestClientManifest)
 
-  const getInitialState = async (): Promise<void> => {
-    requestConnections()
-    requestADBDevices()
-    requestClientManifest()
+  if (!mounted) {
+    const getInitialState = async (): Promise<void> => {
+      requestConnections()
+      requestADBDevices()
+      requestClientManifest()
+    }
+
+    getInitialState()
+    mounted = true
   }
 
-  getInitialState()
-
   useEffect(() => {
-    window.electron.ipcRenderer.on('clients', async (_event, data) => {
+    const onClientdata: IpcRendererCallback<'clients'> = (_async, data) => {
       setClients(data.data)
-    })
+    }
 
-    window.electron.ipcRenderer.on('connections', async (_event, data) => {
+    window.electron.ipcRenderer.on('clients', onClientdata)
+
+    const onConnections: IpcRendererCallback<'connections'> = (_async, data) => {
       setConnections(data.data)
-    })
+    }
 
-    window.electron.ipcRenderer.on('adbdevices', async (_event, data: ADBClient[]) => {
+    window.electron.ipcRenderer.on('connections', onConnections)
+
+    const onAdbDevices: IpcRendererCallback<'adbdevices'> = (_async, data) => {
       setAdbDevices(data)
-    })
+    }
+
+    window.electron.ipcRenderer.on('adbdevices', onAdbDevices)
 
     // Cleanup listeners on unmount
     return () => {

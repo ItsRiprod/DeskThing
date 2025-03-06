@@ -23,11 +23,12 @@ import {
   IPCData,
   UTILITY_TYPES
 } from '@shared/types'
-import { App, AuthScopes } from '@deskthing/types'
+import { App } from '@deskthing/types'
 import { app, shell, BrowserWindow, ipcMain, Tray, Menu, nativeImage } from 'electron'
 import { join, resolve, dirname } from 'node:path'
 import icon from '../../resources/icon.png?asset'
 import dotenv from 'dotenv'
+import { nextTick } from 'node:process'
 
 if (process.env.NODE_ENV === 'development') {
   dotenv.config()
@@ -224,8 +225,9 @@ async function initializeTray(): Promise<void> {
         if (clientWindow && !clientWindow.isDestroyed()) {
           clientWindow.focus()
         } else {
-          const settingsStore = await import('./stores/settingsStore')
-          const data = await settingsStore.default.getSettings()
+          const { storeProvider } = await import('./stores/storeProvider')
+          const settingsStore = storeProvider.getStore('settingsStore')
+          const data = await settingsStore.getSettings()
           if (data) {
             clientWindow = createClientWindow(data.devicePort)
           }
@@ -265,8 +267,9 @@ async function initializeDoc(): Promise<void> {
         if (clientWindow && !clientWindow.isDestroyed()) {
           clientWindow.focus()
         } else {
-          const settingsStore = await import('./stores/settingsStore')
-          const data = await settingsStore.default.getSettings()
+          const { storeProvider } = await import('./stores/storeProvider')
+          const settingsStore = storeProvider.getStore('settingsStore')
+          const data = await settingsStore.getSettings()
           if (data) {
             clientWindow = createClientWindow(data.devicePort)
           }
@@ -317,7 +320,7 @@ async function setupIpcHandlers(): Promise<void> {
         })
       }
     } catch (error) {
-      Logger.error(`Error in IPC handler: ${error}`, {
+      Logger.error(`Error in IPC handler with event ${data.type}: ${error}`, {
         domain: 'server',
         source: 'ipcHandlers',
         function: 'APPS',
@@ -343,7 +346,7 @@ async function setupIpcHandlers(): Promise<void> {
         })
       }
     } catch (error) {
-      Logger.error(`Error in IPC handler: ${error}`, {
+      Logger.error(`Error in IPC handler with event ${data.type}: ${error}`, {
         domain: 'server',
         source: 'ipcHandlers',
         function: 'CLIENT',
@@ -373,7 +376,7 @@ async function setupIpcHandlers(): Promise<void> {
         })
       }
     } catch (error) {
-      Logger.error(`Error in IPC handler: ${error}`, {
+      Logger.error(`Error in IPC handler with event ${data.type}: ${error}`, {
         domain: 'server',
         source: 'ipcHandlers',
         function: 'UTILITY',
@@ -444,10 +447,10 @@ if (!app.requestSingleInstanceLock()) {
       mainWindow?.show()
     })
 
-    setTimeout(() => {
+    nextTick(async () => {
       loadModules()
       setupIpcHandlers()
-    }, 10)
+    })
 
     // Handle window recreation on macOS
     app.on('activate', function () {
@@ -459,17 +462,16 @@ if (!app.requestSingleInstanceLock()) {
 
   // Handle window closure
   app.on('window-all-closed', async () => {
-    import('./stores/settingsStore').then(({ default: settingsStore }) => {
-      settingsStore.getSettings().then(async (settings) => {
-        if (settings.minimizeApp) {
-          // Clear cache from everywhere
-          const { default: cacheManager } = await import('./services/cache/cacheManager')
-          await cacheManager.hibernateAll()
-        } else {
-          app.quit()
-        }
-      })
-    })
+    const { storeProvider } = await import('./stores/storeProvider')
+    const settingsStore = storeProvider.getStore('settingsStore')
+    const settings = await settingsStore.getSettings()
+    if (settings.minimizeApp) {
+      // Clear cache from everywhere
+      const { default: cacheManager } = await import('./services/cache/cacheManager')
+      await cacheManager.hibernateAll()
+    } else {
+      app.quit()
+    }
   })
 }
 
@@ -499,14 +501,18 @@ async function openAuthWindow(url: string): Promise<void> {
 async function loadModules(): Promise<void> {
   try {
     // Store listeners
+    const { storeProvider } = await import('./stores/storeProvider')
+
+    const expressServerStore = storeProvider.getStore('expressServerStore')
+    expressServerStore.start()
+
+    const { initializePlatforms } = await import('./services/platforms/platformInitializer')
+    await initializePlatforms()
+
     const { initializeStores } = await import('./services/cache/storeInitializer')
     await initializeStores()
 
     import('./handlers/authHandler')
-
-    import('./services/client/websocket').then(({ restartServer }) => {
-      restartServer()
-    })
   } catch (error) {
     Logger.error('Error loading modules:', {
       domain: 'server',
@@ -515,14 +521,6 @@ async function loadModules(): Promise<void> {
       error: error instanceof Error ? error : new Error(String(error))
     })
   }
-}
-
-async function sendIpcAuthMessage(
-  _appName: string,
-  requestId: string,
-  scope: AuthScopes
-): Promise<void> {
-  mainWindow?.webContents.send('display-user-form', requestId, scope)
 }
 
 export type IpcDataTypes = {
@@ -538,11 +536,4 @@ async function sendIpcData({ type, payload, window }: ServerIPCData): Promise<vo
   }
 }
 
-export {
-  sendIpcAuthMessage,
-  openAuthWindow,
-  sendIpcData,
-  createMainWindow,
-  createClientWindow,
-  handleUrl
-}
+export { openAuthWindow, sendIpcData, createMainWindow, createClientWindow, handleUrl }

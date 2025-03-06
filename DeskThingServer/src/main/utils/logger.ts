@@ -8,8 +8,9 @@ import fs, { existsSync } from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
 import { LOGGING_LEVELS } from '@DeskThing/types'
-import { Log, LOG_FILTER, ReplyData, Settings, ReplyFn, LoggingOptions } from '@shared/types'
+import { Log, LOG_FILTER, ReplyData, ReplyFn, LoggingOptions } from '@shared/types'
 import { access, mkdir, readFile, rename, writeFile } from 'fs/promises'
+import { SettingsStoreClass } from '@shared/stores/settingsStore'
 
 // Logger configuration
 const logFile = join(app.getPath('userData'), 'logs', 'application.log.json')
@@ -27,8 +28,13 @@ class Logger {
 
   private constructor() {
     this.setupFiles()
-    import('@server/stores/settingsStore').then(({ default: settingsStore }) => {
-      settingsStore.addListener(this.settingsStoreListener.bind(this))
+  }
+
+  public setupSettingsListener = async (settingsStore: SettingsStoreClass): Promise<void> => {
+    this.logLevel = (await settingsStore.getSettings()).LogLevel || LOG_FILTER.SYSTEM
+
+    settingsStore.addListener((settings) => {
+      this.logLevel = settings?.logLevel || LOG_FILTER.SYSTEM
     })
   }
 
@@ -64,15 +70,6 @@ class Logger {
     }
   }
 
-  /**
-   * Updates the log level of the `Logger` based on the settings from the `SettingsStore`.
-   * @param settings - The updated settings from the `SettingsStore`.
-   */
-  private settingsStoreListener(settings: Settings): void {
-    this.logLevel = settings?.logLevel || LOG_FILTER.SYSTEM
-  }
-
-  // Singleton instance
   /**
    * Gets the singleton instance of the `Logger` class.
    * If the instance doesn't exist, it creates a new instance and returns it.
@@ -213,7 +210,7 @@ class Logger {
           console.log('\x1b[35m%s\x1b[0m', readableMessage) // Magenta for fatal
           break
         case LOGGING_LEVELS.DEBUG:
-          console.log('\x1b[34m%s\x1b[0m', readableMessage) // Blue for debug
+          console.debug('\x1b[36m%s\x1b[0m', readableMessage) // Cyan for debug
           break
         default:
           console.log('\x1b[0m%s', readableMessage) // Default color for other types

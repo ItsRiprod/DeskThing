@@ -7,8 +7,7 @@ import { app, net } from 'electron'
 import { handleAdbCommands } from './adbHandler'
 import { Client, ReplyData, ReplyFn } from '@shared/types'
 import { ClientConnectionMethod, ClientManifest, LOGGING_LEVELS } from '@DeskThing/types'
-import settingsStore from '../stores/settingsStore'
-import { githubStore } from '@server/stores'
+import { storeProvider } from '@server/stores/storeProvider'
 
 /**
  * Handles device data received from the client.
@@ -76,6 +75,8 @@ export const getDeviceManifestVersion = async (deviceId: string): Promise<string
  * @returns A Promise that resolves when the device configuration is complete.
  */
 export const configureDevice = async (deviceId: string, reply?: ReplyFn): Promise<void> => {
+  const settingsStore = storeProvider.getStore('settingsStore')
+  const githubStore = storeProvider.getStore('githubStore')
   const settings = await settingsStore.getSettings()
 
   // Opens the socket port

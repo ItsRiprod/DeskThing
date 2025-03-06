@@ -1,18 +1,21 @@
 console.log('[Settings Store] Starting')
+// Types
+import { LOGGING_LEVELS } from '@DeskThing/types'
+import { Settings, LOG_FILTER, CacheableStore } from '@shared/types'
+import { SettingsStoreClass, SettingsStoreListener } from '@shared/stores/settingsStore'
+
+// Utils
 import { readFromFile, writeToFile } from '../services/files/fileService'
 import Logger from '@server/utils/logger'
 import os from 'os'
-import { LOGGING_LEVELS } from '@DeskThing/types'
-import { Settings, LOG_FILTER, CacheableStore } from '@shared/types'
+
+// Consts
 const settingsVersion = '0.9.2'
 const version_code = 9.2
 
-type SettingsStoreListener = (settings: Settings) => void
-
-class SettingsStore implements CacheableStore {
+export class SettingsStore implements CacheableStore, SettingsStoreClass {
   private settings: Settings | null
   private settingsFilePath: string = 'settings.json'
-  private static instance: SettingsStore
   private listeners: SettingsStoreListener[] = []
 
   constructor() {
@@ -45,13 +48,6 @@ class SettingsStore implements CacheableStore {
       .catch((err) => {
         console.error('SETTINGS: Error initializing settings:', err)
       })
-  }
-
-  static getInstance(): SettingsStore {
-    if (!SettingsStore.instance) {
-      SettingsStore.instance = new SettingsStore()
-    }
-    return SettingsStore.instance
   }
 
   /**
@@ -254,5 +250,3 @@ const getLocalIpAddress = (): string[] => {
   }
   return localIps
 }
-
-export default SettingsStore.getInstance()

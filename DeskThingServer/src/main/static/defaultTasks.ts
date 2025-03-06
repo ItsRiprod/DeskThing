@@ -1,6 +1,6 @@
 import { Task, STEP_TYPES } from '@DeskThing/types'
-import { TaskList } from '@shared/types'
-const tasks: Record<string, Task> = {
+
+export const ServerTasks: Record<string, Task> = {
   gettingstarted: {
     id: 'gettingstarted',
     version: '0.10.4',
@@ -209,9 +209,3 @@ const tasks: Record<string, Task> = {
     completed: false
   }
 }
-
-const defaultTask: TaskList = {
-  version: '0.10.4',
-  tasks
-}
-export default defaultTask

@@ -30,51 +30,28 @@ import {
   saveAppReleaseData,
   saveClientReleaseData
 } from '@server/services/files/releaseFileService'
-
-interface CacheEntry {
-  timestamp: number
-  data: GithubRelease[] | Promise<GithubRelease[]>
-  isError?: boolean
-}
-
-interface AssetAppCacheEntry {
-  timestamp: number
-  data: AppReleaseMeta
-}
-
-interface AssetClientCacheEntry {
-  timestamp: number
-  data: ClientReleaseMeta
-}
-
-type GithubListenerEvents = {
-  app: AppReleaseMeta[]
-  community: AppReleaseCommunity[]
-  client: ClientReleaseMeta[]
-}
-
-// Create listener types automatically from event map
-type Listener<T> = (payload: T) => void
-type GithubStoreListener<K extends keyof GithubListenerEvents> = Listener<GithubListenerEvents[K]>
-
-// Create listeners collection type automatically
-type GithubStoreListeners = {
-  [K in keyof GithubListenerEvents]: GithubStoreListener<K>[]
-}
+import {
+  AssetAppCacheEntry,
+  AssetClientCacheEntry,
+  CacheEntry,
+  GithubListenerEvents,
+  GithubStoreClass,
+  GithubStoreListener,
+  GithubStoreListeners
+} from '@shared/stores/githubStore'
 
 /**
  * Temporarily holds the entire repo response information in memory unless manually refreshed
  *
  * Holds the AppReleaseMeta information and properly stores it when needed
  */
-class GithubStore implements CacheableStore {
+export class GithubStore implements CacheableStore, GithubStoreClass {
   private cache: Map<string, CacheEntry>
   private assetAppCache: Map<string, AssetAppCacheEntry>
   private assetClientCache: Map<string, AssetClientCacheEntry>
   private appReleases: AppReleaseFile | null
   private clientReleases: ClientReleaseFile | null
   private cachedRepos: string[]
-  private static instance: GithubStore
 
   private listeners: GithubStoreListeners = {
     app: [],
@@ -117,13 +94,6 @@ class GithubStore implements CacheableStore {
     if (this.clientReleases) {
       await this.saveClientReleaseFile()
     }
-  }
-
-  static getInstance(): GithubStore {
-    if (!GithubStore.instance) {
-      GithubStore.instance = new GithubStore()
-    }
-    return GithubStore.instance
   }
 
   private notifyListeners = <K extends keyof GithubListenerEvents>(
@@ -986,5 +956,3 @@ class GithubStore implements CacheableStore {
     return this.clientReleases?.releases || (await this.getClientReleaseFile()).releases
   }
 }
-
-export default GithubStore.getInstance()

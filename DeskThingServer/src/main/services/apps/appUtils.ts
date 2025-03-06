@@ -506,7 +506,10 @@ export const validateSha512 = async (
   try {
     statSync(zipLocation)
   } catch (err) {
-    Logger.error(`File not found or not readable: ${zipLocation}`)
+    Logger.error(`File not found or not readable: ${zipLocation}`, {
+      source: 'validateSha512',
+      error: err as Error
+    })
     return false
   }
 
@@ -529,7 +532,8 @@ export const validateSha512 = async (
     return fileHash === app.hash
   } catch (err) {
     Logger.warn(`Could not validate hash for package file`, {
-      source: 'validateSha512'
+      source: 'validateSha512',
+      error: err as Error
     })
     return false
   }

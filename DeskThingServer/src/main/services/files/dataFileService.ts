@@ -14,15 +14,18 @@ import { AppDataInterface } from '@DeskThing/types'
 import { deleteFile, readFromFile, writeToFile } from './fileService'
 import { join } from 'path'
 import logger from '@server/utils/logger'
+import { isValidAppDataInterface } from '../apps'
 
 // Updated function to read Data using the new FileService
 const readAppData = async (name: string): Promise<AppDataInterface | undefined> => {
   const dataFilePath = join('data', `${name}.json`)
   try {
     const data = await readFromFile<AppDataInterface>(dataFilePath)
-    return data || undefined
+    if (!data) return
+    isValidAppDataInterface(data)
+    return data
   } catch (err) {
-    logger.error('Error reading data:', {
+    logger.error(`Error reading data for ${name}:`, {
       error: err as Error,
       function: 'readAppData',
       source: 'DataFileService'
@@ -40,7 +43,7 @@ const writeAppData = async (name: string, data: AppDataInterface): Promise<void>
   try {
     await writeToFile<AppDataInterface>(data, dataFilePath)
   } catch (error) {
-    logger.error('Error writing data:', {
+    logger.error(`Error writing data for ${name}:`, {
       error: error as Error,
       function: 'writeAppData',
       source: 'DataFileService'
@@ -53,7 +56,7 @@ export const overwriteData = async (name: string, data: AppDataInterface): Promi
   try {
     await writeAppData(name, data)
   } catch (err) {
-    logger.error('Error overwriting data:', {
+    logger.error(`Error overwriting data for ${name}:`, {
       error: err as Error,
       function: 'overwriteData',
       source: 'DataFileService'
@@ -66,7 +69,7 @@ export const setData = async (
   value: Partial<AppDataInterface>
 ): Promise<AppDataInterface | undefined> => {
   try {
-    const data = await readAppData(appName)
+    const data = await readAppData(appName).catch(() => undefined)
     if (data) {
       // Merge the new data with the existing data
       const mergedData: AppDataInterface = {
@@ -94,7 +97,7 @@ export const setData = async (
       return
     }
   } catch (err) {
-    logger.error('Error setting data:', {
+    logger.error(`Error setting data for ${appName}:`, {
       error: err as Error,
       function: 'setData',
       source: 'DataFileService'
@@ -109,7 +112,7 @@ export const setData = async (
       try {
         await writeAppData(appName, appData)
       } catch (error) {
-        logger.error('Error writing default data:', {
+        logger.error(`Error writing default data for ${appName}:`, {
           error: error as Error,
           function: 'writeAppData',
           source: 'DataFileService'
@@ -128,9 +131,10 @@ export const setData = async (
  */
 export const getData = async (app: string): Promise<AppDataInterface | undefined> => {
   try {
-    return await readAppData(app)
+    const data = await readAppData(app)
+    return data
   } catch (err) {
-    logger.error('Error getting data:', {
+    logger.error(`Error getting data for ${app}:`, {
       error: err as Error,
       function: 'getData',
       source: 'DataFileService'
@@ -143,7 +147,7 @@ export const purgeAppData = async (appName: string): Promise<void> => {
   try {
     await deleteFile(join('data', `${appName}.json`))
   } catch (error) {
-    logger.error('Error deleting app data:', {
+    logger.error(`Error deleting app data for ${appName}:`, {
       error: error as Error,
       function: 'purgeAppData',
       source: 'DataFileService'

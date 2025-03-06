@@ -1,13 +1,12 @@
 // Ik this is bad practice but I don't have time to fix it right now
-import { DeskThingType, App, AppManifest, EventPayload } from '@deskthing/types'
+import { App, AppManifest, EventPayload } from '@deskthing/types'
 
 /**
  * The AppInstance interface represents an instance of an app.
  * Represents the structure of the application
+ * @deprecated - use App instead
  */
-export interface AppInstance extends App {
-  func?: DeskThingType
-}
+export type AppInstance = App
 
 // Type that sets up the expected format for data sent to and from main
 export type ToClientType = (data: EventPayload) => void

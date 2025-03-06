@@ -1,6 +1,6 @@
 console.log('[ClientUtils Service] Starting')
 import { ClientDeviceType } from '@deskthing/types'
-import { sendMessageToClients } from './clientCom'
+import { storeProvider } from '@server/stores'
 
 /**
  * Calculates the delay in milliseconds until the next full minute.
@@ -53,6 +53,7 @@ export const getDeviceType = (userAgent: string | undefined): ClientDeviceType =
  * The time information is logged at the DEBUG level using the `Logger`.
  */
 export const sendTime = async (): Promise<void> => {
+  const platformStore = storeProvider.getStore('platformStore')
   const now = new Date()
   const utcTime = Date.now() // UTC time in milliseconds
   const timezoneOffset = now.getTimezoneOffset() * -1 // Offset in minutes (server's timezone)
@@ -62,7 +63,7 @@ export const sendTime = async (): Promise<void> => {
     timezoneOffset // Timezone offset in minutes
   }
 
-  sendMessageToClients({ app: 'client', type: 'set', request: 'time', payload: data })
+  platformStore.broadcastToClients({ app: 'client', type: 'set', request: 'time', payload: data })
 }
 
 /**

@@ -4,21 +4,31 @@
  * refreshing the music data, setting the audio source, and handling client requests and music messages.
  */
 console.log('[Music Handler] Starting')
-import { settingsStore, appStore } from '.'
-import Logger from '@server/utils/logger'
+// Types
+import { MusicStoreClass } from '@shared/stores/musicStore'
 import { SocketData, LOGGING_LEVELS, SongData, ServerEvent, EventPayload } from '@DeskThing/types'
 import { CacheableStore, Settings } from '@shared/types'
+import { SettingsStoreClass } from '@shared/stores/settingsStore'
+import { AppStoreClass } from '@shared/stores/appStore'
+
+// Utils
+import Logger from '@server/utils/logger'
 import { getAppByName } from '../services/files/appFileService'
 import { sendMessageToClients } from '../services/client/clientCom'
 import { getColorFromImage } from '../services/music/musicUtils'
 // import { getNowPlaying } from '../services/music/musicController'
 
-export class MusicStore implements CacheableStore {
-  private static instance: MusicStore
+export class MusicStore implements CacheableStore, MusicStoreClass {
   private refreshInterval: NodeJS.Timeout | null = null
   private currentApp: string | null = null
 
-  private constructor() {
+  // DI stores
+  private settingsStore: SettingsStoreClass
+  private appStore: AppStoreClass
+
+  constructor(settingsStore: SettingsStoreClass, appStore: AppStoreClass) {
+    this.settingsStore = settingsStore
+    this.appStore = appStore
     setTimeout(() => {
       this.initializeRefreshInterval()
     }, 3000)
@@ -41,19 +51,12 @@ export class MusicStore implements CacheableStore {
      */
   }
 
-  public static getInstance(): MusicStore {
-    if (!MusicStore.instance) {
-      MusicStore.instance = new MusicStore()
-    }
-    return MusicStore.instance
-  }
-
   private async initializeRefreshInterval(): Promise<void> {
-    const settings = await settingsStore.getSettings() // Get from your settings store
+    const settings = await this.settingsStore.getSettings() // Get from your settings store
     this.currentApp = settings.playbackLocation || 'none'
 
     this.updateRefreshInterval(settings.refreshInterval)
-    settingsStore.addListener(this.handleSettingsUpdate.bind(this))
+    this.settingsStore.addListener(this.handleSettingsUpdate.bind(this))
 
     setTimeout(() => {
       Logger.log(LOGGING_LEVELS.DEBUG, '[MusicStore]: Initialized')
@@ -117,7 +120,7 @@ export class MusicStore implements CacheableStore {
       )
     }
 
-    const settings = await settingsStore.getSettings()
+    const settings = await this.settingsStore.getSettings()
 
     if (settings.playbackLocation && settings.playbackLocation != 'none') {
       Logger.log(
@@ -132,7 +135,7 @@ export class MusicStore implements CacheableStore {
       )
     }
 
-    const Apps = appStore.getAllBase()
+    const Apps = this.appStore.getAllBase()
 
     const audioSource = Apps.find((app) => app.manifest?.isAudioSource)
 
@@ -154,9 +157,9 @@ export class MusicStore implements CacheableStore {
   private async getPlaybackSource(): Promise<string | null> {
     if (this.currentApp == 'disabled') {
       Logger.log(LOGGING_LEVELS.LOG, `[MusicStore]: Music is disabled! Cancelling refresh`)
-      const settings = await settingsStore.getSettings()
+      const settings = await this.settingsStore.getSettings()
       if (settings.refreshInterval > 0) {
-        settingsStore.updateSetting('refreshInterval', -1)
+        this.settingsStore.updateSetting('refreshInterval', -1)
       }
       return null
     }
@@ -165,7 +168,7 @@ export class MusicStore implements CacheableStore {
       const app = await this.findCurrentPlaybackSource()
       if (app) {
         this.currentApp = app
-        settingsStore.updateSetting('playbackLocation', app)
+        this.settingsStore.updateSetting('playbackLocation', app)
         return app
       } else {
         Logger.log(
@@ -178,7 +181,7 @@ export class MusicStore implements CacheableStore {
 
     if (!this.currentApp || this.currentApp.length == 0) {
       // Attempt to get audiosource from settings
-      const currentApp = (await settingsStore.getSettings()).playbackLocation
+      const currentApp = (await this.settingsStore.getSettings()).playbackLocation
       if (!currentApp || currentApp.length == 0) {
         Logger.log(
           LOGGING_LEVELS.ERROR,
@@ -226,8 +229,11 @@ export class MusicStore implements CacheableStore {
     }
 
     try {
-      const { appStore } = await import('@server/stores')
-      appStore.sendDataToApp(currentApp, { type: ServerEvent.GET, request: 'refresh', payload: '' })
+      this.appStore.sendDataToApp(currentApp, {
+        type: ServerEvent.GET,
+        request: 'refresh',
+        payload: ''
+      })
       Logger.log(LOGGING_LEVELS.LOG, `[MusicStore]: Refreshed with ${currentApp}!`)
     } catch (error) {
       Logger.log(LOGGING_LEVELS.ERROR, `[MusicStore]: Music refresh failed: ${error}`)
@@ -243,7 +249,7 @@ export class MusicStore implements CacheableStore {
       return
     }
     Logger.log(LOGGING_LEVELS.LOG, `[MusicStore]: Setting Playback Location to ${source}`)
-    settingsStore.updateSetting('playbackLocation', source)
+    this.settingsStore.updateSetting('playbackLocation', source)
     this.currentApp = source
   }
 
@@ -265,8 +271,7 @@ export class MusicStore implements CacheableStore {
 
     Logger.log(LOGGING_LEVELS.LOG, `[MusicStore]: ${request.type} ${request.request}`)
 
-    const { appStore } = await import('@server/stores')
-    appStore.sendDataToApp(currentApp, {
+    this.appStore.sendDataToApp(currentApp, {
       type: request.type as ServerEvent,
       request: request.request,
       payload: request.payload
@@ -305,5 +310,3 @@ export class MusicStore implements CacheableStore {
     }
   }
 }
-
-export default MusicStore.getInstance()

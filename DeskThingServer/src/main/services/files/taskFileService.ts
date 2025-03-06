@@ -1,10 +1,10 @@
-import { TaskList } from '@shared/types'
+import { FullTaskList } from '@shared/types'
 import { readFromFile, writeToFile } from './fileService'
 import { join } from 'node:path'
 import logger from '@server/utils/logger'
 import { isValidTaskList, sanitizeTaskList, sanitizeTaskListFile } from '../task'
 
-export const saveTaskList = async (taskList: TaskList): Promise<void> => {
+export const saveTaskList = async (taskList: FullTaskList): Promise<void> => {
   try {
     const sTaskList = sanitizeTaskListFile(taskList)
     isValidTaskList(sTaskList)
@@ -20,10 +20,10 @@ export const saveTaskList = async (taskList: TaskList): Promise<void> => {
   }
 }
 
-export const readTasksFromFile = async (): Promise<TaskList | undefined> => {
+export const readTasksFromFile = async (): Promise<FullTaskList | undefined> => {
   try {
     const taskListPath = join('system', 'tasks.json')
-    const taskList = await readFromFile<TaskList>(taskListPath)
+    const taskList = await readFromFile<FullTaskList>(taskListPath)
     isValidTaskList(taskList)
     const sTaskList = sanitizeTaskList(taskList)
     return sTaskList

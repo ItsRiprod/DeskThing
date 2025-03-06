@@ -1,4 +1,10 @@
-import { IconCarThingSmall, IconConfig, IconLoading, IconRefresh, IconUpload } from '@renderer/assets/icons'
+import {
+  IconCarThingSmall,
+  IconConfig,
+  IconLoading,
+  IconRefresh,
+  IconUpload
+} from '@renderer/assets/icons'
 import { ADBClient, LoggingData } from '@shared/types'
 import React, { useState } from 'react'
 import Button from '../Button'

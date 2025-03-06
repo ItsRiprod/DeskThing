@@ -6,22 +6,39 @@
 console.log('[Connection Store] Starting')
 import { LOGGING_LEVELS } from '@DeskThing/types'
 import { ADBClient, CacheableStore, Client } from '@shared/types'
-import { settingsStore, taskStore } from '.'
 import Logger from '@server/utils/logger'
 import { configureDevice } from '@server/handlers/deviceHandler'
-type ClientListener = (client: Client[]) => void
-type DeviceListener = (device: ADBClient[]) => void
+import {
+  ClientListener,
+  ConnectionStoreClass,
+  DeviceListener
+} from '@shared/stores/connectionsStore'
+import { handleAdbCommands } from '@server/handlers/adbHandler'
+import { SettingsStoreClass } from '@shared/stores/settingsStore'
+import { TaskStoreClass } from '@shared/stores/taskStore'
+import { PlatformStoreClass, PlatformStoreEvent } from '@shared/stores/platformStore'
 
-class ConnectionStore implements CacheableStore {
+export class ConnectionStore implements CacheableStore, ConnectionStoreClass {
   private clients: Client[] = []
   private devices: ADBClient[] = []
-  private static instance: ConnectionStore
   private clientListeners: ClientListener[] = []
   private deviceListeners: DeviceListener[] = []
   private autoDetectADB: boolean = false
   private clearTimeout: NodeJS.Timeout | null = null
 
-  constructor() {
+  // Stores that are DI
+  private settingsStore: SettingsStoreClass
+  private taskStore: TaskStoreClass
+  private platformStore: PlatformStoreClass
+
+  constructor(
+    settingsStore: SettingsStoreClass,
+    taskStore: TaskStoreClass,
+    platformStore: PlatformStoreClass
+  ) {
+    this.settingsStore = settingsStore
+    this.taskStore = taskStore
+    this.platformStore = platformStore
     this.setupConnectionListeners()
   }
 
@@ -37,14 +54,12 @@ class ConnectionStore implements CacheableStore {
   }
 
   private setupConnectionListeners = async (): Promise<void> => {
-    // Cooldown to let the settings store startup
-    await new Promise((res) => setTimeout(res, 200))
-
-    settingsStore.getSettings().then((settings) => {
+    // Setting Store listeners
+    this.settingsStore.getSettings().then((settings) => {
       this.autoDetectADB = settings.autoDetectADB
     })
 
-    settingsStore.addListener((newSettings) => {
+    this.settingsStore.addListener((newSettings) => {
       try {
         if (newSettings.autoDetectADB !== undefined) {
           this.autoDetectADB = newSettings.autoDetectADB
@@ -77,13 +92,15 @@ class ConnectionStore implements CacheableStore {
 
     // Initial check
     this.checkAutoDetectADB()
-  }
 
-  static getInstance(): ConnectionStore {
-    if (!ConnectionStore.instance) {
-      ConnectionStore.instance = new ConnectionStore()
-    }
-    return ConnectionStore.instance
+    // Connection store
+    this.platformStore.on(PlatformStoreEvent.CLIENT_CONNECTED, (client) => {
+      this.addClient(client)
+    })
+
+    this.platformStore.on(PlatformStoreEvent.CLIENT_DISCONNECTED, (client) => {
+      this.removeClient(client)
+    })
   }
 
   async on(listener: ClientListener): Promise<() => void> {
@@ -205,16 +222,19 @@ class ConnectionStore implements CacheableStore {
   }
 
   async getAdbDevices(): Promise<ADBClient[]> {
-    const { handleAdbCommands } = await import('../handlers/adbHandler')
     try {
+      Logger.info('Getting ADB devices', {
+        function: 'getAdbDevices',
+        source: 'ConnectionsStore'
+      })
       const result = await handleAdbCommands('devices')
 
       const newDevices = this.parseADBDevices(result) || []
 
       if (newDevices.length > 0) {
-        taskStore.completeStep('device', 'detect')
+        this.taskStore.completeStep('server', 'device', 'detect')
         if (newDevices.some((device) => device.connected)) {
-          taskStore.completeStep('device', 'configure')
+          this.taskStore.completeStep('server', 'device', 'configure')
         }
       }
 
@@ -228,7 +248,7 @@ class ConnectionStore implements CacheableStore {
 
       try {
         // Automatically config the devices if it is both not offline and not connected
-        const settings = await settingsStore.getSettings()
+        const settings = await this.settingsStore.getSettings()
         if (settings.autoConfig && newDevices.some((device) => !device.connected)) {
           // Wait for all of the devices to configure
           Logger.info('Automatically configuring disconnected devices', {
@@ -278,5 +298,3 @@ class ConnectionStore implements CacheableStore {
     checkAndAutoDetect()
   }
 }
-
-export default ConnectionStore.getInstance()

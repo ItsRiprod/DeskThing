@@ -15,7 +15,7 @@ const NotificationOverlay: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const notificationState = useNotificationStore((state) => state)
-  const taskList = useTaskStore((state) => state.taskList.tasks)
+  const taskList = useTaskStore((state) => state.taskList)
   const page = searchParams.get('page') || 'event'
 
   const NotificationPage = useMemo(() => {
@@ -33,7 +33,9 @@ const NotificationOverlay: React.FC = () => {
     }
   }, [page])
 
-  const activeTasks = Object.values(taskList).filter((task) => task.completed == false)
+  const activeTasks = Object.values(taskList)
+    .flatMap((appTasks) => Object.values(appTasks))
+    .filter((task) => task.completed === false && task.available === false)
 
   const setPage = (page: string): void => {
     searchParams.set('page', page)
@@ -91,7 +93,7 @@ const NotificationOverlay: React.FC = () => {
           />
         </div>
         <div className="w-full">
-          <ErrorBoundary>{NotificationPage}</ErrorBoundary>
+          <ErrorBoundary key={page}>{NotificationPage}</ErrorBoundary>
         </div>
       </div>
     </Overlay>

@@ -1,4 +1,5 @@
 console.log('[MapStore Service] Starting')
+// Types
 import {
   Action,
   EventMode,
@@ -6,9 +7,14 @@ import {
   ActionReference,
   ServerEvent,
   EventPayload,
-  LOGGING_LEVELS
+  LOGGING_LEVELS,
+  SEND_TYPES
 } from '@DeskThing/types'
 import { ButtonMapping, MappingStructure, Button, Profile, CacheableStore } from '@shared/types'
+import { Listener, ListenerPayloads, MappingStoreClass } from '@shared/stores/mappingStore'
+import { AppStoreClass } from '@shared/stores/appStore'
+
+//Utilities
 import Logger from '@server/utils/logger'
 import { writeToFile } from '@server/services/files/fileService'
 import { deepMerge } from '@server/utils/objectUtils'
@@ -20,26 +26,124 @@ import {
   isValidActionReference,
   isValidKey,
   validMappingExists,
-  isValidButtonMapping
+  isValidButtonMapping,
+  sanitizeAction
 } from '@server/services/mappings/utilsMaps'
 import { defaultProfile } from '@server/static/defaultMapping'
 
-type ListeningTypes = 'key' | 'profile' | 'action' | 'update'
-
-type Listener = (data?: Key[] | ButtonMapping | Action[]) => void
-
-export class MappingState implements CacheableStore {
+export class MappingStore implements CacheableStore, MappingStoreClass {
   private mappings: MappingStructure | null = null
-  private static instance: MappingState
-  private listeners: Record<ListeningTypes, Set<Listener>> = {
-    key: new Set(),
-    profile: new Set(),
-    action: new Set(),
-    update: new Set()
+  private listeners: Record<keyof ListenerPayloads, Array<Listener<keyof ListenerPayloads>>> = {
+    key: [],
+    profile: [],
+    action: [],
+    update: []
   }
 
-  constructor() {
+  // stores
+  private appStore: AppStoreClass
+
+  constructor(appStore: AppStoreClass) {
+    this.appStore = appStore
+    this.initializeListeners()
     this.fetchMappings()
+  }
+
+  private initializeListeners = async (): Promise<void> => {
+    this.appStore.onAppMessage(SEND_TYPES.ACTION, (data) => {
+      try {
+        switch (data.request) {
+          case 'add':
+            {
+              const Action: Action = {
+                name: data.payload.name || 'Default Name',
+                description: data.payload.description || 'No description provided',
+                id: data.payload.id || 'unsetid',
+                value: data.payload.value || undefined,
+                value_options: data.payload.value_options || [],
+                value_instructions: data.payload.value_instructions || '',
+                icon: data.payload.icon || undefined,
+                source: data.source,
+                version: data.payload.version || '0.0.0',
+                version_code: data.payload.version_code || 0,
+                tag: data.payload.tag || 'basic',
+                enabled: true
+              }
+              try {
+                sanitizeAction(Action)
+                this.addAction(Action)
+              } catch (error) {
+                Logger.error(`Unable to add action to app ${data.source}`, {
+                  function: 'handleRequestActionAdd',
+                  error: error as Error,
+                  source: 'mappingStore'
+                })
+              }
+            }
+            break
+          case 'remove':
+            this.removeAction(data.payload.id)
+            break
+          case 'update':
+            this.updateIcon(data.payload.id, data.payload.icon)
+            break
+          case 'run':
+            this.runAction({ id: data.payload.id, enabled: true, source: data.source })
+            break
+          default:
+            break
+        }
+      } catch (error) {
+        Logger.error(`Unable to handle action request from app ${data.source}`, {
+          function: 'handleRequestAction',
+          error: error as Error,
+          source: 'mappingStore'
+        })
+      }
+    })
+
+    this.appStore.onAppMessage(SEND_TYPES.KEY, (data) => {
+      try {
+        switch (data.request) {
+          case 'add':
+            {
+              try {
+                isValidKey(data.payload)
+                const Key: Key = {
+                  id: data.payload.id || 'unsetid',
+                  description: data.payload.description || 'Default Description',
+                  source: data.source,
+                  version: data.payload.version || '0.0.0',
+                  enabled: true,
+                  modes: data.payload.modes || []
+                }
+                this.addKey(Key)
+              } catch (error) {
+                Logger.error(`Unable to add key to app ${data.source}`, {
+                  function: 'handleRequestKeyAdd',
+                  error: error as Error,
+                  source: 'mappingStore'
+                })
+              }
+            }
+            break
+          case 'remove':
+            this.removeKey(data.payload.id)
+            break
+          case 'trigger':
+            this.triggerKey(data.payload.id, data.payload.mode)
+            break
+          default:
+            break
+        }
+      } catch (error) {
+        Logger.error(`Unable to handle key request from app ${data.source}`, {
+          function: 'handleRequestKey',
+          error: error as Error,
+          source: 'mappingStore'
+        })
+      }
+    })
   }
 
   /**
@@ -53,13 +157,6 @@ export class MappingState implements CacheableStore {
    */
   saveToFile = async (): Promise<void> => {
     await this.saveMapping()
-  }
-
-  static getInstance(): MappingState {
-    if (!this.instance) {
-      this.instance = new MappingState()
-    }
-    return this.instance
   }
 
   /**
@@ -121,10 +218,11 @@ export class MappingState implements CacheableStore {
    * @param listener - The listener function to add.
    * @returns A function that can be called to remove the listener.
    */
-  addListener(type: ListeningTypes, listener: Listener): () => void {
-    this.listeners[type].add(listener)
+  addListener<T extends keyof ListenerPayloads>(type: T, listener: Listener<T>): () => void {
+    const listeners = this.listeners[type] as Listener<T>[]
+    listeners.push(listener)
     return () => {
-      this.listeners[type].delete(listener)
+      this.listeners[type] = this.listeners[type].filter((l) => l != listener)
     }
   }
 
@@ -133,8 +231,8 @@ export class MappingState implements CacheableStore {
    * @param type - The type of listening event to remove the listener from.
    * @param listener - The listener function to remove.
    */
-  removeListener(type: ListeningTypes, listener: Listener): void {
-    this.listeners[type].delete(listener)
+  removeListener<T extends keyof ListenerPayloads>(type: T, listener: Listener<T>): void {
+    this.listeners[type] = this.listeners[type].filter((l) => l != listener)
   }
 
   /**
@@ -142,9 +240,9 @@ export class MappingState implements CacheableStore {
    * @param type - The type of listening event to notify listeners for.
    * @param data - The data to pass to the listener functions.
    */
-  private async notifyListeners(
-    type: ListeningTypes,
-    data?: Key[] | ButtonMapping | Action[]
+  private async notifyListeners<T extends keyof ListenerPayloads>(
+    type: T,
+    data?: ListenerPayloads[T]
   ): Promise<void> {
     this.listeners[type].forEach((listener) => listener(data))
   }
@@ -903,9 +1001,7 @@ export class MappingState implements CacheableStore {
           request: '',
           type: ServerEvent.ACTION
         }
-        import('@server/stores').then(({ appStore }) => {
-          action.source && appStore.sendDataToApp(action.source, SocketData)
-        })
+        action.source && this.appStore.sendDataToApp(action.source, SocketData)
       } else {
         Logger.log(LOGGING_LEVELS.ERROR, `[MappingStore]: Action not found or not enabled!`)
       }
@@ -998,5 +1094,3 @@ export class MappingState implements CacheableStore {
     this.saveMapping(mapping, false)
   }
 }
-
-export default MappingState.getInstance()

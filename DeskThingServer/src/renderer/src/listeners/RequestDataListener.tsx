@@ -1,26 +1,24 @@
 import { useEffect } from 'react'
 import { useNotificationStore } from '@renderer/stores'
-import { AuthScopes } from '@DeskThing/types'
 import useTaskStore from '@renderer/stores/taskStore'
-import { TaskList } from '@shared/types'
+import { IpcRendererCallback } from '@shared/types'
 
 const RequestDataListener = (): null => {
   const addRequest = useNotificationStore((state) => state.addRequest)
-  const setTasks = useTaskStore((state) => state.setTaskList)
+  const setAppTasks = useTaskStore((state) => state.setAppTaskList)
   const getTaskList = useTaskStore((state) => state.requestTasks)
 
   getTaskList()
 
   useEffect(() => {
-    const handleDisplayUserForm = async (
+    const handleDisplayUserForm: IpcRendererCallback<'display-user-form'> = async (
       _event,
-      requestId: string,
-      fields: AuthScopes
+      { requestId, scope }
     ): Promise<void> => {
-      addRequest(requestId, fields)
+      addRequest(requestId, scope)
     }
-    const handleTask = async (_event, tasks: TaskList): Promise<void> => {
-      setTasks(tasks)
+    const handleTask: IpcRendererCallback<'taskList'> = async (_event, tasks): Promise<void> => {
+      setAppTasks(tasks.source, tasks.taskList)
     }
 
     window.electron.ipcRenderer.on('display-user-form', handleDisplayUserForm)

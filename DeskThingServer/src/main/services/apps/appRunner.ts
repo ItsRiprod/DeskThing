@@ -1,6 +1,7 @@
 console.log('[AppRnr Service] Starting')
 import Logger from '@server/utils/logger'
 import { LOGGING_LEVELS } from '@DeskThing/types'
+import { storeProvider } from '@server/stores'
 
 /**
  * Loads and runs all enabled apps from appData.json
@@ -9,7 +10,7 @@ import { LOGGING_LEVELS } from '@DeskThing/types'
  * @returns {Promise<void>}
  */
 export async function loadAndRunEnabledApps(): Promise<void> {
-  const { appStore } = await import('@server/stores')
+  const appStore = storeProvider.getStore('appStore')
 
   try {
     const appInstances = appStore.getAll()

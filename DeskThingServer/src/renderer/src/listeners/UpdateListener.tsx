@@ -1,12 +1,15 @@
 import { useEffect } from 'react'
-import { UpdateInfoType } from '@shared/types'
+import { IpcRendererCallback } from '@shared/types'
 import useUpdateStore from '@renderer/stores/updateStore'
 
 const UpdateDataListener = (): null => {
   const updateStatus = useUpdateStore((state) => state.updateStatus)
 
   useEffect(() => {
-    const handleUpdateStatus = async (_event, update: UpdateInfoType): Promise<void> => {
+    const handleUpdateStatus: IpcRendererCallback<'update-status'> = async (
+      _event,
+      update
+    ): Promise<void> => {
       await updateStatus(update)
     }
 

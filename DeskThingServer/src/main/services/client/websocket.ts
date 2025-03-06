@@ -1,7 +1,8 @@
-console.log('[ClientSocket Service] Starting')
-import WebSocket, { WebSocketServer } from 'ws'
+console.log('\x1b[31m[ClientSocket Service] Starting (depreciated - it will not work)\x1b[0m')
+/*import WebSocket, { WebSocketServer } from 'ws'
 import { createServer, Server as HttpServer, IncomingMessage } from 'http'
-import { connectionStore, settingsStore, appStore, mappingStore } from '@server/stores'
+import { storeProvider } from '@server/stores/storeProvider'
+
 import Logger from '@server/utils/logger'
 import {
   LOGGING_LEVELS,
@@ -33,23 +34,22 @@ export let server: WebSocketServer | null = null
 export let httpServer: HttpServer
 export const Clients: { client: Client; socket }[] = []
 
-let currentPort
-let currentAddress
-
 const alwaysAllow = ['preferences', 'ping', 'pong', 'manifest']
 
 const messageThrottles = new Map()
 const THROTTLE_DELAY = 300 // milliseconds
+*/
 
 /**
  * Restarts the WebSocket server by shutting down the existing server, removing all connected clients, and setting up a new server.
  * This function is called when the WebSocket server needs to be restarted, for example, when the server configuration changes.
  * It logs the server shutdown and startup process, and handles any errors that may occur during the process.
+ * @deprecated - use the ProcessStore to restart the server
  */
+/*
 export const restartServer = async (): Promise<void> => {
   try {
     if (server) {
-      Logger.log(LOGGING_LEVELS.LOG, 'WSOCKET: Shutting down the WebSocket server...')
       Logger.log(LOGGING_LEVELS.LOG, 'WSOCKET: Shutting down the WebSocket server...')
       connectionStore.removeAllClients()
 
@@ -100,6 +100,7 @@ export const restartServer = async (): Promise<void> => {
     console.error('WSOCKET: Error restarting the WebSocket server:', error)
   }
 }
+*/
 
 /**
  * Asynchronously sets up the WebSocket server for the application.
@@ -109,14 +110,13 @@ export const restartServer = async (): Promise<void> => {
  *
  * @returns {Promise<void>} A Promise that resolves when the server is set up.
  */
+/*
 export const setupServer = async (): Promise<void> => {
   Logger.log(LOGGING_LEVELS.MESSAGE, 'WSOCKET: Attempting to setup the server')
 
-  if (!currentPort || !currentAddress) {
-    const settings = await settingsStore.getSettings()
-    currentPort = settings.devicePort
-    currentAddress = settings.address
-  }
+  const settings = await storeProvider.getStore('settingsStore').getSettings()
+  const currentPort = settings.devicePort
+  const currentAddress = settings.address
 
   // Setting up the express app
   const expressApp = express()
@@ -198,7 +198,7 @@ export const setupServer = async (): Promise<void> => {
        * The purpose of the throttle is so when multiple clients are connected,
        * they often send the same request at the same time (i.e. song at its end).
        * As most, if not all, of these requests are burst to every client, they can be grouped together.
-       */
+       *
 
       if (
         !messageThrottles.has(messageKey) ||
@@ -254,6 +254,7 @@ export const setupServer = async (): Promise<void> => {
     })
   })
 }
+*/
 
 /**
  * Handles server messages received through the WebSocket connection.
@@ -268,6 +269,7 @@ export const setupServer = async (): Promise<void> => {
  * @param messageData The data received from the server, containing the message type and payload.
  * @returns A Promise that resolves when the message has been handled.
  */
+/*
 const handleServerMessage = async (
   socket,
   client: Client,
@@ -423,7 +425,7 @@ const handleServerMessage = async (
  *
  * The function is wrapped in a `setTimeout` to ensure that the stores have been
  * properly initialized before the listeners are added.
- */
+ *
 const setupListeners = async (): Promise<void> => {
   setTimeout(() => {
     settingsStore.addListener((newSettings: Settings) => {
@@ -483,3 +485,4 @@ const setupListeners = async (): Promise<void> => {
 }
 
 setupListeners()
+*/

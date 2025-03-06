@@ -1,5 +1,5 @@
 import { getClientManifest } from '@server/handlers/deviceHandler'
-import { appStore, connectionStore } from '@server/stores'
+import { storeProvider } from '@server/stores'
 import logger from '@server/utils/logger'
 import { FeedbackReport, FeedbackType, SystemInfo } from '@shared/types'
 import os from 'os'
@@ -92,6 +92,9 @@ export class FeedbackService {
   }
 
   static async collectSystemInfo(): Promise<SystemInfo> {
+    const appStore = storeProvider.getStore('appStore')
+    const connectionStore = storeProvider.getStore('connectionsStore')
+
     const systemInfo: SystemInfo = {
       serverVersion: 'v' + process.env.PACKAGE_VERSION || '0.0.0',
       clientVersion: (await getClientManifest())?.version || '0.0.0',
@@ -120,7 +123,7 @@ export class FeedbackService {
     // Get connected clients
     const connectedClients = await connectionStore.getClients()
     systemInfo.clients = connectedClients.map((client) => ({
-      name: client.client_name || 'Unknown Device',
+      name: client.name || 'Unknown Device',
       connectionType: client.ip || 'direct',
       deviceType: client.device_type?.name || 'unknown',
       connectionDuration: client.timestamp

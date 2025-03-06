@@ -1,7 +1,7 @@
 // Ik this is bad practice but I don't have time to fix it right now
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { BrowserWindow } from 'electron'
+import { BrowserWindow, IpcRendererEvent } from 'electron'
 import {
   Log,
   Settings,
@@ -25,9 +25,10 @@ import {
   EventPayload,
   ActionReference,
   AppReleaseSingleMeta,
-  ClientReleaseMeta
+  ClientReleaseMeta,
+  AuthScopes
 } from '@deskthing/types'
-import { FeedbackReport, StagedAppManifest, SystemInfo, TaskList } from '@shared/types'
+import { FeedbackReport, StagedAppManifest, SystemInfo, FullTaskList } from '@shared/types'
 
 export const IPC_HANDLERS = {
   UTILITY: 'utility',
@@ -226,6 +227,7 @@ export interface UtilityIPCBase {
   request: string
   payload: any
 }
+
 export type UtilityIPCData = {
   kind: 'utility'
 } & (
@@ -362,7 +364,7 @@ export type UtilityHandlerReturnMap = {
   [UTILITY_TYPES.MAP]: Profile
   [UTILITY_TYPES.RUN]: void
   [UTILITY_TYPES.FEEDBACK]: SystemInfo | void
-  [UTILITY_TYPES.TASK]: Task | Task[] | TaskList
+  [UTILITY_TYPES.TASK]: Task | Task[] | FullTaskList
   [UTILITY_TYPES.UPDATE]: void
   [UTILITY_TYPES.GITHUB]:
     | ClientReleaseMeta[]
@@ -411,22 +413,22 @@ export type UtilityIPCTask = {
 } & (
   | {
       request: 'complete_task' | 'start' | 'stop' | 'restart' | 'previous' | 'next'
-      payload: string
+      payload: { source: string; taskId: string }
     }
   | {
       request: 'complete'
-      payload: string[]
+      payload: { source: string; taskId: string; stepId: string }
     }
   | {
       request: 'get' | 'pause'
     }
   | {
       request: 'update-step'
-      payload: [string, Partial<Step>]
+      payload: { source: string; taskId: string; newStep: Partial<Step> }
     }
   | {
       request: 'update-task'
-      payload: Partial<Task>
+      payload: { source: string; newTask: Partial<Task> }
     }
 )
 
@@ -435,44 +437,102 @@ export type IPCData =
   | ({ kind: 'client' } & ClientIPCData)
   | ({ kind: 'utility' } & UtilityIPCData)
 
+export type IpcRendererFunction = <T extends ServerIPCData['type']>(
+  channel: T,
+  callback: IpcRendererCallback<T>
+) => void
+
+export type IpcRendererCallback<T extends ServerIPCData['type']> = (
+  event: IpcRendererEvent,
+  response: Extract<ServerIPCData, { type: T }>['payload']
+) => void
+
 /**
  * OUTGOING DATA TYPES FROM SERVER BACKEND TO SERVER FRONTEND
  */
-export type ServerIPCData =
-  | AppsListIPC
-  | LogIPC
-  | SettingsIPC
-  | ConnectionsIPC
-  | AdbDevicesIPC
-  | ClientsIPC
-  | VersionStatusIPC
-  | ProfileIPC
-  | UpdateStatusIPC
-  | UpdateProgressIPC
-  | AppDataIPC
-  | AppSettingsIPC
-  | TasksIPC
-  | GithubIPC
-
-export type OutgoingIPCBase = {
-  type: string
-  payload: unknown
+export type ServerIPCData = {
   window?: BrowserWindow | null
-}
-
-export interface AppDataIPC extends OutgoingIPCBase {
-  type: 'app-data'
-  payload: App[]
-}
-
-export interface AppSettingsIPC extends OutgoingIPCBase {
-  type: 'app-settings'
-  payload: { appId: string; data: AppSettings }
-}
-export interface VersionStatusIPC extends OutgoingIPCBase {
-  type: 'version-status'
-  payload: any
-}
+} & (
+  | {
+      type: 'app-data'
+      payload: App[]
+    }
+  | {
+      type: 'app-settings'
+      payload: { appId: string; data: AppSettings }
+    }
+  | {
+      type: 'version-status'
+      payload: any
+    }
+  | {
+      type: 'update-status'
+      payload: UpdateInfoType
+    }
+  | {
+      type: 'update-progress'
+      payload: UpdateProgressType
+    }
+  | {
+      type: 'profile'
+      payload: ButtonMapping
+    }
+  | {
+      type: 'key'
+      payload: Key[]
+    }
+  | {
+      type: 'action'
+      payload: Action[]
+    }
+  | {
+      type: 'log'
+      payload: Log
+    }
+  | {
+      type: 'app-types'
+      payload: App[]
+    }
+  | {
+      type: 'connections'
+      payload: ReplyData
+    }
+  | {
+      type: 'settings-updated'
+      payload: Settings
+    }
+  | {
+      type: 'adbdevices'
+      payload: ADBClient[]
+    }
+  | {
+      type: 'clients'
+      payload: ReplyData
+    }
+  | {
+      type: 'taskList'
+      payload: { source: string; taskList: Record<string, Task> }
+    }
+  | {
+      type: 'github-apps'
+      payload: AppReleaseMeta[]
+    }
+  | {
+      type: 'github-community'
+      payload: AppReleaseCommunity[]
+    }
+  | {
+      type: 'github-client'
+      payload: ClientReleaseMeta[]
+    }
+  | {
+      type: 'display-user-form'
+      payload: {
+        requestId: string
+        scope: AuthScopes
+      }
+    }
+)
 
 export interface UpdateInfoType {
   updateAvailable: boolean
@@ -485,79 +545,12 @@ export interface UpdateInfoType {
   releaseDate?: string
 }
 
-export interface UpdateStatusIPC extends OutgoingIPCBase {
-  type: 'update-status'
-  payload: UpdateInfoType
-}
-
 export interface UpdateProgressType {
   speed: number
   percent: number
   total: number
   transferred: number
 }
-
-export interface UpdateProgressIPC extends OutgoingIPCBase {
-  type: 'update-progress'
-  payload: UpdateProgressType
-}
-
-export interface ProfileIPC extends OutgoingIPCBase {
-  type: 'profile' | 'key' | 'action'
-  payload: ButtonMapping | Key[] | Action[]
-}
-
-export interface LogIPC extends OutgoingIPCBase {
-  type: 'log'
-  payload: Log
-}
-
-export interface AppsListIPC extends OutgoingIPCBase {
-  type: 'app-types'
-  payload: App[]
-}
-
-export interface ConnectionsIPC extends OutgoingIPCBase {
-  type: 'connections'
-  payload: ReplyData
-}
-
-export interface SettingsIPC extends OutgoingIPCBase {
-  type: 'settings-updated'
-  payload: Settings
-}
-
-export interface AdbDevicesIPC extends OutgoingIPCBase {
-  type: 'adbdevices'
-  payload: ADBClient[]
-}
-
-export interface ClientsIPC extends OutgoingIPCBase {
-  type: 'clients'
-  payload: ReplyData
-}
-
-export interface TasksIPC extends OutgoingIPCBase {
-  type: 'taskList'
-  payload: TaskList
-}
-
-export type GithubIPC = OutgoingIPCBase &
-  (
-    | {
-        type: 'github-apps'
-        payload: AppReleaseMeta[]
-      }
-    | {
-        type: 'github-community'
-        payload: AppReleaseCommunity[]
-      }
-    | {
-        type: 'github-client'
-        payload: ClientReleaseMeta[]
-      }
-  )
-
 export interface LoggingData {
   status: boolean
   data: AppManifest | string // add as needed

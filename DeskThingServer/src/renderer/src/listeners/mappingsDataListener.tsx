@@ -1,8 +1,8 @@
 import { useEffect } from 'react'
-import { Action, Key } from '@DeskThing/types'
-import { ButtonMapping } from '@shared/types'
+import { IpcRendererCallback } from '@shared/types'
 import useMappingStore from '@renderer/stores/mappingStore'
 
+let mounted = false
 /**
  * A React component that listens for updates to mapping data and updates the mapping store accordingly.
  *
@@ -19,17 +19,25 @@ const MappingsDataListener = (): null => {
   const setCurrentProfile = useMappingStore((state) => state.setCurrentProfile)
   const requestMappings = useMappingStore((state) => state.requestMappings)
 
-  requestMappings()
+  if (!mounted) {
+    requestMappings()
+    mounted = true
+  }
 
   useEffect(() => {
-    const handleKeyUpdate = async (_event, key: Key[]): Promise<void> => {
+    const handleKeyUpdate: IpcRendererCallback<'key'> = (_event, key): void => {
       setKeys(key)
     }
-    const handleActionUpdate = async (_event, action: Action[]): Promise<void> => {
+    const handleActionUpdate: IpcRendererCallback<'action'> = async (
+      _event,
+      action
+    ): Promise<void> => {
       setActions(action)
     }
-    const handleProfileUpdate = async (_event, profile: ButtonMapping): Promise<void> => {
-      console.log(profile)
+    const handleProfileUpdate: IpcRendererCallback<'profile'> = async (
+      _event,
+      profile
+    ): Promise<void> => {
       setProfile(profile)
       const currentProfile = await window.electron.getCurrentProfile()
       setCurrentProfile(currentProfile)

@@ -126,11 +126,7 @@ export type TaskReference = {
   description?: string
 }
 
-export interface TaskList {
-  version: string
-  tasks: Record<string, TaskReference | Task>
-  currentTaskId?: string
-}
+export type FullTaskList = Record<string, Record<string, Task>>
 
 // The settings for the app
 export interface Settings {

@@ -28,7 +28,8 @@ class CacheManager {
 
     await Promise.all(promises)
 
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    // Cooldown to let stuff settle
+    await new Promise((resolve) => setTimeout(resolve, 5000))
 
     const afterMemory = process.memoryUsage()
     const savedHeapUsed = (beforeMemory.heapUsed - afterMemory.heapUsed) / 1024 / 1024
