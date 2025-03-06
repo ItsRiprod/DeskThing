@@ -501,10 +501,10 @@ async function openAuthWindow(url: string): Promise<void> {
 async function loadModules(): Promise<void> {
   try {
     // Store listeners
-    const { storeProvider } = await import('./stores/storeProvider')
+    // const { storeProvider } = await import('./stores/storeProvider')
 
-    const expressServerStore = storeProvider.getStore('expressServerStore')
-    expressServerStore.start()
+    // const expressServerStore = storeProvider.getStore('expressServerStore')
+    // expressServerStore.start()
 
     const { initializePlatforms } = await import('./services/platforms/platformInitializer')
     await initializePlatforms()

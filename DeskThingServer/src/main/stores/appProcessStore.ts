@@ -9,7 +9,8 @@ import {
 } from '@shared/stores/appProcessStore'
 import { SEND_TYPES, ToServerData } from '@DeskThing/types'
 import appProcessPath from '@utilities/appProcess?modulePath'
-import { app, utilityProcess } from 'electron'
+import { app /*, utilityProcess */ } from 'electron'
+import { Worker } from 'node:worker_threads'
 import Logger from '@server/utils/logger'
 import { join } from 'node:path'
 import { stat } from 'node:fs/promises'
@@ -18,7 +19,7 @@ export class AppProcessStore implements AppProcessStoreClass {
   private processes: Record<
     string,
     {
-      process: Electron.UtilityProcess
+      process: Worker //Electron.UtilityProcess
     }
   > = {}
   private processEventListeners: Record<AppProcessEvents, AppProcessEventListener[]> = {
@@ -141,16 +142,14 @@ export class AppProcessStore implements AppProcessStoreClass {
       }
 
       const deskthingUrl = await this.getAppPath(appName)
-      const process = utilityProcess.fork(appProcessPath, [], {
-        stdio: 'pipe',
-        serviceName: `DeskThing ${appName} App`,
-        allowLoadingUnsignedLibraries: true,
+      const process = new Worker(appProcessPath, {
+        stdout: true,
+        stderr: true,
         env: {
           DESKTHING_URL: deskthingUrl,
-          DESKTHING_APP_NAME: appName,
-          NODE_DNS_SERVER_1: '8.8.8.8',  // Google DNS
-          NODE_DNS_SERVER_2: '1.1.1.1'
-        }
+          DESKTHING_APP_NAME: appName
+        },
+        name: `DeskThing ${appName} App`
       })
 
       process.stdout?.on('data', (data) => {
@@ -206,7 +205,7 @@ export class AppProcessStore implements AppProcessStoreClass {
         }
       })
 
-      process.on('spawn', () => {
+      process.on('online', () => {
         this.notifyProcessEvent(AppProcessEvents.STARTED, appName)
       })
 
@@ -238,9 +237,9 @@ export class AppProcessStore implements AppProcessStoreClass {
         Logger.error(`Process ${appName} encountered an error`, {
           source: 'AppProcessStore',
           function: 'spawnProcess',
-          error: new Error(error)
+          error: error instanceof Error ? error : new Error(String(error))
         })
-        this.notifyProcessEvent(AppProcessEvents.ERROR, appName, error)
+        this.notifyProcessEvent(AppProcessEvents.ERROR, appName, error.message)
       })
 
       return true
@@ -270,7 +269,7 @@ export class AppProcessStore implements AppProcessStoreClass {
         return false
       }
 
-      this.processes[appName].process.kill()
+      this.processes[appName].process.terminate()
       delete this.processes[appName]
       return true
     } catch (error) {

@@ -1,5 +1,5 @@
 import WebSocket, { WebSocketServer } from 'ws'
-import { createServer, Server as HttpServer, IncomingMessage } from 'http'
+import { Server as HttpServer, IncomingMessage } from 'http'
 import { parentPort } from 'worker_threads'
 import express from 'express'
 import crypto from 'crypto'
@@ -11,6 +11,8 @@ import {
 } from '@shared/interfaces/platform'
 import { Client } from '@shared/types'
 import { ClientDeviceType, SocketData } from '@deskthing/types'
+import { ExpressServer } from './expressWorker'
+import { workerData } from 'worker_threads'
 
 export class WSPlatform {
   private server: WebSocketServer | null = null
@@ -18,14 +20,17 @@ export class WSPlatform {
   private clients: Map<string, { client: Client; socket: WebSocket }> = new Map()
   private isActive: boolean = false
   private startTime: number = 0
+  private userDataPath: string
+  private expressServer: ExpressServer | null = null
   private options: PlatformConnectionOptions = {
-    port: 8080,
+    port: 8891,
     address: 'localhost'
   }
 
   public readonly id: string
 
-  constructor() {
+  constructor(userDataPath: string) {
+    this.userDataPath = userDataPath
     this.id = crypto.randomUUID()
   }
 
@@ -40,16 +45,22 @@ export class WSPlatform {
     if (this.isActive) return
 
     this.options = options ?? this.options
-    const port = this.options.port
+    const port = this.options.port || 8891
     const address = this.options.address
 
     const expressApp = express()
-    this.httpServer = createServer(expressApp)
+    this.expressServer = new ExpressServer(expressApp, this.userDataPath, port)
+    this.expressServer.initializeServer()
+    this.httpServer = this.expressServer.getServer() as HttpServer
+
     this.server = new WebSocketServer({ server: this.httpServer })
 
     this.server.on('connection', this.handleConnection.bind(this))
 
-    this.httpServer.listen(port, address)
+    this.server.on('listening', () => {
+      this.sendToParent(PlatformEvent.SERVER_STARTED, { port, address })
+    })
+
     this.isActive = true
     this.startTime = Date.now()
     this.sendToParent(PlatformEvent.STATUS_CHANGED, this.getStatus())
@@ -68,8 +79,12 @@ export class WSPlatform {
       this.server = null
     }
 
+    if (this.expressServer) {
+      await this.expressServer.shutdown()
+      this.expressServer = null
+    }
+
     if (this.httpServer) {
-      this.httpServer.close()
       this.httpServer = null
     }
 
@@ -133,10 +148,16 @@ export class WSPlatform {
   }
 
   async broadcastData(data: SocketData): Promise<void> {
-    this.clients.forEach(({ socket }) => {
+    this.clients.forEach(({ socket, client  }) => {
+      console.log('Sending data to client', client.name, data)
       try {
-        socket.send(JSON.stringify(data))
+        if (socket.readyState == WebSocket.OPEN) { 
+          socket.send(JSON.stringify(data))
+        } else {
+          console.log('Socket not open, adding to queue')
+        }
       } catch (error) {
+        console.log('Encountered error ', error)
         this.sendToParent(
           PlatformEvent.ERROR,
           error instanceof Error
@@ -201,7 +222,7 @@ export class WSPlatform {
 
 // Worker thread communication
 if (parentPort) {
-  const platform = new WSPlatform()
+  const platform = new WSPlatform(workerData.userDataPath)
 
   parentPort.on('message', async (message) => {
     switch (message.type) {

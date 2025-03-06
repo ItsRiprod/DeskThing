@@ -18,7 +18,8 @@ export enum PlatformEvent {
   CLIENT_DISCONNECTED = 'client_disconnected',
   DATA_RECEIVED = 'data_received',
   ERROR = 'error',
-  STATUS_CHANGED = 'status_changed'
+  STATUS_CHANGED = 'status_changed',
+  SERVER_STARTED = 'server_started'
 }
 
 export interface PlatformConnectionOptions {
@@ -42,6 +43,7 @@ export type PlatformEventPayloads = {
   [PlatformEvent.DATA_RECEIVED]: { client: Client; data: SocketData }
   [PlatformEvent.ERROR]: Error
   [PlatformEvent.STATUS_CHANGED]: PlatformStatus
+  [PlatformEvent.SERVER_STARTED]: { port?: number; address?: string }
 }
 
 export type PlatformConnectionListener<T extends PlatformEvent> = (

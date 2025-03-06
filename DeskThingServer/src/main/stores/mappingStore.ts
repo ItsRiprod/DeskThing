@@ -88,7 +88,12 @@ export class MappingStore implements CacheableStore, MappingStoreClass {
             this.updateIcon(data.payload.id, data.payload.icon)
             break
           case 'run':
-            this.runAction({ id: data.payload.id, enabled: true, source: data.source })
+            console.log('Running action ', data)
+            this.runAction({
+              id: data.payload.id,
+              enabled: true,
+              source: data.payload.source || data.source
+            })
             break
           default:
             break

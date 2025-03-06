@@ -10,6 +10,7 @@ import {
 import { SocketData } from '@DeskThing/types'
 import { Client } from '@shared/types'
 import wsPath from './wsWebsocket?modulePath'
+import { app } from 'electron'
 
 export class WebSocketPlatform implements PlatformInterface {
   private worker: Worker
@@ -19,7 +20,7 @@ export class WebSocketPlatform implements PlatformInterface {
   private clients: Client[] = []
 
   constructor() {
-    this.worker = new Worker(wsPath, { workerData: {} })
+    this.worker = new Worker(wsPath, { workerData: { userDataPath: app.getPath('userData') } })
     this.setupWorkerListeners()
   }
 
@@ -30,8 +31,8 @@ export class WebSocketPlatform implements PlatformInterface {
   private setupWorkerListeners(): void {
     this.worker.on(
       'message',
-      <T extends PlatformEvent>(message: { event: T; data: PlatformEventPayloads[T] }) => {
-        this.notify(message.event, message.data)
+      <T extends PlatformEvent>(message: { event: T; payload: PlatformEventPayloads[T] }) => {
+        this.notify(message.event, message.payload)
       }
     )
 

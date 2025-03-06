@@ -1,17 +1,11 @@
 import { DeskThingType, EventPayload, LOGGING_LEVELS, ToServerData } from '@deskthing/types'
 import { FAppProcessPayload, TAppProcessPayload } from '@shared/stores/appProcessStore'
 import { resolve } from 'node:path'
-import dns from 'node:dns'
-import { promisify } from 'node:util'
-
-dns.setServers(['8.8.8.8', '1.1.1.1'])
-const lookupAsync = promisify(dns.lookup)
-
-console.log('The app is sandboxed: ', !!process.sandboxed)
+import { parentPort } from 'worker_threads'
 
 const sendMessage = (data: FAppProcessPayload): void => {
-  if (process.parentPort.postMessage) {
-    process.parentPort.postMessage(data)
+  if (parentPort?.postMessage) {
+    parentPort.postMessage(data)
   } else {
     console.error('Parent port or postmessage is undefined!')
   }
@@ -82,7 +76,7 @@ const setupServer = async (): Promise<void> => {
     })
 
     // Handle messages from parent process
-    process.parentPort.on('message', async ({ data }: { data: TAppProcessPayload }) => {
+    parentPort?.on('message', async (data: TAppProcessPayload) => {
       switch (data.type) {
         case 'data':
           handleAppRequest(data.payload)
@@ -124,25 +118,4 @@ const setupServer = async (): Promise<void> => {
 
   await importDeskThing()
 }
-
 setupServer()
-import { net } from 'electron'
-const testFetch = async (): Promise<void> => {
-  try {
-    console.log('Net is ', net.isOnline())
-    const url =
-      'http://localhost:8891/proxy/fetch/' + encodeURIComponent('https://picsum.photos/200')
-    const response = await net.fetch(url)
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    const blob = await response.blob()
-    console.log('Fetch successful, content size:', blob.size)
-  } catch (error) {
-    console.error('Operation failed:', error)
-    if (error instanceof Error && error.cause) {
-      console.error('Root cause:', error.cause)
-    }
-  }
-}
-testFetch()

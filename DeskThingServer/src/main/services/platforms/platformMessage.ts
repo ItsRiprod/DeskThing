@@ -13,6 +13,7 @@ export async function handlePlatformMessage(
   client: Client,
   messageData: SocketData
 ): Promise<void> {
+  console.log(`Handling platform message from platform ${platform.name} ${client.device_type?.name}`, messageData)
   const messageKey = `${messageData.app}-${messageData.type}-${messageData.request}`
   const now = Date.now()
 
@@ -145,7 +146,7 @@ async function handleServerMessage(
       break
 
     case 'action':
-      await mappingStore.runAction(messageData.payload as Action)
+      await mappingStore.runAction(messageData.payload)
       break
 
     default:

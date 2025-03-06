@@ -18,8 +18,8 @@ import { AppProcessStore } from './appProcessStore'
 import { AppProcessStoreClass } from '@shared/stores/appProcessStore'
 import { PlatformStoreClass } from '@shared/stores/platformStore'
 import { PlatformStore } from './platformStore'
-import { ExpressServerStoreClass } from '@shared/stores/expressServerStore'
-import { ExpressServerManager } from './expressServerStore'
+// import { ExpressServerStoreClass } from '@shared/stores/expressServerStore'
+// import { ExpressServerManager } from './_expressServerStore'
 import logger from '@server/utils/logger'
 
 interface Stores {
@@ -33,7 +33,7 @@ interface Stores {
   musicStore: MusicStoreClass
   appProcessStore: AppProcessStoreClass
   platformStore: PlatformStoreClass
-  expressServerStore: ExpressServerStoreClass
+  // expressServerStore: ExpressServerStoreClass
 }
 
 export class StoreProvider {
@@ -57,8 +57,8 @@ export class StoreProvider {
           this.getStore('taskStore'),
           this.getStore('platformStore')
         ),
-      expressServerStore: () =>
-        new ExpressServerManager(this.getStore('settingsStore'), this.getStore('appStore')),
+      // expressServerStore: () =>
+      //   new ExpressServerManager(this.getStore('settingsStore'), this.getStore('appStore')),
       githubStore: () => new GithubStore(),
       mappingStore: () => new MappingStore(this.getStore('appStore')),
       musicStore: () => new MusicStore(this.getStore('settingsStore'), this.getStore('appStore'))

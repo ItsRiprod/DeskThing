@@ -508,8 +508,17 @@ export class AppStore implements CacheableStore, AppStoreClass {
         })
         return false
       }
+
     } else if (!this.appProcessStore.getActiveProcessIds().includes(name)) {
-      await this.enable(name)
+      const result = await this.enable(name)
+      if (!result) {
+        Logger.warn(`Unable to enable ${name}`, {
+          source: 'AppStore',
+          function: 'start',
+          domain: 'SERVER.' + name.toUpperCase()
+        })
+        return false
+      }
     }
 
     const manifest = this.apps[name].manifest

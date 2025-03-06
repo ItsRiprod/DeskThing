@@ -11,7 +11,10 @@ export async function initializePlatforms(): Promise<void> {
     await platformStore.addPlatform(wsPlatform)
 
     // Start the ws platform
-    await platformStore.startPlatform(wsPlatform.id)
+    await platformStore.startPlatform(wsPlatform.id, {
+      port: 8891,
+      address: '0.0.0.0'
+    })
 
     Logger.info('Platforms initialized successfully', {
       source: 'platformInitializer',

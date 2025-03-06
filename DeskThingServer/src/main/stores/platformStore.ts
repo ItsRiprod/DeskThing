@@ -15,6 +15,7 @@ import {
 } from '@shared/stores/platformStore'
 import { handlePlatformMessage } from '@server/services/platforms/platformMessage'
 import { AppStoreClass } from '@shared/stores/appStore'
+import { storeProvider } from '.'
 
 export class PlatformStore implements PlatformStoreClass {
   private platforms: Map<string, PlatformInterface> = new Map()
@@ -37,7 +38,7 @@ export class PlatformStore implements PlatformStoreClass {
 
   private setupAppStoreListeners(): void {
     this.appStore.onAppMessage(SEND_TYPES.SEND, (AppData) => {
-      this.broadcastToClients(AppData)
+      this.broadcastToClients({ app: AppData.source, ...AppData.payload })
     })
   }
   /**
@@ -257,6 +258,7 @@ export class PlatformStore implements PlatformStoreClass {
   }
 
   async sendDataToClient(clientId: string, data: SocketData): Promise<boolean> {
+    console.log('Sending data to', clientId, data)
     const platform = this.getPlatformForClient(clientId)
     if (!platform) {
       Logger.warn(`Cannot send data: No platform found for client ${clientId}`, {
@@ -331,6 +333,7 @@ export class PlatformStore implements PlatformStoreClass {
     platform.on(PlatformEvent.CLIENT_CONNECTED, (client: Client) => {
       this.clientPlatformMap.set(client.connectionId, platform.id)
       this.notify(PlatformStoreEvent.CLIENT_CONNECTED, client)
+      this.sendInitialDataToClient(client.connectionId)
 
       Logger.info(`Client ${client.connectionId} connected via ${platform.type}`, {
         domain: 'platform',
@@ -343,6 +346,7 @@ export class PlatformStore implements PlatformStoreClass {
     platform.on(PlatformEvent.CLIENT_DISCONNECTED, (client: Client) => {
       this.clientPlatformMap.delete(client.connectionId)
       this.notify(PlatformStoreEvent.CLIENT_DISCONNECTED, client.id)
+
 
       Logger.info(`Client ${client.connectionId} disconnected from ${platform.type}`, {
         domain: 'platform',
@@ -375,5 +379,95 @@ export class PlatformStore implements PlatformStoreClass {
       })
       console.log(`UNIMPLEMENTED: New status of ${platform.name}:`, status)
     })
+
+    // Status changed handler
+    platform.on(PlatformEvent.SERVER_STARTED, ({ port, address }) => {
+      Logger.debug(`Platform ${platform.name} connected to ${address}:${port}`, {
+        domain: 'platform',
+        source: 'platformStore',
+        function: 'statusChanged'
+      })
+    })
   }
-}
+
+  private async sendInitialDataToClient(clientId: string): Promise<void> {
+    try {
+      // Send configuration data
+      const appStore = storeProvider.getStore('appStore')
+      const appData = await appStore.getAll()
+      const filteredAppData = appData.filter((app) => app.manifest?.isWebApp !== false)
+
+      // Send config data
+      this.sendDataToClient(clientId, {
+        app: 'client',
+        type: 'config',
+        payload: filteredAppData
+      })
+
+      // Send settings data
+      const appDataStore = storeProvider.getStore('appDataStore')
+      const settings = {}
+
+      if (appData) {
+        await Promise.all(
+          appData.map(async (app) => {
+            if (app) {
+              const appSettings = await appDataStore.getSettings(app.name)
+              if (appSettings) {
+                settings[app.name] = appSettings
+              }
+            }
+          })
+        )
+      }
+
+      this.sendDataToClient(clientId, {
+        app: 'client',
+        type: 'settings',
+        payload: settings
+      })
+
+      // Send button mappings data
+      const mappingStore = storeProvider.getStore('mappingStore')
+      const mappings = await mappingStore.getMapping()
+      const actions = await mappingStore.getActions()
+
+      if (mappings) {
+        const combinedActions = {
+          ...mappings,
+          actions: actions
+        }
+
+        this.sendDataToClient(clientId, {
+          app: 'client',
+          type: 'button_mappings',
+          payload: combinedActions
+        })
+      }
+
+      // Send time information
+      const now = new Date()
+      this.sendDataToClient(clientId, {
+        app: 'client',
+        type: 'set',
+        request: 'time',
+        payload: {
+          utcTime: Date.now(),
+          timezoneOffset: now.getTimezoneOffset() * -1
+        }
+      })
+
+      Logger.info(`Initial data sent to client ${clientId}`, {
+        domain: 'platform',
+        source: 'platformStore',
+        function: 'sendInitialDataToClient'
+      })
+    } catch (error) {
+      Logger.error(`Error sending initial data to client ${clientId}`, {
+        error: error as Error,
+        domain: 'platform',
+        source: 'platformStore',
+        function: 'sendInitialDataToClient'
+      })
+    }
+  }}
