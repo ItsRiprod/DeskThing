@@ -4,7 +4,7 @@ import {
   PlatformConnectionOptions,
   PlatformStatus
 } from '@shared/interfaces/platform'
-import { SEND_TYPES, SocketData } from '@DeskThing/types'
+import { AppSettings, SEND_TYPES, SocketData } from '@DeskThing/types'
 import Logger from '@server/utils/logger'
 import { Client } from '@shared/types'
 import {
@@ -16,6 +16,7 @@ import {
 import { handlePlatformMessage } from '@server/services/platforms/platformMessage'
 import { AppStoreClass } from '@shared/stores/appStore'
 import { storeProvider } from '.'
+import { AppDataStoreClass } from '@shared/stores/appDataStore'
 
 export class PlatformStore implements PlatformStoreClass {
   private platforms: Map<string, PlatformInterface> = new Map()
@@ -30,15 +31,34 @@ export class PlatformStore implements PlatformStoreClass {
     [PlatformStoreEvent.DATA_RECEIVED]: []
   }
   private appStore: AppStoreClass
+  private appDataStore: AppDataStoreClass
 
-  constructor(appStore: AppStoreClass) {
+  constructor(appStore: AppStoreClass, appDataStore: AppDataStoreClass) {
     this.appStore = appStore
+    this.appDataStore = appDataStore
     this.setupAppStoreListeners()
   }
 
   private setupAppStoreListeners(): void {
     this.appStore.onAppMessage(SEND_TYPES.SEND, (AppData) => {
       this.broadcastToClients({ app: AppData.source, ...AppData.payload })
+    })
+
+    this.appStore.on('apps', (apps) => {
+      const filteredApps = apps.data.filter((app) => app.manifest?.isWebApp !== false)
+      this.broadcastToClients({
+        app: 'client',
+        type: 'apps',
+        payload: filteredApps
+      })
+    })
+
+    this.appDataStore.on('settings', (settings) => {
+      this.broadcastToClients({
+        app: 'client',
+        type: 'settings',
+        payload: settings
+      })
     })
   }
   /**
@@ -347,7 +367,6 @@ export class PlatformStore implements PlatformStoreClass {
       this.clientPlatformMap.delete(client.connectionId)
       this.notify(PlatformStoreEvent.CLIENT_DISCONNECTED, client.id)
 
-
       Logger.info(`Client ${client.connectionId} disconnected from ${platform.type}`, {
         domain: 'platform',
         source: 'platformStore',
@@ -390,44 +409,96 @@ export class PlatformStore implements PlatformStoreClass {
     })
   }
 
-  private async sendInitialDataToClient(clientId: string): Promise<void> {
+  private async sendConfigToClient(clientId?: string): Promise<void> {
     try {
-      // Send configuration data
-      const appStore = storeProvider.getStore('appStore')
-      const appData = await appStore.getAll()
+      const appData = await this.appStore.getAll()
       const filteredAppData = appData.filter((app) => app.manifest?.isWebApp !== false)
 
-      // Send config data
-      this.sendDataToClient(clientId, {
-        app: 'client',
-        type: 'config',
-        payload: filteredAppData
-      })
+      if (clientId) {
+        this.sendDataToClient(clientId, {
+          app: 'client',
+          type: 'config',
+          payload: filteredAppData
+        })
+      } else {
+        this.broadcastToClients({
+          app: 'client',
+          type: 'config',
+          payload: filteredAppData
+        })
+      }
 
-      // Send settings data
+      Logger.info(`Config data sent ${clientId ? `to client ${clientId}` : 'to all clients'}`, {
+        domain: 'platform',
+        source: 'platformStore',
+        function: 'sendConfigToClient'
+      })
+    } catch (error) {
+      Logger.error(
+        `Error sending config data ${clientId ? `to client ${clientId}` : 'to all clients'}`,
+        {
+          error: error as Error,
+          domain: 'platform',
+          source: 'platformStore',
+          function: 'sendConfigToClient'
+        }
+      )
+    }
+  }
+
+  private async sendSettingsToClient(clientId?: string, settings?: AppSettings): Promise<void> {
+    try {
+      const appData = await this.appStore.getAll()
       const appDataStore = storeProvider.getStore('appDataStore')
-      const settings = {}
+      const mergedSettings = {}
 
       if (appData) {
         await Promise.all(
           appData.map(async (app) => {
             if (app) {
-              const appSettings = await appDataStore.getSettings(app.name)
+              const appSettings = settings || (await appDataStore.getSettings(app.name))
               if (appSettings) {
-                settings[app.name] = appSettings
+                mergedSettings[app.name] = appSettings
               }
             }
           })
         )
       }
 
-      this.sendDataToClient(clientId, {
-        app: 'client',
-        type: 'settings',
-        payload: settings
-      })
+      if (clientId) {
+        this.sendDataToClient(clientId, {
+          app: 'client',
+          type: 'settings',
+          payload: mergedSettings
+        })
+      } else {
+        this.broadcastToClients({
+          app: 'client',
+          type: 'settings',
+          payload: mergedSettings
+        })
+      }
 
-      // Send button mappings data
+      Logger.info(`Settings data sent ${clientId ? `to client ${clientId}` : 'to all clients'}`, {
+        domain: 'platform',
+        source: 'platformStore',
+        function: 'sendSettingsToClient'
+      })
+    } catch (error) {
+      Logger.error(
+        `Error sending settings data ${clientId ? `to client ${clientId}` : 'to all clients'}`,
+        {
+          error: error as Error,
+          domain: 'platform',
+          source: 'platformStore',
+          function: 'sendSettingsToClient'
+        }
+      )
+    }
+  }
+
+  private async sendMappingsToClient(clientId?: string): Promise<void> {
+    try {
       const mappingStore = storeProvider.getStore('mappingStore')
       const mappings = await mappingStore.getMapping()
       const actions = await mappingStore.getActions()
@@ -438,36 +509,86 @@ export class PlatformStore implements PlatformStoreClass {
           actions: actions
         }
 
+        if (clientId) {
+          this.sendDataToClient(clientId, {
+            app: 'client',
+            type: 'button_mappings',
+            payload: combinedActions
+          })
+        } else {
+          this.broadcastToClients({
+            app: 'client',
+            type: 'button_mappings',
+            payload: combinedActions
+          })
+        }
+      }
+
+      Logger.info(`Mappings data sent ${clientId ? `to client ${clientId}` : 'to all clients'}`, {
+        domain: 'platform',
+        source: 'platformStore',
+        function: 'sendMappingsToClient'
+      })
+    } catch (error) {
+      Logger.error(
+        `Error sending mappings data ${clientId ? `to client ${clientId}` : 'to all clients'}`,
+        {
+          error: error as Error,
+          domain: 'platform',
+          source: 'platformStore',
+          function: 'sendMappingsToClient'
+        }
+      )
+    }
+  }
+
+  private async sendTimeToClient(clientId?: string): Promise<void> {
+    try {
+      const now = new Date()
+      if (!clientId) {
+        this.broadcastToClients({
+          app: 'client',
+          type: 'set',
+          request: 'time',
+          payload: {
+            utcTime: Date.now(),
+            timezoneOffset: now.getTimezoneOffset() * -1
+          }
+        })
+      } else {
         this.sendDataToClient(clientId, {
           app: 'client',
-          type: 'button_mappings',
-          payload: combinedActions
+          type: 'set',
+          request: 'time',
+          payload: {
+            utcTime: Date.now(),
+            timezoneOffset: now.getTimezoneOffset() * -1
+          }
         })
       }
 
-      // Send time information
-      const now = new Date()
-      this.sendDataToClient(clientId, {
-        app: 'client',
-        type: 'set',
-        request: 'time',
-        payload: {
-          utcTime: Date.now(),
-          timezoneOffset: now.getTimezoneOffset() * -1
-        }
-      })
-
-      Logger.info(`Initial data sent to client ${clientId}`, {
+      Logger.info(`Time data sent ${clientId ? `to client ${clientId}` : 'to all clients'}`, {
         domain: 'platform',
         source: 'platformStore',
-        function: 'sendInitialDataToClient'
+        function: 'sendTimeToClient'
       })
     } catch (error) {
-      Logger.error(`Error sending initial data to client ${clientId}`, {
-        error: error as Error,
-        domain: 'platform',
-        source: 'platformStore',
-        function: 'sendInitialDataToClient'
-      })
+      Logger.error(
+        `Error sending time data ${clientId ? `to client ${clientId}` : 'to all clients'}`,
+        {
+          error: error as Error,
+          domain: 'platform',
+          source: 'platformStore',
+          function: 'sendTimeToClient'
+        }
+      )
     }
-  }}
+  }
+
+  private async sendInitialDataToClient(clientId?: string): Promise<void> {
+    await this.sendConfigToClient(clientId)
+    await this.sendSettingsToClient(clientId)
+    await this.sendMappingsToClient(clientId)
+    await this.sendTimeToClient(clientId)
+  }
+}

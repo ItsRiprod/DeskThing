@@ -48,7 +48,7 @@ export class StoreProvider {
       appStore: () => new AppStore(this.getStore('appProcessStore')),
       // Circular dependency: appDataStore depends on taskStore and taskStore depends on appDataStore
       appDataStore: () => new AppDataStore(this.getStore('appStore')),
-      platformStore: () => new PlatformStore(this.getStore('appStore')),
+      platformStore: () => new PlatformStore(this.getStore('appStore'), this.getStore('appDataStore')),
       // Circular dependency: taskStore depends on appDataStore which depends on taskStore above
       taskStore: () => new TaskStore(this.getStore('appDataStore'), this.getStore('appStore')),
       connectionsStore: () =>
