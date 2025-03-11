@@ -18,7 +18,7 @@ import { App, LOGGING_LEVELS, AppManifest } from '@DeskThing/types'
 import Logger from '@server/utils/logger'
 import { AppData } from '@shared/types'
 import { readFromFile, writeToFile } from './fileService'
-import { verifyAppDataStructure, sanitizeAppStructure } from '../apps/appUtils'
+import { verifyAppDataStructure, sanitizeAppStructure } from '../apps/appValidator'
 
 const defaultData: AppData = {}
 

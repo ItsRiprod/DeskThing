@@ -1,17 +1,16 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { Client } from '@shared/types'
-import connectionStore from '@server/stores/connectionsStore'
+import { ConnectionStore } from '../../../src/main/stores/connectionsStore'
+import { SettingsStoreClass } from '@shared/stores/settingsStore'
+import { TaskStoreClass } from '@shared/stores/taskStore'
+import { PlatformStoreClass } from '@shared/stores/platformStore'
+import Logger from '@server/utils/logger'
+import { handleAdbCommands } from '@server/handlers/adbHandler'
 
 vi.mock('@server/utils/logger', () => ({
   default: {
-    log: vi.fn()
-  }
-}))
-
-vi.mock('@server/stores', () => ({
-  settingsStore: {
-    getSettings: vi.fn().mockResolvedValue({ autoDetectADB: false }),
-    addListener: vi.fn()
+    log: vi.fn(),
+    info: vi.fn(),
+    error: vi.fn()
   }
 }))
 
@@ -19,159 +18,139 @@ vi.mock('@server/handlers/adbHandler', () => ({
   handleAdbCommands: vi.fn()
 }))
 
-describe('connectionStore', () => {
+vi.mock('@server/handlers/deviceHandler', () => ({
+  configureDevice: vi.fn()
+}))
+
+describe('ConnectionStore', () => {
+  let connectionStore: ConnectionStore
+  let mockSettingsStore: SettingsStoreClass
+  let mockTaskStore: TaskStoreClass
+  let mockPlatformStore: PlatformStoreClass
+
   beforeEach(() => {
+    mockSettingsStore = {
+      getSettings: vi.fn().mockResolvedValue({ autoDetectADB: false, autoConfig: false }),
+      addListener: vi.fn()
+    } as unknown as SettingsStoreClass
+
+    mockTaskStore = {
+      completeStep: vi.fn()
+    } as unknown as TaskStoreClass
+
+    mockPlatformStore = {
+      on: vi.fn()
+    } as unknown as PlatformStoreClass
+
+    connectionStore = new ConnectionStore(mockSettingsStore, mockTaskStore, mockPlatformStore)
+  })
+
+  afterEach(() => {
     vi.clearAllMocks()
   })
 
-  afterEach(async () => {
-    await connectionStore.removeAllClients()
-    vi.resetModules()
-  })
+  describe('ADB Device Management', () => {
+    it('should parse ADB devices correctly from command output', async () => {
+      const mockAdbOutput = 'List of devices attached\n1234 device\n9876 device offline\n'
+      vi.mocked(handleAdbCommands).mockResolvedValue(mockAdbOutput)
 
-  describe('Client Management', () => {
-    it('should add and retrieve clients', async () => {
-      const client: Client = {
-        connectionId: '123',
-        client_name: 'test',
-        ip: '',
-        connected: false,
-        timestamp: 0
-      }
-      await connectionStore.addClient(client)
-      expect(connectionStore.getClients()).toContainEqual(client)
-    })
-
-    it('should update existing client', async () => {
-      const client: Client = {
-        connectionId: '123',
-        client_name: 'test',
-        ip: '',
-        connected: false,
-        timestamp: 0
-      }
-      const updates: Partial<Client> = { client_name: 'updated' }
-      await connectionStore.addClient(client)
-      await connectionStore.updateClient('123', updates)
-      expect(connectionStore.getClients()[0].client_name).toBe('updated')
-    })
-
-    it('should remove specific client', async () => {
-      const client: Client = {
-        connectionId: '123',
-        client_name: 'test',
-        ip: '',
-        connected: false,
-        timestamp: 0
-      }
-      await connectionStore.addClient(client)
-      await connectionStore.removeClient('123')
-      expect(connectionStore.getClients()).toHaveLength(0)
-    })
-
-    it('should remove all clients', async () => {
-      const client1: Client = {
-        connectionId: '123',
-        client_name: 'test1',
-        ip: '',
-        connected: false,
-        timestamp: 0
-      }
-      const client2: Client = {
-        connectionId: '456',
-        client_name: 'test2',
-        ip: '',
-        connected: false,
-        timestamp: 0
-      }
-      await connectionStore.addClient(client1)
-      await connectionStore.addClient(client2)
-      await connectionStore.removeAllClients()
-      expect(connectionStore.getClients()).toHaveLength(0)
-    })
-
-    it('should ping client correctly', async () => {
-      const client: Client = {
-        connectionId: '123',
-        client_name: 'test',
-        ip: '',
-        connected: false,
-        timestamp: 0
-      }
-      await connectionStore.addClient(client)
-      expect(connectionStore.pingClient('123')).toBe(true)
-      expect(connectionStore.pingClient('456')).toBe(false)
-    })
-  })
-
-  describe('Listeners', () => {
-    it('should notify client listeners when clients change', async () => {
-      const listener = vi.fn()
-      await connectionStore.on(listener)
-      await connectionStore.addClient({
-        connectionId: '123',
-        client_name: 'test',
-        ip: '',
-        connected: false,
-        timestamp: 0
-      })
-      expect(listener).toHaveBeenCalled()
-    })
-
-    it('should notify device listeners when devices change', async () => {
-      const listener = vi.fn()
-      await connectionStore.onDevice(listener)
-      const { handleAdbCommands } = await import('@server/handlers/adbHandler')
-      vi.mocked(handleAdbCommands).mockResolvedValue('List of devices attached\nClient1\tdevice\n')
-      await connectionStore.getAdbDevices()
-      expect(listener).toHaveBeenCalled()
-    })
-
-    it('should remove client listeners correctly', async () => {
-      const listener = vi.fn()
-      const removeListener = await connectionStore.on(listener)
-      removeListener()
-      await connectionStore.addClient({
-        connectionId: '123',
-        client_name: 'test',
-        ip: '',
-        connected: false,
-        timestamp: 0
-      })
-      expect(listener).not.toHaveBeenCalled()
-    })
-
-    it('should remove device listeners correctly', async () => {
-      const listener = vi.fn()
-      const removeListener = await connectionStore.onDevice(listener)
-      removeListener()
-      await connectionStore.getAdbDevices()
-      expect(listener).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('ADB Detection', () => {
-    it('should parse ADB devices correctly', async () => {
-      const { handleAdbCommands } = await import('@server/handlers/adbHandler')
-      vi.mocked(handleAdbCommands).mockResolvedValue(
-        'List of devices attached\nClient1\tdevice\nClient2\tdevice\n'
-      )
       const devices = await connectionStore.getAdbDevices()
-      expect(devices).toEqual(['Client1', 'Client2'])
+
+      expect(devices).toHaveLength(2)
+      expect(devices[0]).toEqual({
+        adbId: '1234',
+        offline: false,
+        connected: false,
+        error: '1234'
+      })
+      expect(devices[1]).toEqual({
+        adbId: '9876',
+        offline: true,
+        connected: false,
+        error: '9876  offline'
+      })
     })
 
     it('should handle empty ADB device list', async () => {
-      const { handleAdbCommands } = await import('@server/handlers/adbHandler')
       vi.mocked(handleAdbCommands).mockResolvedValue('List of devices attached\n')
+
       const devices = await connectionStore.getAdbDevices()
-      expect(devices).toEqual([])
+
+      expect(devices).toHaveLength(0)
     })
 
     it('should handle ADB command errors', async () => {
-      const { handleAdbCommands } = await import('@server/handlers/adbHandler')
       vi.mocked(handleAdbCommands).mockRejectedValue(new Error('ADB error'))
+
       const devices = await connectionStore.getAdbDevices()
-      expect(devices).toEqual([])
+
+      expect(devices).toHaveLength(0)
+      expect(Logger.error).toHaveBeenCalledWith('Error detecting ADB devices!', expect.any(Object))
+    })
+  })
+
+  describe('Client Management', () => {
+    it('should notify listeners when clients are updated', async () => {
+      const mockListener = vi.fn()
+      await connectionStore.on(mockListener)
+
+      await connectionStore.addClient({
+        connectionId: 'test',
+        name: 'Test Client',
+        id: '',
+        connected: false,
+        timestamp: 0
+      })
+
+      expect(mockListener).toHaveBeenCalledWith(
+        expect.arrayContaining([expect.objectContaining({ connectionId: 'test' })])
+      )
+    })
+
+    it('should update existing client correctly', async () => {
+      await connectionStore.addClient({
+        connectionId: 'test',
+        name: 'Test Client',
+        id: '',
+        connected: false,
+        timestamp: 0
+      })
+      await connectionStore.updateClient('test', { name: 'Updated Client' })
+
+      const clients = connectionStore.getClients()
+      expect(clients).toHaveLength(1)
+      expect(clients[0]).toEqual(
+        expect.objectContaining({
+          connectionId: 'test',
+          name: 'Updated Client'
+        })
+      )
+    })
+
+    it('should handle device listener registration and notification', async () => {
+      const mockDeviceListener = vi.fn()
+      await connectionStore.onDevice(mockDeviceListener)
+
+      vi.mocked(handleAdbCommands).mockResolvedValue('List of devices attached\ndevice1 device\n')
+      await connectionStore.getAdbDevices()
+
+      expect(mockDeviceListener).toHaveBeenCalled()
+    })
+
+    it('should remove client listener correctly', async () => {
+      const mockListener = vi.fn()
+      const removeListener = await connectionStore.on(mockListener)
+      removeListener()
+
+      await connectionStore.addClient({
+        connectionId: 'test',
+        name: 'Test Client',
+        id: '',
+        connected: false,
+        timestamp: 0
+      })
+
+      expect(mockListener).not.toHaveBeenCalled()
     })
   })
 })

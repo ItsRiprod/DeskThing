@@ -63,7 +63,6 @@ export const restartServer = async (): Promise<void> => {
           Logger.log(LOGGING_LEVELS.ERROR, 'WSOCKET: Error shutting down WebSocket server:' + err)
         } else {
           Logger.log(LOGGING_LEVELS.LOG, 'WSOCKET: WebSocket server shut down successfully.')
-          Logger.log(LOGGING_LEVELS.LOG, 'WSOCKET: WebSocket server shut down successfully.')
         }
 
         if (httpServer && httpServer.listening) {

@@ -15,7 +15,7 @@ import {
 } from '@shared/stores/platformStore'
 import { handlePlatformMessage } from '@server/services/platforms/platformMessage'
 import { AppStoreClass } from '@shared/stores/appStore'
-import { storeProvider } from '.'
+import { storeProvider } from './storeProvider'
 import { AppDataStoreClass } from '@shared/stores/appDataStore'
 
 export class PlatformStore implements PlatformStoreClass {
@@ -28,6 +28,7 @@ export class PlatformStore implements PlatformStoreClass {
     [PlatformStoreEvent.PLATFORM_STOPPED]: [],
     [PlatformStoreEvent.CLIENT_CONNECTED]: [],
     [PlatformStoreEvent.CLIENT_DISCONNECTED]: [],
+    [PlatformStoreEvent.CLIENT_UPDATED]: [],
     [PlatformStoreEvent.DATA_RECEIVED]: []
   }
   private appStore: AppStoreClass
@@ -115,7 +116,7 @@ export class PlatformStore implements PlatformStoreClass {
     this.setupPlatformListeners(platform)
     this.notify(PlatformStoreEvent.PLATFORM_ADDED, platform)
 
-    Logger.info(`Platform ${platform.name} (${platform.type}) added`, {
+    Logger.debug(`Platform ${platform.name} (${platform.type}) added`, {
       domain: 'platform',
       source: 'platformStore',
       function: 'addPlatform'
@@ -144,7 +145,7 @@ export class PlatformStore implements PlatformStoreClass {
     this.platforms.delete(platformId)
     this.notify(PlatformStoreEvent.PLATFORM_REMOVED, platformId)
 
-    Logger.info(`Platform ${platform.name} (${platform.type}) removed`, {
+    Logger.debug(`Platform ${platform.name} (${platform.type}) removed`, {
       domain: 'platform',
       source: 'platformStore',
       function: 'removePlatform'
@@ -175,7 +176,7 @@ export class PlatformStore implements PlatformStoreClass {
       await platform.start(options)
       this.notify(PlatformStoreEvent.PLATFORM_STARTED, platform)
 
-      Logger.info(`Platform ${platform.name} (${platform.type}) started`, {
+      Logger.debug(`Platform ${platform.name} (${platform.type}) started`, {
         domain: 'platform',
         source: 'platformStore',
         function: 'startPlatform'
@@ -203,7 +204,7 @@ export class PlatformStore implements PlatformStoreClass {
       await platform.stop()
       this.notify(PlatformStoreEvent.PLATFORM_STOPPED, platform)
 
-      Logger.info(`Platform ${platform.name} (${platform.type}) stopped`, {
+      Logger.debug(`Platform ${platform.name} (${platform.type}) stopped`, {
         domain: 'platform',
         source: 'platformStore',
         function: 'stopPlatform'
@@ -224,6 +225,19 @@ export class PlatformStore implements PlatformStoreClass {
   async restartPlatform(platformId: string, options?: PlatformConnectionOptions): Promise<boolean> {
     await this.stopPlatform(platformId)
     return await this.startPlatform(platformId, options)
+  }
+
+  updateClient(clientId: string, client: Partial<Client>): void {
+    const platform = this.getPlatformForClient(clientId)
+    if (platform) {
+      platform.updateClient(clientId, client)
+    } else {
+      Logger.warn(`No platform found for client ${clientId}`, {
+        domain: 'platform',
+        source: 'platformStore',
+        function: 'updateClient'
+      })
+    }
   }
 
   // Client management
@@ -278,7 +292,6 @@ export class PlatformStore implements PlatformStoreClass {
   }
 
   async sendDataToClient(clientId: string, data: SocketData): Promise<boolean> {
-    console.log('Sending data to', clientId, data)
     const platform = this.getPlatformForClient(clientId)
     if (!platform) {
       Logger.warn(`Cannot send data: No platform found for client ${clientId}`, {
@@ -355,7 +368,7 @@ export class PlatformStore implements PlatformStoreClass {
       this.notify(PlatformStoreEvent.CLIENT_CONNECTED, client)
       this.sendInitialDataToClient(client.connectionId)
 
-      Logger.info(`Client ${client.connectionId} connected via ${platform.type}`, {
+      Logger.debug(`Client ${client.connectionId} connected via ${platform.type}`, {
         domain: 'platform',
         source: 'platformStore',
         function: 'clientConnected'
@@ -367,7 +380,7 @@ export class PlatformStore implements PlatformStoreClass {
       this.clientPlatformMap.delete(client.connectionId)
       this.notify(PlatformStoreEvent.CLIENT_DISCONNECTED, client.id)
 
-      Logger.info(`Client ${client.connectionId} disconnected from ${platform.type}`, {
+      Logger.debug(`Client ${client.connectionId} disconnected from ${platform.type}`, {
         domain: 'platform',
         source: 'platformStore',
         function: 'clientDisconnected'
@@ -407,6 +420,15 @@ export class PlatformStore implements PlatformStoreClass {
         function: 'statusChanged'
       })
     })
+
+    platform.on(PlatformEvent.CLIENT_UPDATED, (client) => {
+      Logger.debug(`Client ${client.connectionId} updated`, {
+        domain: 'platform',
+        source: 'platformStore',
+        function: 'clientUpdated'
+      })
+      this.notify(PlatformStoreEvent.CLIENT_UPDATED, client)
+    })
   }
 
   private async sendConfigToClient(clientId?: string): Promise<void> {
@@ -428,7 +450,7 @@ export class PlatformStore implements PlatformStoreClass {
         })
       }
 
-      Logger.info(`Config data sent ${clientId ? `to client ${clientId}` : 'to all clients'}`, {
+      Logger.debug(`Config data sent ${clientId ? `to client ${clientId}` : 'to all clients'}`, {
         domain: 'platform',
         source: 'platformStore',
         function: 'sendConfigToClient'
@@ -449,7 +471,7 @@ export class PlatformStore implements PlatformStoreClass {
   private async sendSettingsToClient(clientId?: string, settings?: AppSettings): Promise<void> {
     try {
       const appData = await this.appStore.getAll()
-      const appDataStore = storeProvider.getStore('appDataStore')
+      const appDataStore = await storeProvider.getStore('appDataStore')
       const mergedSettings = {}
 
       if (appData) {
@@ -479,7 +501,7 @@ export class PlatformStore implements PlatformStoreClass {
         })
       }
 
-      Logger.info(`Settings data sent ${clientId ? `to client ${clientId}` : 'to all clients'}`, {
+      Logger.debug(`Settings data sent ${clientId ? `to client ${clientId}` : 'to all clients'}`, {
         domain: 'platform',
         source: 'platformStore',
         function: 'sendSettingsToClient'
@@ -499,7 +521,7 @@ export class PlatformStore implements PlatformStoreClass {
 
   private async sendMappingsToClient(clientId?: string): Promise<void> {
     try {
-      const mappingStore = storeProvider.getStore('mappingStore')
+      const mappingStore = await storeProvider.getStore('mappingStore')
       const mappings = await mappingStore.getMapping()
       const actions = await mappingStore.getActions()
 
@@ -524,7 +546,7 @@ export class PlatformStore implements PlatformStoreClass {
         }
       }
 
-      Logger.info(`Mappings data sent ${clientId ? `to client ${clientId}` : 'to all clients'}`, {
+      Logger.debug(`Mappings data sent ${clientId ? `to client ${clientId}` : 'to all clients'}`, {
         domain: 'platform',
         source: 'platformStore',
         function: 'sendMappingsToClient'
@@ -567,7 +589,7 @@ export class PlatformStore implements PlatformStoreClass {
         })
       }
 
-      Logger.info(`Time data sent ${clientId ? `to client ${clientId}` : 'to all clients'}`, {
+      Logger.debug(`Time data sent ${clientId ? `to client ${clientId}` : 'to all clients'}`, {
         domain: 'platform',
         source: 'platformStore',
         function: 'sendTimeToClient'
@@ -585,10 +607,19 @@ export class PlatformStore implements PlatformStoreClass {
     }
   }
 
+  private async sendManifestRequest(clientId?: string): Promise<void> {
+    if (clientId) {
+      this.sendDataToClient(clientId, { app: 'client', type: 'get', request: 'manifest' })
+    } else {
+      this.broadcastToClients({ app: 'client', type: 'get', request: 'manifest' })
+    }
+  }
+
   private async sendInitialDataToClient(clientId?: string): Promise<void> {
     await this.sendConfigToClient(clientId)
     await this.sendSettingsToClient(clientId)
     await this.sendMappingsToClient(clientId)
     await this.sendTimeToClient(clientId)
+    await this.sendManifestRequest(clientId)
   }
 }

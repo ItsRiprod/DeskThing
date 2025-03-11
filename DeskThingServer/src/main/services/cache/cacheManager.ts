@@ -17,7 +17,7 @@ class CacheManager {
   }
 
   async hibernateAll(): Promise<void> {
-    Logger.info('Hibernating all stores', { source: 'CacheManager' })
+    Logger.debug('Hibernating all stores', { source: 'CacheManager' })
 
     const beforeMemory = process.memoryUsage()
 

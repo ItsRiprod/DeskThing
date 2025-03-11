@@ -4,6 +4,10 @@ import { join } from 'node:path'
 import logger from '@server/utils/logger'
 import { isValidTaskList, sanitizeTaskList, sanitizeTaskListFile } from '../task'
 
+/**
+ * @deprecated 
+ * @param taskList 
+ */
 export const saveTaskList = async (taskList: FullTaskList): Promise<void> => {
   try {
     const sTaskList = sanitizeTaskListFile(taskList)
@@ -20,6 +24,10 @@ export const saveTaskList = async (taskList: FullTaskList): Promise<void> => {
   }
 }
 
+/**
+ * @depreciated
+ * @returns 
+ */
 export const readTasksFromFile = async (): Promise<FullTaskList | undefined> => {
   try {
     const taskListPath = join('system', 'tasks.json')

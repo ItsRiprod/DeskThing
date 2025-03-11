@@ -3,7 +3,7 @@ import { Task, STEP_TYPES } from '@DeskThing/types'
 export const ServerTasks: Record<string, Task> = {
   gettingstarted: {
     id: 'gettingstarted',
-    version: '0.10.4',
+    version: '0.10.5',
     started: false,
     available: true,
     source: 'server',
@@ -16,6 +16,7 @@ export const ServerTasks: Record<string, Task> = {
         type: STEP_TYPES.TASK,
         label: 'Setup the Client',
         taskId: 'client',
+        taskSource: 'server',
         instructions: 'Ensure you have a client setup',
         completed: false
       },
@@ -24,6 +25,7 @@ export const ServerTasks: Record<string, Task> = {
         type: STEP_TYPES.TASK,
         label: 'Setup the Car Thing',
         taskId: 'device',
+        taskSource: 'server',
         instructions: 'Finish setting up a device!',
         completed: false
       },
@@ -40,7 +42,7 @@ export const ServerTasks: Record<string, Task> = {
   },
   device: {
     id: 'device',
-    version: '0.10.4',
+    version: '0.10.7',
     started: false,
     available: true,
     source: 'server',
@@ -52,6 +54,7 @@ export const ServerTasks: Record<string, Task> = {
         type: STEP_TYPES.TASK,
         label: 'Install the Client',
         taskId: 'client',
+        taskSource: 'server',
         instructions: 'Ensure you have a client setup',
         completed: false
       },
@@ -88,32 +91,27 @@ export const ServerTasks: Record<string, Task> = {
         debugging: {
           cable: {
             id: 'cable',
-            type: STEP_TYPES.EXTERNAL,
             label: 'Different cable',
             instructions: 'Try using a different cable'
           },
           port: {
             id: 'port',
-            type: STEP_TYPES.EXTERNAL,
             label: 'Different port',
             instructions: 'Try different ports on your computer'
           },
           driver: {
             id: 'driver',
-            type: STEP_TYPES.EXTERNAL,
             label: 'Windows - Check Drivers',
             instructions:
               'Ensure ADB Interface and NDIS Compatible Device show up in Device Manager'
           },
           norndis: {
             id: 'norndis',
-            type: STEP_TYPES.EXTERNAL,
             label: 'AMD CPU - norndis',
             instructions: 'Reflash with the "norndis" image in Thing Labs and try again'
           },
           biosport: {
             id: 'biosport',
-            type: STEP_TYPES.EXTERNAL,
             label: 'AMD CPU - Try the BIOS port',
             instructions: 'Try using the BIOS port on your motherboard'
           }
@@ -129,7 +127,6 @@ export const ServerTasks: Record<string, Task> = {
         debugging: {
           offline: {
             id: 'offline',
-            type: STEP_TYPES.EXTERNAL,
             label: 'Offline',
             instructions: 'If your device is offline, click the "reconnect offline" button'
           }
@@ -140,7 +137,7 @@ export const ServerTasks: Record<string, Task> = {
   },
   client: {
     id: 'client',
-    version: '0.10.3',
+    version: '0.10.5',
     started: false,
     available: true,
     source: 'server',
@@ -176,10 +173,10 @@ export const ServerTasks: Record<string, Task> = {
   },
   updateClient: {
     id: 'updateClient',
-    version: '0.10.3',
+    version: '0.10.5',
     started: false,
     source: 'server',
-    label: 'Setting up a Device',
+    label: 'Updating the Client',
     description: "Looks like theres a new client! Lets ensure we're up to date.",
     steps: {
       download: {

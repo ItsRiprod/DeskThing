@@ -11,10 +11,6 @@
  * - Handles application lifecycle events
  * - Manages module loading and initialization
  */
-
-import Logger from './utils/logger'
-Logger.info('[Index] Starting', { domain: 'server', source: 'index' })
-
 import {
   AppIPCData,
   UtilityIPCData,
@@ -226,8 +222,8 @@ async function initializeTray(): Promise<void> {
           clientWindow.focus()
         } else {
           const { storeProvider } = await import('./stores/storeProvider')
-          const settingsStore = storeProvider.getStore('settingsStore')
-          const data = await settingsStore.getSettings()
+          const settingsStore = await storeProvider.getStore('settingsStore')
+          const data = await await settingsStore.getSettings()
           if (data) {
             clientWindow = createClientWindow(data.devicePort)
           }
@@ -268,7 +264,7 @@ async function initializeDoc(): Promise<void> {
           clientWindow.focus()
         } else {
           const { storeProvider } = await import('./stores/storeProvider')
-          const settingsStore = storeProvider.getStore('settingsStore')
+          const settingsStore = await storeProvider.getStore('settingsStore')
           const data = await settingsStore.getSettings()
           if (data) {
             clientWindow = createClientWindow(data.devicePort)
@@ -394,7 +390,7 @@ async function setupIpcHandlers(): Promise<void> {
   })
 
   import('./services/updater/autoUpdater').then(async ({ checkForUpdates }) => {
-    Logger.info('[INDEX] Checking for updates...')
+    Logger.debug('[INDEX] Checking for updates...')
     checkForUpdates()
   })
 }
@@ -463,9 +459,9 @@ if (!app.requestSingleInstanceLock()) {
   // Handle window closure
   app.on('window-all-closed', async () => {
     const { storeProvider } = await import('./stores/storeProvider')
-    const settingsStore = storeProvider.getStore('settingsStore')
+    const settingsStore = await storeProvider.getStore('settingsStore')
     const settings = await settingsStore.getSettings()
-    if (settings.minimizeApp) {
+    if (settings?.minimizeApp) {
       // Clear cache from everywhere
       const { default: cacheManager } = await import('./services/cache/cacheManager')
       await cacheManager.hibernateAll()
@@ -503,7 +499,7 @@ async function loadModules(): Promise<void> {
     // Store listeners
     // const { storeProvider } = await import('./stores/storeProvider')
 
-    // const expressServerStore = storeProvider.getStore('expressServerStore')
+    // const expressServerStore = await storeProvider.getStore('expressServerStore')
     // expressServerStore.start()
 
     const { initializePlatforms } = await import('./services/platforms/platformInitializer')
@@ -514,12 +510,7 @@ async function loadModules(): Promise<void> {
 
     import('./handlers/authHandler')
   } catch (error) {
-    Logger.error('Error loading modules:', {
-      domain: 'server',
-      source: 'index',
-      function: 'loadModules',
-      error: error instanceof Error ? error : new Error(String(error))
-    })
+    console.error('Error loading modules: ', error)
   }
 }
 
@@ -529,7 +520,7 @@ export type IpcDataTypes = {
 }
 
 async function sendIpcData({ type, payload, window }: ServerIPCData): Promise<void> {
-  if (window instanceof BrowserWindow) {
+  if (window && window instanceof BrowserWindow) {
     window.webContents.send(type, payload)
   } else {
     mainWindow?.webContents.send(type, payload)

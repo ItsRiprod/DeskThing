@@ -1,5 +1,5 @@
 import { FC, useEffect, useState } from 'react'
-import { StepProps } from './TaskBase'
+import { StepPropsMap } from '@shared/types'
 import { STEP_TYPES } from '@DeskThing/types'
 import { useAppStore } from '@renderer/stores'
 import { SettingsType } from '@DeskThing/types'
@@ -8,9 +8,7 @@ import Button from '../Button'
 import useTaskStore from '@renderer/stores/taskStore'
 import Settings from '../settings'
 
-export const TaskSetting: FC<StepProps> = ({ step, source }) => {
-  if (step.type != STEP_TYPES.SETTING) return <div>Not a Setting</div>
-
+export const TaskSettingComponent: FC<StepPropsMap[STEP_TYPES.SETTING]> = ({ step, source }) => {
   const completeStep = useTaskStore((state) => state.resolveStep)
   const updateStep = useTaskStore((state) => state.updateStep)
   const getSetting = useAppStore((state) => state.getAppSettings)
@@ -58,8 +56,12 @@ export const TaskSetting: FC<StepProps> = ({ step, source }) => {
         await updateStep(step.parentId, { id: step.id, setting: setting })
       }
     }
-    await completeStep(step.parentId, step.id)
+    await completeStep(step.parentId, step.id, source)
   }
+
+  useEffect(() => {
+    console.log('Setting changed', setting)
+  }, [setting])
 
   const handleSettingChange = (value: SettingsType['value']): void => {
     setIsComplete(true)
@@ -69,11 +71,11 @@ export const TaskSetting: FC<StepProps> = ({ step, source }) => {
         if (!settingType) {
           return typeof step.setting !== 'string' ? step.setting : null
         }
-        console.log('Changing from the setting', settingType.value)
-        console.log('To', value)
-        settingType.value = value
         console.log('Setting is now', settingType.value)
-        return settingType
+        return {
+          ...settingType,
+          value
+        } as SettingsType
       })
     } else {
       console.log('Not changing', setting)
@@ -96,7 +98,7 @@ export const TaskSetting: FC<StepProps> = ({ step, source }) => {
           title={`${stepCompleted ? 'Confirm Completion' : step.strict ? 'Modify setting first' : 'Continue Anyway'}`}
           onClick={handleComplete}
         >
-          {stepCompleted || !step.strict ? <p>Mark as Completed</p> : <p>Open Link First</p>}
+          {stepCompleted || !step.strict ? <p>Mark as Completed</p> : <p>Change Setting First</p>}
           {stepCompleted || !step.strict ? <IconCheck /> : <IconX />}
         </Button>
       )}
@@ -104,4 +106,4 @@ export const TaskSetting: FC<StepProps> = ({ step, source }) => {
   )
 }
 
-export default TaskSetting
+export default TaskSettingComponent

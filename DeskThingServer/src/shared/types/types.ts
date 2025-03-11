@@ -5,8 +5,7 @@ import {
   AppReleaseCommunity,
   AppReleaseMeta,
   ClientReleaseMeta,
-  LOGGING_LEVELS,
-  Task
+  LOGGING_LEVELS
 } from '@deskthing/types'
 
 export interface CacheableStore {
@@ -115,23 +114,11 @@ export interface RepoReleases {
   releases: GithubRelease[]
 }
 
-export type TaskReference = {
-  id: string
-  source: string
-  version: string
-  available?: boolean
-  completed: boolean
-  label: string
-  started: false
-  description?: string
-}
-
-export type FullTaskList = Record<string, Record<string, Task>>
-
 // The settings for the app
-export interface Settings {
+export type Settings = {
   version: string
-  version_code: number
+  /** @depreciated - use semver off the main settings */
+  version_code?: number
   callbackPort: number
   LogLevel: LOG_FILTER
   devicePort: number
@@ -171,9 +158,15 @@ export type LoggingOptions = {
  * The SYSTEM level is used for system-level logs, the APPS level is used for app and client emitted logs, and the PRODUCTION level is used for only errors, warnings, debugging, and fatal logs.
  */
 export enum LOG_FILTER {
-  SYSTEM = 'system', // All system-level logs
-  APPS = 'apps', // all app and client emitted logs
-  PRODUCTION = 'production' // Only errors, warnings, debugging, and fatal logs
+  DEBUG = LOGGING_LEVELS.DEBUG,
+  MESSAGE = LOGGING_LEVELS.MESSAGE,
+  LOG = LOGGING_LEVELS.LOG,
+  INFO = LOGGING_LEVELS.LOG,
+  WARN = LOGGING_LEVELS.WARN,
+  ERROR = LOGGING_LEVELS.ERROR,
+  FATAL = LOGGING_LEVELS.FATAL,
+  SILENT = 'silent',
+  APPSONLY = 'appsOnly'
 }
 
 export interface Log {

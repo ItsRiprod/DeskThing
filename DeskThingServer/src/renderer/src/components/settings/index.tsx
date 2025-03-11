@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useMemo } from 'react'
 import { SettingsType } from '@DeskThing/types'
 import { SettingsBooleanComponent } from './SettingsBoolean'
 import { SettingsListComponent } from './SettingsList'
@@ -40,11 +40,15 @@ const SETTINGS_COMPONENTS: {
  * @returns
  */
 export const Settings: React.FC<SettingsProps> = ({ setting, className, handleSettingChange }) => {
-  const SettingComponent = SETTINGS_COMPONENTS[setting.type] as React.ComponentType<{
-    setting: SettingsType
-    handleSettingChange: (value: number | boolean | string | string[]) => void
-    className?: string
-  }>
+  const SettingComponent = useMemo(
+    () => SETTINGS_COMPONENTS[setting.type] as React.ComponentType<SettingsProps>,
+    [setting.type]
+  )
+
+  useEffect(() => {
+    console.log('Settings', setting)
+  }, [setting])
+
   return SettingComponent ? (
     <SettingComponent
       setting={setting}

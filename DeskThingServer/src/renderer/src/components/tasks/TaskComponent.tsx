@@ -3,10 +3,8 @@ import useTaskStore from '@renderer/stores/taskStore'
 import { Step, Task } from '@DeskThing/types'
 import { FC, useMemo } from 'react'
 import Button from '../Button'
-import { TaskReference } from '@shared/types'
-
 interface TaskComponentProps {
-  task: Task | TaskReference
+  task: Task
   onClose: () => void
 }
 
@@ -21,35 +19,35 @@ const TaskComponent: FC<TaskComponentProps> = ({ task, onClose }) => {
   const restartTask = useTaskStore((state) => state.restartTask)
   const currentTask = useTaskStore((state) => state.currentTask)
 
-  const stepCount = task.started && useMemo(() => Object.values(task.steps).length, [task.steps])
-  const currentStepNumber =
-    task.started &&
-    useMemo(
-      () => getCurrentStepNumber(task.steps, task.currentStep),
-      [task.steps, task.currentStep]
-    )
+  const stepCount = useMemo(() => Object.values(task.steps).length, [task.steps])
+  const currentStepNumber = useMemo(
+    () => getCurrentStepNumber(task.steps, task.currentStep),
+    [task.steps, task.currentStep]
+  )
 
   const handleRestart = (): void => {
-    restartTask(task.id)
+    restartTask(task.id, task.source)
   }
 
   const handleReject = (): void => {
-    rejectTask(task.id)
+    rejectTask(task.id, task.source)
   }
 
   const handleAccept = (): void => {
-    acceptTask(task.id)
+    acceptTask(task.id, task.source)
     onClose()
   }
 
   return (
     <div
-      className={`w-full ${task.id == currentTask?.id ? 'border border-cyan-500' : ''} ${task.available ? 'bg-zinc-900 p-4 hover:bg-zinc-800' : 'text-gray-500 hover:text-gray-300 bg-zinc-950 p-4 hover:bg-zinc-900 '} transition-colors rounded-lg mb-4 flex flex-col`}
+      className={`w-full ${task.id == currentTask?.id ? 'border border-cyan-500' : ''} ${task.available ? (task.completed ? 'bg-zinc-950 p-4 hover:bg-zinc-900' : 'bg-zinc-900 p-4 hover:bg-zinc-800') : 'text-gray-500 hover:text-gray-300 bg-zinc-950 p-4 hover:bg-zinc-900 '} transition-colors rounded-lg mb-4 flex flex-col`}
     >
       <div className="flex justify-between items-center">
         <div className="items-start flex flex-col">
           <div className="flex gap-2 items-center">
-            <h2 className={`${task.completed && 'line-through'} text-lg font-bold mb-2`}>
+            <h2
+              className={`${task.completed && 'line-through text-gray-500'} text-lg font-bold mb-2`}
+            >
               {task.label || task.id}
             </h2>
             {task.started && (
@@ -62,7 +60,9 @@ const TaskComponent: FC<TaskComponentProps> = ({ task, onClose }) => {
               </div>
             )}
           </div>
-          <p className="text-gray-300">{task.description}</p>
+          <p className={`${task.completed ? 'text-gray-500' : 'text-gray-300'}`}>
+            {task.description}
+          </p>
           <div className="text-gray-500 italic gap-2 flex items-center">
             <p>{task.source}</p>
             <p>{task.version}</p>
@@ -79,7 +79,7 @@ const TaskComponent: FC<TaskComponentProps> = ({ task, onClose }) => {
         <div className="flex-shrink-0 flex">
           {task.completed ? (
             <Button
-              className="bg-amber-500 group gap-2 flex italic text-gray-200 hover:text-white transition-colors mx-2 my-5"
+              className="bg-amber-950 hover:bg-amber-900 group gap-2 flex italic text-gray-200 hover:text-white transition-colors mx-2 my-5"
               onClick={handleRestart}
             >
               <p>Restart Task</p>

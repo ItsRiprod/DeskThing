@@ -66,10 +66,10 @@ const ClientSettingsOverlay: React.FC<ClientSettingsOverlayProps> = ({ onClose }
               <div className="items-center border-zinc-500 border p-2 my-2 rounded-xl">
                 <div className="flex justify-between">
                   <h1 className="text-lg flex font-semibold">
-                    {clientSettings.client_name}{' '}
+                    {clientSettings.name}{' '}
                     <p className="text-xs font-normal">{clientSettings.version}</p>
                   </h1>
-                  <p className="">ID: {clientSettings.client_name}</p>
+                  <p className="">ID: {clientSettings.name}</p>
                 </div>
                 <p className="text-xs italic">{clientSettings.description}</p>
               </div>

@@ -8,18 +8,17 @@ import { SettingsStoreClass, SettingsStoreListener } from '@shared/stores/settin
 import { readFromFile, writeToFile } from '../services/files/fileService'
 import Logger from '@server/utils/logger'
 import os from 'os'
+import semverSatisfies from 'semver/functions/satisfies.js'
 
 // Consts
-const settingsVersion = '0.9.2'
-const version_code = 9.2
+const settingsVersion = '0.10.4'
 
 export class SettingsStore implements CacheableStore, SettingsStoreClass {
-  private settings: Settings | null
+  private settings: Settings | undefined
   private settingsFilePath: string = 'settings.json'
   private listeners: SettingsStoreListener[] = []
 
   constructor() {
-    this.settings = this.getDefaultSettings()
     this.setupSettings()
   }
 
@@ -27,8 +26,9 @@ export class SettingsStore implements CacheableStore, SettingsStoreClass {
    * @implements CacheableStore
    */
   clearCache = async (): Promise<void> => {
-    this.settings = null
+    // this.settings = undefined - it's not worth the performance overhead of loading them again
   }
+
   /**
    * @implements CacheableStore
    */
@@ -71,7 +71,7 @@ export class SettingsStore implements CacheableStore, SettingsStoreClass {
     await Promise.all(this.listeners.map((listener) => listener(this.settings as Settings)))
   }
 
-  public async getSettings(): Promise<Settings> {
+  public async getSettings(): Promise<Settings | undefined> {
     if (this.settings) {
       return this.settings
     } else {
@@ -116,12 +116,12 @@ export class SettingsStore implements CacheableStore, SettingsStoreClass {
   public async loadSettings(): Promise<Settings> {
     try {
       const data = await readFromFile<Settings>(this.settingsFilePath)
-      Logger.info('Loaded Settings!', {
+      Logger.debug('Loaded Settings!', {
         source: 'settingStore',
         function: 'loadSettings'
       })
 
-      if (!data || !data.version_code || data.version_code < version_code) {
+      if (!data || !data.version || !semverSatisfies(data.version, '>=' + settingsVersion)) {
         // File does not exist, create it with default settings
         console.log('Unable to find settings. ', data)
         const defaultSettings = this.getDefaultSettings()
@@ -129,6 +129,7 @@ export class SettingsStore implements CacheableStore, SettingsStoreClass {
         console.log('SETTINGS: Returning default settings')
         return defaultSettings
       }
+
       if (data.autoStart !== undefined) {
         await this.updateAutoLaunch(data.autoStart)
       }
@@ -171,7 +172,7 @@ export class SettingsStore implements CacheableStore, SettingsStoreClass {
   public async saveSettings(settings?: Settings): Promise<void> {
     try {
       if (settings) {
-        this.settings = settings as Settings
+        this.settings = settings
       }
 
       await writeToFile(this.settings, this.settingsFilePath)
@@ -196,11 +197,10 @@ export class SettingsStore implements CacheableStore, SettingsStoreClass {
   private getDefaultSettings(): Settings {
     return {
       version: settingsVersion,
-      version_code: version_code,
       callbackPort: 8888,
       devicePort: 8891,
       address: '0.0.0.0',
-      LogLevel: LOG_FILTER.PRODUCTION,
+      LogLevel: LOG_FILTER.INFO,
       autoStart: false,
       autoConfig: false,
       minimizeApp: true,

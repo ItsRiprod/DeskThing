@@ -4,7 +4,7 @@ import { useSettingsStore } from '@renderer/stores'
 import React, { useState } from 'react'
 import QRCode from 'react-qr-code'
 import { useSearchParams } from 'react-router-dom'
-import Overlay from './Overlay'
+import Overlay from '../Overlay'
 
 const QROverlay: React.FC = () => {
   const settings = useSettingsStore((settings) => settings.settings)

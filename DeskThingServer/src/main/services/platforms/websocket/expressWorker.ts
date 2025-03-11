@@ -3,12 +3,10 @@ import cors from 'cors'
 import { Server } from 'node:http'
 import { join } from 'node:path'
 import fs from 'node:fs'
-import crypto from 'node:crypto'
 
 export class ExpressServer {
   private app: express.Application
   private server: Server | null = null
-  private pendingRequests = new Map()
   private userDataPath: string
   private port: number
 
@@ -33,6 +31,11 @@ export class ExpressServer {
     this.server = this.app.listen(this.port)
 
     this.setupClientRoutes()
+
+    // Default all routes to / as a fallback
+    this.app.get('/', (_req, res) => {
+      res.redirect('/client/')
+    })
   }
 
   public getServer(): Server | null {
@@ -73,7 +76,7 @@ export class ExpressServer {
       )
     }
 
-    this.app.get('/client/*', (req, res) => {
+    this.app.get('/client/*', (_req, res) => {
       const indexPath = join(webAppDir, 'index.html')
       if (fs.existsSync(indexPath)) {
         res.sendFile(indexPath)
@@ -228,6 +231,7 @@ export class ExpressServer {
           res.sendStatus(204)
         }
       } catch (error) {
+        console.log('Error fetching resource', error)
         res.status(500).send('Error fetching resource')
       }
     })

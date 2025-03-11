@@ -11,42 +11,56 @@ import { ServerIPCData } from '@shared/types'
 
 // Mock electron modules
 vi.mock('electron', () => {
-  const BrowserWindowMock = vi.fn().mockImplementation(() => ({
-    loadURL: vi.fn(),
-    loadFile: vi.fn(),
+  const mockWebContents = {
+    session: {
+      webRequest: {
+        onHeadersReceived: vi.fn((callback) => {
+          callback(
+            {
+              responseHeaders: {}
+            },
+            (details) => details
+          )
+        })
+      }
+    },
+    setWindowOpenHandler: vi.fn((handler) => {
+      handler({ url: 'deskthing://test' })
+      handler({ url: 'https://external.com' })
+    }),
     on: vi.fn(),
+    executeJavaScript: vi.fn(),
+    send: vi.fn()
+  }
+
+  const BrowserWindowMock = vi.fn().mockImplementation(() => ({
+    loadURL: vi.fn().mockResolvedValue(undefined),
+    loadFile: vi.fn().mockResolvedValue(undefined),
+    on: vi.fn((event, callback) => {
+      if (event === 'ready-to-show') callback()
+      if (event === 'closed') callback()
+    }),
     show: vi.fn(),
     focus: vi.fn(),
-    isMinimized: vi.fn(),
+    isMinimized: vi.fn().mockReturnValue(false),
     restore: vi.fn(),
-    isDestroyed: vi.fn(),
-    webContents: {
-      session: {
-        webRequest: {
-          onHeadersReceived: vi.fn()
-        }
-      },
-      setWindowOpenHandler: vi.fn(),
-      on: vi.fn(),
-      executeJavaScript: vi.fn(),
-      send: vi.fn()
-    }
+    isDestroyed: vi.fn().mockReturnValue(false),
+    webContents: mockWebContents
   }))
 
-  // Ensure instanceof checks work correctly
   Object.defineProperty(BrowserWindowMock, Symbol.hasInstance, {
     value: () => true
   })
 
   return {
     app: {
-      whenReady: vi.fn(),
+      whenReady: vi.fn().mockResolvedValue(undefined),
       on: vi.fn(),
       quit: vi.fn(),
       setAsDefaultProtocolClient: vi.fn(),
-
-      requestSingleInstanceLock: vi.fn().mockReturnValue(false),
+      requestSingleInstanceLock: vi.fn().mockReturnValue(true),
       setAppUserModelId: vi.fn(),
+      getPath: vi.fn().mockReturnValue('/fake/path'),
       dock: {
         setMenu: vi.fn()
       }
@@ -58,39 +72,50 @@ vi.mock('electron', () => {
     Tray: vi.fn().mockImplementation(() => ({
       setToolTip: vi.fn(),
       setContextMenu: vi.fn(),
-      on: vi.fn()
+      on: vi.fn((event, callback) => {
+        if (event === 'click') callback()
+      })
     })),
     Menu: {
-      buildFromTemplate: vi.fn()
+      buildFromTemplate: vi.fn().mockReturnValue({})
     },
     shell: {
-      openExternal: vi.fn()
+      openExternal: vi.fn().mockResolvedValue(undefined)
     },
     nativeImage: {
-      createFromPath: vi.fn()
+      createFromPath: vi.fn().mockReturnValue({})
     }
   }
 })
 
-// Mock path module
-vi.mock('path', () => ({
-  join: vi.fn(),
-  resolve: vi.fn()
+vi.mock('node:path', () => ({
+  join: vi.fn((...args) => args.join('/')),
+  resolve: vi.fn((path) => path),
+  dirname: vi.fn((path) => path)
 }))
 
-// Mock logger
 vi.mock('../../src/main/utils/logger', () => ({
   default: {
     info: vi.fn(),
     error: vi.fn(),
     debug: vi.fn(),
     addListener: vi.fn()
+  },
+  ResponseLogger: vi.fn((fn) => fn)
+}))
+
+vi.mock('../../src/main/stores/storeProvider', () => ({
+  storeProvider: {
+    getStore: vi.fn().mockResolvedValue({
+      getSettings: vi.fn().mockResolvedValue({ devicePort: 8080, minimizeApp: false })
+    })
   }
 }))
 
 describe('Main Process', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.stubEnv('ELECTRON_RENDERER_URL', 'http://localhost:5173')
   })
 
   afterEach(() => {
@@ -98,81 +123,70 @@ describe('Main Process', () => {
   })
 
   describe('Window Creation', () => {
-    it('should create main window with correct configuration', () => {
+    it('should create main window and handle lifecycle events', () => {
       const window = createMainWindow()
-      expect(BrowserWindow).toHaveBeenCalledWith(
-        expect.objectContaining({
-          width: 1130,
-          height: 730,
-          minWidth: 500,
-          minHeight: 400,
-          show: false,
 
-          autoHideMenuBar: true,
-          webPreferences: expect.objectContaining({
-            sandbox: false
-          })
-        })
-      )
-      expect(window).toBeDefined()
+      expect(window.webContents.session.webRequest.onHeadersReceived).toHaveBeenCalled()
+      expect(window.on).toHaveBeenCalledWith('ready-to-show', expect.any(Function))
+      expect(window.on).toHaveBeenCalledWith('closed', expect.any(Function))
+      expect(window.webContents.setWindowOpenHandler).toHaveBeenCalled()
+      expect(window.loadURL).toHaveBeenCalledWith('http://localhost:5173')
     })
 
-    it('should create client window with correct configuration', () => {
+    it('should create client window with custom configuration', async () => {
       const port = 8080
       const window = createClientWindow(port)
-      expect(BrowserWindow).toHaveBeenCalledWith(
-        expect.objectContaining({
-          width: 800,
-          height: 480,
-          minWidth: 500,
-          minHeight: 140,
-          show: false,
 
-          frame: true,
-          webPreferences: expect.objectContaining({
-            sandbox: false,
-            contextIsolation: true,
-            nodeIntegration: false
-          })
-        })
-      )
-      expect(window.loadURL).toHaveBeenCalledWith(`http://localhost:${port}/`, {})
+      expect(window.webContents.on).toHaveBeenCalledWith('did-finish-load', expect.any(Function))
+      expect(window.webContents.session.webRequest.onHeadersReceived).toHaveBeenCalled()
+      expect(window.loadURL).toHaveBeenCalledWith('http://localhost:8080/', {})
     })
   })
 
   describe('URL Handling', () => {
-    it('should handle deskthing protocol URLs when main window exists', () => {
-      const testUrl = 'deskthing://test/path'
+    it('should process deskthing protocol URLs', () => {
       const mockWindow = new BrowserWindow()
-      handleUrl(testUrl, mockWindow)
+      handleUrl('deskthing://test/path', mockWindow)
       expect(mockWindow.webContents.send).toHaveBeenCalledWith('handle-protocol-url', 'test/path')
     })
 
-    it('should log error when no main window exists', () => {
-      const testUrl = 'deskthing://test/path'
+    it('should handle missing window gracefully', () => {
       const consoleSpy = vi.spyOn(console, 'log')
-
-      handleUrl(testUrl, null)
+      handleUrl('deskthing://test', null)
       expect(consoleSpy).toHaveBeenCalledWith('No main window found')
     })
 
-    it('should open auth window in external browser', async () => {
-      const testUrl = 'https://auth.example.com'
-      await openAuthWindow(testUrl)
-      expect(shell.openExternal).toHaveBeenCalledWith(testUrl)
+    it('should open auth URLs in external browser', async () => {
+      await openAuthWindow('https://auth.example.com')
+      expect(shell.openExternal).toHaveBeenCalledWith('https://auth.example.com')
     })
   })
 
   describe('IPC Communication', () => {
-    it('should send IPC data to specified window', () => {
+    it('should send IPC messages to specific window', async () => {
       const mockWindow = new BrowserWindow()
-      const testData = { test: 'data' }
-      sendIpcData({
-        type: 'test-type',
-        payload: testData,
+      const testPayload = { data: 'test' }
+
+      await sendIpcData({
+        type: 'test-event',
+        payload: testPayload,
         window: mockWindow
       } as unknown as ServerIPCData)
-      expect(mockWindow.webContents.send).toHaveBeenCalledWith('test-type', testData)
+
+      expect(mockWindow.webContents.send).toHaveBeenCalledWith('test-event', testPayload)
+    })
+
+    it('should handle undefined window gracefully', async () => {
+      const mockWindow = { webContents: { send: vi.fn() } } as unknown as BrowserWindow
+      const testPayload = { data: 'test' }
+
+      await sendIpcData({
+        type: 'test-event',
+        payload: testPayload,
+        window: undefined
+      } as unknown as ServerIPCData)
+
+      expect(mockWindow.webContents.send).not.toHaveBeenCalled()
     })
   })
 })

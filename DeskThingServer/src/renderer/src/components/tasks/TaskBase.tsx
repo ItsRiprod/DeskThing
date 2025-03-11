@@ -1,4 +1,4 @@
-import { Step, STEP_TYPES, Task } from '@DeskThing/types'
+import { DebugStep, Step, STEP_TYPES } from '@DeskThing/types'
 import { FC, lazy, memo, Suspense, useMemo, useState } from 'react'
 import Button from '../Button'
 import {
@@ -11,36 +11,45 @@ import {
 } from '@renderer/assets/icons'
 import useTaskStore from '@renderer/stores/taskStore'
 import { useSearchParams } from 'react-router-dom'
+import { TaskProps } from '@shared/types'
 
-export type TaskProps = {
-  task: Task
+import TaskStepComponent from './TaskStep'
+import TaskActionComponent from './TaskAction'
+import TaskExternalComponent from './TaskExternal'
+import TaskSettingComponent from './TaskSetting'
+import TaskShortcutComponent from './TaskShortcut'
+import TaskTaskComponent from './TaskTask'
+
+function renderStepWithCorrectType(step: Step, source: string): JSX.Element | undefined {
+  switch (step.type) {
+    case STEP_TYPES.STEP:
+      return <TaskStepComponent step={step} source={source} />
+    case STEP_TYPES.ACTION:
+      return <TaskActionComponent step={step} source={source} />
+    case STEP_TYPES.SHORTCUT:
+      return <TaskShortcutComponent step={step} source={source} />
+    case STEP_TYPES.SETTING:
+      return <TaskSettingComponent step={step} source={source} />
+    case STEP_TYPES.TASK:
+      return <TaskTaskComponent step={step} source={source} />
+    case STEP_TYPES.EXTERNAL:
+      return <TaskExternalComponent step={step} source={source} />
+    default:
+      return
+  }
 }
 
-export type StepProps = {
-  step: Step
-  source: string
-}
-
-type StepComponent = FC<StepProps>
-type StepComponents = Record<STEP_TYPES, StepComponent>
-
-const Steps: StepComponents = {
-  [STEP_TYPES.STEP]: lazy(() => import('./TaskStep')),
-  [STEP_TYPES.ACTION]: lazy(() => import('./TaskAction')),
-  [STEP_TYPES.SHORTCUT]: lazy(() => import('./TaskShortcut')),
-  [STEP_TYPES.SETTING]: lazy(() => import('./TaskSetting')),
-  [STEP_TYPES.TASK]: lazy(() => import('./TaskTask')),
-  [STEP_TYPES.EXTERNAL]: lazy(() => import('./TaskExternal'))
-}
 export const TaskBase: FC<TaskProps> = memo(
-  ({ task }: TaskProps) => {
-    const currentStep = useMemo(() => {
-      return task.currentStep ? { ...task.steps[task.currentStep], parentId: task.id } : undefined
-    }, [task.currentStep, task.id])
+  ({ task, source }: TaskProps) => {
+    const currentStep: Extract<Step, { type: STEP_TYPES }> | undefined = useMemo(() => {
+      return task?.currentStep ? { ...task.steps[task.currentStep], parentId: task.id } : undefined
+    }, [task?.currentStep, task?.id])
+
+    const currentType = currentStep?.type
 
     const currentStepIndex = useMemo(() => {
-      return task.currentStep ? Object.keys(task.steps).indexOf(task.currentStep) : -1
-    }, [task.currentStep, task.id])
+      return currentStep?.id && task ? Object.keys(task.steps).indexOf(currentStep?.id) : -1
+    }, [currentStep?.id, task?.steps])
 
     const [uiState, setUiState] = useState({
       showDebug: false
@@ -53,8 +62,8 @@ export const TaskBase: FC<TaskProps> = memo(
 
     const handlers = useMemo(
       () => ({
-        handleNextStep: () => nextStep(task.id),
-        handlePreviousStep: () => previousStep(task.id),
+        handleNextStep: () => task && nextStep(task.id, source),
+        handlePreviousStep: () => task && previousStep(task.id, source),
         handleToggleDebug: () => setUiState((prev) => ({ ...prev, showDebug: !prev.showDebug })),
         openTasks: (): void => {
           searchParams.set('page', 'task')
@@ -63,27 +72,31 @@ export const TaskBase: FC<TaskProps> = memo(
           removeCurrentTask()
         }
       }),
-      [task.id, nextStep, previousStep, searchParams, removeCurrentTask]
+      [task?.id, nextStep, previousStep, searchParams, removeCurrentTask]
     )
 
-    const StepComponent = useMemo(
-      () => (currentStep?.type ? Steps[currentStep.type] : undefined),
-      [currentStep]
-    )
+    const StepComponentSection = useMemo(() => {
+      if (!currentStep || !currentType) return null
+      return renderStepWithCorrectType(currentStep, source)
+    }, [currentStep, currentType, task?.id, source])
 
     const DebugComponent = lazy(() => import('./TaskDebug'))
 
     const DebugSection = memo(
-      ({ debugging }: { debugging: { [key: string]: Omit<Step, 'completed'> } }) => {
+      ({ debugging }: { debugging: Record<string, DebugStep> }) => {
         return (
           <div className="flex flex-col gap-2 px-2">
-            {Object.entries(debugging).map(([key, debug]) => (
-              <Suspense key={key} fallback={<IconLoading />}>
-                <DebugComponent debugStep={debug} source={task.source} />
-              </Suspense>
-            ))}
+            {task &&
+              Object.entries(debugging).map(([key, debug]) => (
+                <Suspense key={key} fallback={<IconLoading />}>
+                  <DebugComponent step={debug} />
+                </Suspense>
+              ))}
           </div>
         )
+      },
+      (prev, next) => {
+        return Object.keys(prev.debugging).length === Object.keys(next.debugging).length
       }
     )
     DebugSection.displayName = 'DebugSection'
@@ -101,7 +114,7 @@ export const TaskBase: FC<TaskProps> = memo(
             </Button>
           )}
           <div className="p-4 w-full">
-            {task.completed && task.currentStep === undefined ? (
+            {task?.completed && task.currentStep === undefined ? (
               <div className="w-full flex-col flex-grow h-full flex items-center justify-center">
                 <p className="text-xl">Task Completed</p>
                 <Button
@@ -114,15 +127,9 @@ export const TaskBase: FC<TaskProps> = memo(
               </div>
             ) : (
               <div className="flex gap-4 flex-col">
-                <Suspense fallback={<IconLoading />}>
-                  {currentStep ? (
-                    StepComponent && (
-                      <StepComponent
-                        key={`${task.id}-${currentStep.id}`}
-                        source={task.source}
-                        step={currentStep}
-                      />
-                    )
+                <Suspense key={currentStepIndex} fallback={<IconLoading />}>
+                  {currentStep && task ? (
+                    StepComponentSection
                   ) : (
                     <>
                       <p>No step selected</p>
@@ -139,7 +146,7 @@ export const TaskBase: FC<TaskProps> = memo(
               </div>
             )}
           </div>
-          {task.currentStep !== undefined && (
+          {task?.currentStep !== undefined && (
             <Button
               disabled={!currentStep?.completed}
               title={currentStep?.completed ? 'Go to next step' : 'Disabled - Step Not Completed'}
@@ -168,14 +175,13 @@ export const TaskBase: FC<TaskProps> = memo(
   },
   (prev, next) => {
     return (
-      prev.task.id === next.task.id &&
-      prev.task.currentStep === next.task.currentStep &&
-      prev.task.completed === next.task.completed &&
-      Object.keys(prev.task.steps).length === Object.keys(next.task.steps).length
+      prev.task?.id === next.task?.id &&
+      prev.task?.currentStep === next.task?.currentStep &&
+      prev.task?.completed === next.task?.completed &&
+      Object.keys(prev.task?.steps ?? {}).length === Object.keys(next.task?.steps ?? {}).length
     )
   }
 )
 
 TaskBase.displayName = 'TaskBase'
-
 export default TaskBase

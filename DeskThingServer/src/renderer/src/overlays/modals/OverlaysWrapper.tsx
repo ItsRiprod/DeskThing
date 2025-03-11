@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import QROverlay from '@renderer/overlays/QROverlay'
-import SettingsOverlay from './settings/SettingsOverlay'
-import NotificationOverlay from './notifications/NotificationOverlay'
-import AppsOverlay from './apps/AppsOverlay'
+import QROverlay from '@renderer/overlays/modals/QROverlay'
+import SettingsOverlay from '../settings/SettingsOverlay'
+import NotificationOverlay from '../notifications/NotificationOverlay'
+import AppsOverlay from '../apps/AppsOverlay'
 import AddProfileOverlay from './AddProfile.'
-import UpdateOverlay from './UpdateOverlay'
+import UpdateOverlay from '../UpdateOverlay'
 import useUpdateStore from '@renderer/stores/updateStore'
 import useTaskStore from '@renderer/stores/taskStore'
 import TaskOverlay from './TaskOverlay'
 import FeedbackOverlay from './FeedbackOverlay'
+import SetupOverlay from '../setup/SetupOverlay'
 
 const overlays = {
   qr: QROverlay,
@@ -17,7 +18,8 @@ const overlays = {
   notifications: NotificationOverlay,
   app: AppsOverlay,
   addProfile: AddProfileOverlay,
-  feedback: FeedbackOverlay
+  feedback: FeedbackOverlay,
+  setup: SetupOverlay
 }
 
 const OverlayWrapper: React.FC<React.PropsWithChildren> = ({
@@ -26,7 +28,7 @@ const OverlayWrapper: React.FC<React.PropsWithChildren> = ({
   const [searchParams] = useSearchParams()
   const [activeOverlays, setActiveOverlays] = useState<string[]>([])
   const update = useUpdateStore((state) => state.update)
-  const currentTaskId = useTaskStore((state) => state.taskList.currentTaskId)
+  const currentTask = useTaskStore((state) => state.currentTask)
 
   useEffect(() => {
     const newActiveOverlays = Object.keys(overlays).filter(
@@ -37,7 +39,7 @@ const OverlayWrapper: React.FC<React.PropsWithChildren> = ({
 
   return (
     <>
-      {currentTaskId && <TaskOverlay />}
+      {currentTask && <TaskOverlay />}
       {(update.updateAvailable || update.updateDownloaded) && <UpdateOverlay />}
       {activeOverlays.map((key) => {
         const OverlayComponent = overlays[key]

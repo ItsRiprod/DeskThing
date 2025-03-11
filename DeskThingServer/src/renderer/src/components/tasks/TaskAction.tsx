@@ -1,13 +1,13 @@
 import { FC, useEffect, useState } from 'react'
-import { StepProps } from './TaskBase'
 import ActionElement from '../ActionElement'
 import useMappingStore from '@renderer/stores/mappingStore'
 import Button from '../Button'
 import { IconCheck, IconX } from '@renderer/assets/icons'
 import useTaskStore from '@renderer/stores/taskStore'
 import { STEP_TYPES } from '@DeskThing/types'
+import { StepPropsMap } from '@shared/types'
 
-export const TaskAction: FC<StepProps> = ({ step, source }) => {
+export const TaskActionComponent: FC<StepPropsMap[STEP_TYPES.ACTION]> = ({ step, source }) => {
   if (step.type != STEP_TYPES.ACTION) return <div>Not an action</div>
   const getAction = useMappingStore((state) => state.getActionFromReference)
   const resolveStep = useTaskStore((state) => state.resolveStep)
@@ -26,14 +26,14 @@ export const TaskAction: FC<StepProps> = ({ step, source }) => {
     if (typeof step.action == 'string') {
       fetchAction(step.action)
     }
-  }, [step])
+  }, [step, source, getAction])
 
   const handleComplete = async (): Promise<void> => {
     if (!step.parentId) {
       console.error('Step does not have a parent task id! It cannot resolve')
       return
     }
-    resolveStep(step.parentId, step.id)
+    resolveStep(step.parentId, step.id, source)
   }
 
   const handleSubmit = (): void => {
@@ -61,4 +61,4 @@ export const TaskAction: FC<StepProps> = ({ step, source }) => {
     </div>
   )
 }
-export default TaskAction
+export default TaskActionComponent

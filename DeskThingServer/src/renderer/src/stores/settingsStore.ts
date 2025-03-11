@@ -19,7 +19,7 @@ const useSettingsStore = create<SettingsStoreState>((set, get) => ({
     devicePort: -1,
     address: '-.-.-.-',
     autoStart: true,
-    LogLevel: LOG_FILTER.PRODUCTION,
+    LogLevel: LOG_FILTER.INFO,
     minimizeApp: true,
     autoConfig: false,
     globalADB: false,

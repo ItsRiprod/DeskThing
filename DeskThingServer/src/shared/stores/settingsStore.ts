@@ -26,7 +26,7 @@ export interface SettingsStoreClass {
    * Gets the current application settings
    * @returns Promise resolving to current settings
    */
-  getSettings(): Promise<Settings>
+  getSettings(): Promise<Settings | undefined>
 
   /**
    * Updates a specific setting and saves it to file

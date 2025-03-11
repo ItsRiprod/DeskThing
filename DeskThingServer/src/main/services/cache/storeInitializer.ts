@@ -9,29 +9,30 @@ export async function initializeStores(): Promise<void> {
   const { default: cacheManager } = await import('./cacheManager')
 
   // Register stores for cache management
-  const storeList = [
-    storeProvider.getStore('connectionsStore'),
-    storeProvider.getStore('appStore'),
-    storeProvider.getStore('mappingStore'),
-    storeProvider.getStore('musicStore'),
-    storeProvider.getStore('settingsStore'),
-    storeProvider.getStore('taskStore'),
-    storeProvider.getStore('githubStore')
-  ]
-  storeList.forEach((store) => cacheManager.registerStore(store))
+  const storeList = {
+    connectionsStore: await storeProvider.getStore('connectionsStore'),
+    appStore: await storeProvider.getStore('appStore'),
+    mappingStore: await storeProvider.getStore('mappingStore'),
+    musicStore: await storeProvider.getStore('musicStore'),
+    settingsStore: await storeProvider.getStore('settingsStore'),
+    taskStore: await storeProvider.getStore('taskStore'),
+    githubStore: await storeProvider.getStore('githubStore'),
+    AppDataStore: await storeProvider.getStore('appDataStore')
+  }
+  Object.values(storeList).forEach((store) => cacheManager.registerStore(store))
 
   // Set up store listeners
-  storeProvider.getStore('mappingStore').addListener('action', (action) => {
+  storeList.mappingStore.addListener('action', (action) => {
     action && sendIpcData({ type: 'action', payload: action })
   })
-  storeProvider.getStore('mappingStore').addListener('key', (key) => {
+  storeList.mappingStore.addListener('key', (key) => {
     key && sendIpcData({ type: 'key', payload: key })
   })
-  storeProvider.getStore('mappingStore').addListener('profile', (profile) => {
+  storeList.mappingStore.addListener('profile', (profile) => {
     profile && sendIpcData({ type: 'profile', payload: profile })
   })
 
-  storeProvider.getStore('connectionsStore').on((clients: Client[]) => {
+  storeList.connectionsStore.on((clients: Client[]) => {
     sendIpcData({
       type: 'connections',
       payload: { status: true, data: clients.length, final: true }
@@ -42,14 +43,14 @@ export async function initializeStores(): Promise<void> {
     })
   })
 
-  storeProvider.getStore('connectionsStore').onDevice((devices: ADBClient[]) => {
+  storeList.connectionsStore.onDevice((devices: ADBClient[]) => {
     sendIpcData({
       type: 'adbdevices',
       payload: devices
     })
   })
 
-  storeProvider.getStore('appDataStore').on('settings', (data) => {
+  storeList.AppDataStore.on('settings', (data) => {
     Logger.debug('[INDEX]: Sending updated setting information with type app-data')
 
     sendIpcData({
@@ -58,7 +59,7 @@ export async function initializeStores(): Promise<void> {
     })
   })
 
-  storeProvider.getStore('appStore').on('apps', ({ data }) => {
+  storeList.appStore.on('apps', ({ data }) => {
     Logger.debug('[INDEX]: Sending updated app information with type app-data')
     sendIpcData({
       type: 'app-data',
@@ -66,28 +67,42 @@ export async function initializeStores(): Promise<void> {
     })
   })
 
-  storeProvider.getStore('taskStore').on('taskList', (taskList) => {
+  storeList.taskStore.on('taskList', (taskList) => {
     sendIpcData({
       type: 'taskList',
       payload: taskList
     })
   })
 
-  storeProvider.getStore('githubStore').on('app', (app) => {
+  storeList.taskStore.on('currentTask', (task) => {
+    sendIpcData({
+      type: 'currentTask',
+      payload: task
+    })
+  })
+
+  storeList.taskStore.on('task', (task) => {
+    sendIpcData({
+      type: 'task',
+      payload: task
+    })
+  })
+
+  storeList.githubStore.on('app', (app) => {
     Logger.debug('[INDEX]: Sending updated app information with type github-apps')
     sendIpcData({
       type: 'github-apps',
       payload: app
     })
   })
-  storeProvider.getStore('githubStore').on('client', (client) => {
+  storeList.githubStore.on('client', (clients) => {
     Logger.debug('[INDEX]: Sending updated client information with type github-client')
     sendIpcData({
       type: 'github-client',
-      payload: client
+      payload: clients
     })
   })
-  storeProvider.getStore('githubStore').on('community', (community) => {
+  storeList.githubStore.on('community', (community) => {
     Logger.debug('[INDEX]: Sending updated community information with type github-community')
     sendIpcData({
       type: 'github-community',
@@ -95,14 +110,14 @@ export async function initializeStores(): Promise<void> {
     })
   })
 
-  storeProvider.getStore('settingsStore').addListener((newSettings) => {
+  storeList.settingsStore.addListener((newSettings) => {
     sendIpcData({
       type: 'settings-updated',
       payload: newSettings
     })
   })
 
-  storeProvider.getStore('appStore').onAppMessage(SEND_TYPES.OPEN, (data) => {
+  storeList.appStore.onAppMessage(SEND_TYPES.OPEN, (data) => {
     if (typeof data.payload == 'string') {
       shell.openExternal(data.payload)
     } else {
@@ -114,7 +129,7 @@ export async function initializeStores(): Promise<void> {
     }
   })
 
-  storeProvider.getStore('appStore').onAppMessage(SEND_TYPES.LOG, (data) => {
+  storeList.appStore.onAppMessage(SEND_TYPES.LOG, (data) => {
     if (data.request && Object.values(LOGGING_LEVELS).includes(data.request)) {
       const message =
         typeof data.payload === 'string'
@@ -127,7 +142,7 @@ export async function initializeStores(): Promise<void> {
     }
   })
 
-  storeProvider.getStore('appStore').onAppMessage(
+  storeList.appStore.onAppMessage(
     SEND_TYPES.GET,
     (data) => {
       if (data.request != 'input') return
@@ -146,7 +161,7 @@ export async function initializeStores(): Promise<void> {
       ipcMain.once(
         `user-data-response-${data.source}`,
         async (_event, formData: Record<string, string>) => {
-          const appStore = storeProvider.getStore('appStore')
+          const appStore = await storeProvider.getStore('appStore')
           appStore.sendDataToApp(data.source, {
             type: ServerEvent.INPUT,
             request: 'data',

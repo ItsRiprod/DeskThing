@@ -1,4 +1,4 @@
-console.log('[AppState Service] Starting')
+// Types
 import {
   AppDataInterface,
   SettingsType,
@@ -9,16 +9,8 @@ import {
   SEND_TYPES
 } from '@DeskThing/types'
 import { TaskReference, CacheableStore, FullTaskList } from '@shared/types'
-import Logger from '@server/utils/logger'
-import {
-  getData,
-  overwriteData,
-  purgeAppData,
-  setData
-} from '@server/services/files/dataFileService'
-import { getIcon, isValidAppDataInterface, isValidAppSettings } from '@server/services/apps'
-import { isValidStep, isValidTask } from '@server/services/task'
 import { TaskStoreClass } from '@shared/stores/taskStore'
+import { AppStoreClass } from '@shared/stores/appStore'
 import {
   addSettingsOptions,
   AppDataStoreClass,
@@ -27,7 +19,22 @@ import {
   AppDataStoreListeners,
   NotifyListenersType
 } from '@shared/stores/appDataStore'
-import { AppStoreClass } from '@shared/stores/appStore'
+
+// Utils
+import Logger from '@server/utils/logger'
+
+// Services
+import {
+  getData,
+  overwriteData,
+  purgeAppData,
+  setData
+} from '@server/services/files/dataFileService'
+import { getIcon } from '@server/services/apps/appUtils'
+import { isValidAppDataInterface, isValidAppSettings } from '@server/services/apps/appValidator'
+
+// Validation
+import { isValidStep, isValidTask } from '@server/services/task'
 
 export class AppDataStore implements CacheableStore, AppDataStoreClass {
   private listeners: AppDataStoreListeners = {
@@ -53,7 +60,6 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
 
   private initAppListeners = (): void => {
     this.appStore.onAppMessage(SEND_TYPES.GET, async (data) => {
-      console.log('Got request', data)
       switch (data.request) {
         case 'data': {
           const appData = await this.getData(data.source)
@@ -136,7 +142,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
     })
   }
   private initAppCache = async (): Promise<void> => {
-    const apps = this.appStore.getOrder()
+    const apps = this.getAvailableData()
     await Promise.all(apps.map(async (app) => this.initCacheVersion(app)))
   }
 
@@ -152,8 +158,13 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
     this.functionTimeouts = {}
   }
 
+  private getAvailableData = (): string[] => {
+    const apps = [...this.appStore.getOrder(), 'server']
+    return apps
+  }
+
   private notifyGlobal = async (): Promise<void> => {
-    Logger.info(`Saving apps to file`, {
+    Logger.debug(`Saving apps to file`, {
       source: 'AppDataStore',
       function: 'saveAppsToFile'
     })
@@ -168,7 +179,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
     ) as (keyof Omit<AppDataInterface, 'version'>)[]
     if (fieldsToUpdate.length === 0) return
 
-    Logger.info(`Saving ${name} to file and notifying apps listeners`, {
+    Logger.debug(`Saving ${name} to file and notifying apps listeners`, {
       source: 'AppDataStore',
       domain: name,
       function: 'saveAppToFile'
@@ -182,7 +193,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
         appId: name,
         data: this.appDataCache[name][field]
       } as AppDataStoreListenerEvents[typeof field])
-      if (notifyApp) {
+      if (notifyApp && name != 'server') {
         switch (field) {
           case 'data':
             this.appStore.sendDataToApp(name, {
@@ -212,7 +223,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
 
   private async saveDataAllData(notifyApp = true): Promise<void> {
     if (this.functionTimeouts['server-saveApps']) {
-      Logger.info(`Cancelling previous saveApps timeout and starting a new one`, {
+      Logger.debug(`Cancelling previous saveApps timeout and starting a new one`, {
         source: 'AppDataStore',
         function: 'saveAppsToFile'
       })
@@ -234,7 +245,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
 
     // Clear any existing timeout for this app
     if (this.functionTimeouts[name]) {
-      Logger.info(`Cancelling previous ${name} request and starting a new one`, {
+      Logger.debug(`Cancelling previous ${name} request and starting a new one`, {
         source: 'AppDataStore',
         domain: name,
         function: 'saveAppToFile'
@@ -248,7 +259,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
         await setData(name, this.appDataCache[name])
       }
       await this.notifyAppFields(name, notifyApp)
-      Logger.info(`Saving and removing ${name} from cache`, {
+      Logger.debug(`Saving and removing ${name} from cache`, {
         function: 'saveData',
         source: 'appDataStore'
       })
@@ -273,16 +284,18 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
 
   async setupListeners(taskStore: TaskStoreClass): Promise<void> {
     taskStore.on('taskList', async (taskData) => {
-      if (this.appStore.get(taskData.source)) {
+      if (this.appDataCache[taskData.source]) {
+        // Update the task if it exists
         this.updateTasks(taskData.source, taskData.taskList)
       } else {
+        // Otherwise, set it
         this.setTasks(taskData.source, taskData.taskList)
       }
     })
 
     taskStore.on('step', async (payload) => {
       if (payload.source && payload.taskId && payload.step) {
-        if (this.appStore.get(payload.source)) {
+        if (this.appDataCache[payload.source]) {
           this.updateStep(payload.source, payload.taskId, payload.step)
         }
       }
@@ -290,7 +303,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
 
     taskStore.on('task', async (payload) => {
       if (payload.source && payload.id) {
-        if (this.appStore.get(payload.source)) {
+        if (this.appDataCache[payload.source]) {
           this.updateTask(payload.source, payload)
         }
       }
@@ -327,6 +340,11 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
 
   async purgeAppData(name: string): Promise<boolean> {
     try {
+      Logger.debug(`Purging app data for ${name}`, {
+        source: 'AppDataStore',
+        domain: name,
+        function: 'purgeAppData'
+      })
       await purgeAppData(name)
       return true
     } catch (error) {
@@ -377,7 +395,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
   async getAppData(name: string): Promise<AppDataInterface | undefined> {
     this.initCacheVersion(name)
 
-    Logger.info('Getting Data', {
+    Logger.debug('Getting Data', {
       source: 'AppDataStore',
       domain: name,
       function: 'getData'
@@ -395,7 +413,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
     if (this.appDataCache[name].data) {
       return this.appDataCache[name].data
     } else {
-      Logger.info('Getting Data', {
+      Logger.debug('Getting Data', {
         source: 'AppDataStore',
         domain: name,
         function: 'getData'
@@ -426,27 +444,25 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
     if (this.appDataCache[name].tasks) {
       return this.appDataCache[name].tasks
     }
-    if (!this.appStore.get(name)) {
-      Logger.warn(`App ${name} not found`, {
+    const data = await getData(name)
+    if (!data) {
+      Logger.debug(`Unable to find tasks for ${name} in filesystem for`, {
         source: 'AppDataStore',
-        domain: name,
         function: 'getTasks'
       })
       return
     }
-    const data = await getData(name)
-    if (!data) return
     this.appDataCache[name].tasks = data.tasks
     return data.tasks
   }
 
   async getTask(name: string, taskId: string): Promise<Task | undefined> {
-    const tasks = this.getTasks(name)
+    const tasks = await this.getTasks(name)
     return tasks?.[taskId]
   }
 
   async getTaskList(): Promise<FullTaskList> {
-    const apps = this.appStore.getOrder()
+    const apps = this.getAvailableData()
     const tasks: FullTaskList = Object.fromEntries(
       await Promise.all(
         apps.map(async (app) => [app, (await this.getTasks(app)) || ({} as Record<string, Task>)])
@@ -459,7 +475,8 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
   /**
    * Adds the tasks to the existing tasks, overwriting if there is overlap
    * @param app
-   * @param tasks
+   * @param tasks - key-value pair of tasks in a map
+   * @param notifyApp - whether to notify the app of the change
    */
   async setTasks(app: string, tasks: Record<string, Task>, notifyApp = true): Promise<void> {
     this.initCacheVersion(app)
@@ -528,7 +545,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
     const task = await this.getTask(app, taskId)
 
     if (!task) {
-      Logger.info(`Unable to update step ${step.id} because ${taskId} was not found!`, {
+      Logger.debug(`Unable to update step ${step.id} because ${taskId} was not found!`, {
         function: 'updateStep',
         source: 'AppDataStore'
       })
@@ -595,12 +612,6 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
 
     this.appDataCache[app].tasks = taskData
 
-    this.appStore.sendDataToApp(app, {
-      type: ServerEvent.TASKS,
-      request: 'task',
-      payload: taskData[task.id]
-    })
-
     await this.saveData(app, true)
   }
 
@@ -642,7 +653,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
       notifyServer: true
     }
   ): Promise<void> => {
-    Logger.info('Adding settings to app', {
+    Logger.debug('Adding settings to app', {
       source: 'AppDataStore',
       domain: app,
       function: 'addSettings'
@@ -677,7 +688,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
    * Deletes a provided setting
    */
   async delSettings(app: string, settings: string[] | string): Promise<void> {
-    Logger.info('Deleting settings from app', {
+    Logger.debug('Deleting settings from app', {
       source: 'AppDataStore',
       domain: app,
       function: 'delSettings'
@@ -708,7 +719,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
    * Deletes provided data
    */
   async delData(app: string, dataIds: string[] | string): Promise<void> {
-    Logger.info('Deleting data from app', {
+    Logger.debug('Deleting data from app', {
       source: 'AppDataStore',
       domain: app,
       function: 'delData'
@@ -735,7 +746,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
     await overwriteData(app, curData)
   }
   async delTasks(app: string, taskIds: string[] | string): Promise<void> {
-    Logger.info('Deleting tasks from app', {
+    Logger.debug('Deleting tasks from app', {
       source: 'AppDataStore',
       domain: app,
       function: 'delTasks'
@@ -763,7 +774,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
   }
 
   completeStep = async (taskRef: Task | TaskReference, stepId: string): Promise<void> => {
-    Logger.info('Completing task', {
+    Logger.debug('Completing task', {
       source: 'AppDataStore',
       domain: taskRef.source,
       function: 'completeStep'

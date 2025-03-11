@@ -514,6 +514,14 @@ export type ServerIPCData = {
       payload: { source: string; taskList: Record<string, Task> }
     }
   | {
+      type: 'currentTask'
+      payload: { source: string; id: string }
+    }
+  | {
+      type: 'task'
+      payload: Task
+    }
+  | {
       type: 'github-apps'
       payload: AppReleaseMeta[]
     }

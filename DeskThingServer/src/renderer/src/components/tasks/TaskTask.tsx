@@ -1,43 +1,43 @@
-import { FC, useEffect, useState } from 'react'
-import { StepProps } from './TaskBase'
+import { FC, useMemo } from 'react'
 import useTaskStore from '@renderer/stores/taskStore'
 import Button from '../Button'
 import { useSearchParams } from 'react-router-dom'
-import { STEP_TYPES } from '@DeskThing/types'
 import { IconCheck, IconLink, IconX } from '@renderer/assets/icons'
+import { STEP_TYPES } from '@DeskThing/types'
+import { StepPropsMap } from '@shared/types'
 
-export const TaskTask: FC<StepProps> = ({ step }) => {
-  if (step.type != STEP_TYPES.TASK) return <div>Not an action</div>
-
+export const TaskTaskComponent: FC<StepPropsMap[STEP_TYPES.TASK]> = ({ step, source }) => {
   const completeStep = useTaskStore((state) => state.resolveStep)
-  const tasks = useTaskStore((state) => state.taskList.tasks)
+  const appTasks = useTaskStore((state) => state.taskList)
   const startTask = useTaskStore((state) => state.acceptTask)
   const [searchParams, setSearchParams] = useSearchParams()
-  const [stepCompleted, setStepCompleted] = useState(false)
+
+  const stepCompleted = useMemo(() => {
+    const tasks = appTasks[source]
+    const task = Object.values(tasks).find((task) => task.id === step.taskId)
+    return task?.completed || false
+  }, [appTasks, step.taskId, source])
 
   const handleComplete = (): void => {
     if (!step.parentId) {
       console.error('Step does not have a parent task id! It cannot resolve')
       return
     }
-    completeStep(step.parentId, step.id)
+    completeStep(step.parentId, step.id, source)
   }
 
   const openTasks = (): void => {
+    const taskSource = step.taskSource || source
+    const tasks = appTasks[taskSource]
     const task = Object.values(tasks).find((task) => task.id === step.taskId)
     if (task) {
-      startTask(task.id)
+      startTask(task.id, task.source)
     } else {
       searchParams.set('page', 'task')
       searchParams.set('notifications', 'true')
       setSearchParams(searchParams)
     }
   }
-
-  useEffect(() => {
-    const task = Object.values(tasks).find((task) => task.id === step.taskId)
-    setStepCompleted(task?.completed || false)
-  }, [tasks, step.taskId])
 
   return (
     <div className="gap-2 flex flex-col">
@@ -70,4 +70,4 @@ export const TaskTask: FC<StepProps> = ({ step }) => {
     </div>
   )
 }
-export default TaskTask
+export default TaskTaskComponent

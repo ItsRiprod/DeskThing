@@ -1,11 +1,6 @@
-console.log('[MapUtil Service] Starting')
 import Logger from '@server/utils/logger'
 import { Action, ActionReference, EventMode, Key, LOGGING_LEVELS } from '@DeskThing/types'
 import { ButtonMapping, MappingFileStructure, Profile, LoggingOptions } from '@shared/types'
-import { getAppFilePath } from '../apps'
-import path from 'node:path'
-import { app } from 'electron'
-import { readFile } from 'node:fs/promises'
 
 export const validMappingExists: (
   mapping: MappingFileStructure | unknown,
@@ -343,28 +338,6 @@ export const isValidKey: (key: unknown) => asserts key is Key = (key) => {
   if (!Array.isArray(keyObj.modes)) throw new Error('Key modes must be an array')
   if (!keyObj.modes.every((Mode) => Object.values(EventMode).includes(Mode))) {
     throw new Error('Key modes must all be valid EventMode values')
-  }
-}
-export const FetchIcon = async (action: Action): Promise<string | null> => {
-  if (!action) return null
-
-  if (!action.source) {
-    Logger.warn('Unable to fetch icon for action: source is not defined', {
-      source: 'FetchIcon'
-    })
-    return null
-  }
-
-  try {
-    const iconPath =
-      action.source === 'server'
-        ? path.join(app.getPath('userData'), 'webapp', 'icons', `${action.icon || action.id}.svg`)
-        : path.join(getAppFilePath(action.source), 'icons', `${action.icon || action.id}.svg`)
-
-    return await readFile(iconPath, 'utf8')
-  } catch (error) {
-    Logger.error('Error reading icon file', { error: error as Error })
-    return null
   }
 }
 

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import SettingComponent from './SettingComponent'
 import { SettingsString } from '@DeskThing/types'
 
@@ -23,14 +23,31 @@ export const SettingsStringComponent: React.FC<SettingsStringProps> = ({
   setting,
   handleSettingChange
 }) => {
+  const [currentValue, setCurrentValue] = useState(setting.value)
+  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null)
+
+  const handleChange = (value: string): void => {
+    setCurrentValue(value)
+
+    if (timeoutId) {
+      clearTimeout(timeoutId)
+    }
+
+    const newTimeoutId = setTimeout(() => {
+      handleSettingChange(value)
+    }, 200)
+
+    setTimeoutId(newTimeoutId)
+  }
+
   return (
     <SettingComponent setting={setting} className={className}>
       <div className="flex items-center w-full">
         <input
           type="text"
-          value={setting.value as string}
+          value={currentValue}
           maxLength={(setting as SettingsString).maxLength}
-          onChange={(e) => handleSettingChange(e.target.value)}
+          onChange={(e) => handleChange(e.target.value)}
           className={commonClasses + ' text-black w-96 max-w-s'}
         />
       </div>

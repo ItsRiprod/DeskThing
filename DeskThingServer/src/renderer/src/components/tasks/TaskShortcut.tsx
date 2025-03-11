@@ -1,20 +1,19 @@
-import { FC, useEffect, useState } from 'react'
-import { StepProps } from './TaskBase'
+import { FC, useMemo } from 'react'
 import { IconCheck, IconLink } from '@renderer/assets/icons'
 import Button from '../Button'
 import { usePageStore } from '@renderer/stores'
 import { useSearchParams } from 'react-router-dom'
 import useTaskStore from '@renderer/stores/taskStore'
+import { STEP_TYPES } from '@DeskThing/types'
+import { StepPropsMap } from '@shared/types'
 
-export const TaskShortcut: FC<StepProps> = ({ step }) => {
-  if (step.type != 'shortcut') return null
+export const TaskShortcutComponent: FC<StepPropsMap[STEP_TYPES.SHORTCUT]> = ({ step, source }) => {
   const setPage = usePageStore((state) => state.setPage)
   const [_searchParams, setSearchParams] = useSearchParams()
   const completeStep = useTaskStore((state) => state.resolveStep)
   const currentPage = usePageStore((state) => state.currentPage)
-  const [isComplete, setIsComplete] = useState(false)
 
-  useEffect(() => {
+  const isComplete = useMemo(() => {
     const [path, query] = step.destination.split('?')
     const stepParams = query ? new URLSearchParams(query) : null
     const currentParams = new URLSearchParams(window.location.search)
@@ -29,18 +28,19 @@ export const TaskShortcut: FC<StepProps> = ({ step }) => {
       )
 
     if (normalizedCurrentPage === normalizedPath && paramsMatch) {
-      setIsComplete(true)
+      return true
     } else {
       console.log('Step is not complete', normalizedCurrentPage, normalizedPath, paramsMatch)
+      return false
     }
-  }, [currentPage, step.destination, completeStep])
+  }, [currentPage, step.destination])
 
   const handleComplete = (): void => {
     if (!step.parentId) {
       console.error('Step does not have a parent task id! It cannot resolve')
       return
     }
-    completeStep(step.parentId, step.id)
+    completeStep(step.parentId, step.id, source)
   }
 
   const handleServerRouting = async (): Promise<void> => {
@@ -82,4 +82,4 @@ export const TaskShortcut: FC<StepProps> = ({ step }) => {
     </div>
   )
 }
-export default TaskShortcut
+export default TaskShortcutComponent

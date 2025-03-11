@@ -14,8 +14,8 @@ const GithubDataListener = (): null => {
   const setAppReleases = useGithubStore((state) => state.setAppReleases)
   const setClientReleases = useGithubStore((state) => state.setClientReleases)
   const setCommunityApps = useGithubStore((state) => state.setCommunityApps)
-
   useEffect(() => {
+    let isInvalid = false
     const handleAppsUpdate: IpcRendererCallback<'github-apps'> = (_event, data): void => {
       setAppReleases(data)
     }
@@ -25,12 +25,25 @@ const GithubDataListener = (): null => {
     const handleClientUpdate: IpcRendererCallback<'github-client'> = (_event, data): void => {
       setClientReleases(data)
     }
+    const getInitialData = async (): Promise<void> => {
+      const clients = await window.electron.github.getClients()
+      const refs = await window.electron.github.getAppReferences()
+      const apps = await window.electron.github.getApps()
+
+      if (isInvalid) return // cancel on a re-render
+      setClientReleases(clients)
+      setCommunityApps(refs)
+      setAppReleases(apps)
+    }
+
+    getInitialData()
 
     window.electron.ipcRenderer.on('github-apps', handleAppsUpdate)
     window.electron.ipcRenderer.on('github-community', handleCommunityUpdate)
     window.electron.ipcRenderer.on('github-client', handleClientUpdate)
 
     return () => {
+      isInvalid = true
       window.electron.ipcRenderer.removeAllListeners('github-apps')
       window.electron.ipcRenderer.removeAllListeners('github-community')
       window.electron.ipcRenderer.removeAllListeners('github-client')

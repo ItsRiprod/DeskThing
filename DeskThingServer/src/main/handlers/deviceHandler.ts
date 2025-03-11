@@ -75,8 +75,8 @@ export const getDeviceManifestVersion = async (deviceId: string): Promise<string
  * @returns A Promise that resolves when the device configuration is complete.
  */
 export const configureDevice = async (deviceId: string, reply?: ReplyFn): Promise<void> => {
-  const settingsStore = storeProvider.getStore('settingsStore')
-  const githubStore = storeProvider.getStore('githubStore')
+  const settingsStore = await storeProvider.getStore('settingsStore')
+  const githubStore = await storeProvider.getStore('githubStore')
   const settings = await settingsStore.getSettings()
 
   // Opens the socket port
@@ -562,7 +562,7 @@ export const checkForClient = async (
 
   const manifestExists = fs.existsSync(manifestPath)
   if (!manifestExists) {
-    Logger.info('Manifest file not found')
+    Logger.debug('Manifest file not found')
     reply &&
       reply('logging', {
         status: false,
@@ -583,12 +583,12 @@ export const checkForClient = async (
 export const getClientManifest = async (
   reply?: (channel: string, data: ReplyData) => void
 ): Promise<ClientManifest | null> => {
-  Logger.info('Getting manifest...')
+  Logger.debug('Getting manifest...')
   const userDataPath = app.getPath('userData')
   const manifestPath = join(userDataPath, 'webapp', 'manifest.js')
-  Logger.info('manifestPath: ' + manifestPath)
+  Logger.debug('manifestPath: ' + manifestPath)
   if (!fs.existsSync(manifestPath)) {
-    Logger.info('Manifest file not found')
+    Logger.warn('DEVICE HANDLER: Manifest file not found')
     reply &&
       reply('logging', {
         status: false,
@@ -623,7 +623,7 @@ export const getClientManifest = async (
         data: 'Manifest loaded!',
         final: false
       })
-    Logger.info('DEVICE HANDLER: Manifest file read successfully')
+    Logger.debug('DEVICE HANDLER: Manifest file read successfully')
     return manifest
   } catch (error) {
     console.error('Error reading or parsing manifest file:', error)
@@ -686,7 +686,7 @@ export const SetupProxy = async (
       final: false
     })
 
-    Logger.info('Remounting...')
+    Logger.debug('Remounting...')
     reply('logging', { status: true, data: 'Remounting...', final: false })
     response = await handleAdbCommands(`-s ${deviceId} shell mount -o remount,rw /`)
 

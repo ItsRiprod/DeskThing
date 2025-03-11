@@ -1,10 +1,19 @@
-console.log('[MapFile Service] Starting')
+
+// Types
 import { LOGGING_LEVELS } from '@DeskThing/types'
 import { Profile, MappingStructure, ButtonMapping, MappingFileStructure } from '@shared/types'
+
+// Static Data
+import { defaultData } from '@server/static/defaultMapping'
+
+// Utils
 import Logger from '@server/utils/logger'
 import { readFromFile, writeToFile } from '@server/services/files/fileService'
-import { defaultData } from '@server/static/defaultMapping'
-import { isValidButtonMapping, isValidFileStructure, isValidMappingStructure } from './utilsMaps'
+import {
+  isValidButtonMapping,
+  isValidFileStructure,
+  isValidMappingStructure
+} from './mapsValidation'
 import path from 'path'
 
 /**
@@ -233,7 +242,7 @@ export const importProfile = async (
       return
     }
 
-    Logger.info(`MAPHANDLER: Profile ${profileName} imported from ${filePath}`, {
+    Logger.debug(`MAPHANDLER: Profile ${profileName} imported from ${filePath}`, {
       function: 'importProfile',
       source: 'fileMaps',
       domain: 'server'

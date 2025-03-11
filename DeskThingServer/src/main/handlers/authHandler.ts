@@ -43,7 +43,7 @@ async function handleCallback(req: http.IncomingMessage, res: http.ServerRespons
   }
 
   const code = parsedUrl.query.code as string
-  const appStore = storeProvider.getStore('appStore')
+  const appStore = await storeProvider.getStore('appStore')
   appStore.sendDataToApp(appName, { type: ServerEvent.CALLBACK_DATA, payload: code })
 
   res.writeHead(200, { 'Content-Type': 'text/html' })
@@ -92,9 +92,9 @@ const startServer = async (): Promise<void> => {
  */
 const initializeServer = async (): Promise<void> => {
   try {
-    const settingsStore = storeProvider.getStore('settingsStore')
+    const settingsStore = await storeProvider.getStore('settingsStore')
     const settings = await settingsStore.getSettings()
-    callBackPort = settings.callbackPort
+    callBackPort = settings?.callbackPort || 8888
     await startServer()
   } catch (error) {
     Logger.error('Failed to get settings or start the server', {
@@ -111,8 +111,8 @@ const initializeServer = async (): Promise<void> => {
  * If the callback port does not change, it logs a message indicating that the server is not being restarted.
  * If there is an error updating the server configuration, it logs an error message.
  */
-const setupListeners = (): void => {
-  const settingsStore = storeProvider.getStore('settingsStore')
+const setupListeners = async (): Promise<void> => {
+  const settingsStore = await storeProvider.getStore('settingsStore')
 
   settingsStore.addListener(async (newSettings) => {
     try {

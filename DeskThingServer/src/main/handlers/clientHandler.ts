@@ -11,7 +11,6 @@ import {
   HandleWebappZipFromUrl,
   SetupProxy
 } from './deviceHandler'
-import { sendMessageToClient, sendMessageToClients } from '../services/client/clientCom'
 import { storeProvider } from '@server/stores/storeProvider'
 
 /**
@@ -26,6 +25,7 @@ export const clientHandler: Record<
   (data: ClientIPCData, replyFn: ReplyFn) => Promise<void | string | ClientManifest | null>
 > = {
   pingClient: async (data, replyFn) => {
+    const platformStore = await storeProvider.getStore('platformStore')
     try {
       replyFn('logging', {
         status: false,
@@ -33,7 +33,7 @@ export const clientHandler: Record<
         data: `Attempted to ping ${data.payload}!`,
         final: true
       })
-      sendMessageToClient(data.payload, { app: 'client', type: 'ping' })
+      platformStore.sendDataToClient(data.payload, { app: 'client', type: 'ping' })
       return `Pinging ${data.payload}...`
     } catch (error) {
       console.error('Error pinging client:', error)
@@ -89,6 +89,8 @@ export const clientHandler: Record<
     replyFn('logging', { status: true, data: 'Configuring Device', final: false })
     const response = await configureDevice(data.payload, replyFn)
     replyFn('logging', { status: true, data: 'Device Configured!', final: true })
+    const taskStore = await storeProvider.getStore('taskStore')
+    taskStore.completeStep('server', 'device', 'configure')
     return response
   },
   'client-manifest': async (data, replyFn) => {
@@ -144,7 +146,7 @@ export const clientHandler: Record<
     }
   },
   'run-device-command': async (data, replyFn) => {
-    const platformStore = storeProvider.getStore('platformStore')
+    const platformStore = await storeProvider.getStore('platformStore')
     const payload = data.payload.payload as string
 
     const message: SocketData = {
@@ -157,7 +159,7 @@ export const clientHandler: Record<
     return await platformStore.broadcastToClients(message)
   },
   icon: async (data) => {
-    const mappingStore = storeProvider.getStore('mappingStore')
+    const mappingStore = await storeProvider.getStore('mappingStore')
     switch (data.request) {
       case 'get':
         return await mappingStore.fetchActionIcon(data.payload)

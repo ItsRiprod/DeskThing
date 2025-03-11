@@ -11,6 +11,7 @@ import { SocketData } from '@DeskThing/types'
 import { Client } from '@shared/types'
 import wsPath from './wsWebsocket?modulePath'
 import { app } from 'electron'
+import logger from '@server/utils/logger'
 
 export class WebSocketPlatform implements PlatformInterface {
   private worker: Worker
@@ -20,24 +21,60 @@ export class WebSocketPlatform implements PlatformInterface {
   private clients: Client[] = []
 
   constructor() {
-    this.worker = new Worker(wsPath, { workerData: { userDataPath: app.getPath('userData') } })
+    this.worker = new Worker(wsPath, {
+      workerData: { userDataPath: app.getPath('userData'), stdout: true, stderr: true }
+    })
     this.setupWorkerListeners()
   }
 
   public readonly id: string = 'websocket-platform'
   public readonly type: string = 'websocket'
-  public readonly name: string = 'WebSocket Platform'
+  public readonly name: string = 'WebSocket'
 
   private setupWorkerListeners(): void {
     this.worker.on(
       'message',
-      <T extends PlatformEvent>(message: { event: T; payload: PlatformEventPayloads[T] }) => {
-        this.notify(message.event, message.payload)
+      <T extends PlatformEvent>({
+        event,
+        payload
+      }: {
+        event: T
+        payload: PlatformEventPayloads[T]
+      }) => {
+        this.notify(event, payload)
+
+        switch (event) {
+          case PlatformEvent.CLIENT_UPDATED:
+            {
+              const client = payload as PlatformEventPayloads[typeof PlatformEvent.CLIENT_UPDATED]
+              const clientIndex = this.clients.findIndex((client) => client.id === client.id)
+              if (clientIndex !== -1) {
+                this.clients[clientIndex] = client
+              }
+            }
+            break
+        }
       }
     )
 
     this.worker.on('error', (error) => {
+      logger.error(`WebSocket worker Error: ${error}`, {
+        source: 'wsPlatform',
+        function: 'setupWorkerListeners'
+      })
       this.notify(PlatformEvent.ERROR, error)
+    })
+
+    this.worker.stdout?.on('data', (data) => {
+      logger.debug(`${data.toString().trim()}`, {
+        domain: 'WebSocket'
+      })
+    })
+
+    this.worker.stderr?.on('data', (data) => {
+      logger.error(`${data.toString().trim()}`, {
+        domain: 'WebSocket'
+      })
     })
   }
 
@@ -106,6 +143,10 @@ export class WebSocketPlatform implements PlatformInterface {
 
   getClientById(clientId: string): Client | undefined {
     return this.clients.find((client) => client.id === clientId)
+  }
+
+  updateClient(clientId: string, client: Partial<Client>): void {
+    this.worker.postMessage({ type: 'updateClient', clientId, client })
   }
 
   isRunning(): boolean {

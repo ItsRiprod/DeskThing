@@ -56,8 +56,8 @@ const TasksPage: React.FC = () => {
               <p>{appId}</p>
               {tasks.length > 0 ? (
                 <div>
-                  {tasks.map((task, index) => (
-                    <TaskComponent key={index} task={task} onClose={onClose} />
+                  {tasks.map((task) => (
+                    <TaskComponent key={task.id} task={task} onClose={onClose} />
                   ))}
                 </div>
               ) : (

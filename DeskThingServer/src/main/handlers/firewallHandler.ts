@@ -86,7 +86,7 @@ async function setupFirewall(port: number, reply?: ReplyFn): Promise<void> {
     reply && reply('logging', { status: true, data: 'Checking if rules exist', final: false })
     const ruleExists = await checkFirewallRuleExists(port)
     if (ruleExists) {
-      Logger.info(` Firewall rule for port ${port} verified successfully`, {
+      Logger.debug(` Firewall rule for port ${port} verified successfully`, {
         source: 'setupFirewall'
       })
       reply &&
@@ -128,7 +128,7 @@ async function setupFirewall(port: number, reply?: ReplyFn): Promise<void> {
 
       try {
         await runCommand(`powershell -ExecutionPolicy Bypass -File "${tempScriptPath}"`)
-        Logger.info('Firewall rules set up successfully on Windows', {
+        Logger.debug('Firewall rules set up successfully on Windows', {
           source: 'setupFirewall'
         })
 
@@ -154,7 +154,7 @@ async function setupFirewall(port: number, reply?: ReplyFn): Promise<void> {
       `
 
       await runCommand(`echo "${script}" | bash`)
-      Logger.info('Firewall rules set up successfully on Linux', {
+      Logger.debug('Firewall rules set up successfully on Linux', {
         source: 'setupFirewall'
       })
     } else if (platform === 'darwin') {
@@ -177,7 +177,7 @@ async function setupFirewall(port: number, reply?: ReplyFn): Promise<void> {
       `
 
       await runCommand(`echo "${script}" | bash`)
-      Logger.info('Firewall rules set up successfully on macOS', {
+      Logger.debug('Firewall rules set up successfully on macOS', {
         source: 'setupFirewall'
       })
     } else {

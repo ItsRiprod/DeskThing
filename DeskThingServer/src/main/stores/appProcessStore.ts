@@ -50,7 +50,7 @@ export class AppProcessStore implements AppProcessStoreClass {
   }
 
   notifyProcessEvent(type: AppProcessEvents, appName: string, cause?: string): void {
-    Logger.info(`Process ${appName} is emitting ${type}`, {
+    Logger.debug(`Process ${appName} is emitting ${type}`, {
       source: 'AppProcessStore',
       function: 'notifyProcessEvent'
     })
@@ -197,7 +197,7 @@ export class AppProcessStore implements AppProcessStoreClass {
             Logger.log(data.payload.type, data.payload.log, data.payload.options)
             break
           default:
-            Logger.info(`Received unknown message type '${String(data)}' from ${appName}`, {
+            Logger.warn(`Received unknown message type '${String(data)}' from ${appName}`, {
               source: 'AppProcessStore',
               function: 'processMessage'
             })
@@ -210,7 +210,7 @@ export class AppProcessStore implements AppProcessStoreClass {
       })
 
       process.on('exit', (code) => {
-        Logger.info(`Process ${appName} exited with code: ${code}`, {
+        Logger.warn(`Process ${appName} exited with code: ${code}`, {
           source: 'AppProcessStore',
           function: 'spawnProcess'
         })
@@ -261,7 +261,7 @@ export class AppProcessStore implements AppProcessStoreClass {
 
   async terminateProcess(appName: string): Promise<boolean> {
     try {
-      Logger.info(`Terminating process ${appName}`, {
+      Logger.debug(`Terminating process ${appName}`, {
         source: 'AppProcessStore',
         function: 'terminateProcess'
       })

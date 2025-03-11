@@ -92,9 +92,9 @@ export interface AppDataStoreClass {
   getTaskList(): Promise<FullTaskList>
 
   /** @deprecated use TaskStore instead - Sets tasks for an app */
-  setTasks(app: string, tasks: Record<string, Task>): Promise<void>
+  setTasks(app: string, tasks: Record<string, Task>, notifyApp?: boolean): Promise<void>
   /** @deprecated use TaskStore instead - Updates a single task */
-  updateTaskList(app: string, task: Task): Promise<void>
+  updateTaskList(app: string, task: Task, notifyApp?: boolean): Promise<void>
   /** @deprecated use TaskStore instead - Updates a partial task */
   updateTask(app: string, task: Partial<Task>): Promise<void>
   /** @deprecated use TaskStore instead - Updates multiple tasks */

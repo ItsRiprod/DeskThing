@@ -1,4 +1,11 @@
 console.log('[AppState Service] Starting')
+// Types
+import {
+  AppDataFilters,
+  AppProcessEvents,
+  AppProcessListener,
+  AppProcessStoreClass
+} from '@shared/stores/appProcessStore'
 import {
   App,
   AppManifest,
@@ -8,28 +15,38 @@ import {
   SEND_TYPES
 } from '@DeskThing/types'
 import { ReplyFn, AppInstance, StagedAppManifest, CacheableStore } from '@shared/types'
-import Logger from '@server/utils/logger'
-import {
-  executeStagedFile,
-  getIcon,
-  loadAndRunEnabledApps,
-  stageAppFile,
-  stageAppFileType
-} from '@server/services/apps'
-import logger from '@server/utils/logger'
 import {
   AppStoreClass,
   AppStoreListeners,
   AppStoreListenerEvents,
   AppStoreListener
 } from '@shared/stores/appStore'
-import { setAppData, setAppsData } from '../services/files/appFileService'
+
+// Utils
+import Logger from '@server/utils/logger'
+
+// Services
+import { getIcon } from '@server/services/apps/appUtils'
 import {
-  AppDataFilters,
-  AppProcessEvents,
-  AppProcessListener,
-  AppProcessStoreClass
-} from '@shared/stores/appProcessStore'
+  executeStagedFile,
+  stageAppFile,
+  stageAppFileType
+} from '@server/services/apps/appInstaller'
+import { loadAndRunEnabledApps } from '@server/services/apps/appRunner'
+import { setAppData, setAppsData } from '../services/files/appFileService'
+
+// // Validation
+import { sanitizeAppMeta } from '@server/services/apps/appValidator'
+
+// Mock functions
+// const getIcon = () => 'mock-icon-path'
+// const executeStagedFile = async () => ({ success: true })
+// const stageAppFile = async () => ({ success: true })
+// const stageAppFileType = { INSTALL: 'install', UPDATE: 'update' }
+// const loadAndRunEnabledApps = async () => ({ success: true })
+// const setAppData = async () => ({ success: true })
+// const setAppsData = async () => ({ success: true })
+// const sanitizeAppMeta = (meta: any) => {}
 
 export class AppStore implements CacheableStore, AppStoreClass {
   private apps: Record<string, AppInstance> = {}
@@ -46,7 +63,6 @@ export class AppStore implements CacheableStore, AppStoreClass {
     this.initializeListeners()
 
     this.loadApps()
-
   }
 
   private initializeListeners = (): void => {
@@ -64,7 +80,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
     )
     this.appProcessStore.onProcessEvent(AppProcessEvents.ERROR, this.handleProcessError.bind(this))
     this.appProcessStore.onProcessEvent(AppProcessEvents.EXITED, this.handleProcessExit.bind(this))
-    
+
     // App Handling
     this.onAppMessage(SEND_TYPES.TOAPP, (data) => {
       this.sendDataToApp(data.source, data)
@@ -138,7 +154,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
    * Loads the apps from file
    */
   private async loadApps(): Promise<void> {
-    Logger.info('Loading apps...', { source: 'AppStore', function: 'loadApps' })
+    Logger.debug('Loading apps...', { source: 'AppStore', function: 'loadApps' })
     const { getAppData } = await import('../services/files/appFileService')
 
     const data = await getAppData()
@@ -169,7 +185,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
 
     // If there is a timeout running
     if (this.functionTimeouts['server-notifyApps']) {
-      Logger.info(`Cancelling previous notifyApps timeout and starting a new one`, {
+      Logger.debug(`Cancelling previous notifyApps timeout and starting a new one`, {
         source: 'AppStore',
         function: 'notifyApps'
       })
@@ -237,13 +253,13 @@ export class AppStore implements CacheableStore, AppStoreClass {
 
   private async saveAppsToFile(): Promise<void> {
     if (this.functionTimeouts['server-saveApps']) {
-      Logger.info(`Cancelling previous saveApps timeout and starting a new one`, {
+      Logger.debug(`Cancelling previous saveApps timeout and starting a new one`, {
         source: 'AppStore',
         function: 'saveAppsToFile'
       })
       clearTimeout(this.functionTimeouts['server-saveApps'])
       this.functionTimeouts['server-saveApps'] = setTimeout(async () => {
-        Logger.info(`Saving apps to file`, {
+        Logger.debug(`Saving apps to file`, {
           source: 'AppStore',
           function: 'saveAppsToFile'
         })
@@ -256,7 +272,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
       this.functionTimeouts['server-saveApps'] = setTimeout(async () => {
         delete this.functionTimeouts['server-saveApps']
       }, 500)
-      Logger.info(`Saving apps to file`, {
+      Logger.debug(`Saving apps to file`, {
         source: 'AppStore',
         function: 'saveAppsToFile'
       })
@@ -271,14 +287,14 @@ export class AppStore implements CacheableStore, AppStoreClass {
 
     // Clear any existing timeout for this app
     if (this.functionTimeouts[name]) {
-      Logger.info(`Cancelling previous ${name} request and starting a new one`, {
+      Logger.debug(`Cancelling previous ${name} request and starting a new one`, {
         source: 'AppStore',
         domain: name,
         function: 'saveAppToFile'
       })
       clearTimeout(this.functionTimeouts[name])
       this.functionTimeouts[name] = setTimeout(async () => {
-        Logger.info(`Saving ${name} to file and notifying apps listeners`, {
+        Logger.debug(`Saving ${name} to file and notifying apps listeners`, {
           source: 'AppStore',
           domain: name,
           function: 'saveAppToFile'
@@ -291,7 +307,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
       this.functionTimeouts[name] = setTimeout(async () => {
         delete this.functionTimeouts[name]
       }, 500)
-      Logger.info(`Saving ${name} to file and notifying apps listeners`, {
+      Logger.debug(`Saving ${name} to file and notifying apps listeners`, {
         source: 'AppStore',
         domain: name,
         function: 'saveAppToFile'
@@ -302,6 +318,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
   }
 
   add(app: App): void {
+    sanitizeAppMeta(app)
     if (this.apps[app.name]) {
       // If the app already exists, merge the new app with the existing one
       this.apps[app.name] = {
@@ -508,7 +525,6 @@ export class AppStore implements CacheableStore, AppStoreClass {
         })
         return false
       }
-
     } else if (!this.appProcessStore.getActiveProcessIds().includes(name)) {
       const result = await this.enable(name)
       if (!result) {
@@ -525,22 +541,29 @@ export class AppStore implements CacheableStore, AppStoreClass {
 
     // Check if all required apps are running
     if (manifest?.requires?.length) {
-      const missingApps = manifest.requires.filter((app) => !(this.apps[app]?.running ?? true))
+      const validRequirements = manifest.requires.filter((req) => req.trim().length > 0)
 
-      if (missingApps.length > 0) {
-        Logger.warn(
-          `[start(${name})]: Unable to run ${name}! Missing required apps: ${missingApps.join(', ')}`,
-          {
-            source: 'AppStore',
-            domain: 'SERVER.' + name.toUpperCase(),
-            function: 'start'
-          }
+      if (validRequirements.length > 0) {
+        const missingApps = manifest.requires.filter(
+          (requiredApp) =>
+            !this.apps[requiredApp] ||
+            !this.appProcessStore.getActiveProcessIds().includes(requiredApp)
         )
-        return false
+        if (missingApps.length > 0) {
+          Logger.warn(
+            `[start(${name})]: Unable to run ${name}! Missing required apps: ${missingApps.join(', ')}`,
+            {
+              source: 'AppStore',
+              domain: 'SERVER.' + name.toUpperCase(),
+              function: 'start'
+            }
+          )
+          return false
+        }
       }
     }
 
-    Logger.info(`Sending start command to ${name}`, {
+    Logger.debug(`Sending start command to ${name}`, {
       source: 'AppStore',
       function: 'start',
       domain: 'SERVER.' + name.toUpperCase()
@@ -572,7 +595,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
       // TODO: Update to use the process
       return await executeStagedFile({ reply, overwrite, appId, run })
     } catch (error) {
-      logger.error('Error while trying to run staged app', {
+      Logger.error('Error while trying to run staged app', {
         function: 'runStagedApp',
         source: 'AppStore',
         error: error as Error

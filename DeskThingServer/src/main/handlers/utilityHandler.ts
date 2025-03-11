@@ -4,7 +4,6 @@ import {
   ReplyFn,
   UtilityIPCData,
   Client,
-  Settings,
   UtilityHandlerReturnType,
   UTILITY_TYPES
 } from '@shared/types'
@@ -69,11 +68,11 @@ export const utilityHandler: {
     }
   },
   [UTILITY_TYPES.DEVICES]: async () => {
-    const connectionStore = storeProvider.getStore('connectionsStore')
+    const connectionStore = await storeProvider.getStore('connectionsStore')
     return await connectionStore.getDevices()
   },
   [UTILITY_TYPES.SETTINGS]: async (data) => {
-    const settingsStore = storeProvider.getStore('settingsStore')
+    const settingsStore = await storeProvider.getStore('settingsStore')
     switch (data.request) {
       case 'get':
         return await settingsStore.getSettings()
@@ -83,7 +82,7 @@ export const utilityHandler: {
     }
   },
   [UTILITY_TYPES.GITHUB]: async (data) => {
-    const githubStore = storeProvider.getStore('githubStore')
+    const githubStore = await storeProvider.getStore('githubStore')
     switch (data.request) {
       case 'refreshApp':
         try {
@@ -183,13 +182,13 @@ export const utilityHandler: {
   },
 
   [UTILITY_TYPES.RESTART_SERVER]: async (_data, replyFn) => {
-    const platformStore = storeProvider.getStore('platformStore')
+    const platformStore = await storeProvider.getStore('platformStore')
     replyFn('logging', { status: true, data: 'Restarting server...', final: false })
     await platformStore.restartPlatform('websocket')
     replyFn('logging', { status: true, data: 'Server Restarted', final: true })
   },
   [UTILITY_TYPES.ACTIONS]: async (data) => {
-    const mappingStore = storeProvider.getStore('mappingStore')
+    const mappingStore = await storeProvider.getStore('mappingStore')
     switch (data.request) {
       case 'get':
         return await mappingStore.getActions()
@@ -202,7 +201,7 @@ export const utilityHandler: {
     }
   },
   [UTILITY_TYPES.BUTTONS]: async (data) => {
-    const mappingStore = storeProvider.getStore('mappingStore')
+    const mappingStore = await storeProvider.getStore('mappingStore')
     switch (data.request) {
       case 'set': {
         const { action, key, mode, profile } = data.payload
@@ -253,7 +252,7 @@ export const utilityHandler: {
     }
   },
   [UTILITY_TYPES.KEYS]: async (data) => {
-    const mappingStore = storeProvider.getStore('mappingStore')
+    const mappingStore = await storeProvider.getStore('mappingStore')
     switch (data.request) {
       case 'get':
         return await mappingStore.getKeys()
@@ -268,7 +267,7 @@ export const utilityHandler: {
     }
   },
   [UTILITY_TYPES.PROFILES]: async (data) => {
-    const mappingStore = storeProvider.getStore('mappingStore')
+    const mappingStore = await storeProvider.getStore('mappingStore')
     if (data.type != 'profiles') return
     switch (data.request) {
       case 'get':
@@ -291,7 +290,7 @@ export const utilityHandler: {
     }
   },
   [UTILITY_TYPES.MAP]: async (data) => {
-    const mappingStore = storeProvider.getStore('mappingStore')
+    const mappingStore = await storeProvider.getStore('mappingStore')
     switch (data.request) {
       case 'get':
         return await mappingStore.getCurrentProfile()
@@ -304,7 +303,7 @@ export const utilityHandler: {
     }
   },
   [UTILITY_TYPES.RUN]: async (data) => {
-    const mappingStore = storeProvider.getStore('mappingStore')
+    const mappingStore = await storeProvider.getStore('mappingStore')
     if (data.payload.source !== 'server' && data.payload.enabled) {
       return await mappingStore.runAction(data.payload)
     } else {
@@ -315,7 +314,7 @@ export const utilityHandler: {
   // Tasks
   [UTILITY_TYPES.TASK]: async (data) => {
     if (data.type != 'task') return
-    const taskStore = storeProvider.getStore('taskStore')
+    const taskStore = await storeProvider.getStore('taskStore')
 
     Logger.debug(`Handling task data with request: ${data.request}`, {
       source: 'utilityHandler',
@@ -338,7 +337,14 @@ export const utilityHandler: {
         await taskStore.pauseTask()
         return
       case 'restart':
-        await taskStore.restartTask(data.payload.source, data.payload.taskId)
+        await taskStore.restartTask(data.payload.source, data.payload.taskId).catch((error) => {
+          Logger.error(`Error restarting task: ${error}`, {
+            source: 'utilityHandler',
+            function: 'task',
+            error: error as Error
+          })
+          return
+        })
         return
       case 'complete_task':
         await taskStore.completeTask(data.payload.source, data.payload.taskId)
@@ -387,8 +393,8 @@ export const utilityHandler: {
  * @returns
  */
 const getConnection = async (replyFn: ReplyFn): Promise<Client[]> => {
-  const connectionStore = storeProvider.getStore('connectionsStore')
-  Logger.info('Getting clients', {
+  const connectionStore = await storeProvider.getStore('connectionsStore')
+  Logger.debug('Getting clients', {
     source: 'utilityHandler',
     function: 'getConnection'
   })
@@ -399,7 +405,7 @@ const getConnection = async (replyFn: ReplyFn): Promise<Client[]> => {
 }
 
 const deleteConnection = async (connectionId: string, replyFn: ReplyFn): Promise<boolean> => {
-  const connectionStore = storeProvider.getStore('connectionsStore')
+  const connectionStore = await storeProvider.getStore('connectionsStore')
   await connectionStore.removeClient(connectionId)
   replyFn('logging', { status: true, data: 'Finished', final: true })
   return true
@@ -415,12 +421,12 @@ const selectZipFile = async (): Promise<string | undefined> => {
 }
 
 const refreshFirewall = async (replyFn: ReplyFn): Promise<void> => {
-  const settingsStore = storeProvider.getStore('settingsStore')
+  const settingsStore = await storeProvider.getStore('settingsStore')
   try {
     replyFn('logging', { status: true, data: 'Refreshing Firewall', final: false })
-    const payload = (await settingsStore.getSettings()) as Settings
+    const payload = await settingsStore.getSettings()
     if (payload) {
-      Logger.info('[firewall] Setting up firewall')
+      Logger.debug('[firewall] Setting up firewall')
       try {
         await setupFirewall(payload.devicePort, replyFn)
       } catch (firewallError) {

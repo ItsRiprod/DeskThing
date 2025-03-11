@@ -32,19 +32,17 @@ const AppsList: React.FC = () => {
     setActiveRequests(requests.map((request) => request.appName))
   }, [requests])
 
-  const handleDragStart = (e, appName: string): void => {
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, appName: string): void => {
     setDraggedApp(appName)
 
     // Create a custom drag image
     const dragImage = e.currentTarget.cloneNode(true) as HTMLElement
-    dragImage.style.opacity = '0.8'
-    dragImage.style.position = 'absolute'
+    dragImage.style.opacity = '1'
+    dragImage.style.position = 'fixed'
     dragImage.style.top = '-1000px'
+    dragImage.style.width = `${e.currentTarget.offsetWidth}px`
     document.body.appendChild(dragImage)
     e.dataTransfer.setDragImage(dragImage, 0, 0)
-
-    // Add a class to the dragged element
-    e.currentTarget.classList.add('dragging')
 
     // Clean up the drag image after dragging
     requestAnimationFrame(() => {
@@ -85,10 +83,10 @@ const AppsList: React.FC = () => {
         </div>
       </Sidebar>
       <MainElement className="relative">
-        <div className="absolute top-0 p-5 left-0 w-full h-full">
+        <div className="absolute inset-0 top-0 p-5 pb-10 left-0 w-full h-full">
           {appsList ? (
             appsList.length > 0 ? (
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col">
                 {order.map((appName, index) => {
                   const app = appsList.find((a) => a.name === appName)
                   if (!app) return null
@@ -100,9 +98,8 @@ const AppsList: React.FC = () => {
                       onDragOver={(e) => handleDragOver(e, index)}
                       onDragLeave={handleDragLeave}
                       onDrop={() => handleDrop(app.name)}
-                      className={`relative ${
-                        dragOverIndex === index ? 'border-t-2 border-zinc-500' : ''
-                      }`}
+                      className={`relative transition-all duration-200 border-t-8 border-transparent
+                        ${draggedApp === app.name ? 'opacity-50' : dragOverIndex === index ? 'border-zinc-800 border-t-[100px]' : ''}`}
                     >
                       <App app={app} activeRequest={activeRequests.includes(app.name)} />
                       {index === order.length - 1 && dragOverIndex === index && (

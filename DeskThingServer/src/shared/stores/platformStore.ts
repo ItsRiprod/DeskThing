@@ -13,6 +13,7 @@ export enum PlatformStoreEvent {
   PLATFORM_STOPPED = 'platform_stopped',
   CLIENT_CONNECTED = 'client_connected',
   CLIENT_DISCONNECTED = 'client_disconnected',
+  CLIENT_UPDATED = 'client_updated',
   DATA_RECEIVED = 'data_received'
 }
 
@@ -23,6 +24,7 @@ export type PlatformStoreEvents = {
   [PlatformStoreEvent.PLATFORM_STOPPED]: PlatformInterface
   [PlatformStoreEvent.CLIENT_CONNECTED]: Client
   [PlatformStoreEvent.CLIENT_DISCONNECTED]: string
+  [PlatformStoreEvent.CLIENT_UPDATED]: Client
   [PlatformStoreEvent.DATA_RECEIVED]: { client: Client; data: SocketData }
 }
 
@@ -41,6 +43,7 @@ export interface PlatformStoreClass {
   startPlatform(platformId: string, options?: PlatformConnectionOptions): Promise<boolean>
   restartPlatform(platformId: string, options?: PlatformConnectionOptions): Promise<boolean>
   stopPlatform(platformId: string): Promise<boolean>
+  updateClient(clientId: string, client: Partial<Client>): void
   getClients(): Client[]
   getClientById(clientId: string): Client | undefined
   getClientsByPlatform(platformId: string): Client[]

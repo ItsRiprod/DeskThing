@@ -16,6 +16,8 @@ interface NotificationStoreState {
   restartTask: (taskId: string, source?: string) => Promise<void>
   requestTasks: () => Promise<void>
   setTaskList: (taskList: FullTaskList) => Promise<void>
+  setTask: (task: Task) => Promise<void>
+  setCurrentTask: (curTask: { id: string; source: string }) => Promise<void>
   setAppTaskList: (source: string, taskList: Record<string, Task>) => Promise<void>
   nextStep: (taskId: string, source?: string) => Promise<void>
   prevStep: (taskId: string, source?: string) => Promise<void>
@@ -62,19 +64,42 @@ const useTaskStore = create<NotificationStoreState>((set) => ({
 
   requestTasks: async (): Promise<void> => {
     const taskList = await window.electron.tasks.getTaskList()
-    set(() => ({
+    set((state) => ({
+      ...state,
       taskList: taskList
     }))
   },
 
   setTaskList: async (taskList: FullTaskList): Promise<void> => {
-    set(() => ({
+    set((state) => ({
+      ...state,
       taskList: taskList
+    }))
+  },
+
+  setTask: async (task: Task): Promise<void> => {
+    set((state) => ({
+      ...state,
+      taskList: {
+        ...state.taskList,
+        [task.source]: {
+          ...state.taskList[task.source],
+          [task.id]: task
+        }
+      }
+    }))
+  },
+
+  setCurrentTask: async (curTask: { id: string; source: string }): Promise<void> => {
+    set((state) => ({
+      ...state,
+      currentTask: curTask
     }))
   },
 
   setAppTaskList: async (source: string, taskList: Record<string, Task>): Promise<void> => {
     set((state) => ({
+      ...state,
       taskList: {
         ...state.taskList,
         [source]: taskList

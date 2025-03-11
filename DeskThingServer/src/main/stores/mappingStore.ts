@@ -21,14 +21,14 @@ import { deepMerge } from '@server/utils/objectUtils'
 import { importProfile, loadMappings, saveMappings } from '@server/services/mappings/fileMaps'
 import {
   ConstructActionReference,
-  FetchIcon,
   isValidAction,
   isValidActionReference,
   isValidKey,
   validMappingExists,
   isValidButtonMapping,
   sanitizeAction
-} from '@server/services/mappings/utilsMaps'
+} from '@server/services/mappings/mapsValidation'
+import { FetchIcon } from '@server/services/mappings/mapsUtils'
 import { defaultProfile } from '@server/static/defaultMapping'
 
 export class MappingStore implements CacheableStore, MappingStoreClass {
@@ -1021,7 +1021,7 @@ export class MappingStore implements CacheableStore, MappingStoreClass {
 
   async triggerKey(keyId: string, mode: EventMode): Promise<void> {
     const profile = await this.getMapping()
-    if (!profile) {
+    if (!profile || !profile.mapping[keyId]) {
       Logger.log(LOGGING_LEVELS.WARN, '[MAPPINGSTORE.triggerKey]: Profile was null or undefined!')
       return
     }

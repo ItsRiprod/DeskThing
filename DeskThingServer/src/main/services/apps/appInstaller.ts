@@ -1,13 +1,20 @@
 console.log('[AppInst Service] Starting')
+// Types
+import { LOGGING_LEVELS, AppReleaseSingleMeta, App } from '@DeskThing/types'
+import { ReplyFn, StagedAppManifest } from '@shared/types'
+
+// Utils
 import Logger from '@server/utils/logger'
-import { LOGGING_LEVELS, AppReleaseSingleMeta } from '@DeskThing/types'
-import { ReplyFn, AppInstance, StagedAppManifest } from '@shared/types'
-import { getAppFilePath, getManifest, getStandardizedFilename, validateSha512 } from './appUtils'
 import { existsSync, promises } from 'node:fs'
-import { overwriteData } from '../files/dataFileService'
 import path from 'node:path'
-import logger from '@server/utils/logger'
-import { storeProvider } from '@server/stores'
+import { getAppFilePath, getManifest, getStandardizedFilename } from './appUtils'
+
+// Validation
+import { validateSha512 } from './appValidator'
+import { overwriteData } from '../files/dataFileService'
+
+// Stores
+import { storeProvider } from '@server/stores/storeProvider'
 
 interface ExecuteStagedFileType {
   reply?: ReplyFn
@@ -22,7 +29,7 @@ export const executeStagedFile = async ({
   appId,
   run = false
 }: ExecuteStagedFileType): Promise<void> => {
-  const appStore = storeProvider.getStore('appStore')
+  const appStore = await storeProvider.getStore('appStore')
   try {
     const tempZipPath = getAppFilePath('staged', 'temp.zip')
     const extractedPath = getAppFilePath('staged', 'extracted')
@@ -42,7 +49,7 @@ export const executeStagedFile = async ({
       appId = appManifestData.id
     }
     if (overwrite) {
-      Logger.info(`[executeStagedFile] Overwriting existing app (overwrite is enabled)...`)
+      Logger.debug(`[executeStagedFile] Overwriting existing app (overwrite is enabled)...`)
       await appStore.purge(appId)
       await new Promise((resolve) => setTimeout(resolve, 1000))
       await overwriteData(appId, { version: appManifestData.version })
@@ -61,7 +68,7 @@ export const executeStagedFile = async ({
       await promises.rm(appPath, { recursive: true })
       reply &&
         reply('logging', { status: true, data: 'Deleted existing app directory', final: false })
-      Logger.info(`[executeStagedFile] Deleting existing app directory... ${appPath}`, {
+      Logger.debug(`[executeStagedFile] Deleting existing app directory... ${appPath}`, {
         function: 'executeStagedFile',
         source: 'executeStagedFile'
       })
@@ -73,16 +80,16 @@ export const executeStagedFile = async ({
 
     if (app && !overwrite) {
       // If the app already exists in the app store
-      Logger.info(`[executeStagedFile] Disabling existing app (Overwrite is disabled)...`)
+      Logger.debug(`[executeStagedFile] Disabling existing app (Overwrite is disabled)...`)
       // Check if the app exists and disable it if it does
-      const app = appStore.get(appId)
       if (app?.enabled || app?.running) {
         await appStore.disable(appId)
       }
     } else {
+      const manifest = await getManifest(extractedPath)
       // If the app is new
-      Logger.info(`[executeStagedFile] Adding app to store...`)
-      const App: App = {
+      Logger.debug(`[executeStagedFile] Adding app to store...`)
+      const newApp: App = {
         name: appId,
         enabled: false,
         running: false,
@@ -95,22 +102,22 @@ export const executeStagedFile = async ({
           updateAvailable: false,
           updateChecked: false
         },
-        manifest: undefined
+        manifest: manifest
       }
-      appStore.add(App)
+      appStore.add(newApp)
     }
 
-    Logger.info(`[executeStagedFile] Deleting temp zip path...`)
+    Logger.debug(`[executeStagedFile] Deleting temp zip path...`)
     // Delete temp.zip if it exists
     try {
       await promises.stat(tempZipPath)
       await promises.unlink(tempZipPath)
     } catch {
       // File doesn't exist, no need to delete
-      Logger.info(`[executeStagedFile] No temp zip file to delete`)
+      Logger.warn(`[executeStagedFile] No temp zip file to delete`)
     }
 
-    Logger.info(`[executeStagedFile] Renaming the staged directory to app id...`)
+    Logger.debug(`[executeStagedFile] Renaming the staged directory to app id...`)
     // Rename staged directory to appId
     try {
       await promises.rename(extractedPath, appPath)
@@ -127,11 +134,11 @@ export const executeStagedFile = async ({
     }
 
     if (run) {
-      Logger.info(`[executeStagedFile] Running app automatically...`)
+      Logger.debug(`[executeStagedFile] Running app automatically...`)
       await appStore.run(appId)
     }
   } catch (error) {
-    logger.error(`Error executing staged file: ${error}`, {
+    Logger.error(`Error executing staged file: ${error}`, {
       function: 'executeStagedFile',
       source: 'appInstaller',
       error: error as Error
@@ -149,7 +156,7 @@ export const findTempZipPath = async (
   { releaseMeta, appId }: { releaseMeta?: AppReleaseSingleMeta; appId?: string }
 ): Promise<string> => {
   if (releaseMeta) {
-    logger.info(`Using releaseMeta to find temp zip path...`, {
+    Logger.debug(`Using releaseMeta to find temp zip path...`, {
       function: 'findTempZipPath',
       source: 'appInstaller'
     })
@@ -165,7 +172,7 @@ export const findTempZipPath = async (
   }
 
   if (appId) {
-    logger.info(`Using appId to find temp zip path...`, {
+    Logger.debug(`Using appId to find temp zip path...`, {
       function: 'findTempZipPath',
       source: 'appInstaller'
     })
@@ -174,7 +181,7 @@ export const findTempZipPath = async (
     if (appZip) return path.join(tempPath, appZip)
   }
 
-  logger.info(`Using default temp zip path...`, {
+  Logger.debug(`Using default temp zip path...`, {
     function: 'findTempZipPath',
     source: 'appInstaller'
   })
@@ -230,7 +237,7 @@ export const stageAppFile = async ({
 
   // Check if the path exists
   if (existsSync(tempPath)) {
-    Logger.info(`[handleZipFromUrl] Deleting old temp path directory...`)
+    Logger.debug(`[handleZipFromUrl] Deleting old temp path directory...`)
     try {
       // Check if directories exist using stat
       await promises.stat(tempPath)
@@ -241,7 +248,7 @@ export const stageAppFile = async ({
         await promises.stat(extractedPath)
         await promises.rm(extractedPath, { recursive: true })
       } catch {
-        Logger.info(`[handleZipFromUrl] extracted path doesnt exist`)
+        Logger.debug(`[handleZipFromUrl] extracted path doesnt exist`)
         reply('logging', { status: true, data: 'Failed to clear extracted path', final: false })
       }
     } catch (error) {
@@ -262,12 +269,12 @@ export const stageAppFile = async ({
       }
     }
   }
-  Logger.info(`[handleZipFromUrl] Creating downloads directory...`)
+  Logger.debug(`[handleZipFromUrl] Creating downloads directory...`)
   await promises.mkdir(tempPath, { recursive: true })
 
   // Check if the path is a URL
   if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
-    Logger.info(`[handleZipFromUrl] URL Detected!`)
+    Logger.debug(`[handleZipFromUrl] URL Detected!`)
 
     reply('logging', { status: true, data: 'Fetching...', final: false })
 
@@ -298,7 +305,7 @@ export const stageAppFile = async ({
       })
       return
     } else {
-      Logger.info(`[handleZipFromUrl] Downloading ${path}...`)
+      Logger.debug(`[handleZipFromUrl] Downloading ${path}...`)
       trackDownloadProgress(0, 100)
     }
     const chunks: Uint8Array[] = []
@@ -324,7 +331,7 @@ export const stageAppFile = async ({
     const buffer = Buffer.concat(chunks)
     await promises.writeFile(tempZipPath, buffer)
   } else {
-    Logger.info(`[handleZipFromUrl] Local File Detected!`)
+    Logger.debug(`[handleZipFromUrl] Local File Detected!`)
     // Handle case where it's a local file upload
     try {
       if (!existsSync(filePath)) {
@@ -345,7 +352,7 @@ export const stageAppFile = async ({
         throw new Error(`File must be a .zip file: ${path}`)
       }
       // Copy the zip file to the extractedPath from the provided path
-      Logger.info(`[handleZipFromUrl] Copying ${path} to ${extractedPath}!`)
+      Logger.debug(`[handleZipFromUrl] Copying ${path} to ${extractedPath}!`)
       await promises.copyFile(filePath, tempZipPath)
     } catch (error) {
       // handle errors
@@ -376,7 +383,7 @@ export const stageAppFile = async ({
   // Try extracting the zip file and reading the manifest
   await new Promise<void>((resolve, reject) => {
     try {
-      Logger.info(`[handleZipFromFile] Extracting app...`)
+      Logger.debug(`[handleZipFromFile] Extracting app...`)
       if (!existsSync(tempZipPath)) {
         Logger.log(
           LOGGING_LEVELS.ERROR,
@@ -401,13 +408,10 @@ export const stageAppFile = async ({
 
   reply('logging', { status: true, data: 'Getting Manifest...', final: false })
 
-  // Extract the zip file to a known location for staging
-  const { getManifest } = await import('./appUtils')
-
   const manifestData = await getManifest(extractedPath)
 
   // Getting the return data
-  Logger.info(`[handleZip] Fetching manifest...`)
+  Logger.debug(`[handleZip] Fetching manifest...`)
   if (!manifestData) {
     Logger.log(
       LOGGING_LEVELS.ERROR,
@@ -452,7 +456,7 @@ export const run = async (app: AppInstance): Promise<void> => {
       })
       return // the app has already been verified
     } else {
-      Logger.info(`App ${app.name} has never been started. Running.`, {
+      Logger.debug(`App ${app.name} has never been started. Running.`, {
         source: 'appInstaller',
         function: 'AppRunner'
       })
@@ -468,7 +472,7 @@ export const run = async (app: AppInstance): Promise<void> => {
       return
     }
 
-    Logger.info(`Configuring ${app.name}!`, {
+    Logger.debug(`Configuring ${app.name}!`, {
       source: 'appInstaller',
       function: 'AppRunner'
     })
@@ -477,7 +481,7 @@ export const run = async (app: AppInstance): Promise<void> => {
     await setupFunctions(app, DeskThing)
     appStore.add(app)
     if (!app.manifest) {
-      Logger.info(`Getting ${app.name}'s manifest file!`, {
+      Logger.debug(`Getting ${app.name}'s manifest file!`, {
         source: 'appInstaller',
         function: 'AppRunner'
       })
@@ -497,7 +501,7 @@ export const run = async (app: AppInstance): Promise<void> => {
       }
     }
 
-    Logger.info(`Running ${app.name}!`, {
+    Logger.debug(`Running ${app.name}!`, {
       source: 'appInstaller',
       function: 'AppRunner'
     })
@@ -508,7 +512,7 @@ export const run = async (app: AppInstance): Promise<void> => {
         function: 'AppRunner'
       })
     } else {
-      Logger.info(`App ${app.name} started successfully!`, {
+      Logger.debug(`App ${app.name} started successfully!`, {
         source: 'appInstaller',
         function: 'AppRunner'
       })
@@ -534,7 +538,7 @@ export const start = async (appInstance: string | AppInstance): Promise<boolean>
   if (typeof appInstance == 'string') {
     appInstance = appStore.get(appInstance) as AppInstance
   }
-  Logger.info(`[start(${appInstance.name})]: Attempting to start app.`)
+  Logger.debug(`[start(${appInstance.name})]: Attempting to start app.`)
 
   if (!appInstance || !appInstance.func?.start || appInstance.func.start === undefined) {
     Logger.warn(`App ${appInstance.name} not found or not started correctly!`, {
@@ -618,7 +622,7 @@ const setupFunctions = async (
   DeskThing: DeskThingType
 ): Promise<void> => {
   const listeners: ((data: EventPayload) => Promise<void>)[] = []
-  await Logger.info(`Configuring functions for ${appInstance.name}.`, {
+  await Logger.debug(`Configuring functions for ${appInstance.name}.`, {
     source: 'appInstaller',
     function: 'setupFunctions'
   })

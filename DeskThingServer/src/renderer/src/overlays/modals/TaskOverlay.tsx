@@ -17,8 +17,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 const TaskOverlay: React.FC = () => {
-  const tasks = useTaskStore((state) => state.taskList.tasks)
-  const currentTaskId = useTaskStore((state) => state.taskList.currentTaskId)
+  const tasks = useTaskStore((state) => state.taskList)
+  const currentTaskId = useTaskStore((state) => state.currentTask)
   const rejectTask = useTaskStore((state) => state.rejectTask)
   const restartTask = useTaskStore((state) => state.restartTask)
   const clearTask = useTaskStore((state) => state.removeCurrentTask)
@@ -26,7 +26,16 @@ const TaskOverlay: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const [currentStepIndex, setCurrentStepIndex] = useState(-1)
-  const [currentTask, setCurrentTask] = useState<Task>()
+  const currentTask = useMemo(() => {
+    if (
+      currentTaskId &&
+      tasks[currentTaskId.source][currentTaskId.id] &&
+      tasks[currentTaskId.source][currentTaskId.id].started
+    ) {
+      return tasks[currentTaskId.source][currentTaskId.id]
+    }
+    return undefined
+  }, [tasks, currentTaskId]) as Task | undefined
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
@@ -35,6 +44,7 @@ const TaskOverlay: React.FC = () => {
     x: 0,
     y: 0
   })
+
   const taskRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -55,6 +65,7 @@ const TaskOverlay: React.FC = () => {
     resizeObserver.observe(taskRef.current)
     return () => resizeObserver.disconnect()
   }, [])
+
   useEffect(() => {
     if (!currentTask || !currentTask.currentStep) {
       setCurrentStepIndex(-1)
@@ -66,12 +77,6 @@ const TaskOverlay: React.FC = () => {
       setCurrentStepIndex(index)
     }
   }, [currentTask?.currentStep])
-
-  useEffect(() => {
-    if (currentTaskId && tasks[currentTaskId] && tasks[currentTaskId].started) {
-      setCurrentTask(tasks[currentTaskId])
-    }
-  }, [tasks, currentTaskId])
 
   useEffect(() => {
     if (isDragging) {
@@ -138,12 +143,12 @@ const TaskOverlay: React.FC = () => {
   const handleRestart = (): void => {
     if (!currentTaskId) return
     openTasks()
-    restartTask(currentTaskId)
+    restartTask(currentTaskId.id, currentTaskId.source)
   }
 
   const handleReject = (): void => {
     if (!currentTaskId) return
-    rejectTask(currentTaskId)
+    rejectTask(currentTaskId.source, currentTaskId.id)
   }
 
   const handleExpand = (): void => {
@@ -152,8 +157,13 @@ const TaskOverlay: React.FC = () => {
   }
 
   const memoizedTaskBase = useMemo(
-    () => (currentTask ? <TaskBase task={currentTask} /> : <div>Unable to load task</div>),
-    [currentTask]
+    () =>
+      currentTask && currentTaskId ? (
+        <TaskBase task={currentTask} source={currentTaskId.source} />
+      ) : (
+        <div>Unable to load task</div>
+      ),
+    [currentTask, currentTaskId?.source]
   )
   return (
     <div

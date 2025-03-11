@@ -4,7 +4,7 @@ import { WebSocketPlatform } from './websocket/wsPlatform'
 
 export async function initializePlatforms(): Promise<void> {
   try {
-    const platformStore = storeProvider.getStore('platformStore')
+    const platformStore = await storeProvider.getStore('platformStore')
 
     // Initialize WebSocket platform
     const wsPlatform = new WebSocketPlatform()
@@ -16,7 +16,7 @@ export async function initializePlatforms(): Promise<void> {
       address: '0.0.0.0'
     })
 
-    Logger.info('Platforms initialized successfully', {
+    Logger.debug('Platforms initialized successfully', {
       source: 'platformInitializer',
       function: 'initializePlatforms'
     })

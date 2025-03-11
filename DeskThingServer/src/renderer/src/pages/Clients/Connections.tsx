@@ -2,13 +2,7 @@ import React, { useEffect, useState } from 'react'
 import Sidebar from '@renderer/nav/Sidebar'
 import { useClientStore, usePageStore, useSettingsStore } from '@renderer/stores'
 import Button from '@renderer/components/Button'
-import {
-  IconCarThingSmall,
-  IconDownload,
-  IconQR,
-  IconRefresh,
-  IconReload
-} from '@renderer/assets/icons'
+import { IconDownload, IconPlus, IconQR, IconRefresh, IconReload } from '@renderer/assets/icons'
 import MainElement from '@renderer/nav/MainElement'
 import { deviceMessages } from '@renderer/assets/refreshMessages'
 import ConnectionComponent from '@renderer/components/Client/Connection'
@@ -17,7 +11,6 @@ import ADBDevice from '@renderer/components/Client/ADBDevice'
 
 const ClientConnections: React.FC = () => {
   const settings = useSettingsStore((settings) => settings.settings)
-  const saveSettings = useSettingsStore((settings) => settings.saveSettings)
   const clients = useClientStore((clients) => clients.clients)
   const stagedClient = useClientStore((clients) => clients.clientManifest)
   const devices = useClientStore((clients) => clients.ADBDevices)
@@ -73,6 +66,11 @@ const ClientConnections: React.FC = () => {
     setSearchParams({ qr: 'true' })
   }
 
+  // Functions
+  const openSetup = (): void => {
+    setSearchParams({ setup: 'true', page: 'adb' })
+  }
+
   const handleDownloadsNav = (): void => {
     setPage('Downloads/Client')
   }
@@ -83,11 +81,6 @@ const ClientConnections: React.FC = () => {
     await setTimeout(() => {
       setIsRestarting(false)
     }, 1000)
-  }
-
-  const handleAutoConfigToggle = (): void => {
-    settings.autoConfig = !settings.autoConfig
-    saveSettings(settings)
   }
 
   return (
@@ -149,16 +142,11 @@ const ClientConnections: React.FC = () => {
               </p>
             </Button>
             <Button
-              className={`border-gray-500 w-full group gap-2 border ${settings.autoConfig ? 'bg-zinc-800 border-green-700 hover:bg-zinc-900' : 'hover:bg-zinc-900 border-transparent'}`}
-              onClick={handleAutoConfigToggle}
+              className={`border-gray-500 w-full group gap-2 border hover:bg-zinc-900 border-transparent`}
+              onClick={openSetup}
             >
-              <IconCarThingSmall strokeWidth={2} iconSize={28} />
-              <p className="md:block hidden text-center flex-grow">
-                <span className="hidden group-hover:inline">
-                  {settings.autoConfig ? 'Disable' : 'Enable'}
-                </span>{' '}
-                Auto Config
-              </p>
+              <IconPlus strokeWidth={2} iconSize={28} />
+              <p className="md:block hidden text-center flex-grow">Add Device</p>
             </Button>
           </div>
           {devices.length > 0 && (

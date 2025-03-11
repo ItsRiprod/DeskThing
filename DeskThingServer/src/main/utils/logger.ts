@@ -22,7 +22,7 @@ class Logger {
   private static instance: Logger
   private listeners: ((data: Log) => void)[] = []
   private logs: Log[] = []
-  private logLevel: LOG_FILTER = LOG_FILTER.SYSTEM
+  private logLevel: LOG_FILTER = LOG_FILTER.INFO
   private filesSetup = false
   private saveTimeout: NodeJS.Timeout | null = null
 
@@ -31,10 +31,13 @@ class Logger {
   }
 
   public setupSettingsListener = async (settingsStore: SettingsStoreClass): Promise<void> => {
-    this.logLevel = (await settingsStore.getSettings()).LogLevel || LOG_FILTER.SYSTEM
+    const settings = await settingsStore.getSettings()
+    if (settings) {
+      this.logLevel = settings?.logLevel || LOG_FILTER.INFO
+    }
 
     settingsStore.addListener((settings) => {
-      this.logLevel = settings?.logLevel || LOG_FILTER.SYSTEM
+      this.logLevel = settings?.logLevel || LOG_FILTER.INFO
     })
   }
 
@@ -141,6 +144,53 @@ class Logger {
     this.log(LOGGING_LEVELS.FATAL, message, options)
   }
 
+  private shouldLog(source: string, level: LOG_FILTER | LOGGING_LEVELS): boolean {
+    const levels = [
+      LOGGING_LEVELS.DEBUG,
+      LOG_FILTER.DEBUG,
+      LOGGING_LEVELS.MESSAGE,
+      LOG_FILTER.MESSAGE,
+      LOGGING_LEVELS.LOG,
+      LOG_FILTER.LOG,
+      LOGGING_LEVELS.WARN,
+      LOG_FILTER.WARN,
+      LOGGING_LEVELS.ERROR,
+      LOG_FILTER.ERROR,
+      LOGGING_LEVELS.FATAL,
+      LOG_FILTER.FATAL,
+      LOG_FILTER.SILENT,
+      LOG_FILTER.APPSONLY
+    ]
+
+    if (this.logLevel === LOG_FILTER.APPSONLY) {
+      return source != 'server'
+    }
+
+    if (this.logLevel === LOG_FILTER.SILENT) {
+      return false
+    }
+
+    if (levels.indexOf(level) >= levels.indexOf(this.logLevel)) {
+      return true
+    }
+
+    return false
+  }
+
+  private reconstructOptions = (options: LoggingOptions): LoggingOptions => {
+    const stackTrace = new Error().stack?.split('\n')
+    const callerFrame = stackTrace?.[3] // Skip Error, reconstructOptions, and log frames
+
+    const functionMatch = callerFrame?.match(/at\s+(\S+)\s+\(/)?.[1]
+    const sourceMatch = callerFrame?.match(/\((.+?)\)/)?.[1]
+
+    return {
+      ...options,
+      date: options.date || new Date().toISOString(),
+      function: options.function || functionMatch || '',
+      source: options.source || sourceMatch || ''
+    }
+  }
   /**
    * Logs a message with the specified level and source.
    * @param level - The message type (e.g. ERROR, WARNING, MESSAGE, LOGGING, FATAL, DEBUG).
@@ -155,19 +205,13 @@ class Logger {
         domain: 'server'
       }
     }
+
+    options = this.reconstructOptions(options)
+    if (!this.shouldLog(options.domain || 'server', level)) {
+      return
+    }
+
     try {
-      if (
-        level === LOGGING_LEVELS.LOG &&
-        options.domain === 'server' &&
-        this.logLevel != LOG_FILTER.SYSTEM
-      ) {
-        return
-      }
-
-      if (level === LOGGING_LEVELS.LOG && this.logLevel === LOG_FILTER.PRODUCTION) {
-        return
-      }
-
       if (options.error instanceof Error) {
         options.error = {
           name: options.error.name,

@@ -1,3 +1,4 @@
+// Store Classes
 import { AppDataStoreClass } from '@shared/stores/appDataStore'
 import { AppStoreClass } from '@shared/stores/appStore'
 import { ConnectionStoreClass } from '@shared/stores/connectionsStore'
@@ -5,19 +6,12 @@ import { GithubStoreClass } from '@shared/stores/githubStore'
 import { MappingStoreClass } from '@shared/stores/mappingStore'
 import { MusicStoreClass } from '@shared/stores/musicStore'
 import { SettingsStoreClass } from '@shared/stores/settingsStore'
-import { TaskStoreClass } from '@shared/stores/taskStore'
-import { AppDataStore } from './appDataStore'
-import { AppStore } from './appStore'
-import { ConnectionStore } from './connectionsStore'
-import { GithubStore } from './githubStore'
-import { MappingStore } from './mappingStore'
-import { MusicStore } from './musicStore'
-import { SettingsStore } from './settingsStore'
-import { TaskStore } from './taskStore'
-import { AppProcessStore } from './appProcessStore'
 import { AppProcessStoreClass } from '@shared/stores/appProcessStore'
+import { TaskStoreClass } from '@shared/stores/taskStore'
 import { PlatformStoreClass } from '@shared/stores/platformStore'
-import { PlatformStore } from './platformStore'
+
+// Stores
+
 // import { ExpressServerStoreClass } from '@shared/stores/expressServerStore'
 // import { ExpressServerManager } from './_expressServerStore'
 import logger from '@server/utils/logger'
@@ -39,36 +33,62 @@ interface Stores {
 export class StoreProvider {
   private static instance: StoreProvider
   private storeInstances: Partial<Stores> = {}
-  private storeInitializers: Record<keyof Stores, () => Stores[keyof Stores]>
+  private storeInitializers: Record<keyof Stores, () => Promise<Stores[keyof Stores]>>
+  private initialized = false
 
   private constructor() {
-    this.storeInitializers = {
-      settingsStore: () => new SettingsStore(),
-      appProcessStore: () => new AppProcessStore(),
-      appStore: () => new AppStore(this.getStore('appProcessStore')),
-      // Circular dependency: appDataStore depends on taskStore and taskStore depends on appDataStore
-      appDataStore: () => new AppDataStore(this.getStore('appStore')),
-      platformStore: () => new PlatformStore(this.getStore('appStore'), this.getStore('appDataStore')),
-      // Circular dependency: taskStore depends on appDataStore which depends on taskStore above
-      taskStore: () => new TaskStore(this.getStore('appDataStore'), this.getStore('appStore')),
-      connectionsStore: () =>
-        new ConnectionStore(
-          this.getStore('settingsStore'),
-          this.getStore('taskStore'),
-          this.getStore('platformStore')
-        ),
-      // expressServerStore: () =>
-      //   new ExpressServerManager(this.getStore('settingsStore'), this.getStore('appStore')),
-      githubStore: () => new GithubStore(),
-      mappingStore: () => new MappingStore(this.getStore('appStore')),
-      musicStore: () => new MusicStore(this.getStore('settingsStore'), this.getStore('appStore'))
+    const storeImports = {
+      appDataStore: () => import('./appDataStore').then((m) => m.AppDataStore),
+      appStore: () => import('./appStore').then((m) => m.AppStore),
+      connectionsStore: () => import('./connectionsStore').then((m) => m.ConnectionStore),
+      githubStore: () => import('./githubStore').then((m) => m.GithubStore),
+      mappingStore: () => import('./mappingStore').then((m) => m.MappingStore),
+      musicStore: () => import('./musicStore').then((m) => m.MusicStore),
+      settingsStore: () => import('./settingsStore').then((m) => m.SettingsStore),
+      taskStore: () => import('./taskStore').then((m) => m.TaskStore),
+      appProcessStore: () => import('./appProcessStore').then((m) => m.AppProcessStore),
+      platformStore: () => import('./platformStore').then((m) => m.PlatformStore)
     }
 
-    this.initializeInitialStores()
+    this.storeInitializers = {
+      settingsStore: async () => new (await storeImports.settingsStore())(),
+      appProcessStore: async () => new (await storeImports.appProcessStore())(),
+      appStore: async () =>
+        new (await storeImports.appStore())(await this.getStore('appProcessStore')),
+      appDataStore: async () =>
+        new (await storeImports.appDataStore())(await this.getStore('appStore')),
+      platformStore: async () =>
+        new (await storeImports.platformStore())(
+          await this.getStore('appStore'),
+          await this.getStore('appDataStore')
+        ),
+      taskStore: async () =>
+        new (await storeImports.taskStore())(
+          await this.getStore('appDataStore'),
+          await this.getStore('appStore')
+        ),
+      connectionsStore: async () =>
+        new (await storeImports.connectionsStore())(
+          await this.getStore('settingsStore'),
+          await this.getStore('taskStore'),
+          await this.getStore('platformStore')
+        ),
+      githubStore: async () => new (await storeImports.githubStore())(),
+      mappingStore: async () =>
+        new (await storeImports.mappingStore())(await this.getStore('appStore')),
+      musicStore: async () =>
+        new (await storeImports.musicStore())(
+          await this.getStore('settingsStore'),
+          await this.getStore('appStore')
+        )
+    }
+
+    this.initialize()
   }
 
-  private initializeInitialStores = (): void => {
-    const settingStore = this.getStore('settingsStore')
+  public async initialize(): Promise<void> {
+    if (this.initialized) return
+    const settingStore = await await this.getStore('settingsStore')
     logger.setupSettingsListener(settingStore)
     logger.info('Initialized initial stores', {
       function: 'initializeInitialStores',
@@ -83,14 +103,14 @@ export class StoreProvider {
     return StoreProvider.instance
   }
 
-  public getStore<K extends keyof Stores>(storeName: K): Stores[K] {
+  public async getStore<K extends keyof Stores>(storeName: K): Promise<Stores[K]> {
     // Lazy initialize store only when requested
     if (!this.storeInstances[storeName]) {
-      this.storeInstances[storeName] = this.storeInitializers[storeName]() as Stores[K]
+      this.storeInstances[storeName] = (await this.storeInitializers[storeName]()) as Stores[K]
 
       if (storeName === 'appDataStore') {
         const appDataStore = this.storeInstances.appDataStore as AppDataStoreClass
-        appDataStore.setupListeners(this.getStore('taskStore'))
+        appDataStore.setupListeners(await this.getStore('taskStore'))
       }
     }
     return this.storeInstances[storeName] as Stores[K]

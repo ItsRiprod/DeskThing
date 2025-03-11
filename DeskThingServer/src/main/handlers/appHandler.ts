@@ -43,7 +43,7 @@ export const appHandler: {
    */
   app: async (data, replyFn) => {
     if (data.request == 'get') {
-      return getApps(replyFn)
+      return await getApps(replyFn)
     }
     return
   },
@@ -91,7 +91,7 @@ export const appHandler: {
    * @returns `true` if the app was successfully stopped, `false` otherwise.
    */
   stop: async (data, replyFn) => {
-    const appStore = storeProvider.getStore('appStore')
+    const appStore = await storeProvider.getStore('appStore')
     await appStore.stop(data.payload)
     replyFn('logging', { status: true, data: 'Finished stopping app', final: true })
     return true
@@ -104,7 +104,7 @@ export const appHandler: {
    * @returns `true` if the app was successfully disabled, `false` otherwise.
    */
   disable: async (data, replyFn) => {
-    const appStore = storeProvider.getStore('appStore')
+    const appStore = await storeProvider.getStore('appStore')
     await appStore.disable(data.payload)
     replyFn('logging', { status: true, data: 'Finished disabling app', final: true })
     return true
@@ -117,7 +117,7 @@ export const appHandler: {
    * @returns `true` if the app was successfully enabled, `false` otherwise.
    */
   enable: async (data, replyFn) => {
-    const appStore = storeProvider.getStore('appStore')
+    const appStore = await storeProvider.getStore('appStore')
     await appStore.enable(data.payload)
     replyFn('logging', { status: true, data: 'Finished enabling app', final: true })
     return true
@@ -130,7 +130,7 @@ export const appHandler: {
    * @returns `true` if the app was successfully run, `false` otherwise.
    */
   run: async (data, replyFn) => {
-    const appStore = storeProvider.getStore('appStore')
+    const appStore = await storeProvider.getStore('appStore')
     await appStore.start(data.payload)
     replyFn('logging', { status: true, data: 'Finished starting app', final: true })
     return true
@@ -143,7 +143,7 @@ export const appHandler: {
    * @returns `true` if the app was successfully purged, `false` otherwise.
    */
   purge: async (data, replyFn) => {
-    const appStore = storeProvider.getStore('appStore')
+    const appStore = await storeProvider.getStore('appStore')
     await appStore.purge(data.payload)
     replyFn('logging', { status: true, data: 'Finished purging app', final: true })
     return true
@@ -189,7 +189,7 @@ export const appHandler: {
   },
 
   add: async (data, replyFn) => {
-    const appStore = storeProvider.getStore('appStore')
+    const appStore = await storeProvider.getStore('appStore')
     replyFn('logging', { status: true, data: 'Handling app from URL...', final: false })
 
     return await appStore.addApp({
@@ -200,7 +200,7 @@ export const appHandler: {
   },
 
   staged: async (data, reply) => {
-    const appStore = storeProvider.getStore('appStore')
+    const appStore = await storeProvider.getStore('appStore')
     reply('logging', { status: true, data: `Handling staged app...`, final: false })
     Logger.log(
       LOGGING_LEVELS.LOG,
@@ -210,7 +210,7 @@ export const appHandler: {
   },
 
   'user-data-response': async (data) => {
-    const appStore = storeProvider.getStore('appStore')
+    const appStore = await storeProvider.getStore('appStore')
     appStore.sendDataToApp(data.payload.requestId, data.payload.response)
   },
   'select-zip-file': async () => {
@@ -235,8 +235,8 @@ export const appHandler: {
     replyFn('logging', { status: true, data: 'Finished', final: true })
   },
   'send-to-app': async (data, replyFn) => {
-    const appStore = storeProvider.getStore('appStore')
-    Logger.info('Sending data to app', {
+    const appStore = await storeProvider.getStore('appStore')
+    Logger.debug('Sending data to app', {
       source: 'AppHandler',
       domain: data.payload?.app || 'unknown',
       function: 'send-to-app'
@@ -245,13 +245,13 @@ export const appHandler: {
     replyFn('logging', { status: true, data: 'Finished', final: true })
   },
   'app-order': async (data, replyFn) => {
-    const appStore = storeProvider.getStore('appStore')
+    const appStore = await storeProvider.getStore('appStore')
     appStore.reorder(data.payload)
     replyFn('logging', { status: true, data: 'Finished', final: true })
   },
 
   icon: async (data) => {
-    const appStore = storeProvider.getStore('appStore')
+    const appStore = await storeProvider.getStore('appStore')
     const { appId, icon } = data.payload
     return appStore.getIcon(appId, icon)
   }
@@ -263,8 +263,8 @@ export const appHandler: {
  * @param replyFn - A function to send the app data to a client.
  * @returns An array of all the apps in the app store.
  */
-const getApps = (replyFn: ReplyFn): App[] => {
-  const appStore = storeProvider.getStore('appStore')
+const getApps = async (replyFn: ReplyFn): Promise<App[]> => {
+  const appStore = await storeProvider.getStore('appStore')
   replyFn('logging', { status: true, data: 'Getting data', final: false })
   const data = appStore.getAllBase()
   replyFn('logging', { status: true, data: 'Finished', final: true })
@@ -284,8 +284,8 @@ const setAppSettings = async (
   appId: string,
   settings: AppSettings
 ): Promise<void> => {
-  const appDataStore = storeProvider.getStore('appDataStore')
-  Logger.info('[setAppSettings]: Saving ' + appId + "'s data " + settings)
+  const appDataStore = await storeProvider.getStore('appDataStore')
+  Logger.debug('[setAppSettings]: Saving ' + appId + "'s data " + settings)
   appDataStore.addSettings(appId, settings)
   replyFn('logging', { status: true, data: 'Finished', final: true })
 }
@@ -295,8 +295,8 @@ const setAppData = async (
   appId: string,
   appData: Record<string, string>
 ): Promise<void> => {
-  const appDataStore = storeProvider.getStore('appDataStore')
-  Logger.info('[setAppData]: Saving ' + appId + "'s data " + appData)
+  const appDataStore = await storeProvider.getStore('appDataStore')
+  Logger.debug('[setAppData]: Saving ' + appId + "'s data " + appData)
   appDataStore.addData(appId, appData)
   replyFn('logging', { status: true, data: 'Finished', final: true })
 }
@@ -310,7 +310,7 @@ const setAppData = async (
  */
 const getAppSettings = async (replyFn: ReplyFn, payload: string): Promise<AppSettings | null> => {
   try {
-    const appDataStore = storeProvider.getStore('appDataStore')
+    const appDataStore = await storeProvider.getStore('appDataStore')
     const data = await appDataStore.getSettings(payload)
     replyFn('logging', { status: true, data: 'Finished', final: true })
     return data || null
@@ -338,7 +338,7 @@ const getAppData = async (
   payload: string
 ): Promise<Record<string, string> | null> => {
   try {
-    const appDataStore = storeProvider.getStore('appDataStore')
+    const appDataStore = await storeProvider.getStore('appDataStore')
     const data = await appDataStore.getData(payload)
     replyFn('logging', { status: true, data: 'Finished', final: true })
     return data || null

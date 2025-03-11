@@ -17,9 +17,15 @@ const ServerSettings: React.FC = () => {
   const checkForUpdateFn = useUpdateStore((state) => state.checkForUpdates)
 
   const logLevelOptions = [
-    { value: LOG_FILTER.SYSTEM, label: 'SYSTEM' },
-    { value: LOG_FILTER.APPS, label: 'APPS' },
-    { value: LOG_FILTER.PRODUCTION, label: 'PRODUCTION' }
+    { value: LOG_FILTER.DEBUG, label: 'Debug' },
+    { value: LOG_FILTER.MESSAGE, label: 'Message' },
+    { value: LOG_FILTER.LOG, label: 'Log' },
+    { value: LOG_FILTER.INFO, label: 'Info' },
+    { value: LOG_FILTER.WARN, label: 'Warning' },
+    { value: LOG_FILTER.ERROR, label: 'Error' },
+    { value: LOG_FILTER.FATAL, label: 'Fatal' },
+    { value: LOG_FILTER.SILENT, label: 'Silent' },
+    { value: LOG_FILTER.APPSONLY, label: 'Apps Only' }
   ]
 
   const handleSettingChange = (key: string, value: string | boolean | number): void => {
@@ -103,7 +109,7 @@ const ServerSettings: React.FC = () => {
           className="w-full"
           onChange={(selected) => {
             const selectedValue = selected as SingleValue<SettingOption>
-            handleSettingChange('logLevel', selectedValue?.value || LOG_FILTER.PRODUCTION)
+            handleSettingChange('logLevel', selectedValue?.value || LOG_FILTER.INFO)
           }}
         />
       </div>

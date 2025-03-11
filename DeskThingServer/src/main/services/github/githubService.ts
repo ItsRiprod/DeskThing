@@ -21,7 +21,7 @@ export async function getLatestRelease(repoUrl: string): Promise<GithubRelease> 
       throw new Error('Invalid GitHub repository URL')
     }
 
-    logger.info(`Fetching latest release for ${repoUrl}`, {
+    logger.debug(`Fetching latest release for ${repoUrl}`, {
       function: 'getLatestRelease',
       source: 'githubService'
     })

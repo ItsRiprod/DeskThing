@@ -1,15 +1,5 @@
-import { isValidAction } from '../mappings/utilsMaps'
-import {
-  Step,
-  STEP_TYPES,
-  Task,
-  TaskAction,
-  TaskExternal,
-  TaskSetting,
-  TaskShortcut,
-  TaskStep,
-  TaskTask
-} from '@DeskThing/types'
+import { isValidAction } from '../mappings/mapsValidation'
+import { Step, STEP_TYPES, Task } from '@DeskThing/types'
 import { TaskReference, FullTaskList } from '@shared/types'
 
 export function isValidTaskList(taskList: unknown): asserts taskList is FullTaskList {
@@ -175,7 +165,7 @@ export const sanitizeTaskReference = (task: Partial<TaskReference | Task>): Task
 export const sanitizeTask = (task: Partial<Task>, source?: string): Task => {
   const updatedTask = {
     id: task.id || '',
-    source: source || task.source || '',
+    source: task.source || source || '',
     version: task.version || '1.0.0',
     available: task.available ?? false,
     completed: task.completed ?? false,
@@ -185,26 +175,29 @@ export const sanitizeTask = (task: Partial<Task>, source?: string): Task => {
     description: task.description || '',
     steps: task.steps
       ? Object.fromEntries(
-          Object.entries(task.steps).map(([key, step]) => [key, sanitizeStep(step)])
+          Object.entries(task.steps).map(([key, step]) => [
+            step.id || key,
+            sanitizeStep(step, task.source || source || '', task.id || step.id || key)
+          ])
         )
       : {}
   }
   return updatedTask as Task
 }
-export const sanitizeStep = (step: Partial<Step>): Step => {
+export const sanitizeStep = (step: Partial<Step>, source?: string, parentId?: string): Step => {
   if (!step.type) {
     throw new Error('Step must have a type')
   }
-  const newStep: Step = {
+  const newStep: Omit<Step, 'type'> = {
     id: step.id || '',
-    parentId: step.parentId,
+    parentId: step.parentId || parentId,
     completed: step.completed ?? false,
     debug: step.debug,
     strict: step.strict,
+    source: source || '',
     label: step.label,
     instructions: step.instructions,
-    debugging: step.debugging,
-    type: STEP_TYPES.STEP
+    debugging: step.debugging
   }
   switch (step.type) {
     case STEP_TYPES.ACTION:
@@ -212,37 +205,39 @@ export const sanitizeStep = (step: Partial<Step>): Step => {
         ...newStep,
         type: STEP_TYPES.ACTION,
         // Should be fixed with a sanitized action but that does not exist yet
-        action: step.action ? step.action : undefined
-      } as TaskAction
+        action: step.action ? step.action : 'unknown'
+      }
     case STEP_TYPES.SHORTCUT:
       return {
         ...newStep,
         type: STEP_TYPES.SHORTCUT,
         destination: step.destination || ''
-      } as TaskShortcut
+      }
     case STEP_TYPES.SETTING:
       return {
         ...newStep,
         type: STEP_TYPES.SETTING,
         // Should be fixed with a sanitized setting but that does not exist yet
-        setting: step.setting ? step.setting : undefined
-      } as TaskSetting
+        setting: step.setting ? step.setting : 'unknown'
+      }
     case STEP_TYPES.TASK:
       return {
         ...newStep,
         type: STEP_TYPES.TASK,
-        taskId: step.taskId || ''
-      } as TaskTask
+        taskId: step.taskId || '',
+        taskSource: step.taskSource || source || ''
+      }
     case STEP_TYPES.EXTERNAL:
       return {
         ...newStep,
-        type: STEP_TYPES.EXTERNAL
-      } as TaskExternal
+        type: STEP_TYPES.EXTERNAL,
+        url: step.url || ''
+      }
     case STEP_TYPES.STEP:
       return {
         ...newStep,
         type: STEP_TYPES.STEP
-      } as TaskStep
+      }
     default:
       throw new Error(`Invalid step type: ${step.type}`)
   }
@@ -262,9 +257,11 @@ function validateStepBase(
   }
 }
 
-export function isValidTaskAction(step: unknown): asserts step is TaskAction {
+export function isValidTaskAction(
+  step: unknown
+): asserts step is Extract<Step, { type: STEP_TYPES.ACTION }> {
   validateStepBase(step, STEP_TYPES.ACTION)
-  const s = step as Partial<TaskAction>
+  const s = step as Partial<Extract<Step, { type: STEP_TYPES.ACTION }>>
 
   if (!s.action) {
     throw new Error(`[ValidateTaskAction] Step ${s.id} does not have an action`)
@@ -278,18 +275,22 @@ export function isValidTaskAction(step: unknown): asserts step is TaskAction {
   isValidAction({ ...action, source: 'test' })
 }
 
-export function isValidTaskShortcut(step: unknown): asserts step is TaskShortcut {
+export function isValidTaskShortcut(
+  step: unknown
+): asserts step is Extract<Step, { type: STEP_TYPES.SHORTCUT }> {
   validateStepBase(step, STEP_TYPES.SHORTCUT)
-  const s = step as Partial<TaskShortcut>
+  const s = step as Partial<Extract<Step, { type: STEP_TYPES.SHORTCUT }>>
 
   if (!s.destination) {
     throw new Error(`[ValidateTaskShortcut] Step ${s.id} does not have a destination`)
   }
 }
 
-export function isValidTaskSetting(step: unknown): asserts step is TaskSetting {
+export function isValidTaskSetting(
+  step: unknown
+): asserts step is Extract<Step, { type: STEP_TYPES.SETTING }> {
   validateStepBase(step, STEP_TYPES.SETTING)
-  const s = step as Partial<TaskSetting>
+  const s = step as Partial<Extract<Step, { type: STEP_TYPES.SETTING }>>
 
   if (!s.setting) {
     throw new Error(`[ValidateTaskSetting] Step ${s.id} does not have a setting`)
@@ -318,19 +319,32 @@ export function isValidTaskSetting(step: unknown): asserts step is TaskSetting {
   }
 }
 
-export function isValidTaskTask(step: unknown): asserts step is TaskTask {
+export function isValidTaskTask(
+  step: unknown
+): asserts step is Extract<Step, { type: STEP_TYPES.TASK }> {
   validateStepBase(step, STEP_TYPES.TASK)
-  const s = step as Partial<TaskTask>
+  const s = step as Partial<Extract<Step, { type: STEP_TYPES.TASK }>>
 
   if (!s.taskId) {
     throw new Error(`[ValidateTaskTask] Step ${s.id} does not have a taskId`)
   }
 }
 
-export function isValidTaskExternal(step: unknown): asserts step is Step {
+export function isValidTaskExternal(
+  step: unknown
+): asserts step is Extract<Step, { type: STEP_TYPES.EXTERNAL }> {
   validateStepBase(step, STEP_TYPES.EXTERNAL)
+  const s = step as Partial<Extract<Step, { type: STEP_TYPES.EXTERNAL }>>
+
+  if (s.url) {
+    if (typeof s.url !== 'string') {
+      throw new Error(`[ValidateTaskExternal] Step ${s.id} url must be a string`)
+    }
+  }
 }
 
-export function isValidTaskStep(step: unknown): asserts step is Step {
+export function isValidTaskStep(
+  step: unknown
+): asserts step is Extract<Step, { type: STEP_TYPES.STEP }> {
   validateStepBase(step, STEP_TYPES.STEP)
 }

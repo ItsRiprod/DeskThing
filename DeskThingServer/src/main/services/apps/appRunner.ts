@@ -1,7 +1,7 @@
 console.log('[AppRnr Service] Starting')
 import Logger from '@server/utils/logger'
 import { LOGGING_LEVELS } from '@DeskThing/types'
-import { storeProvider } from '@server/stores'
+import { storeProvider } from '@server/stores/storeProvider'
 
 /**
  * Loads and runs all enabled apps from appData.json
@@ -10,11 +10,11 @@ import { storeProvider } from '@server/stores'
  * @returns {Promise<void>}
  */
 export async function loadAndRunEnabledApps(): Promise<void> {
-  const appStore = storeProvider.getStore('appStore')
+  const appStore = await storeProvider.getStore('appStore')
 
   try {
     const appInstances = appStore.getAll()
-    Logger.info('Loaded apps config. Running apps...', {
+    Logger.debug('Loaded apps config. Running apps...', {
       source: 'loadAndRunEnabledApps'
     })
 
@@ -24,7 +24,7 @@ export async function loadAndRunEnabledApps(): Promise<void> {
     // Run all of the enabled apps
     await Promise.all(
       enabledApps.map(async (appConfig) => {
-        Logger.info(`Automatically running app ${appConfig.name}`, {
+        Logger.debug(`Automatically running app ${appConfig.name}`, {
           source: 'loadAndRunEnabledApps'
         })
         await appStore.run(appConfig.name)
@@ -35,7 +35,7 @@ export async function loadAndRunEnabledApps(): Promise<void> {
 
     await Promise.all(
       failedApps.map(async (failedApp) => {
-        Logger.info(`SERVER: Attempting to run ${failedApp.name} again`, {
+        Logger.debug(`SERVER: Attempting to run ${failedApp.name} again`, {
           source: 'loadAndRunEnabledApps'
         })
         await appStore.run(failedApp.name)

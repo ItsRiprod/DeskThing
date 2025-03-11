@@ -14,7 +14,7 @@ import { AppDataInterface } from '@DeskThing/types'
 import { deleteFile, readFromFile, writeToFile } from './fileService'
 import { join } from 'path'
 import logger from '@server/utils/logger'
-import { isValidAppDataInterface } from '../apps'
+import { isValidAppDataInterface } from '../apps/appValidator'
 
 // Updated function to read Data using the new FileService
 const readAppData = async (name: string): Promise<AppDataInterface | undefined> => {

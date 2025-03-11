@@ -53,9 +53,11 @@ export class MusicStore implements CacheableStore, MusicStoreClass {
 
   private async initializeRefreshInterval(): Promise<void> {
     const settings = await this.settingsStore.getSettings() // Get from your settings store
-    this.currentApp = settings.playbackLocation || 'none'
+    this.currentApp = settings?.playbackLocation || 'none'
 
-    this.updateRefreshInterval(settings.refreshInterval)
+    if (!settings) return
+
+    this.updateRefreshInterval(settings?.refreshInterval)
     this.settingsStore.addListener(this.handleSettingsUpdate.bind(this))
 
     setTimeout(() => {
@@ -122,7 +124,7 @@ export class MusicStore implements CacheableStore, MusicStoreClass {
 
     const settings = await this.settingsStore.getSettings()
 
-    if (settings.playbackLocation && settings.playbackLocation != 'none') {
+    if (settings?.playbackLocation && settings?.playbackLocation != 'none') {
       Logger.log(
         LOGGING_LEVELS.LOG,
         `[MusicStore]: Fount ${settings.playbackLocation} in settings. Setting playback location to i!`
@@ -131,7 +133,7 @@ export class MusicStore implements CacheableStore, MusicStoreClass {
     } else {
       Logger.log(
         LOGGING_LEVELS.LOG,
-        `[MusicStore]: Unable to find a playback from settings! ${settings.playbackLocation}`
+        `[MusicStore]: Unable to find a playback from settings! ${settings?.playbackLocation}`
       )
     }
 
@@ -158,7 +160,7 @@ export class MusicStore implements CacheableStore, MusicStoreClass {
     if (this.currentApp == 'disabled') {
       Logger.log(LOGGING_LEVELS.LOG, `[MusicStore]: Music is disabled! Cancelling refresh`)
       const settings = await this.settingsStore.getSettings()
-      if (settings.refreshInterval > 0) {
+      if (!settings || settings?.refreshInterval > 0) {
         this.settingsStore.updateSetting('refreshInterval', -1)
       }
       return null
@@ -181,7 +183,7 @@ export class MusicStore implements CacheableStore, MusicStoreClass {
 
     if (!this.currentApp || this.currentApp.length == 0) {
       // Attempt to get audiosource from settings
-      const currentApp = (await this.settingsStore.getSettings()).playbackLocation
+      const currentApp = (await this.settingsStore.getSettings())?.playbackLocation
       if (!currentApp || currentApp.length == 0) {
         Logger.log(
           LOGGING_LEVELS.ERROR,

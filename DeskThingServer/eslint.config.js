@@ -23,7 +23,15 @@ export default tseslint.config(
     rules: {
       ...eslintPluginReactRefresh.configs.vite.rules,
       'prettier/prettier': ['error', { endOfLine: 'auto' }],
-      '@typescript-eslint/no-unused-vars': ['error', { varsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          varsIgnorePattern: '^_',
+          argsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+          ignoreRestSiblings: true
+        }
+      ],
       '@typescript-eslint/no-unused-expressions': [
         'error',
         {

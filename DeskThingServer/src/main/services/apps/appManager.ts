@@ -2,7 +2,7 @@ console.log('[AppMangr Service] Starting')
 import { rmSync, readdirSync, statSync, existsSync } from 'node:fs'
 import Logger from '@server/utils/logger'
 import { LOGGING_LEVELS } from '@DeskThing/types'
-import { storeProvider } from '@server/stores'
+import { storeProvider } from '@server/stores/storeProvider'
 
 /**
  * Clears the cache for an app
@@ -82,11 +82,11 @@ export async function purgeApp(appName: string): Promise<void> {
   const errors: Error[] = []
 
   try {
-    Logger.info(`SERVER: Purging App ${appName}`)
+    Logger.debug(`SERVER: Purging App ${appName}`)
 
     const { purgeAppData } = await import('../files/dataFileService')
     const { purgeAppConfig } = await import('../files/appFileService')
-    const keyMapStore = storeProvider.getStore('mappingStore')
+    const keyMapStore = await storeProvider.getStore('mappingStore')
 
     // Purge App Data
     try {
@@ -142,7 +142,7 @@ export async function purgeApp(appName: string): Promise<void> {
       Logger.error(`Failed to remove app directory for ${appName}:`, { error: e as Error })
     }
 
-    Logger.info(`SERVER: Purged App ${appName}`)
+    Logger.debug(`SERVER: Purged App ${appName}`)
 
     if (errors.length > 0) {
       throw new Error(

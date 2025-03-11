@@ -56,7 +56,9 @@ export class ConnectionStore implements CacheableStore, ConnectionStoreClass {
   private setupConnectionListeners = async (): Promise<void> => {
     // Setting Store listeners
     this.settingsStore.getSettings().then((settings) => {
-      this.autoDetectADB = settings.autoDetectADB
+      if (settings) {
+        this.autoDetectADB = settings.autoDetectADB
+      }
     })
 
     this.settingsStore.addListener((newSettings) => {
@@ -100,6 +102,10 @@ export class ConnectionStore implements CacheableStore, ConnectionStoreClass {
 
     this.platformStore.on(PlatformStoreEvent.CLIENT_DISCONNECTED, (client) => {
       this.removeClient(client)
+    })
+
+    this.platformStore.on(PlatformStoreEvent.CLIENT_UPDATED, (client) => {
+      this.updateClient(client.id, client)
     })
   }
 
@@ -249,7 +255,7 @@ export class ConnectionStore implements CacheableStore, ConnectionStoreClass {
       try {
         // Automatically config the devices if it is both not offline and not connected
         const settings = await this.settingsStore.getSettings()
-        if (settings.autoConfig && newDevices.some((device) => !device.connected)) {
+        if (settings?.autoConfig && newDevices.some((device) => !device.connected)) {
           // Wait for all of the devices to configure
           Logger.info('Automatically configuring disconnected devices', {
             function: 'getAdbDevices',

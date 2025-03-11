@@ -23,7 +23,8 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
   private listeners: TaskStoreListeners = {
     taskList: [],
     step: [],
-    task: []
+    task: [],
+    currentTask: []
   }
 
   // stores
@@ -46,32 +47,7 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
           case 'init':
             if (data.payload?.tasks) {
               // Similar to handleRequestInitTasks
-              const existingTasks = (await this.appDataStore.getTasks(source)) || {}
-              const newTasks = Object.entries(data.payload.tasks as Record<string, Task>).reduce<
-                Record<string, Task>
-              >((acc, [id, task]) => {
-                try {
-                  isValidTask(task)
-                  const sanitizedTask = sanitizeTask(task, source)
-                  if (!existingTasks[id]) {
-                    acc[id] = sanitizedTask
-                  }
-                  return acc
-                } catch (error) {
-                  Logger.error(
-                    `Error in task init. Unable to add task ${typeof task == 'object' ? JSON.stringify(task) : 'unknown'}`,
-                    {
-                      source: 'TaskStore',
-                      function: 'initializeListeners',
-                      error: error as Error
-                    }
-                  )
-                  return acc
-                }
-              }, {})
-
-              const mergedTasks = { ...existingTasks, ...newTasks }
-              await this.addTasks(source, mergedTasks)
+              this.initTasks(data.source, data.payload.tasks)
             }
             break
 
@@ -246,7 +222,8 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
   saveToFile = async (): Promise<void> => {}
 
   private initializeServerTasks = async (): Promise<void> => {
-    // TODO: Handle virtual server app creation / task addition
+    const defaultTasks = await import('../static/defaultTasks')
+    this.initTasks('server', defaultTasks.ServerTasks)
   }
 
   /**
@@ -268,6 +245,36 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
     this.listeners[type] = this.listeners[type].filter(
       (l) => l !== listener
     ) as TaskStoreListeners[K]
+  }
+
+  public async initTasks(app: string, tasks: Record<string, Task>): Promise<void> {
+    const existingTasks = (await this.appDataStore.getTasks(app)) || {}
+    const newTasks = Object.entries(tasks as Record<string, Task>).reduce<Record<string, Task>>(
+      (acc, [id, task]) => {
+        try {
+          isValidTask(task)
+          if (!existingTasks[id] || task.version !== existingTasks[id].version) {
+            const sanitizedTask = sanitizeTask(task, app)
+            acc[id] = sanitizedTask
+          }
+          return acc
+        } catch (error) {
+          Logger.error(
+            `Error in task init. Unable to add task ${typeof task == 'object' ? JSON.stringify(task) : 'unknown'}`,
+            {
+              source: 'TaskStore',
+              function: 'initializeListeners',
+              error: error as Error
+            }
+          )
+          return acc
+        }
+      },
+      {}
+    )
+
+    const mergedTasks = { ...existingTasks, ...newTasks }
+    await this.addTasks(app, mergedTasks)
   }
 
   public async getTaskList(): Promise<FullTaskList> {
@@ -357,6 +364,8 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
   }
 
   async completeTask(sourceId: string, taskId: string): Promise<void> {
+    Logger.debug(`Completing task ${taskId} from ${sourceId}`)
+
     const task = await this.appDataStore.getTask(sourceId, taskId)
 
     if (!task) {
@@ -386,6 +395,7 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
   }
 
   async restartTask(source?: string, id?: string): Promise<void> {
+    Logger.debug(`Restarting task ${id} from ${source}`)
     if ((!source || !id) && !this.currentTask) {
       Logger.warn(`[restartTask]: No task or source ID provided`)
       return
@@ -430,6 +440,7 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
 
     this.currentTask = { source, id }
     this.notify('task', task)
+    this.notify('currentTask', this.currentTask)
   }
 
   async stopTask(source: string, id: string): Promise<void> {
@@ -501,24 +512,37 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
 
       this.notify('step', { taskId: id, source: source, step: updatedStep })
     } catch (error) {
-      Logger.warn(`[updateStep]: Step ${newStep.id} is invalid`, { error: error as Error })
+      Logger.warn(`[updateStep]: Step ${newStep.id} is invalid`, {
+        error: error as Error,
+        function: 'updateStep',
+        source: 'taskStore'
+      })
     }
   }
 
   async deleteStep(source: string, taskId: string, stepId: string): Promise<void> {
     const task = await this.appDataStore.getTask(source, taskId)
     if (!task) {
-      Logger.warn(`[deleteStep]: Task ${taskId} does not exist`)
+      Logger.warn(`[deleteStep]: Task ${taskId} does not exist`, {
+        function: 'deleteStep',
+        source: 'taskStore'
+      })
       return
     }
 
     if (!task.steps) {
-      Logger.warn(`[deleteStep]: Task ${taskId} does not have any steps`)
+      Logger.warn(`[deleteStep]: Task ${taskId} does not have any steps`, {
+        function: 'deleteStep',
+        source: 'taskStore'
+      })
       return
     }
 
     if (!task.steps[stepId]) {
-      Logger.warn(`[deleteStep]: Step ${stepId} does not exist`)
+      Logger.warn(`[deleteStep]: Step ${stepId} does not exist`, {
+        function: 'deleteStep',
+        source: 'taskStore'
+      })
       return
     }
 
@@ -533,17 +557,34 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
   async nextStep(source: string, taskId: string): Promise<void> {
     const task = await this.appDataStore.getTask(source, taskId)
     if (!task) {
-      Logger.warn(`[nextStep]: Task ${taskId} does not exist`)
+      Logger.warn(`[nextStep]: Task ${taskId} does not exist`, {
+        function: 'nextStep',
+        source: 'taskStore'
+      })
       return
     }
 
+    if (!task.started) {
+      Logger.warn(`[nextStep]: Task ${taskId} has not been started! Starting...`, {
+        function: 'nextStep',
+        source: 'taskStore'
+      })
+      await this.startTask(source, taskId)
+    }
+
     if (!task.steps) {
-      Logger.warn(`[nextStep]: Task ${taskId} does not have any steps`)
+      Logger.warn(`[nextStep]: Task ${taskId} does not have any steps`, {
+        function: 'nextStep',
+        source: 'taskStore'
+      })
       return
     }
 
     if (!task.currentStep) {
-      Logger.info(`[nextStep]: Task ${taskId} does not have a current step`)
+      Logger.warn(`[nextStep]: Task ${taskId} does not have a current step`, {
+        function: 'nextStep',
+        source: 'taskStore'
+      })
       task.currentStep = Object.values(task.steps)[0].id
       this.notify('task', task)
       return
@@ -551,42 +592,59 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
     const currentStep = task.steps[task.currentStep]
 
     if (!currentStep) {
-      Logger.warn(`[nextStep]: Task ${taskId} does not have a current step`)
+      Logger.warn(`[nextStep]: Task ${taskId} does not have a current step`, {
+        function: 'nextStep',
+        source: 'taskStore'
+      })
       task.currentStep = Object.values(task.steps)[0].id
       this.notify('task', task)
       return
     }
 
     if (!currentStep.completed) {
-      Logger.info(`[nextStep]: Step ${currentStep.id} in ${taskId} has not been completed yet!`)
+      Logger.warn(`[nextStep]: Step ${currentStep.id} in ${taskId} has not been completed yet!`, {
+        function: 'nextStep',
+        source: 'taskStore'
+      })
       return
     }
 
     const nextStep = await this.getNextStep(task, task.currentStep)
 
     if (!nextStep) {
-      Logger.warn(`[nextStep]: Task ${taskId} does not have a next step`)
+      Logger.warn(`[nextStep]: Task ${taskId} does not have a next step`, {
+        function: 'nextStep',
+        source: 'taskStore'
+      })
       return
     }
 
     task.currentStep = nextStep.id
     this.notify('task', task)
   }
-
   async prevStep(source: string, taskId: string): Promise<void> {
     const task = await this.appDataStore.getTask(source, taskId)
     if (!task) {
-      Logger.warn(`[prevStep]: Task ${taskId} does not exist`)
+      Logger.warn(`[prevStep]: Task ${taskId} does not exist`, {
+        function: 'prevStep',
+        source: 'taskStore'
+      })
       return
     }
 
     if (!task.steps) {
-      Logger.warn(`[prevStep]: Task ${taskId} does not have any steps`)
+      Logger.warn(`[prevStep]: Task ${taskId} does not have any steps`, {
+        function: 'prevStep',
+        source: 'taskStore'
+      })
       return
     }
 
     if (!task.currentStep) {
-      Logger.info(`[prevStep]: Task ${taskId} does not have a current step`)
+      Logger.warn(`[prevStep]: Task ${taskId} does not have a current step`, {
+        function: 'prevStep',
+        source: 'taskStore'
+      })
       task.currentStep = Object.values(task.steps)[0].id
       this.notify('task', task)
       return
@@ -595,14 +653,20 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
     const stepIndex = Object.values(task.steps).findIndex((s) => s.id === task.currentStep)
 
     if (stepIndex === -1) {
-      Logger.info(`[prevStep]: Task ${taskId} does not have a current step`)
+      Logger.warn(`[prevStep]: Task ${taskId} does not have a current step`, {
+        function: 'prevStep',
+        source: 'taskStore'
+      })
       task.currentStep = Object.values(task.steps)[0].id
       this.notify('task', task)
       return
     }
 
     if (stepIndex === 0) {
-      Logger.info(`[prevStep]: Task ${taskId} is on the first step`)
+      Logger.warn(`[prevStep]: Task ${taskId} is on the first step`, {
+        function: 'prevStep',
+        source: 'taskStore'
+      })
       return
     }
 
@@ -633,7 +697,7 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
     const nextStep = Object.values(task.steps)[stepIndex + 1]
 
     if (!nextStep) {
-      Logger.info(`[getNextStep]: No next step for step ${stepId}`)
+      Logger.warn(`[getNextStep]: No next step for step ${stepId}`)
       return
     }
 
@@ -641,28 +705,60 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
   }
 
   async completeStep(source: string, taskId: string, stepId: string): Promise<void> {
+    Logger.debug(`Completing step ${stepId} in task ${taskId} from ${source}`, {
+      function: 'completeStep',
+      source: 'taskStore'
+    })
     const task = await this.appDataStore.getTask(source, taskId)
 
-    // Check if the task is completed for an early return
-    if (task?.completed) return
-
     if (!task) {
-      Logger.warn(`[completeStep]: Task ${taskId} does not exist`)
+      Logger.warn(`[completeStep]: Task ${taskId} does not exist`, {
+        function: 'completeStep',
+        source: 'taskStore'
+      })
       return
     }
 
     if (!task.steps) {
-      Logger.warn(`[completeStep]: Task ${taskId} does not have any steps`)
+      Logger.warn(`[completeStep]: Task ${taskId} does not have any steps`, {
+        function: 'completeStep',
+        source: 'taskStore'
+      })
       return
     }
     if (!task.steps[stepId]) {
-      Logger.info(`[completeStep]: Step ${stepId} does not exist`)
+      Logger.warn(`Step ${stepId} does not exist in task ${taskId}`, {
+        function: 'completeStep',
+        source: 'taskStore'
+      })
+      console.log(task)
       return
     } else {
       task.steps[stepId].completed = true
     }
 
-    this.appDataStore.updateTask(source, task)
+    const nextStep = await this.getNextStep(task, stepId)
+    if (nextStep && !nextStep?.completed) {
+      task.currentStep = nextStep.id
+    } else {
+      Logger.debug(`Step ${stepId} was the last to complete the task`, {
+        function: 'completeStep',
+        source: 'taskStore'
+      })
+      this.completeTask(source, taskId)
+    }
+
+    Logger.debug(`Step ${stepId} completed`, {
+      function: 'completeStep',
+      source: 'taskStore'
+    })
+    Logger.debug(`Step ${stepId} completed`, {
+      function: 'completeStep',
+      source: 'taskStore'
+    })
+
+    this.notify('step', { taskId, source, step: task.steps[stepId] })
+    this.notify('task', task)
   }
 
   async restartStep(source: string, taskId: string, stepId: string): Promise<void> {

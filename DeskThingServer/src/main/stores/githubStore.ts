@@ -115,7 +115,7 @@ export class GithubStore implements CacheableStore, GithubStoreClass {
   }
 
   public refreshData = async (force = false): Promise<void> => {
-    logger.info('Refreshing data...', {
+    logger.debug('Refreshing data...', {
       function: 'refreshData',
       source: 'GithubStore'
     })
@@ -174,6 +174,7 @@ export class GithubStore implements CacheableStore, GithubStoreClass {
         return this.appReleases
       }
     }
+
     return this.appReleases
   }
 
@@ -222,7 +223,7 @@ export class GithubStore implements CacheableStore, GithubStoreClass {
       )
 
       try {
-        logger.info('Updating community file...', {
+        logger.debug('Updating community file...', {
           function: 'getAppLatestJsonFile',
           source: 'GithubStore'
         })
@@ -260,7 +261,7 @@ export class GithubStore implements CacheableStore, GithubStoreClass {
       }
 
       try {
-        logger.info('Updating app release file...', {
+        logger.debug('Updating app release file...', {
           function: 'getAppLatestJsonFile',
           source: 'GithubStore'
         })
@@ -326,7 +327,7 @@ export class GithubStore implements CacheableStore, GithubStoreClass {
     }
 
     try {
-      logger.info('Updating app release file...', {
+      logger.debug('Updating app release file...', {
         function: 'getAppLatestJsonFile',
         source: 'GithubStore'
       })
@@ -658,7 +659,7 @@ export class GithubStore implements CacheableStore, GithubStoreClass {
     const cached = this.assetAppCache.get(asset.browser_download_url.toLowerCase())
 
     if (cached && this.isCacheValid(cached)) {
-      logger.info(`Using cached asset content for ${asset.browser_download_url}`, {
+      logger.debug(`Using cached asset content for ${asset.browser_download_url}`, {
         function: 'fetchAppAssetContent',
         source: 'GithubStore'
       })
@@ -719,7 +720,7 @@ export class GithubStore implements CacheableStore, GithubStoreClass {
     }
 
     try {
-      logger.info(`Fetching asset content for ${asset.browser_download_url}`, {
+      logger.debug(`Fetching asset content for ${asset.browser_download_url}`, {
         function: 'fetchClientAssetContent',
         source: 'GithubStore'
       })
@@ -792,7 +793,7 @@ export class GithubStore implements CacheableStore, GithubStoreClass {
 
   private doFetchRelease = async (repoUrl: string): Promise<GithubRelease[]> => {
     try {
-      logger.info(`Fetching latest release for ${repoUrl} from github`, {
+      logger.debug(`Fetching latest release for ${repoUrl} from github`, {
         function: 'fetchLatestRelease',
         source: 'GithubStore'
       })

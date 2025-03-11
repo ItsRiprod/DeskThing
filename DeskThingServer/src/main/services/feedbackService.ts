@@ -1,5 +1,5 @@
 import { getClientManifest } from '@server/handlers/deviceHandler'
-import { storeProvider } from '@server/stores'
+import { storeProvider } from '@server/stores/storeProvider'
 import logger from '@server/utils/logger'
 import { FeedbackReport, FeedbackType, SystemInfo } from '@shared/types'
 import os from 'os'
@@ -92,8 +92,8 @@ export class FeedbackService {
   }
 
   static async collectSystemInfo(): Promise<SystemInfo> {
-    const appStore = storeProvider.getStore('appStore')
-    const connectionStore = storeProvider.getStore('connectionsStore')
+    const appStore = await storeProvider.getStore('appStore')
+    const connectionStore = await storeProvider.getStore('connectionsStore')
 
     const systemInfo: SystemInfo = {
       serverVersion: 'v' + process.env.PACKAGE_VERSION || '0.0.0',

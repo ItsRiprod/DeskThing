@@ -1,5 +1,5 @@
 import { storeProvider } from '@server/stores/storeProvider'
-import { SocketData, ClientManifest, Action, SettingsType } from '@DeskThing/types'
+import { SocketData, ClientManifest, SettingsType } from '@DeskThing/types'
 import Logger from '@server/utils/logger'
 import { Client } from '@shared/types'
 import { PlatformInterface } from '@shared/interfaces/platform'
@@ -13,7 +13,6 @@ export async function handlePlatformMessage(
   client: Client,
   messageData: SocketData
 ): Promise<void> {
-  console.log(`Handling platform message from platform ${platform.name} ${client.device_type?.name}`, messageData)
   const messageKey = `${messageData.app}-${messageData.type}-${messageData.request}`
   const now = Date.now()
 
@@ -28,10 +27,10 @@ export async function handlePlatformMessage(
       if (messageData.app === 'server') {
         await handleServerMessage(platform, client, messageData)
       } else if (messageData.app === 'utility' || messageData.app === 'music') {
-        const musicStore = storeProvider.getStore('musicStore')
+        const musicStore = await storeProvider.getStore('musicStore')
         await musicStore.handleClientRequest(messageData)
       } else if (messageData.app) {
-        const appStore = storeProvider.getStore('appStore')
+        const appStore = await storeProvider.getStore('appStore')
 
         await appStore.sendDataToApp(messageData.app.toLowerCase(), {
           type: messageData.type,
@@ -61,10 +60,10 @@ async function handleServerMessage(
   client: Client,
   messageData: SocketData
 ): Promise<void> {
-  const appStore = storeProvider.getStore('appStore')
-  const appDataStore = storeProvider.getStore('appDataStore')
-  const mappingStore = storeProvider.getStore('mappingStore')
-  const settingsStore = storeProvider.getStore('settingsStore')
+  const appStore = await storeProvider.getStore('appStore')
+  const appDataStore = await storeProvider.getStore('appDataStore')
+  const mappingStore = await storeProvider.getStore('mappingStore')
+  const settingsStore = await storeProvider.getStore('settingsStore')
 
   switch (messageData.type) {
     case 'heartbeat':
@@ -128,21 +127,28 @@ async function handleServerMessage(
     case 'manifest':
       if (messageData.payload) {
         const manifest = messageData.payload as ClientManifest & { adbId: string }
-        client.connected = true
-        client.name = manifest.name
-        client.version = manifest.version
-        client.description = manifest.description
+        const clientUpdates: Partial<Client> = {
+          connected: true,
+          name: manifest.name,
+          version: manifest.version,
+          description: manifest.description
+        }
 
         if (manifest.adbId) {
-          client.adbId = manifest.adbId
-          client.device_type = manifest.device_type
+          clientUpdates.adbId = manifest.adbId
+          clientUpdates.device_type = manifest.device_type
         }
+
+        const platformStore = await storeProvider.getStore('platformStore')
+        platformStore.updateClient(client.connectionId, clientUpdates)
 
         Logger.info(`Updated client manifest for ${client.connectionId}`, {
           domain: client.connectionId,
-          source: 'platformMessage'
+          source: 'platformMessage',
+          function: 'updateClient'
         })
       }
+
       break
 
     case 'action':

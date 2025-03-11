@@ -1,6 +1,6 @@
 import WebSocket, { WebSocketServer } from 'ws'
 import { Server as HttpServer, IncomingMessage } from 'http'
-import { parentPort } from 'worker_threads'
+import { parentPort, workerData } from 'worker_threads'
 import express from 'express'
 import crypto from 'crypto'
 import {
@@ -12,7 +12,6 @@ import {
 import { Client } from '@shared/types'
 import { ClientDeviceType, SocketData } from '@deskthing/types'
 import { ExpressServer } from './expressWorker'
-import { workerData } from 'worker_threads'
 
 export class WSPlatform {
   private server: WebSocketServer | null = null
@@ -148,16 +147,15 @@ export class WSPlatform {
   }
 
   async broadcastData(data: SocketData): Promise<void> {
-    this.clients.forEach(({ socket, client  }) => {
-      console.log('Sending data to client', client.name, data)
+    this.clients.forEach(({ socket }) => {
       try {
-        if (socket.readyState == WebSocket.OPEN) { 
+        if (socket.readyState == WebSocket.OPEN) {
           socket.send(JSON.stringify(data))
         } else {
-          console.log('Socket not open, adding to queue')
+          console.error('Socket not open, adding to queue')
         }
       } catch (error) {
-        console.log('Encountered error ', error)
+        console.error('Encountered error ', error)
         this.sendToParent(
           PlatformEvent.ERROR,
           error instanceof Error
@@ -180,6 +178,20 @@ export class WSPlatform {
 
   isRunning(): boolean {
     return this.isActive
+  }
+
+  updateClient(clientId: string, newClient: Partial<Client>): void {
+    const clientObj = this.clients.get(clientId)
+    if (!clientObj) {
+      console.error(`Unable to find the client for id ${clientId}`)
+      return
+    }
+
+    const { client } = clientObj
+    clientObj.client = { ...client, ...newClient }
+    this.sendToParent(PlatformEvent.CLIENT_UPDATED, clientObj.client)
+    this.clients.set(clientId, clientObj)
+    console.log('Updated the client')
   }
 
   getStatus(): PlatformStatus {
@@ -237,6 +249,9 @@ if (parentPort) {
         break
       case 'broadcast':
         await platform.broadcastData(message.data)
+        break
+      case 'updateClient':
+        await platform.updateClient(message.clientId, message.client)
         break
     }
   })

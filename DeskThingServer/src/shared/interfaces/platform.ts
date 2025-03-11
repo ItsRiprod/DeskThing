@@ -16,6 +16,7 @@ import { Client } from '@shared/types'
 export enum PlatformEvent {
   CLIENT_CONNECTED = 'client_connected',
   CLIENT_DISCONNECTED = 'client_disconnected',
+  CLIENT_UPDATED = 'client_updated',
   DATA_RECEIVED = 'data_received',
   ERROR = 'error',
   STATUS_CHANGED = 'status_changed',
@@ -40,6 +41,7 @@ export type PlatformStatus = {
 export type PlatformEventPayloads = {
   [PlatformEvent.CLIENT_CONNECTED]: Client
   [PlatformEvent.CLIENT_DISCONNECTED]: Client
+  [PlatformEvent.CLIENT_UPDATED]: Client
   [PlatformEvent.DATA_RECEIVED]: { client: Client; data: SocketData }
   [PlatformEvent.ERROR]: Error
   [PlatformEvent.STATUS_CHANGED]: PlatformStatus
@@ -69,6 +71,9 @@ export interface PlatformInterface {
   // Client connection handling
   getClients(): Client[]
   getClientById(clientId: string): Client | undefined
+
+  // Client management
+  updateClient(clientId: string, client: Partial<Client>): void
 
   // Data transfer
   sendData(clientId: string, data: SocketData): Promise<boolean>

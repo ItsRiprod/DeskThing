@@ -1,5 +1,5 @@
 import { Task, Step } from '@deskthing/types'
-import { FullTaskList } from '../types/types'
+import { FullTaskList } from '@shared/types'
 
 export type TaskStoreEvents = {
   /** Full key-val task list update */
@@ -8,6 +8,8 @@ export type TaskStoreEvents = {
   step: { source: string; taskId: string; step: Step }
   /** Individual task updates */
   task: Task
+  /** Current Task Updates */
+  currentTask: { source: string; id: string }
 }
 
 // Create listener types automatically from event map
