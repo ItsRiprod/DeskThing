@@ -1,6 +1,6 @@
 import { PageProps } from '..'
 import useMappingStore from '@renderer/stores/mappingStore'
-import { ActionReference } from '@shared/types'
+import { ActionReference } from '@DeskThing/types'
 import { ActionIcon } from '../components/ActionIcon'
 import Button from '@renderer/components/Button'
 import { IconCarThing } from '@renderer/assets/icons'

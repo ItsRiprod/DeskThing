@@ -1,0 +1,40 @@
+import { SocketData, SongData } from '@deskthing/types'
+
+/**
+ * Interface representing the public methods of MusicStore
+ */
+export interface MusicStoreClass {
+  /**
+   * Clears the music store cache
+   */
+  clearCache(): Promise<void>
+
+  /**
+   * Saves music store data to file (no-op for MusicStore)
+   */
+  saveToFile(): Promise<void>
+
+  /**
+   * Updates the refresh interval for music data polling
+   * @param refreshRate Refresh rate in milliseconds
+   */
+  updateRefreshInterval(refreshRate: number): Promise<void>
+
+  /**
+   * Sets the audio source app for music playback
+   * @param source Name of the app to use as audio source
+   */
+  setAudioSource(source: string): Promise<void>
+
+  /**
+   * Handles client requests related to music functionality
+   * @param request Socket data containing the client request
+   */
+  handleClientRequest(request: SocketData): Promise<void>
+
+  /**
+   * Processes and forwards music data to connected clients
+   * @param songData Song data received from audio source
+   */
+  handleMusicMessage(songData: SongData): Promise<void>
+}

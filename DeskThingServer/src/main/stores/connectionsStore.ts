@@ -1,30 +1,67 @@
+/**
+ * The ConnectionStore class is a singleton that manages the state of connected clients and devices.
+ * It provides methods to add, update, and remove clients, as well as to get the list of connected clients and devices.
+ * The class also handles the auto-detection of ADB devices and notifies listeners of changes to the client and device lists.
+ */
 console.log('[Connection Store] Starting')
-import { Client, MESSAGE_TYPES } from '@shared/types'
-import loggingStore from '../stores/loggingStore'
-import settingsStore from './settingsStore'
+import { LOGGING_LEVELS } from '@DeskThing/types'
+import { ADBClient, CacheableStore, Client } from '@shared/types'
+import Logger from '@server/utils/logger'
+import { configureDevice } from '@server/handlers/deviceHandler'
+import {
+  ClientListener,
+  ConnectionStoreClass,
+  DeviceListener
+} from '@shared/stores/connectionsStore'
+import { handleAdbCommands } from '@server/handlers/adbHandler'
+import { SettingsStoreClass } from '@shared/stores/settingsStore'
+import { TaskStoreClass } from '@shared/stores/taskStore'
+import { PlatformStoreClass, PlatformStoreEvent } from '@shared/stores/platformStore'
 
-type ClientListener = (client: Client[]) => void
-type DeviceListener = (device: string[]) => void
-
-class ConnectionStore {
+export class ConnectionStore implements CacheableStore, ConnectionStoreClass {
   private clients: Client[] = []
-  private devices: string[] = []
-  private static instance: ConnectionStore
+  private devices: ADBClient[] = []
   private clientListeners: ClientListener[] = []
   private deviceListeners: DeviceListener[] = []
   private autoDetectADB: boolean = false
   private clearTimeout: NodeJS.Timeout | null = null
 
-  constructor() {
+  // Stores that are DI
+  private settingsStore: SettingsStoreClass
+  private taskStore: TaskStoreClass
+  private platformStore: PlatformStoreClass
+
+  constructor(
+    settingsStore: SettingsStoreClass,
+    taskStore: TaskStoreClass,
+    platformStore: PlatformStoreClass
+  ) {
+    this.settingsStore = settingsStore
+    this.taskStore = taskStore
+    this.platformStore = platformStore
     this.setupConnectionListeners()
   }
 
+  public clearCache = async (): Promise<void> => {
+    this.clearTimeout && clearTimeout(this.clearTimeout)
+
+    this.devices = []
+  }
+  public saveToFile = async (): Promise<void> => {
+    /**
+     * Nothing to save to file for this store
+     */
+  }
+
   private setupConnectionListeners = async (): Promise<void> => {
-    settingsStore.getSettings().then((settings) => {
-      this.autoDetectADB = settings.autoDetectADB
+    // Setting Store listeners
+    this.settingsStore.getSettings().then((settings) => {
+      if (settings) {
+        this.autoDetectADB = settings.autoDetectADB
+      }
     })
 
-    settingsStore.addListener((newSettings) => {
+    this.settingsStore.addListener((newSettings) => {
       try {
         if (newSettings.autoDetectADB !== undefined) {
           this.autoDetectADB = newSettings.autoDetectADB
@@ -35,29 +72,41 @@ class ConnectionStore {
 
           if (newSettings.autoDetectADB) {
             this.checkAutoDetectADB()
-            loggingStore.log(MESSAGE_TYPES.LOGGING, '[ADB]: Auto-Detect is Enabled')
+            Logger.log(LOGGING_LEVELS.LOG, '[ADB]: Auto-Detect is Enabled', {
+              function: 'setupConnectionListeners',
+              source: 'ConnectionStore'
+            })
           } else {
-            loggingStore.log(MESSAGE_TYPES.LOGGING, '[ADB]: Auto-Detect is Disabled')
+            Logger.log(LOGGING_LEVELS.LOG, '[ADB]: Auto-Detect is Disabled', {
+              function: 'setupConnectionListeners',
+              source: 'ConnectionStore'
+            })
           }
         }
       } catch (error) {
-        if (error instanceof Error) {
-          loggingStore.log(MESSAGE_TYPES.ERROR, 'ADB: Error updating with settings', error.message)
-        } else {
-          loggingStore.log(MESSAGE_TYPES.ERROR, 'ADB: Error updating with settings', String(error))
-        }
+        Logger.log(LOGGING_LEVELS.ERROR, 'ADB: Error updating with settings', {
+          error: error as Error,
+          function: 'setupConnectionListeners',
+          source: 'ConnectionStore'
+        })
       }
     })
 
     // Initial check
     this.checkAutoDetectADB()
-  }
 
-  static getInstance(): ConnectionStore {
-    if (!ConnectionStore.instance) {
-      ConnectionStore.instance = new ConnectionStore()
-    }
-    return ConnectionStore.instance
+    // Connection store
+    this.platformStore.on(PlatformStoreEvent.CLIENT_CONNECTED, (client) => {
+      this.addClient(client)
+    })
+
+    this.platformStore.on(PlatformStoreEvent.CLIENT_DISCONNECTED, (client) => {
+      this.removeClient(client)
+    })
+
+    this.platformStore.on(PlatformStoreEvent.CLIENT_UPDATED, (client) => {
+      this.updateClient(client.id, client)
+    })
   }
 
   async on(listener: ClientListener): Promise<() => void> {
@@ -77,7 +126,10 @@ class ConnectionStore {
   }
 
   pingClient(connectionId: string): boolean {
-    loggingStore.log(MESSAGE_TYPES.LOGGING, 'Pinging client:', connectionId)
+    Logger.log(LOGGING_LEVELS.LOG, 'Pinging client:' + connectionId, {
+      function: 'pingClient',
+      source: 'ConnectionStore'
+    })
     const clientIndex = this.clients.findIndex((c) => c.connectionId === connectionId)
     console.error('PINGING CLIENTS NOT IMPLEMENTED YET')
     if (clientIndex !== -1) {
@@ -91,8 +143,8 @@ class ConnectionStore {
     return this.clients
   }
 
-  getDevices(): string[] {
-    return this.devices
+  getDevices(): Promise<ADBClient[]> {
+    return this.getAdbDevices()
   }
 
   async addClient(client: Client): Promise<void> {
@@ -101,25 +153,31 @@ class ConnectionStore {
   }
 
   async updateClient(connectionId: string, updates: Partial<Client>): Promise<void> {
-    loggingStore.log(MESSAGE_TYPES.LOGGING, 'Updating client:' + connectionId + updates)
+    Logger.log(LOGGING_LEVELS.LOG, 'Updating client:' + connectionId + updates, {
+      function: 'updateClient',
+      source: 'ConnectionStore'
+    })
     const clientIndex = this.clients.findIndex((c) => c.connectionId === connectionId)
 
     if (clientIndex !== -1) {
       this.clients[clientIndex] = { ...this.clients[clientIndex], ...updates }
       this.notifyListeners()
     } else {
-      loggingStore.log(MESSAGE_TYPES.LOGGING, 'Client not found:', connectionId)
+      Logger.log(LOGGING_LEVELS.LOG, 'Client not found:' + connectionId, {
+        function: 'updateClient',
+        source: 'ConnectionStore'
+      })
     }
   }
 
   async removeClient(connectionId: string): Promise<void> {
-    loggingStore.log(MESSAGE_TYPES.LOGGING, 'Removing client:' + connectionId)
+    Logger.log(LOGGING_LEVELS.LOG, 'Removing client:' + connectionId)
     this.clients = this.clients.filter((c) => c.connectionId !== connectionId)
     this.notifyListeners()
   }
 
   async removeAllClients(): Promise<void> {
-    loggingStore.log(MESSAGE_TYPES.LOGGING, 'Removing all clients')
+    Logger.log(LOGGING_LEVELS.LOG, 'Removing all clients')
     this.clients = []
     this.notifyListeners()
   }
@@ -132,28 +190,102 @@ class ConnectionStore {
     this.deviceListeners.forEach((listener) => listener(this.devices))
   }
 
-  async getAdbDevices(): Promise<string[]> {
-    const { handleAdbCommands } = await import('../handlers/adbHandler')
-    return handleAdbCommands('devices')
-      .then((result) => {
-        const parseADBDevices = (response: string): string[] => {
-          return response
-            .split('\n')
-            .filter(
-              (line) => line && !line.startsWith('List of devices attached') && line.trim() !== ''
-            )
-            .map((line) => line.replace('device', '').trim())
+  private parseADBDevices = (response: string): ADBClient[] => {
+    const lines = response
+      .split('\n')
+      .filter((line) => line && !line.startsWith('List of devices attached') && line.trim() !== '')
+
+    // Get all of the adb ids that are connected for use later
+    const connectedAdbIds = this.clients.reduce(
+      (acc, client) => (client.adbId ? [...acc, client.adbId] : acc),
+      [] as string[]
+    )
+
+    // Filter out the 'device' keywords but only include lines with the device keyword
+    const adbDevices: ADBClient[] = lines.reduce((acc, line) => {
+      if (line.includes('device')) {
+        const deviceId = line.replace('device', '').trim()
+
+        const adbClient: ADBClient = {
+          // the device id
+          adbId: deviceId.split(' ')[0],
+          // if the device is offline
+          offline: deviceId.includes('offline'),
+          // If the device is in the connected list
+          connected: connectedAdbIds.includes(deviceId),
+
+          // If there is more than one "section" then that means there is some type of error
+          error: deviceId.split(' ').length > 0 ? deviceId : ''
         }
-        const newDevices = parseADBDevices(result) || []
-        this.devices = newDevices
-        this.notifyDeviceListeners()
-        loggingStore.log(MESSAGE_TYPES.LOGGING, 'ADB Device found!')
-        return newDevices
+
+        return [...acc, adbClient]
+      } else {
+        return acc
+      }
+    }, [] as ADBClient[])
+
+    return adbDevices
+  }
+
+  async getAdbDevices(): Promise<ADBClient[]> {
+    try {
+      Logger.info('Getting ADB devices', {
+        function: 'getAdbDevices',
+        source: 'ConnectionsStore'
       })
-      .catch((error) => {
-        console.error('Error auto-detecting ADB devices:', error)
-        return []
+      const result = await handleAdbCommands('devices')
+
+      const newDevices = this.parseADBDevices(result) || []
+
+      if (newDevices.length > 0) {
+        this.taskStore.completeStep('server', 'device', 'detect')
+        if (newDevices.some((device) => device.connected)) {
+          this.taskStore.completeStep('server', 'device', 'configure')
+        }
+      }
+
+      this.devices = newDevices
+
+      this.notifyDeviceListeners()
+      Logger.info('ADB Device found!', {
+        function: 'getAdbDevices',
+        source: 'ConnectionsStore'
       })
+
+      try {
+        // Automatically config the devices if it is both not offline and not connected
+        const settings = await this.settingsStore.getSettings()
+        if (settings?.autoConfig && newDevices.some((device) => !device.connected)) {
+          // Wait for all of the devices to configure
+          Logger.info('Automatically configuring disconnected devices', {
+            function: 'getAdbDevices',
+            source: 'connectionsStore'
+          })
+          await Promise.all(
+            newDevices.map(async (device) => {
+              if (!device.connected && !device.offline) {
+                await configureDevice(device.adbId)
+              }
+            })
+          )
+        }
+      } catch (error) {
+        Logger.error('Error auto-configuring devices!', {
+          error: error as Error,
+          function: 'getAdbDevices',
+          source: 'ConnectionsStore'
+        })
+      }
+
+      return newDevices
+    } catch (error) {
+      Logger.error('Error detecting ADB devices!', {
+        error: error as Error,
+        function: 'getAdbDevices',
+        source: 'ConnectionsStore'
+      })
+      return []
+    }
   }
 
   async checkAutoDetectADB(): Promise<void> {
@@ -163,7 +295,7 @@ class ConnectionStore {
 
     const checkAndAutoDetect = async (): Promise<void> => {
       if (this.autoDetectADB === true) {
-        loggingStore.log(MESSAGE_TYPES.LOGGING, 'Auto-detecting ADB devices...')
+        Logger.log(LOGGING_LEVELS.LOG, 'Auto-detecting ADB devices...')
         await this.getAdbDevices()
         this.clearTimeout = await setTimeout(checkAndAutoDetect, 7000)
       }
@@ -172,5 +304,3 @@ class ConnectionStore {
     checkAndAutoDetect()
   }
 }
-
-export default ConnectionStore.getInstance()

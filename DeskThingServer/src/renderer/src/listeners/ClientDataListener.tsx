@@ -1,6 +1,17 @@
 import { useEffect } from 'react'
-import { useClientStore, useNotificationStore } from '../stores'
+import { useClientStore } from '../stores'
+import { IpcRendererCallback } from '@shared/types'
 
+let mounted = false
+
+/**
+ * Listens for client data events and updates the client store accordingly.
+ * This component is responsible for fetching and updating the following data:
+ * - Clients
+ * - Connections
+ * - ADB Devices
+ * It also sets up an initial task to help the user connect their ADB device.
+ */
 const ClientDataListener = (): null => {
   const setClients = useClientStore((state) => state.setClients)
   const setConnections = useClientStore((state) => state.setConnections)
@@ -9,44 +20,35 @@ const ClientDataListener = (): null => {
   const requestConnections = useClientStore((state) => state.requestConnections)
   const requestClientManifest = useClientStore((state) => state.requestClientManifest)
 
-  const addTask = useNotificationStore((state) => state.addTask)
-
-  useEffect(() => {
-    window.electron.ipcRenderer.on('clients', async (_event, data) => {
-      setClients(data.data)
-    })
-
-    window.electron.ipcRenderer.on('connections', async (_event, data) => {
-      setConnections(data.data)
-    })
-
-    window.electron.ipcRenderer.on('adbdevices', async (_event, data) => {
-      setAdbDevices(data.data)
-    })
-
+  if (!mounted) {
     const getInitialState = async (): Promise<void> => {
       requestConnections()
       requestADBDevices()
       requestClientManifest()
-
-      addTask({
-        id: 'adbdevices-setup',
-        title: 'Find ADB Devices',
-        description: 'You look new around here. Lets try and get your device connected!',
-        status: 'pending',
-        complete: false,
-        steps: [
-          {
-            task: 'Ensure the device is plugged in',
-            status: false,
-            stepId: 'plugged-in'
-          },
-          { task: 'Try refreshing ADB', status: false, stepId: 'refresh' }
-        ]
-      })
     }
 
     getInitialState()
+    mounted = true
+  }
+
+  useEffect(() => {
+    const onClientdata: IpcRendererCallback<'clients'> = (_async, data) => {
+      setClients(data.data)
+    }
+
+    window.electron.ipcRenderer.on('clients', onClientdata)
+
+    const onConnections: IpcRendererCallback<'connections'> = (_async, data) => {
+      setConnections(data.data)
+    }
+
+    window.electron.ipcRenderer.on('connections', onConnections)
+
+    const onAdbDevices: IpcRendererCallback<'adbdevices'> = (_async, data) => {
+      setAdbDevices(data)
+    }
+
+    window.electron.ipcRenderer.on('adbdevices', onAdbDevices)
 
     // Cleanup listeners on unmount
     return () => {

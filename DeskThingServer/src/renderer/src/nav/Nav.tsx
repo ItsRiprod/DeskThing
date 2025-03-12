@@ -25,7 +25,7 @@ const Nav: React.FC = () => {
             handleNavigation={handleNavigation}
           >
             <IconHome iconSize={30} />
-            <span className="hidden lg:inline group-hover:inline">Dashboard</span>
+            <span className="hidden lg:inline group-hover:inline">Landing</span>
           </NavButton>
         </li>
         <li className="w-full h-full group">

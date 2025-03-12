@@ -5,7 +5,8 @@
  * @version 0.9.4
  */
 import { create } from 'zustand'
-import { Action, Key, ButtonMapping, ActionReference, Profile } from '@shared/types'
+import { ButtonMapping, Profile } from '@shared/types'
+import { Action, Key, ActionReference } from '@deskthing/types'
 
 const DefaultProfile: Profile = {
   id: 'default',
@@ -40,6 +41,10 @@ interface MappingStoreState {
   getKeyById: (keyId: string) => Promise<Key | undefined>
   setActions: (actions: Action[]) => Promise<void>
   getActions: () => Promise<Action[]>
+
+  getActionFromReference: (
+    action: ActionReference | { id: string; source: string }
+  ) => Action | undefined
 
   addKey: (key: Key) => Promise<void>
   removeKey: (keyId: string) => Promise<void>
@@ -117,6 +122,15 @@ const useMappingStore = create<MappingStoreState>(
       const actions = await window.electron.getActions()
       set({ actions })
       return actions
+    },
+
+    getActionFromReference: (
+      actionRef: ActionReference | { id: string; source: string }
+    ): Action | undefined => {
+      const action = get().actions.find(
+        (a) => a.id === actionRef.id && a.source === actionRef.source
+      )
+      return action
     },
 
     getIcon: async (actionRef: Action | ActionReference): Promise<string | null> => {

@@ -22,19 +22,21 @@ const ADBSettings: React.FC = () => {
   const sendCommand = async (): Promise<void> => {
     setLoading(true)
     setPastCommands((prev) => (prev.includes(inputValue) ? prev : [...prev, inputValue]))
+    setResponse('Sending Command...')
 
     if (commandType == 'adb') {
-      const adbCommand = `${adbDevice.length > 0 ? ' -s ' + adbDevice : ''} ${inputValue.trim()}`
+      const adbCommand = `${adbDevice.length > 0 && adbDevice != 'None' ? ' -s ' + adbDevice : ''} ${inputValue.trim()}`
 
       const response = await window.electron.handleClientADB(adbCommand)
 
       setResponse(response)
+    } else {
+      setResponse(`${commandType} Not Supported`)
     }
-    setResponse('Not Supported')
     setLoading(false)
   }
 
-  const handleRestarServer = async (): Promise<void> => {
+  const handleRestartServer = async (): Promise<void> => {
     setLoading(true)
     setRestarting(true)
     setResponse('Killing Server...')
@@ -73,7 +75,7 @@ const ADBSettings: React.FC = () => {
         </Button>
         <Button
           disabled={loading}
-          onClick={handleRestarServer}
+          onClick={handleRestartServer}
           className={restarting ? 'text-gray-300' : 'hover:bg-zinc-900'}
         >
           <IconReload
@@ -108,11 +110,11 @@ const ADBSettings: React.FC = () => {
               onChange={(e) => setAdbDevice(e.target.value)}
             >
               {adbDevices.map((device) => (
-                <option key={device} value={device}>
-                  {device}
+                <option key={device.adbId} value={device.adbId}>
+                  {device.adbId}
                 </option>
               ))}
-              <option value="">None</option>
+              <option value="None">None</option>
             </select>
           </div>
           <div className="flex flex-col w-full sm:flex-row gap-2">
@@ -121,6 +123,11 @@ const ADBSettings: React.FC = () => {
               className="p-2 rounded text-black w-full"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  sendCommand()
+                }
+              }}
             />
             <Button
               className="text-nowrap border group border-cyan-500 hover:bg-cyan-500"

@@ -1,6 +1,6 @@
 import React from 'react'
 import SettingComponent from './SettingComponent'
-import { SettingOption, SettingsMultiSelect } from '@shared/types'
+import { SettingOption, SettingsMultiSelect } from '@DeskThing/types'
 import Select from '../Select'
 import { MultiValue } from 'react-select'
 
@@ -10,6 +10,14 @@ interface SettingsMultiSelectProps {
   className?: string
 }
 
+/**
+ * A React component that renders a multi-select settings option.
+ *
+ * @param handleSettingChange - A function that is called when the selected options change. It receives the updated array of selected option values.
+ * @param className - An optional CSS class name to apply to the component.
+ * @param setting - The settings multi-select configuration, including the options, current value, and placeholder.
+ * @returns A React element representing the multi-select settings component.
+ */
 export const SettingsMultiSelectComponent: React.FC<SettingsMultiSelectProps> = ({
   handleSettingChange,
   className,

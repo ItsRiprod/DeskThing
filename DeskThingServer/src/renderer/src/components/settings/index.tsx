@@ -1,5 +1,5 @@
-import React from 'react'
-import { SettingsType } from '@shared/types'
+import React, { useEffect, useMemo } from 'react'
+import { SettingsType } from '@DeskThing/types'
 import { SettingsBooleanComponent } from './SettingsBoolean'
 import { SettingsListComponent } from './SettingsList'
 import { SettingsMultiSelectComponent } from './SettingsMultiSelect'
@@ -34,12 +34,21 @@ const SETTINGS_COMPONENTS: {
   color: SettingsColorComponent
 } as const
 
+/**
+ * The `Settings` component is a React functional component that renders a setting component based on the `type` property of the `setting` prop. It uses the `SETTINGS_COMPONENTS` object to map the `type` to the appropriate setting component. If the `SettingComponent` is found, it is rendered with the `setting`, `className`, and `handleSettingChange` props. Otherwise, it returns `null`.
+ * @param param0
+ * @returns
+ */
 export const Settings: React.FC<SettingsProps> = ({ setting, className, handleSettingChange }) => {
-  const SettingComponent = SETTINGS_COMPONENTS[setting.type] as React.ComponentType<{
-    setting: SettingsType
-    handleSettingChange: (value: number | boolean | string | string[]) => void
-    className?: string
-  }>
+  const SettingComponent = useMemo(
+    () => SETTINGS_COMPONENTS[setting.type] as React.ComponentType<SettingsProps>,
+    [setting.type]
+  )
+
+  useEffect(() => {
+    console.log('Settings', setting)
+  }, [setting])
+
   return SettingComponent ? (
     <SettingComponent
       setting={setting}

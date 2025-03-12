@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 
-module.exports = {
+export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     screens: {
@@ -41,8 +41,10 @@ module.exports = {
         }
       },
       animation: {
+        'spin-smooth': 'spin 1.3s ease-in-out infinite;',
         'fade-in-down': 'fade-in-down 0.5s ease-out',
-        fade: 'fade 0.2s ease-out'
+        'fade-out': 'fade-in-down 0.2s ease-out reverse forwards',
+        fade: 'fade 0.2s ease-out forwards'
       }
     }
   }

@@ -1,31 +1,54 @@
 console.log('[Device Handler] Starting')
 import { sendIpcData } from '..'
-import loggingStore from '../stores/loggingStore'
+import Logger from '@server/utils/logger'
 import { join } from 'path'
 import * as fs from 'fs'
 import { app, net } from 'electron'
 import { handleAdbCommands } from './adbHandler'
-import { Client, ClientManifest, MESSAGE_TYPES, ReplyData, ReplyFn } from '@shared/types'
-import settingsStore from '../stores/settingsStore'
-import { getLatestRelease } from './githubHandler'
+import { Client, ReplyData, ReplyFn } from '@shared/types'
+import { ClientConnectionMethod, ClientManifest, LOGGING_LEVELS } from '@DeskThing/types'
+import { storeProvider } from '@server/stores/storeProvider'
 
+/**
+ * Handles device data received from the client.
+ *
+ * This function is responsible for processing the device data received from the client
+ * and taking appropriate actions based on the type of data. Currently, it handles the
+ * 'version_status' type and sends the data to the IPC channel for further processing.
+ *
+ * @param data - The device data received from the client as a JSON string.
+ * @returns Promise<void>
+ */
 export const HandleDeviceData = async (data: string): Promise<void> => {
   try {
     const deviceData = JSON.parse(data)
 
     switch (deviceData.type) {
       case 'version_status':
-        sendIpcData('version-status', deviceData)
+        sendIpcData({
+          type: 'version-status',
+          payload: deviceData
+        })
         break
       default:
-        loggingStore.log(MESSAGE_TYPES.ERROR, 'HandleDeviceData Unable to find device version')
+        Logger.log(LOGGING_LEVELS.ERROR, 'HandleDeviceData Unable to find device version')
         break
     }
   } catch (Exception) {
-    loggingStore.log(MESSAGE_TYPES.ERROR, 'HandleDeviceData encountered the error ' + Exception)
+    Logger.log(LOGGING_LEVELS.ERROR, 'HandleDeviceData encountered the error ' + Exception)
   }
 }
 
+/**
+ * Retrieves the version of the device manifest.
+ *
+ * This function uses ADB commands to retrieve the contents of the device's manifest file,
+ * and then extracts the version information from the response. If the version is not found
+ * in the manifest, it returns '0.0.0'.
+ *
+ * @param deviceId - The ID of the device to retrieve the manifest version from.
+ * @returns A Promise that resolves to the version string from the device manifest.
+ */
 export const getDeviceManifestVersion = async (deviceId: string): Promise<string> => {
   try {
     const manifestPath = '/usr/share/qt-superbird-app/webapp/manifest.js'
@@ -43,7 +66,17 @@ export const getDeviceManifestVersion = async (deviceId: string): Promise<string
   }
 }
 
+/**
+ * Configures a device by performing various setup tasks, such as opening a socket port,
+ * checking for the client application, and pushing the web app to the device.
+ *
+ * @param deviceId - The ID of the device to configure.
+ * @param reply - An optional callback function to send logging information back to the caller.
+ * @returns A Promise that resolves when the device configuration is complete.
+ */
 export const configureDevice = async (deviceId: string, reply?: ReplyFn): Promise<void> => {
+  const settingsStore = await storeProvider.getStore('settingsStore')
+  const githubStore = await storeProvider.getStore('githubStore')
   const settings = await settingsStore.getSettings()
 
   // Opens the socket port
@@ -57,7 +90,7 @@ export const configureDevice = async (deviceId: string, reply?: ReplyFn): Promis
           reply
         )
         reply && reply('logging', { status: true, data: response || 'Port Opened', final: false })
-      } catch (error) {
+      } catch {
         reply && reply('logging', { status: false, data: 'Unable to open port!', final: false })
       }
     } else {
@@ -87,27 +120,17 @@ export const configureDevice = async (deviceId: string, reply?: ReplyFn): Promis
     const clientExists = await checkForClient(reply)
 
     if (!clientExists) {
-      // Download it from github
-      const repos = settings.clientRepos
       reply && reply('logging', { status: true, data: 'Fetching Latest Client...', final: false })
-      const latestReleases = await Promise.all(
-        repos.map(async (repo) => {
-          return await getLatestRelease(repo)
-        })
-      )
+      const clientReleases = await githubStore.getClientReleases()
 
-      // Sort releases by date and get the latest one
-      const clientAsset = latestReleases
-        .flatMap((release) =>
-          release.assets.map((asset) => ({ ...asset, created_at: release.created_at }))
-        )
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .find((asset) => asset.name.includes('-client'))
+      const latestRelease = clientReleases?.sort(
+        (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+      )[0]
 
       // Download it
-      if (clientAsset) {
+      if (latestRelease) {
         reply && reply('logging', { status: true, data: 'Downloading Client...', final: false })
-        await HandleWebappZipFromUrl(reply, clientAsset.browser_download_url)
+        await HandleWebappZipFromUrl(reply, latestRelease.updateUrl)
 
         await new Promise((resolve) => {
           setTimeout(async () => {
@@ -231,6 +254,25 @@ export const configureDevice = async (deviceId: string, reply?: ReplyFn): Promis
   }
 }
 
+/**
+ * Handles the process of pushing a web application to a device.
+ *
+ * This function performs the following steps:
+ * 1. Checks if the client exists on the device.
+ * 2. Remounts the device's file system as read-write.
+ * 3. Moves the existing webapp to a temporary location.
+ * 4. Moves the new webapp to the correct location.
+ * 5. Removes the old webapp.
+ * 6. Updates the client manifest with the device ID and type.
+ * 7. Pushes the new webapp to the device.
+ * 8. Restarts the Chromium process on the device.
+ * 9. Syncs the files on the device.
+ * 10. Updates the client manifest to remove the device ID and type.
+ *
+ * @param deviceId - The ID of the device to push the webapp to.
+ * @param reply - An optional callback function to handle logging and status updates.
+ * @returns A Promise that resolves when the webapp has been pushed to the device.
+ */
 export const HandlePushWebApp = async (
   deviceId: string,
   reply?: (channel: string, data: ReplyData) => void
@@ -248,8 +290,8 @@ export const HandlePushWebApp = async (
           error: 'Client not found!',
           final: false
         })
-      loggingStore.log(
-        MESSAGE_TYPES.ERROR,
+      Logger.log(
+        LOGGING_LEVELS.ERROR,
         '[HandlePushWebApp] Client Not Found! Ensure it is downloaded'
       )
       return
@@ -276,7 +318,10 @@ export const HandlePushWebApp = async (
       reply('logging', { status: true, data: response || 'Pushing client ID...', final: false })
     try {
       await handleClientManifestUpdate(
-        { adbId: deviceId, device_type: { name: 'Car Thing', id: 4 } },
+        {
+          adbId: deviceId,
+          device_type: { method: ClientConnectionMethod.ADB, name: 'Car Thing', id: 4 }
+        },
         reply
       )
     } catch (error) {
@@ -307,7 +352,10 @@ export const HandlePushWebApp = async (
       reply('logging', { status: true, data: response || 'Cleaning up device ID...', final: false })
     try {
       await handleClientManifestUpdate(
-        { adbId: undefined, device_type: { name: 'Unknown', id: 0 } },
+        {
+          adbId: undefined,
+          device_type: { method: ClientConnectionMethod.Unknown, name: 'Unknown', id: 0 }
+        },
         reply
       )
     } catch (error) {
@@ -340,10 +388,17 @@ export const HandlePushWebApp = async (
           error: `${Exception}`
         })
     }
-    loggingStore.log(MESSAGE_TYPES.ERROR, 'HandlePushWebApp encountered the error ' + Exception)
+    Logger.log(LOGGING_LEVELS.ERROR, 'HandlePushWebApp encountered the error ' + Exception)
   }
 }
 
+/**
+ * Handles the download and extraction of a webapp zip file from a given URL.
+ *
+ * @param reply - An optional function to send logging updates to the frontend.
+ * @param zipFileUrl - The URL of the zip file to download and extract.
+ * @returns A Promise that resolves when the extraction is complete.
+ */
 export const HandleWebappZipFromUrl = async (
   reply: ReplyFn | undefined,
   zipFileUrl: string
@@ -384,16 +439,13 @@ export const HandleWebappZipFromUrl = async (
 
           // Optionally remove the temporary zip file
           fs.unlinkSync(tempZipPath)
-          loggingStore.log(
-            MESSAGE_TYPES.LOGGING,
-            `Successfully extracted ${zipFileUrl} to ${extractDir}`
-          )
+          Logger.info(`Successfully extracted ${zipFileUrl} to ${extractDir}`)
 
           // Notify success to the frontend
           reply && reply('logging', { status: true, data: 'Success!', final: false })
         } catch (error) {
           console.error('Error extracting zip file:', error)
-          loggingStore.log(MESSAGE_TYPES.ERROR, `Error extracting zip file: ${error}`)
+          Logger.log(LOGGING_LEVELS.ERROR, `Error extracting zip file: ${error}`)
 
           // Notify failure to the frontend
           reply &&
@@ -407,7 +459,7 @@ export const HandleWebappZipFromUrl = async (
       })
       response.on('error', (error) => {
         console.error('Error downloading zip file:', error)
-        loggingStore.log(MESSAGE_TYPES.ERROR, `Error downloading zip file: ${error}`)
+        Logger.log(LOGGING_LEVELS.ERROR, `Error downloading zip file: ${error}`)
 
         // Notify failure to the frontend
         reply &&
@@ -421,7 +473,7 @@ export const HandleWebappZipFromUrl = async (
     } else {
       const errorMessage = `Failed to download zip file: ${response.statusCode}`
       console.error(errorMessage)
-      loggingStore.log(MESSAGE_TYPES.ERROR, errorMessage)
+      Logger.log(LOGGING_LEVELS.ERROR, errorMessage)
 
       // Notify failure to the frontend
       reply &&
@@ -436,7 +488,7 @@ export const HandleWebappZipFromUrl = async (
 
   request.on('error', (error) => {
     console.error('Error sending request:', error)
-    loggingStore.log(MESSAGE_TYPES.ERROR, `Error sending request: ${error}`)
+    Logger.log(LOGGING_LEVELS.ERROR, `Error sending request: ${error}`)
 
     // Notify failure to the frontend
     reply &&
@@ -451,6 +503,13 @@ export const HandleWebappZipFromUrl = async (
   request.end()
 }
 
+/**
+ * Updates the client manifest file with the provided partial manifest data.
+ *
+ * @param partialManifest - The partial manifest data to be merged with the existing manifest.
+ * @param reply - An optional callback function to provide logging updates.
+ * @returns A Promise that resolves when the manifest file has been updated.
+ */
 export const handleClientManifestUpdate = async (
   partialManifest: Partial<Client>,
   reply?: (channel: string, data: ReplyData) => void
@@ -478,15 +537,21 @@ export const handleClientManifestUpdate = async (
 
     // Write the updated manifest to the file
     await fs.promises.writeFile(manifestPath, manifestContent, 'utf8')
-    loggingStore.log(MESSAGE_TYPES.LOGGING, 'Manifest file updated successfully')
+    Logger.info('Manifest file updated successfully')
     reply && reply('logging', { status: true, data: 'Manifest Updated!', final: false })
-    loggingStore.log(MESSAGE_TYPES.LOGGING, 'DEVICE HANDLER: Manifest file updated successfully')
+    Logger.info('DEVICE HANDLER: Manifest file updated successfully')
   } catch (error) {
     console.error('Error updating manifest file:', error)
-    loggingStore.log(MESSAGE_TYPES.ERROR, 'DEVICE HANDLER: Error updating manifest file: ' + error)
+    Logger.log(LOGGING_LEVELS.ERROR, 'DEVICE HANDLER: Error updating manifest file: ' + error)
   }
 }
 
+/**
+ * Checks if the client manifest file exists in the user's data directory.
+ *
+ * @param reply - An optional callback function to provide logging updates.
+ * @returns A Promise that resolves to a boolean indicating whether the manifest file exists.
+ */
 export const checkForClient = async (
   reply?: (channel: string, data: ReplyData) => void
 ): Promise<boolean> => {
@@ -497,27 +562,33 @@ export const checkForClient = async (
 
   const manifestExists = fs.existsSync(manifestPath)
   if (!manifestExists) {
-    loggingStore.log(MESSAGE_TYPES.LOGGING, 'Manifest file not found')
+    Logger.debug('Manifest file not found')
     reply &&
       reply('logging', {
         status: false,
         data: 'Manifest file not found',
         final: false
       })
-    loggingStore.log(MESSAGE_TYPES.ERROR, 'DEVICE HANDLER: Manifest file not found')
+    Logger.log(LOGGING_LEVELS.ERROR, 'DEVICE HANDLER: Manifest file not found')
   }
   return manifestExists
 }
 
+/**
+ * Retrieves the client manifest from the user's data directory.
+ *
+ * @param reply - An optional callback function to provide logging updates.
+ * @returns A Promise that resolves to the client manifest, or null if the manifest file is not found or cannot be parsed.
+ */
 export const getClientManifest = async (
   reply?: (channel: string, data: ReplyData) => void
 ): Promise<ClientManifest | null> => {
-  loggingStore.log(MESSAGE_TYPES.LOGGING, 'Getting manifest...')
+  Logger.debug('Getting manifest...')
   const userDataPath = app.getPath('userData')
   const manifestPath = join(userDataPath, 'webapp', 'manifest.js')
-  loggingStore.log(MESSAGE_TYPES.LOGGING, 'manifestPath: ' + manifestPath)
+  Logger.debug('manifestPath: ' + manifestPath)
   if (!fs.existsSync(manifestPath)) {
-    loggingStore.log(MESSAGE_TYPES.LOGGING, 'Manifest file not found')
+    Logger.warn('DEVICE HANDLER: Manifest file not found')
     reply &&
       reply('logging', {
         status: false,
@@ -525,8 +596,8 @@ export const getClientManifest = async (
         data: 'Manifest file not found',
         final: false
       })
-    loggingStore.log(
-      MESSAGE_TYPES.ERROR,
+    Logger.log(
+      LOGGING_LEVELS.ERROR,
       'DEVICE HANDLER: Client is not detected or downloaded! Please download the client! (downloads -> client)'
     )
     return null
@@ -552,12 +623,12 @@ export const getClientManifest = async (
         data: 'Manifest loaded!',
         final: false
       })
-    loggingStore.log(MESSAGE_TYPES.LOGGING, 'DEVICE HANDLER: Manifest file read successfully')
+    Logger.debug('DEVICE HANDLER: Manifest file read successfully')
     return manifest
   } catch (error) {
     console.error('Error reading or parsing manifest file:', error)
-    loggingStore.log(
-      MESSAGE_TYPES.ERROR,
+    Logger.log(
+      LOGGING_LEVELS.ERROR,
       'DEVICE HANDLER: Error reading or parsing manifest file: ' + error
     )
     reply &&
@@ -576,6 +647,14 @@ const scriptDir = isDevelopment
   ? join(__dirname, '..', '..', 'resources', 'scripts')
   : join(process.resourcesPath, 'scripts')
 
+/**
+ * Sets up a proxy configuration on the device by uploading a setup script, creating a Supervisor configuration file, and starting the proxy program.
+ *
+ * @deprecated - Do not use this. It is untested and the functionality of it is unknown.
+ * @param reply - A function to provide logging and feedback during the setup process.
+ * @param deviceId - The ID of the device to set up the proxy on.
+ * @returns A Promise that resolves when the proxy setup is complete.
+ */
 export const SetupProxy = async (
   reply: (channel: string, data: ReplyData) => void,
   deviceId: string
@@ -607,7 +686,7 @@ export const SetupProxy = async (
       final: false
     })
 
-    loggingStore.log(MESSAGE_TYPES.LOGGING, 'Remounting...')
+    Logger.debug('Remounting...')
     reply('logging', { status: true, data: 'Remounting...', final: false })
     response = await handleAdbCommands(`-s ${deviceId} shell mount -o remount,rw /`)
 
@@ -685,7 +764,7 @@ user=root`
       final: false,
       error: `${Exception}`
     })
-    loggingStore.log(MESSAGE_TYPES.ERROR, 'SetupProxy encountered the error ' + Exception)
+    Logger.log(LOGGING_LEVELS.ERROR, 'SetupProxy encountered the error ' + Exception)
     throw new Error('SetupProxy encountered the error ' + Exception)
   }
 }
@@ -799,7 +878,7 @@ export const AppendToSupervisor = async (
       final: false,
       error: `${Exception}`
     })
-    loggingStore.log(MESSAGE_TYPES.ERROR, 'AppendToSupervisor encountered the error ' + Exception)
+    Logger.log(LOGGING_LEVELS.ERROR, 'AppendToSupervisor encountered the error ' + Exception)
   }
 }
 
@@ -891,9 +970,6 @@ files = /etc/supervisor.d/*.conf\n`
       final: false,
       error: `${Exception}`
     })
-    loggingStore.log(
-      MESSAGE_TYPES.ERROR,
-      'EnsureSupervisorInclude encountered the error ' + Exception
-    )
+    Logger.log(LOGGING_LEVELS.ERROR, 'EnsureSupervisorInclude encountered the error ' + Exception)
   }
 }

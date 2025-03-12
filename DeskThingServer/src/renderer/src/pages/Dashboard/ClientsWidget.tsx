@@ -30,7 +30,7 @@ const ClientsWidget: React.FC = () => {
 const ClientComponent: React.FC<{ client: Client }> = ({ client }) => {
   return (
     <div className="flex flex-col gap-2 border-t border-zinc-500">
-      <h1 className="text-lg font-semibold">{client.device_type?.name || client.client_name}</h1>
+      <h1 className="text-lg font-semibold">{client.device_type?.name || client.name}</h1>
       <p className="text-gray-500 font-geistMono">{client.connectionId}</p>
       <p className="text-gray-500 font-geistMono">
         {client.ip}:{client.port}

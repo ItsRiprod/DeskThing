@@ -1,30 +1,22 @@
 import { create } from 'zustand'
-import { Client, ClientManifest, LoggingData } from '@shared/types'
+import { ADBClient, Client, LoggingData } from '@shared/types'
+import { ClientManifest } from '@deskthing/types'
 import useNotificationStore from './notificationStore'
-import useSettingsStore from './settingsStore'
-
-// Utility function to parse ADB devices
-const parseADBDevices = (response: string): string[] => {
-  return response
-    .split('\n')
-    .filter((line) => line && !line.startsWith('List of devices attached') && line.trim() !== '')
-    .map((line) => line.replace('device', '').trim())
-}
 
 interface ClientStoreState {
-  ADBDevices: string[]
+  ADBDevices: ADBClient[]
   connections: number
   clients: Client[]
   logging: LoggingData | null
   clientManifest: ClientManifest | null
 
   // Actions
-  setADBDevices: (devices: string[]) => void
+  setADBDevices: (devices: ADBClient[]) => void
   setConnections: (connections: number) => Promise<void>
   setClients: (clients: Client[]) => void
   setClientManifest: (client: ClientManifest) => void
   requestClientManifest: () => Promise<Partial<Client>>
-  requestADBDevices: () => Promise<void>
+  requestADBDevices: () => Promise<ADBClient[]>
   requestConnections: () => Promise<void>
   loadClientUrl: (url: string) => Promise<void>
   loadClientZip: (zip: string) => Promise<void>
@@ -40,63 +32,14 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
   clientManifest: null,
 
   // Setters
-  setADBDevices: async (devices: string[]): Promise<void> => {
-    if (devices.includes('offline')) {
-      window.electron.handleClientADB('reconnect offline')
-    }
-
-    const currentDevices = get().ADBDevices
-    const newDevices = devices.filter((device) => !currentDevices.includes(device))
-
-    set((state) => {
-      const updatedClients = state.clients.filter(
-        (client) => client.connected || devices.includes(client.adbId || 'XXXXX')
-      )
-
-      devices.forEach((deviceId) => {
-        if (!updatedClients.some((client) => client.adbId === deviceId)) {
-          updatedClients.push({
-            adbId: deviceId,
-            device_type: { name: 'Car Thing', id: 4 },
-            client_name: `Car Thing ${deviceId}`,
-            ip: '',
-            port: 0,
-            connectionId: '',
-            connected: false,
-            timestamp: Date.now()
-          })
-        }
-      })
-
-      return {
-        ADBDevices: devices,
-        clients: updatedClients as Client[]
-      }
-    })
-
-    if (newDevices.length > 0) {
-      const { autoConfig } = useSettingsStore.getState().settings
-
-      if (autoConfig) {
-        newDevices.forEach((deviceId) => {
-          const client = get().clients.find((c) => c.adbId === deviceId)
-          if (client && !client.connected) {
-            window.electron.configureDevice(deviceId)
-          }
-        })
-      }
-    }
+  setADBDevices: async (clients: ADBClient[]): Promise<void> => {
+    set({ ADBDevices: clients })
   },
 
   setConnections: async (connections: number): Promise<void> => set({ connections }),
   setClients: async (clients: Client[]): Promise<void> => {
     set({ clients })
     get().requestADBDevices() // update adb mapping
-
-    if (clients.some((client) => client.adbId)) {
-      const resolveTask = useNotificationStore.getInitialState().resolveTask
-      resolveTask('adbdevices-configure')
-    }
   },
   setClientManifest: async (client: ClientManifest): Promise<void> =>
     set({ clientManifest: client }),
@@ -109,7 +52,7 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
       addIssue({
         title: 'Client Is Not Installed!',
         description:
-          'The client wasnt found! Please install the Client in order to finish setting up the server!',
+          "The client wasn't found! Please install the Client in order to finish setting up the server!",
         id: `client-manifest-missing`,
         status: 'error',
         complete: false,
@@ -141,20 +84,12 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
   },
 
   // Request ADB Devices
-  requestADBDevices: async (): Promise<void> => {
+  requestADBDevices: async (): Promise<ADBClient[]> => {
     try {
-      const response = await window.electron.handleClientADB('devices')
-      if (response) {
-        if (response.includes('offline')) {
-          await window.electron.handleClientADB('reconnect offline')
-        }
-        const deviceList = parseADBDevices(response)
-        get().setADBDevices(deviceList)
-      } else {
-        console.log('No devices found')
-      }
+      return await window.electron.getDevices()
     } catch (error) {
       console.error('Error fetching ADB devices:', error)
+      return []
     }
   },
 

@@ -4,7 +4,9 @@
     "electron.vite.config.*",
     "src/main/**/*",
     "src/preload/**/*",
-    "src/shared/**/*.ts"
+    "src/shared/**/*.ts",
+    "src/main/utilities/**/*",
+    "test/**/*.ts"
   ],
   "compilerOptions": {
     "target": "ESNext",
@@ -19,6 +21,7 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
+      "@utilities/*": ["src/main/utilities/*"],
       "@server/*": ["src/main/*"],
       "@shared/*": ["src/shared/*"],
     },
@@ -26,6 +29,6 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "composite": true,
-    "types": ["electron-vite/node"]
+    "types": ["electron-vite/node", "vitest/globals"]
   }
 }

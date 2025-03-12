@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { PageProps } from '..'
 import useMappingStore from '@renderer/stores/mappingStore'
-import { App, Key } from '@shared/types'
+import { App, Key } from '@DeskThing/types'
 import { ActionIcon } from '../components/ActionIcon'
 import Button from '@renderer/components/Button'
 import { useAppStore } from '@renderer/stores'

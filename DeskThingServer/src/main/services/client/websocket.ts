@@ -1,25 +1,21 @@
-console.log('[ClientSocket Service] Starting')
-import WebSocket, { WebSocketServer } from 'ws'
+console.log('\x1b[31m[ClientSocket Service] Starting (depreciated - it will not work)\x1b[0m')
+/*import WebSocket, { WebSocketServer } from 'ws'
 import { createServer, Server as HttpServer, IncomingMessage } from 'http'
-import loggingStore from '../../stores/loggingStore'
+import { storeProvider } from '@server/stores/storeProvider'
+
+import Logger from '@server/utils/logger'
 import {
-  AppDataInterface,
-  MESSAGE_TYPES,
-  Client,
+  LOGGING_LEVELS,
   ClientManifest,
-  Settings,
   SocketData,
-  Action
-} from '@shared/types'
-import { addData } from '../../handlers/dataHandler'
+  Action,
+  SettingsType,
+  ServerEvent,
+  EventPayload
+} from '@DeskThing/types'
+import { Client, ServerIPCData, Settings } from '@shared/types'
 import { HandleDeviceData } from '../../handlers/deviceHandler'
-import settingsStore from '../../stores/settingsStore'
-import AppState from '../../services/apps/appState'
 import crypto from 'crypto'
-
-import { sendMessageToApp } from '../apps'
-import ConnectionStore from '../../stores/connectionsStore'
-
 import { getDeviceType, sendTime } from './clientUtils'
 import express from 'express'
 import { setupExpressServer } from './expressServer'
@@ -29,29 +25,33 @@ import {
   sendMappings,
   sendMessageToClient,
   sendMessageToClients,
+  sendSettingData,
   sendSettingsData
 } from './clientCom'
 import { sendIpcData } from '../..'
-import mappingStore from '../mappings/mappingStore'
 
 export let server: WebSocketServer | null = null
 export let httpServer: HttpServer
 export const Clients: { client: Client; socket }[] = []
 
-let currentPort
-let currentAddress
-
 const alwaysAllow = ['preferences', 'ping', 'pong', 'manifest']
 
 const messageThrottles = new Map()
 const THROTTLE_DELAY = 300 // milliseconds
+*/
 
+/**
+ * Restarts the WebSocket server by shutting down the existing server, removing all connected clients, and setting up a new server.
+ * This function is called when the WebSocket server needs to be restarted, for example, when the server configuration changes.
+ * It logs the server shutdown and startup process, and handles any errors that may occur during the process.
+ * @deprecated - use the ProcessStore to restart the server
+ */
+/*
 export const restartServer = async (): Promise<void> => {
   try {
     if (server) {
-      loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Shutting down the WebSocket server...')
-      loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Shutting down the WebSocket server...')
-      ConnectionStore.removeAllClients()
+      Logger.log(LOGGING_LEVELS.LOG, 'WSOCKET: Shutting down the WebSocket server...')
+      connectionStore.removeAllClients()
 
       server.clients.forEach((client) => {
         client.terminate()
@@ -60,28 +60,18 @@ export const restartServer = async (): Promise<void> => {
       server.close((err) => {
         if (err) {
           console.error('WSOCKET: Error shutting down WebSocket server:', err)
-          loggingStore.log(
-            MESSAGE_TYPES.ERROR,
-            'WSOCKET: Error shutting down WebSocket server:' + err
-          )
+          Logger.log(LOGGING_LEVELS.ERROR, 'WSOCKET: Error shutting down WebSocket server:' + err)
         } else {
-          loggingStore.log(
-            MESSAGE_TYPES.LOGGING,
-            'WSOCKET: WebSocket server shut down successfully.'
-          )
-          loggingStore.log(
-            MESSAGE_TYPES.LOGGING,
-            'WSOCKET: WebSocket server shut down successfully.'
-          )
+          Logger.log(LOGGING_LEVELS.LOG, 'WSOCKET: WebSocket server shut down successfully.')
         }
 
         if (httpServer && httpServer.listening) {
-          loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Stopping HTTP server...')
+          Logger.log(LOGGING_LEVELS.LOG, 'WSOCKET: Stopping HTTP server...')
           httpServer.close((err) => {
             if (err) {
               console.error('WSOCKET: Error stopping HTTP server:', err)
             } else {
-              loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: HTTP server stopped successfully.')
+              Logger.log(LOGGING_LEVELS.LOG, 'WSOCKET: HTTP server stopped successfully.')
               setupServer()
             }
           })
@@ -90,17 +80,14 @@ export const restartServer = async (): Promise<void> => {
         }
       })
     } else {
-      loggingStore.log(
-        MESSAGE_TYPES.LOGGING,
-        'WSOCKET: No WebSocket server running - setting one up'
-      )
+      Logger.log(LOGGING_LEVELS.LOG, 'WSOCKET: No WebSocket server running - setting one up')
       if (httpServer && httpServer.listening) {
-        loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: Stopping HTTP server...')
+        Logger.log(LOGGING_LEVELS.LOG, 'WSOCKET: Stopping HTTP server...')
         httpServer.close((err) => {
           if (err) {
             console.error('WSOCKET: Error stopping HTTP server:', err)
           } else {
-            loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: HTTP server stopped successfully.')
+            Logger.log(LOGGING_LEVELS.LOG, 'WSOCKET: HTTP server stopped successfully.')
             setupServer()
           }
         })
@@ -112,15 +99,23 @@ export const restartServer = async (): Promise<void> => {
     console.error('WSOCKET: Error restarting the WebSocket server:', error)
   }
 }
+*/
 
+/**
+ * Asynchronously sets up the WebSocket server for the application.
+ * This function initializes the Express app, creates the HTTP server,
+ * and sets up the WebSocket server to handle incoming client connections.
+ * It also sets up event listeners to handle client messages and disconnections.
+ *
+ * @returns {Promise<void>} A Promise that resolves when the server is set up.
+ */
+/*
 export const setupServer = async (): Promise<void> => {
-  loggingStore.log(MESSAGE_TYPES.MESSAGE, 'WSOCKET: Attempting to setup the server')
+  Logger.log(LOGGING_LEVELS.MESSAGE, 'WSOCKET: Attempting to setup the server')
 
-  if (!currentPort || !currentAddress) {
-    const settings = await settingsStore.getSettings()
-    currentPort = settings.devicePort
-    currentAddress = settings.address
-  }
+  const settings = await storeProvider.getStore('settingsStore').getSettings()
+  const currentPort = settings.devicePort
+  const currentAddress = settings.address
 
   // Setting up the express app
   const expressApp = express()
@@ -131,26 +126,26 @@ export const setupServer = async (): Promise<void> => {
 
   server = new WebSocketServer({ server: httpServer })
 
-  loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: WebSocket server is running.')
+  Logger.log(LOGGING_LEVELS.LOG, 'WSOCKET: WebSocket server is running.')
 
   httpServer.listen(currentPort, currentAddress, () => {
-    loggingStore.log(
-      MESSAGE_TYPES.LOGGING,
+    Logger.log(
+      LOGGING_LEVELS.LOG,
       `WEBSOCKET: Server is listening on ${currentAddress}:${currentPort}`
     )
   })
 
   // Handle incoming messages from the client
   server.on('connection', async (socket: WebSocket.WebSocket, req: IncomingMessage) => {
-    // Handle the incoming connection and add it to the ConnectionStore
+    // Handle the incoming connection and add it to the connectionStore
 
     // This is a bad way of handling and syncing clients
     const clientIp =
       req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.connection.remoteAddress
 
     // Setup the initial client data
-    loggingStore.log(
-      MESSAGE_TYPES.LOGGING,
+    Logger.log(
+      LOGGING_LEVELS.LOG,
       `WSOCKET: Client connected! Looking for client with IP ${clientIp}`
     )
 
@@ -167,17 +162,20 @@ export const setupServer = async (): Promise<void> => {
 
     Clients.push({ client, socket })
 
-    loggingStore.log(
-      MESSAGE_TYPES.LOGGING,
-      `WSOCKET: Client with id: ${client.connectionId} connected!\nWSOCKET: Sending preferences...`
+    Logger.log(
+      LOGGING_LEVELS.LOG,
+      `Client with id: ${client.connectionId} connected!\nWSOCKET: Sending preferences...`,
+      {
+        function: 'setupServer',
+        source: 'websocket'
+      }
     )
-    ConnectionStore.addClient(client)
+    connectionStore.addClient(client)
 
-    loggingStore.log(
-      MESSAGE_TYPES.LOGGING,
-      'WSOCKET: Client connected!\nWSOCKET: Sending preferences...'
-    )
-    loggingStore.log(MESSAGE_TYPES.LOGGING, `WEBSOCKET: Sending client preferences...`)
+    Logger.log(LOGGING_LEVELS.LOG, 'Client connected!\nWSOCKET: Sending preferences...', {
+      function: 'setupServer',
+      source: 'websocket'
+    })
 
     sendConfigData(client.connectionId)
     sendSettingsData(client.connectionId)
@@ -186,10 +184,10 @@ export const setupServer = async (): Promise<void> => {
 
     socket.on('message', async (message: string) => {
       const messageData = JSON.parse(message) as SocketData
-      loggingStore.log(
-        MESSAGE_TYPES.LOGGING,
-        `WEBSOCKET: Client ${client.connectionId} has sent ${message}`
-      )
+      Logger.info(`Client ${client.connectionId} has sent ${message}`, {
+        function: 'onMessage',
+        source: 'websocket'
+      })
       const messageKey = `${messageData.app}-${messageData.type}-${messageData.request}`
       const now = Date.now()
 
@@ -199,7 +197,7 @@ export const setupServer = async (): Promise<void> => {
        * The purpose of the throttle is so when multiple clients are connected,
        * they often send the same request at the same time (i.e. song at its end).
        * As most, if not all, of these requests are burst to every client, they can be grouped together.
-       */
+       *
 
       if (
         !messageThrottles.has(messageKey) ||
@@ -216,17 +214,18 @@ export const setupServer = async (): Promise<void> => {
           messageData.app !== 'utility' &&
           messageData.app !== 'music'
         ) {
-          sendMessageToApp(messageData.app.toLowerCase(), {
-            type: messageData.type,
+          const { appStore } = await import('@server/stores')
+          appStore.sendDataToApp(messageData.app.toLowerCase(), {
+            type: messageData.type as ServerEvent,
             request: messageData.request,
             payload: messageData.payload
-          })
+          } as EventPayload)
         } else if (messageData.app === 'server') {
           // Handle server requests
           handleServerMessage(socket, client, messageData)
         } else if (messageData.app === 'utility' || messageData.app === 'music') {
           // Handle music requests
-          const MusicHandler = (await import('../../handlers/musicHandler')).default
+          const MusicHandler = (await import('../../stores/musicStore')).default
           MusicHandler.handleClientRequest(messageData)
         }
 
@@ -237,27 +236,39 @@ export const setupServer = async (): Promise<void> => {
           }
         })
       } else {
-        loggingStore.log(
-          MESSAGE_TYPES.DEBUG,
+        Logger.log(
+          LOGGING_LEVELS.DEBUG,
           `WSOCKET: Throttling message for ${messageKey} for ${THROTTLE_DELAY}ms`
         )
       }
     })
 
     socket.on('close', () => {
-      loggingStore.log(
-        MESSAGE_TYPES.LOGGING,
-        `WSOCKET: Client ${client.connectionId} has disconnected!`
-      )
+      Logger.log(LOGGING_LEVELS.LOG, `WSOCKET: Client ${client.connectionId} has disconnected!`)
       Clients.splice(
         Clients.findIndex((client) => client.client.connectionId === client.client.connectionId),
         1
       )
-      ConnectionStore.removeClient(client.connectionId)
+      connectionStore.removeClient(client.connectionId)
     })
   })
 }
+*/
 
+/**
+ * Handles server messages received through the WebSocket connection.
+ *
+ * This function is responsible for processing different types of server messages,
+ * such as preferences, heartbeat, ping/pong, settings updates, and more. It
+ * performs the necessary actions based on the message type and updates the
+ * application state accordingly.
+ *
+ * @param socket The WebSocket connection object.
+ * @param client The client object associated with the WebSocket connection.
+ * @param messageData The data received from the server, containing the message type and payload.
+ * @returns A Promise that resolves when the message has been handled.
+ */
+/*
 const handleServerMessage = async (
   socket,
   client: Client,
@@ -265,17 +276,13 @@ const handleServerMessage = async (
 ): Promise<void> => {
   try {
     if (messageData.app === 'server') {
-      loggingStore.log(
-        MESSAGE_TYPES.LOGGING,
-        `WSOCKET: Server message received! ${messageData.type}`
-      )
+      Logger.log(LOGGING_LEVELS.LOG, `Server message received! ${messageData.type}`, {
+        domain: client.connectionId,
+        source: 'websocket',
+        function: 'handleServerMessage'
+      })
       try {
         switch (messageData.type) {
-          case 'preferences':
-            if (messageData.request && messageData.payload) {
-              addData(messageData.request, messageData.payload as AppDataInterface)
-            }
-            break
           case 'heartbeat':
             socket.send(
               JSON.stringify({
@@ -286,11 +293,22 @@ const handleServerMessage = async (
             )
             break
           case 'pong':
-            loggingStore.log(MESSAGE_TYPES.LOGGING, 'Received pong from ', client.connectionId)
-            sendIpcData(`pong-${client.connectionId}`, messageData.payload)
+            Logger.log(LOGGING_LEVELS.LOG, 'Received pong from ', {
+              domain: client.connectionId,
+              source: 'websocket',
+              function: 'handleServerMessage'
+            })
+            sendIpcData({
+              type: `pong-${client.connectionId}`,
+              payload: messageData.payload
+            } as unknown as ServerIPCData) // so it doesnt mess with other types
             break
           case 'ping':
-            loggingStore.log(MESSAGE_TYPES.LOGGING, 'Sent Ping', client.connectionId)
+            Logger.log(LOGGING_LEVELS.LOG, 'Sent Ping', {
+              domain: client.connectionId,
+              source: 'websocket',
+              function: 'handleServerMessage'
+            })
             socket.send(
               JSON.stringify({
                 type: 'pong',
@@ -307,7 +325,17 @@ const handleServerMessage = async (
                     app: string
                     index: number
                   }
-                  AppState.setItemOrder(appName, newIndex)
+                  appStore.setItemOrder(appName, newIndex)
+                }
+                break
+              case 'settings':
+                if (messageData.payload) {
+                  const { app, id, setting } = messageData.payload as {
+                    app: string
+                    id: string
+                    setting: SettingsType
+                  }
+                  appStore.addSetting(app, id, setting)
                 }
                 break
               default:
@@ -321,22 +349,34 @@ const handleServerMessage = async (
             sendTime()
             break
           case 'message':
-            loggingStore.log(
-              MESSAGE_TYPES.MESSAGE,
-              `${client.connectionId}: ${messageData.payload}`
-            )
+            Logger.log(LOGGING_LEVELS.MESSAGE, `${messageData.payload}`, {
+              domain: client.connectionId,
+              source: 'client'
+            })
+            break
+          case 'log':
+            Logger.log(messageData.payload.type, `${messageData.payload.payload}`, {
+              domain: client.connectionId,
+              function: messageData.payload.app,
+              source: 'client'
+            })
             break
           case 'device':
             HandleDeviceData(messageData.payload as string)
             break
           case 'manifest':
             if (messageData.payload) {
-              const manifest = messageData.payload as ClientManifest
+              const manifest = messageData.payload as ClientManifest & { adbId: string }
               if (!manifest) return
 
-              loggingStore.log(
-                MESSAGE_TYPES.LOGGING,
-                'WSOCKET: Received manifest from client' + JSON.stringify(manifest)
+              Logger.log(
+                LOGGING_LEVELS.LOG,
+                'WSOCKET: Received manifest from client' + JSON.stringify(manifest),
+                {
+                  domain: client.connectionId,
+                  source: 'client',
+                  function: 'handleServerMessage'
+                }
               )
 
               // Update the client to the info received from the client
@@ -345,7 +385,7 @@ const handleServerMessage = async (
 
               // Update the client to the new one
               client.connected = true
-              client.client_name = manifest.name
+              client.name = manifest.name
               client.version = manifest.version
               client.description = manifest.description
 
@@ -355,7 +395,7 @@ const handleServerMessage = async (
                 client.device_type = manifest.device_type
               }
               // Update the client
-              ConnectionStore.updateClient(client.connectionId, client)
+              connectionStore.updateClient(client.connectionId, client)
             }
             break
           case 'action':
@@ -374,18 +414,29 @@ const handleServerMessage = async (
   }
 }
 
+/**
+ * Sets up event listeners for various stores and sends updates to connected clients.
+ *
+ * This function is called to initialize the event listeners for the `settingsStore`,
+ * `mappingStore`, and other relevant stores. It sets up callbacks that are triggered
+ * when the settings or mapping data changes, and then sends the updated information
+ * to all connected clients using the `sendMessageToClients` function.
+ *
+ * The function is wrapped in a `setTimeout` to ensure that the stores have been
+ * properly initialized before the listeners are added.
+ *
 const setupListeners = async (): Promise<void> => {
   setTimeout(() => {
     settingsStore.addListener((newSettings: Settings) => {
       if (currentPort !== newSettings.devicePort || currentAddress !== newSettings.address) {
         restartServer()
       } else {
-        loggingStore.log(MESSAGE_TYPES.LOGGING, 'WSOCKET: No settings changed!')
+        Logger.log(LOGGING_LEVELS.LOG, 'WSOCKET: No settings changed!')
       }
     })
 
-    mappingStore.addListener('profile', (profile) => {
-      const actions = mappingStore.getActions()
+    mappingStore.addListener('profile', async (profile) => {
+      const actions = await mappingStore.getActions()
       const SocketData = {
         type: 'button_mappings',
         app: 'client',
@@ -395,8 +446,8 @@ const setupListeners = async (): Promise<void> => {
       sendMessageToClients(SocketData)
     })
 
-    mappingStore.addListener('action', (actions) => {
-      const profile = mappingStore.getMapping()
+    mappingStore.addListener('action', async (actions) => {
+      const profile = await mappingStore.getMapping()
       const SocketData = {
         type: 'button_mappings',
         app: 'client',
@@ -406,9 +457,9 @@ const setupListeners = async (): Promise<void> => {
       sendMessageToClients(SocketData)
     })
 
-    mappingStore.addListener('update', () => {
-      const profile = mappingStore.getMapping()
-      const actions = mappingStore.getActions()
+    mappingStore.addListener('update', async () => {
+      const profile = await mappingStore.getMapping()
+      const actions = await mappingStore.getActions()
       const SocketData = {
         type: 'button_mappings',
         app: 'client',
@@ -416,8 +467,21 @@ const setupListeners = async (): Promise<void> => {
       }
 
       sendMessageToClients(SocketData)
+    })
+
+    appStore.on('apps', ({ data }) => {
+      const filteredAppData = data.filter((app) => app.manifest?.isWebApp !== false)
+      sendMessageToClient(undefined, { app: 'client', type: 'config', payload: filteredAppData })
+    })
+
+    appStore.on('settings', async (settingData) => {
+      // handle potentially empty settings
+      if (!settingData) return
+
+      sendSettingData(settingData.appId, settingData.data)
     })
   }, 500)
 }
 
 setupListeners()
+*/

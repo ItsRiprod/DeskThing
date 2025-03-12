@@ -41,7 +41,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
     usid?: string
     mac_bt?: string
   }>({})
-  const [supervisorData, setSupervisorData] = useState<{ [key: string]: string }>({})
+  const [supervisorData, setSupervisorData] = useState<Record<string, string>>({})
 
   const getSupervisorData = async (): Promise<void> => {
     const supervisorResponse = await window.electron.handleClientADB(
@@ -50,7 +50,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
     console.log('Raw adb response (supervisorctl):', supervisorResponse)
     if (supervisorResponse) {
       const supervisorLines = supervisorResponse.trim().split('\n')
-      const parsedData: { [key: string]: string } = {}
+      const parsedData: Record<string, string> = {}
       supervisorLines.forEach((line) => {
         const [name, status] = line.split(/\s+/)
         if (name && status) {
@@ -331,7 +331,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
         />
       )}
       <div className="w-full px-1 py-4 flex items-center gap-2">
-        <h1 className="font-semibold text-2xl">{client.device_type?.name || client.client_name}</h1>
+        <h1 className="font-semibold text-2xl">{client.device_type?.name || client.name}</h1>
         <p className="text-gray-500 text-lg">{client.adbId || client.connectionId}</p>
       </div>
       <div className="w-full px-1 gap-1 flex items-center justify-evenly">
@@ -347,6 +347,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
         {client.adbId && (
           <>
             <Button
+              title="Set Device Client to Staged Client"
               className="bg-black group hover:bg-zinc-950 gap-2 w-full justify-center"
               onClick={handlePushStaged}
               disabled={loading}
@@ -355,6 +356,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
               <p className="bg-black group-hover:block hidden text-nowrap">Push Staged</p>
             </Button>
             <Button
+              title="Restart Client's Chromium"
               className="bg-black group hover:bg-zinc-950 gap-2 w-full justify-center"
               onClick={restartChromium}
               disabled={loading}
@@ -369,6 +371,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
               <p className="bg-black group-hover:block hidden text-nowrap">Reload Chromium</p>
             </Button>
             <Button
+              title="Setup ADB Port for Device"
               className="bg-black group hover:bg-zinc-950 gap-2 w-full justify-center"
               onClick={openPort}
               disabled={loading}
@@ -377,6 +380,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
               <p className="bg-black group-hover:block hidden text-nowrap">Setup Port</p>
             </Button>
             <Button
+              title="Restart the Client"
               className="bg-black group border-red-500 border hover:bg-zinc-950 gap-2 w-full justify-center"
               onClick={handleRestart}
               disabled={loading}
@@ -389,6 +393,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
               <p className="bg-black group-hover:block hidden text-nowrap">Restart</p>
             </Button>
             <Button
+              title="Shutdown the Client"
               className="bg-black group border-red-500 border hover:bg-zinc-950 gap-2 w-full justify-center"
               onClick={handleShutdown}
               disabled={loading}
@@ -401,6 +406,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
         {client.connected && (
           <>
             <Button
+              title="Ping the Client"
               className="bg-black group hover:bg-zinc-950 gap-2 w-full justify-center"
               onClick={handlePing}
             >
@@ -408,6 +414,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
               <p className="bg-black group-hover:block hidden text-nowrap">Ping</p>
             </Button>
             <Button
+              title="Disconnect the Client"
               className="group bg-red-700 gap-2 w-full justify-center"
               onClick={handleDisconnect}
             >
@@ -453,6 +460,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
                     {key}: {value}
                   </h3>
                   <Button
+                    title="Toggle Supervisor"
                     className="bg-black group hover:bg-zinc-950 gap-2"
                     onClick={() => handleToggleSupervisor(key, value != 'RUNNING')}
                     disabled={animatingIcons[key]}
@@ -475,7 +483,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
         )}
         <div className="my-4">
           <p className="text-xs font-geistMono text-gray-500">{client.version}</p>
-          <h3 className="text-xl">{client.client_name}</h3>
+          <h3 className="text-xl">{client.name}</h3>
           <p className="text-xs font-geistMono text-gray-500">{client.description}</p>
         </div>
         <div className="my-4">
@@ -499,6 +507,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
                 className="flex-1 px-3 py-2 bg-zinc-900 rounded-md text-white border border-zinc-700 focus:outline-none focus:border-zinc-500"
               />
               <Button
+                title="Execute Command"
                 className="group bg-black group  hover:bg-zinc-950"
                 onClick={handleExecuteCommand}
               >

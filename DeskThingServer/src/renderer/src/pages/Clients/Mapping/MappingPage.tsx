@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import AvailableModes from './components/AvailableModesComponent'
-import { Key, EventMode, ButtonMapping, Action } from '@shared/types'
+import { Key, EventMode, Action } from '@DeskThing/types'
+import { ButtonMapping } from '@shared/types'
 import AvailableKeys from './components/AvailableKeysComponent'
 import { PageProps } from '.'
 import AllActionsComponent from './components/AllActionsComponent'

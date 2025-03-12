@@ -1,60 +1,53 @@
 import { useEffect } from 'react'
-import { useClientStore, useNotificationStore } from '@renderer/stores'
-import { AuthScopes } from '@shared/types'
+import { useNotificationStore } from '@renderer/stores'
+import useTaskStore from '@renderer/stores/taskStore'
+import { IpcRendererCallback } from '@shared/types'
 
 const RequestDataListener = (): null => {
   const addRequest = useNotificationStore((state) => state.addRequest)
-  const resolveTask = useNotificationStore((state) => state.resolveTask)
-  const addTask = useNotificationStore((state) => state.addTask)
-  const devices = useClientStore((state) => state.ADBDevices)
-  const clientManifest = useClientStore((state) => state.clientManifest)
+  const setAppTasks = useTaskStore((state) => state.setAppTaskList)
+  const setTask = useTaskStore((state) => state.setTask)
+  const setCurrentTask = useTaskStore((state) => state.setCurrentTask)
+  const getTaskList = useTaskStore((state) => state.requestTasks)
+
+  getTaskList()
 
   useEffect(() => {
-    const checkDevices = async (): Promise<void> => {
-      resolveTask('adbdevices-setup')
-      addTask({
-        id: 'adbdevices-configure',
-        title: 'Configure ADB Device',
-        description:
-          'Looks like you have some devices connected! Try configuring one of them to run DeskThing!',
-        status: 'pending',
-        complete: false,
-        steps: [
-          {
-            task: 'Ensure you have a client installed',
-            status: clientManifest !== null,
-            stepId: 'install'
-          },
-          {
-            task: 'Hit the Configure Device button to load the client',
-            status: false,
-            stepId: 'configure'
-          },
-          { task: 'Ping the device to make sure its working!', status: false, stepId: 'ping' }
-        ]
-      })
-    }
-
-    if (devices.length > 0) {
-      checkDevices()
-    }
-  }, [devices])
-
-  useEffect(() => {
-    const handleDisplayUserForm = async (
+    const handleDisplayUserForm: IpcRendererCallback<'display-user-form'> = async (
       _event,
-      requestId: string,
-      fields: AuthScopes
+      { requestId, scope }
     ): Promise<void> => {
-      addRequest(requestId, fields)
+      addRequest(requestId, scope)
+    }
+
+    const handleTasks: IpcRendererCallback<'taskList'> = async (_event, tasks): Promise<void> => {
+      setAppTasks(tasks.source, tasks.taskList)
+    }
+
+    const handleTask: IpcRendererCallback<'task'> = async (_event, task): Promise<void> => {
+      console.log('Handling task update', task)
+      setTask(task)
+    }
+
+    const handleCurrentTask: IpcRendererCallback<'currentTask'> = async (
+      _event,
+      task
+    ): Promise<void> => {
+      setCurrentTask(task)
     }
 
     window.electron.ipcRenderer.on('display-user-form', handleDisplayUserForm)
+    window.electron.ipcRenderer.on('taskList', handleTasks)
+    window.electron.ipcRenderer.on('task', handleTask)
+    window.electron.ipcRenderer.on('currentTask', handleCurrentTask)
 
     return () => {
       window.electron.ipcRenderer.removeAllListeners('display-user-form')
+      window.electron.ipcRenderer.removeAllListeners('task')
+      window.electron.ipcRenderer.removeAllListeners('taskList')
+      window.electron.ipcRenderer.removeAllListeners('currentTask')
     }
-  }, [addRequest])
+  }, [])
 
   return null
 }

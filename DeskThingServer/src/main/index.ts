@@ -11,12 +11,28 @@
  * - Handles application lifecycle events
  * - Manages module loading and initialization
  */
-
-console.log('[Index] Starting')
-import { AppIPCData, AuthScopes, Client, UtilityIPCData, MESSAGE_TYPES } from '@shared/types'
+import {
+  AppIPCData,
+  UtilityIPCData,
+  ServerIPCData,
+  ClientIPCData,
+  IPCData,
+  UTILITY_TYPES
+} from '@shared/types'
+import { App } from '@deskthing/types'
 import { app, shell, BrowserWindow, ipcMain, Tray, Menu, nativeImage } from 'electron'
-import { join, resolve } from 'path'
+import { join, resolve, dirname } from 'node:path'
 import icon from '../../resources/icon.png?asset'
+import dotenv from 'dotenv'
+import { nextTick } from 'node:process'
+
+if (process.env.NODE_ENV === 'development') {
+  dotenv.config()
+} else {
+  const userDataPath = dirname(app.getPath('exe'))
+  const envPath = join(userDataPath, '.env.production')
+  dotenv.config({ path: envPath })
+}
 
 // Global window and tray references to prevent garbage collection
 let mainWindow: BrowserWindow | null = null
@@ -48,7 +64,7 @@ function createMainWindow(): BrowserWindow {
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon: icon } : {}),
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
+      preload: join(__dirname, '../preload/index.mjs'),
       sandbox: false
     }
   })
@@ -143,6 +159,18 @@ function createClientWindow(port: number): BrowserWindow {
     `)
   })
 
+  // Set up CORS for localhost:8891
+  window.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Access-Control-Allow-Origin': ['*'],
+        'Access-Control-Allow-Methods': ['GET, POST, OPTIONS'],
+        'Access-Control-Allow-Headers': ['Content-Type']
+      }
+    })
+  })
+
   // Show window when ready
   window.on('ready-to-show', () => {
     window.show()
@@ -157,7 +185,6 @@ function createClientWindow(port: number): BrowserWindow {
   window.loadURL(`http://localhost:${port}/`, {})
   return window
 }
-
 /**
  * Initializes the system tray icon and menu
  */
@@ -194,8 +221,9 @@ async function initializeTray(): Promise<void> {
         if (clientWindow && !clientWindow.isDestroyed()) {
           clientWindow.focus()
         } else {
-          const settingsStore = await import('./stores/settingsStore')
-          const data = await settingsStore.default.getSettings()
+          const { storeProvider } = await import('./stores/storeProvider')
+          const settingsStore = await storeProvider.getStore('settingsStore')
+          const data = await await settingsStore.getSettings()
           if (data) {
             clientWindow = createClientWindow(data.devicePort)
           }
@@ -235,8 +263,9 @@ async function initializeDoc(): Promise<void> {
         if (clientWindow && !clientWindow.isDestroyed()) {
           clientWindow.focus()
         } else {
-          const settingsStore = await import('./stores/settingsStore')
-          const data = await settingsStore.default.getSettings()
+          const { storeProvider } = await import('./stores/storeProvider')
+          const settingsStore = await storeProvider.getStore('settingsStore')
+          const data = await settingsStore.getSettings()
           if (data) {
             clientWindow = createClientWindow(data.devicePort)
           }
@@ -259,14 +288,15 @@ async function initializeDoc(): Promise<void> {
  */
 async function setupIpcHandlers(): Promise<void> {
   // Import required stores
-  const [{ default: settingsStore }, { default: loggingStore, ResponseLogger }] = await Promise.all(
-    [import('./stores/settingsStore'), import('./stores/loggingStore')]
-  )
-
+  const { default: Logger, ResponseLogger } = await import('./utils/logger')
   // Default handler for unimplemented IPC messages
-  const defaultHandler = async (data: AppIPCData): Promise<void> => {
-    console.error(`No handler implemented for type: ${data.type} ${data}`)
-    loggingStore.log(MESSAGE_TYPES.ERROR, `No handler implemented for type: ${data.type}`)
+  const defaultHandler = async (data: IPCData): Promise<void> => {
+    Logger.error(`No handler implemented for type: ${data.type}`, {
+      domain: 'server',
+      source: 'ipcHandlers',
+      function: 'defaultHandler',
+      error: new Error(`Unhandled type: ${data.type}`)
+    })
   }
 
   // Handle app-related IPC messages
@@ -276,19 +306,27 @@ async function setupIpcHandlers(): Promise<void> {
     const replyFn = ResponseLogger(event.sender.send.bind(event.sender))
     try {
       if (handler) {
-        return await handler(data, replyFn)
+        return await handler(data as Extract<AppIPCData, { type: keyof UTILITY_TYPES }>, replyFn)
       } else {
-        console.error(`No handler found for type: ${data.type}`)
-        throw new Error(`Unhandled type: ${data.type}`)
+        Logger.error(`No handler found for type: ${data.type}`, {
+          domain: 'server',
+          source: 'ipcHandlers',
+          function: 'APPS',
+          error: new Error(`Unhandled type: ${data.type}`)
+        })
       }
     } catch (error) {
-      console.error('Error in IPC handler:', error)
-      loggingStore.log(MESSAGE_TYPES.ERROR, `Error in IPC handler: ${error}`)
+      Logger.error(`Error in IPC handler with event ${data.type}: ${error}`, {
+        domain: 'server',
+        source: 'ipcHandlers',
+        function: 'APPS',
+        error: error instanceof Error ? error : new Error(String(error))
+      })
     }
   })
 
   // Handle client-related IPC messages
-  ipcMain.handle('CLIENT', async (event, data: AppIPCData) => {
+  ipcMain.handle('CLIENT', async (event, data: ClientIPCData) => {
     const { clientHandler } = await import('./handlers/clientHandler')
     const handler = clientHandler[data.type] || defaultHandler
     const replyFn = ResponseLogger(event.sender.send.bind(event.sender))
@@ -296,66 +334,64 @@ async function setupIpcHandlers(): Promise<void> {
       if (handler) {
         return await handler(data, replyFn)
       } else {
-        console.error(`No handler found for type: ${data.type}`)
-        throw new Error(`Unhandled type: ${data.type}`)
+        Logger.error(`No handler found for type: ${data.type}`, {
+          domain: 'server',
+          source: 'ipcHandlers',
+          function: 'CLIENT',
+          error: new Error(`Unhandled type: ${data.type}`)
+        })
       }
     } catch (error) {
-      console.error('Error in IPC handler:', error)
-      loggingStore.log(MESSAGE_TYPES.ERROR, `Error in IPC handler: ${error}`)
+      Logger.error(`Error in IPC handler with event ${data.type}: ${error}`, {
+        domain: 'server',
+        source: 'ipcHandlers',
+        function: 'CLIENT',
+        error: error instanceof Error ? error : new Error(String(error))
+      })
     }
   })
 
   // Handle utility-related IPC messages
   ipcMain.handle('UTILITY', async (event, data: UtilityIPCData) => {
     const { utilityHandler } = await import('./handlers/utilityHandler')
-    const handler = utilityHandler[data.type] || defaultHandler
     const replyFn = ResponseLogger(event.sender.send.bind(event.sender))
+    const handler = utilityHandler[data.type]
 
     try {
       if (handler) {
-        return await handler(data, replyFn)
+        return await handler(
+          data as Extract<UtilityIPCData, { type: keyof UTILITY_TYPES }>,
+          replyFn
+        )
       } else {
-        console.error(`No handler found for type: ${data.type}`)
-        throw new Error(`Unhandled type: ${data.type}`)
+        Logger.error(`No handler found for type: ${data.type}`, {
+          domain: 'server',
+          source: 'ipcHandlers',
+          function: 'UTILITY',
+          error: new Error(`Unhandled type: ${data.type}`)
+        })
       }
     } catch (error) {
-      console.error('Error in IPC handler:', error)
-      loggingStore.log(MESSAGE_TYPES.ERROR, `Error in IPC handler: ${error}`)
+      Logger.error(`Error in IPC handler with event ${data.type}: ${error}`, {
+        domain: 'server',
+        source: 'ipcHandlers',
+        function: 'UTILITY',
+        error: error instanceof Error ? error : new Error(String(error))
+      })
     }
   })
 
-  // Set up mapping store listeners
-  import('./services/mappings/mappingStore').then(({ default: mappingStore }) => {
-    mappingStore.addListener('action', (action) => {
-      sendIpcData('action', action)
-    })
-    mappingStore.addListener('key', (key) => {
-      sendIpcData('key', key)
-    })
-    mappingStore.addListener('profile', (profile) => {
-      sendIpcData('profile', profile)
-    })
-  })
-
   // Set up logging store listener
-  loggingStore.addListener((errorData) => {
-    sendIpcData('log', errorData)
+  Logger.addListener((logData) => {
+    sendIpcData({
+      type: 'log',
+      payload: logData
+    })
   })
 
-  // Set up settings store listener
-  settingsStore.addListener((newSettings) => {
-    sendIpcData('settings-updated', newSettings)
-  })
-
-  // Set up connections store listeners
-  import('./stores/connectionsStore').then(({ default: ConnectionStore }) => {
-    ConnectionStore.on((clients: Client[]) => {
-      sendIpcData('connections', { status: true, data: clients.length, final: true })
-      sendIpcData('clients', { status: true, data: clients, final: true })
-    })
-    ConnectionStore.onDevice((devices: string[]) => {
-      sendIpcData('adbdevices', { status: true, data: devices, final: true })
-    })
+  import('./services/updater/autoUpdater').then(async ({ checkForUpdates }) => {
+    Logger.debug('[INDEX] Checking for updates...')
+    checkForUpdates()
   })
 }
 
@@ -395,15 +431,19 @@ if (!app.requestSingleInstanceLock()) {
     app.setAppUserModelId('com.deskthing')
 
     // Set up window optimization
-    app.on('browser-window-created', (_, window) => {
-      const { optimizer } = require('@electron-toolkit/utils')
+    app.on('browser-window-created', async (_, window) => {
+      const { optimizer } = await import('@electron-toolkit/utils')
       optimizer.watchWindowShortcuts(window)
     })
 
     // Create main window and set up handlers
     mainWindow = createMainWindow()
 
-    mainWindow.once('ready-to-show', () => {
+    mainWindow.on('ready-to-show', () => {
+      mainWindow?.show()
+    })
+
+    nextTick(async () => {
       loadModules()
       setupIpcHandlers()
     })
@@ -417,12 +457,14 @@ if (!app.requestSingleInstanceLock()) {
   })
 
   // Handle window closure
-  app.on('window-all-closed', async (e) => {
-    const { default: settingsStore } = await import('./stores/settingsStore')
-
+  app.on('window-all-closed', async () => {
+    const { storeProvider } = await import('./stores/storeProvider')
+    const settingsStore = await storeProvider.getStore('settingsStore')
     const settings = await settingsStore.getSettings()
-    if (settings.minimizeApp) {
-      e.preventDefault()
+    if (settings?.minimizeApp) {
+      // Clear cache from everywhere
+      const { default: cacheManager } = await import('./services/cache/cacheManager')
+      await cacheManager.hibernateAll()
     } else {
       app.quit()
     }
@@ -433,50 +475,66 @@ if (!app.requestSingleInstanceLock()) {
  * Handles custom protocol URLs
  * @param url - The URL to handle
  */
-function handleUrl(url: string | undefined): void {
+async function handleUrl(
+  url: string | undefined,
+  window: BrowserWindow | null = mainWindow
+): Promise<void> {
   if (url && url.startsWith('deskthing://')) {
     const path = url.replace('deskthing://', '')
 
-    if (mainWindow) {
-      mainWindow.webContents.send('handle-protocol-url', path)
+    if (path.startsWith('a?') || path.startsWith('a/?')) {
+      const { default: Logger } = await import('./utils/logger')
+
+      Logger.debug('Attempting to handle with authStore', {
+        source: 'handleUrl',
+        function: 'handleUrl'
+      })
+      const { storeProvider } = await import('./stores/storeProvider')
+      const authStore = await storeProvider.getStore('authStore')
+      authStore.handleProtocol(url)
+
+      return
+    }
+    console.log('Sending path to webContents for handling')
+
+    const targetWindow = clientWindow && !clientWindow.isDestroyed() ? clientWindow : window
+
+    if (targetWindow) {
+      targetWindow.webContents.send('handle-protocol-url', path)
+    } else {
+      console.log('No window available to handle URL:', url)
     }
   }
 }
-
-/**
- * Opens authentication window in default browser
- * @param url - The authentication URL
- */
-async function openAuthWindow(url: string): Promise<void> {
-  await shell.openExternal(url)
-}
 async function loadModules(): Promise<void> {
   try {
-    import('./handlers/authHandler')
+    // Store listeners
+    // const { storeProvider } = await import('./stores/storeProvider')
 
-    import('./services/client/websocket').then(({ restartServer }) => {
-      restartServer()
-    })
+    // const expressServerStore = await storeProvider.getStore('expressServerStore')
+    // expressServerStore.start()
 
-    import('./services/apps').then(({ loadAndRunEnabledApps }) => {
-      loadAndRunEnabledApps()
-    })
+    const { initializePlatforms } = await import('./services/platforms/platformInitializer')
+    await initializePlatforms()
 
-    import('./handlers/musicHandler')
+    const { initializeStores } = await import('./services/cache/storeInitializer')
+    await initializeStores()
   } catch (error) {
-    console.error('Error loading modules:', error)
+    console.error('Error loading modules: ', error)
   }
 }
 
-async function sendIpcAuthMessage(
-  _appName: string,
-  requestId: string,
-  scope: AuthScopes
-): Promise<void> {
-  mainWindow?.webContents.send('display-user-form', requestId, scope)
-}
-async function sendIpcData(dataType: string, data: unknown): Promise<void> {
-  mainWindow?.webContents.send(dataType, data)
+export type IpcDataTypes = {
+  dataType: ''
+  data: App[]
 }
 
-export { sendIpcAuthMessage, openAuthWindow, sendIpcData }
+async function sendIpcData({ type, payload, window }: ServerIPCData): Promise<void> {
+  if (window && window instanceof BrowserWindow) {
+    window.webContents.send(type, payload)
+  } else {
+    mainWindow?.webContents.send(type, payload)
+  }
+}
+
+export { sendIpcData, createMainWindow, createClientWindow, handleUrl }

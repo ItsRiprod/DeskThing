@@ -16,15 +16,15 @@ const SponsorButton: React.FC = () => {
       href="https://deskthing.app/support"
       target="_blank"
       rel="noreferrer"
+      title="Sponsor Link"
       className="group fill-fuchsia-600 hover:bg-fuchsia-600 hover:text-black text-fuchsia-600"
       onMouseEnter={reward}
     >
       <span id="rewardId" />
       <IconCoffee iconSize={24} strokeWidth={2} />
-      <p className="flex-grow text-center text-lg md:block hidden group-hover:hidden">Coffee</p>
-      <p className="flex-grow text-center text-lg group-hover:md:block hidden">Support</p>
+      <p className="flex-grow text-center text-lg md:block hidden group-hover:hidden">Donate</p>
+      <p className="flex-grow text-center text-lg group-hover:md:block hidden">Coffee</p>
     </Button>
   )
 }
-
 export default SponsorButton

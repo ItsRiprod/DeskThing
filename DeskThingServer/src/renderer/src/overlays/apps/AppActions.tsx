@@ -1,14 +1,29 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { AppSettingProps } from './AppsOverlay'
 import Button from '@renderer/components/Button'
 import { IconPlay, IconStop, IconTrash, IconX } from '@renderer/assets/icons'
 import { useAppStore } from '@renderer/stores'
+import useMappingStore from '@renderer/stores/mappingStore'
+import { Action } from '@DeskThing/types'
+import ActionElement from '@renderer/components/ActionElement'
 
 const AppActions: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
   const stopApp = useAppStore((state) => state.stopApp)
   const runApp = useAppStore((state) => state.runApp)
   const disableApp = useAppStore((state) => state.disableApp)
   const enableApp = useAppStore((state) => state.enableApp)
+  const actions = useMappingStore((state) => state.actions)
+  const fetchActions = useMappingStore((state) => state.getActions)
+
+  const [availableActions, setAvailableActions] = useState<Action[]>([])
+
+  useEffect(() => {
+    setAvailableActions(actions.filter((action) => action.source === app.name))
+  }, [actions])
+
+  useEffect(() => {
+    fetchActions()
+  }, [])
 
   const handlePurge = (): void => {
     window.electron.purgeApp(app.name)
@@ -22,7 +37,7 @@ const AppActions: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
           className="justify-center gap-2 hover:bg-red-500 border-red-500 border w-full"
         >
           <IconTrash className="stroke-2" />
-          <p>Purge</p>
+          <p>Uninstall</p>
         </Button>
 
         {app.enabled ? (
@@ -66,6 +81,11 @@ const AppActions: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
           {app.manifest?.label || app.name} is {app.running ? 'running' : 'not running'}
         </h1>
         <h1>App will {app.enabled ? 'Start Automatically' : 'Not Start Automatically'}</h1>
+      </div>
+      <div className="flex flex-wrap gap-2 mt-4 justify-start">
+        {availableActions.map((action) => (
+          <ActionElement key={action.id} action={action} />
+        ))}
       </div>
     </div>
   )

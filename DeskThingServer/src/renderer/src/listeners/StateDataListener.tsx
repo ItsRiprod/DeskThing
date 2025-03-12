@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { usePageStore } from '@renderer/stores/'
 
 const StateDataListener = (): null => {
-  const { setPage } = usePageStore()
+  const setPage = usePageStore((state) => state.setPage)
 
   useEffect(() => {
     window.electron.ipcRenderer.on('page-change', async (_event, newPage) => {

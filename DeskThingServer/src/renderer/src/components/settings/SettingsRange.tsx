@@ -1,6 +1,6 @@
 import React from 'react'
 import SettingComponent from './SettingComponent'
-import { SettingsRange } from '@shared/types'
+import { SettingsRange } from '@DeskThing/types'
 
 interface SettingsRangeProps {
   setting: SettingsRange
@@ -8,6 +8,13 @@ interface SettingsRangeProps {
   className?: string
 }
 
+/**
+ * A React component that renders a settings range input.
+ *
+ * @param className - An optional CSS class name to apply to the component.
+ * @param setting - The settings range object, which includes the value, min, max, and step properties.
+ * @param handleSettingChange - A function to call when the range input value changes, passing the new value.
+ */
 export const SettingsRangeComponent: React.FC<SettingsRangeProps> = ({
   className,
   setting,

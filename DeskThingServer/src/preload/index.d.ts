@@ -1,33 +1,44 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 import {
   ActionReference,
-  AppDataInterface,
-  AppReturnData,
-  ButtonMapping,
-  Client,
+  AppReleaseCommunity,
+  AppReleaseMeta,
+  AppSettings,
   ClientManifest,
-  Log,
-  Profile
-} from '@shared/types'
+  ClientReleaseMeta
+} from '@DeskThing/types'
+import { Profile, Client, ButtonMapping, Log, StagedAppManifest, ADBClient } from '@shared/types'
 
-type AppData = { [key: string]: string }
+type AppData = Record<string, string>
 
 declare global {
   interface Window {
+    electronAPI: {
+      platform: NodeJS.Platform
+    }
     electron: ElectronAPI & {
       ping: () => Promise<string>
       pingClient: (clientId: string) => Promise<string | null>
       getApps: () => Promise<App[]>
-      getAppData: (appId: string) => Promise<AppDataInterface | null>
-      setAppData: (appId: string, data: AppDataInterface) => Promise<void>
+      getAppData: (appId: string) => Promise<Record<string, string> | null>
+      setAppData: (appId: string, data: Record<string, string>) => Promise<void>
+      getAppSettings: (appId: string) => Promise<AppSettings | null>
+      setAppSettings: (appId: string, settings: AppSettings) => Promise<void>
       stopApp: (appId: string) => Promise<void>
       disableApp: (appId: string) => Promise<void>
       runApp: (appId: string) => Promise<void>
       enableApp: (appId: string) => Promise<void>
       purgeApp: (appId: string) => Promise<void>
-      handleAppZip: (path: string) => Promise<AppReturnData | null>
-      handleAppUrl: (url: string) => Promise<AppReturnData | null>
-      handleResponseToUserData: (requestId: string, payload: IncomingData) => Promise<void>
+      app: {
+        add: (data: {
+          appPath?: string
+          releaseMeta?: AppReleaseSingleMeta
+        }) => Promise<StagedAppManifest>
+        getIcon: (appId: string, icon?: string) => Promise<string | null>
+        runStaged: (appId: string, overwrite: boolean) => Promise<void>
+      }
+
+      handleResponseToUserData: (requestId: string, payload: ToAppData) => Promise<void>
       handleDevAppZip: (path: string) => Promise<void>
       sendDataToApp: (data: SocketData) => Promise<void>
       orderApps: (data: string[]) => Promise<void>
@@ -42,11 +53,19 @@ declare global {
       handleClientCommand: (command: SocketData) => Promise<void>
       ping: () => Promise<void>
       getConnections: () => Promise<Client[]>
-      getDevices: () => Promise<string[]>
+      getDevices: () => Promise<ADBClient[]>
       disconnectClient: (connectionId: string) => Promise<void>
       saveSettings: (settings: Settings) => Promise<void>
       getSettings: () => Promise<Settings>
-      fetchGithub: (url: string) => Promise<GithubRelease[]>
+      github: {
+        refreshApp: (repoUrl: string) => Promise<void>
+        refreshApps: () => Promise<void>
+        getApps: () => Promise<AppReleaseMeta[]>
+        getAppReferences: () => Promise<AppReleaseCommunity[]>
+        addAppRepo: (repoUrl: string) => Promise<AppReleaseMeta>
+        getClients: () => Promise<ClientReleaseMeta[]>
+        removeAppRepo: (repoUrl: string) => Promise<void>
+      }
       getLogs: () => Promise<Log[]>
       shutdown: () => Promise<void>
       openLogsFolder: () => Promise<void>
@@ -76,6 +95,30 @@ declare global {
       deleteProfile: (profile: string) => Promise<void>
 
       runAction: (action: Action | ActionReference) => Promise<void>
+
+      tasks: {
+        getTaskList: () => Promise<TaskList>
+        stopTask: (taskId: string, source?: string) => Promise<void>
+        startTask: (taskId: string, source?: string) => Promise<void>
+        completeStep: (taskId: string, stepId: string, source?: string) => Promise<void>
+        completeTask: (taskId: string, source?: string) => Promise<void>
+        restartTask: (taskId: string, source?: string) => Promise<void>
+        pauseTask: () => Promise<void>
+        nextStep: (taskId: string, source?: string) => Promise<void>
+        prevStep: (taskId: string, source?: string) => Promise<void>
+        updateStep: (taskId: string, newStep: Partial<Step>, source?: string) => Promise<void>
+        updateTask: (newTask: Partial<Task>, source?: string) => Promise<void>
+      }
+
+      update: {
+        check: () => Promise<void>
+        download: () => Promise<void>
+        install: () => Promise<void>
+      }
+      feedback: {
+        submit: (feedback: FeedbackReport) => Promise<void>
+        getSysInfo: () => Promise<getSysInfo>
+      }
     }
     api: unknown // Or define `api` more specifically if you have a shape for it
   }

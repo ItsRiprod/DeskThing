@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef, useMemo, memo } from 'react'
 import useLogStore from '../../stores/logStore'
 import Sidebar from '@renderer/nav/Sidebar'
 import MainElement from '@renderer/nav/MainElement'
@@ -9,20 +9,35 @@ import {
   IconCopy,
   IconFolderOpen,
   IconLogs,
+  IconToggle,
   IconWarning
 } from '@renderer/assets/icons'
 import { useReward } from 'react-rewards'
-import { MESSAGE_TYPES } from '@shared/types/types'
+import { Log } from '@shared/types'
+import { LOGGING_LEVELS } from '@DeskThing/types'
+
+const colorMap = {
+  [LOGGING_LEVELS.ERROR]: 'text-red-500',
+  [LOGGING_LEVELS.FATAL]: 'text-red-700',
+  [LOGGING_LEVELS.WARN]: 'text-orange-500',
+  [LOGGING_LEVELS.MESSAGE]: 'text-yellow-500',
+  [LOGGING_LEVELS.DEBUG]: 'text-blue-500',
+  [LOGGING_LEVELS.LOG]: 'text-gray-500'
+}
 
 const Logs: React.FC = () => {
-  const { logList, getLogs } = useLogStore()
-  const [filter, setFilter] = useState<MESSAGE_TYPES | null>(null)
+  const logList = useLogStore((state) => state.logList)
+  const getLogs = useLogStore((state) => state.getLogs)
+  const [filter, setFilter] = useState<LOGGING_LEVELS | null>(null)
   const logContainerRef = useRef<HTMLDivElement>(null)
   const [autoScroll, setAutoScroll] = useState(true)
   const { reward, isAnimating } = useReward('rewardId', 'confetti')
-  const [hoveredLog, setHoveredLog] = useState<string | null>(null)
+  const [hoveredLog, setHoveredLog] = useState<Error | null>(null)
 
-  const filteredLogs = filter ? logList.filter((log) => log.type === filter) : logList
+  const filteredLogs = useMemo(
+    () => (filter ? logList.filter((log) => !filter || log.type === filter) : logList),
+    [filter, logList]
+  )
 
   useEffect(() => {
     getLogs()
@@ -34,14 +49,6 @@ const Logs: React.FC = () => {
     }
   }, [filteredLogs, autoScroll])
 
-  const handleScroll = (): void => {
-    if (logContainerRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = logContainerRef.current
-      const isScrolledToBottom = scrollTop + clientHeight >= scrollHeight - 10 // 10px threshold
-      setAutoScroll(isScrolledToBottom)
-    }
-  }
-
   const handleLogsOpen = (): void => {
     window.electron.openLogsFolder()
   }
@@ -50,7 +57,7 @@ const Logs: React.FC = () => {
     const logsText = filteredLogs
       .map(
         (log) =>
-          `[${new Date(log.date || '2024-11-17T11:16:16.970Z').toLocaleTimeString()} ${log.source}]: ${log.log}`
+          `[${new Date(log.options.date || '2024-11-17T11:16:16.970Z').toLocaleTimeString()} ${log.options.source}]: ${log.log}`
       )
       .join('\n')
     navigator.clipboard.writeText(logsText)
@@ -63,7 +70,10 @@ const Logs: React.FC = () => {
         <div className="relative h-full overflow-auto">
           <p>
             {hoveredLog && (
-              <div className="absolute inset-0 text-xs text-gray-500 break-words">{hoveredLog}</div>
+              <div className="absolute inset-0">
+                <p className="text-xs text-gray-500 break-words">{hoveredLog.message}</p>
+                <p className="text-xs text-gray-500 break-words">{hoveredLog.stack}</p>
+              </div>
             )}
           </p>
         </div>
@@ -78,6 +88,18 @@ const Logs: React.FC = () => {
             {isAnimating ? <IconCheck strokeWidth={1.5} /> : <IconCopy strokeWidth={1.5} />}
             <p className="md:block xs:hidden text-center flex-grow">Copy Logs</p>
           </Button>
+          <Button
+            onClick={() => setAutoScroll(!autoScroll)}
+            className="items-center justify-center hover:bg-zinc-900"
+          >
+            <IconToggle
+              className={autoScroll ? `text-green-500` : `text-red-500`}
+              checked={autoScroll}
+              strokeWidth={1.5}
+              iconSize={30}
+            />
+            <p className="md:block xs:hidden text-center flex-grow">Autoscroll</p>
+          </Button>
         </div>
       </Sidebar>
       <MainElement>
@@ -90,43 +112,43 @@ const Logs: React.FC = () => {
             <p className="md:block hidden text-center flex-grow">All</p>
           </Button>
           <Button
-            onClick={() => setFilter(MESSAGE_TYPES.MESSAGE)}
-            className={`w-full ${filter === MESSAGE_TYPES.MESSAGE ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
+            onClick={() => setFilter(LOGGING_LEVELS.MESSAGE)}
+            className={`w-full ${filter === LOGGING_LEVELS.MESSAGE ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
           >
             <IconBell strokeWidth={1.5} />
             <p className="md:block hidden text-center flex-grow">Messages</p>
           </Button>
           <Button
-            onClick={() => setFilter(MESSAGE_TYPES.ERROR)}
-            className={`w-full ${filter === MESSAGE_TYPES.ERROR ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
+            onClick={() => setFilter(LOGGING_LEVELS.ERROR)}
+            className={`w-full ${filter === LOGGING_LEVELS.ERROR ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
           >
             <IconWarning strokeWidth={1.5} />
             <p className="md:block hidden text-center flex-grow">Errors</p>
           </Button>
           <Button
-            onClick={() => setFilter(MESSAGE_TYPES.WARNING)}
-            className={`w-full ${filter === MESSAGE_TYPES.WARNING ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
+            onClick={() => setFilter(LOGGING_LEVELS.WARN)}
+            className={`w-full ${filter === LOGGING_LEVELS.WARN ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
           >
             <IconWarning strokeWidth={1.5} />
-            <p className="md:block hidden text-center flex-grow">Warnings</p>
+            <p className="md:block hidden text-center flex-grow">WARNs</p>
           </Button>
           <Button
-            onClick={() => setFilter(MESSAGE_TYPES.FATAL)}
-            className={`w-full ${filter === MESSAGE_TYPES.FATAL ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
+            onClick={() => setFilter(LOGGING_LEVELS.FATAL)}
+            className={`w-full ${filter === LOGGING_LEVELS.FATAL ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
           >
             <IconWarning strokeWidth={1.5} />
             <p className="md:block hidden text-center flex-grow">Fatal</p>
           </Button>
           <Button
-            onClick={() => setFilter(MESSAGE_TYPES.DEBUG)}
-            className={`w-full ${filter === MESSAGE_TYPES.DEBUG ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
+            onClick={() => setFilter(LOGGING_LEVELS.DEBUG)}
+            className={`w-full ${filter === LOGGING_LEVELS.DEBUG ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
           >
             <IconLogs strokeWidth={1.5} />
             <p className="md:block hidden text-center flex-grow">Debug</p>
           </Button>
           <Button
-            onClick={() => setFilter(MESSAGE_TYPES.LOGGING)}
-            className={`w-full ${filter === MESSAGE_TYPES.LOGGING ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
+            onClick={() => setFilter(LOGGING_LEVELS.LOG)}
+            className={`w-full ${filter === LOGGING_LEVELS.LOG ? 'bg-zinc-800 hover:bg-zinc-700' : 'hover:bg-zinc-900'}`}
           >
             <IconLogs strokeWidth={1.5} />
             <p className="md:block hidden text-center flex-grow">Logs</p>
@@ -134,44 +156,48 @@ const Logs: React.FC = () => {
         </div>
         <div
           ref={logContainerRef}
-          className="w-full bg-black shadow-2xl p-5 max-w-full overflow-auto"
+          className="w-full h-full bg-black shadow-2xl p-5 max-w-full overflow-auto"
           style={{ maxHeight: 'calc(100vh - 8rem)' }}
-          onScroll={handleScroll}
         >
-          <ul className="space-y-2">
-            {filteredLogs.length > 0 ? (
-              filteredLogs.map((log, index) => (
-                <li
-                  key={index}
-                  className={`relative group text-sm hover:bg-zinc-900 items-center flex overflow-auto justify-between w-full font-geistMono break-words whitespace-pre-wrap ${
-                    log.type === MESSAGE_TYPES.ERROR
-                      ? 'text-red-500'
-                      : log.type === MESSAGE_TYPES.MESSAGE
-                        ? 'text-yellow-500'
-                        : log.type === MESSAGE_TYPES.WARNING
-                          ? 'text-orange-500'
-                          : log.type === MESSAGE_TYPES.FATAL
-                            ? 'text-red-700'
-                            : log.type === MESSAGE_TYPES.DEBUG
-                              ? 'text-blue-500'
-                              : 'text-gray-500'
-                  }`}
-                  onClick={() => setHoveredLog(log.trace || null)}
-                >
-                  <p className="break-words">{log.log}</p>
-                  <p className="text-xs italic text-gray-600 text-nowrap">
-                    [{new Date(log.date as string).toLocaleTimeString()} {log.source}]
-                  </p>
-                </li>
-              ))
-            ) : (
-              <li className="text-sm text-white">No logs available for filter {filter}.</li>
-            )}
-          </ul>
+          {filteredLogs.length > 0 ? (
+            <ul className="space-y-2">
+              {filteredLogs.map((log, index) => (
+                <LogItem
+                  key={`${log.options.date}-${index}`}
+                  log={log}
+                  setHoveredLog={setHoveredLog}
+                />
+              ))}
+            </ul>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <p className="text-sm text-white">No logs available for filter {filter}.</p>
+            </div>
+          )}
         </div>
       </MainElement>
     </div>
   )
 }
 
-export default Logs
+const LogItem = memo(
+  ({ log, setHoveredLog }: { log: Log; setHoveredLog: (log: Error | null) => void }) => (
+    <li
+      className={`group text-sm hover:bg-zinc-900 items-center flex overflow-auto justify-between w-full font-geistMono break-words whitespace-pre-wrap ${
+        colorMap[log.type]
+      }`}
+      onClick={() => setHoveredLog(log.options?.error || null)}
+    >
+      <p className="break-words">{log.log}</p>
+      <div className="right-full pr-4 text-xs italic text-gray-600 group-hover:text-gray-300 text-nowrap flex flex-col items-end">
+        <p>[{new Date(log.options.date as string).toLocaleTimeString()}]</p>
+        <p>{`${log.options.source}${log.options.function && `.${log.options.function}`}`}</p>
+      </div>
+    </li>
+  )
+)
+LogItem.displayName = 'LogItem'
+
+Logs.displayName = 'Logs'
+
+export default memo(Logs)

@@ -44,7 +44,7 @@ const RequestComponent = ({ request }: RequestProps): React.ReactElement => {
   const resolveRequest = useNotificationStore((state) => state.resolveRequest)
   const [expanded, setIsExpanded] = useState(false)
   const [focusedIndex, setFocusedIndex] = useState(0)
-  const [formData, setFormData] = useState<{ [key: string]: string }>({})
+  const [formData, setFormData] = useState<Record<string, string>>({})
   const [allFieldsFilled, setAllFieldsFilled] = useState(false)
 
   const handleInputChange = (field: string, value: string): void => {
@@ -60,7 +60,7 @@ const RequestComponent = ({ request }: RequestProps): React.ReactElement => {
         acc[key] = scope.value || ''
         return acc
       },
-      {} as { [key: string]: string }
+      {} as Record<string, string>
     )
     setFormData(initialFormData)
   }, [request.scopes])

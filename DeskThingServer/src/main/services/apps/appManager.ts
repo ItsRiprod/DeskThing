@@ -1,7 +1,15 @@
 console.log('[AppMangr Service] Starting')
 import { rmSync, readdirSync, statSync, existsSync } from 'node:fs'
-import loggingStore from '../../stores/loggingStore'
-import { MESSAGE_TYPES } from '@shared/types'
+import Logger from '@server/utils/logger'
+import { LOGGING_LEVELS } from '@DeskThing/types'
+import { storeProvider } from '@server/stores/storeProvider'
+
+/**
+ * Clears the cache for an app
+ * @param appName
+ * @depreciated Apps were migrated to threads - no longer needed
+ * @returns
+ */
 export async function clearCache(appName: string): Promise<void> {
   try {
     const { join } = await import('path')
@@ -9,6 +17,11 @@ export async function clearCache(appName: string): Promise<void> {
     const dir = getAppFilePath(appName)
 
     const items = readdirSync(dir)
+    if (!items || items.length === 0) {
+      Logger.log(LOGGING_LEVELS.WARN, `SERVER: Directory ${dir} is empty`)
+      return
+    }
+
     items.forEach((item) => {
       const itemPath = join(dir, item)
       const stats = statSync(itemPath)
@@ -22,39 +35,37 @@ export async function clearCache(appName: string): Promise<void> {
           const resolvedPath = require.resolve(itemPath)
           if (require.cache[resolvedPath]) {
             delete require.cache[resolvedPath]
-            loggingStore.log(MESSAGE_TYPES.LOGGING, `SERVER: Removed ${resolvedPath} from cache`)
+            Logger.info(`SERVER: Removed ${resolvedPath} from cache`)
           } else {
-            loggingStore.log(MESSAGE_TYPES.LOGGING, `SERVER: ${resolvedPath} not in cache!`)
+            Logger.info(`SERVER: ${resolvedPath} not in cache!`)
           }
         } catch (error) {
           if (error instanceof Error) {
-            loggingStore.log(
-              MESSAGE_TYPES.ERROR,
-              `SERVER: Error clearing cache for ${itemPath}:`,
-              error.message
-            )
+            Logger.log(LOGGING_LEVELS.ERROR, `SERVER: Error clearing cache for ${itemPath}:`, {
+              error,
+              function: 'clearCache',
+              source: 'clearCache'
+            })
           } else {
-            loggingStore.log(
-              MESSAGE_TYPES.ERROR,
-              `SERVER: Error clearing cache for ${itemPath}:`,
-              String(error)
-            )
+            Logger.log(LOGGING_LEVELS.ERROR, `SERVER: Error clearing cache for ${itemPath}:`, {
+              error: new Error(String(error)),
+              function: 'clearCache',
+              source: 'clearCache'
+            })
           }
         }
       }
     })
   } catch (error) {
     if (error instanceof Error) {
-      loggingStore.log(
-        MESSAGE_TYPES.ERROR,
-        `SERVER: Error clearing cache for directory ${appName}:`,
-        error.message
+      Logger.log(
+        LOGGING_LEVELS.ERROR,
+        `SERVER: Error clearing cache for directory ${appName}: ` + error.message
       )
     } else {
-      loggingStore.log(
-        MESSAGE_TYPES.ERROR,
-        `SERVER: Error clearing cache for directory ${appName}:`,
-        String(error)
+      Logger.log(
+        LOGGING_LEVELS.ERROR,
+        `SERVER: Error clearing cache for directory ${appName}:` + String(error)
       )
     }
   }
@@ -63,39 +74,83 @@ export async function clearCache(appName: string): Promise<void> {
 /**
  * Purges an app by its name, stopping it and removing its configuration and data.
  *
+ * @deprecated No longer needed - apps are now handled by threads and stores
  * @param {string} appName - The name of the app to purge.
+ * @throws {Error} If an error occurs during the purge process.
  */
 export async function purgeApp(appName: string): Promise<void> {
-  try {
-    loggingStore.log(MESSAGE_TYPES.LOGGING, `SERVER: Purging App ${appName}`)
+  const errors: Error[] = []
 
-    const { purgeAppData } = await import('../../handlers/dataHandler')
-    const { purgeAppConfig } = await import('../../handlers/configHandler')
-    const keyMapStore = (await import('../mappings/mappingStore')).default
+  try {
+    Logger.debug(`SERVER: Purging App ${appName}`)
+
+    const { purgeAppData } = await import('../files/dataFileService')
+    const { purgeAppConfig } = await import('../files/appFileService')
+    const keyMapStore = await storeProvider.getStore('mappingStore')
 
     // Purge App Data
-    await purgeAppData(appName)
+    try {
+      await purgeAppData(appName)
+    } catch (e) {
+      errors.push(e instanceof Error ? e : new Error(String(e)))
+      Logger.error(`Failed to purge app data for ${appName}:`, { error: e as Error })
+    }
 
     // Purge App Config
-    await purgeAppConfig(appName)
+    try {
+      await purgeAppConfig(appName)
+    } catch (e) {
+      errors.push(e instanceof Error ? e : new Error(String(e)))
+      Logger.error(`Failed to purge app config for ${appName}:`, { error: e as Error })
+    }
 
     // Remove buttons / keys associated with app
-    await keyMapStore.removeSource(appName)
+    try {
+      await keyMapStore.removeSource(appName)
+    } catch (e) {
+      errors.push(e instanceof Error ? e : new Error(String(e)))
+      Logger.error(`Failed to remove key mappings for ${appName}:`, { error: e as Error })
+    }
 
-    // Get path to file
-    await clearCache(appName)
+    // Clear cache
+    try {
+      await clearCache(appName)
+    } catch (e) {
+      errors.push(e instanceof Error ? e : new Error(String(e)))
+      Logger.error(`Failed to clear cache for ${appName}:`, { error: e as Error })
+    }
 
     const { getAppFilePath } = await import('./appUtils')
     const dir = getAppFilePath(appName)
 
     if (appName == 'developer-app') return // Cancel here if it is a developer app
+
     // Remove the file from filesystem
-    if (existsSync(dir)) {
-      await rmSync(dir, { recursive: true, force: true })
-      loggingStore.log(MESSAGE_TYPES.LOGGING, `Purged all data for app ${appName}`)
+    try {
+      console.log('Removing file:', appName)
+      const appExists = existsSync(dir)
+      console.log('App exists:', appExists)
+      if (appExists) {
+        console.log('Removing directory:', dir)
+        await rmSync(dir, { recursive: true, force: true })
+        Logger.info(`Purged all data for app ${appName}`)
+      } else {
+        console.log('Directory does not exist:', dir)
+      }
+    } catch (e) {
+      errors.push(e instanceof Error ? e : new Error(String(e)))
+      Logger.error(`Failed to remove app directory for ${appName}:`, { error: e as Error })
     }
-    loggingStore.log(MESSAGE_TYPES.LOGGING, `SERVER: Purged App ${appName}`)
+
+    Logger.debug(`SERVER: Purged App ${appName}`)
+
+    if (errors.length > 0) {
+      throw new Error(
+        `Completed app purge with ${errors.length} errors: ${errors.map((e) => e.message).join(', ')}`
+      )
+    }
   } catch (error) {
     console.error(`Error purging app data for ${appName}`, error)
+    throw error
   }
 }

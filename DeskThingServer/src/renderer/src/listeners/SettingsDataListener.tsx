@@ -1,27 +1,44 @@
 import { useEffect } from 'react'
 import { useSettingsStore } from '../stores/'
-import { Settings } from '@shared/types'
+import { IpcRendererCallback } from '@shared/types'
+
+let mounted = false
 
 const SettingsDataListener = (): null => {
   const setSettings = useSettingsStore((state) => state.setSettings)
+  const addRequest = useSettingsStore((state) => state.addRequest)
 
-  useEffect(() => {
-    const handleSettingsUpdate = async (_event, settings: Settings): Promise<void> => {
-      await setSettings(settings)
-    }
-
+  if (!mounted) {
     const getInitialSettings = async (): Promise<void> => {
       const settings = await window.electron.getSettings()
-      console.log('Initial Settings', settings)
       setSettings(settings)
     }
 
     getInitialSettings()
+    mounted = true
+  }
+
+  useEffect(() => {
+    const handleSettingsUpdate: IpcRendererCallback<'settings-updated'> = async (
+      _event,
+      settings
+    ): Promise<void> => {
+      await setSettings(settings)
+    }
+
+    const handleLinkRequest: IpcRendererCallback<'link-request'> = async (
+      _event,
+      request
+    ): Promise<void> => {
+      addRequest(request)
+    }
 
     window.electron.ipcRenderer.on('settings-updated', handleSettingsUpdate)
+    window.electron.ipcRenderer.on('link-request', handleLinkRequest)
 
     return () => {
       window.electron.ipcRenderer.removeAllListeners('settings-updated')
+      window.electron.ipcRenderer.removeAllListeners('link-request')
     }
   }, [])
 

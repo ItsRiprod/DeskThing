@@ -1,40 +1,36 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import { useAppStore } from '@renderer/stores'
-import { AppDataInterface } from '@shared/types'
+import { AppSettings as AppSettingsType } from '@DeskThing/types'
 import { AppSettingProps } from './AppsOverlay'
 import Button from '@renderer/components/Button'
 import { IconLoading, IconSave } from '@renderer/assets/icons'
 import Settings from '@renderer/components/settings'
 
 const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
-  const getAppData = useAppStore((state) => state.getAppData)
-  const saveAppData = useAppStore((state) => state.setAppData)
-  const [appData, setAppData] = useState<AppDataInterface | null>(null)
+  const getAppSettings = useAppStore((state) => state.getAppSettings)
+  const setAppSettings = useAppStore((state) => state.setAppSettings)
+  const [appSettings, setAppData] = useState<AppSettingsType | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     const fetchAppData = async (): Promise<void> => {
-      const data = await getAppData(app.name)
-      setAppData(data)
+      const data = await getAppSettings(app.name)
+      data && setAppData(data)
     }
     fetchAppData()
-  }, [app.name, getAppData])
+  }, [app.name, getAppSettings])
 
   const handleSettingChange = useCallback(
     (key: string, value: string | number | boolean | string[] | boolean[]) => {
       console.log('Setting changed:', key, value)
       setAppData((prev) =>
-        prev && prev.settings
+        prev
           ? {
               ...prev,
-              settings: {
-                ...prev.settings,
-                [key]: {
-                  ...prev.settings[key],
-                  // It had to be this way... The way that the type expects a specific value for each type of object means that this can only be every type of value but only one at a time. We have no way of knowing which type of setting it is.
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  value: value as any
-                }
+              [key]: {
+                ...prev[key],
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                value: value as any
               }
             }
           : prev
@@ -44,15 +40,15 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
   )
 
   const settingsEntries = useMemo(
-    () => (appData?.settings ? Object.entries(appData.settings) : []),
-    [appData]
+    () => (appSettings ? Object.entries(appSettings) : []),
+    [appSettings]
   )
 
   const onSaveClick = async (): Promise<void> => {
-    if (!appData) return
+    if (!appSettings) return
     setLoading(true)
     try {
-      await saveAppData(app.name, appData)
+      setAppSettings(app.name, appSettings)
     } catch (error) {
       console.error('Error saving app data:', error)
     }

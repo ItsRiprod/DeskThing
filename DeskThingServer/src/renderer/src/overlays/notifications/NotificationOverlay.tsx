@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import Overlay from '../Overlay'
 import Button from '@renderer/components/Button'
 import { IconBell, IconLayoutgrid, IconLogs, IconWarning } from '@renderer/assets/icons'
@@ -8,16 +8,34 @@ import RequestsPage from './RequestsPage'
 import TasksPage from './TasksPage'
 import IssuesPage from './IssuesPage'
 import { useSearchParams } from 'react-router-dom'
+import useTaskStore from '@renderer/stores/taskStore'
+import ErrorBoundary from '@renderer/components/ErrorBoundary'
 
 const NotificationOverlay: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const notifState = useNotificationStore((state) => state)
+  const notificationState = useNotificationStore((state) => state)
+  const taskList = useTaskStore((state) => state.taskList)
   const page = searchParams.get('page') || 'event'
 
-  const activeTasks = notifState.tasks.filter(
-    (task) => task.status !== 'complete' && task.status !== 'rejected'
-  )
+  const NotificationPage = useMemo(() => {
+    switch (page) {
+      case 'event':
+        return <EvensPage />
+      case 'request':
+        return <RequestsPage />
+      case 'task':
+        return <TasksPage />
+      case 'issue':
+        return <IssuesPage />
+      default:
+        return <EvensPage />
+    }
+  }, [page])
+
+  const activeTasks = Object.values(taskList)
+    .flatMap((appTasks) => Object.values(appTasks))
+    .filter((task) => task.completed === false && task.available === false)
 
   const setPage = (page: string): void => {
     searchParams.set('page', page)
@@ -43,26 +61,26 @@ const NotificationOverlay: React.FC = () => {
             setPage={setPage}
             page="Event"
             curPage={page}
-            value={notifState.logs.length}
+            value={notificationState.logs.length}
             Icon={<IconLogs />}
           />
           <NavComponent
             setPage={setPage}
             page="Issue"
             curPage={page}
-            value={notifState.issues.length}
+            value={notificationState.issues.length}
             Icon={<IconWarning />}
-            className={notifState.issues.length > 0 ? 'bg-red-600' : ''}
+            className={notificationState.issues.length > 0 ? 'bg-red-600' : ''}
           />
           <NavComponent
             setPage={setPage}
             page="Request"
             curPage={page}
-            value={notifState.requestQueue.length}
+            value={notificationState.requestQueue.length}
             Icon={<IconBell />}
             className="relative"
           >
-            {notifState.requestQueue.length > 0 && (
+            {notificationState.requestQueue.length > 0 && (
               <div className="absolute inset-0 rounded w-full h-full animate-pulse border-2 border-blue-500"></div>
             )}
           </NavComponent>
@@ -75,10 +93,7 @@ const NotificationOverlay: React.FC = () => {
           />
         </div>
         <div className="w-full">
-          {page == 'issue' && <IssuesPage />}
-          {page == 'event' && <EvensPage />}
-          {page == 'request' && <RequestsPage />}
-          {page == 'task' && <TasksPage />}
+          <ErrorBoundary key={page}>{NotificationPage}</ErrorBoundary>
         </div>
       </div>
     </Overlay>

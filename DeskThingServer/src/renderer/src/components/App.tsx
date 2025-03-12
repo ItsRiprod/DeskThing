@@ -1,38 +1,21 @@
+/**
+ * Renders an App component that displays information about an application, including its name, version, and whether it is running or stopped. The component also provides buttons to start, stop, or view the details of the application.
+ *
+ * @param app - An object containing information about the application, including its name, manifest, and running state.
+ * @param activeRequest - A boolean indicating whether the application has an active request.
+ * @returns A React component that renders the App UI.
+ */
 import React from 'react'
-import { App as AppType } from '@shared/types/app'
-import { IconPause, IconPlay, IconWrench } from '@renderer/assets/icons'
+import { App as AppType, TagTypes } from '@DeskThing/types'
+import { IconGrip, IconPause, IconPlay, IconPulsing, IconWrench } from '@renderer/assets/icons'
 import Button from './Button'
 import { useAppStore } from '@renderer/stores'
 import { useSearchParams } from 'react-router-dom'
+import { AppIcon } from './AppIcon'
 
 interface AppProps {
   app: AppType
   activeRequest?: boolean
-}
-
-interface RunningProps {
-  stopApp: () => void
-}
-
-const Running: React.FC<RunningProps> = ({ stopApp }) => {
-  return (
-    <Button className="group hover:bg-amber-500 gap-2 bg-amber-800" onClick={stopApp}>
-      <p className="group-hover:block hidden">Pause</p>
-      <IconPause className="stroke-2" />
-    </Button>
-  )
-}
-
-interface StoppedProps {
-  runApp: () => void
-}
-const Stopped: React.FC<StoppedProps> = ({ runApp }) => {
-  return (
-    <Button className="group hover:bg-cyan-600 bg-cyan-800 gap-2" onClick={runApp}>
-      <p className="group-hover:block hidden">Run</p>
-      <IconPlay className="stroke-2" />
-    </Button>
-  )
 }
 
 const App: React.FC<AppProps> = ({ app, activeRequest }) => {
@@ -54,43 +37,86 @@ const App: React.FC<AppProps> = ({ app, activeRequest }) => {
 
   return (
     <div className="flex items-center bg-zinc-900 p-4 justify-between rounded-xl text-white">
-      <div className="flex items-center">
-        <div className="px-2">
+      <div className="flex items-center gap-4">
+        <IconGrip className="text-gray-300 -mx-3 cursor-grab md:block hidden" />
+        <div className="w-12 h-12 flex-shrink-0">
+          <AppIcon className="w-full h-full text-white fill-white" appId={app.name} />
+        </div>
+        <div>
           <div className="flex items-center gap-2">
             <h2 className="font-geist font-semibold">{app.manifest?.label || app.name}</h2>
             {app.manifest?.version && (
               <p className="text-xs text-gray-500 font-geistMono italic">{app.manifest.version}</p>
             )}
           </div>
-          {activeRequest ? (
-            <button
-              className="bg-cyan-500 hover:bg-cyan-600 w-fit px-2 py-1 rounded-full text-xs"
-              onClick={showAppRequests}
-            >
-              <p>Requesting Data</p>
-            </button>
-          ) : (
-            <>
-              <div className="font-geistMono text-xs flex w-full text-gray-300 justify-between">
-                {app.manifest?.isAudioSource && <p>audiosource</p>}
-                {app.manifest?.isScreenSaver && <p>screensaver</p>}
-              </div>
-              <p className="font-geistMono italic text-xs text-gray-500">
-                Made by {app.manifest?.author || app.manifest?.author}
-              </p>
-            </>
-          )}
+          <div className="font-geistMono text-xs flex gap-2 text-gray-300">
+            {app.manifest?.tags?.includes(TagTypes.AUDIO_SOURCE) && (
+              <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors bg-blue-500/10 text-blue-500 hover:bg-blue-500/15 border-none">
+                Audio Source
+              </span>
+            )}
+            {app.manifest?.tags?.includes(TagTypes.SCREEN_SAVER) && (
+              <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors bg-violet-500/10 text-violet-500 hover:bg-violet-500/15 border-none">
+                Screensaver
+              </span>
+            )}
+            {app.manifest?.tags?.includes(TagTypes.UTILITY_ONLY) && (
+              <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/15 border-none">
+                Local App
+              </span>
+            )}
+            {app.manifest?.tags?.includes(TagTypes.WEB_APP_ONLY) && (
+              <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors bg-amber-500/10 text-amber-500 hover:bg-amber-500/15 border-none">
+                Web App
+              </span>
+            )}{' '}
+          </div>
+          <div className="flex flex-col gap-1 mt-1">
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <p className="font-geistMono italic">By {app.manifest?.author || 'Unknown'}</p>
+            </div>
+          </div>
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <Button onClick={showAppDetails} className="group bg-slate-950 hover:bg-slate-900 gap-2">
-          <IconWrench />
-          <p className="group-hover:block hidden">Settings</p>
+      <div className="flex md:items-center items-end gap-3 md:flex-row flex-col">
+        {activeRequest && (
+          <Button
+            title="Handle data request"
+            className="bg-cyan-500 hover:bg-cyan-600 items-center justify-center gap-1 sm:gap-2 rounded-full px-2 sm:px-4 py-1.5 sm:py-2 shadow-lg hover:shadow-cyan-500/20 transition-all duration-200"
+            onClick={showAppRequests}
+          >
+            <IconPulsing />
+            <p className="text-xs hidden md:block lg:text-base font-medium text-nowrap">
+              Requesting Data
+            </p>
+          </Button>
+        )}
+        <Button
+          title="App Settings"
+          onClick={showAppDetails}
+          className="bg-slate-800 hover:bg-slate-700 items-center justify-center gap-1 sm:gap-2 rounded-full px-2 sm:px-4 py-1.5 sm:py-2 shadow-lg hover:shadow-slate-800/20 transition-all duration-200"
+        >
+          <IconWrench className="text-gray-300" />
+          <p className="text-xs hidden md:block lg:text-base font-medium">Settings</p>
         </Button>
         {app.running ? (
-          <Running stopApp={() => stopApp(app.name)} />
+          <Button
+            title="Pause App"
+            className="bg-amber-800 hover:bg-amber-500 items-center justify-center gap-1 sm:gap-2 rounded-full px-2 sm:px-4 py-1.5 sm:py-2 shadow-lg hover:shadow-amber-500/20 transition-all duration-200"
+            onClick={() => stopApp(app.name)}
+          >
+            <p className="text-xs hidden md:block lg:text-base font-medium">Pause</p>
+            <IconPause className="stroke-2" />
+          </Button>
         ) : (
-          <Stopped runApp={() => runApp(app.name)} />
+          <Button
+            title="Run App"
+            className="bg-cyan-800 hover:bg-cyan-600 items-center justify-center gap-1 sm:gap-2 rounded-full px-2 sm:px-4 py-1.5 sm:py-2 shadow-lg hover:shadow-cyan-500/20 transition-all duration-200"
+            onClick={() => runApp(app.name)}
+          >
+            <p className="text-xs hidden md:block lg:text-base font-medium">Run</p>
+            <IconPlay className="stroke-2" />
+          </Button>
         )}
       </div>
     </div>

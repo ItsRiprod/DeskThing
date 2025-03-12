@@ -1,7 +1,8 @@
 import { IconLayoutgrid } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
 import useMappingStore from '@renderer/stores/mappingStore'
-import { ActionReference, ButtonMapping, EventMode, Key } from '@shared/types'
+import { ActionReference, EventMode, Key } from '@DeskThing/types'
+import { ButtonMapping } from '@shared/types'
 import { useState, useEffect, FC } from 'react'
 
 interface AvailableKeysProps {

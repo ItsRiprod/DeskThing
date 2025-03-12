@@ -2,21 +2,15 @@ import React, { useEffect, useState } from 'react'
 import Sidebar from '@renderer/nav/Sidebar'
 import { useClientStore, usePageStore, useSettingsStore } from '@renderer/stores'
 import Button from '@renderer/components/Button'
-import {
-  IconCarThingSmall,
-  IconDownload,
-  IconQR,
-  IconRefresh,
-  IconReload
-} from '@renderer/assets/icons'
+import { IconDownload, IconPlus, IconQR, IconRefresh, IconReload } from '@renderer/assets/icons'
 import MainElement from '@renderer/nav/MainElement'
 import { deviceMessages } from '@renderer/assets/refreshMessages'
-import ConnectionComponent from '@renderer/components/Connection'
+import ConnectionComponent from '@renderer/components/Client/Connection'
 import { useSearchParams } from 'react-router-dom'
+import ADBDevice from '@renderer/components/Client/ADBDevice'
 
 const ClientConnections: React.FC = () => {
   const settings = useSettingsStore((settings) => settings.settings)
-  const saveSettings = useSettingsStore((settings) => settings.saveSettings)
   const clients = useClientStore((clients) => clients.clients)
   const stagedClient = useClientStore((clients) => clients.clientManifest)
   const devices = useClientStore((clients) => clients.ADBDevices)
@@ -31,8 +25,9 @@ const ClientConnections: React.FC = () => {
   const [isRestarting, setIsRestarting] = useState(false)
   const [refreshCount, setRefreshCount] = useState(0)
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0)
+
   useEffect(() => {
-    if (devices.length === 0) {
+    if (clients.length === 0) {
       const eligibleMessages = deviceMessages.filter((msg) => msg.minimum <= refreshCount)
       const totalWeight = eligibleMessages.reduce((sum, msg) => sum + msg.weight, 0)
       let randomWeight = Math.random() * totalWeight
@@ -71,6 +66,11 @@ const ClientConnections: React.FC = () => {
     setSearchParams({ qr: 'true' })
   }
 
+  // Functions
+  const openSetup = (): void => {
+    setSearchParams({ setup: 'true', page: 'adb' })
+  }
+
   const handleDownloadsNav = (): void => {
     setPage('Downloads/Client')
   }
@@ -81,11 +81,6 @@ const ClientConnections: React.FC = () => {
     await setTimeout(() => {
       setIsRestarting(false)
     }, 1000)
-  }
-
-  const handleAutoConfigToggle = (): void => {
-    settings.autoConfig = !settings.autoConfig
-    saveSettings(settings)
   }
 
   return (
@@ -147,18 +142,25 @@ const ClientConnections: React.FC = () => {
               </p>
             </Button>
             <Button
-              className={`border-gray-500 w-full group gap-2 border ${settings.autoConfig ? 'bg-zinc-800 border-green-700 hover:bg-zinc-900' : 'hover:bg-zinc-900 border-transparent'}`}
-              onClick={handleAutoConfigToggle}
+              className={`border-gray-500 w-full group gap-2 border hover:bg-zinc-900 border-transparent`}
+              onClick={openSetup}
             >
-              <IconCarThingSmall strokeWidth={2} iconSize={28} />
-              <p className="md:block hidden text-center flex-grow">
-                <span className="hidden group-hover:inline">
-                  {settings.autoConfig ? 'Disable' : 'Enable'}
-                </span>{' '}
-                Auto Config
-              </p>
+              <IconPlus strokeWidth={2} iconSize={28} />
+              <p className="md:block hidden text-center flex-grow">Add Device</p>
             </Button>
           </div>
+          {devices.length > 0 && (
+            <details className="font-geistMono w-full h-full items-center flex flex-col gap-2 justify-center border border-zinc-700">
+              <summary className="cursor-pointer select-none p-2 bg-zinc-800 hover:bg-zinc-700">
+                ADB Devices
+              </summary>
+              <div className="p-2">
+                {devices.map((adbClient) => (
+                  <ADBDevice adbDevice={adbClient} key={adbClient.adbId} />
+                ))}
+              </div>
+            </details>
+          )}
           <div className="font-geistMono w-full h-full items-center flex flex-col gap-2 justify-center">
             {clients.length > 0 ? (
               clients.map((client) => (

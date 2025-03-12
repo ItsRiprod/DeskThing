@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useClientStore } from '@renderer/stores'
-import { ClientManifest } from '@shared/types'
+import { ClientManifest } from '@DeskThing/types'
 import Button from '@renderer/components/Button'
 import { IconToggle, IconSave, IconLoading } from '@renderer/assets/icons'
 

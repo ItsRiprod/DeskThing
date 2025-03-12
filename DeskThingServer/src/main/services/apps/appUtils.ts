@@ -1,11 +1,10 @@
-console.log('[AppUtils Service] Starting')
-import { Manifest, MESSAGE_TYPES } from '@shared/types'
+import { access, readFile } from 'node:fs/promises'
 import { join } from 'path'
-import { existsSync, promises } from 'node:fs'
-import loggingStore from '../../stores/loggingStore'
+import { constructManifest } from './appValidator'
+import Logger from '@server/utils/logger'
+import { AppManifest, LOGGING_LEVELS } from '@deskthing/types'
+import { existsSync } from 'node:fs'
 import { app } from 'electron'
-
-let devAppPath: string
 
 /**
  * Retrieves and parses the manifest file for an app.
@@ -15,35 +14,22 @@ let devAppPath: string
  * @param fileLocation The file path of the manifest file to be read and parsed
  * @returns The parsed manifest data as a JavaScript object
  */
-export async function getManifest(fileLocation: string): Promise<Manifest | undefined> {
+export const getManifest = async (fileLocation: string): Promise<AppManifest | undefined> => {
   try {
-    loggingStore.log(MESSAGE_TYPES.LOGGING, '[getManifest] Getting manifest for app')
+    Logger.debug('[getManifest] Getting manifest for app')
     const manifestPath = join(fileLocation, 'manifest.json')
     if (!existsSync(manifestPath)) {
       throw new Error('manifest.json not found after extraction')
     }
 
-    const manifest = await promises.readFile(manifestPath, 'utf8')
+    const manifest = await readFile(manifestPath, 'utf8')
     const parsedManifest = JSON.parse(manifest)
 
-    const returnData = {
-      isAudioSource: parsedManifest.isAudioSource,
-      requires: parsedManifest.requires,
-      label: parsedManifest.label,
-      version: parsedManifest.version,
-      description: parsedManifest.description || undefined,
-      author: parsedManifest.author || undefined,
-      id: parsedManifest.id,
-      isWebApp: parsedManifest.isWebApp,
-      isLocalApp: parsedManifest.isLocalApp,
-      platforms: parsedManifest.platforms,
-      homepage: parsedManifest.homepage || undefined,
-      repository: parsedManifest.repository || undefined
-    }
-    loggingStore.log(MESSAGE_TYPES.LOGGING, '[getManifest] Successfully got manifest for app')
+    const returnData: AppManifest = constructManifest(parsedManifest)
+    Logger.info('[getManifest] Successfully got manifest for app')
     return returnData
   } catch (error) {
-    console.error('Error getting manifest:', error)
+    console.error(`Error getting manifest from ${fileLocation}`, error)
     return undefined
   }
 }
@@ -58,13 +44,30 @@ export async function getManifest(fileLocation: string): Promise<Manifest | unde
 export function getAppFilePath(appName: string, fileName: string = '/'): string {
   let path
   if (appName == 'developer-app') {
-    if (devAppPath) {
-      path = join(devAppPath, fileName)
-    } else {
-      loggingStore.log(MESSAGE_TYPES.ERROR, 'Developer app path not set! (Expected if on startup)')
-    }
+    Logger.log(LOGGING_LEVELS.ERROR, 'Developer app does not exist!')
   } else {
     path = join(app.getPath('userData'), 'apps', appName, fileName)
   }
   return path
+}
+
+export const getStandardizedFilename = (appId: string, version: string): string => {
+  return `${appId}-v${version}.zip`
+}
+
+export const getIcon = async (appName: string, icon?: string): Promise<string | null> => {
+  const iconPath = join(getAppFilePath(appName), 'icons', icon || `${appName}.svg`)
+  try {
+    await access(iconPath)
+
+    const svgContent = await readFile(iconPath, 'utf-8')
+    // Return file protocol URL that Electron can load directly
+    return svgContent
+  } catch (error) {
+    Logger.error(`Error accessing icon for ${appName}:`, {
+      source: 'getIcon',
+      error: error as Error
+    })
+    return null
+  }
 }

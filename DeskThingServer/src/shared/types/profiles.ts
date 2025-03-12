@@ -1,5 +1,8 @@
-import { App } from './app'
+import { ClientPreferences } from '@deskthing/types'
 
+/**
+ * @deprecated - not added yet actually. Dont use this
+ */
 export interface Pending_Profile {
   version: string
   version_code: number
@@ -16,40 +19,4 @@ export interface Pending_Profile {
   name?: string
   description?: string
   icon?: string
-}
-
-export interface ClientPreferences {
-  miniplayer?: MiniplayerSettings
-  appTrayState: ViewMode
-  volume: VolMode
-  theme?: Theme
-  currentView?: App
-  ShowNotifications: boolean
-  Screensaver: App
-}
-
-export interface MiniplayerSettings {
-  state: ViewMode
-  visible: boolean
-  position: 'bottom' | 'left' | 'right'
-}
-
-export interface Theme {
-  primary: string
-  textLight: string
-  textDark: string
-  icons: string
-  background: string
-  scale: 'small' | 'medium' | 'large'
-}
-
-export enum VolMode {
-  WHEEL = 'wheel',
-  SLIDER = 'slider',
-  BAR = 'bar'
-}
-export enum ViewMode {
-  HIDDEN = 'hidden',
-  PEEK = 'peek',
-  FULL = 'full'
 }

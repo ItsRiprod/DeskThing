@@ -12,7 +12,7 @@ const SettingsButton: React.FC = () => {
 
   return (
     <>
-      <Button className="hover:bg-zinc-900" onClick={handleOpenSettings}>
+      <Button title="App Settings" className="hover:bg-zinc-900" onClick={handleOpenSettings}>
         <IconGear iconSize={24} strokeWidth={2} />
         <p className="flex-grow text-center text-lg md:block hidden">Settings</p>
       </Button>

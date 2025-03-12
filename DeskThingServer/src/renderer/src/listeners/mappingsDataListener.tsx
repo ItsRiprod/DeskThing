@@ -1,7 +1,17 @@
 import { useEffect } from 'react'
-import { Action, ButtonMapping, Key } from '@shared/types'
+import { IpcRendererCallback } from '@shared/types'
 import useMappingStore from '@renderer/stores/mappingStore'
 
+let mounted = false
+/**
+ * A React component that listens for updates to mapping data and updates the mapping store accordingly.
+ *
+ * This component subscribes to the 'key', 'action', and 'profile' events from the Electron IPC renderer,
+ * and updates the mapping store with the received data. It also requests the initial mapping data
+ * when the component mounts.
+ *
+ * The component does not render any UI elements, it only handles the mapping data updates.
+ */
 const MappingsDataListener = (): null => {
   const setKeys = useMappingStore((state) => state.setKeys)
   const setActions = useMappingStore((state) => state.setActions)
@@ -9,21 +19,29 @@ const MappingsDataListener = (): null => {
   const setCurrentProfile = useMappingStore((state) => state.setCurrentProfile)
   const requestMappings = useMappingStore((state) => state.requestMappings)
 
+  if (!mounted) {
+    requestMappings()
+    mounted = true
+  }
+
   useEffect(() => {
-    const handleKeyUpdate = async (_event, key: Key[]): Promise<void> => {
+    const handleKeyUpdate: IpcRendererCallback<'key'> = (_event, key): void => {
       setKeys(key)
     }
-    const handleActionUpdate = async (_event, action: Action[]): Promise<void> => {
+    const handleActionUpdate: IpcRendererCallback<'action'> = async (
+      _event,
+      action
+    ): Promise<void> => {
       setActions(action)
     }
-    const handleProfileUpdate = async (_event, profile: ButtonMapping): Promise<void> => {
-      console.log(profile)
+    const handleProfileUpdate: IpcRendererCallback<'profile'> = async (
+      _event,
+      profile
+    ): Promise<void> => {
       setProfile(profile)
       const currentProfile = await window.electron.getCurrentProfile()
       setCurrentProfile(currentProfile)
     }
-
-    requestMappings()
 
     window.electron.ipcRenderer.on('key', handleKeyUpdate)
     window.electron.ipcRenderer.on('action', handleActionUpdate)
