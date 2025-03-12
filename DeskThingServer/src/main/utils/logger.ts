@@ -178,17 +178,11 @@ class Logger {
   }
 
   private reconstructOptions = (options: LoggingOptions): LoggingOptions => {
-    const stackTrace = new Error().stack?.split('\n')
-    const callerFrame = stackTrace?.[3] // Skip Error, reconstructOptions, and log frames
-
-    const functionMatch = callerFrame?.match(/at\s+(\S+)\s+\(/)?.[1]
-    const sourceMatch = callerFrame?.match(/\((.+?)\)/)?.[1]
-
     return {
       ...options,
       date: options.date || new Date().toISOString(),
-      function: options.function || functionMatch || '',
-      source: options.source || sourceMatch || ''
+      function: options.function,
+      source: options.source || 'unknown'
     }
   }
   /**

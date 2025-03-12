@@ -475,24 +475,36 @@ if (!app.requestSingleInstanceLock()) {
  * Handles custom protocol URLs
  * @param url - The URL to handle
  */
-function handleUrl(url: string | undefined, window: BrowserWindow | null = mainWindow): void {
+async function handleUrl(
+  url: string | undefined,
+  window: BrowserWindow | null = mainWindow
+): Promise<void> {
   if (url && url.startsWith('deskthing://')) {
     const path = url.replace('deskthing://', '')
 
-    if (window) {
-      window.webContents.send('handle-protocol-url', path)
+    if (path.startsWith('a?') || path.startsWith('a/?')) {
+      const { default: Logger } = await import('./utils/logger')
+
+      Logger.debug('Attempting to handle with authStore', {
+        source: 'handleUrl',
+        function: 'handleUrl'
+      })
+      const { storeProvider } = await import('./stores/storeProvider')
+      const authStore = await storeProvider.getStore('authStore')
+      authStore.handleProtocol(url)
+
+      return
+    }
+    console.log('Sending path to webContents for handling')
+
+    const targetWindow = clientWindow && !clientWindow.isDestroyed() ? clientWindow : window
+
+    if (targetWindow) {
+      targetWindow.webContents.send('handle-protocol-url', path)
     } else {
-      console.log('No main window found')
+      console.log('No window available to handle URL:', url)
     }
   }
-}
-
-/**
- * Opens authentication window in default browser
- * @param url - The authentication URL
- */
-async function openAuthWindow(url: string): Promise<void> {
-  await shell.openExternal(url)
 }
 async function loadModules(): Promise<void> {
   try {
@@ -507,8 +519,6 @@ async function loadModules(): Promise<void> {
 
     const { initializeStores } = await import('./services/cache/storeInitializer')
     await initializeStores()
-
-    import('./handlers/authHandler')
   } catch (error) {
     console.error('Error loading modules: ', error)
   }
@@ -527,4 +537,4 @@ async function sendIpcData({ type, payload, window }: ServerIPCData): Promise<vo
   }
 }
 
-export { openAuthWindow, sendIpcData, createMainWindow, createClientWindow, handleUrl }
+export { sendIpcData, createMainWindow, createClientWindow, handleUrl }

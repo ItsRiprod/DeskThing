@@ -100,10 +100,11 @@ const setupServer = async (): Promise<void> => {
               return () => {}
             }
           })
-          sendMessage({ type: 'start' }) // Send data to parent
+          sendMessage({ type: 'started' }) // Send data to parent
           break
         case 'stop':
-          DeskThing.stop()
+          await DeskThing.stop()
+          sendMessage({ type: 'stopped' }) // Send data to parent
           break
         case 'purge':
           DeskThing.purge()

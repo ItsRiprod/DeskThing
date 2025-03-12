@@ -7,7 +7,7 @@
  */
 import React from 'react'
 import { App as AppType, TagTypes } from '@DeskThing/types'
-import { IconPause, IconPlay, IconPulsing, IconWrench } from '@renderer/assets/icons'
+import { IconGrip, IconPause, IconPlay, IconPulsing, IconWrench } from '@renderer/assets/icons'
 import Button from './Button'
 import { useAppStore } from '@renderer/stores'
 import { useSearchParams } from 'react-router-dom'
@@ -38,6 +38,7 @@ const App: React.FC<AppProps> = ({ app, activeRequest }) => {
   return (
     <div className="flex items-center bg-zinc-900 p-4 justify-between rounded-xl text-white">
       <div className="flex items-center gap-4">
+        <IconGrip className="text-gray-300 -mx-3 cursor-grab md:block hidden" />
         <div className="w-12 h-12 flex-shrink-0">
           <AppIcon className="w-full h-full text-white fill-white" appId={app.name} />
         </div>

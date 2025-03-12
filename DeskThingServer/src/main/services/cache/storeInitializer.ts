@@ -3,7 +3,7 @@ import { sendIpcData } from '../../index'
 import Logger from '../../utils/logger'
 import { storeProvider } from '../../stores/storeProvider'
 import { AppSettings, LOGGING_LEVELS, SEND_TYPES, ServerEvent } from '@deskthing/types'
-import { ipcMain, shell } from 'electron'
+import { BrowserWindow, ipcMain, shell } from 'electron'
 
 export async function initializeStores(): Promise<void> {
   const { default: cacheManager } = await import('./cacheManager')
@@ -119,7 +119,18 @@ export async function initializeStores(): Promise<void> {
 
   storeList.appStore.onAppMessage(SEND_TYPES.OPEN, (data) => {
     if (typeof data.payload == 'string') {
-      shell.openExternal(data.payload)
+      const windows = BrowserWindow.getAllWindows()
+      if (windows.length === 0) {
+        shell.openExternal(data.payload)
+      } else {
+        sendIpcData({
+          type: 'link-request',
+          payload: {
+            url: data.payload,
+            app: data.source
+          }
+        })
+      }
     } else {
       Logger.warn('App sent invalid payload for openAuthWindow', {
         source: 'appCommunication',

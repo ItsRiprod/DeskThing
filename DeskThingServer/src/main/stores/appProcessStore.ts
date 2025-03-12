@@ -187,8 +187,11 @@ export class AppProcessStore implements AppProcessStoreClass {
               source: appName
             })
             break
-          case 'start':
+          case 'started':
             this.notifyProcessEvent(AppProcessEvents.RUNNING, appName)
+            break
+          case 'stopped':
+            this.notifyProcessEvent(AppProcessEvents.STOPPED, appName)
             break
           case 'server:error':
             this.notifyProcessEvent(AppProcessEvents.ERROR, appName, data.payload.message)

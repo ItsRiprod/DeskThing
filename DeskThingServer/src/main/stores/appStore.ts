@@ -37,6 +37,8 @@ import { setAppData, setAppsData } from '../services/files/appFileService'
 
 // // Validation
 import { sanitizeAppMeta } from '@server/services/apps/appValidator'
+import { AuthStoreClass } from '@shared/stores/authStore'
+import { nextTick } from 'node:process'
 
 // Mock functions
 // const getIcon = () => 'mock-icon-path'
@@ -55,14 +57,17 @@ export class AppStore implements CacheableStore, AppStoreClass {
     apps: []
   }
   private appProcessStore: AppProcessStoreClass
+  private authStore: AuthStoreClass
   private functionTimeouts: Record<string, NodeJS.Timeout> = {}
 
-  constructor(appProcessStore: AppProcessStoreClass) {
+  constructor(appProcessStore: AppProcessStoreClass, authStore: AuthStoreClass) {
     this.appProcessStore = appProcessStore
-
+    this.authStore = authStore
     this.initializeListeners()
 
-    this.loadApps()
+    nextTick(async () => {
+      await this.loadApps()
+    })
   }
 
   private initializeListeners = (): void => {
@@ -84,6 +89,15 @@ export class AppStore implements CacheableStore, AppStoreClass {
     // App Handling
     this.onAppMessage(SEND_TYPES.TOAPP, (data) => {
       this.sendDataToApp(data.source, data)
+    })
+
+    this.authStore.on('appData', (data) => {
+      if (this.apps[data.app]) {
+        this.sendDataToApp(data.app, {
+          type: ServerEvent.CALLBACK_DATA,
+          payload: data.callbackData
+        })
+      }
     })
   }
 
@@ -175,7 +189,11 @@ export class AppStore implements CacheableStore, AppStoreClass {
         this.order.push(app.name)
       }
     })
-    await loadAndRunEnabledApps()
+
+    // Wait another tick because it takes two for the UI to load - this is a low priority task
+    nextTick(async () => {
+      await loadAndRunEnabledApps()
+    })
   }
 
   async notifyApps(apps?: App[]): Promise<void> {
@@ -229,8 +247,29 @@ export class AppStore implements CacheableStore, AppStoreClass {
     listener: AppProcessListener<T>,
     filters?: AppDataFilters<T>
   ): () => void {
-    // Register with the process store
-    const unsubscribe = this.appProcessStore.onMessage(type, listener, filters)
+    // Create a wrapper for the listener
+    const wrappedListener: AppProcessListener<T> = async (data) => {
+      try {
+        if (this.apps[data.source]?.running) {
+          await listener(data)
+        } else {
+          Logger.error(`App ${data.source} is not running, not sending data`, {
+            source: 'AppStore',
+            function: 'onAppMessage',
+            domain: data.source
+          })
+        }
+      } catch (error) {
+        Logger.error(`Error in app message listener for type ${type}`, {
+          error: error as Error,
+          source: 'AppStore',
+          function: 'onAppMessage'
+        })
+      }
+    }
+
+    // Register with the process store using wrapped listener
+    const unsubscribe = this.appProcessStore.onMessage(type, wrappedListener, filters)
 
     return unsubscribe
   }
@@ -422,10 +461,18 @@ export class AppStore implements CacheableStore, AppStoreClass {
 
   async sendDataToApp(name: string, data: EventPayload): Promise<void> {
     try {
-      await this.appProcessStore.postMessage(name, {
-        type: 'data',
-        payload: data
-      })
+      if (this.apps[name]?.running) {
+        await this.appProcessStore.postMessage(name, {
+          type: 'data',
+          payload: data
+        })
+      } else {
+        Logger.debug(`App ${name} is not running, not sending data`, {
+          source: 'AppStore',
+          function: 'sendDataToApp',
+          domain: name
+        })
+      }
     } catch (error) {
       Logger.error(`Error sending data to app ${name}: ${error}`, {
         source: 'AppStore',
@@ -475,6 +522,11 @@ export class AppStore implements CacheableStore, AppStoreClass {
    */
   async stop(name: string): Promise<boolean> {
     if (!(name in this.apps)) {
+      Logger.warn(`App ${name} was not found`, {
+        source: 'AppStore',
+        function: 'stop',
+        domain: 'SERVER.' + name.toUpperCase()
+      })
       return false
     }
 

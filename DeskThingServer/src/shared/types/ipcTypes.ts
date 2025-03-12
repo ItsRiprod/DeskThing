@@ -447,6 +447,8 @@ export type IpcRendererCallback<T extends ServerIPCData['type']> = (
   response: Extract<ServerIPCData, { type: T }>['payload']
 ) => void
 
+export type LinkRequest = { url: string; app: string }
+
 /**
  * OUTGOING DATA TYPES FROM SERVER BACKEND TO SERVER FRONTEND
  */
@@ -524,6 +526,10 @@ export type ServerIPCData = {
   | {
       type: 'github-apps'
       payload: AppReleaseMeta[]
+    }
+  | {
+      type: 'link-request'
+      payload: LinkRequest
     }
   | {
       type: 'github-community'

@@ -93,7 +93,7 @@ export const appHandler: {
   stop: async (data, replyFn) => {
     const appStore = await storeProvider.getStore('appStore')
     await appStore.stop(data.payload)
-    replyFn('logging', { status: true, data: 'Finished stopping app', final: true })
+    replyFn('logging', { status: true, data: `Finished stopping app ${data.payload}`, final: true })
     return true
   },
   /**

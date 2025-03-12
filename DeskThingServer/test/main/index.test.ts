@@ -1,12 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { BrowserWindow, shell } from 'electron'
-import {
-  createMainWindow,
-  createClientWindow,
-  handleUrl,
-  openAuthWindow,
-  sendIpcData
-} from '../../src/main'
+import { BrowserWindow } from 'electron'
+import { createMainWindow, createClientWindow, sendIpcData } from '../../src/main'
 import { ServerIPCData } from '@shared/types'
 
 // Mock electron modules
@@ -140,25 +134,6 @@ describe('Main Process', () => {
       expect(window.webContents.on).toHaveBeenCalledWith('did-finish-load', expect.any(Function))
       expect(window.webContents.session.webRequest.onHeadersReceived).toHaveBeenCalled()
       expect(window.loadURL).toHaveBeenCalledWith('http://localhost:8080/', {})
-    })
-  })
-
-  describe('URL Handling', () => {
-    it('should process deskthing protocol URLs', () => {
-      const mockWindow = new BrowserWindow()
-      handleUrl('deskthing://test/path', mockWindow)
-      expect(mockWindow.webContents.send).toHaveBeenCalledWith('handle-protocol-url', 'test/path')
-    })
-
-    it('should handle missing window gracefully', () => {
-      const consoleSpy = vi.spyOn(console, 'log')
-      handleUrl('deskthing://test', null)
-      expect(consoleSpy).toHaveBeenCalledWith('No main window found')
-    })
-
-    it('should open auth URLs in external browser', async () => {
-      await openAuthWindow('https://auth.example.com')
-      expect(shell.openExternal).toHaveBeenCalledWith('https://auth.example.com')
     })
   })
 

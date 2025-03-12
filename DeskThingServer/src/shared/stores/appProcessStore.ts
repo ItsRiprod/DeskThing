@@ -11,7 +11,8 @@ export enum AppProcessEvents {
 
 export type FAppProcessPayload =
   | { type: 'data'; payload: ToServerData }
-  | { type: 'start' }
+  | { type: 'started' }
+  | { type: 'stopped' }
   | { type: 'server:error'; payload: Error }
   | { type: 'server:log'; payload: Log }
 

@@ -15,6 +15,7 @@ import { PlatformStoreClass } from '@shared/stores/platformStore'
 // import { ExpressServerStoreClass } from '@shared/stores/expressServerStore'
 // import { ExpressServerManager } from './_expressServerStore'
 import logger from '@server/utils/logger'
+import { AuthStoreClass } from '@shared/stores/authStore'
 
 interface Stores {
   settingsStore: SettingsStoreClass
@@ -27,6 +28,7 @@ interface Stores {
   musicStore: MusicStoreClass
   appProcessStore: AppProcessStoreClass
   platformStore: PlatformStoreClass
+  authStore: AuthStoreClass
   // expressServerStore: ExpressServerStoreClass
 }
 
@@ -41,6 +43,7 @@ export class StoreProvider {
       appDataStore: () => import('./appDataStore').then((m) => m.AppDataStore),
       appStore: () => import('./appStore').then((m) => m.AppStore),
       connectionsStore: () => import('./connectionsStore').then((m) => m.ConnectionStore),
+      authStore: () => import('./authStore').then((m) => m.AuthStore),
       githubStore: () => import('./githubStore').then((m) => m.GithubStore),
       mappingStore: () => import('./mappingStore').then((m) => m.MappingStore),
       musicStore: () => import('./musicStore').then((m) => m.MusicStore),
@@ -53,8 +56,13 @@ export class StoreProvider {
     this.storeInitializers = {
       settingsStore: async () => new (await storeImports.settingsStore())(),
       appProcessStore: async () => new (await storeImports.appProcessStore())(),
+      authStore: async () =>
+        new (await storeImports.authStore())(await this.getStore('settingsStore')),
       appStore: async () =>
-        new (await storeImports.appStore())(await this.getStore('appProcessStore')),
+        new (await storeImports.appStore())(
+          await this.getStore('appProcessStore'),
+          await this.getStore('authStore')
+        ),
       appDataStore: async () =>
         new (await storeImports.appDataStore())(await this.getStore('appStore')),
       platformStore: async () =>

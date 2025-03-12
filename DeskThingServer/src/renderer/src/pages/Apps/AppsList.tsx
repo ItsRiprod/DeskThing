@@ -98,7 +98,7 @@ const AppsList: React.FC = () => {
                       onDragOver={(e) => handleDragOver(e, index)}
                       onDragLeave={handleDragLeave}
                       onDrop={() => handleDrop(app.name)}
-                      className={`relative transition-all duration-200 border-t-8 border-transparent
+                      className={`relative transition-all duration-75 border-t-8 border-transparent
                         ${draggedApp === app.name ? 'opacity-50' : dragOverIndex === index ? 'border-zinc-800 border-t-[100px]' : ''}`}
                     >
                       <App app={app} activeRequest={activeRequests.includes(app.name)} />

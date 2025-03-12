@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import QROverlay from '@renderer/overlays/modals/QROverlay'
 import SettingsOverlay from '../settings/SettingsOverlay'
@@ -11,6 +11,8 @@ import useTaskStore from '@renderer/stores/taskStore'
 import TaskOverlay from './TaskOverlay'
 import FeedbackOverlay from './FeedbackOverlay'
 import SetupOverlay from '../setup/SetupOverlay'
+import { useSettingsStore } from '@renderer/stores'
+import LinkRequestOverlay from './LinkRequestOverlay'
 
 const overlays = {
   qr: QROverlay,
@@ -29,6 +31,7 @@ const OverlayWrapper: React.FC<React.PropsWithChildren> = ({
   const [activeOverlays, setActiveOverlays] = useState<string[]>([])
   const update = useUpdateStore((state) => state.update)
   const currentTask = useTaskStore((state) => state.currentTask)
+  const activeRequests = useSettingsStore((state) => state.activeRequests)
 
   useEffect(() => {
     const newActiveOverlays = Object.keys(overlays).filter(
@@ -37,15 +40,18 @@ const OverlayWrapper: React.FC<React.PropsWithChildren> = ({
     setActiveOverlays(newActiveOverlays)
   }, [searchParams])
 
+  const memoizedChildren = useMemo(() => children, [children])
+
   return (
     <>
-      {currentTask && <TaskOverlay />}
+      {activeRequests.length > 0 && <LinkRequestOverlay />}
       {(update.updateAvailable || update.updateDownloaded) && <UpdateOverlay />}
       {activeOverlays.map((key) => {
         const OverlayComponent = overlays[key]
         return <OverlayComponent key={key} />
       })}
-      {children}
+      {memoizedChildren}
+      {currentTask && <TaskOverlay />}
     </>
   )
 }
