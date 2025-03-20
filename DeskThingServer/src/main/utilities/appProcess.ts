@@ -1,9 +1,15 @@
-import { DeskThingType, EventPayload, LOGGING_LEVELS, ToServerData } from '@deskthing/types'
-import { FAppProcessPayload, TAppProcessPayload } from '@shared/stores/appProcessStore'
+import {
+  AppProcessData,
+  DeskThingType,
+  EventPayload,
+  LOGGING_LEVELS,
+  ToAppProcess,
+  ToServerData
+} from '@deskthing/types'
 import { resolve } from 'node:path'
 import { parentPort } from 'worker_threads'
 
-const sendMessage = (data: FAppProcessPayload): void => {
+const sendMessage = (data: AppProcessData): void => {
   if (parentPort?.postMessage) {
     parentPort.postMessage(data)
   } else {
@@ -15,6 +21,7 @@ const sendMessage = (data: FAppProcessPayload): void => {
 process.on('uncaughtException', (error) => {
   // Send detailed error info to parent process
   sendMessage({
+    version: '0.11.0',
     type: 'server:error',
     payload: error instanceof Error ? error : new Error(String(error))
   })
@@ -26,13 +33,13 @@ process.on('uncaughtException', (error) => {
 })
 
 sendMessage({
+  version: '0.11.0',
   type: 'server:log',
   payload: {
-    type: LOGGING_LEVELS.LOG,
-    log: `Process started.`,
-    options: {
-      domain: 'SERVER.APPPROCESS'
-    }
+    level: LOGGING_LEVELS.LOG,
+    message: `Process started.`,
+    domain: 'app',
+    source: 'APPPROCESS'
   }
 })
 
@@ -40,6 +47,7 @@ process.on('unhandledRejection', (reason) => {
   // Send detailed rejection info to parent process
   const error = reason instanceof Error ? reason : new Error(String(reason))
   sendMessage({
+    version: '0.11.0',
     type: 'server:error',
     payload: error
   })
@@ -65,46 +73,56 @@ const setupServer = async (): Promise<void> => {
       DeskThing: DeskThingType
     }
     sendMessage({
+      version: '0.11.0',
       type: 'server:log',
       payload: {
-        type: LOGGING_LEVELS.LOG,
-        log: 'DeskThing module loaded successfully.',
-        options: {
-          domain: 'SERVER.' + appName.toUpperCase()
-        }
+        level: LOGGING_LEVELS.LOG,
+        message: 'DeskThing module loaded successfully.',
+        domain: 'app',
+        source: 'SERVER.' + appName.toUpperCase()
       }
     })
 
     // Handle messages from parent process
-    parentPort?.on('message', async (data: TAppProcessPayload) => {
+    parentPort?.on('message', async (data: ToAppProcess) => {
       switch (data.type) {
         case 'data':
           handleAppRequest(data.payload)
           break
         case 'start':
           sendMessage({
+            version: '0.11.0',
             type: 'server:log',
             payload: {
-              type: LOGGING_LEVELS.LOG,
-              log: `Sending START to ${appName}.`,
-              options: {
-                domain: 'SERVER.' + appName.toUpperCase()
-              }
+              level: LOGGING_LEVELS.LOG,
+              message: `Sending START to ${appName}.`,
+              domain: 'app',
+              source: 'SERVER.' + appName.toUpperCase()
             }
           })
           DeskThing.start({
             toServer: (payload: ToServerData) => {
-              sendMessage({ type: 'data', payload }) // Send data to parent
+              sendMessage({
+                version: '0.10.3',
+                type: 'data',
+                payload
+              }) // Send data to parent
             },
             SysEvents: () => {
               return () => {}
             }
           })
-          sendMessage({ type: 'started' }) // Send data to parent
+          sendMessage({
+            version: '0.11.0',
+            type: 'started'
+          }) // Send data to parent
           break
         case 'stop':
           await DeskThing.stop()
-          sendMessage({ type: 'stopped' }) // Send data to parent
+          sendMessage({
+            version: '0.11.0',
+            type: 'stopped'
+          }) // Send data to parent
           break
         case 'purge':
           DeskThing.purge()

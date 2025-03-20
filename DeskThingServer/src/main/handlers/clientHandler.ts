@@ -1,5 +1,10 @@
 console.log('[Auth Handler] Starting')
-import { ClientManifest, SocketData, LOGGING_LEVELS } from '@DeskThing/types'
+import {
+  ClientManifest,
+  LOGGING_LEVELS,
+  FromDeskthingToDeviceEvents,
+  SendToDeviceFromServerPayload
+} from '@DeskThing/types'
 import { ReplyFn, ClientIPCData } from '@shared/types'
 import Logger from '@server/utils/logger'
 import { handleAdbCommands } from './adbHandler'
@@ -33,7 +38,10 @@ export const clientHandler: Record<
         data: `Attempted to ping ${data.payload}!`,
         final: true
       })
-      platformStore.sendDataToClient(data.payload, { app: 'client', type: 'ping' })
+      platformStore.sendDataToClient(data.payload, {
+        app: 'client',
+        type: FromDeskthingToDeviceEvents.PING
+      })
       return `Pinging ${data.payload}...`
     } catch (error) {
       console.error('Error pinging client:', error)
@@ -149,12 +157,12 @@ export const clientHandler: Record<
     const platformStore = await storeProvider.getStore('platformStore')
     const payload = data.payload.payload as string
 
-    const message: SocketData = {
+    const message = {
       app: data.payload.app || 'client',
       type: data.payload.type,
       request: data.payload.request,
       payload: !payload.includes('{') ? data.payload.payload : JSON.parse(data.payload.payload)
-    }
+    } as SendToDeviceFromServerPayload<string>
     replyFn('logging', { status: true, data: 'Finished', final: true })
     return await platformStore.broadcastToClients(message)
   },

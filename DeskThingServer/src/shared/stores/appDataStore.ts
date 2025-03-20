@@ -3,9 +3,17 @@
  * Does not hold the current list of apps, their manifests, or their functions
  */
 
-import { AppSettings, Task, AppDataInterface, Step, SettingsType } from '@deskthing/types'
+import {
+  AppSettings,
+  Task,
+  AppDataInterface,
+  Step,
+  SettingsType,
+  SavedData
+} from '@deskthing/types'
 import { FullTaskList, TaskReference } from '../types'
 import { TaskStoreClass } from './taskStore'
+import { StoreInterface } from '@shared/interfaces/storeInterface'
 
 /** Options for adding settings including notification flags */
 export type addSettingsOptions = {
@@ -45,7 +53,7 @@ export type NotifyListenersType = <K extends keyof AppDataStoreListenerEvents>(
 ) => Promise<void>
 
 /** Main AppDataStore interface defining all available methods */
-export interface AppDataStoreClass {
+export interface AppDataStoreClass extends StoreInterface {
   /** Clears the cache */
   clearCache(): Promise<void>
   /** Saves all cached data to files */
@@ -69,9 +77,9 @@ export interface AppDataStoreClass {
   addAppData(app: string, data: AppDataInterface): Promise<void>
 
   /** Gets app's data field */
-  getData(name: string): Promise<Record<string, string> | undefined>
+  getSavedData(name: string): Promise<SavedData | undefined>
   /** Adds data to app's data field */
-  addData(app: string, data: Record<string, string>): Promise<void>
+  addData(app: string, data: SavedData): Promise<void>
   /** Deletes specific data entries */
   delData(app: string, dataIds: string[] | string): Promise<void>
 

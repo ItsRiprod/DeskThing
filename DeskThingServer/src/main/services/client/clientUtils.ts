@@ -1,5 +1,5 @@
 console.log('[ClientUtils Service] Starting')
-import { ClientDeviceType } from '@deskthing/types'
+import { ClientDeviceType, FromDeviceDataEvents } from '@deskthing/types'
 import { storeProvider } from '@server/stores/storeProvider'
 
 /**
@@ -63,7 +63,12 @@ export const sendTime = async (): Promise<void> => {
     timezoneOffset // Timezone offset in minutes
   }
 
-  platformStore.broadcastToClients({ app: 'client', type: 'set', request: 'time', payload: data })
+  platformStore.broadcastToClients({
+    app: 'client',
+    type: FromDeviceDataEvents.TIME,
+    request: 'set',
+    payload: data
+  })
 }
 
 /**

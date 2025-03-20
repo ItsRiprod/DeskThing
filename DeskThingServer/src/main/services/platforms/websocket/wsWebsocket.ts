@@ -10,8 +10,13 @@ import {
   PlatformStatus
 } from '@shared/interfaces/platform'
 import { Client } from '@shared/types'
-import { ClientDeviceType, SocketData } from '@deskthing/types'
+import { ClientDeviceType, SocketData, ToDeviceData } from '@deskthing/types'
 import { ExpressServer } from './expressWorker'
+
+type AdditionalOptions = {
+  port?: number
+  address?: string
+}
 
 export class WSPlatform {
   private server: WebSocketServer | null = null
@@ -21,7 +26,7 @@ export class WSPlatform {
   private startTime: number = 0
   private userDataPath: string
   private expressServer: ExpressServer | null = null
-  private options: PlatformConnectionOptions = {
+  private options: PlatformConnectionOptions<AdditionalOptions> = {
     port: 8891,
     address: 'localhost'
   }
@@ -40,7 +45,7 @@ export class WSPlatform {
     parentPort?.postMessage({ event, payload })
   }
 
-  async start(options?: PlatformConnectionOptions): Promise<void> {
+  async start(options?: PlatformConnectionOptions<AdditionalOptions>): Promise<void> {
     if (this.isActive) return
 
     this.options = options ?? this.options
@@ -111,7 +116,7 @@ export class WSPlatform {
 
     socket.on('message', (message: string) => {
       try {
-        const data = JSON.parse(message)
+        const data = JSON.parse(message) as ToDeviceData
         this.sendToParent(PlatformEvent.DATA_RECEIVED, { client: client, data: data })
       } catch (error) {
         this.sendToParent(PlatformEvent.ERROR, new Error(`Invalid message format: ${error}`))

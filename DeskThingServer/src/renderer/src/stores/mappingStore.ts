@@ -5,8 +5,7 @@
  * @version 0.9.4
  */
 import { create } from 'zustand'
-import { ButtonMapping, Profile } from '@shared/types'
-import { Action, Key, ActionReference } from '@deskthing/types'
+import { Action, Key, ActionReference, ButtonMapping, Profile } from '@deskthing/types'
 
 const DefaultProfile: Profile = {
   id: 'default',

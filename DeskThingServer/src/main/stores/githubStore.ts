@@ -3,7 +3,8 @@
  *
  * Holds the AppReleaseMeta information and properly stores it when needed
  */
-console.log('[Github Store] Starting')
+
+// types
 import {
   AppReleaseFile,
   CacheableStore,
@@ -11,25 +12,6 @@ import {
   GithubAsset,
   GithubRelease
 } from '@shared/types'
-import { fetchAssetContent, getLatestRelease } from '@server/services/github/githubService'
-import {
-  AppReleaseCommunity,
-  AppReleaseMeta,
-  AppReleaseSingleMeta,
-  ClientReleaseMeta
-} from '@deskthing/types'
-import logger from '@server/utils/logger'
-import { defaultClientReleaseFile, defaultAppReleaseData } from '@server/static/defaultRepos'
-import {
-  isValidAppReleaseMeta,
-  isValidClientReleaseFile
-} from '@server/services/github/githubUtils'
-import {
-  readAppReleaseData,
-  readClientReleaseData,
-  saveAppReleaseData,
-  saveClientReleaseData
-} from '@server/services/files/releaseFileService'
 import {
   AssetAppCacheEntry,
   AssetClientCacheEntry,
@@ -39,6 +21,31 @@ import {
   GithubStoreListener,
   GithubStoreListeners
 } from '@shared/stores/githubStore'
+import {
+  AppReleaseCommunity,
+  AppReleaseMeta,
+  AppReleaseSingleMeta,
+  ClientReleaseMeta
+} from '@deskthing/types'
+
+// Utils
+import logger from '@server/utils/logger'
+import {
+  isValidAppReleaseMeta,
+  isValidClientReleaseFile
+} from '@server/services/github/githubUtils'
+
+// Static
+import { defaultClientReleaseFile, defaultAppReleaseData } from '@server/static/defaultRepos'
+
+// Services
+import { fetchAssetContent, getLatestRelease } from '@server/services/github/githubService'
+import {
+  readAppReleaseData,
+  readClientReleaseData,
+  saveAppReleaseData,
+  saveClientReleaseData
+} from '@server/services/files/releaseFileService'
 
 /**
  * Temporarily holds the entire repo response information in memory unless manually refreshed
@@ -59,6 +66,11 @@ export class GithubStore implements CacheableStore, GithubStoreClass {
     client: []
   }
 
+  private _initialized: boolean = false
+  public get initialized(): boolean {
+    return this._initialized
+  }
+
   constructor() {
     // Cache of github responses
     this.cache = new Map()
@@ -73,9 +85,12 @@ export class GithubStore implements CacheableStore, GithubStoreClass {
 
     // not fully implemented yet
     this.clientReleases = defaultClientReleaseFile
+  }
 
-    // Ensure that nothing is fetched at startup and blocking the main thread
-    setTimeout(this.refreshData, 10)
+  async initialize(): Promise<void> {
+    if (this._initialized) return
+    this._initialized = true
+    this.refreshData()
   }
 
   clearCache = async (): Promise<void> => {

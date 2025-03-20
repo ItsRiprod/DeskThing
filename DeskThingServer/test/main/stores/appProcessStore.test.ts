@@ -2,7 +2,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { AppProcessStore } from '../../../src/main/stores/appProcessStore'
 import { AppProcessEvents } from '@shared/stores/appProcessStore'
-import { SEND_TYPES } from '@deskthing/types'
+import { App, SEND_TYPES } from '@deskthing/types'
 import Logger from '@server/utils/logger'
 import { stat } from 'node:fs/promises'
 
@@ -56,7 +56,8 @@ describe('AppProcessStore', () => {
       appProcessStore.notifyMessageListeners(SEND_TYPES.TASK, {
         type: SEND_TYPES.TASK,
         source: 'testApp',
-        request: 'get'
+        request: 'get',
+        version: '0.0.0'
       })
 
       expect(mockListener).toHaveBeenCalled()
@@ -66,7 +67,8 @@ describe('AppProcessStore', () => {
       appProcessStore.notifyMessageListeners(SEND_TYPES.TASK, {
         type: SEND_TYPES.TASK,
         source: 'testApp',
-        request: 'get'
+        request: 'get',
+        version: '0.0.0'
       })
 
       expect(mockListener).toHaveBeenCalledTimes(1)
@@ -84,7 +86,7 @@ describe('AppProcessStore', () => {
     it('should fail to spawn process when entry point not found', async () => {
       vi.mocked(stat).mockRejectedValue(new Error('File not found'))
 
-      const result = await appProcessStore.spawnProcess('nonexistentApp')
+      const result = await appProcessStore.spawnProcess({ name: 'nonexistentApp' } as App)
 
       expect(result).toBe(false)
       expect(Logger.error).toHaveBeenCalled()
@@ -99,8 +101,8 @@ describe('AppProcessStore', () => {
     it('should prevent spawning duplicate processes', async () => {
       vi.mocked(stat).mockResolvedValue({} as any)
 
-      await appProcessStore.spawnProcess('testApp')
-      const result = await appProcessStore.spawnProcess('testApp')
+      await appProcessStore.spawnProcess({ name: 'testApp' } as App)
+      const result = await appProcessStore.spawnProcess({ name: 'testApp' } as App)
 
       expect(result).toBe(false)
       expect(Logger.warn).toHaveBeenCalled()

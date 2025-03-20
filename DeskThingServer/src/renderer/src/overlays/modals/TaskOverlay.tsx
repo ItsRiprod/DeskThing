@@ -36,6 +36,7 @@ const TaskOverlay: React.FC = () => {
     }
     return undefined
   }, [tasks, currentTaskId]) as Task | undefined
+
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
@@ -165,6 +166,7 @@ const TaskOverlay: React.FC = () => {
       ),
     [currentTask, currentTaskId?.source]
   )
+
   return (
     <div
       ref={taskRef}
@@ -175,7 +177,7 @@ const TaskOverlay: React.FC = () => {
               transform: `translate(${position.x}px, ${position.y}px)`
             }
       }
-      className={`fixed select-none flex ${isFullscreen ? 'min-w-full min-h-full transition-[min-height,min-width,transform]' : ''} min-w-0 min-h-0 items-center flex-col justify-center bg-black bg-opacity-90 z-50`}
+      className={`fixed top-0 left-0 select-none flex ${isFullscreen ? 'min-w-full min-h-full transition-[min-height,min-width,transform]' : ''} min-w-0 min-h-0 items-center flex-col justify-center bg-black bg-opacity-90 z-50`}
     >
       <div className={`flex flex-col justify-center rounded-lg w-full bg-zinc-900`}>
         <div className="flex justify-between">

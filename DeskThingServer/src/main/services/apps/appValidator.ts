@@ -30,6 +30,8 @@ import { isValidTask } from '../task'
 import { isValidAction, isValidKey } from '../mappings/mapsValidation'
 import { statSync } from 'node:fs'
 
+console.log('in the app validator')
+
 /**
  * Validates a setting.
  * @throws {Error} If the setting is not valid

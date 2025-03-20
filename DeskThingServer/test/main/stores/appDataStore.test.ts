@@ -39,7 +39,7 @@ describe('AppDataStore', () => {
 
   beforeEach(() => {
     mockAppStore = {
-      get: vi.fn().mockReturnValue({ manifest: { version: '0.0.0'}}),
+      get: vi.fn().mockReturnValue({ manifest: { version: '0.0.0' } }),
       getOrder: vi.fn().mockReturnValue(['app1', 'app2']),
       onAppMessage: vi.fn(),
       sendDataToApp: vi.fn()

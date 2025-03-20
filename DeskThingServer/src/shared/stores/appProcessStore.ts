@@ -1,5 +1,5 @@
-import { EventPayload, SEND_TYPES, ToServerData } from '@deskthing/types'
-import { Log } from '@shared/types'
+import { App, SEND_TYPES, ToAppProcess, ToServerData } from '@deskthing/types'
+import { StoreInterface } from '@shared/interfaces/storeInterface'
 
 export enum AppProcessEvents {
   STARTED = 'started',
@@ -8,19 +8,6 @@ export enum AppProcessEvents {
   RUNNING = 'running',
   ERROR = 'error'
 }
-
-export type FAppProcessPayload =
-  | { type: 'data'; payload: ToServerData }
-  | { type: 'started' }
-  | { type: 'stopped' }
-  | { type: 'server:error'; payload: Error }
-  | { type: 'server:log'; payload: Log }
-
-export type TAppProcessPayload =
-  | { type: 'data'; payload: EventPayload }
-  | { type: 'start' }
-  | { type: 'stop' }
-  | { type: 'purge' }
 
 export type AppDataFilters<T extends SEND_TYPES> = {
   request?: Extract<ToServerData, { type: T }>['request']
@@ -41,11 +28,11 @@ export type AppProcessListeners = {
  * The AppProcessStore class is focused solely on process communication
  * and handling the direct lifecycle of electron processes.
  */
-export interface AppProcessStoreClass {
+export interface AppProcessStoreClass extends StoreInterface {
   /**
    * Post a message to a specific app process
    */
-  postMessage(appName: string, data: TAppProcessPayload): Promise<void>
+  postMessage(appName: string, data: ToAppProcess): Promise<void>
 
   /**
    * Subscribe to process lifecycle events
@@ -75,7 +62,7 @@ export interface AppProcessStoreClass {
   /**
    * Spawn a new process for an app
    */
-  spawnProcess(appName: string, options?: unknown): Promise<boolean>
+  spawnProcess(app: App, options?: unknown): Promise<boolean>
 
   /**
    * Terminate a process

@@ -5,9 +5,11 @@ import {
   AppReleaseMeta,
   AppSettings,
   ClientManifest,
-  ClientReleaseMeta
+  ClientReleaseMeta,
+  Profile,
+  ButtonMapping
 } from '@DeskThing/types'
-import { Profile, Client, ButtonMapping, Log, StagedAppManifest, ADBClient } from '@shared/types'
+import { Client, Log, StagedAppManifest, ADBClient } from '@shared/types'
 
 type AppData = Record<string, string>
 

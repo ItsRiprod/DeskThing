@@ -34,8 +34,12 @@ interface Stores {
 
 export class StoreProvider {
   private static instance: StoreProvider
-  private storeInstances: Partial<Stores> = {}
-  private storeInitializers: Record<keyof Stores, () => Promise<Stores[keyof Stores]>>
+  private storeInstances: {
+    [K in keyof Stores]?: Stores[K]
+  } = {}
+  private storeInitializers: {
+    [K in keyof Stores]: () => Promise<Stores[K]>
+  }
   private initialized = false
 
   private constructor() {
@@ -57,37 +61,39 @@ export class StoreProvider {
       settingsStore: async () => new (await storeImports.settingsStore())(),
       appProcessStore: async () => new (await storeImports.appProcessStore())(),
       authStore: async () =>
-        new (await storeImports.authStore())(await this.getStore('settingsStore')),
+        new (await storeImports.authStore())(await this.getStore('settingsStore', false)),
       appStore: async () =>
         new (await storeImports.appStore())(
-          await this.getStore('appProcessStore'),
-          await this.getStore('authStore')
+          await this.getStore('appProcessStore', false),
+          await this.getStore('authStore', false)
         ),
       appDataStore: async () =>
-        new (await storeImports.appDataStore())(await this.getStore('appStore')),
+        new (await storeImports.appDataStore())(await this.getStore('appStore', false)),
       platformStore: async () =>
         new (await storeImports.platformStore())(
-          await this.getStore('appStore'),
-          await this.getStore('appDataStore')
+          await this.getStore('appStore', false),
+          await this.getStore('appDataStore', false),
+          await this.getStore('mappingStore', false)
         ),
       taskStore: async () =>
         new (await storeImports.taskStore())(
-          await this.getStore('appDataStore'),
-          await this.getStore('appStore')
+          await this.getStore('appDataStore', false),
+          await this.getStore('appStore', false)
         ),
       connectionsStore: async () =>
         new (await storeImports.connectionsStore())(
-          await this.getStore('settingsStore'),
-          await this.getStore('taskStore'),
-          await this.getStore('platformStore')
+          await this.getStore('settingsStore', false),
+          await this.getStore('taskStore', false),
+          await this.getStore('platformStore', false)
         ),
       githubStore: async () => new (await storeImports.githubStore())(),
       mappingStore: async () =>
-        new (await storeImports.mappingStore())(await this.getStore('appStore')),
+        new (await storeImports.mappingStore())(await this.getStore('appStore', false)),
       musicStore: async () =>
         new (await storeImports.musicStore())(
-          await this.getStore('settingsStore'),
-          await this.getStore('appStore')
+          await this.getStore('settingsStore', false),
+          await this.getStore('appStore', false),
+          await this.getStore('platformStore', false)
         )
     }
 
@@ -96,7 +102,7 @@ export class StoreProvider {
 
   public async initialize(): Promise<void> {
     if (this.initialized) return
-    const settingStore = await await this.getStore('settingsStore')
+    const settingStore = await this.getStore('settingsStore')
     logger.setupSettingsListener(settingStore)
     logger.info('Initialized initial stores', {
       function: 'initializeInitialStores',
@@ -111,15 +117,28 @@ export class StoreProvider {
     return StoreProvider.instance
   }
 
-  public async getStore<K extends keyof Stores>(storeName: K): Promise<Stores[K]> {
+  public async getStore<K extends keyof Stores>(
+    storeName: K,
+    initialize = true
+  ): Promise<Stores[K]> {
     // Lazy initialize store only when requested
     if (!this.storeInstances[storeName]) {
-      this.storeInstances[storeName] = (await this.storeInitializers[storeName]()) as Stores[K]
+      this.storeInstances[storeName] = await this.storeInitializers[storeName]()
 
-      if (storeName === 'appDataStore') {
-        const appDataStore = this.storeInstances.appDataStore as AppDataStoreClass
-        appDataStore.setupListeners(await this.getStore('taskStore'))
+      // Specifically handle the appDataStore loop
+      if (storeName == 'appDataStore') {
+        const appDataStore = this.storeInstances[storeName] as Stores['appDataStore']
+        appDataStore.setupListeners(await this.getStore('taskStore', false))
       }
+    }
+
+    if (!this.storeInstances[storeName].initialized && initialize) {
+      // Ensure the store is initialized before returning it
+      logger.info(`Initializing ${storeName}`, {
+        function: 'getStore',
+        source: 'storeProvider'
+      })
+      await this.storeInstances[storeName].initialize()
     }
     return this.storeInstances[storeName] as Stores[K]
   }

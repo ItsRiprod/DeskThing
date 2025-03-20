@@ -1,5 +1,13 @@
 import { storeProvider } from '@server/stores/storeProvider'
-import { SocketData, ClientManifest, SettingsType } from '@DeskThing/types'
+import {
+  SocketData,
+  ClientManifest,
+  SettingsType,
+  EventPayload,
+  FromDeviceDataEvents,
+  FromDeskthingToDeviceEvents,
+  CombinedMappings
+} from '@DeskThing/types'
 import Logger from '@server/utils/logger'
 import { Client } from '@shared/types'
 import { PlatformInterface } from '@shared/interfaces/platform'
@@ -27,8 +35,9 @@ export async function handlePlatformMessage(
       if (messageData.app === 'server') {
         await handleServerMessage(platform, client, messageData)
       } else if (messageData.app === 'utility' || messageData.app === 'music') {
-        const musicStore = await storeProvider.getStore('musicStore')
-        await musicStore.handleClientRequest(messageData)
+        // musicStore now listens directly
+        // const musicStore = await storeProvider.getStore('musicStore')
+        // await musicStore.handleClientRequest(messageData)
       } else if (messageData.app) {
         const appStore = await storeProvider.getStore('appStore')
 
@@ -36,7 +45,7 @@ export async function handlePlatformMessage(
           type: messageData.type,
           request: messageData.request,
           payload: messageData.payload
-        })
+        } as EventPayload)
       }
 
       // Cleanup throttle
@@ -63,12 +72,11 @@ async function handleServerMessage(
   const appStore = await storeProvider.getStore('appStore')
   const appDataStore = await storeProvider.getStore('appDataStore')
   const mappingStore = await storeProvider.getStore('mappingStore')
-  const settingsStore = await storeProvider.getStore('settingsStore')
 
   switch (messageData.type) {
     case 'heartbeat':
       await platform.sendData(client.connectionId, {
-        type: 'heartbeat',
+        type: FromDeskthingToDeviceEvents.HEARTBEAT,
         app: 'client',
         payload: new Date().toISOString()
       })
@@ -76,7 +84,7 @@ async function handleServerMessage(
 
     case 'ping':
       await platform.sendData(client.connectionId, {
-        type: 'pong',
+        type: FromDeskthingToDeviceEvents.PONG,
         app: 'client',
         payload: new Date().toISOString()
       })
@@ -100,25 +108,25 @@ async function handleServerMessage(
       break
 
     case 'get': {
-      const settings = await settingsStore.getSettings()
       const mapping = await mappingStore.getMapping()
       const actions = await mappingStore.getActions()
       const apps = await appStore.getAll()
 
-      await platform.sendData(client.connectionId, {
-        type: 'settings',
-        app: 'client',
-        payload: settings
-      })
+      if (mapping) {
+        const combinedMappings: CombinedMappings = {
+          ...mapping,
+          actions: actions
+        }
+
+        await platform.sendData(client.connectionId, {
+          type: FromDeskthingToDeviceEvents.MAPPINGS,
+          app: 'client',
+          payload: combinedMappings
+        })
+      }
 
       await platform.sendData(client.connectionId, {
-        type: 'button_mappings',
-        app: 'client',
-        payload: { ...mapping, actions }
-      })
-
-      await platform.sendData(client.connectionId, {
-        type: 'config',
+        type: FromDeviceDataEvents.APPS,
         app: 'client',
         payload: apps.filter((app) => app.manifest?.isWebApp !== false)
       })

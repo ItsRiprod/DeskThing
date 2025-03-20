@@ -1,4 +1,3 @@
-console.log('[MapStore Service] Starting')
 // Types
 import {
   Action,
@@ -8,9 +7,11 @@ import {
   ServerEvent,
   EventPayload,
   LOGGING_LEVELS,
-  SEND_TYPES
+  SEND_TYPES,
+  ButtonMapping,
+  Profile
 } from '@DeskThing/types'
-import { ButtonMapping, MappingStructure, Button, Profile, CacheableStore } from '@shared/types'
+import { MappingStructure, Button, CacheableStore } from '@shared/types'
 import { Listener, ListenerPayloads, MappingStoreClass } from '@shared/stores/mappingStore'
 import { AppStoreClass } from '@shared/stores/appStore'
 
@@ -37,7 +38,12 @@ export class MappingStore implements CacheableStore, MappingStoreClass {
     key: [],
     profile: [],
     action: [],
-    update: []
+    update: [],
+    icon: []
+  }
+  private _initialized: boolean = false
+  public get initialized(): boolean {
+    return this._initialized
   }
 
   // stores
@@ -45,6 +51,12 @@ export class MappingStore implements CacheableStore, MappingStoreClass {
 
   constructor(appStore: AppStoreClass) {
     this.appStore = appStore
+  }
+
+  async initialize(): Promise<void> {
+    if (this._initialized) return
+    this.appStore.initialize()
+    this._initialized = true
     this.initializeListeners()
     this.fetchMappings()
   }
@@ -705,7 +717,13 @@ export class MappingStore implements CacheableStore, MappingStoreClass {
     if (actionIndex !== -1) {
       // Update the icon
       mapping.actions[actionIndex].icon = icon
+      this.notifyListeners('icon', {
+        action: mapping.actions[actionIndex],
+        icon,
+        source: mapping.actions[actionIndex].source || 'server'
+      })
       await this.saveMapping(mapping)
+
       Logger.log(LOGGING_LEVELS.LOG, `[MappingStore]: Icon for action ${actionId} updated`)
     } else {
       Logger.log(LOGGING_LEVELS.ERROR, `[MappingStore]: Action ${actionId} not found`)

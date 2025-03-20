@@ -1,9 +1,10 @@
-import { SocketData, SongData } from '@deskthing/types'
+import { SocketData } from '@deskthing/types'
+import { StoreInterface } from '@shared/interfaces/storeInterface'
 
 /**
  * Interface representing the public methods of MusicStore
  */
-export interface MusicStoreClass {
+export interface MusicStoreClass extends StoreInterface {
   /**
    * Clears the music store cache
    */
@@ -31,10 +32,4 @@ export interface MusicStoreClass {
    * @param request Socket data containing the client request
    */
   handleClientRequest(request: SocketData): Promise<void>
-
-  /**
-   * Processes and forwards music data to connected clients
-   * @param songData Song data received from audio source
-   */
-  handleMusicMessage(songData: SongData): Promise<void>
 }

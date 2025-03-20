@@ -1,3 +1,4 @@
+import { StoreInterface } from '@shared/interfaces/storeInterface'
 import { Settings } from '../types'
 
 export type SettingsStoreListener = (settings: Settings) => void
@@ -5,7 +6,7 @@ export type SettingsStoreListener = (settings: Settings) => void
 /**
  * Interface representing the public methods of SettingsStore
  */
-export interface SettingsStoreClass {
+export interface SettingsStoreClass extends StoreInterface {
   /**
    * Clears the settings store cache
    */

@@ -2,25 +2,23 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { MusicStore } from '../../../src/main/stores/musicStore'
 import { SettingsStoreClass } from '@shared/stores/settingsStore'
 import { AppStoreClass } from '@shared/stores/appStore'
-import { LOGGING_LEVELS } from '@DeskThing/types'
+import { LOGGING_LEVELS, SEND_TYPES, FromDeviceDataEvents, SongData } from '@DeskThing/types'
 import Logger from '@server/utils/logger'
-import { sendMessageToClients } from '../../../src/main/services/client/clientCom'
 import { getColorFromImage } from '../../../src/main/services/music/musicUtils'
+import { PlatformStoreClass } from '@shared/stores/platformStore'
 
 vi.mock('@server/utils/logger', () => ({
   default: {
     log: vi.fn(),
     info: vi.fn(),
-    error: vi.fn()
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn()
   }
 }))
 
 vi.mock('../../../src/main/services/files/appFileService', () => ({
   getAppByName: vi.fn()
-}))
-
-vi.mock('../../../src/main/services/client/clientCom', () => ({
-  sendMessageToClients: vi.fn()
 }))
 
 vi.mock('../../../src/main/services/music/musicUtils', () => ({
@@ -31,6 +29,7 @@ describe('MusicStore', () => {
   let musicStore: MusicStore
   let mockSettingsStore: SettingsStoreClass
   let mockAppStore: AppStoreClass
+  let mockPlatformStore: PlatformStoreClass
 
   beforeEach(() => {
     vi.useFakeTimers()
@@ -40,15 +39,23 @@ describe('MusicStore', () => {
         refreshInterval: 1000
       }),
       updateSetting: vi.fn(),
-      addListener: vi.fn()
+      addListener: vi.fn(),
+      initialize: vi.fn()
     } as unknown as SettingsStoreClass
 
     mockAppStore = {
       getAllBase: vi.fn().mockReturnValue([{ name: 'spotify', manifest: { isAudioSource: true } }]),
-      sendDataToApp: vi.fn()
+      sendDataToApp: vi.fn(),
+      onAppMessage: vi.fn(),
+      initialize: vi.fn()
     } as unknown as AppStoreClass
 
-    musicStore = new MusicStore(mockSettingsStore, mockAppStore)
+    mockPlatformStore = {
+      on: vi.fn(),
+      broadcastToClients: vi.fn()
+    } as unknown as PlatformStoreClass
+
+    musicStore = new MusicStore(mockSettingsStore, mockAppStore, mockPlatformStore)
   })
 
   afterEach(() => {
@@ -57,6 +64,7 @@ describe('MusicStore', () => {
   })
 
   it('should initialize refresh interval after construction', async () => {
+    await musicStore.initialize()
     vi.advanceTimersByTime(3000)
     expect(mockSettingsStore.getSettings).toHaveBeenCalled()
   })
@@ -74,7 +82,7 @@ describe('MusicStore', () => {
 
     vi.mocked(getColorFromImage).mockResolvedValue(mockedColors)
 
-    await musicStore.handleMusicMessage({
+    const songData: SongData = {
       track_name: 'Test Song',
       artist: 'Test Artist',
       thumbnail: 'test.jpg',
@@ -95,33 +103,27 @@ describe('MusicStore', () => {
       device: null,
       id: null,
       device_id: null
-    })
+    }
 
-    expect(sendMessageToClients).toHaveBeenCalledWith({
-      type: 'song',
+    const appData = {
+      type: SEND_TYPES.SONG,
+      payload: songData
+    }
+
+    // Access the private method through the prototype
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (MusicStore.prototype as any).handleMusicMessage.call(musicStore, appData)
+
+    expect(mockPlatformStore.broadcastToClients).toHaveBeenCalledWith({
+      type: FromDeviceDataEvents.MUSIC,
       app: 'client',
-      payload: expect.objectContaining({
-        album: null,
-        playlist: null,
-        playlist_id: null,
-        shuffle_state: null,
-        repeat_state: 'all',
-        is_playing: false,
-        can_fast_forward: false,
-        can_skip: false,
-        can_like: false,
-        can_change_volume: false,
-        can_set_output: false,
-        track_duration: null,
-        track_progress: null,
-        volume: 0,
-        device: null,
-        id: null,
-        device_id: null,
+      payload: {
+        ...songData,
         color: mockedColors
-      })
+      }
     })
   })
+
   it('should handle invalid refresh intervals', async () => {
     await musicStore.updateRefreshInterval(-1)
     expect(Logger.log).toHaveBeenCalledWith(

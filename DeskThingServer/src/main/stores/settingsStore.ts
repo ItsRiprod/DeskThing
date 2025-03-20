@@ -1,4 +1,3 @@
-console.log('[Settings Store] Starting')
 // Types
 import { LOGGING_LEVELS } from '@DeskThing/types'
 import { Settings, LOG_FILTER, CacheableStore } from '@shared/types'
@@ -18,7 +17,14 @@ export class SettingsStore implements CacheableStore, SettingsStoreClass {
   private settingsFilePath: string = 'settings.json'
   private listeners: SettingsStoreListener[] = []
 
-  constructor() {
+  private _initialized: boolean = false
+  public get initialized(): boolean {
+    return this._initialized
+  }
+
+  async initialize(): Promise<void> {
+    if (this._initialized) return
+    this._initialized = true
     this.setupSettings()
   }
 

@@ -6,7 +6,8 @@ import {
   ServerEvent,
   Step,
   Task,
-  SEND_TYPES
+  SEND_TYPES,
+  SavedData
 } from '@DeskThing/types'
 import { TaskReference, CacheableStore, FullTaskList } from '@shared/types'
 import { TaskStoreClass } from '@shared/stores/taskStore'
@@ -52,26 +53,46 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
 
   private appStore: AppStoreClass
 
+  private _initialized: boolean = false
+  public get initialized(): boolean {
+    return this._initialized
+  }
+
   constructor(appStore: AppStoreClass) {
     this.appStore = appStore
-    this.initAppCache()
     this.initAppListeners()
+  }
+
+  async initialize(): Promise<void> {
+    if (this._initialized) return
+    this._initialized = true
+    this.appStore.initialize()
+    this.initAppCache()
   }
 
   private initAppListeners = (): void => {
     this.appStore.onAppMessage(SEND_TYPES.GET, async (data) => {
+      await this.initialize()
       switch (data.request) {
         case 'data': {
-          const appData = await this.getData(data.source)
+          const savedData = await this.getSavedData(data.source)
+          if (!savedData) {
+            Logger.warn(`Attempted to retrieve data for ${data.source} but it does not exist`)
+            return
+          }
           this.appStore.sendDataToApp(data.source, {
             type: ServerEvent.DATA,
             request: 'data',
-            payload: appData
+            payload: savedData
           })
           break
         }
         case 'appData': {
           const appData = await this.getAppData(data.source)
+          if (!appData) {
+            Logger.warn(`Attempted to retrieve data for ${data.source} but it does not exist`)
+            return
+          }
           this.appStore.sendDataToApp(data.source, {
             type: ServerEvent.APPDATA,
             request: 'data',
@@ -80,7 +101,15 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
           break
         }
         case 'settings': {
+          Logger.debug(`Received settings request from ${data.source}`, {
+            source: 'AppDataStore',
+            function: 'onAppMessage'
+          })
           const settings = await this.getSettings(data.source)
+          if (!settings) {
+            Logger.warn(`Attempted to retrieve settings for ${data.source} but it does not exist`)
+            return
+          }
           this.appStore.sendDataToApp(data.source, {
             type: ServerEvent.SETTINGS,
             request: 'data',
@@ -103,11 +132,24 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
     })
 
     this.appStore.onAppMessage(SEND_TYPES.SET, async (data) => {
+      await this.initialize()
       switch (data.request) {
         case 'appData': {
           try {
-            isValidAppDataInterface(data.payload)
-            await this.addAppData(data.source, data.payload)
+            if (data.legacy) {
+              Logger.debug(`Attempting to repair legacy app ${data.source} and set the data`, {
+                source: 'AppDataStore',
+                domain: 'SERVER.' + data.source.toUpperCase(),
+                function: 'handleRequestSetAppData'
+              })
+              const app = this.appStore.get(data.source)
+              await this.addAppData(data.source, {
+                ...data.payload,
+                version: app?.manifest?.version || '0.0.0'
+              })
+            } else {
+              await this.addAppData(data.source, data.payload)
+            }
           } catch (error) {
             Logger.error(`[handleRequestSetAppData]: Error setting app data`, {
               error: error as Error,
@@ -129,6 +171,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
     })
 
     this.appStore.onAppMessage(SEND_TYPES.DELETE, async (data) => {
+      await this.initialize()
       switch (data.request) {
         case 'data': {
           await this.delData(data.source, data.payload)
@@ -139,6 +182,11 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
           break
         }
       }
+    })
+
+    this.appStore.on('purging', async ({ appName }) => {
+      await this.initialize()
+      await this.purgeAppData(appName)
     })
   }
   private initAppCache = async (): Promise<void> => {
@@ -401,22 +449,29 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
       function: 'getData'
     })
     const data = await getData(name)
-    if (!data) return
+    if (!data) {
+      Logger.debug(`No data found for ${name}`, {
+        source: 'AppDataStore',
+        domain: name,
+        function: 'getAppData'
+      })
+      return
+    }
 
     this.appDataCache[name] = data
     return data
   }
 
-  async getData(name: string): Promise<Record<string, string> | undefined> {
+  async getSavedData(name: string): Promise<SavedData | undefined> {
     this.initCacheVersion(name)
 
     if (this.appDataCache[name].data) {
       return this.appDataCache[name].data
     } else {
-      Logger.debug('Getting Data', {
+      Logger.debug(`Getting saved data for ${name}`, {
         source: 'AppDataStore',
-        domain: name,
-        function: 'getData'
+        domain: 'SERVER.' + name.toUpperCase(),
+        function: 'getSavedData'
       })
       const data = await getData(name)
       this.appDataCache[name].data = data?.data
@@ -433,7 +488,14 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
     }
 
     const data = await getData(name)
-    if (!data) return
+    if (!data) {
+      Logger.debug(`No settings found for ${name}`, {
+        source: 'AppDataStore',
+        domain: 'SERVER.' + name.toUpperCase(),
+        function: 'getSettings'
+      })
+      return
+    }
     this.appDataCache[name].settings = data?.settings
     return data?.settings
   }
@@ -615,10 +677,10 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
     await this.saveData(app, true)
   }
 
-  async addData(app: string, data: Record<string, string>): Promise<void> {
+  async addData(app: string, data: SavedData): Promise<void> {
     this.initCacheVersion(app)
 
-    this.appDataCache[app].data = data
+    this.appDataCache[app].data = { ...this.appDataCache[app].data, ...data }
 
     await this.saveData(app, true)
   }
@@ -626,18 +688,32 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
   async addAppData(app: string, data: AppDataInterface): Promise<void> {
     try {
       isValidAppDataInterface(data)
-    } catch {
+    } catch (error) {
       Logger.error('Invalid app data interface', {
         source: 'AppDataStore',
         domain: 'SERVER.' + app.toUpperCase(),
+        error: error as Error,
         function: 'addAppData'
       })
       return
     }
 
     if (this.appDataCache[app]) {
+      const mergeProperty = <T>(existing: T | undefined, update: T | undefined): T | undefined => {
+        if (!update) return existing
+        if (!existing) return update
+        return { ...existing, ...update }
+      }
       // deepest of merges
-      this.appDataCache[app] = { ...this.appDataCache[app], ...data }
+      this.appDataCache[app] = {
+        ...this.appDataCache[app],
+        version: data.version || this.appDataCache[app].version,
+        settings: mergeProperty(this.appDataCache[app].settings, data.settings),
+        data: mergeProperty(this.appDataCache[app].data, data.data),
+        tasks: mergeProperty(this.appDataCache[app].tasks, data.tasks),
+        keys: mergeProperty(this.appDataCache[app].keys, data.keys),
+        actions: mergeProperty(this.appDataCache[app].actions, data.actions)
+      }
     } else {
       this.appDataCache[app] = data
     }

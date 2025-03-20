@@ -5,8 +5,8 @@ import logger from '@server/utils/logger'
 import { isValidTaskList, sanitizeTaskList, sanitizeTaskListFile } from '../task'
 
 /**
- * @deprecated 
- * @param taskList 
+ * @deprecated
+ * @param taskList
  */
 export const saveTaskList = async (taskList: FullTaskList): Promise<void> => {
   try {
@@ -26,7 +26,7 @@ export const saveTaskList = async (taskList: FullTaskList): Promise<void> => {
 
 /**
  * @depreciated
- * @returns 
+ * @returns
  */
 export const readTasksFromFile = async (): Promise<FullTaskList | undefined> => {
   try {

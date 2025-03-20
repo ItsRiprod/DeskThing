@@ -64,7 +64,7 @@ export const getIcon = async (appName: string, icon?: string): Promise<string | 
     // Return file protocol URL that Electron can load directly
     return svgContent
   } catch (error) {
-    Logger.error(`Error accessing icon for ${appName}:`, {
+    Logger.warn(`Error accessing icon for ${appName}:`, {
       source: 'getIcon',
       error: error as Error
     })

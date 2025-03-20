@@ -3,7 +3,6 @@
  * It provides methods to add, update, and remove clients, as well as to get the list of connected clients and devices.
  * The class also handles the auto-detection of ADB devices and notifies listeners of changes to the client and device lists.
  */
-console.log('[Connection Store] Starting')
 import { LOGGING_LEVELS } from '@DeskThing/types'
 import { ADBClient, CacheableStore, Client } from '@shared/types'
 import Logger from '@server/utils/logger'
@@ -31,6 +30,11 @@ export class ConnectionStore implements CacheableStore, ConnectionStoreClass {
   private taskStore: TaskStoreClass
   private platformStore: PlatformStoreClass
 
+  private _initialized: boolean = false
+  public get initialized(): boolean {
+    return this._initialized
+  }
+
   constructor(
     settingsStore: SettingsStoreClass,
     taskStore: TaskStoreClass,
@@ -39,6 +43,13 @@ export class ConnectionStore implements CacheableStore, ConnectionStoreClass {
     this.settingsStore = settingsStore
     this.taskStore = taskStore
     this.platformStore = platformStore
+  }
+
+  async initialize(): Promise<void> {
+    if (this._initialized) return
+    this._initialized = true
+    this.taskStore.initialize()
+    this.settingsStore.initialize()
     this.setupConnectionListeners()
   }
 

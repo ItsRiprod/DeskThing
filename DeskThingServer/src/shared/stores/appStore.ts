@@ -2,6 +2,7 @@ import { App, EventPayload, AppManifest, SEND_TYPES } from '@deskthing/types'
 import { stageAppFileType } from '@server/services/apps/appInstaller'
 import { ReplyFn, StagedAppManifest } from '../types'
 import { AppDataFilters, AppProcessListener } from './appProcessStore'
+import { StoreInterface } from '@shared/interfaces/storeInterface'
 
 export type addSettingsOptions = {
   notifyApp?: boolean
@@ -10,6 +11,7 @@ export type addSettingsOptions = {
 
 export type AppStoreListenerEvents = {
   apps: { data: App[] }
+  purging: { appName: string }
 }
 
 // Create listener types automatically from event map
@@ -23,7 +25,7 @@ export type AppStoreListeners = {
   [K in keyof AppStoreListenerEvents]: AppStoreListener<K>[]
 }
 
-export interface AppStoreClass {
+export interface AppStoreClass extends StoreInterface {
   // Utility
 
   clearCache(): Promise<void>

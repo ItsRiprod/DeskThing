@@ -8,7 +8,7 @@
  */
 console.log('[App Handler] Starting')
 import path from 'path'
-import { App, LOGGING_LEVELS, AppSettings } from '@DeskThing/types'
+import { App, LOGGING_LEVELS, AppSettings, SavedData } from '@DeskThing/types'
 import { APP_TYPES, AppHandlerReturnType, AppIPCData, ReplyFn } from '@shared/types'
 import { storeProvider } from '@server/stores/storeProvider'
 import Logger from '@server/utils/logger'
@@ -290,11 +290,7 @@ const setAppSettings = async (
   replyFn('logging', { status: true, data: 'Finished', final: true })
 }
 
-const setAppData = async (
-  replyFn: ReplyFn,
-  appId: string,
-  appData: Record<string, string>
-): Promise<void> => {
+const setAppData = async (replyFn: ReplyFn, appId: string, appData: SavedData): Promise<void> => {
   const appDataStore = await storeProvider.getStore('appDataStore')
   Logger.debug('[setAppData]: Saving ' + appId + "'s data " + appData)
   appDataStore.addData(appId, appData)
@@ -333,13 +329,10 @@ const getAppSettings = async (replyFn: ReplyFn, payload: string): Promise<AppSet
  * @param payload - The payload containing the data needed to retrieve the app data.
  * @returns A Promise that resolves to the app data, or null if an error occurs.
  */
-const getAppData = async (
-  replyFn: ReplyFn,
-  payload: string
-): Promise<Record<string, string> | null> => {
+const getAppData = async (replyFn: ReplyFn, payload: string): Promise<SavedData | null> => {
   try {
     const appDataStore = await storeProvider.getStore('appDataStore')
-    const data = await appDataStore.getData(payload)
+    const data = await appDataStore.getSavedData(payload)
     replyFn('logging', { status: true, data: 'Finished', final: true })
     return data || null
   } catch (error) {

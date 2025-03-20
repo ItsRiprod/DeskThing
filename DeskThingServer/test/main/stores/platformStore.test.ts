@@ -3,10 +3,11 @@ import { PlatformStore } from '../../../src/main/stores/platformStore'
 import { AppStoreClass } from '@shared/stores/appStore'
 import { AppDataStoreClass } from '@shared/stores/appDataStore'
 import { PlatformInterface } from '@shared/interfaces/platform'
-import { SocketData } from '@DeskThing/types'
+import { ToDeviceData } from '@DeskThing/types'
 import Logger from '@server/utils/logger'
 import { Client } from '@shared/types'
 import { PlatformStoreEvent } from '@shared/stores/platformStore'
+import { MappingStoreClass } from '@shared/stores/mappingStore'
 
 vi.mock('@server/utils/logger', () => ({
   default: {
@@ -20,6 +21,7 @@ describe('PlatformStore', () => {
   let platformStore: PlatformStore
   let mockAppStore: AppStoreClass
   let mockAppDataStore: AppDataStoreClass
+  let mockMappingStore: MappingStoreClass
   let mockPlatform: PlatformInterface
   let testClient: Client
 
@@ -60,7 +62,14 @@ describe('PlatformStore', () => {
       updateClient: vi.fn()
     } as unknown as PlatformInterface
 
-    platformStore = new PlatformStore(mockAppStore, mockAppDataStore)
+    mockMappingStore = {
+      getAction: vi.fn(),
+      addAction: vi.fn(),
+      on: vi.fn(),
+      removeAllListeners: vi.fn()
+    } as unknown as MappingStoreClass
+
+    platformStore = new PlatformStore(mockAppStore, mockAppDataStore, mockMappingStore)
   })
 
   afterEach(() => {
@@ -102,11 +111,11 @@ describe('PlatformStore', () => {
     })
 
     it('should broadcast data to all clients', async () => {
-      const testData: SocketData = {
+      const testData = {
         app: 'test-app',
         type: 'test-type',
         payload: { test: true }
-      }
+      } as unknown as ToDeviceData
 
       await platformStore.addPlatform(mockPlatform)
       await platformStore.broadcastToClients(testData)
@@ -126,11 +135,11 @@ describe('PlatformStore', () => {
     })
 
     it('should handle socket data from clients', async () => {
-      const testData: SocketData = {
+      const testData = {
         app: 'test-app',
         type: 'test-type',
         payload: { test: true }
-      }
+      } as unknown as ToDeviceData
 
       vi.spyOn(platformStore, 'getPlatformForClient').mockReturnValue(mockPlatform)
       await platformStore.addPlatform(mockPlatform)

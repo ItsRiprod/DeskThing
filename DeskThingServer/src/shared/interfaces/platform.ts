@@ -10,7 +10,7 @@
  * - The client interface (for the connections store)
  */
 
-import { SocketData } from '@DeskThing/types'
+import { SendToDeviceFromServerPayload, SocketData, ToDeviceData } from '@DeskThing/types'
 import { Client } from '@shared/types'
 
 export enum PlatformEvent {
@@ -23,13 +23,13 @@ export enum PlatformEvent {
   SERVER_STARTED = 'server_started'
 }
 
-export interface PlatformConnectionOptions {
-  host?: string
-  port?: number
-  path?: string
-  protocol?: string
-  [key: string]: any // For platform-specific options
-}
+export type PlatformConnectionOptions<T extends Record<string, unknown> = Record<string, unknown>> =
+  {
+    host?: string
+    port?: number
+    path?: string
+    protocol?: string
+  } & T
 
 export type PlatformStatus = {
   isActive: boolean
@@ -42,7 +42,7 @@ export type PlatformEventPayloads = {
   [PlatformEvent.CLIENT_CONNECTED]: Client
   [PlatformEvent.CLIENT_DISCONNECTED]: Client
   [PlatformEvent.CLIENT_UPDATED]: Client
-  [PlatformEvent.DATA_RECEIVED]: { client: Client; data: SocketData }
+  [PlatformEvent.DATA_RECEIVED]: { client: Client; data: ToDeviceData }
   [PlatformEvent.ERROR]: Error
   [PlatformEvent.STATUS_CHANGED]: PlatformStatus
   [PlatformEvent.SERVER_STARTED]: { port?: number; address?: string }
@@ -52,14 +52,14 @@ export type PlatformConnectionListener<T extends PlatformEvent> = (
   data: PlatformEventPayloads[T]
 ) => void
 
-export interface PlatformInterface {
+export interface PlatformInterface<E extends Record<string, unknown> = Record<string, unknown>> {
   // Core identity properties
   readonly id: string
   readonly type: 'websocket' | 'bluetooth' | 'ssh' | 'adb' | string
   readonly name: string
 
   // Server management
-  start(options?: PlatformConnectionOptions): Promise<void>
+  start(options?: PlatformConnectionOptions<E>): Promise<void>
   stop(): Promise<void>
   isRunning(): boolean
 
@@ -76,7 +76,10 @@ export interface PlatformInterface {
   updateClient(clientId: string, client: Partial<Client>): void
 
   // Data transfer
-  sendData(clientId: string, data: SocketData): Promise<boolean>
+  sendData<T extends string>(
+    clientId: string,
+    data: SendToDeviceFromServerPayload<T> & { app: T }
+  ): Promise<boolean>
   broadcastData(data: SocketData): Promise<void>
 
   // Status

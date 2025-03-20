@@ -5,19 +5,20 @@ import {
   AppReleaseSingleMeta
 } from '@deskthing/types'
 import { GithubRelease } from '../types/types'
+import { StoreInterface } from '@shared/interfaces/storeInterface'
 
-export interface CacheEntry {
+export type CacheEntry = {
   timestamp: number
   data: GithubRelease[] | Promise<GithubRelease[]>
   isError?: boolean
 }
 
-export interface AssetAppCacheEntry {
+export type AssetAppCacheEntry = {
   timestamp: number
   data: AppReleaseMeta
 }
 
-export interface AssetClientCacheEntry {
+export type AssetClientCacheEntry = {
   timestamp: number
   data: ClientReleaseMeta
 }
@@ -42,7 +43,7 @@ export type GithubStoreListeners = {
 /**
  * Interface representing the public methods of GithubStore
  */
-export interface GithubStoreClass {
+export interface GithubStoreClass extends StoreInterface {
   /**
    * Clears all cached data
    */

@@ -10,14 +10,14 @@ export async function initializeStores(): Promise<void> {
 
   // Register stores for cache management
   const storeList = {
-    connectionsStore: await storeProvider.getStore('connectionsStore'),
-    appStore: await storeProvider.getStore('appStore'),
-    mappingStore: await storeProvider.getStore('mappingStore'),
-    musicStore: await storeProvider.getStore('musicStore'),
-    settingsStore: await storeProvider.getStore('settingsStore'),
-    taskStore: await storeProvider.getStore('taskStore'),
-    githubStore: await storeProvider.getStore('githubStore'),
-    AppDataStore: await storeProvider.getStore('appDataStore')
+    connectionsStore: await storeProvider.getStore('connectionsStore', false),
+    appStore: await storeProvider.getStore('appStore', false),
+    mappingStore: await storeProvider.getStore('mappingStore', false),
+    musicStore: await storeProvider.getStore('musicStore', false),
+    settingsStore: await storeProvider.getStore('settingsStore', false),
+    taskStore: await storeProvider.getStore('taskStore', false),
+    githubStore: await storeProvider.getStore('githubStore', false),
+    AppDataStore: await storeProvider.getStore('appDataStore', false)
   }
   Object.values(storeList).forEach((store) => cacheManager.registerStore(store))
 

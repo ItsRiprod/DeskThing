@@ -41,6 +41,11 @@ const readAppData = async (name: string): Promise<AppDataInterface | undefined> 
 const writeAppData = async (name: string, data: AppDataInterface): Promise<void> => {
   const dataFilePath = join('data', `${name}.json`)
   try {
+    logger.debug('[writeAppData] Saving app data', {
+      source: 'DataFileService',
+      function: 'writeAppData',
+      domain: 'SERVER.' + name
+    })
     await writeToFile<AppDataInterface>(data, dataFilePath)
   } catch (error) {
     logger.error(`Error writing data for ${name}:`, {
@@ -54,6 +59,11 @@ const writeAppData = async (name: string, data: AppDataInterface): Promise<void>
 
 export const overwriteData = async (name: string, data: AppDataInterface): Promise<void> => {
   try {
+    logger.debug('[overwriteData] Overwriting app data', {
+      source: 'DataFileService',
+      function: 'overwriteData',
+      domain: 'SERVER.' + name
+    })
     await writeAppData(name, data)
   } catch (err) {
     logger.error(`Error overwriting data for ${name}:`, {
@@ -68,6 +78,11 @@ export const setData = async (
   appName: string,
   value: Partial<AppDataInterface>
 ): Promise<AppDataInterface | undefined> => {
+  logger.debug('[setData] Saving app data', {
+    source: 'DataFileService',
+    function: 'setData',
+    domain: 'SERVER.' + appName
+  })
   try {
     const data = await readAppData(appName).catch(() => undefined)
     if (data) {

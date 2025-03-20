@@ -1,3 +1,4 @@
+import { StoreInterface } from '@shared/interfaces/storeInterface'
 import { ADBClient, Client } from '@shared/types'
 
 export type ClientListener = (client: Client[]) => void
@@ -6,7 +7,7 @@ export type DeviceListener = (device: ADBClient[]) => void
 /**
  * Interface representing the ConnectionStore public methods
  */
-export interface ConnectionStoreClass {
+export interface ConnectionStoreClass extends StoreInterface {
   /**
    * Clears the cache of devices
    */

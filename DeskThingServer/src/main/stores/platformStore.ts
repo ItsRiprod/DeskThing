@@ -4,7 +4,16 @@ import {
   PlatformConnectionOptions,
   PlatformStatus
 } from '@shared/interfaces/platform'
-import { AppSettings, SEND_TYPES, SocketData } from '@DeskThing/types'
+import {
+  AppSettings,
+  CombinedMappings,
+  FromDeskthingToDeviceEvents,
+  FromDeviceData,
+  FromDeviceDataEvents,
+  SEND_TYPES,
+  SendToDeviceFromServerPayload,
+  ToDeviceData
+} from '@DeskThing/types'
 import Logger from '@server/utils/logger'
 import { Client } from '@shared/types'
 import {
@@ -17,6 +26,8 @@ import { handlePlatformMessage } from '@server/services/platforms/platformMessag
 import { AppStoreClass } from '@shared/stores/appStore'
 import { storeProvider } from './storeProvider'
 import { AppDataStoreClass } from '@shared/stores/appDataStore'
+import { isValidAppSettings } from '@server/services/apps/appValidator'
+import { MappingStoreClass } from '@shared/stores/mappingStore'
 
 export class PlatformStore implements PlatformStoreClass {
   private platforms: Map<string, PlatformInterface> = new Map()
@@ -33,33 +44,64 @@ export class PlatformStore implements PlatformStoreClass {
   }
   private appStore: AppStoreClass
   private appDataStore: AppDataStoreClass
+  private mappingStore: MappingStoreClass
 
-  constructor(appStore: AppStoreClass, appDataStore: AppDataStoreClass) {
-    this.appStore = appStore
-    this.appDataStore = appDataStore
-    this.setupAppStoreListeners()
+  private _initialized: boolean = false
+  public get initialized(): boolean {
+    return this._initialized
   }
 
-  private setupAppStoreListeners(): void {
+  constructor(
+    appStore: AppStoreClass,
+    appDataStore: AppDataStoreClass,
+    mappingStore: MappingStoreClass
+  ) {
+    this.appStore = appStore
+    this.appDataStore = appDataStore
+    this.mappingStore = mappingStore
+  }
+
+  async initialize(): Promise<void> {
+    if (this._initialized) return
+    this._initialized = true
+    this.appStore.initialize()
+    this.setupListeners()
+  }
+
+  private setupListeners(): void {
     this.appStore.onAppMessage(SEND_TYPES.SEND, (AppData) => {
-      this.broadcastToClients({ app: AppData.source, ...AppData.payload })
+      this.broadcastToClients({ app: AppData.source, ...AppData.payload } as FromDeviceData)
     })
 
     this.appStore.on('apps', (apps) => {
       const filteredApps = apps.data.filter((app) => app.manifest?.isWebApp !== false)
       this.broadcastToClients({
         app: 'client',
-        type: 'apps',
+        type: FromDeviceDataEvents.APPS,
         payload: filteredApps
       })
     })
 
     this.appDataStore.on('settings', (settings) => {
+      if (!settings?.data) return
+
+      isValidAppSettings(settings.data)
       this.broadcastToClients({
         app: 'client',
-        type: 'settings',
-        payload: settings
+        type: FromDeviceDataEvents.SETTINGS,
+        payload: { ...settings.data, app: settings.appId } as AppSettings & { app?: string }
       })
+    })
+
+    this.mappingStore.addListener('icon', (updates) => {
+      if (updates) {
+        this.broadcastToClients({
+          app: 'client',
+          type: FromDeviceDataEvents.ICON,
+          request: 'set',
+          payload: updates
+        })
+      }
     })
   }
   /**
@@ -273,7 +315,10 @@ export class PlatformStore implements PlatformStoreClass {
   }
 
   // Data handling
-  async handleSocketData(client: Client, data: SocketData): Promise<void> {
+  async handleSocketData(
+    client: Client,
+    data: Extract<ToDeviceData, { app: string }>
+  ): Promise<void> {
     // TODO: Fully implement this
     const platform = this.getPlatformForClient(client.id)
     if (!platform) {
@@ -285,13 +330,24 @@ export class PlatformStore implements PlatformStoreClass {
       return
     }
 
+    const logData = { ...data, payload: 'Scrubbed Payload' }
+
+    Logger.debug(`Received data from client ${client.id}: ${JSON.stringify(logData)}`, {
+      domain: 'platform',
+      source: 'platformStore',
+      function: 'handleSocketData'
+    })
+
     handlePlatformMessage(platform, client, data)
 
     // Data is already received at this point, just relay it to listeners
     this.notify(PlatformStoreEvent.DATA_RECEIVED, { client, data })
   }
 
-  async sendDataToClient(clientId: string, data: SocketData): Promise<boolean> {
+  async sendDataToClient<T extends string>(
+    clientId: string,
+    data: Extract<SendToDeviceFromServerPayload<T>, { app: T }>
+  ): Promise<boolean> {
     const platform = this.getPlatformForClient(clientId)
     if (!platform) {
       Logger.warn(`Cannot send data: No platform found for client ${clientId}`, {
@@ -315,7 +371,9 @@ export class PlatformStore implements PlatformStoreClass {
     }
   }
 
-  async broadcastToClients(data: SocketData): Promise<void> {
+  async broadcastToClients<T extends string>(
+    data: SendToDeviceFromServerPayload<T> & { app: T }
+  ): Promise<void> {
     const promises = Array.from(this.platforms.values())
       .filter((platform) => platform.isRunning())
       .map((platform) =>
@@ -439,13 +497,13 @@ export class PlatformStore implements PlatformStoreClass {
       if (clientId) {
         this.sendDataToClient(clientId, {
           app: 'client',
-          type: 'config',
+          type: FromDeviceDataEvents.APPS,
           payload: filteredAppData
         })
       } else {
         this.broadcastToClients({
           app: 'client',
-          type: 'config',
+          type: FromDeviceDataEvents.APPS,
           payload: filteredAppData
         })
       }
@@ -472,7 +530,7 @@ export class PlatformStore implements PlatformStoreClass {
     try {
       const appData = await this.appStore.getAll()
       const appDataStore = await storeProvider.getStore('appDataStore')
-      const mergedSettings = {}
+      const mergedSettings: Record<string, AppSettings> = {}
 
       if (appData) {
         await Promise.all(
@@ -490,13 +548,13 @@ export class PlatformStore implements PlatformStoreClass {
       if (clientId) {
         this.sendDataToClient(clientId, {
           app: 'client',
-          type: 'settings',
+          type: FromDeskthingToDeviceEvents.GLOBAL_SETTINGS,
           payload: mergedSettings
         })
       } else {
         this.broadcastToClients({
           app: 'client',
-          type: 'settings',
+          type: FromDeskthingToDeviceEvents.GLOBAL_SETTINGS,
           payload: mergedSettings
         })
       }
@@ -526,7 +584,7 @@ export class PlatformStore implements PlatformStoreClass {
       const actions = await mappingStore.getActions()
 
       if (mappings) {
-        const combinedActions = {
+        const combinedActions: CombinedMappings = {
           ...mappings,
           actions: actions
         }
@@ -534,13 +592,13 @@ export class PlatformStore implements PlatformStoreClass {
         if (clientId) {
           this.sendDataToClient(clientId, {
             app: 'client',
-            type: 'button_mappings',
+            type: FromDeskthingToDeviceEvents.MAPPINGS,
             payload: combinedActions
           })
         } else {
           this.broadcastToClients({
             app: 'client',
-            type: 'button_mappings',
+            type: FromDeskthingToDeviceEvents.MAPPINGS,
             payload: combinedActions
           })
         }
@@ -570,8 +628,8 @@ export class PlatformStore implements PlatformStoreClass {
       if (!clientId) {
         this.broadcastToClients({
           app: 'client',
-          type: 'set',
-          request: 'time',
+          type: FromDeviceDataEvents.TIME,
+          request: 'set',
           payload: {
             utcTime: Date.now(),
             timezoneOffset: now.getTimezoneOffset() * -1
@@ -580,8 +638,8 @@ export class PlatformStore implements PlatformStoreClass {
       } else {
         this.sendDataToClient(clientId, {
           app: 'client',
-          type: 'set',
-          request: 'time',
+          type: FromDeviceDataEvents.TIME,
+          request: 'set',
           payload: {
             utcTime: Date.now(),
             timezoneOffset: now.getTimezoneOffset() * -1
@@ -609,9 +667,17 @@ export class PlatformStore implements PlatformStoreClass {
 
   private async sendManifestRequest(clientId?: string): Promise<void> {
     if (clientId) {
-      this.sendDataToClient(clientId, { app: 'client', type: 'get', request: 'manifest' })
+      this.sendDataToClient(clientId, {
+        app: 'client',
+        type: FromDeskthingToDeviceEvents.GET,
+        request: 'manifest'
+      })
     } else {
-      this.broadcastToClients({ app: 'client', type: 'get', request: 'manifest' })
+      this.broadcastToClients({
+        app: 'client',
+        type: FromDeskthingToDeviceEvents.GET,
+        request: 'manifest'
+      })
     }
   }
 

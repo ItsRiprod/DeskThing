@@ -119,21 +119,20 @@ export const writeToFile = async <T>(data: T, filepath: string): Promise<void> =
         .then(() => true)
         .catch(() => false)
 
+      await fs.promises.mkdir(dirPath, { recursive: true })
+
       if (!fileExists) {
         // If file doesn't exist, write directly
-        await fs.promises.mkdir(dirPath, { recursive: true })
         await fs.promises.writeFile(finalPath, JSON.stringify(data, null, 2))
         return
       }
 
       // If file exists, use temp file for safe writing
       const uniqueId = `${Date.now()}-${Math.random().toString(36).slice(2)}`
-      const tempPath = join(app.getPath('temp'), `${filepath}-${uniqueId}.tmp`)
-      const tempDir = join(app.getPath('temp'), ...filepath.split(/[/\\]/).slice(0, -1))
+      const tempFilename = `deskthing-${filepath.replace(/[/\\]/g, '-')}-${uniqueId}.tmp`
+      const tempPath = join(app.getPath('temp'), tempFilename)
 
       try {
-        await fs.promises.mkdir(tempDir, { recursive: true })
-        await fs.promises.mkdir(dirPath, { recursive: true })
         await fs.promises.writeFile(tempPath, JSON.stringify(data, null, 2))
         await fs.promises.copyFile(tempPath, finalPath)
       } catch (err) {
@@ -144,10 +143,7 @@ export const writeToFile = async <T>(data: T, filepath: string): Promise<void> =
         throw new Error('[writeToFile]: failed with ', { cause: err })
       } finally {
         try {
-          await Promise.allSettled([
-            fs.promises.rm(tempPath, { force: true }),
-            fs.promises.rm(tempDir, { force: true, recursive: true })
-          ])
+          await fs.promises.rm(tempPath, { force: true })
         } catch (err) {
           Logger.error('Error deleting temp files', {
             error: err as Error,

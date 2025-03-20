@@ -2,16 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { BrowserWindow, IpcRendererEvent } from 'electron'
-import {
-  Log,
-  Settings,
-  Button,
-  ButtonMapping,
-  MappingStructure,
-  Profile,
-  Client,
-  ADBClient
-} from '.'
+import { Log, Settings, Button, MappingStructure, Client, ADBClient } from '.'
 import {
   Step,
   Task,
@@ -26,7 +17,10 @@ import {
   ActionReference,
   AppReleaseSingleMeta,
   ClientReleaseMeta,
-  AuthScopes
+  AuthScopes,
+  SavedData,
+  ButtonMapping,
+  Profile
 } from '@deskthing/types'
 import { FeedbackReport, StagedAppManifest, SystemInfo, FullTaskList } from '@shared/types'
 
@@ -111,7 +105,7 @@ export type AppIPCData = {
   | {
       type: APP_TYPES.DATA
       request: 'set'
-      payload: { appId: string; data: Record<string, string> }
+      payload: { appId: string; data: SavedData }
     }
   | {
       type: APP_TYPES.SETTINGS
@@ -185,7 +179,7 @@ export type AppIPCData = {
 )
 export type AppHandlerReturnMap = {
   [APP_TYPES.APP]: App[]
-  [APP_TYPES.DATA]: Record<string, string> | null
+  [APP_TYPES.DATA]: SavedData | null
   [APP_TYPES.SETTINGS]: AppSettings | null
   [APP_TYPES.STOP]: boolean
   [APP_TYPES.DISABLE]: boolean

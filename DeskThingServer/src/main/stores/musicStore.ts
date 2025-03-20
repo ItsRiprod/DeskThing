@@ -3,10 +3,16 @@
  * It handles the initialization of the refresh interval, updates to the settings, finding the current playback source,
  * refreshing the music data, setting the audio source, and handling client requests and music messages.
  */
-console.log('[Music Handler] Starting')
 // Types
 import { MusicStoreClass } from '@shared/stores/musicStore'
-import { SocketData, LOGGING_LEVELS, SongData, ServerEvent, EventPayload } from '@DeskThing/types'
+import {
+  LOGGING_LEVELS,
+  SongData,
+  ServerEvent,
+  MusicEventPayloads,
+  SEND_TYPES,
+  FromDeviceDataEvents
+} from '@DeskThing/types'
 import { CacheableStore, Settings } from '@shared/types'
 import { SettingsStoreClass } from '@shared/stores/settingsStore'
 import { AppStoreClass } from '@shared/stores/appStore'
@@ -14,24 +20,46 @@ import { AppStoreClass } from '@shared/stores/appStore'
 // Utils
 import Logger from '@server/utils/logger'
 import { getAppByName } from '../services/files/appFileService'
-import { sendMessageToClients } from '../services/client/clientCom'
 import { getColorFromImage } from '../services/music/musicUtils'
+import {
+  PlatformStoreClass,
+  PlatformStoreEvent,
+  PlatformStoreListener
+} from '@shared/stores/platformStore'
+import { AppProcessListener } from '@shared/stores/appProcessStore'
 // import { getNowPlaying } from '../services/music/musicController'
 
 export class MusicStore implements CacheableStore, MusicStoreClass {
   private refreshInterval: NodeJS.Timeout | null = null
   private currentApp: string | null = null
 
+  private _initialized: boolean = false
+  public get initialized(): boolean {
+    return this._initialized
+  }
+
   // DI stores
   private settingsStore: SettingsStoreClass
   private appStore: AppStoreClass
+  private platformStore: PlatformStoreClass
 
-  constructor(settingsStore: SettingsStoreClass, appStore: AppStoreClass) {
+  constructor(
+    settingsStore: SettingsStoreClass,
+    appStore: AppStoreClass,
+    platformStore: PlatformStoreClass
+  ) {
     this.settingsStore = settingsStore
     this.appStore = appStore
-    setTimeout(() => {
-      this.initializeRefreshInterval()
-    }, 3000)
+    this.platformStore = platformStore
+    this.initializeListeners()
+  }
+
+  async initialize(): Promise<void> {
+    if (this._initialized) return
+    this._initialized = true
+    this.appStore.initialize()
+    this.settingsStore.initialize()
+    this.initializeRefreshInterval()
   }
 
   /**
@@ -49,6 +77,19 @@ export class MusicStore implements CacheableStore, MusicStoreClass {
     /**
      * Save to file logic here if needed
      */
+  }
+
+  private async initializeListeners(): Promise<void> {
+    this.platformStore.on(PlatformStoreEvent.DATA_RECEIVED, this.handleDataReceived)
+    this.appStore.onAppMessage(SEND_TYPES.SONG, this.handleMusicMessage)
+  }
+
+  private handleDataReceived: PlatformStoreListener<PlatformStoreEvent.DATA_RECEIVED> = (
+    data
+  ): void => {
+    if (data.data.app) {
+      this.currentApp = data.data.app
+    }
   }
 
   private async initializeRefreshInterval(): Promise<void> {
@@ -255,52 +296,72 @@ export class MusicStore implements CacheableStore, MusicStoreClass {
     this.currentApp = source
   }
 
-  public async handleClientRequest(request: SocketData): Promise<void> {
+  public async handleClientRequest(songData: MusicEventPayloads): Promise<void> {
     const currentApp = await this.getPlaybackSource()
 
     if (!currentApp) {
       return
     }
 
-    if (request.app != 'music' && request.app != 'utility') return
+    if (songData.app != 'music' || (songData.app as string) != 'utility') return
 
-    if (request.app == 'utility') {
-      Logger.log(
-        LOGGING_LEVELS.LOG,
-        `[MusicStore]: Legacy Name called! Support for this will be dropped in future updates. Migrate your app to use 'music' instead!`
+    // Legacy warning
+    if ((songData.app as string) == 'utility') {
+      Logger.warn(
+        `[MusicStore]: Legacy Name called! Support for this will be dropped in future updates. Migrate your app to use 'music' instead!`,
+        {
+          domain: 'music',
+          source: 'musicStore',
+          function: 'handleClientRequest'
+        }
       )
+      // Ensure app is music
+      songData.app = 'music'
     }
 
-    Logger.log(LOGGING_LEVELS.LOG, `[MusicStore]: ${request.type} ${request.request}`)
+    Logger.debug(`[MusicStore]: ${songData.type} ${songData.request} being sent to ${currentApp}`, {
+      domain: 'music',
+      source: 'musicStore',
+      function: 'handleClientRequest'
+    })
 
-    this.appStore.sendDataToApp(currentApp, {
-      type: request.type as ServerEvent,
-      request: request.request,
-      payload: request.payload
-    } as EventPayload)
+    if (!songData.payload || songData.app || !songData.request || !songData.type) {
+      Logger.debug(`[MusicStore]: Invalid song data received: ${JSON.stringify(songData)}`, {
+        domain: 'music',
+        source: 'musicStore',
+        function: 'handleClientRequest'
+      })
+      return
+    }
+
+    this.appStore.sendDataToApp(currentApp, songData)
   }
 
-  public async handleMusicMessage(songData: SongData): Promise<void> {
-    if (!songData || typeof songData !== 'object') {
+  private handleMusicMessage: AppProcessListener<SEND_TYPES.SONG> = async (
+    appData
+  ): Promise<void> => {
+    if (!appData || typeof appData !== 'object') {
       Logger.log(LOGGING_LEVELS.ERROR, '[MusicStore]: Invalid song data received')
       return
     }
 
+    const songData = appData.payload
+
     try {
       if (songData.thumbnail) {
         const color = await getColorFromImage(songData.thumbnail)
-        const songDataWithColor = {
+        const songDataWithColor: SongData = {
           ...songData,
           color: color
         }
-        await sendMessageToClients({
-          type: 'song',
+        this.platformStore.broadcastToClients({
+          type: FromDeviceDataEvents.MUSIC,
           app: 'client',
           payload: songDataWithColor
         })
       } else {
-        await sendMessageToClients({
-          type: 'song',
+        this.platformStore.broadcastToClients({
+          type: FromDeviceDataEvents.MUSIC,
           app: 'client',
           payload: songData
         })

@@ -3,7 +3,6 @@
  * It writes log messages to a JSON file and a readable log file, and also logs messages to the console with colored output.
  * The log level can be configured through the `Settings` store.
  */
-console.log('[Logging Store] Starting')
 import fs, { existsSync } from 'fs'
 import { join } from 'path'
 import { app } from 'electron'

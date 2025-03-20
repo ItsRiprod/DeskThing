@@ -1,60 +1,6 @@
-console.log('[ClientCom Service] Starting')
-import { SocketData, SongData, AppSettings } from '@DeskThing/types'
+import { FromDeskthingToDeviceEvents, FromDeviceDataEvents } from '@DeskThing/types'
 import Logger from '@server/utils/logger'
 import { storeProvider } from '@server/stores/storeProvider'
-/**
- * Handles a client message by dispatching the message to the appropriate handler based on the message type.
- * If the message type is 'song', it calls the `handleMusicMessage` function from the `musicHandler` module.
- * If the message type is anything else, it calls the `sendMessageToClients` function to broadcast the message to all connected clients.
- *
- * @param data - The incoming socket data, which contains the message type and payload.
- * @returns - A Promise that resolves when the message has been handled.
- */
-export const handleClientMessage = async (data: SocketData): Promise<void> => {
-  const { type, payload } = data
-  const musicStore = await storeProvider.getStore('musicStore')
-  switch (type) {
-    case 'song':
-      musicStore.handleMusicMessage(payload as SongData)
-      break
-    default:
-      sendMessageToClients(data)
-  }
-}
-
-/**
- * Sends a message to all connected clients.
- *
- * @param data - The socket data to be sent to the clients.
- * @returns - A Promise that resolves when the message has been sent to all clients.
- * @depreciated - use broadcastToClients instead
- */
-export const sendMessageToClients = async (data: SocketData): Promise<void> => {
-  const platformStore = await storeProvider.getStore('platformStore')
-  platformStore.broadcastToClients(data)
-}
-
-/**
- * Sends a message to a specific client identified by the provided `clientId`.
- * If no `clientId` is provided, the message is broadcasted to all connected clients.
- *
- * @param clientId - The connection ID of the client to send the message to. If not provided, the message will be sent to all connected clients.
- * @param data - The socket data to be sent to the client(s).
- * @deprecated - use broadcastToClients instead
- * @returns - Void.
- */
-export const sendMessageToClient = async (
-  clientId: string | undefined,
-  data: SocketData
-): Promise<void> => {
-  const platformStore = await storeProvider.getStore('platformStore')
-
-  if (clientId) {
-    platformStore.sendDataToClient(clientId, data)
-  } else {
-    platformStore.broadcastToClients(data)
-  }
-}
 
 /**
  * Sends an error message to the specified client.
@@ -65,7 +11,20 @@ export const sendMessageToClient = async (
  */
 export const sendError = async (clientId: string | undefined, error: string): Promise<void> => {
   try {
-    sendMessageToClient(clientId, { app: 'client', type: 'error', payload: error })
+    const platformStore = await storeProvider.getStore('platformStore')
+    if (clientId) {
+      platformStore.sendDataToClient(clientId, {
+        app: 'client',
+        type: FromDeskthingToDeviceEvents.ERROR,
+        payload: error
+      })
+    } else {
+      platformStore.broadcastToClients({
+        app: 'client',
+        type: FromDeskthingToDeviceEvents.ERROR,
+        payload: error
+      })
+    }
   } catch (error) {
     Logger.error('Error sending message', {
       source: 'clientCom',
@@ -84,11 +43,25 @@ export const sendError = async (clientId: string | undefined, error: string): Pr
 export const sendConfigData = async (clientId?: string): Promise<void> => {
   try {
     const appStore = await storeProvider.getStore('appStore')
-    const appData = await appStore.getAllBase()
+    const appData = await appStore.getAll()
 
     const filteredAppData = appData.filter((app) => app.manifest?.isWebApp !== false)
 
-    sendMessageToClient(clientId, { app: 'client', type: 'config', payload: filteredAppData })
+    const platformStore = await storeProvider.getStore('platformStore')
+    if (clientId) {
+      platformStore.sendDataToClient(clientId, {
+        app: 'client',
+        type: FromDeviceDataEvents.APPS,
+        payload: filteredAppData
+      })
+    } else {
+      platformStore.broadcastToClients({
+        app: 'client',
+        type: FromDeviceDataEvents.APPS,
+        payload: filteredAppData
+      })
+    }
+
     Logger.debug('WSOCKET: Preferences sent!', {
       source: 'clientCom',
       function: 'sendSettingsData'
@@ -131,7 +104,20 @@ export const sendSettingsData = async (clientId?: string): Promise<void> => {
       console.error('appData or appData.apps is undefined or null', appData)
     }
 
-    sendMessageToClient(clientId, { app: 'client', type: 'settings', payload: settings })
+    const platformStore = await storeProvider.getStore('platformStore')
+    if (clientId) {
+      platformStore.sendDataToClient(clientId, {
+        app: 'client',
+        type: FromDeviceDataEvents.SETTINGS,
+        payload: settings
+      })
+    } else {
+      platformStore.broadcastToClients({
+        app: 'client',
+        type: FromDeviceDataEvents.SETTINGS,
+        payload: settings
+      })
+    }
     Logger.debug('WSOCKET: Preferences sent!', { source: 'clientCom', function: 'sendSettingData' })
   } catch (error) {
     Logger.error('WSOCKET: Error getting config data', {
@@ -144,26 +130,6 @@ export const sendSettingsData = async (clientId?: string): Promise<void> => {
 }
 
 /**
- * Sends the setting data to the specified client or all connected clients.
- *
- * @param clientId - The connection ID of the client to send the settings data to. If not provided, the data will be sent to all connected clients.
- * @returns - A Promise that resolves when the settings data has been sent.
- */
-export const sendSettingData = async (app: string, setting: AppSettings): Promise<void> => {
-  try {
-    sendMessageToClient(undefined, { app: 'client', type: 'setting', payload: { app, setting } })
-    Logger.debug('WSOCKET: Preferences sent!', { source: 'clientCom', function: 'sendSettingData' })
-  } catch (error) {
-    Logger.error('WSOCKET: Error getting config data', {
-      source: 'clientCom',
-      function: 'sendSettingData',
-      error: error as Error
-    })
-    sendError(undefined, 'WSOCKET: Error getting config data')
-  }
-}
-
-/**
  * Sends the button mappings data to the specified client or all connected clients.
  *
  * @param clientId - The connection ID of the client to send the button mappings data to. If not provided, the data will be sent to all connected clients.
@@ -172,6 +138,7 @@ export const sendSettingData = async (app: string, setting: AppSettings): Promis
 export const sendMappings = async (clientId?: string): Promise<void> => {
   try {
     const mappingStore = await storeProvider.getStore('mappingStore')
+    const platformStore = await storeProvider.getStore('platformStore')
     const mappings = await mappingStore.getMapping()
     const actions = await mappingStore.getActions()
 
@@ -188,11 +155,19 @@ export const sendMappings = async (clientId?: string): Promise<void> => {
       actions: actions
     }
 
-    sendMessageToClient(clientId, {
-      app: 'client',
-      type: 'button_mappings',
-      payload: combinedActions
-    })
+    if (clientId) {
+      platformStore.sendDataToClient(clientId, {
+        app: 'client',
+        type: FromDeskthingToDeviceEvents.MAPPINGS,
+        payload: combinedActions
+      })
+    } else {
+      platformStore.broadcastToClients({
+        app: 'client',
+        type: FromDeskthingToDeviceEvents.MAPPINGS,
+        payload: combinedActions
+      })
+    }
 
     Logger.debug('Button mappings sent', {
       source: 'clientCom',

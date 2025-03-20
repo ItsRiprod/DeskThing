@@ -1,12 +1,14 @@
 console.log('[MapStore Service] Starting')
-import { Action, EventMode, Key, ActionReference } from '@DeskThing/types'
-import { ButtonMapping, Button, Profile } from '@shared/types'
+import { Action, EventMode, Key, ActionReference, ButtonMapping, Profile } from '@DeskThing/types'
+import { StoreInterface } from '@shared/interfaces/storeInterface'
+import { Button } from '@shared/types'
 
 export type ListenerPayloads = {
   key: Key[]
   profile: ButtonMapping
   action: Action[]
   update: undefined
+  icon: { action: Action; icon: string; source: string }
 }
 
 export type Listener<T extends keyof ListenerPayloads> = (data?: ListenerPayloads[T]) => void
@@ -14,7 +16,7 @@ export type Listener<T extends keyof ListenerPayloads> = (data?: ListenerPayload
 /**
  * Interface representing the public methods of MappingState
  */
-export interface MappingStoreClass {
+export interface MappingStoreClass extends StoreInterface {
   /**
    * Clears the mapping cache
    */

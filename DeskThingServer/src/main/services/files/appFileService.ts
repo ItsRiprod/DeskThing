@@ -58,7 +58,10 @@ const readData = async (): Promise<AppData> => {
  */
 const writeData = async (data: AppData): Promise<void> => {
   try {
-    Logger.log(LOGGING_LEVELS.LOG, '[Config Handler] Writing data')
+    Logger.info('Writing App data', {
+      source: 'AppFileService',
+      function: 'writeData'
+    })
 
     verifyAppDataStructure(data)
 
@@ -82,6 +85,12 @@ export const setAppData = async (newApp: Partial<App>): Promise<void> => {
     Logger.log(LOGGING_LEVELS.WARN, 'Unable to save app. Missing name!')
     return
   }
+
+  Logger.debug('[setAppData] Saving app', {
+    source: 'AppFileService',
+    function: 'setAppData',
+    domain: 'SERVER.' + newApp.name
+  })
 
   // Find existing app by name
   const existingApp = data[newApp.name]

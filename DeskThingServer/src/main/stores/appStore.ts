@@ -1,4 +1,3 @@
-console.log('[AppState Service] Starting')
 // Types
 import {
   AppDataFilters,
@@ -14,7 +13,7 @@ import {
   ServerEvent,
   SEND_TYPES
 } from '@DeskThing/types'
-import { ReplyFn, AppInstance, StagedAppManifest, CacheableStore } from '@shared/types'
+import { ReplyFn, StagedAppManifest, CacheableStore } from '@shared/types'
 import {
   AppStoreClass,
   AppStoreListeners,
@@ -40,34 +39,32 @@ import { sanitizeAppMeta } from '@server/services/apps/appValidator'
 import { AuthStoreClass } from '@shared/stores/authStore'
 import { nextTick } from 'node:process'
 
-// Mock functions
-// const getIcon = () => 'mock-icon-path'
-// const executeStagedFile = async () => ({ success: true })
-// const stageAppFile = async () => ({ success: true })
-// const stageAppFileType = { INSTALL: 'install', UPDATE: 'update' }
-// const loadAndRunEnabledApps = async () => ({ success: true })
-// const setAppData = async () => ({ success: true })
-// const setAppsData = async () => ({ success: true })
-// const sanitizeAppMeta = (meta: any) => {}
-
 export class AppStore implements CacheableStore, AppStoreClass {
-  private apps: Record<string, AppInstance> = {}
+  private apps: Record<string, App> = {}
   private order: string[] = []
   private listeners: AppStoreListeners = {
-    apps: []
+    apps: [],
+    purging: []
   }
   private appProcessStore: AppProcessStoreClass
   private authStore: AuthStoreClass
   private functionTimeouts: Record<string, NodeJS.Timeout> = {}
+  private _initialized: boolean = false
+  public get initialized(): boolean {
+    return this._initialized
+  }
 
   constructor(appProcessStore: AppProcessStoreClass, authStore: AuthStoreClass) {
     this.appProcessStore = appProcessStore
     this.authStore = authStore
-    this.initializeListeners()
+  }
 
-    nextTick(async () => {
-      await this.loadApps()
-    })
+  async initialize(): Promise<void> {
+    if (this._initialized) return
+    this._initialized = true
+    this.appProcessStore.initialize()
+    this.initializeListeners()
+    await this.loadApps()
   }
 
   private initializeListeners = (): void => {
@@ -88,7 +85,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
 
     // App Handling
     this.onAppMessage(SEND_TYPES.TOAPP, (data) => {
-      this.sendDataToApp(data.source, data)
+      this.sendDataToApp(data.source, data.payload)
     })
 
     this.authStore.on('appData', (data) => {
@@ -198,7 +195,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
 
   async notifyApps(apps?: App[]): Promise<void> {
     if (!apps) {
-      apps = this.getAllBase()
+      apps = this.getAll()
     }
 
     // If there is a timeout running
@@ -249,15 +246,22 @@ export class AppStore implements CacheableStore, AppStoreClass {
   ): () => void {
     // Create a wrapper for the listener
     const wrappedListener: AppProcessListener<T> = async (data) => {
+      Logger.debug(`Received message from ${data.source}: ${data.type}:${data.request}`, {
+        source: 'AppStore',
+        function: 'onAppMessage'
+      })
       try {
         if (this.apps[data.source]?.running) {
           await listener(data)
         } else {
-          Logger.error(`App ${data.source} is not running, not sending data`, {
-            source: 'AppStore',
-            function: 'onAppMessage',
-            domain: data.source
-          })
+          Logger.error(
+            `App ${data.source} is not running, not sending data ${data.type}:${data.request}`,
+            {
+              source: 'AppStore',
+              function: 'onAppMessage',
+              domain: data.source
+            }
+          )
         }
       } catch (error) {
         Logger.error(`Error in app message listener for type ${type}`, {
@@ -377,7 +381,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
    * @param name The ID of the app
    * @returns
    */
-  get(name: string): AppInstance | undefined {
+  get(name: string): App | undefined {
     return this.apps[name]
   }
 
@@ -386,7 +390,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
    * @description Gets all apps
    * @returns all apps
    */
-  getAll(): AppInstance[] {
+  getAll(): App[] {
     return this.order.map((name) => this.apps[name])
   }
 
@@ -407,7 +411,13 @@ export class AppStore implements CacheableStore, AppStoreClass {
     if (!(name in this.apps)) {
       return false
     }
-    this.appProcessStore.postMessage(name, { type: 'purge' })
+    try {
+      this.appProcessStore.postMessage(name, { type: 'purge' })
+    } catch {
+      Logger.info(`It doesn't appear that ${name} was running`)
+    }
+
+    await this.notifyListeners('purging', { appName: name })
     // Wait for the app to fully purge
     await new Promise((resolve) => setTimeout(resolve, 500))
 
@@ -488,11 +498,12 @@ export class AppStore implements CacheableStore, AppStoreClass {
    * @returns
    */
   async enable(name: string): Promise<boolean> {
-    if (!(name in this.apps)) {
+    const app = this.apps[name]
+    if (!app) {
       return false
     }
 
-    const result = await this.appProcessStore.spawnProcess(name)
+    const result = await this.appProcessStore.spawnProcess(app)
     return result
   }
 
@@ -530,9 +541,13 @@ export class AppStore implements CacheableStore, AppStoreClass {
       return false
     }
 
-    await this.appProcessStore.postMessage(name, {
-      type: ServerEvent.STOP
-    })
+    try {
+      await this.appProcessStore.postMessage(name, {
+        type: ServerEvent.STOP
+      })
+    } catch {
+      Logger.info(`It doesn't appear ${name} was running`)
+    }
 
     return true
   }
@@ -621,9 +636,18 @@ export class AppStore implements CacheableStore, AppStoreClass {
       domain: 'SERVER.' + name.toUpperCase()
     })
 
-    this.appProcessStore.postMessage(name, {
-      type: ServerEvent.START
-    })
+    try {
+      this.appProcessStore.postMessage(name, {
+        type: ServerEvent.START
+      })
+    } catch (error) {
+      Logger.error(`Error starting ${name}: ${error}`, {
+        source: 'AppStore',
+        function: 'start',
+        error: error as Error,
+        domain: 'SERVER.' + name.toUpperCase()
+      })
+    }
 
     return true
   }
