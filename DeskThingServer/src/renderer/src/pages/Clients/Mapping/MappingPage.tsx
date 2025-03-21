@@ -2,7 +2,7 @@ import { useState } from 'react'
 import AvailableModes from './components/AvailableModesComponent'
 import { Key, EventMode, Action, ButtonMapping } from '@DeskThing/types'
 import AvailableKeys from './components/AvailableKeysComponent'
-import { PageProps } from '.'
+import { PageProps } from './index'
 import AllActionsComponent from './components/AllActionsComponent'
 import AddActionOverlay from './components/AddActionPopup'
 

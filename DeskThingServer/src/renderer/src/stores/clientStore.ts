@@ -1,6 +1,6 @@
 import { create } from 'zustand'
-import { ADBClient, Client, LoggingData } from '@shared/types'
-import { ClientManifest } from '@deskthing/types'
+import { ADBClient, LoggingData } from '@shared/types'
+import { ClientManifest, Client } from '@deskthing/types'
 import useNotificationStore from './notificationStore'
 
 interface ClientStoreState {

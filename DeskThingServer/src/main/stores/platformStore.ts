@@ -12,10 +12,11 @@ import {
   FromDeviceDataEvents,
   SEND_TYPES,
   SendToDeviceFromServerPayload,
-  ToDeviceData
+  Client,
+  ServerEvent,
+  DeviceToDeskthing
 } from '@DeskThing/types'
 import Logger from '@server/utils/logger'
-import { Client } from '@shared/types'
 import {
   PlatformStoreClass,
   PlatformStoreEvent,
@@ -69,8 +70,15 @@ export class PlatformStore implements PlatformStoreClass {
   }
 
   private setupListeners(): void {
-    this.appStore.onAppMessage(SEND_TYPES.SEND, (AppData) => {
-      this.broadcastToClients({ app: AppData.source, ...AppData.payload } as FromDeviceData)
+    this.appStore.onAppMessage(SEND_TYPES.SEND, (appData) => {
+      if (appData.payload.clientId) {
+        this.sendDataToClient(appData.payload.clientId, {
+          app: appData.source,
+          ...appData.payload
+        } as FromDeviceData)
+      } else {
+        this.broadcastToClients({ app: appData.source, ...appData.payload } as FromDeviceData)
+      }
     })
 
     this.appStore.on('apps', (apps) => {
@@ -81,6 +89,24 @@ export class PlatformStore implements PlatformStoreClass {
         payload: filteredApps
       })
     })
+
+    this.appStore.onAppMessage(
+      SEND_TYPES.GET,
+      (data) => {
+        if (data.request != 'connections') return
+        Logger.debug(`Handling request for all of the connections`, {
+          source: 'appCommunication',
+          function: 'handleRequestGetConnections',
+          domain: data.source
+        })
+        this.appStore.sendDataToApp(data.source, {
+          type: ServerEvent.CLIENT_STATUS,
+          request: 'connections',
+          payload: this.getClients()
+        })
+      },
+      { request: 'connections' }
+    )
 
     this.appDataStore.on('settings', (settings) => {
       if (!settings?.data) return
@@ -102,6 +128,22 @@ export class PlatformStore implements PlatformStoreClass {
           payload: updates
         })
       }
+    })
+
+    this.on(PlatformStoreEvent.CLIENT_CONNECTED, (client) => {
+      this.appStore.broadcastToApps({
+        type: ServerEvent.CLIENT_STATUS,
+        request: 'connected',
+        payload: client
+      })
+    })
+
+    this.on(PlatformStoreEvent.CLIENT_DISCONNECTED, (clientId) => {
+      this.appStore.broadcastToApps({
+        type: ServerEvent.CLIENT_STATUS,
+        request: 'disconnected',
+        payload: clientId
+      })
     })
   }
   /**
@@ -317,7 +359,7 @@ export class PlatformStore implements PlatformStoreClass {
   // Data handling
   async handleSocketData(
     client: Client,
-    data: Extract<ToDeviceData, { app: string }>
+    data: DeviceToDeskthing & { connectionId: string }
   ): Promise<void> {
     // TODO: Fully implement this
     const platform = this.getPlatformForClient(client.id)

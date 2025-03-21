@@ -7,8 +7,7 @@ import {
   PlatformEventPayloads,
   PlatformStatus
 } from '@shared/interfaces/platform'
-import { SocketData } from '@DeskThing/types'
-import { Client } from '@shared/types'
+import { SocketData, Client } from '@DeskThing/types'
 import wsPath from './wsWebsocket?modulePath'
 import { app } from 'electron'
 import logger from '@server/utils/logger'

@@ -9,8 +9,7 @@ import {
   PlatformEventPayloads,
   PlatformStatus
 } from '@shared/interfaces/platform'
-import { Client } from '@shared/types'
-import { ClientDeviceType, SocketData, ToDeviceData } from '@deskthing/types'
+import { ClientDeviceType, SocketData, Client, DeviceToDeskthing } from '@deskthing/types'
 import { ExpressServer } from './expressWorker'
 
 type AdditionalOptions = {
@@ -116,7 +115,7 @@ export class WSPlatform {
 
     socket.on('message', (message: string) => {
       try {
-        const data = JSON.parse(message) as ToDeviceData
+        const data = JSON.parse(message) as DeviceToDeskthing & { connectionId: string }
         this.sendToParent(PlatformEvent.DATA_RECEIVED, { client: client, data: data })
       } catch (error) {
         this.sendToParent(PlatformEvent.ERROR, new Error(`Invalid message format: ${error}`))

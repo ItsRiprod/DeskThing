@@ -1,12 +1,6 @@
 console.log('[Utility Handler] Starting')
-import { LOGGING_LEVELS } from '@DeskThing/types'
-import {
-  ReplyFn,
-  UtilityIPCData,
-  Client,
-  UtilityHandlerReturnType,
-  UTILITY_TYPES
-} from '@shared/types'
+import { LOGGING_LEVELS, Client } from '@DeskThing/types'
+import { ReplyFn, UtilityIPCData, UtilityHandlerReturnType, UTILITY_TYPES } from '@shared/types'
 import Logger from '@server/utils/logger'
 import path from 'path'
 import { shell, app, dialog } from 'electron'

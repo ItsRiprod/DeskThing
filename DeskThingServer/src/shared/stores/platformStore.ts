@@ -3,8 +3,12 @@ import {
   PlatformConnectionOptions,
   PlatformStatus
 } from '@shared/interfaces/platform'
-import { SendToDeviceFromServerPayload, SocketData } from '@DeskThing/types'
-import { Client } from '@shared/types'
+import {
+  SendToDeviceFromServerPayload,
+  SocketData,
+  Client,
+  DeviceToDeskthing
+} from '@DeskThing/types'
 import { StoreInterface } from '@shared/interfaces/storeInterface'
 
 export enum PlatformStoreEvent {
@@ -49,7 +53,10 @@ export interface PlatformStoreClass extends StoreInterface {
   getClientById(clientId: string): Client | undefined
   getClientsByPlatform(platformId: string): Client[]
   getPlatformForClient(clientId: string): PlatformInterface | undefined
-  handleSocketData(client: Client, data: SocketData): Promise<void>
+  handleSocketData(
+    client: Client,
+    data: DeviceToDeskthing & { connectionId: string }
+  ): Promise<void>
   sendDataToClient<T extends string>(
     clientId: string,
     data: SendToDeviceFromServerPayload<T> & { app: T }

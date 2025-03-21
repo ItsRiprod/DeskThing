@@ -10,8 +10,12 @@
  * - The client interface (for the connections store)
  */
 
-import { SendToDeviceFromServerPayload, SocketData, ToDeviceData } from '@DeskThing/types'
-import { Client } from '@shared/types'
+import {
+  Client,
+  DeviceToDeskthing,
+  SendToDeviceFromServerPayload,
+  SocketData
+} from '@DeskThing/types'
 
 export enum PlatformEvent {
   CLIENT_CONNECTED = 'client_connected',
@@ -42,7 +46,10 @@ export type PlatformEventPayloads = {
   [PlatformEvent.CLIENT_CONNECTED]: Client
   [PlatformEvent.CLIENT_DISCONNECTED]: Client
   [PlatformEvent.CLIENT_UPDATED]: Client
-  [PlatformEvent.DATA_RECEIVED]: { client: Client; data: ToDeviceData }
+  [PlatformEvent.DATA_RECEIVED]: {
+    client: Client
+    data: DeviceToDeskthing & { connectionId: string }
+  }
   [PlatformEvent.ERROR]: Error
   [PlatformEvent.STATUS_CHANGED]: PlatformStatus
   [PlatformEvent.SERVER_STARTED]: { port?: number; address?: string }

@@ -16,11 +16,11 @@ import {
   EventPayload,
   AppReleaseSingleMeta,
   Profile,
+  Client,
   ButtonMapping,
   ClientReleaseMeta
 } from '@DeskThing/types'
 import {
-  Client,
   Log,
   AppReturnData,
   Button,

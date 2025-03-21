@@ -5,8 +5,8 @@ import { join } from 'path'
 import * as fs from 'fs'
 import { app, net } from 'electron'
 import { handleAdbCommands } from './adbHandler'
-import { Client, ReplyData, ReplyFn } from '@shared/types'
-import { ClientConnectionMethod, ClientManifest, LOGGING_LEVELS } from '@DeskThing/types'
+import { ReplyData, ReplyFn } from '@shared/types'
+import { ClientConnectionMethod, ClientManifest, LOGGING_LEVELS, Client } from '@DeskThing/types'
 import { storeProvider } from '@server/stores/storeProvider'
 
 /**

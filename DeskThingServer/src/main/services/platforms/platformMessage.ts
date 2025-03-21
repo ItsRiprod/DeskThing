@@ -1,15 +1,13 @@
 import { storeProvider } from '@server/stores/storeProvider'
 import {
-  SocketData,
   ClientManifest,
-  SettingsType,
-  EventPayload,
-  FromDeviceDataEvents,
   FromDeskthingToDeviceEvents,
-  CombinedMappings
+  Client,
+  DeviceToDeskthing,
+  DEVICE_EVENTS,
+  ServerEvent
 } from '@DeskThing/types'
 import Logger from '@server/utils/logger'
-import { Client } from '@shared/types'
 import { PlatformInterface } from '@shared/interfaces/platform'
 
 const alwaysAllow = ['preferences', 'ping', 'pong', 'manifest']
@@ -19,9 +17,9 @@ const THROTTLE_DELAY = 300
 export async function handlePlatformMessage(
   platform: PlatformInterface,
   client: Client,
-  messageData: SocketData
+  messageData: DeviceToDeskthing & { connectionId: string }
 ): Promise<void> {
-  const messageKey = `${messageData.app}-${messageData.type}-${messageData.request}`
+  const messageKey = `${messageData.app}-${messageData.type}-${messageData['request']}`
   const now = Date.now()
 
   if (
@@ -38,14 +36,24 @@ export async function handlePlatformMessage(
         // musicStore now listens directly
         // const musicStore = await storeProvider.getStore('musicStore')
         // await musicStore.handleClientRequest(messageData)
-      } else if (messageData.app) {
+      } else if (messageData.type == DEVICE_EVENTS.SETTINGS) {
+        const appDataStore = await storeProvider.getStore('appDataStore')
+        if (messageData.request == 'set') {
+          await appDataStore.addSettings(messageData.app, messageData.payload)
+        } else if (messageData.request == 'update') {
+          await appDataStore.updateSetting(
+            messageData.app,
+            messageData.payload.id,
+            messageData.payload.value
+          )
+        }
+      } else if (messageData.type === DEVICE_EVENTS.APP_PAYLOAD) {
         const appStore = await storeProvider.getStore('appStore')
 
         await appStore.sendDataToApp(messageData.app.toLowerCase(), {
-          type: messageData.type,
-          request: messageData.request,
-          payload: messageData.payload
-        } as EventPayload)
+          connectionId: messageData.connectionId,
+          ...messageData.payload
+        })
       }
 
       // Cleanup throttle
@@ -67,22 +75,13 @@ export async function handlePlatformMessage(
 async function handleServerMessage(
   platform: PlatformInterface,
   client: Client,
-  messageData: SocketData
+  messageData: DeviceToDeskthing
 ): Promise<void> {
   const appStore = await storeProvider.getStore('appStore')
-  const appDataStore = await storeProvider.getStore('appDataStore')
   const mappingStore = await storeProvider.getStore('mappingStore')
 
   switch (messageData.type) {
-    case 'heartbeat':
-      await platform.sendData(client.connectionId, {
-        type: FromDeskthingToDeviceEvents.HEARTBEAT,
-        app: 'client',
-        payload: new Date().toISOString()
-      })
-      break
-
-    case 'ping':
+    case DEVICE_EVENTS.PING:
       await platform.sendData(client.connectionId, {
         type: FromDeskthingToDeviceEvents.PONG,
         app: 'client',
@@ -90,49 +89,36 @@ async function handleServerMessage(
       })
       break
 
-    case 'set':
+    case DEVICE_EVENTS.SET:
       if (messageData.request === 'update_pref_index' && messageData.payload) {
         const { app: appName, index: newIndex } = messageData.payload as {
           app: string
           index: number
         }
         await appStore.setItemOrder(appName, newIndex)
-      } else if (messageData.request === 'settings' && messageData.payload) {
-        const { app, id, setting } = messageData.payload as {
-          app: string
-          id: string
-          setting: SettingsType
-        }
-        await appDataStore.addSetting(app, id, setting)
       }
       break
-
-    case 'get': {
-      const mapping = await mappingStore.getMapping()
-      const actions = await mappingStore.getActions()
-      const apps = await appStore.getAll()
-
-      if (mapping) {
-        const combinedMappings: CombinedMappings = {
-          ...mapping,
-          actions: actions
-        }
-
-        await platform.sendData(client.connectionId, {
-          type: FromDeskthingToDeviceEvents.MAPPINGS,
-          app: 'client',
-          payload: combinedMappings
+    case DEVICE_EVENTS.VIEW:
+      if (messageData.request == 'change') {
+        const { currentApp, previousApp } = messageData.payload
+        // Update the apps with what page is currently open
+        await appStore.sendDataToApp(currentApp, {
+          type: ServerEvent.CLIENT_STATUS,
+          request: 'opened',
+          payload: client
+        })
+        await appStore.sendDataToApp(previousApp, {
+          type: ServerEvent.CLIENT_STATUS,
+          request: 'closed',
+          payload: client
+        })
+        const connectionStore = await storeProvider.getStore('connectionsStore')
+        connectionStore.updateClient(client.connectionId, {
+          currentApp: currentApp
         })
       }
-
-      await platform.sendData(client.connectionId, {
-        type: FromDeviceDataEvents.APPS,
-        app: 'client',
-        payload: apps.filter((app) => app.manifest?.isWebApp !== false)
-      })
       break
-    }
-    case 'manifest':
+    case DEVICE_EVENTS.MANIFEST:
       if (messageData.payload) {
         const manifest = messageData.payload as ClientManifest & { adbId: string }
         const clientUpdates: Partial<Client> = {
@@ -159,7 +145,7 @@ async function handleServerMessage(
 
       break
 
-    case 'action':
+    case DEVICE_EVENTS.ACTION:
       await mappingStore.runAction(messageData.payload)
       break
 

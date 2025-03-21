@@ -1,8 +1,8 @@
-import { ADBClient, Client } from '@shared/types'
+import { ADBClient } from '@shared/types'
 import { sendIpcData } from '../../index'
 import Logger from '../../utils/logger'
 import { storeProvider } from '../../stores/storeProvider'
-import { AppSettings, LOGGING_LEVELS, SEND_TYPES, ServerEvent } from '@deskthing/types'
+import { AppSettings, Client, LOGGING_LEVELS, SEND_TYPES, ServerEvent } from '@deskthing/types'
 import { BrowserWindow, ipcMain, shell } from 'electron'
 
 export async function initializeStores(): Promise<void> {

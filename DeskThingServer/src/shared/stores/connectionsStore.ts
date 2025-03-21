@@ -1,5 +1,6 @@
 import { StoreInterface } from '@shared/interfaces/storeInterface'
-import { ADBClient, Client } from '@shared/types'
+import { ADBClient } from '@shared/types'
+import { Client } from '@deskthing/types'
 
 export type ClientListener = (client: Client[]) => void
 export type DeviceListener = (device: ADBClient[]) => void

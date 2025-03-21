@@ -62,6 +62,7 @@ export interface AppStoreClass extends StoreInterface {
 
   // App communication / management
   sendDataToApp(name: string, data: EventPayload): Promise<void>
+  broadcastToApps(data: EventPayload): Promise<void>
   purge(name: string): Promise<boolean>
 
   /**

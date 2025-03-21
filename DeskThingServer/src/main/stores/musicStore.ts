@@ -80,8 +80,19 @@ export class MusicStore implements CacheableStore, MusicStoreClass {
   }
 
   private async initializeListeners(): Promise<void> {
-    this.platformStore.on(PlatformStoreEvent.DATA_RECEIVED, this.handleDataReceived)
-    this.appStore.onAppMessage(SEND_TYPES.SONG, this.handleMusicMessage)
+    this.platformStore.on(PlatformStoreEvent.DATA_RECEIVED, async (data) => {
+      await this.initialize()
+      await this.handleDataReceived(data)
+    })
+    this.appStore.onAppMessage(SEND_TYPES.SONG, (data) => {
+      this.initialize()
+      this.handleMusicMessage(data)
+    })
+
+    this.settingsStore.addListener((data) => {
+      this.initialize()
+      this.handleSettingsUpdate(data)
+    })
   }
 
   private handleDataReceived: PlatformStoreListener<PlatformStoreEvent.DATA_RECEIVED> = (
@@ -96,15 +107,13 @@ export class MusicStore implements CacheableStore, MusicStoreClass {
     const settings = await this.settingsStore.getSettings() // Get from your settings store
     this.currentApp = settings?.playbackLocation || 'none'
 
+    Logger.debug(`Initializing the current app to ${this.currentApp}`)
+
     if (!settings) return
 
     this.updateRefreshInterval(settings?.refreshInterval)
-    this.settingsStore.addListener(this.handleSettingsUpdate.bind(this))
 
-    setTimeout(() => {
-      Logger.log(LOGGING_LEVELS.DEBUG, '[MusicStore]: Initialized')
-      this.refreshMusicData()
-    }, 3000) // Delay to ensure settings are loaded
+    this.refreshMusicData()
   }
 
   private handleSettingsUpdate = async (settings: Settings): Promise<void> => {

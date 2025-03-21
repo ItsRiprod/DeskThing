@@ -3,8 +3,8 @@
  * It provides methods to add, update, and remove clients, as well as to get the list of connected clients and devices.
  * The class also handles the auto-detection of ADB devices and notifies listeners of changes to the client and device lists.
  */
-import { LOGGING_LEVELS } from '@DeskThing/types'
-import { ADBClient, CacheableStore, Client } from '@shared/types'
+import { LOGGING_LEVELS, Client } from '@DeskThing/types'
+import { ADBClient, CacheableStore } from '@shared/types'
 import Logger from '@server/utils/logger'
 import { configureDevice } from '@server/handlers/deviceHandler'
 import {

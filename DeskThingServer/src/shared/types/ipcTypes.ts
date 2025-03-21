@@ -2,9 +2,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { BrowserWindow, IpcRendererEvent } from 'electron'
-import { Log, Settings, Button, MappingStructure, Client, ADBClient } from '.'
+import { Log, Settings, Button, MappingStructure, ADBClient } from '.'
 import {
   Step,
+  Client,
   Task,
   Action,
   Key,

@@ -893,6 +893,15 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
 
     this.saveData(app)
   }
+
+  async updateSetting(app: string, id: string, value: SettingsType['value']): Promise<void> {
+    const appSettings = await this.getSettings(app)
+    if (!appSettings) return
+    appSettings[id].value = value
+    this.appDataCache[app].settings = appSettings
+    this.saveData(app)
+  }
+
   /**
    * Fetches the icon.svg from the file system and returns the file:// path for it
    */

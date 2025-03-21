@@ -3,9 +3,8 @@ import { PlatformStore } from '../../../src/main/stores/platformStore'
 import { AppStoreClass } from '@shared/stores/appStore'
 import { AppDataStoreClass } from '@shared/stores/appDataStore'
 import { PlatformInterface } from '@shared/interfaces/platform'
-import { ToDeviceData } from '@DeskThing/types'
+import { Client, DeviceToDeskthing, ToDeviceData } from '@DeskThing/types'
 import Logger from '@server/utils/logger'
-import { Client } from '@shared/types'
 import { PlatformStoreEvent } from '@shared/stores/platformStore'
 import { MappingStoreClass } from '@shared/stores/mappingStore'
 
@@ -139,7 +138,7 @@ describe('PlatformStore', () => {
         app: 'test-app',
         type: 'test-type',
         payload: { test: true }
-      } as unknown as ToDeviceData
+      } as unknown as DeviceToDeskthing & { connectionId: string }
 
       vi.spyOn(platformStore, 'getPlatformForClient').mockReturnValue(mockPlatform)
       await platformStore.addPlatform(mockPlatform)

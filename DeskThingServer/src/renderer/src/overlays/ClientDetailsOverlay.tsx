@@ -13,10 +13,11 @@ import {
 } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
 import { useSettingsStore } from '@renderer/stores'
-import { Client, LoggingData } from '@shared/types'
+import { LoggingData } from '@shared/types'
 import React, { useState, useRef, useEffect } from 'react'
 import Overlay from './Overlay'
 import DownloadNotification from './DownloadNotification'
+import { Client } from '@DeskThing/types'
 
 interface ClientDetailsOverlayProps {
   onClose: () => void

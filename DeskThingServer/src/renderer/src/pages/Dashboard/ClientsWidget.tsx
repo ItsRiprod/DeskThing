@@ -1,6 +1,6 @@
 import React from 'react'
 import { useClientStore } from '@renderer/stores'
-import { Client } from '@shared/types'
+import { Client } from '@DeskThing/types'
 
 const ClientsWidget: React.FC = () => {
   const clients = useClientStore((state) => state.clients)

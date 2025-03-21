@@ -91,6 +91,8 @@ export interface AppDataStoreClass extends StoreInterface {
   addSetting(app: string, id: string, setting: SettingsType): Promise<void>
   /** Deletes specific settings */
   delSettings(app: string, settings: string[] | string): Promise<void>
+  /** Updates a single setting */
+  updateSetting(app: string, id: string, setting: SettingsType['value']): Promise<void>
 
   /** Gets all tasks for an app */
   getTasks(name: string): Promise<Record<string, Task> | undefined>

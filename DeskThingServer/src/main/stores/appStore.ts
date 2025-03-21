@@ -469,6 +469,19 @@ export class AppStore implements CacheableStore, AppStoreClass {
     return this.order
   }
 
+  async broadcastToApps(data: EventPayload): Promise<void> {
+    const apps = this.getOrder()
+    Logger.debug(
+      `Broadcasting to ${apps.length} apps: ${JSON.stringify({ ...data, payload: 'Scrubbed Payload' })}`
+    )
+    apps.forEach((appId) => {
+      this.appProcessStore.postMessage(appId, {
+        type: 'data',
+        payload: data
+      })
+    })
+  }
+
   async sendDataToApp(name: string, data: EventPayload): Promise<void> {
     try {
       if (this.apps[name]?.running) {

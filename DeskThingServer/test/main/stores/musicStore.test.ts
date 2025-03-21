@@ -90,7 +90,7 @@ describe('MusicStore', () => {
       playlist: null,
       playlist_id: null,
       shuffle_state: null,
-      repeat_state: 'all',
+      repeat_state: 'context',
       is_playing: false,
       can_fast_forward: false,
       can_skip: false,

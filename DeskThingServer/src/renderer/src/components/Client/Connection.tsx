@@ -7,12 +7,13 @@ import {
   IconRefresh,
   IconX
 } from '@renderer/assets/icons'
-import { Client, LoggingData } from '@shared/types'
+import { LoggingData } from '@shared/types'
 import React, { useState } from 'react'
 import Button from '../Button'
 // import { useSettingsStore } from '@renderer/stores'
 import ClientDetailsOverlay from '@renderer/overlays/ClientDetailsOverlay'
 import DownloadNotification from '@renderer/overlays/DownloadNotification'
+import { Client } from '@DeskThing/types'
 
 interface ConnectionComponentProps {
   client: Client
