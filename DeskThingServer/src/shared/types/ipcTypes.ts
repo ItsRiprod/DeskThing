@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { BrowserWindow, IpcRendererEvent } from 'electron'
-import { Log, Settings, Button, MappingStructure, ADBClient } from '.'
+import { Log, Settings, MappingStructure, ADBClient } from '.'
 import {
   Step,
   Client,
@@ -14,14 +14,15 @@ import {
   AppReleaseMeta,
   AppReleaseCommunity,
   AppSettings,
-  EventPayload,
   ActionReference,
+  Button,
   AppReleaseSingleMeta,
   ClientReleaseMeta,
   AuthScopes,
   SavedData,
   ButtonMapping,
-  Profile
+  Profile,
+  DeskThingToAppData
 } from '@deskthing/types'
 import { FeedbackReport, StagedAppManifest, SystemInfo, FullTaskList } from '@shared/types'
 
@@ -156,7 +157,7 @@ export type AppIPCData = {
     }
   | {
       type: APP_TYPES.USER_DATA_RESPONSE
-      payload: { requestId: string; response: EventPayload }
+      payload: { requestId: string; response: DeskThingToAppData }
     }
   | {
       type: APP_TYPES.SELECT_ZIP_FILE
@@ -167,7 +168,7 @@ export type AppIPCData = {
     }
   | {
       type: APP_TYPES.SEND_TO_APP
-      payload: EventPayload & { app: string }
+      payload: DeskThingToAppData & { app: string }
     }
   | {
       type: APP_TYPES.APP_ORDER

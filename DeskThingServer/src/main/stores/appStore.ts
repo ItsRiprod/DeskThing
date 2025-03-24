@@ -1,7 +1,7 @@
 // Types
 import {
   AppDataFilters,
-  AppProcessEvents,
+  AppProcessTypes,
   AppProcessListener,
   AppProcessStoreClass
 } from '@shared/stores/appProcessStore'
@@ -9,9 +9,9 @@ import {
   App,
   AppManifest,
   LOGGING_LEVELS,
-  EventPayload,
-  ServerEvent,
-  SEND_TYPES
+  APP_REQUESTS,
+  DESKTHING_EVENTS,
+  DeskThingToAppData
 } from '@DeskThing/types'
 import { ReplyFn, StagedAppManifest, CacheableStore } from '@shared/types'
 import {
@@ -68,30 +68,21 @@ export class AppStore implements CacheableStore, AppStoreClass {
   }
 
   private initializeListeners = (): void => {
-    this.appProcessStore.onProcessEvent(
-      AppProcessEvents.STARTED,
-      this.handleProcessStarted.bind(this)
-    )
-    this.appProcessStore.onProcessEvent(
-      AppProcessEvents.RUNNING,
-      this.handleProcessRunning.bind(this)
-    )
-    this.appProcessStore.onProcessEvent(
-      AppProcessEvents.STOPPED,
-      this.handleProcessStopped.bind(this)
-    )
-    this.appProcessStore.onProcessEvent(AppProcessEvents.ERROR, this.handleProcessError.bind(this))
-    this.appProcessStore.onProcessEvent(AppProcessEvents.EXITED, this.handleProcessExit.bind(this))
+    this.appProcessStore.on(AppProcessTypes.STARTED, this.handleProcessStarted.bind(this))
+    this.appProcessStore.on(AppProcessTypes.RUNNING, this.handleProcessRunning.bind(this))
+    this.appProcessStore.on(AppProcessTypes.STOPPED, this.handleProcessStopped.bind(this))
+    this.appProcessStore.on(AppProcessTypes.ERROR, this.handleProcessError.bind(this))
+    this.appProcessStore.on(AppProcessTypes.EXITED, this.handleProcessExit.bind(this))
 
     // App Handling
-    this.onAppMessage(SEND_TYPES.TOAPP, (data) => {
+    this.onAppMessage(APP_REQUESTS.TOAPP, (data) => {
       this.sendDataToApp(data.source, data.payload)
     })
 
     this.authStore.on('appData', (data) => {
       if (this.apps[data.app]) {
         this.sendDataToApp(data.app, {
-          type: ServerEvent.CALLBACK_DATA,
+          type: DESKTHING_EVENTS.CALLBACK_DATA,
           payload: data.callbackData
         })
       }
@@ -239,7 +230,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
    * @param listener The callback function to execute when message is received
    * @returns A function to unsubscribe the listener
    */
-  onAppMessage<T extends SEND_TYPES>(
+  onAppMessage<T extends APP_REQUESTS>(
     type: T,
     listener: AppProcessListener<T>,
     filters?: AppDataFilters<T>
@@ -250,8 +241,13 @@ export class AppStore implements CacheableStore, AppStoreClass {
         source: 'AppStore',
         function: 'onAppMessage'
       })
+
+      Logger.debug(JSON.stringify(data))
+
       try {
         if (this.apps[data.source]?.running) {
+          if (filters?.request && data.request !== filters.request) return
+          if (filters?.app && data.source !== filters.app) return
           await listener(data)
         } else {
           Logger.error(
@@ -273,9 +269,9 @@ export class AppStore implements CacheableStore, AppStoreClass {
     }
 
     // Register with the process store using wrapped listener
-    const unsubscribe = this.appProcessStore.onMessage(type, wrappedListener, filters)
+    this.appProcessStore.on(type as APP_REQUESTS, wrappedListener)
 
-    return unsubscribe
+    return () => this.appProcessStore.off(type as APP_REQUESTS, wrappedListener)
   }
 
   on<K extends keyof AppStoreListenerEvents>(event: K, listener: AppStoreListener<K>): () => void {
@@ -469,7 +465,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
     return this.order
   }
 
-  async broadcastToApps(data: EventPayload): Promise<void> {
+  async broadcastToApps(data: DeskThingToAppData): Promise<void> {
     const apps = this.getOrder()
     Logger.debug(
       `Broadcasting to ${apps.length} apps: ${JSON.stringify({ ...data, payload: 'Scrubbed Payload' })}`
@@ -482,7 +478,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
     })
   }
 
-  async sendDataToApp(name: string, data: EventPayload): Promise<void> {
+  async sendDataToApp(name: string, data: DeskThingToAppData): Promise<void> {
     try {
       if (this.apps[name]?.running) {
         await this.appProcessStore.postMessage(name, {
@@ -556,7 +552,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
 
     try {
       await this.appProcessStore.postMessage(name, {
-        type: ServerEvent.STOP
+        type: DESKTHING_EVENTS.STOP
       })
     } catch {
       Logger.info(`It doesn't appear ${name} was running`)
@@ -651,7 +647,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
 
     try {
       this.appProcessStore.postMessage(name, {
-        type: ServerEvent.START
+        type: DESKTHING_EVENTS.START
       })
     } catch (error) {
       Logger.error(`Error starting ${name}: ${error}`, {

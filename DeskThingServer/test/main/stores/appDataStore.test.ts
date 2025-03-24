@@ -3,7 +3,7 @@ import { AppDataStore } from '../../../src/main/stores/appDataStore'
 import { AppStoreClass } from '@shared/stores/appStore'
 import { TaskStoreClass } from '@shared/stores/taskStore'
 import {
-  ServerEvent,
+  DESKTHING_EVENTS,
   Task,
   Step,
   STEP_TYPES,
@@ -41,6 +41,7 @@ describe('AppDataStore', () => {
     mockAppStore = {
       get: vi.fn().mockReturnValue({ manifest: { version: '0.0.0' } }),
       getOrder: vi.fn().mockReturnValue(['app1', 'app2']),
+      on: vi.fn(),
       onAppMessage: vi.fn(),
       sendDataToApp: vi.fn()
     } as unknown as AppStoreClass
@@ -81,7 +82,7 @@ describe('AppDataStore', () => {
       await appDataStore.updateStep('app1', 'task1', mockStep)
 
       expect(mockAppStore.sendDataToApp).toHaveBeenCalledWith('app1', {
-        type: ServerEvent.TASKS,
+        type: DESKTHING_EVENTS.TASKS,
         request: 'step',
         payload: mockStep
       })
@@ -120,7 +121,7 @@ describe('AppDataStore', () => {
       await appDataStore.completeStep(mockTask, 'step1')
 
       expect(mockAppStore.sendDataToApp).toHaveBeenCalledWith('app1', {
-        type: ServerEvent.TASKS,
+        type: DESKTHING_EVENTS.TASKS,
         payload: expect.objectContaining({
           completed: true,
           parentId: 'task1'
@@ -155,11 +156,17 @@ describe('AppDataStore', () => {
     it('should add new setting correctly', async () => {
       const mockSetting: SettingsType = {
         value: 'test',
+        id: 'newSetting',
         type: SETTING_TYPES.STRING,
         label: 'Test Setting'
       }
 
       vi.spyOn(appDataStore, 'getSettings').mockResolvedValue({})
+      appDataStore['appDataCache'] = {
+        app1: {
+          version: ''
+        }
+      }
 
       await appDataStore.addSetting('app1', 'newSetting', mockSetting)
 
@@ -170,13 +177,25 @@ describe('AppDataStore', () => {
 
     it('should update existing setting', async () => {
       const existingSettings: AppSettings = {
-        setting1: { value: 'old', type: SETTING_TYPES.STRING, label: 'Test Setting' }
+        setting1: {
+          value: 'old',
+          id: 'setting1',
+          type: SETTING_TYPES.STRING,
+          label: 'Test Setting'
+        }
       }
 
       const newSetting: SettingsType = {
         value: 'new',
+        id: 'setting1',
         type: SETTING_TYPES.STRING,
         label: 'Test Setting'
+      }
+
+      appDataStore['appDataCache'] = {
+        app1: {
+          version: ''
+        }
       }
 
       vi.spyOn(appDataStore, 'getSettings').mockResolvedValue(existingSettings)

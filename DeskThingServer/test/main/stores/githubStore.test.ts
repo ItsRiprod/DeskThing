@@ -58,7 +58,6 @@ describe('GithubStore', () => {
   })
 
   describe('Release Management', () => {
-
     it('should remove app release successfully', async () => {
       const mockRelease = {
         type: 'single',

@@ -3,7 +3,7 @@
  * It provides methods to add, update, and remove clients, as well as to get the list of connected clients and devices.
  * The class also handles the auto-detection of ADB devices and notifies listeners of changes to the client and device lists.
  */
-import { LOGGING_LEVELS, Client } from '@DeskThing/types'
+import { LOGGING_LEVELS, Client, ClientConnectionMethod } from '@DeskThing/types'
 import { ADBClient, CacheableStore } from '@shared/types'
 import Logger from '@server/utils/logger'
 import { configureDevice } from '@server/handlers/deviceHandler'
@@ -208,7 +208,10 @@ export class ConnectionStore implements CacheableStore, ConnectionStoreClass {
 
     // Get all of the adb ids that are connected for use later
     const connectedAdbIds = this.clients.reduce(
-      (acc, client) => (client.adbId ? [...acc, client.adbId] : acc),
+      (acc, client) =>
+        client.manifest?.context.method === ClientConnectionMethod.ADB
+          ? [...acc, client.manifest.context.adbId]
+          : acc,
       [] as string[]
     )
 

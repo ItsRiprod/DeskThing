@@ -9,7 +9,7 @@ import {
   PlatformEventPayloads,
   PlatformStatus
 } from '@shared/interfaces/platform'
-import { ClientDeviceType, SocketData, Client, DeviceToDeskthing } from '@deskthing/types'
+import { SocketData, Client, DeviceToDeskthingData, DeskThingToAppCore } from '@deskthing/types'
 import { ExpressServer } from './expressWorker'
 
 type AdditionalOptions = {
@@ -96,18 +96,14 @@ export class WSPlatform {
   }
 
   private handleConnection(socket: WebSocket, req: IncomingMessage): void {
-    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress
     const connectionId = crypto.randomUUID()
 
     const client: Client = {
       id: connectionId,
-      ip: clientIp as string,
       connected: true,
-      port: req.socket.remotePort,
       timestamp: Date.now(),
       connectionId,
-      userAgent: req.headers['user-agent'] || '',
-      device_type: this.getDeviceType(req.headers['user-agent'])
+      userAgent: req.headers['user-agent'] || ''
     }
 
     this.clients.set(connectionId, { client, socket })
@@ -115,7 +111,7 @@ export class WSPlatform {
 
     socket.on('message', (message: string) => {
       try {
-        const data = JSON.parse(message) as DeviceToDeskthing & { connectionId: string }
+        const data = JSON.parse(message) as DeviceToDeskthingData & { connectionId: string }
         this.sendToParent(PlatformEvent.DATA_RECEIVED, { client: client, data: data })
       } catch (error) {
         this.sendToParent(PlatformEvent.ERROR, new Error(`Invalid message format: ${error}`))
@@ -132,7 +128,7 @@ export class WSPlatform {
     })
   }
 
-  async sendData(clientId: string, data: SocketData): Promise<boolean> {
+  async sendData(clientId: string, data: DeskThingToAppCore): Promise<boolean> {
     const clientConnection = this.clients.get(clientId)
     if (!clientConnection) return false
 
@@ -204,35 +200,6 @@ export class WSPlatform {
       clients: this.getClients(),
       uptime: this.isActive ? Date.now() - this.startTime : 0
     }
-  }
-
-  private getDeviceType = (userAgent: string | undefined): ClientDeviceType => {
-    if (!userAgent) return { method: 1, id: 0, name: 'unknown' }
-
-    userAgent = userAgent.toLowerCase()
-    // Desktops
-    if (userAgent.includes('linux')) return { method: 1, id: 1, name: 'linux' }
-    if (userAgent.includes('win')) return { method: 1, id: 1, name: 'windows' }
-    if (userAgent.includes('mac')) return { method: 1, id: 1, name: 'mac' }
-    if (userAgent.includes('chromebook')) return { method: 1, id: 1, name: 'chromebook' }
-
-    // Tablets
-    if (userAgent.includes('ipad')) return { method: 1, id: 2, name: 'tablet' }
-    if (userAgent.includes('webos')) return { method: 1, id: 2, name: 'webos' }
-    if (userAgent.includes('kindle')) return { method: 1, id: 2, name: 'kindle' }
-
-    // Mobile
-    if (userAgent.includes('iphone')) return { method: 1, id: 3, name: 'iphone' }
-    if (userAgent.includes('android')) {
-      if (userAgent.includes('mobile')) return { method: 1, id: 3, name: 'android' }
-      return { method: 1, id: 2, name: 'tablet' }
-    }
-    if (userAgent.includes('firefox os')) return { method: 1, id: 3, name: 'firefox-os' }
-    if (userAgent.includes('blackberry')) return { method: 1, id: 3, name: 'blackberry' }
-    if (userAgent.includes('windows phone')) return { method: 1, id: 3, name: 'windows-phone' }
-
-    // Default to unknown
-    return { method: 1, id: 0, name: 'unknown' }
   }
 }
 

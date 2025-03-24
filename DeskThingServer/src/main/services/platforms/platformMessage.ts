@@ -1,11 +1,12 @@
 import { storeProvider } from '@server/stores/storeProvider'
 import {
   ClientManifest,
-  FromDeskthingToDeviceEvents,
+  DESKTHING_DEVICE,
   Client,
-  DeviceToDeskthing,
-  DEVICE_EVENTS,
-  ServerEvent
+  DeviceToDeskthingData,
+  DEVICE_DESKTHING,
+  DESKTHING_EVENTS,
+  DeskThingToAppCore
 } from '@DeskThing/types'
 import Logger from '@server/utils/logger'
 import { PlatformInterface } from '@shared/interfaces/platform'
@@ -17,7 +18,7 @@ const THROTTLE_DELAY = 300
 export async function handlePlatformMessage(
   platform: PlatformInterface,
   client: Client,
-  messageData: DeviceToDeskthing & { connectionId: string }
+  messageData: DeviceToDeskthingData & { connectionId: string }
 ): Promise<void> {
   const messageKey = `${messageData.app}-${messageData.type}-${messageData['request']}`
   const now = Date.now()
@@ -36,7 +37,7 @@ export async function handlePlatformMessage(
         // musicStore now listens directly
         // const musicStore = await storeProvider.getStore('musicStore')
         // await musicStore.handleClientRequest(messageData)
-      } else if (messageData.type == DEVICE_EVENTS.SETTINGS) {
+      } else if (messageData.type == DEVICE_DESKTHING.SETTINGS) {
         const appDataStore = await storeProvider.getStore('appDataStore')
         if (messageData.request == 'set') {
           await appDataStore.addSettings(messageData.app, messageData.payload)
@@ -47,13 +48,13 @@ export async function handlePlatformMessage(
             messageData.payload.value
           )
         }
-      } else if (messageData.type === DEVICE_EVENTS.APP_PAYLOAD) {
+      } else if (messageData.type === DEVICE_DESKTHING.APP_PAYLOAD && messageData.payload) {
         const appStore = await storeProvider.getStore('appStore')
 
         await appStore.sendDataToApp(messageData.app.toLowerCase(), {
-          connectionId: messageData.connectionId,
-          ...messageData.payload
-        })
+          ...messageData.payload,
+          clientId: messageData.connectionId
+        } as DeskThingToAppCore)
       }
 
       // Cleanup throttle
@@ -75,21 +76,21 @@ export async function handlePlatformMessage(
 async function handleServerMessage(
   platform: PlatformInterface,
   client: Client,
-  messageData: DeviceToDeskthing
+  messageData: DeviceToDeskthingData
 ): Promise<void> {
   const appStore = await storeProvider.getStore('appStore')
   const mappingStore = await storeProvider.getStore('mappingStore')
 
   switch (messageData.type) {
-    case DEVICE_EVENTS.PING:
+    case DEVICE_DESKTHING.PING:
       await platform.sendData(client.connectionId, {
-        type: FromDeskthingToDeviceEvents.PONG,
+        type: DESKTHING_DEVICE.PONG,
         app: 'client',
         payload: new Date().toISOString()
       })
       break
 
-    case DEVICE_EVENTS.SET:
+    case DEVICE_DESKTHING.SET:
       if (messageData.request === 'update_pref_index' && messageData.payload) {
         const { app: appName, index: newIndex } = messageData.payload as {
           app: string
@@ -98,17 +99,17 @@ async function handleServerMessage(
         await appStore.setItemOrder(appName, newIndex)
       }
       break
-    case DEVICE_EVENTS.VIEW:
+    case DEVICE_DESKTHING.VIEW:
       if (messageData.request == 'change') {
         const { currentApp, previousApp } = messageData.payload
         // Update the apps with what page is currently open
         await appStore.sendDataToApp(currentApp, {
-          type: ServerEvent.CLIENT_STATUS,
+          type: DESKTHING_EVENTS.CLIENT_STATUS,
           request: 'opened',
           payload: client
         })
         await appStore.sendDataToApp(previousApp, {
-          type: ServerEvent.CLIENT_STATUS,
+          type: DESKTHING_EVENTS.CLIENT_STATUS,
           request: 'closed',
           payload: client
         })
@@ -118,19 +119,14 @@ async function handleServerMessage(
         })
       }
       break
-    case DEVICE_EVENTS.MANIFEST:
+    case DEVICE_DESKTHING.MANIFEST:
       if (messageData.payload) {
-        const manifest = messageData.payload as ClientManifest & { adbId: string }
+        const manifest = messageData.payload as ClientManifest
         const clientUpdates: Partial<Client> = {
           connected: true,
-          name: manifest.name,
-          version: manifest.version,
-          description: manifest.description
-        }
-
-        if (manifest.adbId) {
-          clientUpdates.adbId = manifest.adbId
-          clientUpdates.device_type = manifest.device_type
+          manifest: {
+            ...manifest
+          }
         }
 
         const platformStore = await storeProvider.getStore('platformStore')
@@ -145,7 +141,7 @@ async function handleServerMessage(
 
       break
 
-    case DEVICE_EVENTS.ACTION:
+    case DEVICE_DESKTHING.ACTION:
       await mappingStore.runAction(messageData.payload)
       break
 

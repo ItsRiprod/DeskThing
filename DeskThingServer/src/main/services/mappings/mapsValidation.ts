@@ -356,7 +356,7 @@ export const ConstructActionReference = ({
   enabled
 }: Action): ActionReference => ({
   id,
-  source,
+  source: source || 'server',
   value,
   enabled
 })

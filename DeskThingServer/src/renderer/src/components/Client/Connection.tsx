@@ -13,7 +13,7 @@ import Button from '../Button'
 // import { useSettingsStore } from '@renderer/stores'
 import ClientDetailsOverlay from '@renderer/overlays/ClientDetailsOverlay'
 import DownloadNotification from '@renderer/overlays/DownloadNotification'
-import { Client } from '@DeskThing/types'
+import { Client, ClientConnectionMethod } from '@DeskThing/types'
 
 interface ConnectionComponentProps {
   client: Client
@@ -28,9 +28,9 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
   const [showLogging, setShowLogging] = useState(false)
 
   const renderIcon = (): JSX.Element => {
-    if (!client.device_type) return <IconComputer iconSize={128} />
+    if (!client.manifest?.context) return <IconComputer iconSize={128} />
 
-    switch (client.device_type.id) {
+    switch (client.manifest?.context.id) {
       case 1:
         return <IconComputer iconSize={128} />
       case 2:
@@ -78,10 +78,12 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
   }
 
   const restartChromium = async (): Promise<void> => {
-    if (!client.adbId) return
+    if (client.manifest?.context.method !== ClientConnectionMethod.ADB) return
 
     setAnimatingIcons((prev) => ({ ...prev, chromium: true }))
-    await handleAdbCommand(`-s ${client.adbId.split(' ')[0]} shell supervisorctl restart chromium`)
+    await handleAdbCommand(
+      `-s ${client.manifest.context.adbId} shell supervisorctl restart chromium`
+    )
     setAnimatingIcons((prev) => ({ ...prev, chromium: false }))
   }
 
@@ -138,14 +140,16 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
         {renderIcon()}
         <div>
           <p>Platform</p>
-          <h2 className="text-2xl">{client.device_type?.name || 'Unknown Platform'}</h2>
+          <h2 className="text-2xl">{client.manifest?.context.name || 'Unknown Platform'}</h2>
           <h2 className="text-sm text-gray-500 font-geistMono">
-            {client.adbId || client.connectionId}
+            {client.manifest?.context.method == ClientConnectionMethod.ADB
+              ? client.manifest?.context.adbId
+              : client.connectionId}
           </h2>
         </div>
       </div>
       <div className="flex gap-2 items-center">
-        {client.adbId && (
+        {client.manifest?.context.method == ClientConnectionMethod.ADB && (
           <>
             <Button
               title="Restart Chromium on the Device"

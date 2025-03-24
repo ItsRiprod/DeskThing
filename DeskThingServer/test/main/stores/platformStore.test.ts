@@ -3,7 +3,12 @@ import { PlatformStore } from '../../../src/main/stores/platformStore'
 import { AppStoreClass } from '@shared/stores/appStore'
 import { AppDataStoreClass } from '@shared/stores/appDataStore'
 import { PlatformInterface } from '@shared/interfaces/platform'
-import { Client, DeviceToDeskthing, ToDeviceData } from '@DeskThing/types'
+import {
+  Client,
+  DeviceToDeskthingData,
+  DESKTHING_DEVICE,
+  DeskThingToDeviceCore
+} from '@DeskThing/types'
 import Logger from '@server/utils/logger'
 import { PlatformStoreEvent } from '@shared/stores/platformStore'
 import { MappingStoreClass } from '@shared/stores/mappingStore'
@@ -39,7 +44,6 @@ describe('PlatformStore', () => {
     testClient = {
       id: 'test-client',
       connectionId: 'test-connection',
-      name: 'Test Client',
       connected: false,
       timestamp: 0
     }
@@ -97,8 +101,7 @@ describe('PlatformStore', () => {
   describe('Client Management', () => {
     it('should handle client updates', () => {
       const clientUpdate: Partial<Client> = {
-        id: 'test-client',
-        name: 'Updated Client'
+        id: 'test-client'
       }
 
       vi.spyOn(platformStore, 'getPlatformForClient').mockReturnValue(mockPlatform)
@@ -110,11 +113,11 @@ describe('PlatformStore', () => {
     })
 
     it('should broadcast data to all clients', async () => {
-      const testData = {
-        app: 'test-app',
-        type: 'test-type',
-        payload: { test: true }
-      } as unknown as ToDeviceData
+      const testData: DeskThingToDeviceCore = {
+        type: DESKTHING_DEVICE.APPS,
+        request: 'manifest',
+        payload: []
+      }
 
       await platformStore.addPlatform(mockPlatform)
       await platformStore.broadcastToClients(testData)
@@ -138,7 +141,7 @@ describe('PlatformStore', () => {
         app: 'test-app',
         type: 'test-type',
         payload: { test: true }
-      } as unknown as DeviceToDeskthing & { connectionId: string }
+      } as unknown as DeviceToDeskthingData & { connectionId: string }
 
       vi.spyOn(platformStore, 'getPlatformForClient').mockReturnValue(mockPlatform)
       await platformStore.addPlatform(mockPlatform)

@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { MusicStore } from '../../../src/main/stores/musicStore'
 import { SettingsStoreClass } from '@shared/stores/settingsStore'
 import { AppStoreClass } from '@shared/stores/appStore'
-import { LOGGING_LEVELS, SEND_TYPES, FromDeviceDataEvents, SongData } from '@DeskThing/types'
+import { LOGGING_LEVELS, APP_REQUESTS, SongData, DEVICE_CLIENT } from '@DeskThing/types'
 import Logger from '@server/utils/logger'
 import { getColorFromImage } from '../../../src/main/services/music/musicUtils'
 import { PlatformStoreClass } from '@shared/stores/platformStore'
@@ -106,16 +106,16 @@ describe('MusicStore', () => {
     }
 
     const appData = {
-      type: SEND_TYPES.SONG,
+      type: APP_REQUESTS.SONG,
       payload: songData
     }
 
     // Access the private method through the prototype
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (MusicStore.prototype as any).handleMusicMessage.call(musicStore, appData)
+    await (musicStore as any).handleMusicMessage(appData)
 
     expect(mockPlatformStore.broadcastToClients).toHaveBeenCalledWith({
-      type: FromDeviceDataEvents.MUSIC,
+      type: DEVICE_CLIENT.MUSIC,
       app: 'client',
       payload: {
         ...songData,

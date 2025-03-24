@@ -1,11 +1,4 @@
-import { Action, ButtonMapping, EventMode, Key, Profile } from '@deskthing/types'
-
-export type Button = {
-  mode: EventMode // The mode of the button
-  action: string // The action to be triggered
-  key: string // The key to be triggered
-  profile?: string // The profile to be used
-}
+import { Action, ButtonMapping, Key, Profile } from '@deskthing/types'
 
 export type MappingFileStructure = {
   selected_profile: Profile

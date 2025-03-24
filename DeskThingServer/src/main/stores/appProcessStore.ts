@@ -1,11 +1,15 @@
 import {
-  AppProcessEvents,
-  AppProcessEventListener,
-  AppProcessListener,
+  AppProcessTypes,
   AppProcessStoreClass,
-  AppDataFilters
+  AppProcessEvents
 } from '@shared/stores/appProcessStore'
-import { App, AppProcessData, SEND_TYPES, ToAppProcess, ToServerData } from '@DeskThing/types'
+import {
+  App,
+  AppProcessData,
+  APP_REQUESTS,
+  DeskThingProcessData,
+  AppToDeskThingData
+} from '@DeskThing/types'
 import appProcessPath from '@utilities/appProcess?modulePath'
 import { app /*, utilityProcess */ } from 'electron'
 import { Worker } from 'node:worker_threads'
@@ -14,8 +18,12 @@ import { dirname, join } from 'node:path'
 import { readFile, stat, writeFile } from 'node:fs/promises'
 import { translateLegacyTypeRequest } from '@server/services/apps/legacyAppComs'
 import { coerce, lt } from 'semver'
+import { EventEmitter } from 'node:events'
 
-export class AppProcessStore implements AppProcessStoreClass {
+export class AppProcessStore
+  extends EventEmitter<AppProcessEvents>
+  implements AppProcessStoreClass
+{
   private processes: Record<
     string,
     {
@@ -23,17 +31,13 @@ export class AppProcessStore implements AppProcessStoreClass {
     }
   > = {}
 
+  constructor() {
+    super()
+  }
+
   private _initialized: boolean = false
   public get initialized(): boolean {
     return this._initialized
-  }
-
-  private processEventListeners: Record<AppProcessEvents, AppProcessEventListener[]> = {
-    [AppProcessEvents.STARTED]: [],
-    [AppProcessEvents.STOPPED]: [],
-    [AppProcessEvents.RUNNING]: [],
-    [AppProcessEvents.ERROR]: [],
-    [AppProcessEvents.EXITED]: []
   }
 
   // Required by all stores. There is nothing
@@ -43,83 +47,11 @@ export class AppProcessStore implements AppProcessStoreClass {
     return Promise.resolve()
   }
 
-  private messageListeners: Partial<{
-    [key in SEND_TYPES]: Array<{ listener: AppProcessListener<key>; filters?: AppDataFilters<key> }>
-  }> = {}
-
-  async postMessage(appName: string, data: ToAppProcess): Promise<void> {
+  async postMessage(appName: string, data: DeskThingProcessData): Promise<void> {
     if (!this.processes[appName]) {
       throw new Error(`Process ${appName} not found`)
     }
     this.processes[appName].process.postMessage(data)
-  }
-
-  onProcessEvent(type: AppProcessEvents, callback: AppProcessEventListener): () => void {
-    this.processEventListeners[type].push(callback)
-    return () => {
-      this.processEventListeners[type] = this.processEventListeners[type].filter(
-        (listener) => listener !== callback
-      )
-    }
-  }
-
-  notifyProcessEvent(type: AppProcessEvents, appName: string, cause?: string): void {
-    Logger.debug(`Process ${appName} is emitting ${type}`, {
-      source: 'AppProcessStore',
-      function: 'notifyProcessEvent'
-    })
-    this.processEventListeners[type].forEach((listener) => listener(appName, cause))
-  }
-
-  onMessage<T extends SEND_TYPES>(
-    type: T,
-    listener: AppProcessListener<T>,
-    filters?: AppDataFilters<T>
-  ): () => void {
-    if (!this.messageListeners[type]) {
-      this.messageListeners[type] = []
-    }
-
-    this.messageListeners[type].push({ listener, filters })
-    return () => this.offMessage(type, listener)
-  }
-
-  offMessage<T extends SEND_TYPES>(type: T, listener: AppProcessListener<T>): void {
-    if (this.messageListeners[type]) {
-      this.messageListeners[type] = this.messageListeners[type].filter(
-        (entry) => entry.listener !== listener
-      ) as []
-    }
-  }
-
-  notifyMessageListeners<T extends SEND_TYPES>(
-    type: T,
-    data: Extract<ToServerData, { type: T }> & { source: string; legacy?: boolean }
-  ): void {
-    Logger.debug(
-      `Notifying listeners for ${type} from ${data.source}: ${data.type}:${data.request}`,
-      {
-        source: 'AppProcessStore',
-        function: 'notifyMessageListeners'
-      }
-    )
-    const listeners = this.messageListeners[type]
-    if (listeners) {
-      listeners.forEach((entry) => {
-        const { listener, filters } = entry
-        if (filters) {
-          if (filters.request && data.request != filters.request) {
-            return
-          }
-
-          if (filters.app && data.source !== filters.app) {
-            return
-          }
-        }
-
-        listener(data)
-      })
-    }
   }
 
   getActiveProcessIds(): string[] {
@@ -148,7 +80,7 @@ export class AppProcessStore implements AppProcessStoreClass {
     }
 
     throw new Error(
-      `Entry point for app ${appName} not found. (Does it have an index.js file in root or server directory?)`
+      `Entry point for app ${appName} not found. (Does it have an index file in root or server directory?)`
     )
   }
 
@@ -199,11 +131,12 @@ export class AppProcessStore implements AppProcessStoreClass {
             process
           }
         } catch (error) {
-          this.notifyProcessEvent(
-            AppProcessEvents.ERROR,
-            app.name,
-            `Error spawning ${app.name} process: ${(error as Error).message}`
-          )
+          Logger.debug(`Error spawning ${app.name} process}`, {
+            source: 'AppProcessStore',
+            function: 'spawnProcess',
+            error: error as Error
+          })
+          this.emit(AppProcessTypes.ERROR, app.name)
           return false
         }
       } else {
@@ -239,7 +172,7 @@ export class AppProcessStore implements AppProcessStoreClass {
       })
 
       this.processes[app.name].process.on('online', () => {
-        this.notifyProcessEvent(AppProcessEvents.STARTED, app.name)
+        this.emit(AppProcessTypes.STARTED, app.name)
       })
 
       this.processes[app.name].process.on('exit', (code) => {
@@ -254,15 +187,11 @@ export class AppProcessStore implements AppProcessStoreClass {
             function: 'spawnProcess'
           })
 
-          this.notifyProcessEvent(
-            AppProcessEvents.ERROR,
-            app.name,
-            `Process exited with code ${code}`
-          )
+          this.emit(AppProcessTypes.ERROR, app.name)
         }
 
-        this.notifyProcessEvent(AppProcessEvents.STOPPED, app.name)
-        this.notifyProcessEvent(AppProcessEvents.EXITED, app.name, `exited with code ${code}`)
+        this.emit(AppProcessTypes.STOPPED, app.name)
+        this.emit(AppProcessTypes.EXITED, app.name)
         delete this.processes[app.name]
       })
 
@@ -272,7 +201,7 @@ export class AppProcessStore implements AppProcessStoreClass {
           function: 'spawnProcess',
           error: error instanceof Error ? error : new Error(String(error))
         })
-        this.notifyProcessEvent(AppProcessEvents.ERROR, app.name, error.message)
+        this.emit(AppProcessTypes.ERROR, app.name)
       })
 
       return true
@@ -283,11 +212,7 @@ export class AppProcessStore implements AppProcessStoreClass {
         error: error as Error
       })
 
-      this.notifyProcessEvent(
-        AppProcessEvents.ERROR,
-        app.name,
-        error instanceof Error ? error.message : String(error)
-      )
+      this.emit(AppProcessTypes.ERROR, app.name)
       return false
     }
   }
@@ -351,19 +276,24 @@ export class AppProcessStore implements AppProcessStoreClass {
 
     switch (data.type) {
       case 'data':
-        this.notifyMessageListeners(data.payload.type as SEND_TYPES, {
-          ...(data.payload as Extract<ToServerData, { type: typeof data.payload.type }>['payload']),
+        this.emit(data.payload.type, {
+          ...data.payload,
           source: appName
-        })
+        } as Extract<AppToDeskThingData, { type: typeof data.payload.type; source: string }>)
         break
       case 'started':
-        this.notifyProcessEvent(AppProcessEvents.RUNNING, appName)
+        this.emit(AppProcessTypes.RUNNING, appName)
         break
       case 'stopped':
-        this.notifyProcessEvent(AppProcessEvents.STOPPED, appName)
+        this.emit(AppProcessTypes.STOPPED, appName)
         break
       case 'server:error':
-        this.notifyProcessEvent(AppProcessEvents.ERROR, appName, data.payload.message)
+        Logger.error(data.payload.message, {
+          source: 'AppProcessStore',
+          function: 'handleProcessMessage',
+          error: data.payload
+        })
+        this.emit(AppProcessTypes.ERROR, appName)
         break
       case 'server:log':
         Logger.log(data.payload.level, data.payload.message, data.payload)
@@ -401,23 +331,31 @@ export class AppProcessStore implements AppProcessStoreClass {
             }
           )
           Logger.debug(JSON.stringify(data.payload.payload))
-          this.notifyMessageListeners(type as SEND_TYPES, {
-            ...({ type, request, payload: data.payload.payload, legacy: true } as Extract<
-              ToServerData,
-              { type: typeof type }
-            >['payload']),
-            source: appName
-          })
+          this.emit(
+            type as APP_REQUESTS,
+            {
+              type,
+              request,
+              source: appName,
+              payload: data.payload.payload,
+              legacy: true
+            } as Extract<AppToDeskThingData, { type: typeof type; source: string }>
+          )
         }
         break
       case 'started':
-        this.notifyProcessEvent(AppProcessEvents.RUNNING, appName)
+        this.emit(AppProcessTypes.RUNNING, appName)
         break
       case 'stopped':
-        this.notifyProcessEvent(AppProcessEvents.STOPPED, appName)
+        this.emit(AppProcessTypes.STOPPED, appName)
         break
       case 'server:error':
-        this.notifyProcessEvent(AppProcessEvents.ERROR, appName, data.payload.message)
+        Logger.error(data.payload.message, {
+          source: 'AppProcessStore',
+          function: 'handleProcessMessage',
+          error: data.payload
+        })
+        this.emit(AppProcessTypes.ERROR, appName)
         break
       case 'server:log':
         Logger.log(data.payload.level, data.payload.message, data.payload)

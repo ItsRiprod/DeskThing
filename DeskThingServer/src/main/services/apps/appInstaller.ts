@@ -621,7 +621,8 @@ const setupFunctions = async (
   appInstance: AppInstance,
   DeskThing: DeskThingType
 ): Promise<void> => {
-  const listeners: ((data: EventPayload) => Promise<void>)[] = []
+  const listeners: ((data: AppToDeskThingData
+AppToDeskThingData) => Promise<void>)[] = []
   await Logger.debug(`Configuring functions for ${appInstance.name}.`, {
     source: 'appInstaller',
     function: 'setupFunctions'
@@ -647,7 +648,8 @@ const setupFunctions = async (
 
     appInstance.func.stop = async (): Promise<Response> => DeskThing.stop()
 
-    appInstance.func.toClient = async (data: EventPayload): Promise<void> => {
+    appInstance.func.toClient = async (data: AppToDeskThingData
+AppToDeskThingData): Promise<void> => {
       listeners.forEach((listener) => listener(data))
       DeskThing.toClient(data)
     }

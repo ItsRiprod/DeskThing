@@ -1,7 +1,14 @@
 console.log('[MapStore Service] Starting')
-import { Action, EventMode, Key, ActionReference, ButtonMapping, Profile } from '@DeskThing/types'
+import {
+  Button,
+  Action,
+  EventMode,
+  Key,
+  ActionReference,
+  ButtonMapping,
+  Profile
+} from '@DeskThing/types'
 import { StoreInterface } from '@shared/interfaces/storeInterface'
-import { Button } from '@shared/types'
 
 export type ListenerPayloads = {
   key: Key[]

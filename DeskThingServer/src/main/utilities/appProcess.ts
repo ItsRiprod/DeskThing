@@ -1,10 +1,10 @@
 import {
   AppProcessData,
-  DeskThingType,
-  EventPayload,
-  LOGGING_LEVELS,
-  ToAppProcess,
-  ToServerData
+  AppToDeskThingData,
+  DeskThingClass,
+  DeskThingProcessData,
+  DeskThingToAppData,
+  LOGGING_LEVELS
 } from '@deskthing/types'
 import { resolve } from 'node:path'
 import { parentPort } from 'worker_threads'
@@ -70,7 +70,7 @@ const setupServer = async (): Promise<void> => {
 
   const importDeskThing = async (): Promise<void> => {
     const { DeskThing } = (await import(`file://${resolve(serverPath)}`)) as {
-      DeskThing: DeskThingType
+      DeskThing: DeskThingClass
     }
     sendMessage({
       version: '0.11.0',
@@ -84,7 +84,7 @@ const setupServer = async (): Promise<void> => {
     })
 
     // Handle messages from parent process
-    parentPort?.on('message', async (data: ToAppProcess) => {
+    parentPort?.on('message', async (data: DeskThingProcessData) => {
       switch (data.type) {
         case 'data':
           handleAppRequest(data.payload)
@@ -100,8 +100,8 @@ const setupServer = async (): Promise<void> => {
               source: 'SERVER.' + appName.toUpperCase()
             }
           })
-          DeskThing.start({
-            toServer: (payload: ToServerData) => {
+          DeskThing.start?.({
+            toServer: (payload: AppToDeskThingData) => {
               sendMessage({
                 version: '0.10.3',
                 type: 'data',
@@ -118,20 +118,20 @@ const setupServer = async (): Promise<void> => {
           }) // Send data to parent
           break
         case 'stop':
-          await DeskThing.stop()
+          await DeskThing.stop?.()
           sendMessage({
             version: '0.11.0',
             type: 'stopped'
           }) // Send data to parent
           break
         case 'purge':
-          DeskThing.purge()
+          DeskThing.purge?.()
           break
       }
     })
 
-    async function handleAppRequest(data: EventPayload): Promise<void> {
-      await DeskThing.toClient(data)
+    async function handleAppRequest(data: DeskThingToAppData): Promise<void> {
+      await DeskThing.toClient?.(data)
     }
   }
 

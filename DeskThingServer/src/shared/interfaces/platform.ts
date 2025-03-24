@@ -10,12 +10,7 @@
  * - The client interface (for the connections store)
  */
 
-import {
-  Client,
-  DeviceToDeskthing,
-  SendToDeviceFromServerPayload,
-  SocketData
-} from '@DeskThing/types'
+import { Client, DeskThingToDeviceCore, DeviceToDeskthingData } from '@DeskThing/types'
 
 export enum PlatformEvent {
   CLIENT_CONNECTED = 'client_connected',
@@ -48,7 +43,7 @@ export type PlatformEventPayloads = {
   [PlatformEvent.CLIENT_UPDATED]: Client
   [PlatformEvent.DATA_RECEIVED]: {
     client: Client
-    data: DeviceToDeskthing & { connectionId: string }
+    data: DeviceToDeskthingData & { connectionId: string }
   }
   [PlatformEvent.ERROR]: Error
   [PlatformEvent.STATUS_CHANGED]: PlatformStatus
@@ -83,11 +78,8 @@ export interface PlatformInterface<E extends Record<string, unknown> = Record<st
   updateClient(clientId: string, client: Partial<Client>): void
 
   // Data transfer
-  sendData<T extends string>(
-    clientId: string,
-    data: SendToDeviceFromServerPayload<T> & { app: T }
-  ): Promise<boolean>
-  broadcastData(data: SocketData): Promise<void>
+  sendData(clientId: string, data: DeskThingToDeviceCore & { app?: string }): Promise<boolean>
+  broadcastData(data: DeskThingToDeviceCore & { app?: string }): Promise<void>
 
   // Status
   getStatus(): PlatformStatus

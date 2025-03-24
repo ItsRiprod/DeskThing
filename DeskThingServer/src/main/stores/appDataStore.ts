@@ -3,23 +3,16 @@ import {
   AppDataInterface,
   SettingsType,
   AppSettings,
-  ServerEvent,
+  DESKTHING_EVENTS,
   Step,
   Task,
-  SEND_TYPES,
+  APP_REQUESTS,
   SavedData
 } from '@DeskThing/types'
 import { TaskReference, CacheableStore, FullTaskList } from '@shared/types'
 import { TaskStoreClass } from '@shared/stores/taskStore'
 import { AppStoreClass } from '@shared/stores/appStore'
-import {
-  addSettingsOptions,
-  AppDataStoreClass,
-  AppDataStoreListener,
-  AppDataStoreListenerEvents,
-  AppDataStoreListeners,
-  NotifyListenersType
-} from '@shared/stores/appDataStore'
+import { addSettingsOptions, AppDataStoreClass, AppStoreEvents } from '@shared/stores/appDataStore'
 
 // Utils
 import Logger from '@server/utils/logger'
@@ -36,17 +29,12 @@ import { isValidAppDataInterface, isValidAppSettings } from '@server/services/ap
 
 // Validation
 import { isValidStep, isValidTask } from '@server/services/task'
+import EventEmitter from 'node:events'
 
-export class AppDataStore implements CacheableStore, AppDataStoreClass {
-  private listeners: AppDataStoreListeners = {
-    appData: [],
-    settings: [],
-    data: [],
-    tasks: [],
-    keys: [],
-    actions: []
-  }
-
+export class AppDataStore
+  extends EventEmitter<AppStoreEvents>
+  implements CacheableStore, AppDataStoreClass
+{
   private appDataCache: Record<string, AppDataInterface> = {}
 
   private functionTimeouts: Record<string, NodeJS.Timeout> = {}
@@ -59,6 +47,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
   }
 
   constructor(appStore: AppStoreClass) {
+    super()
     this.appStore = appStore
     this.initAppListeners()
   }
@@ -71,7 +60,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
   }
 
   private initAppListeners = (): void => {
-    this.appStore.onAppMessage(SEND_TYPES.GET, async (data) => {
+    this.appStore.onAppMessage(APP_REQUESTS.GET, async (data) => {
       await this.initialize()
       switch (data.request) {
         case 'data': {
@@ -81,7 +70,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
             return
           }
           this.appStore.sendDataToApp(data.source, {
-            type: ServerEvent.DATA,
+            type: DESKTHING_EVENTS.DATA,
             request: 'data',
             payload: savedData
           })
@@ -94,7 +83,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
             return
           }
           this.appStore.sendDataToApp(data.source, {
-            type: ServerEvent.APPDATA,
+            type: DESKTHING_EVENTS.APPDATA,
             request: 'data',
             payload: appData
           })
@@ -111,7 +100,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
             return
           }
           this.appStore.sendDataToApp(data.source, {
-            type: ServerEvent.SETTINGS,
+            type: DESKTHING_EVENTS.SETTINGS,
             request: 'data',
             payload: settings
           })
@@ -131,7 +120,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
       }
     })
 
-    this.appStore.onAppMessage(SEND_TYPES.SET, async (data) => {
+    this.appStore.onAppMessage(APP_REQUESTS.SET, async (data) => {
       await this.initialize()
       switch (data.request) {
         case 'appData': {
@@ -170,7 +159,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
       }
     })
 
-    this.appStore.onAppMessage(SEND_TYPES.DELETE, async (data) => {
+    this.appStore.onAppMessage(APP_REQUESTS.DELETE, async (data) => {
       await this.initialize()
       switch (data.request) {
         case 'data': {
@@ -216,7 +205,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
       source: 'AppDataStore',
       function: 'saveAppsToFile'
     })
-    this.notifyListeners('appData', this.appDataCache)
+    this.emit('appData', this.appDataCache)
   }
 
   private notifyAppFields = async (name: string, notifyApp = true): Promise<void> => {
@@ -237,29 +226,29 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
     fieldsToUpdate.forEach((field) => {
       if (!this.appDataCache[name][field]) return
 
-      this.notifyListeners(field, {
+      this.emit(field, {
         appId: name,
         data: this.appDataCache[name][field]
-      } as AppDataStoreListenerEvents[typeof field])
+      })
       if (notifyApp && name != 'server') {
         switch (field) {
           case 'data':
             this.appStore.sendDataToApp(name, {
-              type: ServerEvent.DATA,
+              type: DESKTHING_EVENTS.DATA,
               request: '',
               payload: this.appDataCache[name][field]
             })
             break
           case 'settings':
             this.appStore.sendDataToApp(name, {
-              type: ServerEvent.SETTINGS,
+              type: DESKTHING_EVENTS.SETTINGS,
               request: '',
               payload: this.appDataCache[name][field]
             })
             break
           case 'tasks':
             this.appStore.sendDataToApp(name, {
-              type: ServerEvent.TASKS,
+              type: DESKTHING_EVENTS.TASKS,
               request: 'update',
               payload: this.appDataCache[name][field]
             })
@@ -356,34 +345,6 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
         }
       }
     })
-  }
-
-  private notifyListeners: NotifyListenersType = async (event, payload): Promise<void> => {
-    if (this.listeners[event]) {
-      await Promise.all(this.listeners[event].map((listener) => listener(payload)))
-    }
-  }
-
-  on<K extends keyof AppDataStoreListenerEvents>(
-    event: K,
-    listener: AppDataStoreListener<K>
-  ): () => void {
-    if (!this.listeners[event]) {
-      this.listeners[event] = []
-    }
-    this.listeners[event].push(listener)
-    return () => this.off(event, listener)
-  }
-
-  off<K extends keyof AppDataStoreListenerEvents>(
-    event: K,
-    listener: AppDataStoreListener<K>
-  ): void {
-    if (this.listeners[event]) {
-      this.listeners[event] = this.listeners[event].filter(
-        (l) => l !== listener
-      ) as AppDataStoreListeners[K]
-    }
   }
 
   async purgeAppData(name: string): Promise<boolean> {
@@ -508,10 +469,11 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
     }
     const data = await getData(name)
     if (!data) {
-      Logger.debug(`Unable to find tasks for ${name} in filesystem for`, {
+      Logger.debug(`Unable to find tasks for ${name} in filesystem`, {
         source: 'AppDataStore',
         function: 'getTasks'
       })
+      this.appDataCache[name].tasks = {}
       return
     }
     this.appDataCache[name].tasks = data.tasks
@@ -581,7 +543,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
     }
 
     this.appStore.sendDataToApp(app, {
-      type: ServerEvent.TASKS,
+      type: DESKTHING_EVENTS.TASKS,
       request: 'update',
       payload: updatedTasks
     })
@@ -616,7 +578,11 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
 
     task.steps[step.id] = step
 
-    this.appStore.sendDataToApp(app, { type: ServerEvent.TASKS, request: 'step', payload: step })
+    this.appStore.sendDataToApp(app, {
+      type: DESKTHING_EVENTS.TASKS,
+      request: 'step',
+      payload: step
+    })
 
     this.saveData(app)
   }
@@ -870,7 +836,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
     task.steps[stepId].completed = true
 
     this.appStore.sendDataToApp(task.source, {
-      type: ServerEvent.TASKS,
+      type: DESKTHING_EVENTS.TASKS,
       payload: { ...task.steps[stepId], parentId: task.id },
       request: 'step'
     })
@@ -882,10 +848,10 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
     let appSettings = await this.getSettings(app)
 
     if (appSettings && appSettings[id]) {
-      appSettings[id] = setting
+      appSettings[id] = { ...setting, id }
     } else {
       appSettings = {
-        [id]: setting
+        [id]: { ...setting, id }
       }
     }
 

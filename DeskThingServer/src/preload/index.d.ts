@@ -7,7 +7,8 @@ import {
   ClientManifest,
   ClientReleaseMeta,
   Profile,
-  ButtonMapping
+  ButtonMapping,
+  DeskThingToAppData
 } from '@DeskThing/types'
 import { Client, Log, StagedAppManifest, ADBClient } from '@shared/types'
 
@@ -40,9 +41,9 @@ declare global {
         runStaged: (appId: string, overwrite: boolean) => Promise<void>
       }
 
-      handleResponseToUserData: (requestId: string, payload: ToAppData) => Promise<void>
+      handleResponseToUserData: (requestId: string, payload: DeskThingToAppData) => Promise<void>
       handleDevAppZip: (path: string) => Promise<void>
-      sendDataToApp: (data: SocketData) => Promise<void>
+      sendDataToApp: (data: DeskThingToAppData) => Promise<void>
       orderApps: (data: string[]) => Promise<void>
       handleClientZip: (path: string) => Promise<void>
       handleClientURL: (url: string) => Promise<void>

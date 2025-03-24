@@ -14,10 +14,10 @@ import {
 import Button from '@renderer/components/Button'
 import { useSettingsStore } from '@renderer/stores'
 import { LoggingData } from '@shared/types'
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useMemo } from 'react'
 import Overlay from './Overlay'
 import DownloadNotification from './DownloadNotification'
-import { Client } from '@DeskThing/types'
+import { Client, ClientConnectionMethod } from '@DeskThing/types'
 
 interface ClientDetailsOverlayProps {
   onClose: () => void
@@ -44,9 +44,19 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
   }>({})
   const [supervisorData, setSupervisorData] = useState<Record<string, string>>({})
 
+  const adbId = useMemo(() => {
+    if (client.manifest?.context.method === ClientConnectionMethod.ADB) {
+      return client.manifest.context.adbId
+    } else {
+      return undefined
+    }
+  }, [client.manifest?.context.method])
+
   const getSupervisorData = async (): Promise<void> => {
+    if (!adbId) return
+
     const supervisorResponse = await window.electron.handleClientADB(
-      `-s ${client.adbId} shell supervisorctl status`
+      `-s ${adbId} shell supervisorctl status`
     )
     console.log('Raw adb response (supervisorctl):', supervisorResponse)
     if (supervisorResponse) {
@@ -64,12 +74,12 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
 
   useEffect(() => {
     const getDeviceData = async (): Promise<void> => {
-      if (!client.adbId) return
+      if (!adbId) return
 
       try {
         // Get version info
         const versionResponse = await window.electron.handleClientADB(
-          `-s ${client.adbId} shell cat /etc/superbird/version`
+          `-s ${adbId} shell cat /etc/superbird/version`
         )
         console.log('Raw adb response (version):', versionResponse)
         if (versionResponse) {
@@ -87,7 +97,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
 
         // Get USID info
         const usidResponse = await window.electron.handleClientADB(
-          `-s ${client.adbId} shell cat /sys/class/efuse/usid`
+          `-s ${adbId} shell cat /sys/class/efuse/usid`
         )
         console.log('Raw adb response (usid):', usidResponse)
         // Set USID data
@@ -100,7 +110,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
 
         // Get MAC BT info
         const macBtResponse = await window.electron.handleClientADB(
-          `-s ${client.adbId} shell cat /sys/class/efuse/mac_bt`
+          `-s ${adbId} shell cat /sys/class/efuse/mac_bt`
         )
         console.log('Raw adb response (mac_bt):', macBtResponse)
 
@@ -124,7 +134,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
     }
 
     getDeviceData()
-  }, [client.adbId])
+  }, [adbId])
 
   const handleAdbCommand = async (command: string): Promise<string | undefined> => {
     try {
@@ -172,7 +182,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
     debounceTimeout.current = setTimeout(async () => {
       try {
         await window.electron.handleClientADB(
-          `-s ${client.adbId} shell echo ${transformedValue} > /sys/devices/platform/backlight/backlight/aml-bl/brightness`
+          `-s ${adbId} shell echo ${transformedValue} > /sys/devices/platform/backlight/backlight/aml-bl/brightness`
         )
         setLogging({ status: true, final: true, data: `Brightness set to ${value}%` })
         setShowLogging(true)
@@ -186,7 +196,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
 
   const handlePushStaged = (): void => {
     setShowLogging(true)
-    if (!client.adbId) {
+    if (!adbId) {
       setLogging({ status: true, final: true, data: 'No Device Detected' })
       return
     }
@@ -194,7 +204,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
     try {
       setLogging({ status: true, final: false, data: 'Pushing App' })
       setLoading(true)
-      window.electron.pushStagedApp(client.adbId)
+      window.electron.pushStagedApp(adbId)
       const unsubscribe = window.electron.ipcRenderer.on('logging', (_event, reply) => {
         console.log(reply)
         setLogging(reply)
@@ -217,18 +227,18 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
   }
 
   const restartChromium = (): void => {
-    if (!client.adbId) return
+    if (!adbId) return
 
     setAnimatingIcons((prev) => ({ ...prev, chromium: true }))
-    handleAdbCommand(`-s ${client.adbId} shell supervisorctl restart chromium`)
+    handleAdbCommand(`-s ${adbId} shell supervisorctl restart chromium`)
     setTimeout(() => {
       setAnimatingIcons((prev) => ({ ...prev, chromium: false }))
     }, 1000)
   }
 
   const openPort = (): void => {
-    if (!client.adbId) return
-    handleAdbCommand(`-s ${client.adbId} reverse tcp:${port} tcp:${port}`)
+    if (!adbId) return
+    handleAdbCommand(`-s ${adbId} reverse tcp:${port} tcp:${port}`)
   }
 
   const handlePing = async (): Promise<void> => {
@@ -273,14 +283,14 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
   const handleRestart = async (): Promise<void> => {
     setAnimatingIcons((prev) => ({ ...prev, restart: true }))
 
-    await window.electron.handleClientADB(`-s ${client.adbId} shell reboot`)
+    await window.electron.handleClientADB(`-s ${adbId} shell reboot`)
     setTimeout(() => {
       setAnimatingIcons((prev) => ({ ...prev, restart: false }))
     }, 300)
   }
 
   const handleShutdown = (): void => {
-    window.electron.handleClientADB(`-s ${client.adbId} shell poweroff`)
+    window.electron.handleClientADB(`-s ${adbId} shell poweroff`)
   }
 
   const handleChangeView = (): void => {
@@ -298,9 +308,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
 
     setLogging({ status: true, final: false, data: `Toggling ${key} ${action}...` })
     try {
-      await window.electron.handleClientADB(
-        `-s ${client.adbId} shell supervisorctl ${action} ${key}`
-      )
+      await window.electron.handleClientADB(`-s ${adbId} shell supervisorctl ${action} ${key}`)
       setLogging({ status: false, final: true, data: `${key} ${action}ed successfully` })
     } catch (error) {
       console.error(`Error toggling ${key}:`, error)
@@ -314,7 +322,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
 
   const handleExecuteCommand = async (): Promise<void> => {
     setAnimatingIcons((prev) => ({ ...prev, command: true }))
-    const response = await window.electron.handleClientADB(`-s ${client.adbId} ${command}`)
+    const response = await window.electron.handleClientADB(`-s ${adbId} ${command}`)
     setResponse(response)
     setAnimatingIcons((prev) => ({ ...prev, command: false }))
   }
@@ -332,8 +340,8 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
         />
       )}
       <div className="w-full px-1 py-4 flex items-center gap-2">
-        <h1 className="font-semibold text-2xl">{client.device_type?.name || client.name}</h1>
-        <p className="text-gray-500 text-lg">{client.adbId || client.connectionId}</p>
+        <h1 className="font-semibold text-2xl">{client.manifest?.context.name || client.id}</h1>
+        <p className="text-gray-500 text-lg">{adbId || client.connectionId}</p>
       </div>
       <div className="w-full px-1 gap-1 flex items-center justify-evenly">
         {client.connected && (
@@ -345,7 +353,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
             <p className="bg-black group-hover:block hidden text-nowrap">Set View</p>
           </Button>
         )}
-        {client.adbId && (
+        {adbId && (
           <>
             <Button
               title="Set Device Client to Staged Client"
@@ -426,7 +434,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
         )}
       </div>
       <div className="h-full overflow-y-scroll">
-        {client.adbId && (
+        {adbId && (
           <>
             <div className="my-4 w-full">
               <p className="text-xs font-geistMono text-white">Brightness</p>
@@ -483,21 +491,21 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
           </>
         )}
         <div className="my-4">
-          <p className="text-xs font-geistMono text-gray-500">{client.version}</p>
-          <h3 className="text-xl">{client.name}</h3>
-          <p className="text-xs font-geistMono text-gray-500">{client.description}</p>
+          <p className="text-xs font-geistMono text-gray-500">{client.manifest?.version}</p>
+          <h3 className="text-xl">{client.manifest?.context.name}</h3>
+          <p className="text-xs font-geistMono text-gray-500">{client.manifest?.description}</p>
         </div>
         <div className="my-4">
           <p className="text-xs font-geistMono text-gray-500">Platform</p>
-          <h3 className="text-xl">{client.device_type?.name || 'Unknown'}</h3>
+          <h3 className="text-xl">{client.manifest?.context.name || 'Unknown'}</h3>
         </div>
         <div className="my-4">
           <p className="text-xs font-geistMono text-gray-500">Connection IP</p>
           <h3 className="text-xl">
-            {client.ip}:{client.port}
+            {client.manifest?.context.ip}:{client.manifest?.context.port}
           </h3>
         </div>
-        {client.adbId && (
+        {adbId && (
           <div className="w-full flex flex-col gap-2">
             <div className="flex items-center gap-2 w-full">
               <input

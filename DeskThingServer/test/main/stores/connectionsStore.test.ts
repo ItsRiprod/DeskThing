@@ -96,7 +96,6 @@ describe('ConnectionStore', () => {
 
       await connectionStore.addClient({
         connectionId: 'test',
-        name: 'Test Client',
         id: '',
         connected: false,
         timestamp: 0
@@ -110,19 +109,18 @@ describe('ConnectionStore', () => {
     it('should update existing client correctly', async () => {
       await connectionStore.addClient({
         connectionId: 'test',
-        name: 'Test Client',
         id: '',
         connected: false,
         timestamp: 0
       })
-      await connectionStore.updateClient('test', { name: 'Updated Client' })
+      await connectionStore.updateClient('test', { id: 'Updated Client' })
 
       const clients = connectionStore.getClients()
       expect(clients).toHaveLength(1)
       expect(clients[0]).toEqual(
         expect.objectContaining({
           connectionId: 'test',
-          name: 'Updated Client'
+          id: 'Updated Client'
         })
       )
     })
@@ -144,7 +142,6 @@ describe('ConnectionStore', () => {
 
       await connectionStore.addClient({
         connectionId: 'test',
-        name: 'Test Client',
         id: '',
         connected: false,
         timestamp: 0

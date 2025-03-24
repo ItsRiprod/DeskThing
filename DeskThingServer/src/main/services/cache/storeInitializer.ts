@@ -2,7 +2,7 @@ import { ADBClient } from '@shared/types'
 import { sendIpcData } from '../../index'
 import Logger from '../../utils/logger'
 import { storeProvider } from '../../stores/storeProvider'
-import { AppSettings, Client, LOGGING_LEVELS, SEND_TYPES, ServerEvent } from '@deskthing/types'
+import { Client, LOGGING_LEVELS, APP_REQUESTS, DESKTHING_EVENTS } from '@deskthing/types'
 import { BrowserWindow, ipcMain, shell } from 'electron'
 
 export async function initializeStores(): Promise<void> {
@@ -51,11 +51,11 @@ export async function initializeStores(): Promise<void> {
   })
 
   storeList.AppDataStore.on('settings', (data) => {
-    Logger.debug('[INDEX]: Sending updated setting information with type app-data')
+    Logger.debug('[INDEX]: Sending updated setting information with type app-settings')
 
     sendIpcData({
       type: 'app-settings',
-      payload: data as { appId: string; data: AppSettings }
+      payload: data
     })
   })
 
@@ -117,7 +117,7 @@ export async function initializeStores(): Promise<void> {
     })
   })
 
-  storeList.appStore.onAppMessage(SEND_TYPES.OPEN, (data) => {
+  storeList.appStore.onAppMessage(APP_REQUESTS.OPEN, (data) => {
     if (typeof data.payload == 'string') {
       const windows = BrowserWindow.getAllWindows()
       if (windows.length === 0) {
@@ -140,7 +140,7 @@ export async function initializeStores(): Promise<void> {
     }
   })
 
-  storeList.appStore.onAppMessage(SEND_TYPES.LOG, (data) => {
+  storeList.appStore.onAppMessage(APP_REQUESTS.LOG, (data) => {
     if (data.request && Object.values(LOGGING_LEVELS).includes(data.request)) {
       const message =
         typeof data.payload === 'string'
@@ -154,7 +154,7 @@ export async function initializeStores(): Promise<void> {
   })
 
   storeList.appStore.onAppMessage(
-    SEND_TYPES.GET,
+    APP_REQUESTS.GET,
     (data) => {
       if (data.request != 'input') return
       Logger.warn(
@@ -174,7 +174,7 @@ export async function initializeStores(): Promise<void> {
         async (_event, formData: Record<string, string>) => {
           const appStore = await storeProvider.getStore('appStore')
           appStore.sendDataToApp(data.source, {
-            type: ServerEvent.INPUT,
+            type: DESKTHING_EVENTS.INPUT,
             request: 'data',
             payload: formData
           })

@@ -15,15 +15,15 @@ export const TaskSettingComponent: FC<StepPropsMap[STEP_TYPES.SETTING]> = ({ ste
   const setAppSettings = useAppStore((state) => state.setAppSettings)
   const [stepCompleted, setIsComplete] = useState(false)
   const [setting, setSetting] = useState<SettingsType | null | undefined>(
-    typeof step.setting !== 'string' ? step.setting : null
+    'type' in step.setting ? step.setting : null
   )
 
   useEffect(() => {
-    if (typeof step.setting === 'string') {
+    if (!('type' in step.setting)) {
       const fetchSetting = async (): Promise<void> => {
-        const settings = await getSetting(source)
-        if (settings?.[step.setting as string]) {
-          setSetting(settings[step.setting as string])
+        const settings = await getSetting(step.setting.source || source)
+        if (step.setting.id && settings?.[step.setting.id]) {
+          setSetting(settings[step.setting.id])
         }
       }
       fetchSetting()
@@ -43,10 +43,11 @@ export const TaskSettingComponent: FC<StepPropsMap[STEP_TYPES.SETTING]> = ({ ste
         if (settings[step.setting].type == setting.type) {
           const updatedSetting: SettingsType = settings[step.setting]
           updatedSetting.value = setting.value
+          updatedSetting.id = step.setting
 
           setAppSettings(source, {
             ...settings,
-            [step.setting]: updatedSetting
+            [updatedSetting.id]: { ...updatedSetting, id: step.setting }
           })
         }
       }
@@ -69,7 +70,7 @@ export const TaskSettingComponent: FC<StepPropsMap[STEP_TYPES.SETTING]> = ({ ste
       console.log('Changing the settings', setting.value)
       setSetting((settingType) => {
         if (!settingType) {
-          return typeof step.setting !== 'string' ? step.setting : null
+          return 'type' in step.setting ? step.setting : null
         }
         console.log('Setting is now', settingType.value)
         return {

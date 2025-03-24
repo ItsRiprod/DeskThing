@@ -1,3 +1,4 @@
+import { ClientConnectionMethod } from '@deskthing/types'
 import { getClientManifest } from '@server/handlers/deviceHandler'
 import { storeProvider } from '@server/stores/storeProvider'
 import logger from '@server/utils/logger'
@@ -123,9 +124,9 @@ export class FeedbackService {
     // Get connected clients
     const connectedClients = await connectionStore.getClients()
     systemInfo.clients = connectedClients.map((client) => ({
-      name: client.name || 'Unknown Device',
-      connectionType: client.ip || 'direct',
-      deviceType: client.device_type?.name || 'unknown',
+      name: client.manifest?.name || 'Unknown Device',
+      connectionType: ClientConnectionMethod[client.manifest?.context.method || 0],
+      deviceType: client.manifest?.context?.name || 'unknown',
       connectionDuration: client.timestamp
         ? this.formatDuration(Date.now() - client.timestamp)
         : 'unknown'

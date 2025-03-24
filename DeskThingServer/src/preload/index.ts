@@ -13,17 +13,17 @@ import {
   TaskList,
   AppReleaseCommunity,
   AppReleaseMeta,
-  EventPayload,
   AppReleaseSingleMeta,
   Profile,
   Client,
+  Button,
   ButtonMapping,
-  ClientReleaseMeta
+  ClientReleaseMeta,
+  DeskThingToAppData
 } from '@DeskThing/types'
 import {
   Log,
   AppReturnData,
-  Button,
   FeedbackReport,
   IPC_HANDLERS,
   Settings,
@@ -159,7 +159,7 @@ const api = {
       })
   },
 
-  handleResponseToUserData: async (requestId: string, payload: EventPayload): Promise<void> =>
+  handleResponseToUserData: async (requestId: string, payload: DeskThingToAppData): Promise<void> =>
     await sendCommand('APPS', {
       kind: 'app',
       type: APP_TYPES.USER_DATA_RESPONSE,
@@ -173,7 +173,7 @@ const api = {
       payload: { appPath: path }
     }),
 
-  sendDataToApp: async (data: EventPayload & { app: string }): Promise<void> =>
+  sendDataToApp: async (data: DeskThingToAppData & { app: string }): Promise<void> =>
     await sendCommand('APPS', {
       kind: 'app',
       type: APP_TYPES.SEND_TO_APP,

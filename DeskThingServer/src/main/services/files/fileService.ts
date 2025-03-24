@@ -7,6 +7,20 @@ import { join } from 'path'
 import fs from 'node:fs'
 import Logger from '@server/utils/logger'
 
+class FileServiceError extends Error {
+  constructor(
+    message: string,
+    public cause?: unknown
+  ) {
+    super(message)
+    this.name = 'FileServiceError'
+    // Capture original stack if possible
+    if (cause instanceof Error) {
+      this.stack = `${this.stack}\nCaused by: ${cause.stack}`
+    }
+  }
+}
+
 class FileOperationQueue {
   private queues: Map<string, Array<() => Promise<void>>> = new Map()
   private processingQueues: Set<string> = new Set()
@@ -79,22 +93,23 @@ export const readFromFile = async <T>(filename: string): Promise<T | undefined> 
   return fileQueue.enqueue(filename, async () => {
     const dataFilePath = join(app.getPath('userData'), filename)
     try {
-      try {
-        await fs.promises.access(dataFilePath)
-      } catch (err) {
-        throw new Error(`[readFromFile]: File ${filename} does not exist or do not have access`, {
-          cause: err
-        })
-      }
-
       const rawData = await fs.promises.readFile(dataFilePath)
       return JSON.parse(rawData.toString())
-    } catch (err) {
-      Logger.error('Error reading data', {
-        error: err as Error,
-        source: 'readFromFile'
-      })
-      throw new Error(`[readFromFile]: Error reading data from file ${filename}`, { cause: err })
+    } catch (error) {
+
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+        Logger.debug(`File not found: ${filename}`, {
+          source: 'readFromFile'
+        })
+        // Return undefined or create default data
+        return undefined
+      }
+
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      throw new FileServiceError(
+        `[readFromFile] Failed to read data ${filename} with: ${errorMessage}`,
+        error
+      )
     }
   })
 }

@@ -10,8 +10,9 @@ import {
   SocketData,
   Action,
   SettingsType,
-  ServerEvent,
-  EventPayload
+  DESKTHING_EVENTS,
+  AppToDeskThingData
+AppToDeskThingData
 } from '@DeskThing/types'
 import { Client, ServerIPCData, Settings } from '@shared/types'
 import { HandleDeviceData } from '../../handlers/deviceHandler'
@@ -216,10 +217,11 @@ export const setupServer = async (): Promise<void> => {
         ) {
           const { appStore } = await import('@server/stores')
           appStore.sendDataToApp(messageData.app.toLowerCase(), {
-            type: messageData.type as ServerEvent,
+            type: messageData.type as DESKTHING_EVENTS,
             request: messageData.request,
             payload: messageData.payload
-          } as EventPayload)
+          } as AppToDeskThingData
+AppToDeskThingData)
         } else if (messageData.app === 'server') {
           // Handle server requests
           handleServerMessage(socket, client, messageData)

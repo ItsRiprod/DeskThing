@@ -3,6 +3,8 @@ import cors from 'cors'
 import { Server } from 'node:http'
 import { join } from 'node:path'
 import fs from 'node:fs'
+import { readFile } from 'node:fs/promises'
+import { ClientManifest } from '@deskthing/types'
 
 export class ExpressServer {
   private app: express.Application
@@ -49,21 +51,24 @@ export class ExpressServer {
   private setupClientRoutes(): void {
     const webAppDir = join(this.userDataPath, 'webapp')
 
-    this.app.get('/client/manifest.js', async (req: Request, res: Response) => {
-      const manifestPath = join(webAppDir, 'manifest.js')
+    this.app.get('/client/manifest.json', async (req: Request, res: Response) => {
+      const manifestPath = join(webAppDir, 'manifest.json')
       const clientIp = req.hostname
 
-      if (fs.existsSync(manifestPath)) {
-        let manifestContent = fs.readFileSync(manifestPath, 'utf8')
-        manifestContent = manifestContent.replace(
-          /"ip":\s*".*?"/,
-          `"ip": "${clientIp === '127.0.0.1' ? 'localhost' : clientIp}"`
-        )
-        res.type('application/javascript').send(manifestContent)
+      try {
+        const manifestContent = await readFile(manifestPath, 'utf8')
+        const manifest = JSON.parse(manifestContent) as ClientManifest
+
+        // Change to the clients IP
+        manifest.context.ip = clientIp === '127.0.0.1' ? 'localhost' : clientIp
+        manifest.context.port = this.port
+
+        res.type('application/json').send(manifestContent)
         return
+      } catch (error) {
+        console.error('Error reading manifest:', error)
+        res.status(404).send('manifest.json not found. Do you have a client installed?')
       }
-      res.sendStatus(404).send('Manifest not found')
-      return
     })
 
     if (fs.existsSync(webAppDir)) {

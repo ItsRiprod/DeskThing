@@ -7,7 +7,7 @@ import {
   PlatformEventPayloads,
   PlatformStatus
 } from '@shared/interfaces/platform'
-import { SocketData, Client } from '@DeskThing/types'
+import { SocketData, Client, DeskThingToDeviceData } from '@DeskThing/types'
 import wsPath from './wsWebsocket?modulePath'
 import { app } from 'electron'
 import logger from '@server/utils/logger'
@@ -125,7 +125,10 @@ export class WebSocketPlatform implements PlatformInterface {
     this.isActive = false
   }
 
-  async sendData(clientId: string, data: SocketData): Promise<boolean> {
+  async sendData<T extends string>(
+    clientId: string,
+    data: DeskThingToDeviceData & { app: T }
+  ): Promise<boolean> {
     if (!this.isActive) return false
     this.worker.postMessage({ type: 'sendData', clientId, data })
     return true

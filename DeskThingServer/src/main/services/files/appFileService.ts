@@ -18,7 +18,7 @@ import { App, LOGGING_LEVELS, AppManifest } from '@DeskThing/types'
 import Logger from '@server/utils/logger'
 import { AppData } from '@shared/types'
 import { readFromFile, writeToFile } from './fileService'
-import { verifyAppDataStructure, sanitizeAppStructure } from '../apps/appValidator'
+import { verifyAppInstanceStructure, sanitizeAppStructure } from '../apps/appValidator'
 
 const defaultData: AppData = {}
 
@@ -33,7 +33,7 @@ const readData = async (): Promise<AppData> => {
   const dataFilePath = 'apps.json'
   try {
     const data = (await readFromFile<AppData>(dataFilePath)) || undefined
-    verifyAppDataStructure(data)
+    verifyAppInstanceStructure(data)
     // If data is of type AppData, return it
     return data
   } catch (err) {
@@ -63,7 +63,7 @@ const writeData = async (data: AppData): Promise<void> => {
       function: 'writeData'
     })
 
-    verifyAppDataStructure(data)
+    verifyAppInstanceStructure(data)
 
     await writeToFile<AppData>(data, 'apps.json')
   } catch (err) {

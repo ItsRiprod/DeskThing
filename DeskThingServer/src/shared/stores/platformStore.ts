@@ -3,12 +3,7 @@ import {
   PlatformConnectionOptions,
   PlatformStatus
 } from '@shared/interfaces/platform'
-import {
-  SendToDeviceFromServerPayload,
-  SocketData,
-  Client,
-  DeviceToDeskthing
-} from '@DeskThing/types'
+import { SocketData, Client, DeviceToDeskthingData, DeskThingToDeviceCore } from '@DeskThing/types'
 import { StoreInterface } from '@shared/interfaces/storeInterface'
 
 export enum PlatformStoreEvent {
@@ -55,14 +50,13 @@ export interface PlatformStoreClass extends StoreInterface {
   getPlatformForClient(clientId: string): PlatformInterface | undefined
   handleSocketData(
     client: Client,
-    data: DeviceToDeskthing & { connectionId: string }
+    data: DeviceToDeskthingData & { connectionId: string }
   ): Promise<void>
-  sendDataToClient<T extends string>(
-    clientId: string,
-    data: SendToDeviceFromServerPayload<T> & { app: T }
+  sendDataToClient(
+    data: DeskThingToDeviceCore & { app?: string; clientId: string }
   ): Promise<boolean>
-  broadcastToClients<T extends string>(
-    data: SendToDeviceFromServerPayload<T> & { app: T }
+  broadcastToClients(
+    data: DeskThingToDeviceCore & { app?: string; clientId?: string }
   ): Promise<void>
   getPlatformStatus(): {
     activePlatforms: string[]

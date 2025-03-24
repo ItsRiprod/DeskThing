@@ -8,10 +8,11 @@ import { MusicStoreClass } from '@shared/stores/musicStore'
 import {
   LOGGING_LEVELS,
   SongData,
-  ServerEvent,
   MusicEventPayloads,
-  SEND_TYPES,
-  FromDeviceDataEvents
+  APP_REQUESTS,
+  DESKTHING_DEVICE,
+  SongEvent,
+  AUDIO_REQUESTS
 } from '@DeskThing/types'
 import { CacheableStore, Settings } from '@shared/types'
 import { SettingsStoreClass } from '@shared/stores/settingsStore'
@@ -84,8 +85,12 @@ export class MusicStore implements CacheableStore, MusicStoreClass {
       await this.initialize()
       await this.handleDataReceived(data)
     })
-    this.appStore.onAppMessage(SEND_TYPES.SONG, (data) => {
+    this.appStore.onAppMessage(APP_REQUESTS.SONG, (data) => {
       this.initialize()
+      Logger.debug('Received music data from app process', {
+        source: 'MusicStore',
+        function: 'handleMusicMessage'
+      })
       this.handleMusicMessage(data)
     })
 
@@ -282,9 +287,9 @@ export class MusicStore implements CacheableStore, MusicStoreClass {
 
     try {
       this.appStore.sendDataToApp(currentApp, {
-        type: ServerEvent.GET,
-        request: 'refresh',
-        payload: ''
+        type: SongEvent.GET,
+        request: AUDIO_REQUESTS.REFRESH,
+        app: 'music'
       })
       Logger.log(LOGGING_LEVELS.LOG, `[MusicStore]: Refreshed with ${currentApp}!`)
     } catch (error) {
@@ -346,7 +351,7 @@ export class MusicStore implements CacheableStore, MusicStoreClass {
     this.appStore.sendDataToApp(currentApp, songData)
   }
 
-  private handleMusicMessage: AppProcessListener<SEND_TYPES.SONG> = async (
+  private handleMusicMessage: AppProcessListener<APP_REQUESTS.SONG> = async (
     appData
   ): Promise<void> => {
     if (!appData || typeof appData !== 'object') {
@@ -364,13 +369,13 @@ export class MusicStore implements CacheableStore, MusicStoreClass {
           color: color
         }
         this.platformStore.broadcastToClients({
-          type: FromDeviceDataEvents.MUSIC,
+          type: DESKTHING_DEVICE.MUSIC,
           app: 'client',
           payload: songDataWithColor
         })
       } else {
         this.platformStore.broadcastToClients({
-          type: FromDeviceDataEvents.MUSIC,
+          type: DESKTHING_DEVICE.MUSIC,
           app: 'client',
           payload: songData
         })

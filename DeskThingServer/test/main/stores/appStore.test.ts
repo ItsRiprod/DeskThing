@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { AppStore } from '@server/stores/appStore'
 import { AppProcessStoreClass } from '@shared/stores/appProcessStore'
-import { App, SEND_TYPES } from '@DeskThing/types'
+import { App, APP_REQUESTS } from '@DeskThing/types'
 import Logger from '@server/utils/logger'
 import { AuthStoreClass } from '@shared/stores/authStore'
 
@@ -60,8 +60,7 @@ describe('AppStore', () => {
 
   beforeEach(() => {
     mockAppProcessStore = {
-      onProcessEvent: vi.fn(),
-      onMessage: vi.fn(),
+      on: vi.fn(),
       postMessage: vi.fn(),
       spawnProcess: vi.fn(),
       terminateProcess: vi.fn(),
@@ -209,17 +208,11 @@ describe('AppStore', () => {
     it('should handle app message subscription', () => {
       const mockListener = vi.fn()
       const mockFilters = { app: 'testApp' }
-      const mockUnsubscribe = vi.fn()
-      vi.mocked(mockAppProcessStore.onMessage).mockReturnValue(mockUnsubscribe)
 
-      const result = appStore.onAppMessage(SEND_TYPES.TOAPP, mockListener, mockFilters)
+      const result = appStore.onAppMessage(APP_REQUESTS.TOAPP, mockListener, mockFilters)
 
-      expect(mockAppProcessStore.onMessage).toHaveBeenCalledWith(
-        SEND_TYPES.TOAPP,
-        expect.any(Function),
-        mockFilters
-      )
-      expect(result).toBe(mockUnsubscribe)
+      expect(mockAppProcessStore.on).toHaveBeenCalledWith(APP_REQUESTS.TOAPP, expect.any(Function))
+      expect(typeof result).toBe('function')
     })
     it('should validate required apps before starting', async () => {
       const app: App = {

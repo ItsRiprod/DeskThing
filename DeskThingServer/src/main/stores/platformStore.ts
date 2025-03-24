@@ -6,15 +6,13 @@ import {
 } from '@shared/interfaces/platform'
 import {
   AppSettings,
-  CombinedMappings,
-  FromDeskthingToDeviceEvents,
-  FromDeviceData,
-  FromDeviceDataEvents,
-  SEND_TYPES,
-  SendToDeviceFromServerPayload,
+  MappingProfile,
+  DeviceToDeskthingData,
   Client,
-  ServerEvent,
-  DeviceToDeskthing
+  APP_REQUESTS,
+  DESKTHING_EVENTS,
+  DESKTHING_DEVICE,
+  DeskThingToDeviceCore
 } from '@DeskThing/types'
 import Logger from '@server/utils/logger'
 import {
@@ -70,14 +68,17 @@ export class PlatformStore implements PlatformStoreClass {
   }
 
   private setupListeners(): void {
-    this.appStore.onAppMessage(SEND_TYPES.SEND, (appData) => {
+    this.appStore.onAppMessage(APP_REQUESTS.SEND, (appData) => {
       if (appData.payload.clientId) {
-        this.sendDataToClient(appData.payload.clientId, {
-          app: appData.source,
-          ...appData.payload
-        } as FromDeviceData)
+        this.sendDataToClient({
+          ...appData.payload,
+          clientId: appData.payload.clientId
+        } as DeskThingToDeviceCore & { clientId: string })
       } else {
-        this.broadcastToClients({ app: appData.source, ...appData.payload } as FromDeviceData)
+        this.broadcastToClients({
+          appId: appData.source,
+          ...appData.payload
+        } as DeskThingToDeviceCore)
       }
     })
 
@@ -85,13 +86,13 @@ export class PlatformStore implements PlatformStoreClass {
       const filteredApps = apps.data.filter((app) => app.manifest?.isWebApp !== false)
       this.broadcastToClients({
         app: 'client',
-        type: FromDeviceDataEvents.APPS,
+        type: DESKTHING_DEVICE.APPS,
         payload: filteredApps
       })
     })
 
     this.appStore.onAppMessage(
-      SEND_TYPES.GET,
+      APP_REQUESTS.GET,
       (data) => {
         if (data.request != 'connections') return
         Logger.debug(`Handling request for all of the connections`, {
@@ -100,7 +101,7 @@ export class PlatformStore implements PlatformStoreClass {
           domain: data.source
         })
         this.appStore.sendDataToApp(data.source, {
-          type: ServerEvent.CLIENT_STATUS,
+          type: DESKTHING_EVENTS.CLIENT_STATUS,
           request: 'connections',
           payload: this.getClients()
         })
@@ -114,8 +115,8 @@ export class PlatformStore implements PlatformStoreClass {
       isValidAppSettings(settings.data)
       this.broadcastToClients({
         app: 'client',
-        type: FromDeviceDataEvents.SETTINGS,
-        payload: { ...settings.data, app: settings.appId } as AppSettings & { app?: string }
+        type: DESKTHING_DEVICE.SETTINGS,
+        payload: settings.data
       })
     })
 
@@ -123,7 +124,7 @@ export class PlatformStore implements PlatformStoreClass {
       if (updates) {
         this.broadcastToClients({
           app: 'client',
-          type: FromDeviceDataEvents.ICON,
+          type: DESKTHING_DEVICE.ICON,
           request: 'set',
           payload: updates
         })
@@ -132,7 +133,7 @@ export class PlatformStore implements PlatformStoreClass {
 
     this.on(PlatformStoreEvent.CLIENT_CONNECTED, (client) => {
       this.appStore.broadcastToApps({
-        type: ServerEvent.CLIENT_STATUS,
+        type: DESKTHING_EVENTS.CLIENT_STATUS,
         request: 'connected',
         payload: client
       })
@@ -140,7 +141,7 @@ export class PlatformStore implements PlatformStoreClass {
 
     this.on(PlatformStoreEvent.CLIENT_DISCONNECTED, (clientId) => {
       this.appStore.broadcastToApps({
-        type: ServerEvent.CLIENT_STATUS,
+        type: DESKTHING_EVENTS.CLIENT_STATUS,
         request: 'disconnected',
         payload: clientId
       })
@@ -359,7 +360,7 @@ export class PlatformStore implements PlatformStoreClass {
   // Data handling
   async handleSocketData(
     client: Client,
-    data: DeviceToDeskthing & { connectionId: string }
+    data: DeviceToDeskthingData & { connectionId: string }
   ): Promise<void> {
     // TODO: Fully implement this
     const platform = this.getPlatformForClient(client.id)
@@ -386,13 +387,17 @@ export class PlatformStore implements PlatformStoreClass {
     this.notify(PlatformStoreEvent.DATA_RECEIVED, { client, data })
   }
 
-  async sendDataToClient<T extends string>(
-    clientId: string,
-    data: Extract<SendToDeviceFromServerPayload<T>, { app: T }>
+  async sendDataToClient(
+    data: DeskThingToDeviceCore & { app?: string; clientId: string }
   ): Promise<boolean> {
-    const platform = this.getPlatformForClient(clientId)
+    Logger.debug(`Sending data to client ${data.clientId}: ${JSON.stringify(data)}`, {
+      domain: 'platform',
+      source: 'platformStore',
+      function: 'sendDataToClient'
+    })
+    const platform = this.getPlatformForClient(data.clientId)
     if (!platform) {
-      Logger.warn(`Cannot send data: No platform found for client ${clientId}`, {
+      Logger.warn(`Cannot send data: No platform found for client ${data.clientId}`, {
         domain: 'platform',
         source: 'platformStore',
         function: 'sendDataToClient'
@@ -401,9 +406,9 @@ export class PlatformStore implements PlatformStoreClass {
     }
 
     try {
-      return await platform.sendData(clientId, data)
+      return await platform.sendData(data.clientId, data)
     } catch (error) {
-      Logger.error(`Error sending data to client ${clientId}`, {
+      Logger.error(`Error sending data to client ${data.clientId}`, {
         error: error as Error,
         domain: 'platform',
         source: 'platformStore',
@@ -413,9 +418,15 @@ export class PlatformStore implements PlatformStoreClass {
     }
   }
 
-  async broadcastToClients<T extends string>(
-    data: SendToDeviceFromServerPayload<T> & { app: T }
+  async broadcastToClients(
+    data: DeskThingToDeviceCore & { app?: string; clientId?: string }
   ): Promise<void> {
+    Logger.debug(`Broadcasting data to clients: ${JSON.stringify(data)}`, {
+      domain: 'platform',
+      source: 'platformStore',
+      function: 'broadcastToClients'
+    })
+
     const promises = Array.from(this.platforms.values())
       .filter((platform) => platform.isRunning())
       .map((platform) =>
@@ -537,15 +548,16 @@ export class PlatformStore implements PlatformStoreClass {
       const filteredAppData = appData.filter((app) => app.manifest?.isWebApp !== false)
 
       if (clientId) {
-        this.sendDataToClient(clientId, {
+        this.sendDataToClient({
           app: 'client',
-          type: FromDeviceDataEvents.APPS,
-          payload: filteredAppData
+          type: DESKTHING_DEVICE.APPS,
+          payload: filteredAppData,
+          clientId
         })
       } else {
         this.broadcastToClients({
           app: 'client',
-          type: FromDeviceDataEvents.APPS,
+          type: DESKTHING_DEVICE.APPS,
           payload: filteredAppData
         })
       }
@@ -571,14 +583,13 @@ export class PlatformStore implements PlatformStoreClass {
   private async sendSettingsToClient(clientId?: string, settings?: AppSettings): Promise<void> {
     try {
       const appData = await this.appStore.getAll()
-      const appDataStore = await storeProvider.getStore('appDataStore')
       const mergedSettings: Record<string, AppSettings> = {}
 
       if (appData) {
         await Promise.all(
           appData.map(async (app) => {
             if (app) {
-              const appSettings = settings || (await appDataStore.getSettings(app.name))
+              const appSettings = settings || (await this.appDataStore.getSettings(app.name))
               if (appSettings) {
                 mergedSettings[app.name] = appSettings
               }
@@ -588,15 +599,16 @@ export class PlatformStore implements PlatformStoreClass {
       }
 
       if (clientId) {
-        this.sendDataToClient(clientId, {
+        this.sendDataToClient({
           app: 'client',
-          type: FromDeskthingToDeviceEvents.GLOBAL_SETTINGS,
-          payload: mergedSettings
+          type: DESKTHING_DEVICE.GLOBAL_SETTINGS,
+          payload: mergedSettings,
+          clientId
         })
       } else {
         this.broadcastToClients({
           app: 'client',
-          type: FromDeskthingToDeviceEvents.GLOBAL_SETTINGS,
+          type: DESKTHING_DEVICE.GLOBAL_SETTINGS,
           payload: mergedSettings
         })
       }
@@ -626,21 +638,24 @@ export class PlatformStore implements PlatformStoreClass {
       const actions = await mappingStore.getActions()
 
       if (mappings) {
-        const combinedActions: CombinedMappings = {
+        const combinedActions: MappingProfile = {
           ...mappings,
-          actions: actions
+          actions: actions,
+          keys: null,
+          profileId: 'default'
         }
 
         if (clientId) {
-          this.sendDataToClient(clientId, {
+          this.sendDataToClient({
             app: 'client',
-            type: FromDeskthingToDeviceEvents.MAPPINGS,
-            payload: combinedActions
+            type: DESKTHING_DEVICE.MAPPINGS,
+            payload: combinedActions,
+            clientId
           })
         } else {
           this.broadcastToClients({
             app: 'client',
-            type: FromDeskthingToDeviceEvents.MAPPINGS,
+            type: DESKTHING_DEVICE.MAPPINGS,
             payload: combinedActions
           })
         }
@@ -670,7 +685,7 @@ export class PlatformStore implements PlatformStoreClass {
       if (!clientId) {
         this.broadcastToClients({
           app: 'client',
-          type: FromDeviceDataEvents.TIME,
+          type: DESKTHING_DEVICE.TIME,
           request: 'set',
           payload: {
             utcTime: Date.now(),
@@ -678,9 +693,10 @@ export class PlatformStore implements PlatformStoreClass {
           }
         })
       } else {
-        this.sendDataToClient(clientId, {
+        this.sendDataToClient({
           app: 'client',
-          type: FromDeviceDataEvents.TIME,
+          clientId,
+          type: DESKTHING_DEVICE.TIME,
           request: 'set',
           payload: {
             utcTime: Date.now(),
@@ -709,18 +725,31 @@ export class PlatformStore implements PlatformStoreClass {
 
   private async sendManifestRequest(clientId?: string): Promise<void> {
     if (clientId) {
-      this.sendDataToClient(clientId, {
+      this.sendDataToClient({
         app: 'client',
-        type: FromDeskthingToDeviceEvents.GET,
-        request: 'manifest'
+        type: DESKTHING_DEVICE.GET,
+        request: 'manifest',
+        clientId
       })
     } else {
       this.broadcastToClients({
         app: 'client',
-        type: FromDeskthingToDeviceEvents.GET,
+        type: DESKTHING_DEVICE.GET,
         request: 'manifest'
       })
     }
+  }
+
+  private async sendConnectionIdToClient(clientId: string): Promise<void> {
+    this.sendDataToClient({
+      app: 'client',
+      type: DESKTHING_DEVICE.META_DATA,
+      request: 'set',
+      payload: {
+        connectionId: clientId
+      },
+      clientId
+    })
   }
 
   private async sendInitialDataToClient(clientId?: string): Promise<void> {
@@ -729,5 +758,8 @@ export class PlatformStore implements PlatformStoreClass {
     await this.sendMappingsToClient(clientId)
     await this.sendTimeToClient(clientId)
     await this.sendManifestRequest(clientId)
+    if (clientId) {
+      await this.sendConnectionIdToClient(clientId)
+    }
   }
 }

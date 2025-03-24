@@ -1,6 +1,6 @@
 // types
 import { FullTaskList, CacheableStore } from '@shared/types'
-import { LOGGING_LEVELS, SEND_TYPES, ServerEvent, Step, Task } from '@DeskThing/types'
+import { LOGGING_LEVELS, APP_REQUESTS, Step, Task, DESKTHING_EVENTS } from '@DeskThing/types'
 import {
   TaskStoreClass,
   TaskStoreEvents,
@@ -49,7 +49,7 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
   }
 
   private initializeListeners = (): void => {
-    this.appStore.onAppMessage(SEND_TYPES.TASK, async (data) => {
+    this.appStore.onAppMessage(APP_REQUESTS.TASK, async (data) => {
       try {
         const source = data.source
 
@@ -66,7 +66,7 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
             const tasks = await this.appDataStore.getTasks(data.payload?.source || source)
             if (tasks) {
               this.appStore.sendDataToApp(source, {
-                type: ServerEvent.TASKS,
+                type: DESKTHING_EVENTS.TASKS,
                 payload: tasks,
                 request: 'update'
               })
@@ -143,7 +143,7 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
     })
 
     // Handle step operations
-    this.appStore.onAppMessage(SEND_TYPES.STEP, async (data) => {
+    this.appStore.onAppMessage(APP_REQUESTS.STEP, async (data) => {
       try {
         const source = data.source
 
@@ -157,7 +157,7 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
               )
               if (step) {
                 this.appStore.sendDataToApp(source, {
-                  type: ServerEvent.TASKS,
+                  type: DESKTHING_EVENTS.TASKS,
                   payload: step,
                   request: 'step'
                 })

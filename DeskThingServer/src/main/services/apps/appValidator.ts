@@ -230,11 +230,11 @@ export const isValidAppSettings: (
  * @throws Error when not a structure
  * @param apps - The AppData
  * */
-export const verifyAppDataStructure: (
+export const verifyAppInstanceStructure: (
   apps?: unknown | AppData | LegacyAppData
 ) => asserts apps is AppData = (apps) => {
-  if (!apps) throw new Error('[verifyAppDataStructure] Apps do not exist')
-  if (typeof apps != 'object') throw new Error('[verifyAppStructure] Apps is not an object')
+  if (!apps) throw new Error('[verifyAppInstanceStructure] Apps do not exist or is not defined')
+  if (typeof apps != 'object') throw new Error('[verifyAppInstanceStructure] Apps is not an object')
 
   // Only old structures should have apps and config
   if ('apps' in apps && 'config' in apps) {
@@ -259,10 +259,7 @@ export const verifyAppDataStructure: (
         sanitizeAppStructure(app as Partial<App>)
         apps[appId] = app
       } catch (error) {
-        handleError(
-          error,
-          `[verifyAppDataStructure]: App ${app || 'unknown'} had issue being verified`
-        )
+        handleError(error, `[verifyAppDataStructure]: App ${appId} had issue being verified`)
       }
     })
   }
