@@ -1,35 +1,36 @@
 // Store Classes
 import { AppDataStoreClass } from '@shared/stores/appDataStore'
 import { AppStoreClass } from '@shared/stores/appStore'
-import { ConnectionStoreClass } from '@shared/stores/connectionsStore'
-import { GithubStoreClass } from '@shared/stores/githubStore'
+import { releaseStoreClass } from '@shared/stores/releaseStore'
 import { MappingStoreClass } from '@shared/stores/mappingStore'
 import { MusicStoreClass } from '@shared/stores/musicStore'
 import { SettingsStoreClass } from '@shared/stores/settingsStore'
 import { AppProcessStoreClass } from '@shared/stores/appProcessStore'
 import { TaskStoreClass } from '@shared/stores/taskStore'
 import { PlatformStoreClass } from '@shared/stores/platformStore'
+import { AuthStoreClass } from '@shared/stores/authStore'
+import { ClientStoreClass } from '@shared/stores/clientStore'
+import { UpdateStoreClass } from '@shared/stores/updateStore'
 
 // Stores
 
 // import { ExpressServerStoreClass } from '@shared/stores/expressServerStore'
 // import { ExpressServerManager } from './_expressServerStore'
 import logger from '@server/utils/logger'
-import { AuthStoreClass } from '@shared/stores/authStore'
 
 interface Stores {
-  settingsStore: SettingsStoreClass
-  taskStore: TaskStoreClass
-  appStore: AppStoreClass
   appDataStore: AppDataStoreClass
-  connectionsStore: ConnectionStoreClass
-  githubStore: GithubStoreClass
+  appProcessStore: AppProcessStoreClass
+  appStore: AppStoreClass
+  authStore: AuthStoreClass
+  clientStore: ClientStoreClass
+  releaseStore: releaseStoreClass
   mappingStore: MappingStoreClass
   musicStore: MusicStoreClass
-  appProcessStore: AppProcessStoreClass
   platformStore: PlatformStoreClass
-  authStore: AuthStoreClass
-  // expressServerStore: ExpressServerStoreClass
+  settingsStore: SettingsStoreClass
+  taskStore: TaskStoreClass
+  updateStore: UpdateStoreClass
 }
 
 export class StoreProvider {
@@ -46,15 +47,16 @@ export class StoreProvider {
     const storeImports = {
       appDataStore: () => import('./appDataStore').then((m) => m.AppDataStore),
       appStore: () => import('./appStore').then((m) => m.AppStore),
-      connectionsStore: () => import('./connectionsStore').then((m) => m.ConnectionStore),
       authStore: () => import('./authStore').then((m) => m.AuthStore),
-      githubStore: () => import('./githubStore').then((m) => m.GithubStore),
+      releaseStore: () => import('./releaseStore').then((m) => m.releaseStore),
       mappingStore: () => import('./mappingStore').then((m) => m.MappingStore),
       musicStore: () => import('./musicStore').then((m) => m.MusicStore),
       settingsStore: () => import('./settingsStore').then((m) => m.SettingsStore),
       taskStore: () => import('./taskStore').then((m) => m.TaskStore),
       appProcessStore: () => import('./appProcessStore').then((m) => m.AppProcessStore),
-      platformStore: () => import('./platformStore').then((m) => m.PlatformStore)
+      platformStore: () => import('./platformStore').then((m) => m.PlatformStore),
+      clientStore: () => import('./clientStore').then((m) => m.ClientStore),
+      updateStore: () => import('./updateStore').then((m) => m.UpdateStore)
     }
 
     this.storeInitializers = {
@@ -80,13 +82,7 @@ export class StoreProvider {
           await this.getStore('appDataStore', false),
           await this.getStore('appStore', false)
         ),
-      connectionsStore: async () =>
-        new (await storeImports.connectionsStore())(
-          await this.getStore('settingsStore', false),
-          await this.getStore('taskStore', false),
-          await this.getStore('platformStore', false)
-        ),
-      githubStore: async () => new (await storeImports.githubStore())(),
+      releaseStore: async () => new (await storeImports.releaseStore())(),
       mappingStore: async () =>
         new (await storeImports.mappingStore())(await this.getStore('appStore', false)),
       musicStore: async () =>
@@ -94,7 +90,9 @@ export class StoreProvider {
           await this.getStore('settingsStore', false),
           await this.getStore('appStore', false),
           await this.getStore('platformStore', false)
-        )
+        ),
+      clientStore: async () => new (await storeImports.clientStore())(),
+      updateStore: async () => new (await storeImports.updateStore())()
     }
 
     this.initialize()

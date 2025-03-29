@@ -12,7 +12,9 @@ import {
   APP_REQUESTS,
   DESKTHING_DEVICE,
   SongEvent,
-  AUDIO_REQUESTS
+  AUDIO_REQUESTS,
+  SocketData,
+  Client
 } from '@DeskThing/types'
 import { CacheableStore, Settings } from '@shared/types'
 import { SettingsStoreClass } from '@shared/stores/settingsStore'
@@ -22,11 +24,7 @@ import { AppStoreClass } from '@shared/stores/appStore'
 import Logger from '@server/utils/logger'
 import { getAppByName } from '../services/files/appFileService'
 import { getColorFromImage } from '../services/music/musicUtils'
-import {
-  PlatformStoreClass,
-  PlatformStoreEvent,
-  PlatformStoreListener
-} from '@shared/stores/platformStore'
+import { PlatformStoreClass, PlatformStoreEvent } from '@shared/stores/platformStore'
 import { AppProcessListener } from '@shared/stores/appProcessStore'
 // import { getNowPlaying } from '../services/music/musicController'
 
@@ -100,9 +98,7 @@ export class MusicStore implements CacheableStore, MusicStoreClass {
     })
   }
 
-  private handleDataReceived: PlatformStoreListener<PlatformStoreEvent.DATA_RECEIVED> = (
-    data
-  ): void => {
+  private handleDataReceived = (data: { client: Client; data: SocketData }): void => {
     if (data.data.app) {
       this.currentApp = data.data.app
     }

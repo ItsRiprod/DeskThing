@@ -12,5 +12,6 @@
     "norndis",
     "Reflash",
     "TOAPP"
-  ]
+  ],
+  "typescript.tsdk": "node_modules\\typescript\\lib"
 }

@@ -1,18 +1,26 @@
 import React from 'react'
 import Overlay from '../Overlay'
-import { IconCarThingSmall, IconComputer, IconMusic, IconServer } from '@renderer/assets/icons'
+import {
+  IconCarThingSmall,
+  IconComputer,
+  IconLayoutgrid,
+  IconMusic,
+  IconServer
+} from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
 import ClientSettings from './ClientSettings'
 import DeviceSettings from './DeviceSettings'
 import ServerSettings from './ServerSettings'
 import { useSearchParams } from 'react-router-dom'
 import MusicSettings from './MusicSettings'
+import AppsSettings from './AppSettings'
 
 const settingsPages = [
   { key: 'server', label: 'Server', Icon: IconServer },
   { key: 'client', label: 'Client', Icon: IconComputer },
   { key: 'device', label: 'Device', Icon: IconCarThingSmall },
-  { key: 'music', label: 'Music', Icon: IconMusic }
+  { key: 'music', label: 'Music', Icon: IconMusic },
+  { key: 'apps', label: 'Apps', Icon: IconLayoutgrid }
 ]
 
 /**
@@ -62,17 +70,19 @@ const SettingsOverlay: React.FC = () => {
           {currentPage == 'device' && <DeviceSettings />}
           {currentPage == 'server' && <ServerSettings />}
           {currentPage == 'music' && <MusicSettings />}
+          {currentPage == 'apps' && <AppsSettings />}
         </div>
       </div>
     </Overlay>
   )
 }
+
 interface SettingsComponentProps {
   setPage: (app: string) => void
   page: string
   label: string
   curPage: string
-  Icon: React.ComponentType<{ strokeWidth: number }>
+  Icon?: React.ComponentType<{ strokeWidth: number }>
 }
 
 const SettingsComponent = ({
@@ -86,7 +96,7 @@ const SettingsComponent = ({
     onClick={() => setPage(page)}
     className={`gap-2 ${curPage == page ? 'bg-zinc-800 hover:bg-zinc-700' : 'bg-zinc-900 hover:bg-zinc-800'}`}
   >
-    <Icon strokeWidth={2} />
+    {Icon && <Icon strokeWidth={2} />}
     <p className="hidden md:block">{label}</p>
   </Button>
 )

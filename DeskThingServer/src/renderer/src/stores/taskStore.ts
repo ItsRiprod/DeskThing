@@ -1,11 +1,14 @@
 import { create } from 'zustand'
 import { Step, Task } from '@DeskThing/types'
-import { FullTaskList } from '@shared/types'
+import { FullTaskList, IpcRendererCallback } from '@shared/types'
+
 interface NotificationStoreState {
   // Nested tasks first by appId then by taskId
   taskList: FullTaskList
   currentTask: { source: string; id: string } | undefined
+  initialized: boolean
 
+  initialize: () => Promise<void>
   // Tasks
   removeCurrentTask: () => Promise<void>
   acceptTask: (taskId: string, source?: string) => Promise<void>
@@ -25,9 +28,54 @@ interface NotificationStoreState {
 }
 
 // Create Zustand store
-const useTaskStore = create<NotificationStoreState>((set) => ({
+const useTaskStore = create<NotificationStoreState>((set, get) => ({
   taskList: {},
   currentTask: undefined,
+  initialized: false,
+
+  initialize: async () => {
+    if (get().initialized) return
+
+    const handleTasks: IpcRendererCallback<'taskList'> = (_event, tasks) => {
+      set((state) => ({
+        ...state,
+        taskList: {
+          ...state.taskList,
+          [tasks.source]: tasks.taskList
+        }
+      }))
+    }
+
+    const handleTask: IpcRendererCallback<'task'> = (_event, task) => {
+      set((state) => ({
+        ...state,
+        taskList: {
+          ...state.taskList,
+          [task.source]: {
+            ...state.taskList[task.source],
+            [task.id]: task
+          }
+        }
+      }))
+    }
+
+    const handleCurrentTask: IpcRendererCallback<'currentTask'> = (_event, task) => {
+      set((state) => ({
+        ...state,
+        currentTask: task
+      }))
+    }
+
+    window.electron.ipcRenderer.on('taskList', handleTasks)
+    window.electron.ipcRenderer.on('task', handleTask)
+    window.electron.ipcRenderer.on('currentTask', handleCurrentTask)
+
+    const taskList = await window.electron.task.getTaskList()
+    set({
+      taskList,
+      initialized: true
+    })
+  },
 
   removeCurrentTask: async (): Promise<void> => {
     set((state) => ({
@@ -37,33 +85,33 @@ const useTaskStore = create<NotificationStoreState>((set) => ({
   },
   // Tasks
   acceptTask: async (taskId: string, source?: string): Promise<void> => {
-    return window.electron.tasks.startTask(taskId, source)
+    return window.electron.task.startTask(taskId, source)
   },
   rejectTask: async (taskId: string, source?: string): Promise<void> => {
-    return window.electron.tasks.stopTask(taskId, source)
+    return window.electron.task.stopTask(taskId, source)
   },
   resolveStep: async (taskId: string, stepId: string, source?: string): Promise<void> => {
-    return window.electron.tasks.completeStep(taskId, stepId, source)
+    return window.electron.task.completeStep(taskId, stepId, source)
   },
   resolveTask: async (taskId: string, source?: string): Promise<void> => {
-    return window.electron.tasks.completeTask(taskId, source)
+    return window.electron.task.completeTask(taskId, source)
   },
   restartTask: async (taskId: string, source?: string): Promise<void> => {
-    return window.electron.tasks.restartTask(taskId, source)
+    return window.electron.task.restartTask(taskId, source)
   },
   pauseTask: async (): Promise<void> => {
-    return window.electron.tasks.pauseTask()
+    return window.electron.task.pauseTask()
   },
 
   nextStep: async (taskId: string, source?: string): Promise<void> => {
-    return window.electron.tasks.nextStep(taskId, source)
+    return window.electron.task.nextStep(taskId, source)
   },
   prevStep: async (taskId: string, source?: string): Promise<void> => {
-    return window.electron.tasks.prevStep(taskId, source)
+    return window.electron.task.prevStep(taskId, source)
   },
 
   requestTasks: async (): Promise<void> => {
-    const taskList = await window.electron.tasks.getTaskList()
+    const taskList = await window.electron.task.getTaskList()
     set((state) => ({
       ...state,
       taskList: taskList
@@ -109,7 +157,7 @@ const useTaskStore = create<NotificationStoreState>((set) => ({
 
   updateStep: async (taskId: string, step: Partial<Step>, source?: string): Promise<void> => {
     if (step.id) {
-      return window.electron.tasks.updateStep(taskId, step, source)
+      return window.electron.task.updateStep(taskId, step, source)
     }
   }
 }))

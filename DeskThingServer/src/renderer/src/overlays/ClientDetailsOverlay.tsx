@@ -13,11 +13,12 @@ import {
 } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
 import { useSettingsStore } from '@renderer/stores'
-import { LoggingData } from '@shared/types'
+import { ProgressChannel } from '@shared/types'
 import React, { useState, useRef, useEffect, useMemo } from 'react'
 import Overlay from './Overlay'
-import DownloadNotification from './DownloadNotification'
 import { Client, ClientConnectionMethod } from '@DeskThing/types'
+import usePlatformStore from '@renderer/stores/platformStore'
+import ProgressOverlay from './ProgressOverlay'
 
 interface ClientDetailsOverlayProps {
   onClose: () => void
@@ -26,6 +27,11 @@ interface ClientDetailsOverlayProps {
 
 const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, client }) => {
   const port = useSettingsStore((settings) => settings.settings.devicePort)
+  const sendCommand = usePlatformStore((state) => state.runCommand)
+  const disconnect = usePlatformStore((state) => state.disconnect)
+  const pushStaged = usePlatformStore((state) => state.pushStaged)
+  const ping = usePlatformStore((state) => state.ping)
+
   // ADB commands
   const [command, setCommand] = useState('')
   const [response, setResponse] = useState('')
@@ -33,8 +39,6 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
   // State Management
   const [loading, setLoading] = useState(false)
   const [animatingIcons, setAnimatingIcons] = useState<Record<string, boolean>>({})
-  const [logging, setLogging] = useState<LoggingData | null>()
-  const [showLogging, setShowLogging] = useState(false)
   const [brightness, setBrightness] = useState(50)
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null)
   const [deviceData, setDeviceData] = useState<{
@@ -55,9 +59,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
   const getSupervisorData = async (): Promise<void> => {
     if (!adbId) return
 
-    const supervisorResponse = await window.electron.handleClientADB(
-      `-s ${adbId} shell supervisorctl status`
-    )
+    const supervisorResponse = await sendCommand(adbId, 'shell supervisorctl status')
     console.log('Raw adb response (supervisorctl):', supervisorResponse)
     if (supervisorResponse) {
       const supervisorLines = supervisorResponse.trim().split('\n')
@@ -78,9 +80,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
 
       try {
         // Get version info
-        const versionResponse = await window.electron.handleClientADB(
-          `-s ${adbId} shell cat /etc/superbird/version`
-        )
+        const versionResponse = await sendCommand(adbId, 'shell cat /etc/superbird/version')
         console.log('Raw adb response (version):', versionResponse)
         if (versionResponse) {
           const versionMatch = versionResponse.match(/SHORT_VERSION\s+(\S+)/)
@@ -96,9 +96,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
         }
 
         // Get USID info
-        const usidResponse = await window.electron.handleClientADB(
-          `-s ${adbId} shell cat /sys/class/efuse/usid`
-        )
+        const usidResponse = await sendCommand(adbId, 'shell cat /sys/class/efuse/usid')
         console.log('Raw adb response (usid):', usidResponse)
         // Set USID data
         if (usidResponse) {
@@ -109,9 +107,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
         }
 
         // Get MAC BT info
-        const macBtResponse = await window.electron.handleClientADB(
-          `-s ${adbId} shell cat /sys/class/efuse/mac_bt`
-        )
+        const macBtResponse = await sendCommand(adbId, 'shell cat /sys/class/efuse/mac_bt')
         console.log('Raw adb response (mac_bt):', macBtResponse)
 
         // Format MAC BT data
@@ -134,31 +130,21 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
     }
 
     getDeviceData()
-  }, [adbId])
+  }, [adbId, sendCommand])
 
   const handleAdbCommand = async (command: string): Promise<string | undefined> => {
     try {
-      setShowLogging(true)
-      setLogging({ status: true, final: false, data: command })
       setLoading(true)
-      const response = await window.electron.handleClientADB(command)
+      const response = await sendCommand(adbId!, command)
       if (response) {
         setLoading(false)
-        setLogging({ status: true, final: true, data: response })
         console.log('Response from adb command:', response)
         return response
       } else {
-        setLogging({ status: true, final: true, data: 'Sent Successfully!' })
         setLoading(false)
       }
       return undefined
     } catch (Error) {
-      setLogging({
-        status: false,
-        error: `${Error}`,
-        final: true,
-        data: 'Unable to send ADB command!'
-      })
       console.log(Error)
       return undefined
     }
@@ -181,40 +167,25 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
     // Set a new debounce timeout to delay the command execution
     debounceTimeout.current = setTimeout(async () => {
       try {
-        await window.electron.handleClientADB(
-          `-s ${adbId} shell echo ${transformedValue} > /sys/devices/platform/backlight/backlight/aml-bl/brightness`
+        await sendCommand(
+          adbId!,
+          `shell echo ${transformedValue} > /sys/devices/platform/backlight/backlight/aml-bl/brightness`
         )
-        setLogging({ status: true, final: true, data: `Brightness set to ${value}%` })
-        setShowLogging(true)
       } catch (error) {
         console.error('Error setting brightness:', error)
-        setLogging({ status: false, final: true, data: 'Error setting brightness' })
-        setShowLogging(true)
       }
     }, 300) // 300ms debounce delay
   }
 
   const handlePushStaged = (): void => {
-    setShowLogging(true)
     if (!adbId) {
-      setLogging({ status: true, final: true, data: 'No Device Detected' })
+      console.error('ADB ID is required')
       return
     }
 
     try {
-      setLogging({ status: true, final: false, data: 'Pushing App' })
       setLoading(true)
-      window.electron.pushStagedApp(adbId)
-      const unsubscribe = window.electron.ipcRenderer.on('logging', (_event, reply) => {
-        console.log(reply)
-        setLogging(reply)
-        if (reply.final) {
-          unsubscribe()
-        }
-        if (!reply.status) {
-          unsubscribe()
-        }
-      })
+      pushStaged(adbId)
     } catch (error) {
       setLoading(false)
       console.log(error)
@@ -223,14 +194,13 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
 
   const onPushFinish = (): void => {
     setLoading(false)
-    setShowLogging(false)
   }
 
   const restartChromium = (): void => {
     if (!adbId) return
 
     setAnimatingIcons((prev) => ({ ...prev, chromium: true }))
-    handleAdbCommand(`-s ${adbId} shell supervisorctl restart chromium`)
+    handleAdbCommand(`shell supervisorctl restart chromium`)
     setTimeout(() => {
       setAnimatingIcons((prev) => ({ ...prev, chromium: false }))
     }, 1000)
@@ -238,20 +208,16 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
 
   const openPort = (): void => {
     if (!adbId) return
-    handleAdbCommand(`-s ${adbId} reverse tcp:${port} tcp:${port}`)
+    handleAdbCommand(`reverse tcp:${port} tcp:${port}`)
   }
 
   const handlePing = async (): Promise<void> => {
     setAnimatingIcons((prev) => ({ ...prev, ping: true }))
-    await window.electron.pingClient(client.connectionId)
-
-    setShowLogging(true)
-    setLogging({ status: true, final: false, data: 'Pinging client...' })
+    await ping(client.connectionId)
 
     const pongPromise = new Promise<void>((resolve) => {
       const onPong = (_event: Electron.IpcRendererEvent, payload: string): void => {
         console.log(`Got ping response from ${client.connectionId}: `, payload)
-        setLogging({ status: true, final: true, data: `Ping successful: ${payload}` })
         setTimeout(() => {
           setAnimatingIcons((prev) => ({ ...prev, ping: false }))
         }, 1000)
@@ -263,7 +229,6 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
     const timeoutPromise = new Promise<void>((resolve) => {
       setTimeout(() => {
         console.log(`Ping timed out for ${client.connectionId}`)
-        setLogging({ status: false, final: true, data: 'Ping timed out' })
         setAnimatingIcons((prev) => ({ ...prev, ping: false }))
         resolve()
       }, 5000)
@@ -277,42 +242,39 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
   }
 
   const handleDisconnect = (): void => {
-    window.electron.disconnectClient(client.connectionId)
+    disconnect(client.connectionId)
   }
 
   const handleRestart = async (): Promise<void> => {
     setAnimatingIcons((prev) => ({ ...prev, restart: true }))
 
-    await window.electron.handleClientADB(`-s ${adbId} shell reboot`)
+    await sendCommand(adbId!, 'shell reboot')
     setTimeout(() => {
       setAnimatingIcons((prev) => ({ ...prev, restart: false }))
     }, 300)
   }
 
   const handleShutdown = (): void => {
-    window.electron.handleClientADB(`-s ${adbId} shell poweroff`)
+    sendCommand(adbId!, 'shell poweroff')
   }
 
   const handleChangeView = (): void => {
-    window.electron.handleClientCommand({
-      app: 'client',
-      type: 'set',
-      request: 'view',
-      payload: 'utility'
-    })
+    // window.electron.handleClientCommand({
+    //   app: 'client',
+    //   type: 'set',
+    //   request: 'view',
+    //   payload: 'utility'
+    // })
   }
 
   const handleToggleSupervisor = async (key: string, value: boolean): Promise<void> => {
     const action = value ? 'start' : 'stop'
     setAnimatingIcons((prev) => ({ ...prev, [key]: true }))
 
-    setLogging({ status: true, final: false, data: `Toggling ${key} ${action}...` })
     try {
-      await window.electron.handleClientADB(`-s ${adbId} shell supervisorctl ${action} ${key}`)
-      setLogging({ status: false, final: true, data: `${key} ${action}ed successfully` })
+      await sendCommand(adbId!, `shell supervisorctl ${action} ${key}`)
     } catch (error) {
       console.error(`Error toggling ${key}:`, error)
-      setLogging({ status: false, final: true, data: `Error toggling ${key}` })
     } finally {
       setAnimatingIcons((prev) => ({ ...prev, [key]: false }))
     }
@@ -322,8 +284,8 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
 
   const handleExecuteCommand = async (): Promise<void> => {
     setAnimatingIcons((prev) => ({ ...prev, command: true }))
-    const response = await window.electron.handleClientADB(`-s ${adbId} ${command}`)
-    setResponse(response)
+    const response = await sendCommand(adbId!, command)
+    setResponse(response || 'No response')
     setAnimatingIcons((prev) => ({ ...prev, command: false }))
   }
 
@@ -332,13 +294,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
       onClose={onClose}
       className="border border-gray-500 p-4 bg-zinc-900 w-5/6 h-5/6 flex flex-col overflow-hidden"
     >
-      {logging && showLogging && (
-        <DownloadNotification
-          loggingData={logging}
-          onClose={onPushFinish}
-          title="Running command"
-        />
-      )}
+      <ProgressOverlay channel={ProgressChannel.PLATFORM_CHANNEL} onClose={onPushFinish} />
       <div className="w-full px-1 py-4 flex items-center gap-2">
         <h1 className="font-semibold text-2xl">{client.manifest?.context.name || client.id}</h1>
         <p className="text-gray-500 text-lg">{adbId || client.connectionId}</p>

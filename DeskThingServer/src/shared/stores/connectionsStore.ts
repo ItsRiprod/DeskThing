@@ -1,9 +1,9 @@
 import { StoreInterface } from '@shared/interfaces/storeInterface'
-import { ADBClient } from '@shared/types'
+import { PotentialDevice } from '@shared/types'
 import { Client } from '@deskthing/types'
 
 export type ClientListener = (client: Client[]) => void
-export type DeviceListener = (device: ADBClient[]) => void
+export type DeviceListener = (device: PotentialDevice[]) => void
 
 /**
  * Interface representing the ConnectionStore public methods
@@ -50,7 +50,7 @@ export interface ConnectionStoreClass extends StoreInterface {
    * Gets the list of ADB devices
    * @returns Promise resolving to array of ADB devices
    */
-  getDevices(): Promise<ADBClient[]>
+  getDevices(): Promise<PotentialDevice[]>
 
   /**
    * Adds a new client

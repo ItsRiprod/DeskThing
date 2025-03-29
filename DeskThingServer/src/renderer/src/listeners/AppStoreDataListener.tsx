@@ -18,7 +18,7 @@ const AppStoreDataListener = (): null => {
 
   if (!mounted) {
     const initialRequest = async (): Promise<void> => {
-      const appsList = await window.electron.getApps()
+      const appsList = await window.electron.app.get()
       setAppList(appsList)
     }
 

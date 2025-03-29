@@ -13,7 +13,6 @@
  * If the configuration file doesn't exist, it will be created with default values.
  */
 
-console.log('[App File Service] Starting')
 import { App, LOGGING_LEVELS, AppManifest } from '@DeskThing/types'
 import Logger from '@server/utils/logger'
 import { AppData } from '@shared/types'

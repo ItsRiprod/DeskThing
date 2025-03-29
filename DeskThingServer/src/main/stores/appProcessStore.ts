@@ -10,7 +10,7 @@ import {
   DeskThingProcessData,
   AppToDeskThingData
 } from '@DeskThing/types'
-import appProcessPath from '@utilities/appProcess?modulePath'
+import appProcessPath from '@processes/appProcess?modulePath'
 import { app /*, utilityProcess */ } from 'electron'
 import { Worker } from 'node:worker_threads'
 import Logger from '@server/utils/logger'
@@ -49,7 +49,11 @@ export class AppProcessStore
 
   async postMessage(appName: string, data: DeskThingProcessData): Promise<void> {
     if (!this.processes[appName]) {
-      throw new Error(`Process ${appName} not found`)
+      Logger.warn(`Tried to send message to app ${appName} but it wasn't found or is not running`, {
+        source: 'AppProcessStore',
+        function: 'postMessage'
+      })
+      return
     }
     this.processes[appName].process.postMessage(data)
   }

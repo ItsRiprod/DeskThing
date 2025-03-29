@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { PlatformStore } from '../../../src/main/stores/platformStore'
 import { AppStoreClass } from '@shared/stores/appStore'
 import { AppDataStoreClass } from '@shared/stores/appDataStore'
-import { PlatformInterface } from '@shared/interfaces/platform'
+import { PlatformInterface } from '@shared/interfaces/platformInterface'
 import {
   Client,
   DeviceToDeskthingData,
@@ -81,7 +81,7 @@ describe('PlatformStore', () => {
 
   describe('Platform Management', () => {
     it('should handle platform restart', async () => {
-      await platformStore.addPlatform(mockPlatform)
+      await platformStore.registerPlatform(mockPlatform)
       const result = await platformStore.restartPlatform('test-platform')
 
       expect(mockPlatform.stop).toHaveBeenCalled()
@@ -90,7 +90,7 @@ describe('PlatformStore', () => {
     })
 
     it('should handle platform status updates', () => {
-      platformStore.addPlatform(mockPlatform)
+      platformStore.registerPlatform(mockPlatform)
       const status = platformStore.getPlatformStatus()
 
       expect(status.activePlatforms).toContain('test-platform')
@@ -106,7 +106,7 @@ describe('PlatformStore', () => {
 
       vi.spyOn(platformStore, 'getPlatformForClient').mockReturnValue(mockPlatform)
 
-      platformStore.addPlatform(mockPlatform)
+      platformStore.registerPlatform(mockPlatform)
       platformStore.updateClient('test-client', clientUpdate)
 
       expect(mockPlatform.updateClient).toHaveBeenCalledWith('test-client', clientUpdate)
@@ -119,7 +119,7 @@ describe('PlatformStore', () => {
         payload: []
       }
 
-      await platformStore.addPlatform(mockPlatform)
+      await platformStore.registerPlatform(mockPlatform)
       await platformStore.broadcastToClients(testData)
 
       expect(mockPlatform.broadcastData).toHaveBeenCalledWith(testData)
@@ -131,7 +131,7 @@ describe('PlatformStore', () => {
       const eventListener = vi.fn()
       platformStore.on(PlatformStoreEvent.PLATFORM_ADDED, eventListener)
 
-      await platformStore.addPlatform(mockPlatform)
+      await platformStore.registerPlatform(mockPlatform)
 
       expect(eventListener).toHaveBeenCalledWith(mockPlatform)
     })
@@ -144,7 +144,7 @@ describe('PlatformStore', () => {
       } as unknown as DeviceToDeskthingData & { connectionId: string }
 
       vi.spyOn(platformStore, 'getPlatformForClient').mockReturnValue(mockPlatform)
-      await platformStore.addPlatform(mockPlatform)
+      await platformStore.registerPlatform(mockPlatform)
       await platformStore.handleSocketData(testClient, testData)
       expect(Logger.warn).not.toHaveBeenCalled()
     })

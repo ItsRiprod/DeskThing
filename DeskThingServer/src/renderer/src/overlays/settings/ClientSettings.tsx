@@ -52,7 +52,7 @@ const ClientSettings: React.FC = () => {
         <div className="flex items-center gap-2">
           <input
             type="text"
-            value={localSettings.context.ip || ''}
+            value={localSettings.context?.ip || ''}
             onChange={(e) => handleContextChange('ip', e.target.value)}
             className="focus:text-white bg-zinc-900 text-white rounded px-2 py-2"
           />
@@ -62,7 +62,7 @@ const ClientSettings: React.FC = () => {
         <h2 className="text-xl">Port</h2>
         <input
           type="number"
-          value={localSettings.context.port || ''}
+          value={localSettings.context?.port || ''}
           onChange={(e) => handleContextChange('port', Number(e.target.value))}
           className="focus:text-white bg-zinc-900 text-white rounded px-2 py-2"
         />
@@ -74,14 +74,14 @@ const ClientSettings: React.FC = () => {
           onClick={() =>
             handleContextChange(
               'ip',
-              localSettings.context.ip === '192.168.7.1' ? 'localhost' : '192.168.7.1'
+              localSettings.context?.ip === '192.168.7.1' ? 'localhost' : '192.168.7.1'
             )
           }
         >
           <IconToggle
             iconSize={48}
-            checked={localSettings.context.ip === '192.168.7.1'}
-            className={`transition-color ${localSettings.context.ip === '192.168.7.1' ? 'text-green-500' : 'text-gray-500'}`}
+            checked={localSettings.context?.ip === '192.168.7.1'}
+            className={`transition-color ${localSettings.context?.ip === '192.168.7.1' ? 'text-green-500' : 'text-gray-500'}`}
           />
         </Button>
       </div>

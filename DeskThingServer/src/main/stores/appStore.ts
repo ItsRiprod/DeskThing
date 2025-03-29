@@ -13,7 +13,7 @@ import {
   DESKTHING_EVENTS,
   DeskThingToAppData
 } from '@DeskThing/types'
-import { ReplyFn, StagedAppManifest, CacheableStore } from '@shared/types'
+import { StagedAppManifest, CacheableStore, ProgressChannel } from '@shared/types'
 import {
   AppStoreClass,
   AppStoreListeners,
@@ -38,6 +38,7 @@ import { setAppData, setAppsData } from '../services/files/appFileService'
 import { sanitizeAppMeta } from '@server/services/apps/appValidator'
 import { AuthStoreClass } from '@shared/stores/authStore'
 import { nextTick } from 'node:process'
+import { progressBus } from '@server/services/events/progressBus'
 
 export class AppStore implements CacheableStore, AppStoreClass {
   private apps: Record<string, App> = {}
@@ -666,31 +667,41 @@ export class AppStore implements CacheableStore, AppStoreClass {
    * @returns Promise<void>
    */
   async runStagedApp({
-    reply,
     overwrite,
     appId,
     run = true
   }: {
-    reply?: ReplyFn
     overwrite?: boolean
     appId?: string
     run?: boolean
   }): Promise<void> {
+    progressBus.startOperation(
+      ProgressChannel.ST_APP_INITIALIZE,
+      'Running App',
+      'Initializing app run',
+      [
+        {
+          channel: ProgressChannel.FN_APP_INITIALIZE,
+          weight: 9
+        }
+      ]
+    )
+
     try {
       // TODO: Update to use the process
-      return await executeStagedFile({ reply, overwrite, appId, run })
+      await executeStagedFile({ overwrite, appId, run })
+      progressBus.complete(ProgressChannel.ST_APP_INITIALIZE, 'Run App', 'App run successfully')
     } catch (error) {
+      progressBus.error(
+        ProgressChannel.ST_APP_INITIALIZE,
+        'Error running app',
+        'Error while trying to run staged app'
+      )
       Logger.error('Error while trying to run staged app', {
         function: 'runStagedApp',
         source: 'AppStore',
         error: error as Error
       })
-      reply &&
-        reply('logging', {
-          status: false,
-          data: 'Error while trying to run staged app',
-          final: true
-        })
     }
   }
 
@@ -701,58 +712,45 @@ export class AppStore implements CacheableStore, AppStoreClass {
    */
   async addApp({
     filePath,
-    releaseMeta,
-    reply
+    releaseMeta
   }: stageAppFileType): Promise<StagedAppManifest | undefined> {
     Logger.log(LOGGING_LEVELS.LOG, `[store.addApp]: Running addApp for ${filePath}`)
 
     try {
-      reply &&
-        reply('logging', {
-          status: true,
-          data: 'Staging file...',
-          final: false
-        })
-      const newAppManifest = await stageAppFile({ filePath, releaseMeta, reply })
+      progressBus.startOperation(
+        ProgressChannel.ST_APP_INSTALL,
+        'Adding App',
+        'Initializing app installation',
+        [
+          {
+            channel: ProgressChannel.FN_APP_INSTALL,
+            weight: 8
+          }
+        ]
+      )
+      const newAppManifest = await stageAppFile({ filePath, releaseMeta })
 
       if (!newAppManifest) {
-        reply &&
-          reply('logging', {
-            status: false,
-            data: 'Unable to stage app',
-            final: true
-          })
+        progressBus.error(
+          ProgressChannel.ST_APP_INSTALL,
+          'Error staging app',
+          'Unable to find the new app manifest'
+        )
         return
       }
 
-      reply &&
-        reply('logging', {
-          status: true,
-          data: 'Finalizing...',
-          final: true
-        })
+      progressBus.complete(ProgressChannel.ST_APP_INSTALL, 'Add App', 'App added successfully')
 
       return newAppManifest
     } catch (e) {
       if (e instanceof Error) {
-        Logger.log(LOGGING_LEVELS.ERROR, `[store.addApp]: ${e.message}`)
-        reply &&
-          reply('logging', {
-            status: false,
-            data: 'Unable to stage app',
-            error: e.message,
-            final: true
-          })
+        Logger.error(`[store.addApp]: ${e.message}`)
+        progressBus.error(ProgressChannel.ST_APP_INSTALL, 'Error staging app', e.message)
       } else {
-        Logger.log(LOGGING_LEVELS.ERROR, `[store.addApp]: Unknown error ` + String(e))
-        reply &&
-          reply('logging', {
-            status: false,
-            data: 'Unable to stage app',
-            error: String(e),
-            final: true
-          })
+        Logger.error(`[store.addApp]: Unknown error ` + String(e))
+        progressBus.error(ProgressChannel.ST_APP_INSTALL, 'Error staging app', String(e))
       }
+
       return
     }
   }

@@ -7,13 +7,14 @@ import {
   IconRefresh,
   IconX
 } from '@renderer/assets/icons'
-import { LoggingData } from '@shared/types'
+import { ProgressChannel } from '@shared/types'
 import React, { useState } from 'react'
 import Button from '../Button'
 // import { useSettingsStore } from '@renderer/stores'
 import ClientDetailsOverlay from '@renderer/overlays/ClientDetailsOverlay'
-import DownloadNotification from '@renderer/overlays/DownloadNotification'
 import { Client, ClientConnectionMethod } from '@DeskThing/types'
+import usePlatformStore from '@renderer/stores/platformStore'
+import ProgressOverlay from '@renderer/overlays/ProgressOverlay'
 
 interface ConnectionComponentProps {
   client: Client
@@ -23,9 +24,11 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
   // const port = useSettingsStore((settings) => settings.settings.devicePort)
   const [loading, setLoading] = useState(false)
   const [animatingIcons, setAnimatingIcons] = useState<Record<string, boolean>>({})
-  const [logging, setLogging] = useState<LoggingData | null>()
   const [enabled, setEnabled] = useState(false)
-  const [showLogging, setShowLogging] = useState(false)
+
+  const sendCommand = usePlatformStore((state) => state.runCommand)
+  const disconnect = usePlatformStore((state) => state.disconnect)
+  const ping = usePlatformStore((state) => state.ping)
 
   const renderIcon = (): JSX.Element => {
     if (!client.manifest?.context) return <IconComputer iconSize={128} />
@@ -45,36 +48,13 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
   }
 
   const handleAdbCommand = async (command: string): Promise<string | undefined> => {
-    try {
-      setShowLogging(true)
-      setLogging({ status: true, final: false, data: command })
-      setLoading(true)
-      const response = await window.electron.handleClientADB(command)
-      if (response) {
-        setLoading(false)
-        setLogging({ status: true, final: true, data: response })
-        console.log('Response from adb command:', response)
-        return response
-      } else {
-        setLogging({ status: true, final: true, data: 'Sent Successfully!' })
-        setLoading(false)
-      }
-      return undefined
-    } catch (Error) {
-      setLogging({
-        status: false,
-        error: `${Error}`,
-        final: true,
-        data: 'Unable to send ADB command!'
-      })
-      console.log(Error)
-      return undefined
-    }
+    if (client.manifest?.context?.method !== ClientConnectionMethod.ADB) return
+
+    return await sendCommand(client.manifest.context.adbId, command)
   }
 
   const onPushFinish = (): void => {
     setLoading(false)
-    setShowLogging(false)
   }
 
   const restartChromium = async (): Promise<void> => {
@@ -89,15 +69,11 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
 
   const handlePing = async (): Promise<void> => {
     setAnimatingIcons((prev) => ({ ...prev, ping: true }))
-    await window.electron.pingClient(client.connectionId)
-
-    setShowLogging(true)
-    setLogging({ status: true, final: false, data: 'Pinging client...' })
+    await ping(client.connectionId)
 
     const pongPromise = new Promise<void>((resolve) => {
       const onPong = (_event: Electron.IpcRendererEvent, payload: string): void => {
         console.log(`Got ping response from ${client.connectionId}: `, payload)
-        setLogging({ status: true, final: true, data: `Ping successful: ${payload}` })
         setTimeout(() => {
           setAnimatingIcons((prev) => ({ ...prev, ping: false }))
         }, 1000)
@@ -109,7 +85,6 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
     const timeoutPromise = new Promise<void>((resolve) => {
       setTimeout(() => {
         console.log(`Ping timed out for ${client.connectionId}`)
-        setLogging({ status: false, final: true, data: 'Ping timed out' })
         setAnimatingIcons((prev) => ({ ...prev, ping: false }))
         resolve()
       }, 5000)
@@ -123,19 +98,14 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
   }
 
   const handleDisconnect = (): void => {
-    window.electron.disconnectClient(client.connectionId)
+    disconnect(client.connectionId)
   }
 
   return (
     <div className="w-full p-4 border rounded-xl border-zinc-900 flex flex-col lg:flex-row gap-4 justify-center items-center lg:justify-between bg-zinc-950">
       {enabled && <ClientDetailsOverlay client={client} onClose={() => setEnabled(false)} />}
-      {logging && showLogging && (
-        <DownloadNotification
-          loggingData={logging}
-          onClose={onPushFinish}
-          title="Running command"
-        />
-      )}
+      <ProgressOverlay channel={ProgressChannel.IPC_CLIENT} onClose={onPushFinish} />
+      <ProgressOverlay channel={ProgressChannel.PLATFORM_CHANNEL} />
       <div className="flex gap-2 items-center">
         {renderIcon()}
         <div>

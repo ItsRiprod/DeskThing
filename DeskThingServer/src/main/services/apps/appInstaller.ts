@@ -1,7 +1,7 @@
 console.log('[AppInst Service] Starting')
 // Types
 import { LOGGING_LEVELS, AppReleaseSingleMeta, App } from '@DeskThing/types'
-import { ReplyFn, StagedAppManifest } from '@shared/types'
+import { ProgressChannel, StagedAppManifest } from '@shared/types'
 
 // Utils
 import Logger from '@server/utils/logger'
@@ -15,20 +15,32 @@ import { overwriteData } from '../files/dataFileService'
 
 // Stores
 import { storeProvider } from '@server/stores/storeProvider'
+import { progressBus } from '../events/progressBus'
 
 interface ExecuteStagedFileType {
-  reply?: ReplyFn
   overwrite?: boolean
   appId?: string
   run?: boolean
 }
 
+/**
+ * Executes the curently staged app
+ * @param overwrite - Whether to overwrite the app if it already exists
+ * @param appId - The id of the app to execute
+ * @param run - Whether to run the app after executing it
+ * @channel - {@link FN_APP_INITIALIZE}
+ * @returns
+ */
 export const executeStagedFile = async ({
-  reply,
   overwrite,
   appId,
   run = false
 }: ExecuteStagedFileType): Promise<void> => {
+  progressBus.start(
+    ProgressChannel.FN_APP_INITIALIZE,
+    'Executing App',
+    'Initializing staging phase'
+  )
   const appStore = await storeProvider.getStore('appStore')
   try {
     const tempZipPath = getAppFilePath('staged', 'temp.zip')
@@ -41,7 +53,12 @@ export const executeStagedFile = async ({
         source: 'executeStagedFile',
         error: new Error('Error getting manifest from tempPath')
       })
-      reply && reply('logging', { status: false, data: 'Error getting manifest', final: true })
+      progressBus.error(
+        ProgressChannel.FN_APP_INITIALIZE,
+        'Error Staging',
+        'Error getting manifest',
+        'Unable to get manifest from staged file'
+      )
       return
     }
 
@@ -49,6 +66,7 @@ export const executeStagedFile = async ({
       appId = appManifestData.id
     }
     if (overwrite) {
+      progressBus.update(ProgressChannel.FN_APP_INITIALIZE, 'Overwriting existing app...', 10)
       Logger.debug(`[executeStagedFile] Overwriting existing app (overwrite is enabled)...`)
       await appStore.purge(appId)
       await new Promise((resolve) => setTimeout(resolve, 1000))
@@ -59,15 +77,13 @@ export const executeStagedFile = async ({
 
     // Delete the app directory if it exists
     if (existsSync(appPath)) {
-      reply &&
-        reply('logging', {
-          status: true,
-          data: 'Deleting existing app directory...',
-          final: false
-        })
+      progressBus.update(
+        ProgressChannel.FN_APP_INITIALIZE,
+        'Deleting existing app directory...',
+        20
+      )
       await promises.rm(appPath, { recursive: true })
-      reply &&
-        reply('logging', { status: true, data: 'Deleted existing app directory', final: false })
+      progressBus.update(ProgressChannel.FN_APP_INITIALIZE, 'Deleted existing app directory...', 25)
       Logger.debug(`[executeStagedFile] Deleting existing app directory... ${appPath}`, {
         function: 'executeStagedFile',
         source: 'executeStagedFile'
@@ -75,6 +91,8 @@ export const executeStagedFile = async ({
     }
 
     // Get the app store
+
+    progressBus.update(ProgressChannel.FN_APP_INITIALIZE, 'Getting app from store...', 30)
 
     const app = appStore.get(appId)
 
@@ -86,6 +104,12 @@ export const executeStagedFile = async ({
         await appStore.disable(appId)
       }
     } else {
+      progressBus.update(
+        ProgressChannel.FN_APP_INITIALIZE,
+        'Getting manifest...',
+        35,
+        'Running App'
+      )
       const manifest = await getManifest(extractedPath)
       // If the app is new
       Logger.debug(`[executeStagedFile] Adding app to store...`)
@@ -107,7 +131,7 @@ export const executeStagedFile = async ({
       appStore.add(newApp)
     }
 
-    Logger.debug(`[executeStagedFile] Deleting temp zip path...`)
+    progressBus.update(ProgressChannel.FN_APP_INITIALIZE, 'Clearing temp files...', 38)
     // Delete temp.zip if it exists
     try {
       await promises.stat(tempZipPath)
@@ -117,7 +141,7 @@ export const executeStagedFile = async ({
       Logger.warn(`[executeStagedFile] No temp zip file to delete`)
     }
 
-    Logger.debug(`[executeStagedFile] Renaming the staged directory to app id...`)
+    progressBus.update(ProgressChannel.FN_APP_INITIALIZE, 'Renaming extracted directory...', 40)
     // Rename staged directory to appId
     try {
       await promises.rename(extractedPath, appPath)
@@ -134,8 +158,9 @@ export const executeStagedFile = async ({
     }
 
     if (run) {
-      Logger.debug(`[executeStagedFile] Running app automatically...`)
+      progressBus.update(ProgressChannel.FN_APP_INITIALIZE, 'Running app...', 60)
       await appStore.run(appId)
+      progressBus.complete(ProgressChannel.FN_APP_INITIALIZE, 'App started successfully')
     }
   } catch (error) {
     Logger.error(`Error executing staged file: ${error}`, {
@@ -143,6 +168,12 @@ export const executeStagedFile = async ({
       source: 'appInstaller',
       error: error as Error
     })
+
+    progressBus.error(
+      ProgressChannel.FN_APP_INITIALIZE,
+      'Error Running App',
+      error instanceof Error ? error.message : 'Unknown error'
+    )
 
     throw error
   }
@@ -208,22 +239,26 @@ const getTempZipPath = (tempPath, releaseMeta?: AppReleaseSingleMeta): string =>
 export interface stageAppFileType {
   filePath?: string
   releaseMeta?: AppReleaseSingleMeta
-  reply: ReplyFn
 }
 
 /**
  * Stages all of the app's files to the staging directory.
  * @param path
  * @param reply
+ * @channel {@link FN_APP_INSTALL}
  * @returns
  */
 export const stageAppFile = async ({
   filePath,
-  releaseMeta,
-  reply
+  releaseMeta
 }: stageAppFileType): Promise<StagedAppManifest | void> => {
+  progressBus.start(ProgressChannel.FN_APP_INSTALL, 'stage-app', 'Initializing staging phase')
   if (!filePath && !releaseMeta) {
-    reply('logging', { status: false, data: 'No file path or release meta provided', final: true })
+    progressBus.error(
+      ProgressChannel.FN_APP_INSTALL,
+      'stage-app',
+      'No file path or release meta provided'
+    )
     return
   } else if (!filePath && releaseMeta) {
     filePath = releaseMeta.updateUrl
@@ -249,7 +284,7 @@ export const stageAppFile = async ({
         await promises.rm(extractedPath, { recursive: true })
       } catch {
         Logger.debug(`[handleZipFromUrl] extracted path doesnt exist`)
-        reply('logging', { status: true, data: 'Failed to clear extracted path', final: false })
+        progressBus.update(ProgressChannel.FN_APP_INSTALL, 'Failed to clear extracted path', 3)
       }
     } catch (error) {
       if (error instanceof Error) {
@@ -258,14 +293,14 @@ export const stageAppFile = async ({
           source: 'stageAppFile',
           error
         })
-        reply('logging', { status: true, data: 'Failed to clear old app files', final: false })
+        progressBus.update(ProgressChannel.FN_APP_INSTALL, 'Failed to clear old app files', 3)
       } else {
         Logger.error(`[handleZipFromUrl] ${error}`, {
           function: 'stageAppFile',
           source: 'stageAppFile',
           error: new Error(String(error))
         })
-        reply('logging', { status: true, data: 'Failed to clear old app files', final: false })
+        progressBus.update(ProgressChannel.FN_APP_INSTALL, 'Failed to clear old app files', 3)
       }
     }
   }
@@ -276,7 +311,7 @@ export const stageAppFile = async ({
   if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
     Logger.debug(`[handleZipFromUrl] URL Detected!`)
 
-    reply('logging', { status: true, data: 'Fetching...', final: false })
+    progressBus.update(ProgressChannel.FN_APP_INSTALL, 'Fetching app...', 5)
 
     const response = await fetch(filePath)
 
@@ -286,7 +321,11 @@ export const stageAppFile = async ({
       const progress = Math.round((received / total) * 100)
       if (progress > prevPercentage) {
         prevPercentage = progress
-        reply('logging', { status: true, data: `Downloading... ${progress}%`, final: false })
+        progressBus.update(
+          ProgressChannel.FN_APP_INSTALL,
+          `Downloading... ${progress}%`,
+          progress * 0.8 + 5
+        )
       }
     }
 
@@ -297,21 +336,24 @@ export const stageAppFile = async ({
         function: 'stageAppFile',
         source: 'stageAppFile'
       })
-      reply('logging', {
-        status: false,
-        data: 'Encountered an error',
-        final: true,
-        error: errorMessage
-      })
+      progressBus.error(
+        ProgressChannel.FN_APP_INSTALL,
+        'App Install Error',
+        'Encountered an error',
+        errorMessage
+      )
       return
     } else {
-      Logger.debug(`[handleZipFromUrl] Downloading ${path}...`)
+      Logger.debug(`[handleZipFromUrl] Downloading ${filePath}...`)
       trackDownloadProgress(0, 100)
     }
     const chunks: Uint8Array[] = []
     const contentLength = Number(response.headers.get('content-length'))
     let receivedLength = 0
     const reader = response.body?.getReader()
+
+    progressBus.update(ProgressChannel.FN_APP_INSTALL, `Got app size of ${contentLength} bytes`, 10)
+
     if (!reader) {
       throw new Error('Failed to get reader from response body')
     }
@@ -329,28 +371,21 @@ export const stageAppFile = async ({
     }
     // Combine chunks and save file
     const buffer = Buffer.concat(chunks)
+    progressBus.update(ProgressChannel.FN_APP_INSTALL, 'Saving...', 90)
     await promises.writeFile(tempZipPath, buffer)
   } else {
     Logger.debug(`[handleZipFromUrl] Local File Detected!`)
     // Handle case where it's a local file upload
     try {
       if (!existsSync(filePath)) {
-        reply('logging', {
-          status: false,
-          data: 'File not found!',
-          error: filePath,
-          final: true
-        })
+        progressBus.error(ProgressChannel.FN_APP_INSTALL, 'File not found!', filePath)
         throw new Error(`Local file not found: ${path}`)
       }
       if (!filePath.toLowerCase().endsWith('.zip')) {
-        reply('logging', {
-          status: false,
-          data: 'File must be a .zip file',
-          final: true
-        })
+        progressBus.error(ProgressChannel.FN_APP_INSTALL, 'File must be a .zip file')
         throw new Error(`File must be a .zip file: ${path}`)
       }
+      progressBus.update(ProgressChannel.FN_APP_INSTALL, 'Copying file...', 90)
       // Copy the zip file to the extractedPath from the provided path
       Logger.debug(`[handleZipFromUrl] Copying ${path} to ${extractedPath}!`)
       await promises.copyFile(filePath, tempZipPath)
@@ -360,53 +395,69 @@ export const stageAppFile = async ({
         const errorMessage = `Failed to copy local file: ${error.message}`
         console.error(`[handleZipFromFile] Error copying local file: ${error.message}`)
         Logger.log(LOGGING_LEVELS.ERROR, errorMessage)
-        reply('logging', {
-          status: false,
-          data: 'Encountered an error',
-          final: true,
-          error: errorMessage
-        })
+        progressBus.error(
+          ProgressChannel.FN_APP_INSTALL,
+          'stage-app',
+          'Encountered an error',
+          errorMessage
+        )
       } else {
         console.error(`[handleZipFromFile] Unknown error copying local file: ${error}`)
-        reply('logging', {
-          status: false,
-          data: 'Encountered an error',
-          final: true,
-          error: 'Unknown error copying file'
-        })
+        progressBus.error(
+          ProgressChannel.FN_APP_INSTALL,
+          'Download App',
+          'Encountered an error',
+          'Unknown error copying file'
+        )
       }
       return
     }
   }
 
+  progressBus.update(ProgressChannel.FN_APP_INSTALL, 'Initializing staging phase', 92)
+
   const AdmZip = await import('adm-zip')
   // Try extracting the zip file and reading the manifest
-  await new Promise<void>((resolve, reject) => {
-    try {
-      Logger.debug(`[handleZipFromFile] Extracting app...`)
-      if (!existsSync(tempZipPath)) {
-        Logger.log(
-          LOGGING_LEVELS.ERROR,
-          `[handleZipFromFile] Temporary zip path at ${tempZipPath} does not exist!`
-        )
-        reply('logging', { status: false, data: 'Temp path does not exist!', final: false })
-        return
+  try {
+    await new Promise<void>((resolve, reject) => {
+      try {
+        progressBus.update(ProgressChannel.FN_APP_INSTALL, 'Extracting app...', 93)
+        Logger.debug(`[handleZipFromFile] Extracting app...`)
+        if (!existsSync(tempZipPath)) {
+          Logger.log(
+            LOGGING_LEVELS.ERROR,
+            `[handleZipFromFile] Temporary zip path at ${tempZipPath} does not exist!`
+          )
+          progressBus.update(ProgressChannel.FN_APP_INSTALL, 'Temp path does not exist!', 93)
+          return
+        }
+        const zip = new AdmZip.default(tempZipPath)
+
+        progressBus.update(ProgressChannel.FN_APP_INSTALL, 'Extracting files...', 94)
+        zip.extractAllTo(extractedPath, true)
+
+        progressBus.update(ProgressChannel.FN_APP_INSTALL, `App extracted to ${extractedPath}`, 95)
+        resolve()
+      } catch (error) {
+        Logger.log(LOGGING_LEVELS.ERROR, `[handleZipFromFile]: Error extracting ${extractedPath}`)
+        progressBus.error(ProgressChannel.FN_APP_INSTALL, 'Extraction failed!')
+        reject(error)
       }
-      const zip = new AdmZip.default(tempZipPath)
+    })
+  } catch (error) {
+    Logger.log(LOGGING_LEVELS.ERROR, `[handleZipFromFile]: Error extracting ${extractedPath}`, {
+      error: error as Error,
+      function: 'handleZipFromFile',
+      source: 'appInstaller'
+    })
+    progressBus.error(
+      ProgressChannel.FN_APP_INSTALL,
+      'Extraction failed!',
+      error instanceof Error ? error.message : 'Unknown error'
+    )
+  }
 
-      reply('logging', { status: true, data: 'Extracting files...', final: false })
-      zip.extractAllTo(extractedPath, true)
-
-      reply('logging', { status: true, data: `App extracted to ${extractedPath}`, final: false })
-      resolve()
-    } catch (error) {
-      Logger.log(LOGGING_LEVELS.ERROR, `[handleZipFromFile]: Error extracting ${extractedPath}`)
-      reply && reply('logging', { status: false, data: 'Extraction failed!', final: true })
-      reject(error)
-    }
-  })
-
-  reply('logging', { status: true, data: 'Getting Manifest...', final: false })
+  progressBus.update(ProgressChannel.FN_APP_INSTALL, 'Getting Manifest...', 96)
 
   const manifestData = await getManifest(extractedPath)
 
@@ -417,15 +468,18 @@ export const stageAppFile = async ({
       LOGGING_LEVELS.ERROR,
       `[handleZip] Error getting manifest from ${extractedPath}. Returning placeholder data...`
     )
-    reply && reply('logging', { status: true, data: 'Error getting manifest!', final: false })
+    progressBus.update(ProgressChannel.FN_APP_INSTALL, 'Error getting manifest!', 96)
     return
   }
 
+  progressBus.update(ProgressChannel.FN_APP_INSTALL, 'Validating checksum...', 97)
+
   const isValidated = await validateSha512(tempZipPath, releaseMeta)
+
+  progressBus.complete(ProgressChannel.FN_APP_INSTALL, 'App Installation Complete!')
 
   return { checksumValidated: isValidated, ...manifestData }
 }
-
 /**
  * Runs an app by its name.
  *

@@ -33,28 +33,15 @@ const ClientDataListener = (): null => {
 
   useEffect(() => {
     const onClientdata: IpcRendererCallback<'clients'> = (_async, data) => {
-      setClients(data.data)
+      setClients(data)
+      setConnections(data.length)
     }
 
     window.electron.ipcRenderer.on('clients', onClientdata)
 
-    const onConnections: IpcRendererCallback<'connections'> = (_async, data) => {
-      setConnections(data.data)
-    }
-
-    window.electron.ipcRenderer.on('connections', onConnections)
-
-    const onAdbDevices: IpcRendererCallback<'adbdevices'> = (_async, data) => {
-      setAdbDevices(data)
-    }
-
-    window.electron.ipcRenderer.on('adbdevices', onAdbDevices)
-
     // Cleanup listeners on unmount
     return () => {
       window.electron.ipcRenderer.removeAllListeners('clients')
-      window.electron.ipcRenderer.removeAllListeners('connections')
-      window.electron.ipcRenderer.removeAllListeners('adbdevices')
     }
   }, [setClients, setConnections, setAdbDevices])
 

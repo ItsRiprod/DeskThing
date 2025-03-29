@@ -8,13 +8,11 @@ import { deviceMessages } from '@renderer/assets/refreshMessages'
 import ConnectionComponent from '@renderer/components/Client/Connection'
 import { useSearchParams } from 'react-router-dom'
 import ADBDevice from '@renderer/components/Client/ADBDevice'
+import { PlatformIDs } from '@shared/stores/platformStore'
 
 const ClientConnections: React.FC = () => {
   const settings = useSettingsStore((settings) => settings.settings)
-  const clients = useClientStore((clients) => clients.clients)
-  const stagedClient = useClientStore((clients) => clients.clientManifest)
-  const devices = useClientStore((clients) => clients.ADBDevices)
-  const refreshClients = useClientStore((clients) => clients.requestADBDevices)
+  const { clients, clientManifest, devices } = useClientStore((state) => state)
   const setPage = usePageStore((pageStore) => pageStore.setPage)
 
   // Visibility States
@@ -47,10 +45,15 @@ const ClientConnections: React.FC = () => {
     }
   }, [refreshCount])
 
-  const handleRefresh = (): void => {
+  const handleRefresh = async (): Promise<void> => {
     if (!isRefreshing) {
       setIsRefreshing(true)
-      refreshClients()
+      const res = await window.electron.platform.send({
+        platform: PlatformIDs.ADB,
+        type: 'refresh',
+        request: 'adb'
+      })
+      console.log('Found', res)
       setTimeout(
         () => {
           setIsRefreshing(false)
@@ -77,7 +80,7 @@ const ClientConnections: React.FC = () => {
 
   const handleRestartServerClick = async (): Promise<void> => {
     setIsRestarting(true)
-    await window.electron.restartServer()
+    await window.electron.utility.restartServer()
     await setTimeout(() => {
       setIsRestarting(false)
     }, 1000)
@@ -96,10 +99,10 @@ const ClientConnections: React.FC = () => {
               ))}
             <div className="border-t border-gray-500 mt-4 pt-4">
               <p className="">Staged Client</p>
-              {stagedClient ? (
+              {clientManifest ? (
                 <>
-                  <p className="text-gray-500">{stagedClient.name}</p>
-                  <p className="text-gray-500">Version: {stagedClient.version}</p>
+                  <p className="text-gray-500">{clientManifest.name}</p>
+                  <p className="text-gray-500">Version: {clientManifest.version}</p>
                 </>
               ) : (
                 <p className="text-red-500 font-semibold">No Client Downloaded</p>

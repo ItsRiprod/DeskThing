@@ -2,18 +2,15 @@ import React, { useEffect, useState } from 'react'
 import { AppSettingProps } from './AppsOverlay'
 import Button from '@renderer/components/Button'
 import { IconPlay, IconStop, IconTrash, IconX } from '@renderer/assets/icons'
-import { useAppStore } from '@renderer/stores'
 import useMappingStore from '@renderer/stores/mappingStore'
 import { Action } from '@DeskThing/types'
 import ActionElement from '@renderer/components/ActionElement'
+import { useAppStore } from '@renderer/stores'
 
 const AppActions: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
-  const stopApp = useAppStore((state) => state.stopApp)
-  const runApp = useAppStore((state) => state.runApp)
-  const disableApp = useAppStore((state) => state.disableApp)
-  const enableApp = useAppStore((state) => state.enableApp)
   const actions = useMappingStore((state) => state.actions)
   const fetchActions = useMappingStore((state) => state.getActions)
+  const { purgeApp, enableApp, disableApp, runApp, stopApp } = useAppStore((state) => state)
 
   const [availableActions, setAvailableActions] = useState<Action[]>([])
 
@@ -25,8 +22,8 @@ const AppActions: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
     fetchActions()
   }, [])
 
-  const handlePurge = (): void => {
-    window.electron.purgeApp(app.name)
+  const handlePurge = async (): Promise<void> => {
+    await purgeApp(app.name)
   }
 
   return (

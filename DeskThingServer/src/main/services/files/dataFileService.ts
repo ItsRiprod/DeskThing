@@ -9,7 +9,6 @@
  * The `purgeAppData` function removes the data for a specific application.
  */
 
-console.log('[Data File Service] Starting')
 import { AppDataInterface } from '@DeskThing/types'
 import { deleteFile, readFromFile, writeToFile } from './fileService'
 import { join } from 'path'

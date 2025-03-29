@@ -3,7 +3,7 @@ import {
   PlatformEvent,
   PlatformConnectionOptions,
   PlatformStatus
-} from '@shared/interfaces/platform'
+} from '@shared/interfaces/platformInterface'
 import {
   AppSettings,
   MappingProfile,
@@ -16,31 +16,25 @@ import {
 } from '@DeskThing/types'
 import Logger from '@server/utils/logger'
 import {
+  PlatformIDs,
   PlatformStoreClass,
   PlatformStoreEvent,
-  PlatformStoreEvents,
-  PlatformStoreListener
+  PlatformStoreEvents
 } from '@shared/stores/platformStore'
-import { handlePlatformMessage } from '@server/services/platforms/platformMessage'
+import { handlePlatformMessage } from '@server/stores/platforms/platformMessage'
 import { AppStoreClass } from '@shared/stores/appStore'
 import { storeProvider } from './storeProvider'
 import { AppDataStoreClass } from '@shared/stores/appDataStore'
 import { isValidAppSettings } from '@server/services/apps/appValidator'
 import { MappingStoreClass } from '@shared/stores/mappingStore'
 
-export class PlatformStore implements PlatformStoreClass {
-  private platforms: Map<string, PlatformInterface> = new Map()
-  private clientPlatformMap: Map<string, string> = new Map() // Maps clientId to platformId
-  private listeners: { [key in PlatformStoreEvent]: PlatformStoreListener<key>[] } = {
-    [PlatformStoreEvent.PLATFORM_ADDED]: [],
-    [PlatformStoreEvent.PLATFORM_REMOVED]: [],
-    [PlatformStoreEvent.PLATFORM_STARTED]: [],
-    [PlatformStoreEvent.PLATFORM_STOPPED]: [],
-    [PlatformStoreEvent.CLIENT_CONNECTED]: [],
-    [PlatformStoreEvent.CLIENT_DISCONNECTED]: [],
-    [PlatformStoreEvent.CLIENT_UPDATED]: [],
-    [PlatformStoreEvent.DATA_RECEIVED]: []
-  }
+import EventEmitter from 'node:events'
+import { ExtractPayloadFromIPC, PlatformIPC } from '@shared/types/ipc/ipcPlatform'
+
+export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements PlatformStoreClass {
+  private platforms: Map<PlatformIDs, PlatformInterface> = new Map()
+  private clientPlatformMap: Map<string, PlatformIDs> = new Map()
+
   private appStore: AppStoreClass
   private appDataStore: AppDataStoreClass
   private mappingStore: MappingStoreClass
@@ -55,9 +49,13 @@ export class PlatformStore implements PlatformStoreClass {
     appDataStore: AppDataStoreClass,
     mappingStore: MappingStoreClass
   ) {
+    super()
     this.appStore = appStore
     this.appDataStore = appDataStore
     this.mappingStore = mappingStore
+  }
+  async sendPlatformData<T extends PlatformIPC>(data: T): Promise<ExtractPayloadFromIPC<T>> {
+    return this.getPlatform(data.platform)?.handlePlatformEvent(data) as ExtractPayloadFromIPC<T>
   }
 
   async initialize(): Promise<void> {
@@ -147,90 +145,43 @@ export class PlatformStore implements PlatformStoreClass {
       })
     })
   }
-  /**
-   * Adds a listener for a specific event
-   * @param event
-   * @param listener
-   * @returns A function to remove the listener
-   */
-  public on = <T extends PlatformStoreEvent>(
-    event: T,
-    listener: PlatformStoreListener<T>
-  ): (() => void) => {
-    if (!this.listeners[event]) {
-      this.listeners[event] = []
-    }
-    this.listeners[event].push(listener)
-    return () => {
-      this.listeners[event] = this.listeners[event].filter((l) => l !== listener) as []
-    }
-  }
 
-  /**
-   * Removes a listener
-   * @param event
-   * @param listener
-   * @returns
-   */
-  public off = <T extends PlatformStoreEvent>(
-    event: T,
-    listener: PlatformStoreListener<T>
-  ): void => {
-    if (!this.listeners[event]) {
-      return
-    }
-    this.listeners[event] = this.listeners[event].filter((l) => l !== listener) as []
-  }
-
-  private notify<T extends PlatformStoreEvent>(event: T, payload: PlatformStoreEvents[T]): void {
-    if (!this.listeners[event]) {
-      return
-    }
-    this.listeners[event].forEach((listener) => {
-      listener(payload)
-    })
-  }
-
-  // Platform management
-  async addPlatform(platform: PlatformInterface): Promise<void> {
+  async registerPlatform(platform: PlatformInterface): Promise<void> {
     if (this.platforms.has(platform.id)) {
       throw new Error(`Platform with ID ${platform.id} already exists`)
     }
 
     this.platforms.set(platform.id, platform)
     this.setupPlatformListeners(platform)
-    this.notify(PlatformStoreEvent.PLATFORM_ADDED, platform)
+    this.emit(PlatformStoreEvent.PLATFORM_ADDED, platform)
 
-    Logger.debug(`Platform ${platform.name} (${platform.type}) added`, {
+    Logger.debug(`Platform ${platform.name} (${platform.id}) added`, {
       domain: 'platform',
       source: 'platformStore',
       function: 'addPlatform'
     })
   }
 
-  async removePlatform(platformId: string): Promise<boolean> {
+  async removePlatform(platformId: PlatformIDs): Promise<boolean> {
     const platform = this.platforms.get(platformId)
     if (!platform) {
       return false
     }
 
-    // Stop platform if running
     if (platform.isRunning()) {
       await platform.stop()
     }
 
-    // Clean up listeners
     platform.removeAllListeners()
 
-    // Remove all clients associated with this platform
     this.getClientsByPlatform(platformId).forEach((client) => {
       this.clientPlatformMap.delete(client.connectionId)
     })
 
     this.platforms.delete(platformId)
-    this.notify(PlatformStoreEvent.PLATFORM_REMOVED, platformId)
+    this.emit(PlatformStoreEvent.PLATFORM_REMOVED, platformId)
 
-    Logger.debug(`Platform ${platform.name} (${platform.type}) removed`, {
+    Logger.debug(`Platform ${platform.name} (${platform.id}) removed`, {
       domain: 'platform',
       source: 'platformStore',
       function: 'removePlatform'
@@ -239,19 +190,18 @@ export class PlatformStore implements PlatformStoreClass {
     return true
   }
 
-  getPlatform(platformId: string): PlatformInterface | undefined {
+  getPlatform(platformId: PlatformIDs): PlatformInterface | undefined {
     return this.platforms.get(platformId)
-  }
-
-  getPlatformByType(type: string): PlatformInterface | undefined {
-    return Array.from(this.platforms.values()).find((p) => p.type === type)
   }
 
   getAllPlatforms(): PlatformInterface[] {
     return Array.from(this.platforms.values())
   }
 
-  async startPlatform(platformId: string, options?: PlatformConnectionOptions): Promise<boolean> {
+  async startPlatform(
+    platformId: PlatformIDs,
+    options?: PlatformConnectionOptions
+  ): Promise<boolean> {
     const platform = this.platforms.get(platformId)
     if (!platform) {
       return false
@@ -259,9 +209,9 @@ export class PlatformStore implements PlatformStoreClass {
 
     try {
       await platform.start(options)
-      this.notify(PlatformStoreEvent.PLATFORM_STARTED, platform)
+      this.emit(PlatformStoreEvent.PLATFORM_STARTED, platform)
 
-      Logger.debug(`Platform ${platform.name} (${platform.type}) started`, {
+      Logger.debug(`Platform ${platform.name} (${platform.id}) started`, {
         domain: 'platform',
         source: 'platformStore',
         function: 'startPlatform'
@@ -279,7 +229,7 @@ export class PlatformStore implements PlatformStoreClass {
     }
   }
 
-  async stopPlatform(platformId: string): Promise<boolean> {
+  async stopPlatform(platformId: PlatformIDs): Promise<boolean> {
     const platform = this.platforms.get(platformId)
     if (!platform) {
       return false
@@ -287,9 +237,9 @@ export class PlatformStore implements PlatformStoreClass {
 
     try {
       await platform.stop()
-      this.notify(PlatformStoreEvent.PLATFORM_STOPPED, platform)
+      this.emit(PlatformStoreEvent.PLATFORM_STOPPED, platform)
 
-      Logger.debug(`Platform ${platform.name} (${platform.type}) stopped`, {
+      Logger.debug(`Platform ${platform.name} (${platform.id}) stopped`, {
         domain: 'platform',
         source: 'platformStore',
         function: 'stopPlatform'
@@ -307,9 +257,43 @@ export class PlatformStore implements PlatformStoreClass {
     }
   }
 
-  async restartPlatform(platformId: string, options?: PlatformConnectionOptions): Promise<boolean> {
+  async restartPlatform(
+    platformId: PlatformIDs,
+    options?: PlatformConnectionOptions
+  ): Promise<boolean> {
     await this.stopPlatform(platformId)
     return await this.startPlatform(platformId, options)
+  }
+
+  getClients(): Client[] {
+    const clients = this.getAllPlatforms().flatMap((platform) => platform.getClients())
+    Logger.debug(`Got ${clients.length} clients`, {
+      domain: 'platform',
+      source: 'platformStore',
+      function: 'getClients'
+    })
+    return clients
+  }
+
+  getClientById(clientId: string): Client | undefined {
+    const platformId = this.clientPlatformMap.get(clientId)
+    if (platformId) {
+      return this.platforms.get(platformId)?.getClientById(clientId)
+    }
+    return
+  }
+
+  getClientsByPlatform(platformId: PlatformIDs): Client[] {
+    const platform = this.platforms.get(platformId)
+    return platform ? platform.getClients() : []
+  }
+
+  getPlatformForClient(clientId: string): PlatformInterface | undefined {
+    const platformId = this.clientPlatformMap.get(clientId)
+    if (!platformId) {
+      return undefined
+    }
+    return this.platforms.get(platformId)
   }
 
   updateClient(clientId: string, client: Partial<Client>): void {
@@ -325,44 +309,10 @@ export class PlatformStore implements PlatformStoreClass {
     }
   }
 
-  // Client management
-  getClients(): Client[] {
-    const allClients: Client[] = []
-    this.platforms.forEach((platform) => {
-      allClients.push(...platform.getClients())
-    })
-    return allClients
-  }
-
-  getClientById(clientId: string): Client | undefined {
-    const platformId = this.clientPlatformMap.get(clientId)
-    if (!platformId) {
-      return undefined
-    }
-
-    const platform = this.platforms.get(platformId)
-    return platform?.getClientById(clientId)
-  }
-
-  getClientsByPlatform(platformId: string): Client[] {
-    const platform = this.platforms.get(platformId)
-    return platform ? platform.getClients() : []
-  }
-
-  getPlatformForClient(clientId: string): PlatformInterface | undefined {
-    const platformId = this.clientPlatformMap.get(clientId)
-    if (!platformId) {
-      return undefined
-    }
-    return this.platforms.get(platformId)
-  }
-
-  // Data handling
   async handleSocketData(
     client: Client,
     data: DeviceToDeskthingData & { connectionId: string }
   ): Promise<void> {
-    // TODO: Fully implement this
     const platform = this.getPlatformForClient(client.id)
     if (!platform) {
       Logger.warn(`No platform found for client ${client.id}`, {
@@ -382,9 +332,7 @@ export class PlatformStore implements PlatformStoreClass {
     })
 
     handlePlatformMessage(platform, client, data)
-
-    // Data is already received at this point, just relay it to listeners
-    this.notify(PlatformStoreEvent.DATA_RECEIVED, { client, data })
+    this.emit(PlatformStoreEvent.DATA_RECEIVED, { client, data })
   }
 
   async sendDataToClient(
@@ -395,6 +343,7 @@ export class PlatformStore implements PlatformStoreClass {
       source: 'platformStore',
       function: 'sendDataToClient'
     })
+
     const platform = this.getPlatformForClient(data.clientId)
     if (!platform) {
       Logger.warn(`Cannot send data: No platform found for client ${data.clientId}`, {
@@ -443,14 +392,13 @@ export class PlatformStore implements PlatformStoreClass {
     await Promise.all(promises)
   }
 
-  // Status information
   getPlatformStatus(): {
-    activePlatforms: string[]
+    activePlatforms: PlatformIDs[]
     totalClients: number
-    platformStatuses: Record<string, PlatformStatus>
+    platformStatuses: Record<PlatformIDs, PlatformStatus>
   } {
-    const platformStatuses: Record<string, PlatformStatus> = {}
-    const activePlatforms: string[] = []
+    const platformStatuses = {} as Record<PlatformIDs, PlatformStatus>
+    const activePlatforms: PlatformIDs[] = []
     let totalClients = 0
 
     this.platforms.forEach((platform, id) => {
@@ -471,39 +419,43 @@ export class PlatformStore implements PlatformStoreClass {
     }
   }
 
-  // Private helper methods
   private setupPlatformListeners(platform: PlatformInterface): void {
-    // Client connected handler
     platform.on(PlatformEvent.CLIENT_CONNECTED, (client: Client) => {
       this.clientPlatformMap.set(client.connectionId, platform.id)
-      this.notify(PlatformStoreEvent.CLIENT_CONNECTED, client)
+      
+      this.emit(PlatformStoreEvent.CLIENT_CONNECTED, client)
       this.sendInitialDataToClient(client.connectionId)
 
-      Logger.debug(`Client ${client.connectionId} connected via ${platform.type}`, {
+      Logger.debug(`Client ${client.connectionId} connected via ${platform.id}`, {
         domain: 'platform',
         source: 'platformStore',
         function: 'clientConnected'
       })
+
+      Logger.debug(`Client details are ${JSON.stringify(client)}`, {
+        domain: 'platform',
+        source: 'platformStore',
+        function: 'clientConnected'
+      })
+
     })
 
-    // Client disconnected handler
     platform.on(PlatformEvent.CLIENT_DISCONNECTED, (client: Client) => {
-      this.clientPlatformMap.delete(client.connectionId)
-      this.notify(PlatformStoreEvent.CLIENT_DISCONNECTED, client.id)
+      this.emit(PlatformStoreEvent.CLIENT_DISCONNECTED, client.id)
 
-      Logger.debug(`Client ${client.connectionId} disconnected from ${platform.type}`, {
+      Logger.debug(`Client ${client.connectionId} disconnected from ${platform.id}`, {
         domain: 'platform',
         source: 'platformStore',
         function: 'clientDisconnected'
       })
+
+      this.clientPlatformMap.delete(client.connectionId)
     })
 
-    // Data received handler
     platform.on(PlatformEvent.DATA_RECEIVED, ({ client, data }) => {
       this.handleSocketData(client, data)
     })
 
-    // Error handler
     platform.on(PlatformEvent.ERROR, (error: Error) => {
       Logger.error(`Platform ${platform.name} error`, {
         error,
@@ -513,7 +465,6 @@ export class PlatformStore implements PlatformStoreClass {
       })
     })
 
-    // Status changed handler
     platform.on(PlatformEvent.STATUS_CHANGED, (status: PlatformStatus) => {
       Logger.debug(`Platform ${platform.name} status changed`, {
         domain: 'platform',
@@ -522,8 +473,6 @@ export class PlatformStore implements PlatformStoreClass {
       })
       console.log(`UNIMPLEMENTED: New status of ${platform.name}:`, status)
     })
-
-    // Status changed handler
     platform.on(PlatformEvent.SERVER_STARTED, ({ port, address }) => {
       Logger.debug(`Platform ${platform.name} connected to ${address}:${port}`, {
         domain: 'platform',
@@ -533,12 +482,19 @@ export class PlatformStore implements PlatformStoreClass {
     })
 
     platform.on(PlatformEvent.CLIENT_UPDATED, (client) => {
-      Logger.debug(`Client ${client.connectionId} updated`, {
+      this.emit(PlatformStoreEvent.CLIENT_UPDATED, client)
+
+      Logger.debug(`Client ${client.connectionId} updated via ${platform.id}`, {
         domain: 'platform',
         source: 'platformStore',
         function: 'clientUpdated'
       })
-      this.notify(PlatformStoreEvent.CLIENT_UPDATED, client)
+
+      Logger.debug(`Client details are now ${JSON.stringify(client)}`, {
+        domain: 'platform',
+        source: 'platformStore',
+        function: 'clientConnected'
+      })
     })
   }
 

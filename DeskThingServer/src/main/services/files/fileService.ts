@@ -96,7 +96,6 @@ export const readFromFile = async <T>(filename: string): Promise<T | undefined> 
       const rawData = await fs.promises.readFile(dataFilePath)
       return JSON.parse(rawData.toString())
     } catch (error) {
-
       if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
         Logger.debug(`File not found: ${filename}`, {
           source: 'readFromFile'

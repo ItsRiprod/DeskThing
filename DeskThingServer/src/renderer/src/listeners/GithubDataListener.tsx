@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useGithubStore } from '../stores'
+import { usereleaseStore } from '../stores'
 import { IpcRendererCallback } from '@shared/types'
 
 /**
@@ -11,9 +11,9 @@ import { IpcRendererCallback } from '@shared/types'
  * - Handling errors that occur during the fetching of repository data.
  */
 const GithubDataListener = (): null => {
-  const setAppReleases = useGithubStore((state) => state.setAppReleases)
-  const setClientReleases = useGithubStore((state) => state.setClientReleases)
-  const setCommunityApps = useGithubStore((state) => state.setCommunityApps)
+  const setAppReleases = usereleaseStore((state) => state.setAppReleases)
+  const setClientReleases = usereleaseStore((state) => state.setClientReleases)
+  const setCommunityApps = usereleaseStore((state) => state.setCommunityApps)
   useEffect(() => {
     let isInvalid = false
     const handleAppsUpdate: IpcRendererCallback<'github-apps'> = (_event, data): void => {
@@ -26,14 +26,14 @@ const GithubDataListener = (): null => {
       setClientReleases(data)
     }
     const getInitialData = async (): Promise<void> => {
-      const clients = await window.electron.github.getClients()
-      const refs = await window.electron.github.getAppReferences()
-      const apps = await window.electron.github.getApps()
+      const clients = await window.electron.releases.getClients()
+      const refs = await window.electron.releases.getAppReferences()
+      const apps = await window.electron.releases.getApps()
 
       if (isInvalid) return // cancel on a re-render
       setClientReleases(clients)
       setCommunityApps(refs)
-      setAppReleases(apps)
+      setAppReleases(Array.isArray(apps) ? apps : [apps])
     }
 
     getInitialData()

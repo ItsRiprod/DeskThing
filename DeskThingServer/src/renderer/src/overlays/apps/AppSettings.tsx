@@ -1,14 +1,13 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react'
-import { useAppStore } from '@renderer/stores'
 import { AppSettings as AppSettingsType } from '@DeskThing/types'
 import { AppSettingProps } from './AppsOverlay'
 import Button from '@renderer/components/Button'
 import { IconLoading, IconSave } from '@renderer/assets/icons'
 import Settings from '@renderer/components/settings'
+import { useAppStore } from '@renderer/stores'
 
 const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
-  const getAppSettings = useAppStore((state) => state.getAppSettings)
-  const setAppSettings = useAppStore((state) => state.setAppSettings)
+  const { getAppSettings, setAppSettings } = useAppStore((state) => state)
   const [appSettings, setAppData] = useState<AppSettingsType | null>(null)
   const [loading, setLoading] = useState(false)
 

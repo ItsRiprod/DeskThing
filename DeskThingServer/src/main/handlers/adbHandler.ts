@@ -4,7 +4,8 @@ import { execFile } from 'child_process'
 import getPlatform from '@server/utils/get-platform'
 import Logger from '@server/utils/logger'
 import { storeProvider } from '../stores/storeProvider'
-import { ReplyFn } from '@shared/types'
+import { progressBus } from '@server/services/events/progressBus'
+import { ProgressChannel } from '@shared/types'
 
 const isDevelopment = process.env.NODE_ENV === 'development'
 const execPath = isDevelopment
@@ -35,9 +36,11 @@ const splitArgs = (str: string): string[] => {
  * Executes an ADB command and returns the output.
  * @param command - The ADB command to execute.
  * @param replyFn - An optional callback function to handle logging.
+ * @channel - {@link ProgressChannel.ADB}
  * @returns A Promise that resolves with the output of the ADB command.
  */
-export const handleAdbCommands = async (command: string, replyFn?: ReplyFn): Promise<string> => {
+export const handleAdbCommands = async (command: string): Promise<string> => {
+  progressBus.start(ProgressChannel.ADB, 'ADB - Runner', 'Executing ADB Command')
   const settingsStore = await storeProvider.getStore('settingsStore')
   const settings = await settingsStore.getSettings()
   const useGlobalADB = settings?.globalADB === true
@@ -49,13 +52,7 @@ export const handleAdbCommands = async (command: string, replyFn?: ReplyFn): Pro
       { cwd: execPath },
       (error, stdout, stderr) => {
         if (error) {
-          replyFn &&
-            replyFn('logging', {
-              status: false,
-              data: 'Error Encountered!',
-              final: false,
-              error: stderr
-            })
+          progressBus.error(ProgressChannel.ADB, 'Error Encountered!', error.message)
           Logger.error(`ADB Error: ${stderr}, ${command}, ${adbPath}`, {
             error: error as Error,
             function: 'adbHandler',
@@ -63,12 +60,7 @@ export const handleAdbCommands = async (command: string, replyFn?: ReplyFn): Pro
           })
           reject(new Error(`ADB Error: ${stderr}, ${command}, ${adbPath}`))
         } else {
-          replyFn &&
-            replyFn('logging', {
-              status: true,
-              data: 'ADB Success!',
-              final: false
-            })
+          progressBus.complete(ProgressChannel.ADB, 'ADB Success!')
           resolve(stdout)
         }
       }

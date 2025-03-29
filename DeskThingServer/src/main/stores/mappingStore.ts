@@ -10,7 +10,7 @@ import {
   ButtonMapping,
   Button,
   Profile,
-  DeskThingToAppData,
+  DeskThingToAppData
 } from '@DeskThing/types'
 import { MappingStructure, CacheableStore } from '@shared/types'
 import { Listener, ListenerPayloads, MappingStoreClass } from '@shared/stores/mappingStore'

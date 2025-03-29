@@ -1,5 +1,5 @@
-import { App, AppReleaseSingleMeta, AppSettings } from '@DeskThing/types'
-import { LoggingData, StagedAppManifest } from '@shared/types'
+import { App, AppReleaseSingleMeta, AppSettings, SavedData } from '@DeskThing/types'
+import { IpcRendererCallback, LoggingData, StagedAppManifest } from '@shared/types'
 import { create } from 'zustand'
 import useSettingsStore from './settingsStore'
 
@@ -9,6 +9,9 @@ interface AppStoreState {
   logging: LoggingData | null
   stagedManifest: StagedAppManifest | null
   iconCache: Record<string, string>
+  initialized: boolean
+
+  initialize: () => Promise<void>
 
   clearIconCache: () => void
   requestApps: () => void
@@ -24,8 +27,9 @@ interface AppStoreState {
   stopApp: (appName: string) => void
   runApp: (appName: string) => void
   enableApp: (appName: string) => void
-  getAppData: (appName: string) => Promise<Record<string, string> | null>
-  setAppData: (appName: string, data: Record<string, string>) => void
+  purgeApp: (appName: string) => void
+  getAppData: (appName: string) => Promise<SavedData | null>
+  setAppData: (appName: string, data: SavedData) => void
   getAppSettings: (appName: string) => Promise<AppSettings | null>
   setAppSettings: (appName: string, settings: AppSettings) => void
   setAppList: (apps: App[]) => void
@@ -59,10 +63,40 @@ const useAppStore = create<AppStoreState>((set, get) => ({
   logging: null,
   stagedManifest: null,
   iconCache: {},
+  initialized: false,
+
+  // Initialize the store and set up listeners
+  initialize: async () => {
+    // Only initialize once
+    if (get().initialized) return
+
+    // Set up the event listener for app-data updates
+    const handleAppData: IpcRendererCallback<'app-data'> = (_event, response) => {
+      set({ appsList: response })
+
+      // Update order if needed
+      const { order } = get()
+      const missingApps = response.filter((app) => !order.includes(app.name))
+      if (missingApps.length > 0) {
+        set({ order: [...order, ...missingApps.map((app) => app.name)] })
+      }
+    }
+
+    // Register the listener
+    window.electron.ipcRenderer.on('app-data', handleAppData)
+
+    // Fetch initial data
+    const apps = await window.electron.app.get()
+    set({
+      appsList: apps,
+      order: apps.map((app) => app.name),
+      initialized: true
+    })
+  },
 
   // Requests the apps from Electron via IPC
   requestApps: async (): Promise<void> => {
-    const apps = await window.electron.getApps() // Assuming this is wrapped in a promise
+    const apps = await window.electron.app.get() // Assuming this is wrapped in a promise
     set({ appsList: apps, order: apps.map((app) => app.name), iconCache: {} })
   },
 
@@ -86,7 +120,7 @@ const useAppStore = create<AppStoreState>((set, get) => ({
 
   // Sets the app order
   setOrder: (order: string[]): void => {
-    window.electron.orderApps(order)
+    window.electron.app.order(order)
     set({ order })
   },
 
@@ -112,17 +146,21 @@ const useAppStore = create<AppStoreState>((set, get) => ({
   },
   // Disables an app (set enabled to false)
   disableApp: (appName: string): void => {
-    window.electron.disableApp(appName)
+    window.electron.app.disable(appName)
     set((state) => ({
       appsList: state.appsList.map((app) =>
         app.name === appName ? { ...app, enabled: false } : app
       )
     }))
-    window.electron.getApps()
+    window.electron.app.get()
+  },
+
+  purgeApp: (appName: string): void => {
+    window.electron.app.purge(appName)
   },
 
   stopApp: (appName: string): void => {
-    window.electron.stopApp(appName)
+    window.electron.app.stop(appName)
     set((state) => ({
       appsList: state.appsList.map((app) =>
         app.name === appName ? { ...app, running: false } : app
@@ -131,7 +169,7 @@ const useAppStore = create<AppStoreState>((set, get) => ({
   },
 
   enableApp: (appName: string): void => {
-    window.electron.enableApp(appName)
+    window.electron.app.enable(appName)
     set((state) => ({
       appsList: state.appsList.map((app) =>
         app.name === appName ? { ...app, enabled: true } : app
@@ -140,7 +178,7 @@ const useAppStore = create<AppStoreState>((set, get) => ({
   },
 
   runApp: (appName: string): void => {
-    window.electron.runApp(appName)
+    window.electron.app.run(appName)
     set((state) => ({
       appsList: state.appsList.map((app) =>
         app.name === appName ? { ...app, running: true } : app
@@ -148,20 +186,20 @@ const useAppStore = create<AppStoreState>((set, get) => ({
     }))
   },
 
-  getAppData: async (appName: string): Promise<Record<string, string> | null> => {
-    return await window.electron.getAppData(appName)
+  getAppData: async (appName: string): Promise<SavedData | null> => {
+    return await window.electron.app.getData(appName)
   },
 
-  setAppData: (appName: string, data: { [key: string]: string }): void => {
-    window.electron.setAppData(appName, data)
+  setAppData: (appName: string, data: SavedData): void => {
+    window.electron.app.setData(appName, data)
   },
 
   getAppSettings: async (appName: string): Promise<AppSettings | null> => {
-    return await window.electron.getAppSettings(appName)
+    return await window.electron.app.getSettings(appName)
   },
 
   setAppSettings: (appName: string, settings: AppSettings): void => {
-    window.electron.setAppSettings(appName, settings)
+    window.electron.app.setSettings(appName, settings)
   },
 
   addApp: async ({

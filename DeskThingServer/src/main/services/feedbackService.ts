@@ -1,5 +1,4 @@
 import { ClientConnectionMethod } from '@deskthing/types'
-import { getClientManifest } from '@server/handlers/deviceHandler'
 import { storeProvider } from '@server/stores/storeProvider'
 import logger from '@server/utils/logger'
 import { FeedbackReport, FeedbackType, SystemInfo } from '@shared/types'
@@ -94,11 +93,12 @@ export class FeedbackService {
 
   static async collectSystemInfo(): Promise<SystemInfo> {
     const appStore = await storeProvider.getStore('appStore')
-    const connectionStore = await storeProvider.getStore('connectionsStore')
+    const platformStore = await storeProvider.getStore('platformStore')
+    const clientStore = await storeProvider.getStore('clientStore')
 
     const systemInfo: SystemInfo = {
       serverVersion: 'v' + process.env.PACKAGE_VERSION || '0.0.0',
-      clientVersion: (await getClientManifest())?.version || '0.0.0',
+      clientVersion: clientStore.getClient()?.version || '0.0.0',
       os: `${os.platform()} ${os.release()}`,
       cpu: os.cpus()[0].model,
       ram: Math.round(os.totalmem() / (1024 * 1024)) + ' MB',
@@ -122,7 +122,7 @@ export class FeedbackService {
     }))
 
     // Get connected clients
-    const connectedClients = await connectionStore.getClients()
+    const connectedClients = await platformStore.getClients()
     systemInfo.clients = connectedClients.map((client) => ({
       name: client.manifest?.name || 'Unknown Device',
       connectionType: ClientConnectionMethod[client.manifest?.context.method || 0],

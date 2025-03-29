@@ -1,24 +1,28 @@
-import { ADBClient } from '@shared/types'
 import { sendIpcData } from '../../index'
 import Logger from '../../utils/logger'
 import { storeProvider } from '../../stores/storeProvider'
-import { Client, LOGGING_LEVELS, APP_REQUESTS, DESKTHING_EVENTS } from '@deskthing/types'
+import { LOGGING_LEVELS, APP_REQUESTS, DESKTHING_EVENTS } from '@deskthing/types'
 import { BrowserWindow, ipcMain, shell } from 'electron'
+import { PlatformStoreEvent } from '@shared/stores/platformStore'
 
 export async function initializeStores(): Promise<void> {
   const { default: cacheManager } = await import('./cacheManager')
 
   // Register stores for cache management
   const storeList = {
-    connectionsStore: await storeProvider.getStore('connectionsStore', false),
     appStore: await storeProvider.getStore('appStore', false),
     mappingStore: await storeProvider.getStore('mappingStore', false),
     musicStore: await storeProvider.getStore('musicStore', false),
     settingsStore: await storeProvider.getStore('settingsStore', false),
     taskStore: await storeProvider.getStore('taskStore', false),
-    githubStore: await storeProvider.getStore('githubStore', false),
-    AppDataStore: await storeProvider.getStore('appDataStore', false)
+    releaseStore: await storeProvider.getStore('releaseStore', false),
+    AppDataStore: await storeProvider.getStore('appDataStore', false),
+    updateStore: await storeProvider.getStore('updateStore', false),
+    clientStore: await storeProvider.getStore('clientStore', false)
   }
+
+  const platformStore = await storeProvider.getStore('platformStore', false)
+
   Object.values(storeList).forEach((store) => cacheManager.registerStore(store))
 
   // Set up store listeners
@@ -30,24 +34,6 @@ export async function initializeStores(): Promise<void> {
   })
   storeList.mappingStore.addListener('profile', (profile) => {
     profile && sendIpcData({ type: 'profile', payload: profile })
-  })
-
-  storeList.connectionsStore.on((clients: Client[]) => {
-    sendIpcData({
-      type: 'connections',
-      payload: { status: true, data: clients.length, final: true }
-    })
-    sendIpcData({
-      type: 'clients',
-      payload: { status: true, data: clients, final: true }
-    })
-  })
-
-  storeList.connectionsStore.onDevice((devices: ADBClient[]) => {
-    sendIpcData({
-      type: 'adbdevices',
-      payload: devices
-    })
   })
 
   storeList.AppDataStore.on('settings', (data) => {
@@ -88,21 +74,21 @@ export async function initializeStores(): Promise<void> {
     })
   })
 
-  storeList.githubStore.on('app', (app) => {
+  storeList.releaseStore.on('app', (app) => {
     Logger.debug('[INDEX]: Sending updated app information with type github-apps')
     sendIpcData({
       type: 'github-apps',
       payload: app
     })
   })
-  storeList.githubStore.on('client', (clients) => {
+  storeList.releaseStore.on('client', (clients) => {
     Logger.debug('[INDEX]: Sending updated client information with type github-client')
     sendIpcData({
       type: 'github-client',
       payload: clients
     })
   })
-  storeList.githubStore.on('community', (community) => {
+  storeList.releaseStore.on('community', (community) => {
     Logger.debug('[INDEX]: Sending updated community information with type github-community')
     sendIpcData({
       type: 'github-community',
@@ -183,4 +169,53 @@ export async function initializeStores(): Promise<void> {
     },
     { request: 'input' }
   )
+
+  storeList.clientStore.on('client-updated', (client) => {
+    sendIpcData({
+      type: 'staged-manifest',
+      payload: client
+    })
+  })
+
+  storeList.updateStore.on('update-status', (status) => {
+    sendIpcData({
+      type: 'update-status',
+      payload: status
+    })
+  })
+
+  storeList.updateStore.on('update-progress', (progress) => {
+    sendIpcData({
+      type: 'update-progress',
+      payload: progress
+    })
+  })
+
+  platformStore.on(PlatformStoreEvent.CLIENT_CONNECTED, (data) => {
+    sendIpcData({
+      type: 'platform:client',
+      payload: {
+        request: 'added',
+        client: data
+      }
+    })
+  })
+  platformStore.on(PlatformStoreEvent.CLIENT_DISCONNECTED, (data) => {
+    sendIpcData({
+      type: 'platform:client',
+      payload: {
+        request: 'removed',
+        clientId: data
+      }
+    })
+  })
+  platformStore.on(PlatformStoreEvent.CLIENT_UPDATED, (data) => {
+    sendIpcData({
+      type: 'platform:client',
+      payload: {
+        request: 'modified',
+        client: data
+      }
+    })
+  })
 }

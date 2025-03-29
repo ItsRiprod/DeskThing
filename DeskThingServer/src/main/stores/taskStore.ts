@@ -746,6 +746,11 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
       console.log(task)
       return
     } else {
+      if (task.steps[stepId].completed) {
+        Logger.info(`Step ${stepId} has already been completed`)
+        return
+      }
+
       task.steps[stepId].completed = true
     }
 

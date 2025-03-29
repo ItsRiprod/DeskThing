@@ -10,7 +10,7 @@ const ADBSettings: React.FC = () => {
   const [pastCommands, setPastCommands] = useState<string[]>([])
   const [commandType, setCommandType] = useState('adb')
   const [adbDevice, setAdbDevice] = useState('')
-  const adbDevices = useClientStore((store) => store.ADBDevices)
+  const adbDevices = useClientStore((store) => store.devices)
   const refreshDevices = useClientStore((store) => store.requestADBDevices)
   const saveSettings = useSettingsStore((store) => store.savePartialSettings)
   const adbSetting = useSettingsStore((store) => store.settings.globalADB)

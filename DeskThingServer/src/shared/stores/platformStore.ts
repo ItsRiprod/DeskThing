@@ -2,9 +2,17 @@ import {
   PlatformInterface,
   PlatformConnectionOptions,
   PlatformStatus
-} from '@shared/interfaces/platform'
+} from '@shared/interfaces/platformInterface'
 import { SocketData, Client, DeviceToDeskthingData, DeskThingToDeviceCore } from '@DeskThing/types'
 import { StoreInterface } from '@shared/interfaces/storeInterface'
+import { EventEmitter } from 'node:stream'
+import { ExtractPayloadFromIPC, PlatformIPC } from '@shared/types/ipc/ipcPlatform'
+
+export enum PlatformIDs {
+  ADB = 'adb',
+  WEBSOCKET = 'websocket',
+  BLUETOOTH = 'bluetooth'
+}
 
 export enum PlatformStoreEvent {
   PLATFORM_ADDED = 'platform_added',
@@ -18,49 +26,59 @@ export enum PlatformStoreEvent {
 }
 
 export type PlatformStoreEvents = {
-  [PlatformStoreEvent.PLATFORM_ADDED]: PlatformInterface
-  [PlatformStoreEvent.PLATFORM_REMOVED]: string
-  [PlatformStoreEvent.PLATFORM_STARTED]: PlatformInterface
-  [PlatformStoreEvent.PLATFORM_STOPPED]: PlatformInterface
-  [PlatformStoreEvent.CLIENT_CONNECTED]: Client
-  [PlatformStoreEvent.CLIENT_DISCONNECTED]: string
-  [PlatformStoreEvent.CLIENT_UPDATED]: Client
-  [PlatformStoreEvent.DATA_RECEIVED]: { client: Client; data: SocketData }
+  [PlatformStoreEvent.PLATFORM_ADDED]: [PlatformInterface]
+  [PlatformStoreEvent.PLATFORM_REMOVED]: [string]
+  [PlatformStoreEvent.PLATFORM_STARTED]: [PlatformInterface]
+  [PlatformStoreEvent.PLATFORM_STOPPED]: [PlatformInterface]
+  [PlatformStoreEvent.CLIENT_CONNECTED]: [Client]
+  [PlatformStoreEvent.CLIENT_DISCONNECTED]: [string]
+  [PlatformStoreEvent.CLIENT_UPDATED]: [Client]
+  [PlatformStoreEvent.DATA_RECEIVED]: [{ client: Client; data: SocketData }]
 }
 
-export type PlatformStoreListener<T extends PlatformStoreEvent> = (
-  data: PlatformStoreEvents[T]
-) => void
+export interface PlatformStoreClass extends StoreInterface, EventEmitter<PlatformStoreEvents> {
+  registerPlatform(platform: PlatformInterface): Promise<void>
 
-export interface PlatformStoreClass extends StoreInterface {
-  on<T extends PlatformStoreEvent>(event: T, listener: PlatformStoreListener<T>): () => void
-  off<T extends PlatformStoreEvent>(event: T, listener: PlatformStoreListener<T>): void
-  addPlatform(platform: PlatformInterface): Promise<void>
-  removePlatform(platformId: string): Promise<boolean>
-  getPlatform(platformId: string): PlatformInterface | undefined
-  getPlatformByType(type: string): PlatformInterface | undefined
+  removePlatform(platformId: PlatformIDs): Promise<boolean>
+
+  getPlatform(platformId: PlatformIDs): PlatformInterface | undefined
+
   getAllPlatforms(): PlatformInterface[]
-  startPlatform(platformId: string, options?: PlatformConnectionOptions): Promise<boolean>
-  restartPlatform(platformId: string, options?: PlatformConnectionOptions): Promise<boolean>
-  stopPlatform(platformId: string): Promise<boolean>
+
+  startPlatform(platformId: PlatformIDs, options?: PlatformConnectionOptions): Promise<boolean>
+
+  restartPlatform(platformId: PlatformIDs, options?: PlatformConnectionOptions): Promise<boolean>
+
+  stopPlatform(platformId: PlatformIDs): Promise<boolean>
+
   updateClient(clientId: string, client: Partial<Client>): void
+
   getClients(): Client[]
+
   getClientById(clientId: string): Client | undefined
-  getClientsByPlatform(platformId: string): Client[]
-  getPlatformForClient(clientId: string): PlatformInterface | undefined
+
+  getClientsByPlatform(platformId: PlatformIDs): Client[]
+
+  getPlatformForClient(clientId: PlatformIDs): PlatformInterface | undefined
+
   handleSocketData(
     client: Client,
     data: DeviceToDeskthingData & { connectionId: string }
   ): Promise<void>
+
   sendDataToClient(
     data: DeskThingToDeviceCore & { app?: string; clientId: string }
   ): Promise<boolean>
+
   broadcastToClients(
     data: DeskThingToDeviceCore & { app?: string; clientId?: string }
   ): Promise<void>
+
   getPlatformStatus(): {
-    activePlatforms: string[]
+    activePlatforms: PlatformIDs[]
     totalClients: number
-    platformStatuses: Record<string, PlatformStatus>
+    platformStatuses: Record<PlatformIDs, PlatformStatus>
   }
+
+  sendPlatformData<T extends PlatformIPC>(data: T): Promise<ExtractPayloadFromIPC<T>>
 }

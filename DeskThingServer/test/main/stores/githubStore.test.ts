@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { GithubStore } from '../../../src/main/stores/githubStore'
+import { releaseStore } from '../../../src/main/stores/releaseStore'
 import { getLatestRelease, fetchAssetContent } from '@server/services/github/githubService'
 import { readAppReleaseData } from '@server/services/files/releaseFileService'
 import Logger from '@server/utils/logger'
@@ -26,12 +26,12 @@ vi.mock('@server/utils/logger', () => ({
   }
 }))
 
-describe('GithubStore', () => {
-  let githubStore: GithubStore
+describe('releaseStore', () => {
+  let releaseStore: releaseStore
 
   beforeEach(() => {
     vi.clearAllMocks()
-    githubStore = new GithubStore()
+    releaseStore = new releaseStore()
   })
 
   afterEach(() => {
@@ -40,9 +40,9 @@ describe('GithubStore', () => {
 
   describe('Cache Management', () => {
     it('should clear all caches when clearCache is called', async () => {
-      await githubStore.clearCache()
-      expect(await githubStore.getAppReleases()).toEqual([])
-      expect(await githubStore.getClientReleases()).toEqual([])
+      await releaseStore.clearCache()
+      expect(await releaseStore.getAppReleases()).toEqual([])
+      expect(await releaseStore.getClientReleases()).toEqual([])
     })
 
     it('should refresh data and clear existing cache', async () => {
@@ -52,7 +52,7 @@ describe('GithubStore', () => {
       } as any)
       vi.mocked(fetchAssetContent).mockResolvedValueOnce(mockRelease as any)
 
-      await githubStore.refreshData(true)
+      await releaseStore.refreshData(true)
       expect(getLatestRelease).toHaveBeenCalled()
     })
   })
@@ -70,7 +70,7 @@ describe('GithubStore', () => {
         timestamp: Date.now()
       } as any)
 
-      await githubStore.removeAppRelease('test/repo')
+      await releaseStore.removeAppRelease('test/repo')
       expect(Logger.info).toHaveBeenCalledWith(
         'App release removed successfully',
         expect.any(Object)
@@ -83,11 +83,11 @@ describe('GithubStore', () => {
       const appListener = vi.fn()
       const communityListener = vi.fn()
 
-      const unsubscribeApp = githubStore.on('app', appListener)
-      const unsubscribeCommunity = githubStore.on('community', communityListener)
+      const unsubscribeApp = releaseStore.on('app', appListener)
+      const unsubscribeCommunity = releaseStore.on('community', communityListener)
 
-      githubStore['notifyListeners']('app', [])
-      githubStore['notifyListeners']('community', [])
+      releaseStore['notifyListeners']('app', [])
+      releaseStore['notifyListeners']('community', [])
 
       expect(appListener).toHaveBeenCalled()
       expect(communityListener).toHaveBeenCalled()
@@ -95,8 +95,8 @@ describe('GithubStore', () => {
       unsubscribeApp()
       unsubscribeCommunity()
 
-      githubStore['notifyListeners']('app', [])
-      githubStore['notifyListeners']('community', [])
+      releaseStore['notifyListeners']('app', [])
+      releaseStore['notifyListeners']('community', [])
 
       expect(appListener).toHaveBeenCalledTimes(1)
       expect(communityListener).toHaveBeenCalledTimes(1)
