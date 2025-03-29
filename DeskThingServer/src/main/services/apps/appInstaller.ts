@@ -103,33 +103,27 @@ export const executeStagedFile = async ({
       if (app?.enabled || app?.running) {
         await appStore.disable(appId)
       }
-    } else {
-      progressBus.update(
-        ProgressChannel.FN_APP_INITIALIZE,
-        'Getting manifest...',
-        35,
-        'Running App'
-      )
-      const manifest = await getManifest(extractedPath)
-      // If the app is new
-      Logger.debug(`[executeStagedFile] Adding app to store...`)
-      const newApp: App = {
-        name: appId,
-        enabled: false,
-        running: false,
-        timeStarted: 0,
-        prefIndex: 10,
-        meta: {
-          version: '0.0.0',
-          verified: false,
-          verifiedManifest: false,
-          updateAvailable: false,
-          updateChecked: false
-        },
-        manifest: manifest
-      }
-      appStore.add(newApp)
     }
+    progressBus.update(ProgressChannel.FN_APP_INITIALIZE, 'Getting manifest...', 35, 'Running App')
+    const manifest = await getManifest(extractedPath)
+    // If the app is new
+    Logger.debug(`[executeStagedFile] Adding app to store...`)
+    const newApp: App = {
+      name: appId,
+      enabled: false,
+      running: false,
+      timeStarted: 0,
+      prefIndex: 10,
+      meta: {
+        version: '0.0.0',
+        verified: false,
+        verifiedManifest: false,
+        updateAvailable: false,
+        updateChecked: false
+      },
+      manifest: manifest
+    }
+    appStore.add(newApp)
 
     progressBus.update(ProgressChannel.FN_APP_INITIALIZE, 'Clearing temp files...', 38)
     // Delete temp.zip if it exists
@@ -252,11 +246,11 @@ export const stageAppFile = async ({
   filePath,
   releaseMeta
 }: stageAppFileType): Promise<StagedAppManifest | void> => {
-  progressBus.start(ProgressChannel.FN_APP_INSTALL, 'stage-app', 'Initializing staging phase')
+  progressBus.start(ProgressChannel.FN_APP_INSTALL, 'Stage App', 'Initializing staging phase')
   if (!filePath && !releaseMeta) {
     progressBus.error(
       ProgressChannel.FN_APP_INSTALL,
-      'stage-app',
+      'Stage App',
       'No file path or release meta provided'
     )
     return
@@ -344,6 +338,7 @@ export const stageAppFile = async ({
       )
       return
     } else {
+      progressBus.update(ProgressChannel.FN_APP_INSTALL, 'Downloading...', 5, 'Downloading App')
       Logger.debug(`[handleZipFromUrl] Downloading ${filePath}...`)
       trackDownloadProgress(0, 100)
     }
@@ -397,7 +392,7 @@ export const stageAppFile = async ({
         Logger.log(LOGGING_LEVELS.ERROR, errorMessage)
         progressBus.error(
           ProgressChannel.FN_APP_INSTALL,
-          'stage-app',
+          'Stage App',
           'Encountered an error',
           errorMessage
         )

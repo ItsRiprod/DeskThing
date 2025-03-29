@@ -20,7 +20,7 @@ export interface ClientStoreClass
 
   /**
    * @channel - {@link ProgressChannel.ST_CLIENT_INSTALL}
-   * @param zipPath 
+   * @param zipPath
    */
   loadClientFromZip(zipPath: string): Promise<void>
 

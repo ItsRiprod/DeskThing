@@ -43,7 +43,7 @@ export type releaseStoreListeners = {
 /**
  * Interface representing the public methods of releaseStore
  */
-export interface releaseStoreClass extends StoreInterface {
+export interface ReleaseStoreClass extends StoreInterface {
   /**
    * Clears all cached data
    */
@@ -72,6 +72,7 @@ export interface releaseStoreClass extends StoreInterface {
   /**
    * Refreshes all GitHub data
    * @param force If true, bypasses cache validation
+   * @channel - {@link ProgressChannel.REFRESH_RELEASES}
    */
   refreshData(force?: boolean): Promise<void>
 

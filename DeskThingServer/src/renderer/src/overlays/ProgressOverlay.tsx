@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useProgress } from '@renderer/hooks/useProgress'
 import { IconCheckCircle, IconLoading } from '@renderer/assets/icons'
-import { ProgressChannel } from '@shared/types'
+import { ProgressChannel, ProgressStatus } from '@shared/types'
 
 interface ProgressOverlayProps {
-  channel: ProgressChannel
+  channel: ProgressChannel | ProgressChannel[]
   onClose?: () => void
   onError?: () => void
   title?: string
@@ -21,10 +21,21 @@ const ProgressOverlay: React.FC<ProgressOverlayProps> = ({
   const [fadeTimeout, setFadeTimeout] = useState<NodeJS.Timeout | null>(null)
   const [operation, setOperation] = useState(title)
 
+  const prevId = useRef<string | null>(null)
+
   useEffect(() => {
-    if (progress.message) {
+    const isNewMessage = progress.id && progress.id !== prevId.current
+
+    if (isNewMessage) {
       setShowProgress(true)
+
+      // Update refs
+      prevId.current = progress.id || null
+
+      // Clear existing timeout
       if (fadeTimeout) clearTimeout(fadeTimeout)
+
+      // Set new timeout
       const timeout = setTimeout(() => {
         setShowProgress(false)
       }, 5000)
@@ -35,18 +46,18 @@ const ProgressOverlay: React.FC<ProgressOverlayProps> = ({
       setOperation(progress.operation)
     }
 
-    if (progress.status === 'complete' || progress.status === 'success') {
+    if (progress.status == ProgressStatus.COMPLETE || progress.status == ProgressStatus.SUCCESS) {
       onClose?.()
     }
 
-    if (progress.status === 'error') {
+    if (progress.status == ProgressStatus.ERROR) {
       onError?.()
     }
 
     return () => {
       if (fadeTimeout) clearTimeout(fadeTimeout)
     }
-  }, [progress, onClose])
+  }, [progress, onClose, fadeTimeout])
 
   if (!progress.message || !showProgress) return null
 
@@ -61,9 +72,13 @@ const ProgressOverlay: React.FC<ProgressOverlayProps> = ({
           )}
         </div>
         <div className="flex-grow">
-          <div className={progress.status === 'error' ? 'text-red-500' : 'text-green-500'}>
+          <div
+            className={progress.status == ProgressStatus.ERROR ? 'text-red-500' : 'text-green-500'}
+          >
             <h2 className="text-lg font-medium">{operation}</h2>
-            {progress.status === 'error' && <p className="text-sm font-medium">Error</p>}
+            {progress.status == ProgressStatus.ERROR && (
+              <p className="text-sm font-medium">Error</p>
+            )}
           </div>
           <p className="mt-2 font-geistMono text-zinc-300 text-sm">{progress.message}</p>
           {progress.error && (
@@ -72,9 +87,10 @@ const ProgressOverlay: React.FC<ProgressOverlayProps> = ({
           <div className="mt-3 w-full bg-zinc-800 rounded-full h-1.5">
             <div
               className={`h-full rounded-full transition-all duration-300 ${
-                progress.status === 'error'
+                progress.status == ProgressStatus.ERROR
                   ? 'bg-red-500'
-                  : progress.status === 'complete' || progress.status === 'success'
+                  : progress.status == ProgressStatus.COMPLETE ||
+                      progress.status == ProgressStatus.SUCCESS
                     ? 'bg-green-500'
                     : 'bg-blue-500'
               }`}

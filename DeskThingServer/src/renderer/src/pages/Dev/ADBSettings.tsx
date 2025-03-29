@@ -27,7 +27,7 @@ const ADBSettings: React.FC = () => {
     if (commandType == 'adb') {
       const adbCommand = `${adbDevice.length > 0 && adbDevice != 'None' ? ' -s ' + adbDevice : ''} ${inputValue.trim()}`
 
-      const response = await window.electron.handleClientADB(adbCommand)
+      const response = await window.electron.client.handleClientADB(adbCommand)
 
       setResponse(response)
     } else {
@@ -40,9 +40,9 @@ const ADBSettings: React.FC = () => {
     setLoading(true)
     setRestarting(true)
     setResponse('Killing Server...')
-    let response = await window.electron.handleClientADB('kill-server')
+    let response = await window.electron.client.handleClientADB('kill-server')
     setResponse((res) => res + '\n' + (response || 'Killed Server\nStarting Server...'))
-    response = await window.electron.handleClientADB('start-server')
+    response = await window.electron.client.handleClientADB('start-server')
     setResponse((res) => res + '\n' + (response || 'Started Server'))
     setRestarting(false)
     setLoading(false)

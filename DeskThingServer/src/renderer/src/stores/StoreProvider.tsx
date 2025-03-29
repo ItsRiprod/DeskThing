@@ -3,7 +3,7 @@ import useAppStore from './appStore'
 import useSettingsStore from './settingsStore'
 import useLogStore from './logStore'
 import useClientStore from './clientStore'
-import usereleaseStore from './releaseStore'
+import useReleaseStore from './releaseStore'
 
 export const StoreProvider: React.FC = () => {
   const [initialized, setIsInitialized] = useState(false)
@@ -21,7 +21,7 @@ export const StoreProvider: React.FC = () => {
           useAppStore.getState().initialize(),
           useLogStore.getState().initialize(),
           useClientStore.getState().initialize(),
-          usereleaseStore.getState().initialize()
+          useReleaseStore.getState().initialize()
         ])
 
         setIsInitialized(true)

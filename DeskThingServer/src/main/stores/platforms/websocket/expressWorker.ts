@@ -61,7 +61,7 @@ export class ExpressServer {
   private setupClientRoutes(): void {
     const webAppDir = join(this.userDataPath, 'webapp')
 
-    this.app.get('/manifest.json', (req, res) => {
+    this.app.get('/manifest.json', (_req, res) => {
       res.redirect('/client/manifest.json')
     })
 

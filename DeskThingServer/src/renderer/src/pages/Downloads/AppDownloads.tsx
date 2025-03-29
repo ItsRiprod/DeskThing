@@ -13,7 +13,7 @@ import {
   IconStop,
   IconUpload
 } from '@renderer/assets/icons'
-import { useAppStore, usereleaseStore, usePageStore } from '@renderer/stores'
+import { useAppStore, useReleaseStore, usePageStore } from '@renderer/stores'
 import MainElement from '@renderer/nav/MainElement'
 import { SuccessNotification } from '@renderer/overlays/SuccessNotification'
 import { AppReleaseCommunity, AppReleaseMeta, AppReleaseSingleMeta } from '@DeskThing/types'
@@ -24,7 +24,7 @@ import ProgressOverlay from '@renderer/overlays/ProgressOverlay'
 /**
  * The `AppDownloads` component is responsible for rendering the downloads page of the application. It displays a list of available app downloads, allows users to upload their own app, and provides a link to the client downloads page.
  *
- * The component uses various hooks from the `useAppStore`, `usereleaseStore`, and `usePageStore` stores to manage the state and functionality of the page. It also uses several custom components, such as `Sidebar`, `Button`, and various overlay components.
+ * The component uses various hooks from the `useAppStore`, `useReleaseStore`, and `usePageStore` stores to manage the state and functionality of the page. It also uses several custom components, such as `Sidebar`, `Button`, and various overlay components.
  *
  * The main features of the `AppDownloads` component include:
  * - Displaying a list of available app downloads, with the ability to download the latest version of each app
@@ -34,13 +34,13 @@ import ProgressOverlay from '@renderer/overlays/ProgressOverlay'
  * - Handling errors and edge cases, such as when the GitHub API limit is reached
  */
 const AppDownloads: React.FC = () => {
-  const appReleases = usereleaseStore((releaseStore) => releaseStore.appReleases)
-  const communityApps = usereleaseStore((releaseStore) => releaseStore.communityApps)
-  const getApps = usereleaseStore((releaseStore) => releaseStore.getApps)
-  const getAppReferences = usereleaseStore((releaseStore) => releaseStore.getAppReferences)
-  const addRepo = usereleaseStore((releaseStore) => releaseStore.addAppRepo)
-  const removeRepo = usereleaseStore((releaseStore) => releaseStore.removeAppRepo)
-  const refresh = usereleaseStore((releaseStore) => releaseStore.refreshData)
+  const appReleases = useReleaseStore((releaseStore) => releaseStore.appReleases)
+  const communityApps = useReleaseStore((releaseStore) => releaseStore.communityApps)
+  const getApps = useReleaseStore((releaseStore) => releaseStore.getApps)
+  const getAppReferences = useReleaseStore((releaseStore) => releaseStore.getAppReferences)
+  const addRepo = useReleaseStore((releaseStore) => releaseStore.addAppRepo)
+  const removeRepo = useReleaseStore((releaseStore) => releaseStore.removeAppRepo)
+  const refresh = useReleaseStore((releaseStore) => releaseStore.refreshData)
   const addApp = useAppStore((state) => state.addApp)
   const stagedAppManifest = useAppStore((appStore) => appStore.stagedManifest)
 
@@ -144,7 +144,12 @@ const AppDownloads: React.FC = () => {
   return (
     <div className="flex h-full w-full">
       <ProgressOverlay
-        channel={ProgressChannel.ST_APP_INSTALL}
+        channel={[
+          ProgressChannel.IPC_APPS,
+          ProgressChannel.IPC_RELEASES,
+          ProgressChannel.ST_APP_INITIALIZE,
+          ProgressChannel.ST_APP_INSTALL
+        ]}
         onError={handleDownloadError}
         onClose={handleDownloadFinalized}
       />

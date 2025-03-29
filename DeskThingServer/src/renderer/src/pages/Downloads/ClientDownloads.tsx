@@ -9,7 +9,7 @@ import {
   IconLoading,
   IconRefresh
 } from '@renderer/assets/icons'
-import { useClientStore, usereleaseStore, usePageStore } from '@renderer/stores'
+import { useClientStore, useReleaseStore, usePageStore } from '@renderer/stores'
 import MainElement from '@renderer/nav/MainElement'
 import { useSearchParams } from 'react-router-dom'
 import useTaskStore from '@renderer/stores/taskStore'
@@ -18,8 +18,8 @@ import { ProgressChannel } from '@shared/types'
 import ProgressOverlay from '@renderer/overlays/ProgressOverlay'
 
 const ClientDownloads: React.FC = () => {
-  const clientReleases = usereleaseStore((releaseStore) => releaseStore.clientReleases)
-  const refresh = usereleaseStore((releaseStore) => releaseStore.refreshData)
+  const clientReleases = useReleaseStore((releaseStore) => releaseStore.clientReleases)
+  const refresh = useReleaseStore((releaseStore) => releaseStore.refreshData)
 
   const installedClient = useClientStore((clientStore) => clientStore.clientManifest)
   const refreshClient = useClientStore((clientStore) => clientStore.requestClientManifest)

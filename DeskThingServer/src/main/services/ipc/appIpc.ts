@@ -194,8 +194,8 @@ export const appHandler: {
   add: async (data) => {
     progressBus.startOperation(ProgressChannel.IPC_APPS, 'Installing App', 'Installing App', [
       {
-        channel: ProgressChannel.FN_APP_INSTALL,
-        weight: 10
+        channel: ProgressChannel.ST_APP_INSTALL,
+        weight: 100
       }
     ])
     const appStore = await storeProvider.getStore('appStore')
@@ -204,6 +204,18 @@ export const appHandler: {
       filePath: data.payload.filePath,
       releaseMeta: data.payload.meta
     })
+
+    if (!stagedAppManifest) {
+      progressBus.error(
+        ProgressChannel.ST_APP_INSTALL,
+        'Check logs for details',
+        'Something went wrong during the download process',
+        'Error Installing App'
+      )
+      return null
+    }
+
+    progressBus.complete(ProgressChannel.ST_APP_INSTALL, 'App Installed', 'App Installed')
 
     return stagedAppManifest
   },

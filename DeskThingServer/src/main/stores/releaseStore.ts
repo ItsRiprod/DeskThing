@@ -10,14 +10,15 @@ import {
   CacheableStore,
   ClientReleaseFile,
   GithubAsset,
-  GithubRelease
+  GithubRelease,
+  ProgressChannel
 } from '@shared/types'
 import {
   AssetAppCacheEntry,
   AssetClientCacheEntry,
   CacheEntry,
   GithubListenerEvents,
-  releaseStoreClass,
+  ReleaseStoreClass,
   releaseStoreListener,
   releaseStoreListeners
 } from '@shared/stores/releaseStore'
@@ -46,13 +47,14 @@ import {
   saveAppReleaseData,
   saveClientReleaseData
 } from '@server/services/files/releaseFileService'
+import { progressBus } from '@server/services/events/progressBus'
 
 /**
  * Temporarily holds the entire repo response information in memory unless manually refreshed
  *
  * Holds the AppReleaseMeta information and properly stores it when needed
  */
-export class releaseStore implements CacheableStore, releaseStoreClass {
+export class ReleaseStore implements CacheableStore, ReleaseStoreClass {
   private cache: Map<string, CacheEntry>
   private assetAppCache: Map<string, AssetAppCacheEntry>
   private assetClientCache: Map<string, AssetClientCacheEntry>
@@ -129,7 +131,27 @@ export class releaseStore implements CacheableStore, releaseStoreClass {
     ) as releaseStoreListeners[K]
   }
 
+  /**
+   * Refreshes the data from the source
+   * @channel - {@link ProgressChannel.REFRESH_RELEASES}
+   * @param force - Whether to force a refresh even if the data is already up to date
+   */
   public refreshData = async (force = false): Promise<void> => {
+    progressBus.startOperation(
+      ProgressChannel.REFRESH_RELEASES,
+      'Refreshing Data',
+      'Initializing',
+      [
+        {
+          channel: ProgressChannel.REFRESH_APP_RELEASES,
+          weight: 60
+        },
+        {
+          channel: ProgressChannel.REFRESH_CLIENT_RELEASES,
+          weight: 40
+        }
+      ]
+    )
     logger.debug('Refreshing data...', {
       function: 'refreshData',
       source: 'releaseStore'
@@ -137,14 +159,18 @@ export class releaseStore implements CacheableStore, releaseStoreClass {
     this.cache.clear()
     this.cachedRepos = []
     await this.getAppReleaseFile()
-    await Promise.all([this.getAppLatestJsonFile(force), this.getClientLatestJsonFile(force)])
+    await this.getAppLatestJsonFile(force)
+    await this.getClientLatestJsonFile(force)
+    progressBus.complete(ProgressChannel.REFRESH_RELEASES, 'Data refreshed successfully!')
   }
 
   private saveAppReleaseFile = async (appReleaseFile?: AppReleaseFile): Promise<void> => {
-    if (!this.appReleases) {
-      this.appReleases = appReleaseFile ?? defaultAppReleaseData
-    }
+    this.appReleases = appReleaseFile ?? defaultAppReleaseData
     try {
+      logger.debug(`Saving app release data: ${JSON.stringify(this.appReleases)}`, {
+        function: 'saveAppReleaseData',
+        source: 'releaseStore'
+      })
       await saveAppReleaseData(this.appReleases)
       this.notifyListeners('app', this.appReleases.releases)
       this.notifyListeners('community', this.appReleases.references)
@@ -223,7 +249,22 @@ export class releaseStore implements CacheableStore, releaseStoreClass {
    * assets, and updates the application release file accordingly.
    */
   private async getAppLatestJsonFile(force = false): Promise<void> {
+    progressBus.startOperation(
+      ProgressChannel.REFRESH_APP_RELEASES,
+      'Refresh Apps',
+      'Refreshing app releases',
+      [
+        { channel: ProgressChannel.GET_APP_RELEASES, weight: 60 },
+        { channel: ProgressChannel.PROCESS_APP_RELEASES, weight: 40 }
+      ]
+    )
     try {
+      progressBus.update(
+        ProgressChannel.REFRESH_APP_RELEASES,
+        'Getting app releases',
+        10,
+        'Getting app releases'
+      )
       const appReleases = await this.getAppReleaseFile()
 
       // Early break if the cache is valid still
@@ -232,9 +273,18 @@ export class releaseStore implements CacheableStore, releaseStoreClass {
           function: 'getAppLatestJsonFile',
           source: 'releaseStore'
         })
+        progressBus.complete(ProgressChannel.PROCESS_APP_RELEASES, 'Cache is valid')
+        progressBus.complete(ProgressChannel.GET_APP_RELEASES, 'Cache is valid')
         this.appReleases = appReleases
         return
       }
+
+      progressBus.update(
+        ProgressChannel.PROCESS_APP_RELEASES,
+        'Processing app releases',
+        25,
+        'Processing app releases'
+      )
 
       const mainRepoReleases = await this.fetchLatestRelease('github.com/itsriprod/deskthing-apps')
       const latestRelease = mainRepoReleases[0]
@@ -247,6 +297,12 @@ export class releaseStore implements CacheableStore, releaseStoreClass {
           function: 'getAppLatestJsonFile',
           source: 'releaseStore'
         })
+        progressBus.update(
+          ProgressChannel.PROCESS_APP_RELEASES,
+          'Updating community file',
+          35,
+          'Updating community file'
+        )
 
         const communityJson = await this.fetchAppAssetContent(
           latestRelease.assets.find((a) => a.name === 'community.json')
@@ -286,6 +342,13 @@ export class releaseStore implements CacheableStore, releaseStoreClass {
           source: 'releaseStore'
         })
 
+        progressBus.update(
+          ProgressChannel.PROCESS_APP_RELEASES,
+          'Updating app release file',
+          65,
+          'Updating app release file'
+        )
+
         if (!latestJson) {
           throw new Error('[getAppLatestJsonFile] Invalid latest.json. Not found')
         }
@@ -300,8 +363,20 @@ export class releaseStore implements CacheableStore, releaseStoreClass {
         // For every release
         for (const release of appReleases.releases) {
           try {
+            progressBus.update(
+              ProgressChannel.PROCESS_APP_RELEASES,
+              `Updating Releases`,
+              65 +
+                ((75 - 65) * (appReleases.releases.indexOf(release) + 1)) /
+                  appReleases.releases.length,
+              `Updating ${release.id}`
+            )
             // Get the latest.json from the release
-            const newRelease = this.getAppLatestJson(release)
+            const newRelease = await this.getAppLatestJson(
+              release,
+              appReleases.releases.indexOf(release),
+              appReleases.releases.length
+            )
 
             Object.assign(release, newRelease)
           } catch (error) {
@@ -314,6 +389,10 @@ export class releaseStore implements CacheableStore, releaseStoreClass {
             })
           }
         }
+        progressBus.complete(
+          ProgressChannel.PROCESS_APP_RELEASES,
+          `Finished Processing App Releases`
+        )
       } catch (error) {
         logger.error('Error fetching latest.json:', {
           function: 'getAppLatestJsonFile',
@@ -329,17 +408,42 @@ export class releaseStore implements CacheableStore, releaseStoreClass {
 
       appReleases.timestamp = Date.now()
       this.saveAppReleaseFile(appReleases)
+      progressBus.complete(ProgressChannel.REFRESH_APP_RELEASES, 'Finished Refreshing App Releases')
     } catch (error) {
       logger.error('Error updating app release file:', {
         function: 'getAppLatestJsonFile',
         source: 'releaseStore',
         error: error as Error
       })
+      progressBus.error(
+        ProgressChannel.REFRESH_APP_RELEASES,
+        'Failed to refresh app releases',
+        error instanceof Error ? error.message : String(error)
+      )
     }
   }
 
   private async getClientLatestJsonFile(force = false): Promise<void> {
+    progressBus.startOperation(
+      ProgressChannel.REFRESH_CLIENT_RELEASES,
+      'Refreshing Clients',
+      'Getting Files',
+      [
+        {
+          channel: ProgressChannel.GET_CLIENT_RELEASES,
+          weight: 70
+        }
+      ]
+    )
+
     const clientReleaseFile = await this.getClientReleaseFile()
+
+    progressBus.update(
+      ProgressChannel.REFRESH_CLIENT_RELEASES,
+      'Refreshing Clients',
+      10,
+      'Checking Cache'
+    )
 
     // Early break if the cache is valid still
     if (this.isCacheValid(clientReleaseFile) && force === false) {
@@ -347,6 +451,12 @@ export class releaseStore implements CacheableStore, releaseStoreClass {
         function: 'getClientLatestJsonFile',
         source: 'releaseStore'
       })
+      progressBus.update(
+        ProgressChannel.REFRESH_CLIENT_RELEASES,
+        'Finished Refreshing Clients',
+        100,
+        'Cache was still Valid'
+      )
       this.clientReleases = clientReleaseFile
       return
     }
@@ -364,30 +474,38 @@ export class releaseStore implements CacheableStore, releaseStoreClass {
         ])
       ]
 
+      progressBus.update(
+        ProgressChannel.REFRESH_CLIENT_RELEASES,
+        `Processing ${repositories.length} repositories`,
+        20,
+        'Processing Repositories'
+      )
+
       // Awaits for all of hte getClientLatestJsons to run an then filters out any that failed
-      clientReleaseFile.releases = (
-        await Promise.all(
-          repositories.map(async (repo) => {
-            try {
-              const newRelease = await this.getClientLatestJson(repo)
-              return newRelease
-            } catch (error) {
-              logger.error(`Error fetching latest.json for ${repo}`, {
-                function: 'getClientLatestJsonFile',
-                source: 'releaseStore',
-                error: error as Error
-              })
-              return undefined
-            }
-          })
+      const results: ClientReleaseMeta[] = []
+      for (let i = 0; i < repositories.length; i++) {
+        progressBus.update(
+          ProgressChannel.REFRESH_CLIENT_RELEASES,
+          `Processing repository ${i + 1}/${repositories.length}`,
+          20 + Math.floor((i / repositories.length) * 80)
         )
-      ).filter((release): release is ClientReleaseMeta => release !== undefined)
+        const result = await this.getClientLatestJson(repositories[i], i, repositories.length)
+        if (result) results.push(result)
+      }
+      clientReleaseFile.releases = results.filter(
+        (release): release is ClientReleaseMeta => release !== undefined
+      )
     } catch (error) {
       logger.error('Error fetching latest.json:', {
         function: 'getClientLatestJsonFile',
         source: 'releaseStore',
         error: error as Error
       })
+      progressBus.error(
+        ProgressChannel.REFRESH_CLIENT_RELEASES,
+        'Failed to process client releases',
+        error instanceof Error ? error.message : String(error)
+      )
     }
 
     logger.info('Update Successful!', {
@@ -396,13 +514,37 @@ export class releaseStore implements CacheableStore, releaseStoreClass {
     })
 
     clientReleaseFile.timestamp = Date.now()
-    this.saveClientReleaseFile(clientReleaseFile)
+    progressBus.update(
+      ProgressChannel.REFRESH_CLIENT_RELEASES,
+      'Saving client release files',
+      25,
+      'Saving...'
+    )
+    await this.saveClientReleaseFile(clientReleaseFile)
+    progressBus.complete(
+      ProgressChannel.REFRESH_CLIENT_RELEASES,
+      'Client releases refreshed successfully'
+    )
   }
 
   private getAppLatestJson = async (
-    release: AppReleaseMeta | string
+    release: AppReleaseMeta | string,
+    index?: number,
+    total?: number
   ): Promise<AppReleaseMeta | undefined> => {
+    const operationId = typeof release === 'string' ? release : release.id
+    const progressChannel = ProgressChannel.GET_APP_RELEASES
+    const baseProgress = index && total ? Math.floor((index / total) * 100) : 0
+
     try {
+      progressBus.start(
+        progressChannel,
+        `get-app-${operationId}`,
+        `Processing ${typeof release === 'string' ? release : release.id}`
+      )
+
+      if (!release) throw new Error('[getAppLatestJson] Release does not exist')
+
       if (!release) throw new Error('[getAppLatestJson] Release does not exist')
       if (typeof release !== 'string' && !['single', 'multi'].includes(release.type)) {
         throw new Error('[getAppLatestJson] Invalid release type')
@@ -417,11 +559,25 @@ export class releaseStore implements CacheableStore, releaseStoreClass {
         releaseUrl = release
       }
 
+      progressBus.update(progressChannel, `Fetching release for ${operationId}`, baseProgress + 30)
+
       const repoReleases = await this.fetchLatestRelease(releaseUrl)
       const latest = repoReleases[0]
 
+      progressBus.update(
+        progressChannel,
+        `Fetching latest.json for ${operationId}`,
+        baseProgress + 60
+      )
+
       const latestJson = await this.fetchAppAssetContent(
         latest.assets.find((a) => a.name === 'latest.json')
+      )
+
+      progressBus.update(
+        progressChannel,
+        `Processing release file for ${operationId}`,
+        baseProgress + 80
       )
 
       if (latestJson && latestJson.type == 'multi') {
@@ -453,6 +609,13 @@ export class releaseStore implements CacheableStore, releaseStoreClass {
         latestJson.createdAt = new Date(releaseFile?.created_at || '').getTime()
         latestJson.updateUrl = releaseFile?.browser_download_url || ''
       } else {
+        progressBus.update(
+          progressChannel,
+          `Unable to determine the latest.json file for ${releaseUrl}. Attempting to reconstruct it`,
+          90,
+          `Reconstructing ${operationId}`
+        )
+
         logger.warn(
           `Unable to determine the latest.json file for ${releaseUrl}. Attempting to reconstruct it`,
           {
@@ -546,6 +709,7 @@ export class releaseStore implements CacheableStore, releaseStoreClass {
         }
       }
 
+      progressBus.complete(progressChannel, `Processed ${operationId} successfully`)
       return latestJson
     } catch (error) {
       logger.error(`Error fetching latest.json for ${release}`, {
@@ -555,8 +719,14 @@ export class releaseStore implements CacheableStore, releaseStoreClass {
       })
 
       if (typeof release !== 'string') {
-        if (!release || (release.type !== 'single' && release.type !== 'multi'))
+        if (!release || (release.type !== 'single' && release.type !== 'multi')) {
+          progressBus.error(
+            progressChannel,
+            `Failed to process ${typeof release === 'string' ? release : release.id}`,
+            error instanceof Error ? error.message : String(error)
+          )
           throw new Error('[getAppLatestJson] Invalid release (release is not single or multi)')
+        }
         return release
       }
 
@@ -590,11 +760,21 @@ export class releaseStore implements CacheableStore, releaseStoreClass {
       return rebuiltAppMeta
     }
   }
-
   private getClientLatestJson = async (
-    release: ClientReleaseMeta | string
+    release: ClientReleaseMeta | string,
+    progressIndex?: number,
+    totalItems?: number
   ): Promise<ClientReleaseMeta | undefined> => {
+    const operationId = typeof release === 'string' ? release : release.id
+    const progressChannel = ProgressChannel.GET_CLIENT_RELEASES
+
     try {
+      progressBus.start(
+        progressChannel,
+        `get-client-${operationId}`,
+        `Processing ${typeof release === 'string' ? release : release.id}`
+      )
+
       if (!release) throw new Error('[getClientLatestJson] Release does not exist')
 
       let releaseUrl: string = ''
@@ -604,15 +784,33 @@ export class releaseStore implements CacheableStore, releaseStoreClass {
         releaseUrl = release
       }
 
+      progressBus.update(
+        progressChannel,
+        `Fetching release for ${operationId}`,
+        progressIndex && totalItems ? Math.floor((progressIndex / totalItems) * 30) : 30
+      )
+
       // Get the initial release for the client
       const repoReleases = await this.fetchLatestRelease(releaseUrl)
       const latest = repoReleases[0]
+
+      progressBus.update(
+        progressChannel,
+        `Fetching latest.json for ${operationId}`,
+        progressIndex && totalItems ? Math.floor((progressIndex / totalItems) * 60) : 60
+      )
 
       const latestJson = await this.fetchClientAssetContent(
         latest.assets.find((a) => a.name === 'latest.json')
       )
 
       if (latestJson) {
+        progressBus.update(
+          progressChannel,
+          `Processing release file for ${operationId}`,
+          progressIndex && totalItems ? Math.floor((progressIndex / totalItems) * 80) : 80
+        )
+
         const releaseFile = latest.assets.find((a) => a.name.includes(latestJson.id))
         if (!releaseFile) {
           logger.error(`Error finding the latest release for ${release}`, {
@@ -632,6 +830,8 @@ export class releaseStore implements CacheableStore, releaseStoreClass {
         })
       }
 
+      progressBus.complete(progressChannel, `Completed processing ${operationId}`)
+
       return latestJson
     } catch (error) {
       logger.error(`Error fetching latest.json for ${release}`, {
@@ -639,6 +839,12 @@ export class releaseStore implements CacheableStore, releaseStoreClass {
         source: 'releaseStore',
         error: error as Error
       })
+
+      progressBus.error(
+        progressChannel,
+        `Failed to process ${operationId}`,
+        error instanceof Error ? error.message : String(error)
+      )
 
       if (typeof release !== 'string') {
         return release

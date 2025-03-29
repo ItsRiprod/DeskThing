@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { releaseStore } from '../../../src/main/stores/releaseStore'
+import { ReleaseStore } from '../../../src/main/stores/releaseStore'
 import { getLatestRelease, fetchAssetContent } from '@server/services/github/githubService'
 import { readAppReleaseData } from '@server/services/files/releaseFileService'
 import Logger from '@server/utils/logger'
@@ -27,13 +27,12 @@ vi.mock('@server/utils/logger', () => ({
 }))
 
 describe('releaseStore', () => {
-  let releaseStore: releaseStore
+  let releaseStore: ReleaseStore
 
   beforeEach(() => {
     vi.clearAllMocks()
-    releaseStore = new releaseStore()
+    releaseStore = new ReleaseStore()
   })
-
   afterEach(() => {
     vi.resetModules()
   })

@@ -121,6 +121,7 @@ export class AppProcessStore
         try {
           // Assert the type to module
           await this.assertModuleType(deskthingUrl)
+
           const process = new Worker(deskthingUrl, {
             stdout: true,
             stderr: true,

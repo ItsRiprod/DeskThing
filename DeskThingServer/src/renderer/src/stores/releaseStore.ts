@@ -27,7 +27,7 @@ interface releaseStoreState {
   setCommunityApps: (apps: AppReleaseCommunity[]) => void
 }
 
-const usereleaseStore = create<releaseStoreState>((set, get) => ({
+const useReleaseStore = create<releaseStoreState>((set, get) => ({
   appReleases: [],
   clientReleases: [],
   communityApps: [],
@@ -113,4 +113,4 @@ const usereleaseStore = create<releaseStoreState>((set, get) => ({
   }
 }))
 
-export default usereleaseStore
+export default useReleaseStore

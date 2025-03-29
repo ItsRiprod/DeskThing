@@ -1,7 +1,7 @@
 // Store Classes
 import { AppDataStoreClass } from '@shared/stores/appDataStore'
 import { AppStoreClass } from '@shared/stores/appStore'
-import { releaseStoreClass } from '@shared/stores/releaseStore'
+import { ReleaseStoreClass } from '@shared/stores/releaseStore'
 import { MappingStoreClass } from '@shared/stores/mappingStore'
 import { MusicStoreClass } from '@shared/stores/musicStore'
 import { SettingsStoreClass } from '@shared/stores/settingsStore'
@@ -24,7 +24,7 @@ interface Stores {
   appStore: AppStoreClass
   authStore: AuthStoreClass
   clientStore: ClientStoreClass
-  releaseStore: releaseStoreClass
+  releaseStore: ReleaseStoreClass
   mappingStore: MappingStoreClass
   musicStore: MusicStoreClass
   platformStore: PlatformStoreClass
@@ -48,7 +48,7 @@ export class StoreProvider {
       appDataStore: () => import('./appDataStore').then((m) => m.AppDataStore),
       appStore: () => import('./appStore').then((m) => m.AppStore),
       authStore: () => import('./authStore').then((m) => m.AuthStore),
-      releaseStore: () => import('./releaseStore').then((m) => m.releaseStore),
+      releaseStore: () => import('./releaseStore').then((m) => m.ReleaseStore),
       mappingStore: () => import('./mappingStore').then((m) => m.MappingStore),
       musicStore: () => import('./musicStore').then((m) => m.MusicStore),
       settingsStore: () => import('./settingsStore').then((m) => m.SettingsStore),

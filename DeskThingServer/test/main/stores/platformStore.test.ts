@@ -10,7 +10,7 @@ import {
   DeskThingToDeviceCore
 } from '@DeskThing/types'
 import Logger from '@server/utils/logger'
-import { PlatformStoreEvent } from '@shared/stores/platformStore'
+import { PlatformIDs, PlatformStoreEvent } from '@shared/stores/platformStore'
 import { MappingStoreClass } from '@shared/stores/mappingStore'
 
 vi.mock('@server/utils/logger', () => ({
@@ -49,7 +49,7 @@ describe('PlatformStore', () => {
     }
 
     mockPlatform = {
-      id: 'test-platform',
+      id: PlatformIDs.ADB,
       name: 'Test Platform',
       type: 'test',
       isRunning: vi.fn().mockReturnValue(true),
@@ -82,7 +82,7 @@ describe('PlatformStore', () => {
   describe('Platform Management', () => {
     it('should handle platform restart', async () => {
       await platformStore.registerPlatform(mockPlatform)
-      const result = await platformStore.restartPlatform('test-platform')
+      const result = await platformStore.restartPlatform(PlatformIDs.ADB)
 
       expect(mockPlatform.stop).toHaveBeenCalled()
       expect(mockPlatform.start).toHaveBeenCalled()
@@ -93,7 +93,7 @@ describe('PlatformStore', () => {
       platformStore.registerPlatform(mockPlatform)
       const status = platformStore.getPlatformStatus()
 
-      expect(status.activePlatforms).toContain('test-platform')
+      expect(status.activePlatforms).toContain(PlatformIDs.ADB)
       expect(status.totalClients).toBe(1)
     })
   })

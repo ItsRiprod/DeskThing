@@ -38,6 +38,15 @@ export enum ProgressChannel {
   /** The channel for all platform-related events */
   PLATFORM_CHANNEL = 'ipc-platform-channel',
 
+
+  /** The channel for all platform-related events */
+  REFRESH_RELEASES = 'refresh-releases',
+  REFRESH_APP_RELEASES = 'refresh-app-releases',
+  REFRESH_CLIENT_RELEASES = 'refresh-client-releases',
+  GET_CLIENT_RELEASES = 'get-client-releases',
+  GET_APP_RELEASES = 'get-app-releases',
+  PROCESS_APP_RELEASES = 'process-app-releases',
+
   // Top-Level routines
 
   /** IPC Channels */
@@ -60,15 +69,24 @@ export type ProgressEvent = {
   lastUpdate?: number
 } & (
   | {
-      status: 'error'
+      status: ProgressStatus.ERROR
       error: string
       message: string
     }
   | {
-      status: 'running' | 'success' | 'info' | 'complete'
+      status: Exclude<ProgressStatus, ProgressStatus.ERROR>
       message: string
     }
 )
+
+export enum ProgressStatus {
+  RUNNING = 'running',
+  SUCCESS = 'success',
+  INFO = 'info',
+  WARN = 'warn',
+  COMPLETE = 'complete',
+  ERROR = 'error'
+}
 
 export interface OperationContext {
   channel: ProgressChannel

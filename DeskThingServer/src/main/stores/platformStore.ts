@@ -422,7 +422,7 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
   private setupPlatformListeners(platform: PlatformInterface): void {
     platform.on(PlatformEvent.CLIENT_CONNECTED, (client: Client) => {
       this.clientPlatformMap.set(client.connectionId, platform.id)
-      
+
       this.emit(PlatformStoreEvent.CLIENT_CONNECTED, client)
       this.sendInitialDataToClient(client.connectionId)
 
@@ -437,7 +437,6 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
         source: 'platformStore',
         function: 'clientConnected'
       })
-
     })
 
     platform.on(PlatformEvent.CLIENT_DISCONNECTED, (client: Client) => {

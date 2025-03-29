@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events'
 import logger from '@server/utils/logger'
-import { OperationContext, ProgressChannel, ProgressEvent } from '@shared/types'
+import { OperationContext, ProgressChannel, ProgressEvent, ProgressStatus } from '@shared/types'
 
 class ProgressEventBus extends EventEmitter {
   private static instance: ProgressEventBus
@@ -64,7 +64,7 @@ class ProgressEventBus extends EventEmitter {
 
     this.emit(channel, {
       operation,
-      status: 'running',
+      status: ProgressStatus.RUNNING,
       message,
       progress: 0,
       metadata: {
@@ -182,7 +182,7 @@ class ProgressEventBus extends EventEmitter {
     message: string,
     metadata?: Record<string, unknown>
   ): void {
-    const finalEvent = { operation, status: 'running' as const, message, metadata }
+    const finalEvent = { operation, status: ProgressStatus.RUNNING, message, metadata }
 
     this.channelOperationMap.set(channel, operation)
 
@@ -196,7 +196,19 @@ class ProgressEventBus extends EventEmitter {
       this.channelOperationMap.set(channel, operation)
     }
 
-    const finalEvent = { operation, status: 'info' as const, message, progress }
+    const finalEvent = { operation, status: ProgressStatus.INFO, message, progress }
+
+    this.emit(channel, finalEvent)
+  }
+
+  warn(channel: ProgressChannel, message: string, operation?: string): void {
+    if (!operation) {
+      operation = this.channelOperationMap.get(channel) ?? ''
+    } else {
+      this.channelOperationMap.set(channel, operation)
+    }
+
+    const finalEvent = { operation, status: ProgressStatus.WARN, message }
 
     this.emit(channel, finalEvent)
   }
@@ -208,7 +220,7 @@ class ProgressEventBus extends EventEmitter {
       this.channelOperationMap.set(channel, operation)
     }
 
-    const finalEvent = { operation, status: 'complete' as const, message, progress: 100 }
+    const finalEvent = { operation, status: ProgressStatus.COMPLETE, message }
 
     if (this.activeContext && this.activeContext.channel === channel) {
       this.clearContext()
@@ -224,7 +236,7 @@ class ProgressEventBus extends EventEmitter {
       this.channelOperationMap.set(channel, operation)
     }
 
-    const errorEvent = { operation, status: 'error' as const, message, error }
+    const errorEvent = { operation, status: ProgressStatus.ERROR, message, error }
 
     if (this.activeContext && this.activeContext.channel === channel) {
       this.clearContext()

@@ -5,6 +5,8 @@ import { IconDownload, IconLink } from '@renderer/assets/icons'
 import { useAppStore, useNotificationStore, usePageStore } from '@renderer/stores'
 import App from '@renderer/components/App'
 import MainElement from '@renderer/nav/MainElement'
+import ProgressOverlay from '@renderer/overlays/ProgressOverlay'
+import { ProgressChannel } from '@shared/types'
 
 /**
  * The `AppsList` component is the main component that renders the list of installed apps in the application.
@@ -74,6 +76,7 @@ const AppsList: React.FC = () => {
 
   return (
     <div className="flex h-full w-full">
+      <ProgressOverlay channel={[ProgressChannel.IPC_APPS]} />
       <Sidebar className="justify-end md:items-stretch xs:items-center">
         <div className="flex flex-col gap-2">
           <Button onClick={handleDownloadsNav}>

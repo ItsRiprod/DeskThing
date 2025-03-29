@@ -1,6 +1,12 @@
-import { ReleaseIPCData, ReleaseHandlerReturnMap, IPC_RELEASE_TYPES } from '@shared/types'
+import {
+  ReleaseIPCData,
+  ReleaseHandlerReturnMap,
+  IPC_RELEASE_TYPES,
+  ProgressChannel
+} from '@shared/types'
 import Logger from '@server/utils/logger'
 import { storeProvider } from '@server/stores/storeProvider'
+import { progressBus } from '../events/progressBus'
 
 export const releaseHandler = async (
   data: ReleaseIPCData
@@ -22,7 +28,19 @@ export const releaseHandler = async (
       }
     case IPC_RELEASE_TYPES.GITHUB_REFRESH_APPS:
       try {
+        progressBus.startOperation(
+          ProgressChannel.IPC_RELEASES,
+          'Refreshing Releases',
+          'initializing',
+          [
+            {
+              channel: ProgressChannel.REFRESH_RELEASES,
+              weight: 100
+            }
+          ]
+        )
         await releaseStore.refreshData(true)
+        progressBus.complete(ProgressChannel.IPC_RELEASES, 'Refreshing Releases', 'complete')
         return
       } catch (error) {
         Logger.error('Unable to refresh repositories!', {

@@ -83,7 +83,7 @@ export class ClientStore
 
   /**
    * @channel - {@link ProgressChannel.ST_CLIENT_INSTALL}
-   * @param zipPath 
+   * @param zipPath
    */
   async loadClientFromZip(zipPath: string): Promise<void> {
     progressBus.startOperation(
