@@ -1,6 +1,6 @@
 import React from 'react'
 import SettingComponent from './SettingComponent'
-import { SettingOption, SettingsMultiSelect } from '@DeskThing/types'
+import { SettingOption, SettingsMultiSelect } from '@deskthing/types'
 import Select from '../Select'
 import { MultiValue } from 'react-select'
 

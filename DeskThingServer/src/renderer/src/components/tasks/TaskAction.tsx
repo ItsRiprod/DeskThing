@@ -4,7 +4,7 @@ import useMappingStore from '@renderer/stores/mappingStore'
 import Button from '../Button'
 import { IconCheck, IconX } from '@renderer/assets/icons'
 import useTaskStore from '@renderer/stores/taskStore'
-import { STEP_TYPES } from '@DeskThing/types'
+import { STEP_TYPES } from '@deskthing/types'
 import { StepPropsMap } from '@shared/types'
 
 export const TaskActionComponent: FC<StepPropsMap[STEP_TYPES.ACTION]> = ({ step, source }) => {

@@ -2,7 +2,7 @@
 // import electronUpdater, { type AppUpdater } from 'electron-updater'
 // import { notifyUpdateFinished, notifyUpdateStatus } from './updateUtils'
 // import { sendIpcData } from '@server/index'
-// import { LOGGING_LEVELS } from '@DeskThing/types'
+// import { LOGGING_LEVELS } from '@deskthing/types'
 
 // let configuredUpdater: AppUpdater | null = null
 

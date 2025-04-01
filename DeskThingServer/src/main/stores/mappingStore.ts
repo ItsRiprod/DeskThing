@@ -11,7 +11,7 @@ import {
   Button,
   Profile,
   DeskThingToAppData
-} from '@DeskThing/types'
+} from '@deskthing/types'
 import { MappingStructure, CacheableStore } from '@shared/types'
 import { Listener, ListenerPayloads, MappingStoreClass } from '@shared/stores/mappingStore'
 import { AppStoreClass } from '@shared/stores/appStore'

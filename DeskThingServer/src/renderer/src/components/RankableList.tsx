@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { SettingOption } from '@DeskThing/types'
+import { SettingOption } from '@deskthing/types'
 import { IconArrowDown, IconArrowUp } from '@renderer/assets/icons'
 
 type RankableListProps = {

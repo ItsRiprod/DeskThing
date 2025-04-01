@@ -1,6 +1,6 @@
 import React from 'react'
 import SettingComponent from './SettingComponent'
-import { SettingsBoolean } from '@DeskThing/types'
+import { SettingsBoolean } from '@deskthing/types'
 import Button from '../Button'
 import { IconToggle } from '@renderer/assets/icons'
 

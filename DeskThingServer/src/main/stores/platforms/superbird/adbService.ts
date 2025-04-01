@@ -1,6 +1,6 @@
 import { handleAdbCommands } from '../../../handlers/adbHandler'
 import logger from '@server/utils/logger'
-import { ADBClientType, ClientConnectionMethod, ClientPlatformIDs } from '@DeskThing/types'
+import { ADBClientType, ClientConnectionMethod, ClientPlatformIDs } from '@deskthing/types'
 import { join } from 'path'
 import { app } from 'electron'
 import * as fs from 'fs'

@@ -8,7 +8,7 @@ import {
   DeviceToDeskthingData,
   DESKTHING_DEVICE,
   DeskThingToDeviceCore
-} from '@DeskThing/types'
+} from '@deskthing/types'
 import Logger from '@server/utils/logger'
 import { PlatformIDs, PlatformStoreEvent } from '@shared/stores/platformStore'
 import { MappingStoreClass } from '@shared/stores/mappingStore'

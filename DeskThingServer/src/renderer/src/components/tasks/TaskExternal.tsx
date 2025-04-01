@@ -2,7 +2,7 @@ import { FC, useState } from 'react'
 import useTaskStore from '@renderer/stores/taskStore'
 import Button from '../Button'
 import { IconCheck, IconLink, IconX } from '@renderer/assets/icons'
-import { STEP_TYPES } from '@DeskThing/types'
+import { STEP_TYPES } from '@deskthing/types'
 import { StepPropsMap } from '@shared/types'
 
 export const TaskExternalComponent: FC<StepPropsMap[STEP_TYPES.EXTERNAL]> = ({ step, source }) => {

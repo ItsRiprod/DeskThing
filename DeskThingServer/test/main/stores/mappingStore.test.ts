@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { MappingStore } from '@server/stores/mappingStore'
 import { AppStoreClass } from '@shared/stores/appStore'
-import { Action, EventMode, Key, Profile } from '@DeskThing/types'
+import { Action, EventMode, Key, Profile } from '@deskthing/types'
 import Logger from '@server/utils/logger'
 
 vi.mock('@server/utils/logger', () => ({

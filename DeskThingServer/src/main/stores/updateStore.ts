@@ -3,7 +3,7 @@ import { CacheableStore, UpdateInfoType, UpdateProgressType } from '@shared/type
 import EventEmitter from 'node:events'
 import electronUpdater, { type AppUpdater } from 'electron-updater'
 import Logger from '@server/utils/logger'
-import { LOGGING_LEVELS } from '@DeskThing/types'
+import { LOGGING_LEVELS } from '@deskthing/types'
 
 export class UpdateStore
   extends EventEmitter<UpdateStoreEvents>

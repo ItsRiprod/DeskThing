@@ -12,7 +12,7 @@ import Button from '@renderer/components/Button'
 import ErrorBoundary from '@renderer/components/ErrorBoundary'
 import TaskBase from '@renderer/components/tasks/TaskBase'
 import useTaskStore from '@renderer/stores/taskStore'
-import { Task } from '@DeskThing/types'
+import { Task } from '@deskthing/types'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 

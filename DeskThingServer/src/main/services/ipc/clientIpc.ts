@@ -1,5 +1,5 @@
 console.log('[Auth Handler] Starting')
-import { LOGGING_LEVELS, DESKTHING_DEVICE } from '@DeskThing/types'
+import { LOGGING_LEVELS, DESKTHING_DEVICE } from '@deskthing/types'
 import {
   IPC_CLIENT_TYPES,
   ClientHandlerReturnType,

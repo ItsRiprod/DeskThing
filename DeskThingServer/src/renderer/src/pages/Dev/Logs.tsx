@@ -14,7 +14,7 @@ import {
 } from '@renderer/assets/icons'
 import { useReward } from 'react-rewards'
 import { Log } from '@shared/types'
-import { LOGGING_LEVELS } from '@DeskThing/types'
+import { LOGGING_LEVELS } from '@deskthing/types'
 
 const colorMap = {
   [LOGGING_LEVELS.ERROR]: 'text-red-500',

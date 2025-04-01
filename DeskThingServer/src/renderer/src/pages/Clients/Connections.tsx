@@ -8,11 +8,10 @@ import { deviceMessages } from '@renderer/assets/refreshMessages'
 import ConnectionComponent from '@renderer/components/Client/Connection'
 import { useSearchParams } from 'react-router-dom'
 import ADBDevice from '@renderer/components/Client/ADBDevice'
-import { PlatformIDs } from '@shared/stores/platformStore'
 
 const ClientConnections: React.FC = () => {
   const settings = useSettingsStore((settings) => settings.settings)
-  const { clients, clientManifest, devices } = useClientStore((state) => state)
+  const { clients, clientManifest, devices, requestADBDevices } = useClientStore((state) => state)
   const setPage = usePageStore((pageStore) => pageStore.setPage)
 
   // Visibility States
@@ -48,11 +47,7 @@ const ClientConnections: React.FC = () => {
   const handleRefresh = async (): Promise<void> => {
     if (!isRefreshing) {
       setIsRefreshing(true)
-      const res = await window.electron.platform.send({
-        platform: PlatformIDs.ADB,
-        type: 'refresh',
-        request: 'adb'
-      })
+      const res = await requestADBDevices()
       console.log('Found', res)
       setTimeout(
         () => {

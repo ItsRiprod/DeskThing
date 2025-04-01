@@ -1,5 +1,5 @@
 import Button from '@renderer/components/Button'
-import { Action, EventMode, Key, SettingOption } from '@DeskThing/types'
+import { Action, EventMode, Key, SettingOption } from '@deskthing/types'
 import { useEffect, useState } from 'react'
 import { ActionIcon } from './ActionIcon'
 import { IconArrowRight, IconArrowUp } from '@renderer/assets/icons'

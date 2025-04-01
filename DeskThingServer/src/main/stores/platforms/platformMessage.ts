@@ -7,7 +7,7 @@ import {
   DEVICE_DESKTHING,
   DESKTHING_EVENTS,
   DeskThingToAppCore
-} from '@DeskThing/types'
+} from '@deskthing/types'
 import Logger from '@server/utils/logger'
 import { PlatformInterface } from '@shared/interfaces/platformInterface'
 

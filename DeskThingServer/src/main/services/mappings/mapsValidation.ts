@@ -7,7 +7,7 @@ import {
   LOGGING_LEVELS,
   ButtonMapping,
   Profile
-} from '@DeskThing/types'
+} from '@deskthing/types'
 import { MappingFileStructure, LoggingOptions } from '@shared/types'
 
 export const validMappingExists: (

@@ -17,6 +17,7 @@ import { UpdateStoreClass } from '@shared/stores/updateStore'
 // import { ExpressServerStoreClass } from '@shared/stores/expressServerStore'
 // import { ExpressServerManager } from './_expressServerStore'
 import logger from '@server/utils/logger'
+import { ProfileStoreClass } from '@shared/stores/profileStore'
 
 interface Stores {
   appDataStore: AppDataStoreClass
@@ -28,6 +29,7 @@ interface Stores {
   mappingStore: MappingStoreClass
   musicStore: MusicStoreClass
   platformStore: PlatformStoreClass
+  profileStore: ProfileStoreClass
   settingsStore: SettingsStoreClass
   taskStore: TaskStoreClass
   updateStore: UpdateStoreClass
@@ -51,6 +53,7 @@ export class StoreProvider {
       releaseStore: () => import('./releaseStore').then((m) => m.ReleaseStore),
       mappingStore: () => import('./mappingStore').then((m) => m.MappingStore),
       musicStore: () => import('./musicStore').then((m) => m.MusicStore),
+      profileStore: () => import('./profileStore').then((m) => m.ProfileStore),
       settingsStore: () => import('./settingsStore').then((m) => m.SettingsStore),
       taskStore: () => import('./taskStore').then((m) => m.TaskStore),
       appProcessStore: () => import('./appProcessStore').then((m) => m.AppProcessStore),
@@ -92,6 +95,8 @@ export class StoreProvider {
           await this.getStore('platformStore', false)
         ),
       clientStore: async () => new (await storeImports.clientStore())(),
+      profileStore: async () =>
+        new (await storeImports.profileStore())(await this.getStore('platformStore', false)),
       updateStore: async () => new (await storeImports.updateStore())()
     }
 

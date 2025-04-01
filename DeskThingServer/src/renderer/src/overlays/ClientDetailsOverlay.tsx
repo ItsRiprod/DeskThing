@@ -16,7 +16,7 @@ import { useSettingsStore } from '@renderer/stores'
 import { ProgressChannel } from '@shared/types'
 import React, { useState, useRef, useEffect, useMemo } from 'react'
 import Overlay from './Overlay'
-import { Client, ClientConnectionMethod } from '@DeskThing/types'
+import { Client, ClientConnectionMethod } from '@deskthing/types'
 import usePlatformStore from '@renderer/stores/platformStore'
 import ProgressOverlay from './ProgressOverlay'
 

@@ -3,7 +3,7 @@ import {
   PlatformConnectionOptions,
   PlatformStatus
 } from '@shared/interfaces/platformInterface'
-import { SocketData, Client, DeviceToDeskthingData, DeskThingToDeviceCore } from '@DeskThing/types'
+import { Client, DeviceToDeskthingData, DeskThingToDeviceCore } from '@deskthing/types'
 import { StoreInterface } from '@shared/interfaces/storeInterface'
 import { EventEmitter } from 'node:stream'
 import { ExtractPayloadFromIPC, PlatformIPC } from '@shared/types/ipc/ipcPlatform'
@@ -33,7 +33,7 @@ export type PlatformStoreEvents = {
   [PlatformStoreEvent.CLIENT_CONNECTED]: [Client]
   [PlatformStoreEvent.CLIENT_DISCONNECTED]: [string]
   [PlatformStoreEvent.CLIENT_UPDATED]: [Client]
-  [PlatformStoreEvent.DATA_RECEIVED]: [{ client: Client; data: SocketData }]
+  [PlatformStoreEvent.DATA_RECEIVED]: [{ client: Client; data: DeviceToDeskthingData }]
 }
 
 export interface PlatformStoreClass extends StoreInterface, EventEmitter<PlatformStoreEvents> {

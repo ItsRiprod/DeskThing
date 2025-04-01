@@ -18,7 +18,8 @@ export async function initializeStores(): Promise<void> {
     releaseStore: await storeProvider.getStore('releaseStore', false),
     AppDataStore: await storeProvider.getStore('appDataStore', false),
     updateStore: await storeProvider.getStore('updateStore', false),
-    clientStore: await storeProvider.getStore('clientStore', false)
+    clientStore: await storeProvider.getStore('clientStore', false),
+    profileStore: await storeProvider.getStore('profileStore', true)
   }
 
   const platformStore = await storeProvider.getStore('platformStore', false)

@@ -1,6 +1,6 @@
 // types
 import { FullTaskList, CacheableStore } from '@shared/types'
-import { LOGGING_LEVELS, APP_REQUESTS, Step, Task, DESKTHING_EVENTS } from '@DeskThing/types'
+import { LOGGING_LEVELS, APP_REQUESTS, Step, Task, DESKTHING_EVENTS } from '@deskthing/types'
 import {
   TaskStoreClass,
   TaskStoreEvents,

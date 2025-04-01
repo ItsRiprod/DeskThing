@@ -1,5 +1,5 @@
 import { isValidAction } from '../mappings/mapsValidation'
-import { Step, STEP_TYPES, Task } from '@DeskThing/types'
+import { Step, STEP_TYPES, Task } from '@deskthing/types'
 import { TaskReference, FullTaskList } from '@shared/types'
 
 export function isValidTaskList(taskList: unknown): asserts taskList is FullTaskList {

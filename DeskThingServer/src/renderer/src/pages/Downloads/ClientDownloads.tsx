@@ -13,7 +13,7 @@ import { useClientStore, useReleaseStore, usePageStore } from '@renderer/stores'
 import MainElement from '@renderer/nav/MainElement'
 import { useSearchParams } from 'react-router-dom'
 import useTaskStore from '@renderer/stores/taskStore'
-import { ClientReleaseMeta } from '@DeskThing/types'
+import { ClientReleaseMeta } from '@deskthing/types'
 import { ProgressChannel } from '@shared/types'
 import ProgressOverlay from '@renderer/overlays/ProgressOverlay'
 
@@ -113,10 +113,10 @@ const ClientDownloads: React.FC = () => {
               <h1 className="font-semibold">Loaded Client:</h1>
               <div className="md:block xs:hidden border p-2 rounded-lg bg-zinc-900 border-zinc-800">
                 <p>{installedClient.name}</p>
-                <p>{installedClient.id}</p>
+                <p>{installedClient.version}</p>
               </div>
               <div className="md:hidden xs:flex hidden flex-col items-center">
-                <p>{installedClient.author}</p>
+                <p>{installedClient.short_name}</p>
                 <p>{installedClient.version}</p>
               </div>
             </div>

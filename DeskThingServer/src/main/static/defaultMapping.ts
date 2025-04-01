@@ -1,4 +1,4 @@
-import { Key, EventMode, Action, ButtonMapping, Profile } from '@DeskThing/types'
+import { Key, EventMode, Action, ButtonMapping, Profile } from '@deskthing/types'
 import { MappingStructure } from '@shared/types'
 
 const keys: Key[] = [

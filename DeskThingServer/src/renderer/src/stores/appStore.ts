@@ -1,4 +1,4 @@
-import { App, AppReleaseSingleMeta, AppSettings, SavedData } from '@DeskThing/types'
+import { App, AppReleaseSingleMeta, AppSettings, SavedData } from '@deskthing/types'
 import { IpcRendererCallback, LoggingData, StagedAppManifest } from '@shared/types'
 import { create } from 'zustand'
 import useSettingsStore from './settingsStore'

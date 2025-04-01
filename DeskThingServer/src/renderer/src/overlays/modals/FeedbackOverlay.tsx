@@ -13,6 +13,7 @@ const FeedbackOverlay: FC = () => {
   const fetchSystemInfo = useFeedbackStore((state) => state.fetchSystemInfo)
   const rawFeedback = useFeedbackStore((state) => state.feedback)
   const systemInfo = useFeedbackStore((state) => state.systemData)
+  const [isFetching, setIsFetching] = useState(false)
 
   const [feedback, setFeedback] = useState<Partial<FeedbackReport>>(
     rawFeedback || {
@@ -27,6 +28,19 @@ const FeedbackOverlay: FC = () => {
       }
     }
   )
+
+  const handleFetchSystemInfo = async (): Promise<void> => {
+    setIsFetching(true)
+    try {
+      await fetchSystemInfo()
+      await new Promise((resolve) => setTimeout(resolve, Math.random() * 100 + 500))
+      setIsFetching(false)
+    } catch {
+      setIsFetching(false)
+    } finally {
+      setIsFetching(false)
+    }
+  }
 
   const onClose = (): void => {
     searchParams.delete('feedback')
@@ -76,7 +90,11 @@ const FeedbackOverlay: FC = () => {
   }
 
   return (
-    <Overlay showFeedbackButton={false} onClose={onClose} className="max-h-[80vh] overflow-y-auto">
+    <Overlay
+      showFeedbackButton={false}
+      onClose={onClose}
+      className="max-h-[80vh] overflow-x-hidden overflow-y-auto"
+    >
       <div className="flex flex-col gap-4 p-4 bg-zinc-900 rounded-lg w-[600px]">
         <h2 className="text-xl font-semibold text-white">Submit Feedback</h2>
 
@@ -85,7 +103,7 @@ const FeedbackOverlay: FC = () => {
             <Button
               key={type}
               onClick={() => handleTypeChange(type)}
-              className={`capitalize ${feedback.type === type ? 'bg-blue-600' : 'bg-zinc-800'}`}
+              className={`capitalize border-b-2 transition-colors duration-200 ${feedback.type === type ? 'border-b-green-500 border-zinc-800 shadow-lg border-b-2 shadow-green-500/50 hover:bg-neutral-700' : 'bg-zinc-800 hover:border-zinc-600 hover:border-b-zinc-400 border border-zinc-700 hover:bg-zinc-700'}`}
             >
               {type}
             </Button>
@@ -164,7 +182,7 @@ const FeedbackOverlay: FC = () => {
                   + Add Step
                 </button>
               </div>
-            </div>{' '}
+            </div>
             <div className="flex flex-col gap-2">
               <label className="text-sm text-zinc-400">Expected Behavior</label>
               <input
@@ -195,8 +213,13 @@ const FeedbackOverlay: FC = () => {
             </summary>
             <div className="relative mt-2 p-4 rounded bg-zinc-800 border border-zinc-700">
               <div className="absolute top-3 right-3">
-                <Button className="gap-2 hover:bg-cyan-400 bg-cyan-500" onClick={fetchSystemInfo}>
-                  <IconRefresh />
+                <Button
+                  className="p-2 rounded hover:shadow-lg disabled:text-gray-300 disabled:shadow-sm hover:shadow-green-500/50 transition-all bg-zinc-800 border border-zinc-700 text-white hover:bg-zinc-700 flex items-center gap-2"
+                  onClick={handleFetchSystemInfo}
+                  title="Refresh system info"
+                  disabled={isFetching}
+                >
+                  <IconRefresh className={isFetching ? 'animate-spin-smooth' : ''} />
                   <p>Fetch Info</p>
                 </Button>
               </div>
@@ -266,7 +289,7 @@ const FeedbackOverlay: FC = () => {
                     value={systemInfo?.arch || 'N/A'}
                     onChange={(e) => handleSystemInfoChange('arch', e.target.value)}
                   />
-                </div>{' '}
+                </div>
                 <div>
                   <p className="text-sm text-zinc-400">Load Average</p>
                   <p>{systemInfo?.loadAverage ? systemInfo.loadAverage.join(', ') : 'N/A'}</p>

@@ -5,7 +5,7 @@ import Logger from '@server/utils/logger'
 import fs from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
-import { LOGGING_LEVELS } from '@DeskThing/types'
+import { LOGGING_LEVELS } from '@deskthing/types'
 import { ProgressChannel } from '@shared/types'
 import { progressBus } from '@server/services/events/progressBus'
 

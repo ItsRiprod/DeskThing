@@ -9,7 +9,7 @@ import {
   APP_REQUESTS,
   DeskThingProcessData,
   AppToDeskThingData
-} from '@DeskThing/types'
+} from '@deskthing/types'
 import appProcessPath from '@processes/appProcess?modulePath'
 import { app /*, utilityProcess */ } from 'electron'
 import { Worker } from 'node:worker_threads'
@@ -335,7 +335,11 @@ export class AppProcessStore
               function: 'handleLegacyProcessMessage'
             }
           )
-          Logger.debug(JSON.stringify(data.payload.payload))
+          Logger.debug(JSON.stringify(data.payload.payload), {
+            domain: appName,
+            function: 'handleLegacyProcessMessage',
+            source: 'AppProcessStore'
+          })
           this.emit(
             type as APP_REQUESTS,
             {

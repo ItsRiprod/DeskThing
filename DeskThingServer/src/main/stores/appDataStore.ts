@@ -8,7 +8,7 @@ import {
   Task,
   APP_REQUESTS,
   SavedData
-} from '@DeskThing/types'
+} from '@deskthing/types'
 import { TaskReference, CacheableStore, FullTaskList } from '@shared/types'
 import { TaskStoreClass } from '@shared/stores/taskStore'
 import { AppStoreClass } from '@shared/stores/appStore'

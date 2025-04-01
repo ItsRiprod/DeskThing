@@ -4,7 +4,7 @@ import Button from '@renderer/components/Button'
 import { IconLoading, IconPlay, IconSave, IconToggle } from '@renderer/assets/icons'
 import Select from '@renderer/components/Select'
 import { SingleValue } from 'react-select'
-import { SettingOption } from '@DeskThing/types'
+import { SettingOption } from '@deskthing/types'
 import { LOG_FILTER } from '@shared/types'
 import useUpdateStore from '@renderer/stores/updateStore'
 

@@ -1,4 +1,4 @@
-import { Action, DebugStep } from '@DeskThing/types'
+import { Action, DebugStep } from '@deskthing/types'
 import { FC, useEffect, useState } from 'react'
 import Button from '../Button'
 import { IconLink } from '@renderer/assets/icons'

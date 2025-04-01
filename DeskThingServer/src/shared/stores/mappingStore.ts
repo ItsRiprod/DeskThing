@@ -7,7 +7,7 @@ import {
   ActionReference,
   ButtonMapping,
   Profile
-} from '@DeskThing/types'
+} from '@deskthing/types'
 import { StoreInterface } from '@shared/interfaces/storeInterface'
 
 export type ListenerPayloads = {

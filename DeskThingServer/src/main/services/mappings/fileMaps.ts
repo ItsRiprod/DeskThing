@@ -1,5 +1,5 @@
 // Types
-import { LOGGING_LEVELS, ButtonMapping, Profile } from '@DeskThing/types'
+import { LOGGING_LEVELS, ButtonMapping, Profile } from '@deskthing/types'
 import { MappingStructure, MappingFileStructure } from '@shared/types'
 
 // Static Data

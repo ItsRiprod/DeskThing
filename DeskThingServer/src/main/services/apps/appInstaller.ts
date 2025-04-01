@@ -1,6 +1,6 @@
 console.log('[AppInst Service] Starting')
 // Types
-import { LOGGING_LEVELS, AppReleaseSingleMeta, App } from '@DeskThing/types'
+import { LOGGING_LEVELS, AppReleaseSingleMeta, App } from '@deskthing/types'
 import { ProgressChannel, StagedAppManifest } from '@shared/types'
 
 // Utils
@@ -110,8 +110,8 @@ export const executeStagedFile = async ({
     Logger.debug(`[executeStagedFile] Adding app to store...`)
     const newApp: App = {
       name: appId,
-      enabled: false,
-      running: false,
+      enabled: true,
+      running: run,
       timeStarted: 0,
       prefIndex: 10,
       meta: {

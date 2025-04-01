@@ -13,7 +13,7 @@ import {
   DESKTHING_EVENTS,
   DESKTHING_DEVICE,
   DeskThingToDeviceCore
-} from '@DeskThing/types'
+} from '@deskthing/types'
 import Logger from '@server/utils/logger'
 import {
   PlatformIDs,
@@ -74,6 +74,7 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
         } as DeskThingToDeviceCore & { clientId: string })
       } else {
         this.broadcastToClients({
+          app: appData.source,
           appId: appData.source,
           ...appData.payload
         } as DeskThingToDeviceCore)

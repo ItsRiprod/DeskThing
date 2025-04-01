@@ -4,7 +4,7 @@ import Button from '@renderer/components/Button'
 import { IconPlay, IconToggle } from '@renderer/assets/icons'
 import { useEffect, useState } from 'react'
 import { useAppStore, useClientStore } from '@renderer/stores'
-import { App, PlatformTypes } from '@DeskThing/types'
+import { App, PlatformTypes } from '@deskthing/types'
 import { StagedAppManifest } from '@shared/types'
 
 type Issues =

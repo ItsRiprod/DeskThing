@@ -10,7 +10,7 @@ import {
   SETTING_TYPES,
   SettingsType,
   AppSettings
-} from '@DeskThing/types'
+} from '@deskthing/types'
 import Logger from '@server/utils/logger'
 
 vi.mock('@server/services/files/dataFileService', () => ({

@@ -12,7 +12,7 @@ import {
   APP_REQUESTS,
   DESKTHING_EVENTS,
   DeskThingToAppData
-} from '@DeskThing/types'
+} from '@deskthing/types'
 import { StagedAppManifest, CacheableStore, ProgressChannel } from '@shared/types'
 import {
   AppStoreClass,
@@ -243,23 +243,15 @@ export class AppStore implements CacheableStore, AppStoreClass {
         function: 'onAppMessage'
       })
 
-      Logger.debug(JSON.stringify(data))
+      Logger.debug(JSON.stringify(data.payload), {
+        source: 'AppStore',
+        function: 'onAppMessage'
+      })
 
       try {
-        if (this.apps[data.source]?.running) {
-          if (filters?.request && data.request !== filters.request) return
-          if (filters?.app && data.source !== filters.app) return
-          await listener(data)
-        } else {
-          Logger.error(
-            `App ${data.source} is not running, not sending data ${data.type}:${data.request}`,
-            {
-              source: 'AppStore',
-              function: 'onAppMessage',
-              domain: data.source
-            }
-          )
-        }
+        if (filters?.request && data.request !== filters.request) return
+        if (filters?.app && data.source !== filters.app) return
+        await listener(data)
       } catch (error) {
         Logger.error(`Error in app message listener for type ${type}`, {
           error: error as Error,
@@ -481,18 +473,15 @@ export class AppStore implements CacheableStore, AppStoreClass {
 
   async sendDataToApp(name: string, data: DeskThingToAppData): Promise<void> {
     try {
-      if (this.apps[name]?.running) {
-        await this.appProcessStore.postMessage(name, {
-          type: 'data',
-          payload: data
-        })
-      } else {
-        Logger.debug(`App ${name} is not running, not sending data`, {
-          source: 'AppStore',
-          function: 'sendDataToApp',
-          domain: name
-        })
-      }
+      Logger.debug(`Sending data to ${name}`, {
+        source: 'AppStore',
+        function: 'sendDataToApp',
+        domain: name
+      })
+      await this.appProcessStore.postMessage(name, {
+        type: 'data',
+        payload: data
+      })
     } catch (error) {
       Logger.error(`Error sending data to app ${name}: ${error}`, {
         source: 'AppStore',

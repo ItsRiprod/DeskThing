@@ -16,7 +16,7 @@ import {
 import { useAppStore, useReleaseStore, usePageStore } from '@renderer/stores'
 import MainElement from '@renderer/nav/MainElement'
 import { SuccessNotification } from '@renderer/overlays/SuccessNotification'
-import { AppReleaseCommunity, AppReleaseMeta, AppReleaseSingleMeta } from '@DeskThing/types'
+import { AppReleaseCommunity, AppReleaseMeta, AppReleaseSingleMeta } from '@deskthing/types'
 import AddRepoOverlay from '@renderer/overlays/AddRepoOverlay'
 import { ProgressChannel } from '@shared/types'
 import ProgressOverlay from '@renderer/overlays/ProgressOverlay'

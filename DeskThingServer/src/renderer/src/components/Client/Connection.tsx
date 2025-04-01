@@ -12,7 +12,7 @@ import React, { useState } from 'react'
 import Button from '../Button'
 // import { useSettingsStore } from '@renderer/stores'
 import ClientDetailsOverlay from '@renderer/overlays/ClientDetailsOverlay'
-import { Client, ClientConnectionMethod } from '@DeskThing/types'
+import { Client, ClientConnectionMethod } from '@deskthing/types'
 import usePlatformStore from '@renderer/stores/platformStore'
 import ProgressOverlay from '@renderer/overlays/ProgressOverlay'
 

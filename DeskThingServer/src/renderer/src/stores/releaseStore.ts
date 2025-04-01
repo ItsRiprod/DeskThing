@@ -5,7 +5,7 @@
  * @version 0.10.4
  */
 import { create } from 'zustand'
-import { AppReleaseCommunity, AppReleaseMeta, ClientReleaseMeta } from '@DeskThing/types'
+import { AppReleaseCommunity, AppReleaseMeta, ClientReleaseMeta } from '@deskthing/types'
 import { IpcRendererCallback } from '@shared/types'
 
 interface releaseStoreState {

@@ -1,4 +1,4 @@
-import { ThemeColor } from '@DeskThing/types'
+import { ThemeColor } from '@deskthing/types'
 import sharp from 'sharp'
 
 export const getColorFromImage = async (input: string): Promise<ThemeColor> => {

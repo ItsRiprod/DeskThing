@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react'
-import { AppSettings as AppSettingsType } from '@DeskThing/types'
+import { AppSettings as AppSettingsType } from '@deskthing/types'
 import { AppSettingProps } from './AppsOverlay'
 import Button from '@renderer/components/Button'
 import { IconLoading, IconSave } from '@renderer/assets/icons'

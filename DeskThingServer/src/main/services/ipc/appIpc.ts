@@ -8,7 +8,7 @@
  */
 console.log('[App Handler] Starting')
 import path from 'path'
-import { App, LOGGING_LEVELS, AppSettings, SavedData } from '@DeskThing/types'
+import { App, LOGGING_LEVELS, AppSettings, SavedData } from '@deskthing/types'
 import { IPC_APP_TYPES, AppHandlerReturnType, AppIPCData, ProgressChannel } from '@shared/types'
 import { storeProvider } from '@server/stores/storeProvider'
 import Logger from '@server/utils/logger'

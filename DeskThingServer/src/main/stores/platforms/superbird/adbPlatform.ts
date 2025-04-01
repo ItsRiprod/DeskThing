@@ -112,6 +112,45 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
         progressBus.complete(ProgressChannel.PLATFORM_CHANNEL, 'Refresh complete')
         return clients
       }
+      case 'run': {
+        progressBus.startOperation(
+          ProgressChannel.PLATFORM_CHANNEL,
+          'Running ADB command',
+          `Running ${data.command}`,
+          [
+            {
+              channel: ProgressChannel.ADB,
+              weight: 100
+            }
+          ]
+        )
+        const response = await this.adbService.sendCommand(data.command, data.adbId)
+
+        progressBus.complete(
+          ProgressChannel.PLATFORM_CHANNEL,
+          `Got response ${response.substring(0, 15)}...`,
+          'Successfully Ran Command'
+        )
+        return response
+      }
+
+      case 'configure': {
+        progressBus.startOperation(
+          ProgressChannel.PLATFORM_CHANNEL,
+          `Configuring Device`,
+          `Configuring ${data.adbId}`,
+          [
+            {
+              channel: ProgressChannel.CONFIGURE_DEVICE,
+              weight: 100
+            }
+          ]
+        )
+
+        await this.adbService.configureDevice(data.adbId, this.adbPort)
+
+        progressBus.complete(ProgressChannel.PLATFORM_CHANNEL, 'Completed Operation')
+      }
     }
 
     return undefined
@@ -240,7 +279,7 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
           const newClient: Client = {
             id: adbDevice.adbId,
             connectionId: adbDevice.adbId,
-            connected: !adbDevice.offline,
+            connected: false,
             timestamp: Date.now()
           }
 

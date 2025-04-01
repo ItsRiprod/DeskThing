@@ -135,6 +135,10 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
         request: 'adb'
       })
 
+      set({
+        devices: devices?.map((client) => client.manifest?.context as ADBClientType)
+      })
+
       return devices
     } catch (error) {
       console.error('Error fetching ADB devices:', error)

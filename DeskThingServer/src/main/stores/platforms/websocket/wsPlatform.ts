@@ -8,7 +8,7 @@ import {
   PlatformPayloads,
   PlatformCapability
 } from '@shared/interfaces/platformInterface'
-import { SocketData, Client, DeskThingToDeviceData } from '@DeskThing/types'
+import { SocketData, Client, DeskThingToDeviceData } from '@deskthing/types'
 import wsPath from './wsWebsocket?modulePath'
 import { app } from 'electron'
 import logger from '@server/utils/logger'

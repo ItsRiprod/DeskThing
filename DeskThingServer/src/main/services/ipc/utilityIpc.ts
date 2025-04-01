@@ -1,4 +1,4 @@
-import { LOGGING_LEVELS, Client } from '@DeskThing/types'
+import { LOGGING_LEVELS, Client } from '@deskthing/types'
 import { UtilityIPCData, UtilityHandlerReturnType, IPC_UTILITY_TYPES } from '@shared/types'
 import Logger from '@server/utils/logger'
 import path from 'path'

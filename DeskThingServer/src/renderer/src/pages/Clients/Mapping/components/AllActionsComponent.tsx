@@ -1,7 +1,7 @@
 import { FC, useState } from 'react'
 import Button from '@renderer/components/Button'
 import useMappingStore from '@renderer/stores/mappingStore'
-import { Action, EventMode, Key, ButtonMapping } from '@DeskThing/types'
+import { Action, EventMode, Key, ButtonMapping } from '@deskthing/types'
 import ActionButton from './ActionButton'
 import { IconArrowUp } from '@renderer/assets/icons'
 

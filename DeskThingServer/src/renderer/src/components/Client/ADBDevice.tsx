@@ -10,7 +10,7 @@ import React, { useState } from 'react'
 import Button from '../Button'
 // import { useSettingsStore } from '@renderer/stores'
 import { useClientStore, useSettingsStore } from '@renderer/stores'
-import { ADBClientType } from '@DeskThing/types'
+import { ADBClientType } from '@deskthing/types'
 import ProgressOverlay from '@renderer/overlays/ProgressOverlay'
 import usePlatformStore from '@renderer/stores/platformStore'
 

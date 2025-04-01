@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { AppStore } from '@server/stores/appStore'
 import { AppProcessStoreClass } from '@shared/stores/appProcessStore'
-import { App, APP_REQUESTS } from '@DeskThing/types'
+import { App, APP_REQUESTS } from '@deskthing/types'
 import Logger from '@server/utils/logger'
 import { AuthStoreClass } from '@shared/stores/authStore'
 

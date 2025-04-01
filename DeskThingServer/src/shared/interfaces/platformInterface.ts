@@ -10,7 +10,7 @@
  * - The client interface (for the connections store)
  */
 
-import { Client, DeskThingToDeviceCore, DeviceToDeskthingData } from '@DeskThing/types'
+import { Client, DeskThingToDeviceCore, DeviceToDeskthingData } from '@deskthing/types'
 import { PlatformIDs } from '@shared/stores/platformStore'
 import { PlatformIPC } from '@shared/types/ipc/ipcPlatform'
 import EventEmitter from 'node:events'

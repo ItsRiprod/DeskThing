@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { LOGGING_LEVELS } from '@DeskThing/types'
+import { LOGGING_LEVELS } from '@deskthing/types'
 import { Log } from '@shared/types'
 
 export interface AuthScopes {

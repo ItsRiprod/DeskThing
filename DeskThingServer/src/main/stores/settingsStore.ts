@@ -1,5 +1,5 @@
 // Types
-import { LOGGING_LEVELS } from '@DeskThing/types'
+import { LOGGING_LEVELS } from '@deskthing/types'
 import { Settings, LOG_FILTER, CacheableStore } from '@shared/types'
 import { SettingsStoreClass, SettingsStoreListener } from '@shared/stores/settingsStore'
 

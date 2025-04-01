@@ -21,7 +21,7 @@ export const platformHandler = async <T extends PlatformIPC>(data: T): Promise<T
   )
 
   try {
-    Logger.debug(`Handling platform event for ${data.platform}`, {
+    Logger.debug(`Handling platform event for ${data.platform} with data ${JSON.stringify(data)}`, {
       domain: 'platform',
       source: 'platformHandler'
     })

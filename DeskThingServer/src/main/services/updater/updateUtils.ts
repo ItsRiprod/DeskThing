@@ -1,6 +1,6 @@
 // import { sendIpcData } from '@server/index'
 // import Logger from '@server/utils/logger'
-// import { LOGGING_LEVELS } from '@DeskThing/types'
+// import { LOGGING_LEVELS } from '@deskthing/types'
 // import { UpdateInfoType } from '@shared/types'
 // import { UpdateCheckResult, UpdateDownloadedEvent } from 'electron-updater'
 

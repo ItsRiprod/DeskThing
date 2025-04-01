@@ -52,7 +52,7 @@
     "zustand": "^5.0.0-rc.2"
   },
   "devDependencies": {
-    "@deskthing/types": "file:../../deskthing-types",
+    "@deskthing/types": "^0.10.17",
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",
     "@electron-toolkit/eslint-config-ts": "^3.0.0",
     "@electron-toolkit/preload": "^3.0.1",

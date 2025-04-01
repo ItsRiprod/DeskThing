@@ -23,6 +23,11 @@ const ProgressOverlay: React.FC<ProgressOverlayProps> = ({
 
   const prevId = useRef<string | null>(null)
 
+  const handleFadeOut = (): void => {
+    setShowProgress(false)
+    if (fadeTimeout) clearTimeout(fadeTimeout)
+  }
+
   useEffect(() => {
     const isNewMessage = progress.id && progress.id !== prevId.current
 
@@ -63,7 +68,10 @@ const ProgressOverlay: React.FC<ProgressOverlayProps> = ({
 
   return (
     <div className="fixed flex bottom-4 right-4 z-50 items-center justify-center">
-      <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl shadow-2xl flex gap-4 max-w-md w-full backdrop-blur-sm">
+      <div
+        className={`animate-fade-in-down bg-zinc-900 border border-zinc-800 p-6 rounded-xl shadow-2xl flex gap-4 max-w-md w-full backdrop-blur-sm cursor-pointer active:scale-95 transition-transform`}
+        onClick={handleFadeOut}
+      >
         <div className="h-12 w-12 flex-shrink-0">
           {progress.status === 'complete' || progress.status === 'success' ? (
             <IconCheckCircle className="stroke-[3] w-full h-full text-green-500" />

@@ -1,6 +1,6 @@
 import React from 'react'
 import SettingComponent from './SettingComponent'
-import { SettingsRanked } from '@DeskThing/types'
+import { SettingsRanked } from '@deskthing/types'
 import RankableList from '../RankableList'
 
 interface SettingsRankedProps {

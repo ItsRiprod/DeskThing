@@ -13,7 +13,7 @@
  * If the configuration file doesn't exist, it will be created with default values.
  */
 
-import { App, LOGGING_LEVELS, AppManifest } from '@DeskThing/types'
+import { App, LOGGING_LEVELS, AppManifest } from '@deskthing/types'
 import Logger from '@server/utils/logger'
 import { AppData } from '@shared/types'
 import { readFromFile, writeToFile } from './fileService'
