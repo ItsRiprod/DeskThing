@@ -33,12 +33,12 @@ export const utility = {
       request: 'get'
     }),
 
-  disconnectClient: async (connectionId: string): Promise<boolean> =>
+  disconnectClient: async (clientId: string): Promise<boolean> =>
     await sendCommand({
       kind: IPC_HANDLERS.UTILITY,
       type: IPC_UTILITY_TYPES.CONNECTIONS,
       request: 'delete',
-      payload: connectionId
+      payload: clientId
     }),
 
   saveSettings: async (settings: Settings): Promise<void> =>

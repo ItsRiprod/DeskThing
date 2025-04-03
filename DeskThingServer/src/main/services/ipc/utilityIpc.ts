@@ -416,14 +416,14 @@ const getConnection = async (): Promise<Client[]> => {
   return clients
 }
 
-const deleteConnection = async (connectionId: string): Promise<boolean> => {
+const deleteConnection = async (clientId: string): Promise<boolean> => {
   const connectionStore = await storeProvider.getStore('platformStore')
   progressBus.start(ProgressChannel.IPC_UTILITY, 'delete-connection', 'Removing connection')
   const res = await connectionStore.sendPlatformData({
     platform: PlatformIDs.WEBSOCKET,
     type: 'disconnect',
     request: 'client',
-    clientId: connectionId
+    clientId: clientId
   })
   progressBus.complete(ProgressChannel.IPC_UTILITY, 'Connection removed')
   return res || false

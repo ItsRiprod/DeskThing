@@ -5,6 +5,7 @@ import useLogStore from './logStore'
 import useClientStore from './clientStore'
 import useReleaseStore from './releaseStore'
 import useTaskStore from './taskStore'
+import { useProgressStore } from './progressStore'
 
 export const StoreProvider: React.FC = () => {
   const [initialized, setIsInitialized] = useState(false)
@@ -16,6 +17,7 @@ export const StoreProvider: React.FC = () => {
 
     const initializeStores = async (): Promise<void> => {
       try {
+        console.log('Initializing store')
         // Initialize stores in parallel when possible, or in sequence when dependencies exist
         await Promise.all([
           useSettingsStore.getState().initialize(),
@@ -23,7 +25,8 @@ export const StoreProvider: React.FC = () => {
           useLogStore.getState().initialize(),
           useClientStore.getState().initialize(),
           useReleaseStore.getState().initialize(),
-          useTaskStore.getState().initialize()
+          useTaskStore.getState().initialize(),
+          useProgressStore.getState().initialize()
         ])
 
         setIsInitialized(true)

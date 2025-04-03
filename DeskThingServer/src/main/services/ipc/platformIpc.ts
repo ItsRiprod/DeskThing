@@ -1,7 +1,7 @@
 import { PlatformIPC } from '@shared/types/ipc/ipcPlatform'
 import Logger from '@server/utils/logger'
 import { storeProvider } from '@server/stores/storeProvider'
-import { PlatformStoreClass } from '@shared/stores/platformStore'
+import { PlatformIDs, PlatformStoreClass } from '@shared/stores/platformStore'
 import { progressBus } from '../events/progressBus'
 import { ProgressChannel } from '@shared/types'
 
@@ -26,11 +26,22 @@ export const platformHandler = async <T extends PlatformIPC>(data: T): Promise<T
       source: 'platformHandler'
     })
 
-    const returnData = await platformStore.sendPlatformData(data)
+    let returnData: T['data']
+
+    if (data.platform === PlatformIDs.MAIN) {
+      switch (data.type) {
+        case 'refresh-clients':
+          await platformStore.refreshClients()
+          returnData = await platformStore.fetchClients()
+      }
+    } else {
+      returnData = await platformStore.sendPlatformData(data)
+    }
+
     progressBus.complete(
       ProgressChannel.IPC_PLATFORM,
-      `Finished ${data.type}`,
-      'Process operation complete'
+      `Completed the operation`,
+      `Finished ${data.type}`
     )
     return returnData
   } catch (error) {

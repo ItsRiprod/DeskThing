@@ -5,16 +5,23 @@ import {
   PlatformConnectionOptions,
   PlatformEvents,
   PlatformStatus,
-  PlatformPayloads,
-  PlatformCapability
+  PlatformPayloads
 } from '@shared/interfaces/platformInterface'
-import { SocketData, Client, DeskThingToDeviceData } from '@deskthing/types'
+import {
+  SocketData,
+  Client,
+  DeskThingToDeviceData,
+  ProviderCapabilities,
+  ClientIdentifier
+} from '@deskthing/types'
 import wsPath from './wsWebsocket?modulePath'
 import { app } from 'electron'
 import logger from '@server/utils/logger'
 import EventEmitter from 'node:events'
 import { PlatformIDs } from '@shared/stores/platformStore'
 import { PlatformIPC } from '@shared/types/ipc/ipcPlatform'
+import { progressBus } from '@server/services/events/progressBus'
+import { ProgressChannel } from '@shared/types'
 
 export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements PlatformInterface {
   private worker: Worker | null = null
@@ -22,6 +29,11 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
   private startTime: number = 0
   private clients: Client[] = []
   private options: PlatformConnectionOptions | undefined = undefined
+
+  private readonly identifier: Omit<ClientIdentifier, 'id' | 'active'> = {
+    providerId: PlatformIDs.WEBSOCKET,
+    capabilities: [ProviderCapabilities.COMMUNICATE, ProviderCapabilities.PING]
+  }
 
   constructor() {
     super()
@@ -43,6 +55,15 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
   public handlePlatformEvent = async <T extends PlatformIPC>(data: T): Promise<T['data']> => {
     if (data.platform !== PlatformIDs.WEBSOCKET) return undefined
 
+    if (!data.type) {
+      logger.error('Received platform event with undefined type', {
+        domain: 'WebSocket',
+        source: 'wsPlatform',
+        function: 'handlePlatformEvent'
+      })
+      return undefined
+    }
+
     switch (data.type) {
       case 'disconnect':
         this.worker?.postMessage({
@@ -52,12 +73,7 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
         // handle disconnecting
         break
       case 'ping':
-        this.worker?.postMessage({
-          type: 'websocketEvent',
-          data: data
-        })
-        // handle ping
-        break
+        return this.ping(data.clientId)
       case 'pong':
         this.worker?.postMessage({
           type: 'websocketEvent',
@@ -79,18 +95,16 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
 
   public readonly id: PlatformIDs = PlatformIDs.WEBSOCKET
   public readonly name: string = 'WebSocket'
-  public readonly capabilities: PlatformCapability[] = [
-    PlatformCapability.DETECT,
-    PlatformCapability.COMMUNICATE
-  ]
 
   private setupWorkerListeners(): void {
     this.worker?.on('message', ({ event, data }: PlatformPayloads) => {
       switch (event) {
         case PlatformEvent.CLIENT_UPDATED:
           {
+            this.ensureClientIdentifiers(data)
+
             const clientIndex = this.clients.findIndex(
-              (client) => client.connectionId === data.connectionId
+              (client) => client.clientId === data.clientId
             )
             if (clientIndex !== -1) {
               this.clients[clientIndex] = data
@@ -102,8 +116,10 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
           break
         case PlatformEvent.CLIENT_CONNECTED:
           {
+            this.ensureClientIdentifiers(data)
+
             const clientIndex = this.clients.findIndex(
-              (client) => client.connectionId === data.connectionId
+              (client) => client.clientId === data.clientId
             )
             if (clientIndex !== -1) {
               this.clients[clientIndex] = data
@@ -114,7 +130,7 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
           }
           break
         case PlatformEvent.CLIENT_DISCONNECTED:
-          this.clients = this.clients.filter((client) => client.connectionId !== data.connectionId)
+          this.clients = this.clients.filter((client) => client.clientId !== data.clientId)
           this.emit(event, data)
           break
         case PlatformEvent.DATA_RECEIVED:
@@ -127,6 +143,24 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
           this.emit(event, data)
           break
         case PlatformEvent.SERVER_STARTED:
+          this.emit(event, data)
+          break
+        case PlatformEvent.CLIENT_PONG:
+          this.emit(event, data)
+          break
+        case PlatformEvent.REFRESHED_CLIENTS:
+          logger.info(
+            `Client refresh completed: ${data.active} active, ${data.disconnected} disconnected`,
+            {
+              domain: 'WebSocket',
+              source: 'wsPlatform',
+              function: 'refreshClients'
+            }
+          )
+          this.emit(event, data)
+          break
+        case PlatformEvent.CLIENT_LIST:
+          this.clients = data
           this.emit(event, data)
           break
       }
@@ -145,18 +179,40 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
     })
 
     this.worker?.stdout?.on('data', (data) => {
-      logger.info(`${data.toString().trim()}`, {
+      logger.debug(`${data.toString().trim()}`, {
         domain: 'WebSocket',
         source: 'wsPlatform',
         function: 'stdout'
       })
     })
-
     this.worker?.stderr?.on('data', (data) => {
       logger.error(`${data.toString().trim()}`, {
-        domain: 'WebSocket'
+        domain: 'WebSocket',
+        source: 'wsPlatform',
+        function: 'stderr'
       })
     })
+  }
+
+  private ensureClientIdentifiers(client: Client): void {
+    // Initialize identifiers if not present
+    if (!client.identifiers) {
+      client.identifiers = {}
+    }
+
+    // Add WebSocket identifier if not present
+    if (!client.identifiers[this.id]) {
+      client.identifiers[this.id] = {
+        ...this.identifier,
+        id: client.clientId,
+        active: true
+      }
+    }
+
+    // Set primary provider if not set
+    if (!client.primaryProviderId) {
+      client.primaryProviderId = this.id
+    }
   }
 
   async start(options?: PlatformConnectionOptions): Promise<void> {
@@ -165,6 +221,38 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
     this.worker?.postMessage({ type: 'start', options })
     this.isActive = true
     this.startTime = Date.now()
+  }
+
+  async ping(clientId: string): Promise<boolean> {
+    progressBus.start(ProgressChannel.PLATFORM_CHANNEL, `Handling Ping`, `Pinging ${clientId}`)
+    return new Promise<boolean>((resolve) => {
+      progressBus.update(ProgressChannel.PLATFORM_CHANNEL, `Awaiting response from ${clientId}`, 50)
+      const timeoutRef = setTimeout(() => {
+        resolveTask(false)
+      }, 5000)
+
+      const resolveTask = (res: boolean): void => {
+        progressBus.complete(
+          ProgressChannel.PLATFORM_CHANNEL,
+          `Pinged ${clientId} ${res ? 'successfully' : 'unsuccessfully'}`
+        )
+        resolve(res)
+        this.removeListener(PlatformEvent.CLIENT_PONG, onceListener)
+        clearTimeout(timeoutRef)
+      }
+
+      const onceListener = (data: { clientId: string; result: boolean }): void => {
+        if (data.clientId === clientId) {
+          resolveTask(data.result)
+        }
+      }
+
+      this.on(PlatformEvent.CLIENT_PONG, onceListener)
+      this.worker?.postMessage({
+        type: 'websocketEvent',
+        data: { type: 'ping', clientId }
+      })
+    })
   }
 
   async stop(): Promise<void> {
@@ -182,6 +270,50 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
     return true
   }
 
+  refreshClient(clientId: string, forceRefresh?: boolean): Promise<Client | undefined> {
+    this.worker?.postMessage({ type: 'refreshClient', clientId, forceRefresh })
+    return Promise.race([
+      new Promise<Client | undefined>((resolve) =>
+        this.once(PlatformEvent.CLIENT_UPDATED, resolve)
+      ),
+      new Promise<undefined>((resolve) => setTimeout(() => resolve(undefined), 5000))
+    ])
+  }
+
+  async refreshClients(): Promise<boolean> {
+    progressBus.start(ProgressChannel.PING, `Refreshing clients`, `Refreshing clients`)
+    this.worker?.postMessage({ type: 'refreshClients' })
+
+    const res = await new Promise<boolean>((resolve) => {
+      progressBus.update(ProgressChannel.PING, `Awaiting devices refresh`, 25)
+      const timeoutRef = setTimeout(() => {
+        resolveTask(false)
+        progressBus.warn(ProgressChannel.PING, `Timed out waiting for clients to refresh`)
+      }, 15000)
+
+      const resolveTask = (res: boolean): void => {
+        progressBus.update(ProgressChannel.PING, `Pinged`, 75)
+        resolve(res)
+        this.removeListener(PlatformEvent.REFRESHED_CLIENTS, onceListener)
+        clearTimeout(timeoutRef)
+      }
+
+      const onceListener = (data: { active: number; disconnected: number }): void => {
+        progressBus.update(
+          ProgressChannel.PING,
+          `Refreshed clients. ${data.active} active, ${data.disconnected} disconnected`,
+          50
+        )
+        resolveTask(true)
+      }
+
+      this.once(PlatformEvent.REFRESHED_CLIENTS, onceListener)
+    })
+
+    progressBus.complete(ProgressChannel.PING, `Clients refreshed`)
+    return res
+  }
+
   async broadcastData(data: SocketData): Promise<void> {
     if (!this.isActive) return
     this.worker?.postMessage({ type: 'broadcast', data })
@@ -195,12 +327,17 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
     return this.clients
   }
 
-  getClientById(clientId: string): Client | undefined {
-    return this.clients.find((client) => client.id === clientId)
+  fetchClients(): Promise<Client[]> {
+    this.worker?.postMessage({ type: 'fetchClients' })
+    return new Promise((resolve) => this.once(PlatformEvent.CLIENT_LIST, resolve))
   }
 
-  updateClient(clientId: string, client: Partial<Client>): void {
-    this.worker?.postMessage({ type: 'updateClient', clientId, client })
+  getClientById(clientId: string): Client | undefined {
+    return this.clients.find((client) => client.clientId === clientId)
+  }
+
+  async updateClient(clientId: string, client: Partial<Client>, notify = true): Promise<void> {
+    this.worker?.postMessage({ type: 'updateClient', clientId, client, notify })
   }
 
   isRunning(): boolean {

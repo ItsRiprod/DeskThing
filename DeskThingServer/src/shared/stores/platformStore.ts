@@ -11,7 +11,8 @@ import { ExtractPayloadFromIPC, PlatformIPC } from '@shared/types/ipc/ipcPlatfor
 export enum PlatformIDs {
   ADB = 'adb',
   WEBSOCKET = 'websocket',
-  BLUETOOTH = 'bluetooth'
+  BLUETOOTH = 'bluetooth',
+  MAIN = 'main'
 }
 
 export enum PlatformStoreEvent {
@@ -22,6 +23,7 @@ export enum PlatformStoreEvent {
   CLIENT_CONNECTED = 'client_connected',
   CLIENT_DISCONNECTED = 'client_disconnected',
   CLIENT_UPDATED = 'client_updated',
+  CLIENT_LIST = 'client_list',
   DATA_RECEIVED = 'data_received'
 }
 
@@ -31,9 +33,12 @@ export type PlatformStoreEvents = {
   [PlatformStoreEvent.PLATFORM_STARTED]: [PlatformInterface]
   [PlatformStoreEvent.PLATFORM_STOPPED]: [PlatformInterface]
   [PlatformStoreEvent.CLIENT_CONNECTED]: [Client]
+  [PlatformStoreEvent.CLIENT_LIST]: [Client[]]
   [PlatformStoreEvent.CLIENT_DISCONNECTED]: [string]
   [PlatformStoreEvent.CLIENT_UPDATED]: [Client]
-  [PlatformStoreEvent.DATA_RECEIVED]: [{ client: Client; data: DeviceToDeskthingData }]
+  [PlatformStoreEvent.DATA_RECEIVED]: [
+    { client: Extract<Client, { connected: true }>; data: DeviceToDeskthingData }
+  ]
 }
 
 export interface PlatformStoreClass extends StoreInterface, EventEmitter<PlatformStoreEvents> {
@@ -55,6 +60,8 @@ export interface PlatformStoreClass extends StoreInterface, EventEmitter<Platfor
 
   getClients(): Client[]
 
+  fetchClients(): Promise<Client[]>
+
   getClientById(clientId: string): Client | undefined
 
   getClientsByPlatform(platformId: PlatformIDs): Client[]
@@ -63,12 +70,14 @@ export interface PlatformStoreClass extends StoreInterface, EventEmitter<Platfor
 
   handleSocketData(
     client: Client,
-    data: DeviceToDeskthingData & { connectionId: string }
+    data: DeviceToDeskthingData & { clientId: string }
   ): Promise<void>
 
   sendDataToClient(
     data: DeskThingToDeviceCore & { app?: string; clientId: string }
   ): Promise<boolean>
+
+  refreshClients(): Promise<boolean>
 
   broadcastToClients(
     data: DeskThingToDeviceCore & { app?: string; clientId?: string }

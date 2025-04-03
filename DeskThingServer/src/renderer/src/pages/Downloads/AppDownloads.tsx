@@ -144,12 +144,12 @@ const AppDownloads: React.FC = () => {
   return (
     <div className="flex h-full w-full">
       <ProgressOverlay
-        channel={[
-          ProgressChannel.IPC_APPS,
-          ProgressChannel.IPC_RELEASES,
-          ProgressChannel.ST_APP_INITIALIZE,
-          ProgressChannel.ST_APP_INSTALL
-        ]}
+        channel={ProgressChannel.IPC_APPS}
+        onError={handleDownloadError}
+        onClose={handleDownloadFinalized}
+      />
+      <ProgressOverlay
+        channel={ProgressChannel.IPC_RELEASES}
         onError={handleDownloadError}
         onClose={handleDownloadFinalized}
       />

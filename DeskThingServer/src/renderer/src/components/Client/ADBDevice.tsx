@@ -11,8 +11,8 @@ import Button from '../Button'
 // import { useSettingsStore } from '@renderer/stores'
 import { useClientStore, useSettingsStore } from '@renderer/stores'
 import { ADBClientType } from '@deskthing/types'
-import ProgressOverlay from '@renderer/overlays/ProgressOverlay'
 import usePlatformStore from '@renderer/stores/platformStore'
+import { useChannelProgress } from '@renderer/hooks/useProgress'
 
 interface ADBComponentProps {
   adbDevice: ADBClientType
@@ -20,20 +20,16 @@ interface ADBComponentProps {
 
 const ADBDevice: React.FC<ADBComponentProps> = ({ adbDevice }) => {
   // const port = useSettingsStore((settings) => settings.settings.devicePort)
-  const [loading, setLoading] = useState(false)
   const [animatingIcons, setAnimatingIcons] = useState<Record<string, boolean>>({})
   const sendCommand = usePlatformStore((state) => state.runCommand)
   const configure = usePlatformStore((state) => state.configure)
   const pushStaged = usePlatformStore((state) => state.pushStaged)
   const refreshADbClients = useClientStore((store) => store.requestADBDevices)
   const devicePort = useSettingsStore((store) => store.settings.devicePort)
+  const { isLoading } = useChannelProgress(ProgressChannel.PLATFORM_CHANNEL)
 
   const handleAdbCommand = async (command: string): Promise<string | undefined> => {
     return sendCommand(adbDevice.adbId, command)
-  }
-
-  const onPushFinish = (): void => {
-    setLoading(false)
   }
 
   const configureDevice = async (): Promise<void> => {
@@ -47,11 +43,9 @@ const ADBDevice: React.FC<ADBComponentProps> = ({ adbDevice }) => {
   }
 
   const handleConnectOffline = async (): Promise<void> => {
-    setLoading(true)
     await handleAdbCommand(`reconnect offline`)
     await setTimeout(() => refreshADbClients, 5000)
     await handleAdbCommand(`reverse tcp:${devicePort} tcp:${devicePort}`)
-    setLoading(false)
   }
 
   const handlePushStaged = (): void => {
@@ -60,11 +54,6 @@ const ADBDevice: React.FC<ADBComponentProps> = ({ adbDevice }) => {
 
   return (
     <div className="w-full p-4 border rounded-xl border-zinc-900 flex flex-col lg:flex-row gap-4 justify-center items-center lg:justify-between bg-zinc-950">
-      <ProgressOverlay
-        channel={ProgressChannel.PLATFORM_CHANNEL}
-        onClose={onPushFinish}
-        title="Running command"
-      />
       <div className="flex gap-2 items-center">
         <IconCarThingSmall iconSize={48} />
         <div>
@@ -83,7 +72,7 @@ const ADBDevice: React.FC<ADBComponentProps> = ({ adbDevice }) => {
                 title="Configure Device"
                 className="group relative hover:bg-zinc-900 gap-2"
                 onClick={configureDevice}
-                disabled={loading}
+                disabled={isLoading}
               >
                 <div className="absolute inset-0 w-full h-full border-blue-500 border animate-pulse rounded-lg"></div>
                 <IconConfig />
@@ -96,7 +85,7 @@ const ADBDevice: React.FC<ADBComponentProps> = ({ adbDevice }) => {
               title="Push staged client"
               className="group hover:bg-zinc-900 gap-2"
               onClick={handlePushStaged}
-              disabled={loading}
+              disabled={isLoading}
             >
               <IconUpload
                 className={
@@ -110,7 +99,7 @@ const ADBDevice: React.FC<ADBComponentProps> = ({ adbDevice }) => {
               title="Restart Chromium on the Device"
               className="group hover:bg-zinc-900 gap-2"
               onClick={restartChromium}
-              disabled={loading}
+              disabled={isLoading}
             >
               <IconRefresh
                 className={
@@ -127,9 +116,9 @@ const ADBDevice: React.FC<ADBComponentProps> = ({ adbDevice }) => {
             title="Reconnect Device"
             className="group hover:bg-red-900 gap-2 border-red-500 border"
             onClick={handleConnectOffline}
-            disabled={loading}
+            disabled={isLoading}
           >
-            {loading ? <IconLoading /> : <IconConfig />}
+            {isLoading ? <IconLoading /> : <IconConfig />}
             <p className="">
               Reconnect<span className="hidden lg:inline"> Device</span>
             </p>

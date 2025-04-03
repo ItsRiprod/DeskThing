@@ -12,6 +12,7 @@ interface PlatformStoreState {
   runCommand: (adbId: string, command: string) => Promise<string | undefined>
   refreshADB: () => Promise<Client[] | undefined>
   configure: (adbId: string) => Promise<boolean>
+  setServiceStatus: (adbId: string, service: string, status: boolean) => Promise<boolean>
 
   // WebSocket
   ping: (clientId: string) => Promise<void>
@@ -73,6 +74,10 @@ const usePlatformStore = create<PlatformStoreState>((set, get) => ({
 
   restart: async (request?: string) => {
     return window.electron.platform.websocket.restart(request)
+  },
+
+  setServiceStatus: async (adbId: string, service: string, status: boolean) => {
+    return (await window.electron.platform.adb.setSupervisorStatus(adbId, service, status)) || false
   },
 
   // Bluetooth Methods

@@ -40,7 +40,7 @@ export interface ProfileStoreClass extends StoreInterface {
   /**
    * Gets the currently active profile
    */
-  getActiveProfile(): Promise<DeskThingProfile | null>
+  getActiveProfile(): Promise<DeskThingProfile | undefined>
 
   /**
    * Creates a new profile
@@ -65,41 +65,10 @@ export interface ProfileStoreClass extends StoreInterface {
   deleteProfile(profileId: string): Promise<boolean>
 
   /**
-   * Sets the active profile
-   * @param profileId ID of the profile to set as active
-   */
-  setActiveProfile(profileId: string): Promise<DeskThingProfile | null>
-
-  /**
-   * Clears the active profile
-   */
-  clearActiveProfile(): Promise<void>
-
-  /**
    * Applies the active profile to a specific client
    * @param clientId ID of the client to apply the profile to
    */
   applyProfileToClient(clientId: string): Promise<boolean>
-
-  /**
-   * Creates a duplicate of an existing profile
-   * @param profileId ID of the profile to duplicate
-   * @param newName Optional new name for the duplicated profile
-   */
-  duplicateProfile(profileId: string, newName?: string): Promise<DeskThingProfile | null>
-
-  /**
-   * Exports a profile to a file
-   * @param profileId ID of the profile to export
-   * @param filePath Optional custom file path for the export
-   */
-  exportProfile(profileId: string, filePath?: string): Promise<string | null>
-
-  /**
-   * Imports a profile from a file
-   * @param filePath Path to the file containing the profile data
-   */
-  importProfile(filePath: string): Promise<DeskThingProfile | null>
 
   /**
    * Clears the profile cache

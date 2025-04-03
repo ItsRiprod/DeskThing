@@ -109,6 +109,13 @@ export type ServerIPCData = {
       }
     }
   | {
+      type: 'platform:client'
+      payload: {
+        request: 'list'
+        clients: Client[]
+      }
+    }
+  | {
       type: 'taskList'
       payload: { source: string; taskList: Record<string, Task> }
     }

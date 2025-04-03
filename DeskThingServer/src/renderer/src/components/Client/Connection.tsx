@@ -10,21 +10,24 @@ import {
 import { ProgressChannel } from '@shared/types'
 import React, { useState } from 'react'
 import Button from '../Button'
-// import { useSettingsStore } from '@renderer/stores'
 import ClientDetailsOverlay from '@renderer/overlays/ClientDetailsOverlay'
-import { Client, ClientConnectionMethod } from '@deskthing/types'
+import {
+  Client,
+  ClientConnectionMethod,
+  ClientPlatformIDs,
+  ConnectionState
+} from '@deskthing/types'
 import usePlatformStore from '@renderer/stores/platformStore'
-import ProgressOverlay from '@renderer/overlays/ProgressOverlay'
+import { useChannelProgress } from '@renderer/hooks/useProgress'
 
 interface ConnectionComponentProps {
   client: Client
 }
 
 const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => {
-  // const port = useSettingsStore((settings) => settings.settings.devicePort)
-  const [loading, setLoading] = useState(false)
   const [animatingIcons, setAnimatingIcons] = useState<Record<string, boolean>>({})
   const [enabled, setEnabled] = useState(false)
+  const { isLoading } = useChannelProgress(ProgressChannel.PLATFORM_CHANNEL)
 
   const sendCommand = usePlatformStore((state) => state.runCommand)
   const disconnect = usePlatformStore((state) => state.disconnect)
@@ -34,13 +37,13 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
     if (!client.manifest?.context) return <IconComputer iconSize={128} />
 
     switch (client.manifest?.context.id) {
-      case 1:
+      case ClientPlatformIDs.Desktop:
         return <IconComputer iconSize={128} />
-      case 2:
+      case ClientPlatformIDs.Tablet:
         return <IconComputer iconSize={128} />
-      case 3:
+      case ClientPlatformIDs.Iphone:
         return <IconMobile iconSize={128} />
-      case 4:
+      case ClientPlatformIDs.CarThing:
         return <IconCarThingSmall iconSize={128} />
       default:
         return <IconComputer iconSize={128} />
@@ -51,10 +54,6 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
     if (client.manifest?.context?.method !== ClientConnectionMethod.ADB) return
 
     return await sendCommand(client.manifest.context.adbId, command)
-  }
-
-  const onPushFinish = (): void => {
-    setLoading(false)
   }
 
   const restartChromium = async (): Promise<void> => {
@@ -69,76 +68,65 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
 
   const handlePing = async (): Promise<void> => {
     setAnimatingIcons((prev) => ({ ...prev, ping: true }))
-    await ping(client.connectionId)
-
-    const pongPromise = new Promise<void>((resolve) => {
-      const onPong = (_event: Electron.IpcRendererEvent, payload: string): void => {
-        console.log(`Got ping response from ${client.connectionId}: `, payload)
-        setTimeout(() => {
-          setAnimatingIcons((prev) => ({ ...prev, ping: false }))
-        }, 1000)
-        resolve()
-      }
-      window.electron.ipcRenderer.once(`pong-${client.connectionId}`, onPong)
-    })
-
-    const timeoutPromise = new Promise<void>((resolve) => {
-      setTimeout(() => {
-        console.log(`Ping timed out for ${client.connectionId}`)
-        setAnimatingIcons((prev) => ({ ...prev, ping: false }))
-        resolve()
-      }, 5000)
-    })
-
-    try {
-      await Promise.race([pongPromise, timeoutPromise])
-    } finally {
-      window.electron.ipcRenderer.removeAllListeners(`pong-${client.connectionId}`)
-    }
+    await ping(client.clientId)
   }
 
   const handleDisconnect = (): void => {
-    disconnect(client.connectionId)
+    disconnect(client.clientId)
+  }
+
+  const getConnectionStateColor = (state: ConnectionState): string => {
+    switch (state) {
+      case ConnectionState.Connected:
+      case ConnectionState.Established:
+        return 'text-green-500'
+      case ConnectionState.Connecting:
+        return 'text-yellow-500'
+      case ConnectionState.Failed:
+        return 'text-red-500'
+      default:
+        return 'text-gray-500'
+    }
   }
 
   return (
     <div className="w-full p-4 border rounded-xl border-zinc-900 flex flex-col lg:flex-row gap-4 justify-center items-center lg:justify-between bg-zinc-950">
       {enabled && <ClientDetailsOverlay client={client} onClose={() => setEnabled(false)} />}
-      <ProgressOverlay channel={ProgressChannel.IPC_CLIENT} onClose={onPushFinish} />
-      <ProgressOverlay channel={ProgressChannel.PLATFORM_CHANNEL} />
-      <div className="flex gap-2 items-center">
+      <div className="flex gap-4 items-center">
         {renderIcon()}
         <div>
-          <p>Platform</p>
-          <h2 className="text-2xl">{client.manifest?.context.name || 'Unknown Platform'}</h2>
-          <h2 className="text-sm text-gray-500 font-geistMono">
-            {client.manifest?.context.method == ClientConnectionMethod.ADB
-              ? client.manifest?.context.adbId
-              : client.connectionId}
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl">{client.manifest?.name || 'Unknown Device'}</h2>
+            <span className={`text-sm ${getConnectionStateColor(client.connectionState)}`}>
+              {ConnectionState[client.connectionState]}
+            </span>
+          </div>
+          <p className="text-gray-400">
+            {client.manifest?.context.ip}:{client.manifest?.context.port}
+          </p>
+          <p className="text-sm text-gray-500 font-geistMono">{client.clientId}</p>
+          {client.manifest?.context.method === ClientConnectionMethod.ADB && (
+            <p className="text-sm text-gray-400">ADB: {client.manifest.context.adbId}</p>
+          )}
         </div>
       </div>
       <div className="flex gap-2 items-center">
-        {client.manifest?.context.method == ClientConnectionMethod.ADB && (
-          <>
-            <Button
-              title="Restart Chromium on the Device"
-              className="group hover:bg-zinc-900 gap-2"
-              onClick={restartChromium}
-              disabled={loading}
-            >
-              <IconRefresh
-                className={
-                  animatingIcons.chromium
-                    ? 'rotate-[360deg] transition-transform duration-1000'
-                    : ''
-                }
-              />
-              <p className="hidden group-hover:block">
-                Restart <span className="hidden lg:inline">Chromium</span>
-              </p>
-            </Button>
-          </>
+        {client.manifest?.context.method === ClientConnectionMethod.ADB && (
+          <Button
+            title="Restart Chromium on the Device"
+            className="group hover:bg-zinc-900 gap-2"
+            onClick={restartChromium}
+            disabled={isLoading}
+          >
+            <IconRefresh
+              className={
+                animatingIcons.chromium ? 'rotate-[360deg] transition-transform duration-1000' : ''
+              }
+            />
+            <p className="hidden group-hover:block">
+              Restart <span className="hidden lg:inline">Chromium</span>
+            </p>
+          </Button>
         )}
         <Button
           title="Client Details and Settings"
@@ -149,13 +137,13 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
           <p className="hidden group-hover:block">Details</p>
         </Button>
         <Button title="Ping Client" className="group hover:bg-zinc-900 gap-2" onClick={handlePing}>
-          <IconPing className={animatingIcons.ping ? 'animate-ping' : ''} />
+          <IconPing className={isLoading ? 'animate-ping' : ''} />
           <p className="hidden group-hover:block">Ping</p>
         </Button>
         <Button
           title="Disconnect Client"
           className="group bg-red-700 gap-2"
-          disabled={loading}
+          disabled={isLoading}
           onClick={handleDisconnect}
         >
           <IconX />

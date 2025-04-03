@@ -34,13 +34,15 @@ export enum ProgressChannel {
   CONFIGURE_DEVICE = 'configure-device',
   PUSH_PROXY_SCRIPT = 'push-proxy-script',
   REFRESH_DEVICES = 'refresh-devices',
-
+  
   /** The channel for all platform-related events */
   PLATFORM_CHANNEL = 'ipc-platform-channel',
-
-
+  
+  
   /** The channel for all platform-related events */
   REFRESH_RELEASES = 'refresh-releases',
+  REFRESH_CLIENTS = 'refresh-clients',
+  PING = 'ping',
   REFRESH_APP_RELEASES = 'refresh-app-releases',
   REFRESH_CLIENT_RELEASES = 'refresh-client-releases',
   GET_CLIENT_RELEASES = 'get-client-releases',

@@ -1,4 +1,4 @@
-import { ClientManifest } from '@deskthing/types'
+import { Client, ClientManifest } from '@deskthing/types'
 import { PlatformIDs } from '@shared/stores/platformStore'
 import { IPC_HANDLERS } from '@shared/types'
 import { PlatformIPC, ExtractPayloadFromIPC } from '@shared/types/ipc/ipcPlatform'
@@ -28,6 +28,21 @@ export const platform = {
         adbId
       })
     },
+    setSupervisorStatus: async (
+      adbId: string,
+      service: string,
+      state: boolean
+    ): Promise<boolean | undefined> => {
+      return await sendPlatformData({
+        platform: PlatformIDs.ADB,
+        type: 'set',
+        request: 'supervisor',
+        service,
+        adbId,
+        state
+      })
+    },
+
     pushStaged: async (adbId: string): Promise<boolean> =>
       (await sendPlatformData({
         platform: PlatformIDs.ADB,
@@ -104,6 +119,12 @@ export const platform = {
         payload: 'etc'
       })
     }
+  },
+  refreshConnections: async (): Promise<Client[] | undefined> => {
+    return sendPlatformData({
+      platform: PlatformIDs.MAIN,
+      type: 'refresh-clients'
+    })
   }
 }
 

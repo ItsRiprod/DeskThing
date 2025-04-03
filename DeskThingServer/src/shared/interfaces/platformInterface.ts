@@ -15,12 +15,6 @@ import { PlatformIDs } from '@shared/stores/platformStore'
 import { PlatformIPC } from '@shared/types/ipc/ipcPlatform'
 import EventEmitter from 'node:events'
 
-export enum PlatformCapability {
-  DETECT = 'detect',
-  CONFIGURE = 'configure',
-  COMMUNICATE = 'communicate'
-}
-
 export enum PlatformEvent {
   CLIENT_CONNECTED = 'client_connected',
   CLIENT_DISCONNECTED = 'client_disconnected',
@@ -28,7 +22,10 @@ export enum PlatformEvent {
   DATA_RECEIVED = 'data_received',
   ERROR = 'error',
   STATUS_CHANGED = 'status_changed',
-  SERVER_STARTED = 'server_started'
+  SERVER_STARTED = 'server_started',
+  REFRESHED_CLIENTS = 'refreshed_clients',
+  CLIENT_LIST = 'clients_list',
+  CLIENT_PONG = 'client_ping'
 }
 
 export type PlatformConnectionOptions<T extends Record<string, unknown> = Record<string, unknown>> =
@@ -38,6 +35,8 @@ export type PlatformConnectionOptions<T extends Record<string, unknown> = Record
     path?: string
     protocol?: string
   } & T
+
+type ConnectedClient = Extract<Client, { connected: true }>
 
 export type PlatformStatus = {
   isActive: boolean
@@ -55,9 +54,12 @@ export type PlatformPayloads =
   | { event: PlatformEvent.CLIENT_CONNECTED; data: Client }
   | { event: PlatformEvent.CLIENT_DISCONNECTED; data: Client }
   | { event: PlatformEvent.CLIENT_UPDATED; data: Client }
+  | { event: PlatformEvent.REFRESHED_CLIENTS; data: { active: number; disconnected: number } }
+  | { event: PlatformEvent.CLIENT_LIST; data: Client[] }
+  | { event: PlatformEvent.CLIENT_PONG; data: { clientId: string; result: boolean } }
   | {
       event: PlatformEvent.DATA_RECEIVED
-      data: { client: Client; data: DeviceToDeskthingData & { connectionId: string } }
+      data: { client: ConnectedClient; data: DeviceToDeskthingData & { clientId: string } }
     }
   | { event: PlatformEvent.ERROR; data: Error }
   | { event: PlatformEvent.STATUS_CHANGED; data: PlatformStatus }
@@ -72,7 +74,6 @@ export interface PlatformInterface<E extends Record<string, unknown> = Record<st
   // Core identity properties
   readonly id: PlatformIDs
   readonly name: string
-  readonly capabilities: PlatformCapability[]
 
   // Server management
   start(options?: PlatformConnectionOptions<E>): Promise<void>
@@ -81,10 +82,17 @@ export interface PlatformInterface<E extends Record<string, unknown> = Record<st
 
   // Client connection handling
   getClients(): Client[]
+  fetchClients(): Promise<Client[]>
   getClientById(clientId: string): Client | undefined
+  refreshClients(): Promise<boolean>
+  refreshClient(clientId: string, forceRefresh?: boolean): Promise<Client | undefined>
 
   // Client management
-  updateClient(clientId: string, client: Partial<Client>): void
+  updateClient(
+    clientId: string,
+    client: Partial<Client>,
+    notify?: boolean
+  ): Promise<void | Client | undefined>
 
   // Data transfer
   sendData(clientId: string, data: DeskThingToDeviceCore & { app?: string }): Promise<boolean>

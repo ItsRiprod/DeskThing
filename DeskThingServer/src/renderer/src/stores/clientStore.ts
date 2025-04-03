@@ -17,6 +17,7 @@ interface ClientStoreState {
   requestClientManifest: () => Promise<Partial<Client>>
   requestADBDevices: () => Promise<Client[] | undefined>
   requestConnections: () => Promise<void>
+  refreshConnections: () => Promise<boolean>
   loadClientUrl: (url: string) => Promise<void>
   loadClientZip: (zip: string) => Promise<void>
   updateClientManifest: (client: Partial<ClientManifest>) => void
@@ -50,7 +51,7 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
         }
         set((state) => {
           const existingClientIndex = state.clients.findIndex(
-            (client) => client.connectionId === data.client.connectionId
+            (client) => client.clientId === data.client.clientId
           )
           if (existingClientIndex !== -1) {
             return {
@@ -61,18 +62,18 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
 
           return {
             clients: [...state.clients, data.client],
-            connections: state.connections + 1
+            connections: state.connections
           }
         })
       } else if (data.request === 'removed') {
         set((state) => ({
-          clients: state.clients.filter((client) => client.connectionId !== data.clientId),
-          connections: state.connections - 1
+          clients: state.clients.filter((client) => client.clientId !== data.clientId),
+          connections: state.connections
         }))
       } else if (data.request === 'modified') {
         set((state) => ({
           clients: state.clients.map((client) =>
-            client.connectionId === data.client.connectionId ? data.client : client
+            client.clientId === data.client.clientId ? data.client : client
           )
         }))
       }
@@ -157,6 +158,22 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
       })
     } catch (error) {
       console.error('Error fetching connections:', error)
+    }
+  },
+
+  refreshConnections: async (): Promise<boolean> => {
+    try {
+      const clients = await window.electron.platform.refreshConnections()
+      console.debug('Got the connections', clients)
+      if (!clients) return false
+      set(() => ({
+        clients: clients,
+        connections: clients.length
+      }))
+      return true
+    } catch (error) {
+      console.error('Error fetching connections:', error)
+      return false
     }
   },
 

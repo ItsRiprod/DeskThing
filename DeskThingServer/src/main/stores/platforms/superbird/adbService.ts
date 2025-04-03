@@ -5,18 +5,62 @@ import { join } from 'path'
 import { app } from 'electron'
 import * as fs from 'fs'
 import { ClientManifest } from '@deskthing/types'
-import { getClientManifest, updateManifest } from '@server/services/client/clientService'
+import {
+  getClientManifest,
+  setManifestJS,
+  updateManifest
+} from '@server/services/client/clientService'
 import { progressBus } from '@server/services/events/progressBus'
 import { ProgressChannel } from '@shared/types'
 
 export class ADBService {
+  private commandQueues: {
+    [deviceId: string]: {
+      command: string
+      resolve: (value: string) => void
+      reject: (error: unknown) => void
+    }[]
+  } = {}
+
   public async sendCommand(command: string, deviceId?: string): Promise<string> {
-    if (deviceId) {
-      command = `-s ${deviceId} ${command}`
-    }
-    return handleAdbCommands(command)
+    const queueKey = deviceId || 'default'
+
+    return new Promise((resolve, reject) => {
+      const queueItem = { command, resolve, reject }
+
+      if (!this.commandQueues[queueKey]) {
+        this.commandQueues[queueKey] = []
+      }
+
+      this.commandQueues[queueKey].push(queueItem)
+
+      if (this.commandQueues[queueKey].length === 1) {
+        this.processNextCommand(queueKey)
+      }
+    })
   }
 
+  private async processNextCommand(queueKey: string): Promise<void> {
+    const currentItem = this.commandQueues[queueKey][0]
+    if (!currentItem) return
+
+    try {
+      let finalCommand = currentItem.command
+      if (queueKey !== 'default') {
+        finalCommand = `-s ${queueKey} ${finalCommand}`
+      }
+
+      const result = await handleAdbCommands(finalCommand)
+      currentItem.resolve(result)
+    } catch (error) {
+      currentItem.reject(error)
+    } finally {
+      this.commandQueues[queueKey].shift()
+      if (this.commandQueues[queueKey].length > 0) {
+        this.processNextCommand(queueKey)
+      }
+    }
+  }
   public async getDevices(): Promise<ADBClientType[]> {
     try {
       const response = await this.sendCommand('devices -l')
@@ -136,7 +180,20 @@ export class ADBService {
       const extractDir = join(userDataPath, 'webapp')
 
       // Modify the manifest
+      await setManifestJS({
+        connectionId: deviceId,
+        context: {
+          method: ClientConnectionMethod.ADB,
+          name: 'Car Thing',
+          id: 4,
+          ip: 'localhost',
+          port: 8891,
+          adbId: deviceId
+        }
+      })
+
       await updateManifest({
+        connectionId: deviceId,
         context: {
           method: ClientConnectionMethod.ADB,
           name: 'Car Thing',
@@ -150,8 +207,9 @@ export class ADBService {
       progressBus.update(ProgressChannel.CONFIGURE_DEVICE, 'Pushing webapp', 50)
       await this.pushWebApp(deviceId, extractDir)
 
-      // Revert changes
-      await updateManifest({
+      // revert the manifest changes
+      await setManifestJS({
+        connectionId: clientManifest.connectionId,
         context: clientManifest.context
       })
     }
@@ -236,6 +294,10 @@ export class ADBService {
       if (name && status) {
         supervisorData[name] = status
       }
+    })
+    logger.debug(`Supervisor status: ${JSON.stringify(supervisorData)}`, {
+      domain: 'adbService',
+      function: 'getSupervisorStatus'
     })
     return supervisorData
   }

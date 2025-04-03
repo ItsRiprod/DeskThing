@@ -219,4 +219,13 @@ export async function initializeStores(): Promise<void> {
       }
     })
   })
+  platformStore.on(PlatformStoreEvent.CLIENT_LIST, (data) => {
+    sendIpcData({
+      type: 'platform:client',
+      payload: {
+        request: 'list',
+        clients: data
+      }
+    })
+  })
 }

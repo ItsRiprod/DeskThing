@@ -43,7 +43,7 @@ describe('PlatformStore', () => {
 
     testClient = {
       id: 'test-client',
-      connectionId: 'test-connection',
+      clientId: 'test-connection',
       connected: false,
       timestamp: 0
     }
@@ -141,7 +141,7 @@ describe('PlatformStore', () => {
         app: 'test-app',
         type: 'test-type',
         payload: { test: true }
-      } as unknown as DeviceToDeskthingData & { connectionId: string }
+      } as unknown as DeviceToDeskthingData & { clientId: string }
 
       vi.spyOn(platformStore, 'getPlatformForClient').mockReturnValue(mockPlatform)
       await platformStore.registerPlatform(mockPlatform)

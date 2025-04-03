@@ -27,12 +27,6 @@ export const clientHandler: {
   pingClient: async (data) => {
     const platformStore = await storeProvider.getStore('platformStore')
     try {
-      progressBus.error(
-        ProgressChannel.IPC_CLIENT,
-        'pingClient',
-        'Not implemented!',
-        `Attempted to ping ${data.payload}!`
-      )
       platformStore.sendDataToClient({
         app: 'client',
         type: DESKTHING_DEVICE.PING,

@@ -10,14 +10,20 @@ import {
   ClientManifest,
   ClientPlatformIDs
 } from '@deskthing/types'
+import EventEmitter from 'node:events'
 
-export class ExpressServer {
+type ExpressServerEvents = {
+  'client-connected': [ClientManifest]
+}
+
+export class ExpressServer extends EventEmitter<ExpressServerEvents> {
   private app: express.Application
   private server: Server | null = null
   private userDataPath: string
   private port: number
 
   constructor(expressApp: express.Application, userDataPath: string, port: number) {
+    super()
     this.app = expressApp
     this.port = port
     this.userDataPath = userDataPath
@@ -82,6 +88,10 @@ export class ExpressServer {
         const manifest = JSON.parse(manifestContent) as ClientManifest
 
         manifest.context = getDeviceType(req.headers['user-agent'], clientIp, this.port)
+
+        manifest.connectionId = crypto.randomUUID()
+
+        this.emit('client-connected', manifest)
 
         console.log('Sending manifest:', manifest)
         res.type('application/json').json(manifest)

@@ -9,9 +9,21 @@ import {
   PlatformStatus,
   PlatformPayloads
 } from '@shared/interfaces/platformInterface'
-import { SocketData, Client, DeviceToDeskthingData, DeskThingToAppCore } from '@deskthing/types'
+import {
+  SocketData,
+  Client,
+  DeviceToDeskthingData,
+  ClientIdentifier,
+  ProviderCapabilities,
+  ConnectionState,
+  ClientManifest,
+  DESKTHING_DEVICE,
+  DeskThingToDeviceCore,
+  DEVICE_DESKTHING
+} from '@deskthing/types'
 import { ExpressServer } from './expressWorker'
 import { WebsocketPlatformIPC } from '@shared/types'
+import { PlatformIDs } from '@shared/stores/platformStore'
 
 type AdditionalOptions = {
   port?: number
@@ -31,6 +43,11 @@ export class WSPlatform {
     address: 'localhost'
   }
 
+  private readonly identifier: Omit<ClientIdentifier, 'id' | 'method' | 'active'> = {
+    providerId: PlatformIDs.WEBSOCKET,
+    capabilities: [ProviderCapabilities.COMMUNICATE, ProviderCapabilities.PING]
+  }
+
   public readonly id: string
 
   constructor(userDataPath: string) {
@@ -38,7 +55,24 @@ export class WSPlatform {
     this.id = crypto.randomUUID()
   }
 
-  private sendToParent = (data: PlatformPayloads): void => {
+  private getInternalId(clientId: string): string | undefined {
+    // Early quick lookup if the client hasn't been changed or taken
+    if (this.clients[clientId]) {
+      return clientId
+    }
+
+    for (const [platformConnectionId, { client }] of this.clients.entries()) {
+      if (
+        client.clientId === clientId ||
+        client.identifiers[this.identifier.providerId]?.id === clientId
+      ) {
+        return platformConnectionId
+      }
+    }
+    return undefined
+  }
+
+  sendToParent = (data: PlatformPayloads): void => {
     parentPort?.postMessage(data)
   }
 
@@ -52,6 +86,7 @@ export class WSPlatform {
     const expressApp = express()
     this.expressServer = new ExpressServer(expressApp, this.userDataPath, port)
     this.expressServer.initializeServer()
+    this.setupExpressListeners()
     this.httpServer = this.expressServer.getServer() as HttpServer
 
     this.server = new WebSocketServer({ server: this.httpServer })
@@ -93,47 +128,214 @@ export class WSPlatform {
     this.sendToParent({ event: PlatformEvent.STATUS_CHANGED, data: this.getStatus() })
   }
 
-  private handleConnection(socket: WebSocket, req: IncomingMessage): void {
-    const connectionId = crypto.randomUUID()
+  setupExpressListeners = async (): Promise<void> => {
+    this.expressServer?.on('client-connected', (manifest) => {
+      console.debug(`Got a manifest request from ${manifest.connectionId}`, {
+        domain: 'wsWebsocket',
+        function: 'setupExpressListeners'
+      })
+    })
+  }
 
-    const client: Client = {
-      id: connectionId,
-      connected: true,
+  private async handleConnection(socket: WebSocket, req: IncomingMessage): Promise<void> {
+    const platformConnectionId = crypto.randomUUID()
+
+    const pendingClient: Client = {
+      connected: false,
       timestamp: Date.now(),
-      connectionId,
+      clientId: platformConnectionId,
+      connectionState: ConnectionState.Connecting,
+      primaryProviderId: this.identifier.providerId,
+      identifiers: {
+        [this.identifier.providerId]: {
+          ...this.identifier,
+          id: platformConnectionId,
+          active: true
+        }
+      },
       userAgent: req.headers['user-agent'] || ''
     }
 
-    this.clients.set(connectionId, { client, socket })
-    this.sendToParent({ event: PlatformEvent.CLIENT_CONNECTED, data: client })
+    const clientRef: { id: string; client: Client } = {
+      id: platformConnectionId,
+      client: pendingClient
+    }
 
-    socket.on('message', (message: string) => {
-      try {
-        const data = JSON.parse(message) as DeviceToDeskthingData & { connectionId: string }
+    this.clients.set(platformConnectionId, { client: pendingClient, socket })
+
+    this.sendToParent({ event: PlatformEvent.CLIENT_CONNECTED, data: pendingClient })
+
+    socket.on('close', () => {
+      const currentId = clientRef.id
+      const currentClient = this.clients.get(currentId)?.client
+
+      if (currentId && currentClient) {
+        this.clients.delete(currentId)
         this.sendToParent({
-          event: PlatformEvent.DATA_RECEIVED,
-          data: { client, data }
+          event: PlatformEvent.CLIENT_DISCONNECTED,
+          data: currentClient
         })
+      }
+    })
+
+    socket.on('ping', () => {
+      console.debug(`Ping received from client ${clientRef.id}`)
+      socket.pong()
+    })
+
+    socket.on('error', (error) => {
+      const currentId = clientRef.id
+      const currentClient = this.clients.get(currentId)?.client
+
+      console.error(`WebSocket error for client ${currentId}:`, error)
+      this.sendToParent({ event: PlatformEvent.ERROR, data: error })
+
+      // Clean up if the client is still in pending state
+      if (
+        currentId &&
+        this.clients.has(currentId) &&
+        this.clients.get(currentId)?.client.connectionState === ConnectionState.Connecting
+      ) {
+        this.clients.delete(currentId)
+        this.sendToParent({
+          event: PlatformEvent.CLIENT_DISCONNECTED,
+          data: {
+            ...(currentClient || pendingClient),
+            connectionState: ConnectionState.Failed
+          }
+        })
+      }
+    })
+    try {
+      // wait half a second to let the client initialize
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
+      // Do a ping handshake to ensure it is connected
+      const result = await this.stabilizeConnection(platformConnectionId, socket)
+
+      if (result) {
+        const manifest = await this.getClientManifest(platformConnectionId, socket)
+        const clientObj = this.clients.get(platformConnectionId)!
+
+        // Update clientId if manifest.connectionId exists
+        const finalClientId = manifest?.connectionId || platformConnectionId
+        if (manifest?.connectionId) {
+          manifest.connectionId = finalClientId
+          this.sendToParent({
+            event: PlatformEvent.CLIENT_DISCONNECTED,
+            data: {
+              ...pendingClient,
+              connectionState: ConnectionState.Failed
+            }
+          })
+          this.clients.delete(platformConnectionId)
+          clientObj.client.clientId = finalClientId
+          this.clients.set(finalClientId, clientObj)
+
+          clientRef.id = finalClientId
+          clientRef.client = clientObj.client
+        } else {
+          manifest && (manifest.connectionId = platformConnectionId)
+        }
+
+        clientObj.client.connected = true
+        clientObj.client.connectionState = ConnectionState.Connected
+        clientObj.client.manifest = manifest
+
+        // Update the connection state in the parent process
+        this.sendToParent({
+          event: PlatformEvent.CLIENT_CONNECTED,
+          data: clientObj.client
+        })
+        this.setupMessageHandling(finalClientId, socket)
+      } else {
+        console.error(`Failed to stabilize connection for client ${platformConnectionId}`)
+        this.handleClientDisconnected(platformConnectionId)
+      }
+    } catch (error) {
+      console.error(`Failed to stabilize connection for client ${platformConnectionId}:`, error)
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.close()
+      }
+      this.clients.delete(platformConnectionId)
+    }
+  }
+
+  private stabilizeConnection = async (clientId, socket): Promise<boolean> => {
+    const result = await this.pingClient(clientId, socket)
+    return result
+  }
+
+  private setupMessageHandling(clientId: string, socket: WebSocket): void {
+    socket.on('message', (message: WebSocket.Data) => {
+      try {
+        let messageStr: string
+        if (typeof message === 'string') {
+          messageStr = message
+        } else if (message instanceof Buffer) {
+          messageStr = message.toString('utf8')
+        } else if (Array.isArray(message)) {
+          messageStr = Buffer.concat(message).toString('utf8')
+        } else {
+          console.error(`Received unsupported message type from ${clientId}: ${message}`)
+          return
+        }
+
+        const data = JSON.parse(messageStr) as DeviceToDeskthingData & { clientId: string }
+        const platformInternalId = this.getInternalId(data.clientId || clientId)
+
+        if (!platformInternalId) {
+          console.error(`Unable to find record of ${clientId}. Cancelling message`)
+          return
+        }
+
+        const clientObj = this.clients.get(platformInternalId)
+
+        if (clientObj) {
+          const client = clientObj.client
+          this.ensureConnected(client)
+
+          if (data.type == DEVICE_DESKTHING.PING) {
+            console.log('Got a ping from the client')
+            this.sendData(client.clientId, {
+              type: DESKTHING_DEVICE.PONG,
+              payload: client.clientId,
+              app: 'client'
+            })
+          }
+
+          this.sendToParent({
+            event: PlatformEvent.DATA_RECEIVED,
+            data: { client, data }
+          })
+        } else {
+          console.error(
+            `Socket not open or client not registered ${clientId} ${JSON.stringify({ ...data, payload: 'Scrubbed payload' })}`
+          )
+        }
       } catch (error) {
+        console.error(`Error parsing message from ${clientId}: ${error}`)
         this.sendToParent({
           event: PlatformEvent.ERROR,
           data: new Error(`Invalid message format: ${error}`)
         })
       }
     })
-
-    socket.on('close', () => {
-      this.clients.delete(connectionId)
-      this.sendToParent({ event: PlatformEvent.CLIENT_DISCONNECTED, data: client })
-    })
-
-    socket.on('error', (error) => {
-      this.sendToParent({ event: PlatformEvent.ERROR, data: error })
-    })
   }
 
-  async sendData(clientId: string, data: DeskThingToAppCore): Promise<boolean> {
-    const clientConnection = this.clients.get(clientId)
+  private ensureConnected: (
+    client: Client
+  ) => asserts client is Extract<Client, { connected: true }> = (client: Client) => {
+    if (!client.connected) {
+      throw new Error('Client is not connected')
+    }
+  }
+
+  async sendData(clientId: string, data: DeskThingToDeviceCore): Promise<boolean> {
+    const platformConnectionId = this.getInternalId(clientId)
+    if (!platformConnectionId) return false
+
+    const clientConnection = this.clients.get(platformConnectionId)
     if (!clientConnection) return false
 
     try {
@@ -178,41 +380,271 @@ export class WSPlatform {
     return Array.from(this.clients.values()).map(({ client }) => client)
   }
 
+  async fetchClients(): Promise<Client[]> {
+    const clients = this.getClients()
+    this.sendToParent({
+      event: PlatformEvent.CLIENT_LIST,
+      data: clients
+    })
+    return clients
+  }
+
   getClientById(clientId: string): Client | undefined {
-    return this.clients.get(clientId)?.client
+    const platformConnectionId = this.getInternalId(clientId)
+    if (!platformConnectionId) return undefined
+    return this.clients.get(platformConnectionId)?.client
   }
 
   isRunning(): boolean {
     return this.isActive
   }
 
-  updateClient(clientId: string, newClient: Partial<Client>): void {
-    const clientObj = this.clients.get(clientId)
+  updateClient(clientId: string, newClient: Partial<Client>, notify = true): void {
+    try {
+      const platformConnectionId = this.getInternalId(clientId)
+      if (!platformConnectionId) {
+        console.error(`Unable to find the client for id ${clientId}`)
+        return
+      }
+
+      const clientObj = this.clients.get(platformConnectionId)
+      if (!clientObj) {
+        console.error(`Unable to find the client for id ${clientId}`)
+        return
+      }
+
+      const { client } = clientObj
+      const updatedClient = { ...client, ...newClient } as Client
+      // Determine primary provider based on capabilities
+      if (Object.values(updatedClient.identifiers).length > 0) {
+        const providers = Object.values(updatedClient.identifiers).filter((id) => id.active)
+        const primaryProvider = providers.sort(
+          (a, b) => (b.capabilities?.length || 0) - (a.capabilities?.length || 0)
+        )[0]
+
+        if (primaryProvider) {
+          updatedClient.connected = true
+          updatedClient.primaryProviderId = primaryProvider.providerId
+          updatedClient.timestamp = Date.now()
+        } else {
+          updatedClient.connected = false
+          delete updatedClient.primaryProviderId
+        }
+      } else {
+        updatedClient.connected = false
+        delete updatedClient.primaryProviderId
+      }
+
+      clientObj.client = updatedClient
+      if (notify) this.sendToParent({ event: PlatformEvent.CLIENT_UPDATED, data: updatedClient })
+      this.clients.set(platformConnectionId, clientObj)
+      console.log('Updated the client')
+    } catch (error) {
+      console.error('Error updating client:', error)
+      this.sendToParent({
+        event: PlatformEvent.ERROR,
+        data:
+          error instanceof Error
+            ? error
+            : new Error('Unknown error occurred updating client', { cause: error })
+      })
+    }
+  }
+
+  async refreshClients(): Promise<void> {
+    const clientIds = Array.from(this.clients.keys())
+
+    const results = await Promise.all(clientIds.map((id) => this.refreshClient(id, true)))
+
+    const successCount = results.filter((r) => r).length
+    console.log(
+      `Refreshed clients: ${successCount} active, ${results.length - successCount} disconnected`
+    )
+
+    this.sendToParent({
+      event: PlatformEvent.REFRESHED_CLIENTS,
+      data: {
+        active: successCount,
+        disconnected: results.length - successCount
+      }
+    })
+  }
+
+  async refreshClient(clientId: string, force: boolean = false): Promise<Client | undefined> {
+    if (force) await this.pingClient(clientId)
+    return this.clients.get(clientId)?.client
+  }
+
+  getStatus(): PlatformStatus {
+    const status = {
+      isActive: this.isActive,
+      clients: this.getClients(),
+      uptime: this.isActive ? Date.now() - this.startTime : 0
+    }
+    this.sendToParent({
+      event: PlatformEvent.STATUS_CHANGED,
+      data: status
+    })
+    return status
+  }
+
+  async handleClientDisconnected(clientId: string, client?: Client): Promise<void> {
+    try {
+      const platformConnectionId = this.getInternalId(clientId)
+      if (!platformConnectionId) return
+      const clientConnection = this.clients.get(platformConnectionId)
+
+      if (clientConnection) {
+        if (clientConnection.socket.readyState === WebSocket.OPEN) {
+          clientConnection.socket.terminate()
+        }
+
+        this.sendToParent({
+          event: PlatformEvent.CLIENT_DISCONNECTED,
+          data: client || clientConnection.client
+        })
+
+        this.clients.delete(platformConnectionId)
+      }
+    } catch (error) {
+      console.error(`Error handling disconnection for client ${clientId}:`, error)
+    }
+  }
+
+  private async getClientManifest(
+    clientId: string,
+    socket?: WebSocket
+  ): Promise<ClientManifest | undefined> {
+    // Get the client's socket
+    const platformConnectionId = this.getInternalId(clientId)
+    if (!platformConnectionId) return
+
+    const clientObj = this.clients.get(platformConnectionId)
     if (!clientObj) {
       console.error(`Unable to find the client for id ${clientId}`)
       return
     }
 
-    const { client } = clientObj
-    clientObj.client = { ...client, ...newClient }
-    this.sendToParent({ event: PlatformEvent.CLIENT_UPDATED, data: clientObj.client })
-    this.clients.set(clientId, clientObj)
-    console.log('Updated the client')
-  }
+    // Use provided socket or get from client object
+    socket = socket || clientObj.socket
 
-  getStatus(): PlatformStatus {
-    return {
-      isActive: this.isActive,
-      clients: this.getClients(),
-      uptime: this.isActive ? Date.now() - this.startTime : 0
+    // Check if socket is open before attempting ping
+    if (socket.readyState !== WebSocket.OPEN) {
+      return
     }
+
+    const manifest = await new Promise<ClientManifest | undefined>((resolve) => {
+      const timeoutId = setTimeout(() => {
+        socket.removeListener('message', messageHandler)
+        resolve(undefined)
+      }, 5000)
+
+      const messageHandler = (data: WebSocket.Data): void => {
+        try {
+          const message = JSON.parse(data.toString()) as DeviceToDeskthingData
+          if (message.type === DEVICE_DESKTHING.MANIFEST && message.payload) {
+            socket.removeListener('message', messageHandler)
+            clearTimeout(timeoutId)
+            resolve(message.payload)
+          }
+        } catch {
+          // Ignore non-JSON messages
+        }
+      }
+
+      socket.on('message', messageHandler)
+
+      this.sendData(platformConnectionId, {
+        type: DESKTHING_DEVICE.GET,
+        request: 'manifest',
+        app: 'client'
+      }).catch((error) => {
+        clearTimeout(timeoutId)
+        socket.removeListener('message', messageHandler)
+        console.error(`Error getting manifest for client ${clientId}:`, error)
+        resolve(undefined)
+      })
+    })
+
+    return manifest
   }
 
-  // Custom websocket-specific operations
+  async pingClient(clientId: string, socket?: WebSocket): Promise<boolean> {
+    // Get the client's socket
+    const platformConnectionId = this.getInternalId(clientId)
+    if (!platformConnectionId) return false
 
-  async handleClientDisconnected(clientId: string): Promise<void> {
-    console.log('CLosing connection to client', clientId)
-    this.clients.get(clientId)?.socket.close()
+    const clientObj = this.clients.get(platformConnectionId)
+    if (!clientObj) {
+      console.error(`Unable to find the client for id ${clientId}`)
+      return false
+    }
+
+    // Use provided socket or get from client object
+    socket = socket || clientObj.socket
+
+    // Check if socket is open before attempting ping
+    if (socket.readyState !== WebSocket.OPEN) {
+      return false
+    }
+
+    // Perform ping with timeout
+    try {
+      await Promise.race([
+        new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            socket.removeListener('pong', pongHandler)
+            socket.removeListener('message', messageHandler)
+            reject(
+              new Error(`Ping timeout. wsResolved: ${wsResolved}, appResolved: ${appResolved}`)
+            )
+          }, 5000)
+
+          let wsResolved = false
+          let appResolved = false
+
+          const cleanup = (): void => {
+            if (wsResolved && appResolved) {
+              socket.removeListener('pong', pongHandler)
+              socket.removeListener('message', messageHandler)
+              clearTimeout(timeout)
+              resolve(true)
+            }
+          }
+
+          const pongHandler = (): void => {
+            wsResolved = true
+            cleanup()
+          }
+
+          const messageHandler = (data: WebSocket.Data): void => {
+            try {
+              const message = JSON.parse(data.toString())
+              if (message.type === 'pong') {
+                appResolved = true
+                cleanup()
+              }
+            } catch {
+              // Ignore non-JSON messages
+            }
+          }
+
+          socket.on('pong', pongHandler)
+          socket.on('message', messageHandler)
+
+          // Send ping message at application layer
+          socket.send(
+            JSON.stringify({ type: DESKTHING_DEVICE.PING, payload: clientId, app: 'client' })
+          )
+          socket.ping()
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Ping timeout')), 5000))
+      ])
+      return true
+    } catch (error) {
+      console.error(`Ping failed for client ${clientId}`, error)
+      return false
+    }
   }
 
   async handleCustomEvent(data: WebsocketPlatformIPC): Promise<void> {
@@ -225,12 +657,20 @@ export class WSPlatform {
         await this.stop()
         await this.start(this.options)
         break
+      case 'ping':
+        {
+          const result = await this.pingClient(data.clientId)
+          this.sendToParent({
+            event: PlatformEvent.CLIENT_PONG,
+            data: { clientId: data.clientId, result }
+          })
+        }
+        break
       default:
         console.error(`Unsupported event: ${data.type}`)
     }
   }
 }
-
 // Worker thread communication
 if (parentPort) {
   const platform = new WSPlatform(workerData.userDataPath)
@@ -249,11 +689,27 @@ if (parentPort) {
       case 'broadcast':
         await platform.broadcastData(message.data)
         break
+      case 'fetchClients':
+        await platform.fetchClients()
+        break
+      case 'refreshClients':
+        await platform.refreshClients()
+        break
+      case 'refreshClient':
+        {
+          const client = await platform.refreshClient(message.clientId, message.forceRefresh)
+          if (!client) return
+          platform.sendToParent({
+            event: PlatformEvent.CLIENT_UPDATED,
+            data: client
+          })
+        }
+        break
       case 'updateClient':
-        await platform.updateClient(message.clientId, message.client)
+        platform.updateClient(message.clientId, message.client, message.notify)
         break
       case 'getStatus':
-        parentPort?.postMessage({ type: 'status', status: platform.getStatus() })
+        platform.getStatus()
         break
       case 'websocketEvent':
         await platform.handleCustomEvent(message.data)

@@ -46,6 +46,14 @@ export type ADBPlatformIPC = {
       data?: undefined
     }
   | {
+      type: 'set'
+      request: 'supervisor'
+      service: string
+      adbId: string
+      state: boolean
+      data?: boolean
+    }
+  | {
       type: 'push'
       request: 'staged'
       adbId: string
@@ -101,12 +109,20 @@ export type BluetoothPlatformIPC = {
     }
 )
 
+export type MainProcessIPC = {
+  platform: PlatformIDs.MAIN
+} & {
+  type: 'refresh-clients'
+  request?: undefined
+  data?: Client[]
+}
+
 type BasePlatformIPC = {
   channel?: string
 }
 
 export type PlatformIPC = BasePlatformIPC &
-  (WebsocketPlatformIPC | ADBPlatformIPC | BluetoothPlatformIPC)
+  (WebsocketPlatformIPC | ADBPlatformIPC | BluetoothPlatformIPC | MainProcessIPC)
 
 export type ExtractPayloadFromIPC<T extends PlatformIPC> = Extract<
   PlatformIPC,

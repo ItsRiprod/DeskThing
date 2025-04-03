@@ -11,15 +11,17 @@ interface ActionIconProps extends IconProps {
 export const AppIcon: FC<ActionIconProps> = ({ appId, className, ...props }) => {
   const getIcon = useAppStore((state) => state.getIcon)
   const [appIcon, setAppIcon] = useState<string | null>(null)
+  const [lastAppId, setLastAppId] = useState<string | null>(null)
 
   useEffect(() => {
-    if (appId && !appIcon) {
+    if (appId && appId !== lastAppId) {
+      setLastAppId(appId)
       getIcon(appId).then(setAppIcon)
     }
   }, [appId])
 
   return (
-    <Icon {...props} className={className || 'w-full h-full'}>
+    <Icon {...props} key={appId} className={`${className} w-full h-full animate-pop-in`}>
       {appIcon ? <svg dangerouslySetInnerHTML={{ __html: appIcon }} /> : <IconLogoGear />}
     </Icon>
   )

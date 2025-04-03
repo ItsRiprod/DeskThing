@@ -8,10 +8,12 @@ import { deviceMessages } from '@renderer/assets/refreshMessages'
 import ConnectionComponent from '@renderer/components/Client/Connection'
 import { useSearchParams } from 'react-router-dom'
 import ADBDevice from '@renderer/components/Client/ADBDevice'
+import ProgressOverlay from '@renderer/overlays/ProgressOverlay'
+import { ProgressChannel } from '@shared/types'
 
 const ClientConnections: React.FC = () => {
   const settings = useSettingsStore((settings) => settings.settings)
-  const { clients, clientManifest, devices, requestADBDevices } = useClientStore((state) => state)
+  const { clients, clientManifest, devices, refreshConnections } = useClientStore((state) => state)
   const setPage = usePageStore((pageStore) => pageStore.setPage)
 
   // Visibility States
@@ -47,7 +49,7 @@ const ClientConnections: React.FC = () => {
   const handleRefresh = async (): Promise<void> => {
     if (!isRefreshing) {
       setIsRefreshing(true)
-      const res = await requestADBDevices()
+      const res = await refreshConnections()
       console.log('Found', res)
       setTimeout(
         () => {
@@ -76,13 +78,15 @@ const ClientConnections: React.FC = () => {
   const handleRestartServerClick = async (): Promise<void> => {
     setIsRestarting(true)
     await window.electron.utility.restartServer()
-    await setTimeout(() => {
+    setTimeout(() => {
       setIsRestarting(false)
     }, 1000)
   }
 
   return (
     <div className="flex h-full w-full">
+      <ProgressOverlay channel={ProgressChannel.IPC_PLATFORM} />
+      <ProgressOverlay channel={ProgressChannel.PLATFORM_CHANNEL} />
       <Sidebar className="flex justify-between flex-col h-full md:items-stretch xs:items-center">
         <div>
           <div className="md:block xs:hidden block">
@@ -136,7 +140,7 @@ const ClientConnections: React.FC = () => {
             >
               <IconRefresh strokeWidth={1.5} className={isRefreshing ? 'animate-spin' : ''} />
               <p className="md:block hidden text-center flex-grow">
-                {isRefreshing ? 'Searching...' : 'Refresh ADB'}
+                {isRefreshing ? 'Searching...' : 'Refresh'}
               </p>
             </Button>
             <Button
@@ -161,9 +165,7 @@ const ClientConnections: React.FC = () => {
           )}
           <div className="font-geistMono w-full h-full items-center flex flex-col gap-2 justify-center">
             {clients.length > 0 ? (
-              clients.map((client) => (
-                <ConnectionComponent key={client.connectionId} client={client} />
-              ))
+              clients.map((client) => <ConnectionComponent key={client.clientId} client={client} />)
             ) : (
               <div className="first-letter:">
                 <p>{deviceMessages[currentMessageIndex].message}</p>

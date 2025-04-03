@@ -18,7 +18,7 @@ const AppsSettings: React.FC = () => {
             onClick={() => setSelectedApp(app)}
             className={`gap-2 flex items-center ${selectedApp.name === app.name ? 'bg-zinc-800 hover:b-zinc-700' : 'bg-zinc-900 hover:bg-zinc-800'}`}
           >
-            <AppIcon appId={app.name} className="w-10 h-10" />
+            <AppIcon appId={app.name} className="!w-10 !h-10" />
             <p className="whitespace-nowrap ">{app.manifest?.label}</p>
           </Button>
         ))}

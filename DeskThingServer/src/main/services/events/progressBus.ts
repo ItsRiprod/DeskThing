@@ -6,8 +6,10 @@ class ProgressEventBus extends EventEmitter {
   private static instance: ProgressEventBus
   private operationHierarchy: Map<ProgressChannel, OperationContext> = new Map()
   private activeContext: OperationContext | null = null
+  private channelProgressMap: Map<ProgressChannel, number> = new Map()
   private channelMap: Map<ProgressChannel, ProgressChannel> = new Map()
   private channelOperationMap: Map<ProgressChannel, string> = new Map()
+  private channelStatusMap: Map<ProgressChannel, ProgressStatus> = new Map()
 
   static getInstance(): ProgressEventBus {
     if (!ProgressEventBus.instance) {
@@ -61,6 +63,9 @@ class ProgressEventBus extends EventEmitter {
     }
 
     this.activeContext = context
+
+    this.channelProgressMap.set(channel, 0)
+    this.channelStatusMap.set(channel, ProgressStatus.RUNNING)
 
     this.emit(channel, {
       operation,
@@ -154,10 +159,21 @@ class ProgressEventBus extends EventEmitter {
       channel: transformedChannel
     }
 
-    logger.debug(`Progress event: ${transformedChannel} - ${event.message}`, {
-      domain: 'progress',
-      source: 'progressBus'
-    })
+    if (typeof finalEvent.progress === 'number') {
+      this.channelProgressMap.set(transformedChannel, finalEvent.progress)
+    }
+
+    if (finalEvent.status) {
+      this.channelStatusMap.set(transformedChannel, finalEvent.status)
+    }
+
+    logger.debug(
+      `Progress event: ${transformedChannel} - ${event.message} - ${finalEvent.progress}`,
+      {
+        domain: 'progress',
+        source: 'progressBus'
+      }
+    )
 
     // Emit the original event
     super.emit('progress', finalEvent)
@@ -169,6 +185,8 @@ class ProgressEventBus extends EventEmitter {
         progress: bubbleEvent.progress,
         channel: bubbleEvent.channel
       }
+
+      this.channelProgressMap.set(bubbleEvent.channel, bubbleEvent.progress)
 
       super.emit('progress', bubbledFinalEvent)
     })
@@ -185,8 +203,34 @@ class ProgressEventBus extends EventEmitter {
     const finalEvent = { operation, status: ProgressStatus.RUNNING, message, metadata }
 
     this.channelOperationMap.set(channel, operation)
+    this.channelProgressMap.set(channel, 0)
+    this.channelStatusMap.set(channel, ProgressStatus.RUNNING)
 
     this.emit(channel, finalEvent)
+  }
+
+  getProgress(channel: ProgressChannel): number {
+    return this.channelProgressMap.get(channel) ?? 0
+  }
+
+  getStatus(channel: ProgressChannel): ProgressStatus {
+    return this.channelStatusMap.get(channel) ?? ProgressStatus.COMPLETE
+  }
+
+  getOperation(channel: ProgressChannel): string {
+    return this.channelOperationMap.get(channel) ?? ''
+  }
+
+  getChannelInfo(channel: ProgressChannel): {
+    progress: number
+    status: ProgressStatus
+    operation: string
+  } {
+    return {
+      progress: this.getProgress(channel),
+      status: this.getStatus(channel),
+      operation: this.getOperation(channel)
+    }
   }
 
   update(channel: ProgressChannel, message: string, progress?: number, operation?: string): void {
@@ -196,9 +240,24 @@ class ProgressEventBus extends EventEmitter {
       this.channelOperationMap.set(channel, operation)
     }
 
+    if (typeof progress === 'number') {
+      this.channelProgressMap.set(channel, progress)
+    }
+
     const finalEvent = { operation, status: ProgressStatus.INFO, message, progress }
 
     this.emit(channel, finalEvent)
+  }
+
+  incrementProgress(
+    channel: ProgressChannel,
+    message: string,
+    increment: number,
+    operation?: string
+  ): void {
+    const currentProgress = this.channelProgressMap.get(channel) ?? 0
+    const newProgress = Math.min(100, currentProgress + increment)
+    this.update(channel, message, newProgress, operation)
   }
 
   warn(channel: ProgressChannel, message: string, operation?: string): void {

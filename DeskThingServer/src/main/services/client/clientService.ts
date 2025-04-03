@@ -141,16 +141,32 @@ export const getClientManifest = async (): Promise<ClientManifest | null> => {
     return null
   }
 }
-
 export const updateManifest = async (manifest: Partial<ClientManifest>): Promise<void> => {
   const userDataPath = app.getPath('userData')
   const manifestPath = join(userDataPath, 'webapp', 'manifest.json')
 
   try {
-    const existingManifest = await readFile(manifestPath, 'utf8')
-    const parsedManifest = JSON.parse(existingManifest)
+    const parsedManifest = await getClientManifest()
     const updatedManifest = { ...parsedManifest, ...manifest }
     await writeFile(manifestPath, JSON.stringify(updatedManifest), 'utf8')
+  } catch (error) {
+    logger.error('Error updating client manifest:', {
+      error: error as Error
+    })
+  }
+}
+
+export const setManifestJS = async (manifest: Partial<ClientManifest>): Promise<void> => {
+  const userDataPath = app.getPath('userData')
+  const scriptPath = join(userDataPath, 'webapp', 'manifest.js')
+  try {
+    const existingManifest = await getClientManifest()
+    const updatedManifest = { ...existingManifest, ...manifest }
+
+    const fileContent = `window.manifest = ${JSON.stringify(updatedManifest, null, 2)};
+document.dispatchEvent(new Event('manifestLoaded'))`
+
+    await writeFile(scriptPath, fileContent, 'utf8')
   } catch (error) {
     logger.error('Error updating client manifest:', {
       error: error as Error

@@ -192,7 +192,7 @@ export class MusicService implements MusicStoreClass {
           type: DESKTHING_DEVICE.MUSIC,
           app: 'client',
           payload: cachedSong,
-          clientId: client.connectionId
+          clientId: client.clientId
         })
       }
     })
@@ -221,11 +221,6 @@ export class MusicService implements MusicStoreClass {
           songDataWithColor = {
             ...songData,
             color: color
-          }
-
-          // Format thumbnail URL to use proxy if it's a URL
-          if (songDataWithColor.thumbnail && songDataWithColor.thumbnail.startsWith('http')) {
-            songDataWithColor.thumbnail = `/proxy/fetch/${encodeURIComponent(songDataWithColor.thumbnail)}`
           }
         }
 
@@ -278,7 +273,7 @@ export class MusicService implements MusicStoreClass {
           type: DESKTHING_DEVICE.MUSIC,
           app: 'client',
           payload: cachedSong,
-          clientId: data.client.connectionId
+          clientId: data.client.clientId
         })
       }
       return

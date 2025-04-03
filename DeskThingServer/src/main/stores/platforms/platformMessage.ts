@@ -18,7 +18,7 @@ const THROTTLE_DELAY = 300
 export async function handlePlatformMessage(
   platform: PlatformInterface,
   client: Client,
-  messageData: DeviceToDeskthingData & { connectionId: string }
+  messageData: DeviceToDeskthingData & { clientId: string }
 ): Promise<void> {
   const messageKey = `${messageData.app}-${messageData.type}-${messageData['request']}`
   const now = Date.now()
@@ -53,7 +53,7 @@ export async function handlePlatformMessage(
 
         await appStore.sendDataToApp(messageData.app.toLowerCase(), {
           ...messageData.payload,
-          clientId: messageData.connectionId
+          clientId: messageData.clientId
         } as DeskThingToAppCore)
       }
 
@@ -66,7 +66,7 @@ export async function handlePlatformMessage(
     } catch (error) {
       Logger.error('Error handling platform message', {
         error: error as Error,
-        domain: client.connectionId,
+        domain: client.clientId,
         source: 'platformMessage'
       })
     }
@@ -83,10 +83,10 @@ async function handleServerMessage(
 
   switch (messageData.type) {
     case DEVICE_DESKTHING.PING:
-      await platform.sendData(client.connectionId, {
+      await platform.sendData(client.clientId, {
         type: DESKTHING_DEVICE.PONG,
         app: 'client',
-        payload: new Date().toISOString()
+        payload: client.clientId
       })
       break
 
@@ -114,7 +114,7 @@ async function handleServerMessage(
           payload: client
         })
         // const connectionStore = await storeProvider.getStore('connectionsStore')
-        // connectionStore.updateClient(client.connectionId, {
+        // connectionStore.updateClient(client.clientId, {
         //   currentApp: currentApp
         // })
       }
@@ -130,10 +130,10 @@ async function handleServerMessage(
         }
 
         const platformStore = await storeProvider.getStore('platformStore')
-        platformStore.updateClient(client.connectionId, clientUpdates)
+        platformStore.updateClient(client.clientId, clientUpdates)
 
-        Logger.info(`Updated client manifest for ${client.connectionId}`, {
-          domain: client.connectionId,
+        Logger.info(`Updated client manifest for ${client.clientId}`, {
+          domain: client.clientId,
           source: 'platformMessage',
           function: 'updateClient'
         })
@@ -143,6 +143,13 @@ async function handleServerMessage(
 
     case DEVICE_DESKTHING.ACTION:
       await mappingStore.runAction(messageData.payload)
+      break
+
+    case DEVICE_DESKTHING.LOG:
+      {
+        const log = messageData.payload
+        Logger.log(log.level, log.message, { ...log, domain: client.clientId })
+      }
       break
 
     default:

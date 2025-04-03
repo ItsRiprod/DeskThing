@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { useProgress } from '@renderer/hooks/useProgress'
 import { IconCheckCircle, IconLoading } from '@renderer/assets/icons'
 import { ProgressChannel, ProgressStatus } from '@shared/types'
+import { useChannelProgress } from '@renderer/hooks/useProgress'
 
 interface ProgressOverlayProps {
-  channel: ProgressChannel | ProgressChannel[]
+  channel: ProgressChannel
   onClose?: () => void
   onError?: () => void
   title?: string
@@ -16,7 +16,7 @@ const ProgressOverlay: React.FC<ProgressOverlayProps> = ({
   onError,
   title = 'Progress Status'
 }) => {
-  const progress = useProgress(channel)
+  const { progress, isLoading } = useChannelProgress(channel)
   const [showProgress, setShowProgress] = useState(false)
   const [fadeTimeout, setFadeTimeout] = useState<NodeJS.Timeout | null>(null)
   const [operation, setOperation] = useState(title)
@@ -29,7 +29,13 @@ const ProgressOverlay: React.FC<ProgressOverlayProps> = ({
   }
 
   useEffect(() => {
-    const isNewMessage = progress.id && progress.id !== prevId.current
+    if (!progress) return
+
+    const isNewMessage = progress && progress.id !== prevId.current
+
+    if (progress.operation) {
+      setOperation(progress.operation)
+    }
 
     if (isNewMessage) {
       setShowProgress(true)
@@ -40,6 +46,8 @@ const ProgressOverlay: React.FC<ProgressOverlayProps> = ({
       // Clear existing timeout
       if (fadeTimeout) clearTimeout(fadeTimeout)
 
+      if (isLoading) return
+
       // Set new timeout
       const timeout = setTimeout(() => {
         setShowProgress(false)
@@ -47,15 +55,11 @@ const ProgressOverlay: React.FC<ProgressOverlayProps> = ({
       setFadeTimeout(timeout)
     }
 
-    if (progress.operation) {
-      setOperation(progress.operation)
-    }
-
     if (progress.status == ProgressStatus.COMPLETE || progress.status == ProgressStatus.SUCCESS) {
       onClose?.()
     }
 
-    if (progress.status == ProgressStatus.ERROR) {
+    if (progress && progress.status == ProgressStatus.ERROR) {
       onError?.()
     }
 
@@ -64,19 +68,19 @@ const ProgressOverlay: React.FC<ProgressOverlayProps> = ({
     }
   }, [progress, onClose, fadeTimeout])
 
-  if (!progress.message || !showProgress) return null
+  if (!progress || !progress.message || !showProgress) return null
 
   return (
-    <div className="fixed flex bottom-4 right-4 z-50 items-center justify-center">
+    <div className="fixed flex flex-col-reverse bottom-4 right-4 z-50 items-end justify-center gap-2">
       <div
         className={`animate-fade-in-down bg-zinc-900 border border-zinc-800 p-6 rounded-xl shadow-2xl flex gap-4 max-w-md w-full backdrop-blur-sm cursor-pointer active:scale-95 transition-transform`}
         onClick={handleFadeOut}
       >
         <div className="h-12 w-12 flex-shrink-0">
-          {progress.status === 'complete' || progress.status === 'success' ? (
-            <IconCheckCircle className="stroke-[3] w-full h-full text-green-500" />
-          ) : (
+          {isLoading ? (
             <IconLoading className="w-full h-full text-blue-500 animate-spin" />
+          ) : (
+            <IconCheckCircle className="stroke-[3] w-full h-full text-green-500" />
           )}
         </div>
         <div className="flex-grow">

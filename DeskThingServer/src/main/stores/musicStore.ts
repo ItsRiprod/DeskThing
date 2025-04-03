@@ -132,7 +132,7 @@ export class MusicStore implements CacheableStore, MusicStoreClass {
 //   private async initializeListeners(): Promise<void> {
 //     this.platformStore.on(PlatformStoreEvent.DATA_RECEIVED, async (data) => {
 //       await this.initialize()
-//       Logger.debug(`Received data from ${data.client.connectionId}`, {
+//       Logger.debug(`Received data from ${data.client.clientId}`, {
 //         source: 'MusicStore',
 //         function: 'initializeListeners'
 //       })
@@ -165,7 +165,7 @@ export class MusicStore implements CacheableStore, MusicStoreClass {
 //           type: DESKTHING_DEVICE.MUSIC,
 //           app: 'client',
 //           payload: cachedSong,
-//           clientId: data.client.connectionId
+//           clientId: data.client.clientId
 //         })
 //         return
 //       }

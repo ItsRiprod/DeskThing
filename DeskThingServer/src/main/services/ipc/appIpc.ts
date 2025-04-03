@@ -207,7 +207,7 @@ export const appHandler: {
 
     if (!stagedAppManifest) {
       progressBus.error(
-        ProgressChannel.ST_APP_INSTALL,
+        ProgressChannel.IPC_APPS,
         'Check logs for details',
         'Something went wrong during the download process',
         'Error Installing App'
@@ -215,7 +215,7 @@ export const appHandler: {
       return null
     }
 
-    progressBus.complete(ProgressChannel.ST_APP_INSTALL, 'App Installed', 'App Installed')
+    progressBus.complete(ProgressChannel.IPC_APPS, 'App Installed', 'App Installed')
 
     return stagedAppManifest
   },
