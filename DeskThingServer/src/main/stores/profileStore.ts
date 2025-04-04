@@ -190,16 +190,16 @@ export class ProfileStore
     return true
   }
 
-  private async applyProfileToAllClients(): Promise<void> {
-    if (!this._profile || !this._profile.clientConfig) {
-      return
-    }
+  // private async applyProfileToAllClients(): Promise<void> {
+  //   if (!this._profile || !this._profile.clientConfig) {
+  //     return
+  //   }
 
-    const clients = this.platformStore.getClients()
-    for (const client of clients) {
-      await this.applyProfileToClient(client.clientId)
-    }
-  }
+  //   const clients = this.platformStore.getClients()
+  //   for (const client of clients) {
+  //     await this.applyProfileToClient(client.clientId)
+  //   }
+  // }
 
   async applyProfileToClient(clientId: string): Promise<boolean> {
     if (!this._profile || !this._profile.clientConfig) {

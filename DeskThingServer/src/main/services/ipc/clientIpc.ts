@@ -11,6 +11,7 @@ import { handleAdbCommands } from '../../handlers/adbHandler'
 import { storeProvider } from '@server/stores/storeProvider'
 import { progressBus } from '@server/services/events/progressBus'
 import { PlatformIDs } from '@shared/stores/platformStore'
+import { getClientWindow } from '@server/windows/windowManager'
 
 /**
  * The `clientHandler` object is a mapping of client IPC (Inter-Process Communication) data types to handler functions. These handlers are responsible for processing various client-related requests, such as pinging clients, handling URL-based web app downloads, configuring devices, managing client manifests, and more.
@@ -313,5 +314,15 @@ export const clientHandler: {
       case 'set':
         return await mappingStore.updateIcon(data.payload.id, data.payload.icon)
     }
+  },
+
+  [IPC_CLIENT_TYPES.OPEN_CLIENT]: async () => {
+    const { storeProvider } = await import('@server/stores/storeProvider')
+    const settingsStore = await storeProvider.getStore('settingsStore')
+    const data = await settingsStore.getSettings()
+    if (data) {
+      getClientWindow(data.devicePort)
+    }
+    return true
   }
 }

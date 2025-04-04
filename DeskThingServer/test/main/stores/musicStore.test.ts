@@ -2,28 +2,21 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { MusicStore } from '../../../src/main/stores/musicStore'
 import { SettingsStoreClass } from '@shared/stores/settingsStore'
 import { AppStoreClass } from '@shared/stores/appStore'
-import { LOGGING_LEVELS, APP_REQUESTS, SongData, DEVICE_CLIENT } from '@deskthing/types'
-import Logger from '@server/utils/logger'
-import { getColorFromImage } from '../../../src/main/services/music/musicUtils'
+import { MusicEventPayloads } from '@deskthing/types'
 import { PlatformStoreClass } from '@shared/stores/platformStore'
+import { MusicService } from '../../../src/main/services/music/MusicService'
 
 vi.mock('@server/utils/logger', () => ({
   default: {
-    log: vi.fn(),
     info: vi.fn(),
     error: vi.fn(),
     warn: vi.fn(),
-    debug: vi.fn()
+    debug: vi.fn(),
+    log: vi.fn()
   }
 }))
 
-vi.mock('../../../src/main/services/files/appFileService', () => ({
-  getAppByName: vi.fn()
-}))
-
-vi.mock('../../../src/main/services/music/musicUtils', () => ({
-  getColorFromImage: vi.fn()
-}))
+vi.mock('../../../src/main/services/music/MusicService')
 
 describe('MusicStore', () => {
   let musicStore: MusicStore
@@ -32,109 +25,52 @@ describe('MusicStore', () => {
   let mockPlatformStore: PlatformStoreClass
 
   beforeEach(() => {
-    vi.useFakeTimers()
-    mockSettingsStore = {
-      getSettings: vi.fn().mockResolvedValue({
-        playbackLocation: 'spotify',
-        refreshInterval: 1000
-      }),
-      updateSetting: vi.fn(),
-      addListener: vi.fn(),
-      initialize: vi.fn()
-    } as unknown as SettingsStoreClass
-
-    mockAppStore = {
-      getAllBase: vi.fn().mockReturnValue([{ name: 'spotify', manifest: { isAudioSource: true } }]),
-      sendDataToApp: vi.fn(),
-      onAppMessage: vi.fn(),
-      initialize: vi.fn()
-    } as unknown as AppStoreClass
-
-    mockPlatformStore = {
-      on: vi.fn(),
-      broadcastToClients: vi.fn()
-    } as unknown as PlatformStoreClass
+    mockSettingsStore = {} as SettingsStoreClass
+    mockAppStore = {} as AppStoreClass
+    mockPlatformStore = {} as PlatformStoreClass
 
     musicStore = new MusicStore(mockSettingsStore, mockAppStore, mockPlatformStore)
   })
 
   afterEach(() => {
     vi.clearAllMocks()
-    vi.useRealTimers()
   })
 
-  it('should initialize refresh interval after construction', async () => {
+  it('should initialize the music service', async () => {
     await musicStore.initialize()
-    vi.advanceTimersByTime(3000)
-    expect(mockSettingsStore.getSettings).toHaveBeenCalled()
+    expect(MusicService.prototype.initialize).toHaveBeenCalled()
   })
 
-  it('should handle music message with thumbnail', async () => {
-    const mockedColors = {
-      hex: '#000000',
-      value: [],
-      rgb: '',
-      rgba: '',
-      hexa: '',
-      isDark: false,
-      isLight: false
-    }
-
-    vi.mocked(getColorFromImage).mockResolvedValue(mockedColors)
-
-    const songData: SongData = {
-      track_name: 'Test Song',
-      artist: 'Test Artist',
-      thumbnail: 'test.jpg',
-      album: null,
-      playlist: null,
-      playlist_id: null,
-      shuffle_state: null,
-      repeat_state: 'context',
-      is_playing: false,
-      can_fast_forward: false,
-      can_skip: false,
-      can_like: false,
-      can_change_volume: false,
-      can_set_output: false,
-      track_duration: null,
-      track_progress: null,
-      volume: 0,
-      device: null,
-      id: null,
-      device_id: null
-    }
-
-    const appData = {
-      type: APP_REQUESTS.SONG,
-      payload: songData
-    }
-
-    // Access the private method through the prototype
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (musicStore as any).handleMusicMessage(appData)
-
-    expect(mockPlatformStore.broadcastToClients).toHaveBeenCalledWith({
-      type: DEVICE_CLIENT.MUSIC,
-      app: 'client',
-      payload: {
-        ...songData,
-        color: mockedColors
-      }
-    })
+  it('should clear cache through music service', async () => {
+    await musicStore.clearCache()
+    expect(MusicService.prototype.clearCache).toHaveBeenCalled()
   })
 
-  it('should handle invalid refresh intervals', async () => {
-    await musicStore.updateRefreshInterval(-1)
-    expect(Logger.log).toHaveBeenCalledWith(
-      LOGGING_LEVELS.LOG,
-      expect.stringContaining('Cancelling')
-    )
+  it('should save to file through music service', async () => {
+    await musicStore.saveToFile()
+    expect(MusicService.prototype.saveToFile).toHaveBeenCalled()
+  })
 
-    await musicStore.updateRefreshInterval(0.5)
-    expect(Logger.log).toHaveBeenCalledWith(
-      LOGGING_LEVELS.WARN,
-      expect.stringContaining('could very well end your system')
-    )
+  it('should update refresh interval through music service', async () => {
+    const refreshRate = 1000
+    await musicStore.updateRefreshInterval(refreshRate)
+    expect(MusicService.prototype.updateRefreshInterval).toHaveBeenCalledWith(refreshRate)
+  })
+
+  it('should set audio source through music service', async () => {
+    const source = 'test-source'
+    await musicStore.setAudioSource(source)
+    expect(MusicService.prototype.setAudioSource).toHaveBeenCalledWith(source)
+  })
+
+  it('should handle client request through music service', async () => {
+    const request: MusicEventPayloads = {} as MusicEventPayloads
+    await musicStore.handleClientRequest(request)
+    expect(MusicService.prototype.handleClientRequest).toHaveBeenCalledWith(request)
+  })
+
+  it('should check initialized state from music service', () => {
+    vi.spyOn(MusicService.prototype, 'initialized', 'get').mockReturnValue(true)
+    expect(musicStore.initialized).toBe(true)
   })
 })

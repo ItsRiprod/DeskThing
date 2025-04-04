@@ -95,6 +95,12 @@ export const client = {
       type: IPC_CLIENT_TYPES.ICON,
       request: 'get',
       payload: action
+    }),
+
+  openClient: async (): Promise<boolean> =>
+    await sendCommand({
+      kind: IPC_HANDLERS.CLIENT,
+      type: IPC_CLIENT_TYPES.OPEN_CLIENT
     })
 }
 

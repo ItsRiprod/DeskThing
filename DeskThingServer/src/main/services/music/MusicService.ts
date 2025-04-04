@@ -385,7 +385,8 @@ export class MusicService implements MusicStoreClass {
     if (songData) {
       await this.platformStore.broadcastToClients({
         type: DESKTHING_DEVICE.MUSIC,
-        payload: songData
+        payload: songData,
+        app: 'client'
       })
       return
     }

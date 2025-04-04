@@ -1,13 +1,16 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
+import { describe, expect, it, vi, beforeEach, afterEach, Mock } from 'vitest'
 import { PlatformStore } from '../../../src/main/stores/platformStore'
 import { AppStoreClass } from '@shared/stores/appStore'
 import { AppDataStoreClass } from '@shared/stores/appDataStore'
-import { PlatformInterface } from '@shared/interfaces/platformInterface'
+import { PlatformInterface, PlatformEvent } from '@shared/interfaces/platformInterface'
 import {
   Client,
   DeviceToDeskthingData,
   DESKTHING_DEVICE,
-  DeskThingToDeviceCore
+  DeskThingToDeviceCore,
+  ConnectionState,
+  ProviderCapabilities,
+  DEVICE_DESKTHING
 } from '@deskthing/types'
 import Logger from '@server/utils/logger'
 import { PlatformIDs, PlatformStoreEvent } from '@shared/stores/platformStore'
@@ -17,7 +20,8 @@ vi.mock('@server/utils/logger', () => ({
   default: {
     debug: vi.fn(),
     error: vi.fn(),
-    warn: vi.fn()
+    warn: vi.fn(),
+    info: vi.fn()
   }
 }))
 
@@ -33,7 +37,10 @@ describe('PlatformStore', () => {
     mockAppStore = {
       onAppMessage: vi.fn(),
       on: vi.fn(),
-      getAll: vi.fn().mockResolvedValue([])
+      getAll: vi.fn().mockResolvedValue([]),
+      initialize: vi.fn(),
+      broadcastToApps: vi.fn(),
+      sendDataToApp: vi.fn()
     } as unknown as AppStoreClass
 
     mockAppDataStore = {
@@ -42,11 +49,20 @@ describe('PlatformStore', () => {
     } as unknown as AppDataStoreClass
 
     testClient = {
-      id: 'test-client',
       clientId: 'test-connection',
-      connected: false,
-      timestamp: 0
-    }
+      connected: true,
+      timestamp: Date.now(),
+      connectionState: ConnectionState.Connected,
+      primaryProviderId: PlatformIDs.ADB,
+      identifiers: {
+        [PlatformIDs.ADB]: {
+          id: 'test-connection',
+          providerId: PlatformIDs.ADB,
+          active: true,
+          capabilities: [ProviderCapabilities.COMMUNICATE]
+        }
+      }
+    } as Client
 
     mockPlatform = {
       id: PlatformIDs.ADB,
@@ -57,18 +73,24 @@ describe('PlatformStore', () => {
       stop: vi.fn(),
       getStatus: vi.fn().mockReturnValue({ isActive: true, clients: [testClient] }),
       getClients: vi.fn().mockReturnValue([testClient]),
-      getClientById: vi.fn(),
+      getClientById: vi.fn().mockReturnValue(testClient),
       sendData: vi.fn(),
       broadcastData: vi.fn().mockReturnValue(Promise.resolve()),
       on: vi.fn(),
+      emit: vi.fn(),
       removeAllListeners: vi.fn(),
-      updateClient: vi.fn()
+      updateClient: vi.fn(),
+      handlePlatformEvent: vi.fn(),
+      fetchClients: vi.fn().mockResolvedValue([testClient]),
+      refreshClients: vi.fn().mockResolvedValue(true),
+      refreshClient: vi.fn()
     } as unknown as PlatformInterface
 
     mockMappingStore = {
       getAction: vi.fn(),
       addAction: vi.fn(),
       on: vi.fn(),
+      addListener: vi.fn(),
       removeAllListeners: vi.fn()
     } as unknown as MappingStoreClass
 
@@ -94,26 +116,33 @@ describe('PlatformStore', () => {
       const status = platformStore.getPlatformStatus()
 
       expect(status.activePlatforms).toContain(PlatformIDs.ADB)
-      expect(status.totalClients).toBe(1)
+      expect(status.totalClients).toBe(0)
     })
   })
 
   describe('Client Management', () => {
-    it('should handle client updates', () => {
+    it('should handle client updates', async () => {
+      await platformStore.registerPlatform(mockPlatform)
+
+      // Simulate client connection through platform event
+      const platformEventHandler = mockPlatform.on as Mock
+      platformEventHandler.mock.calls.find(
+        (call) => call[0] === PlatformEvent.CLIENT_CONNECTED
+      )?.[1](testClient)
+
       const clientUpdate: Partial<Client> = {
-        id: 'test-client'
+        clientId: testClient.clientId,
+        connected: true,
+        connectionState: ConnectionState.Connected
       }
 
-      vi.spyOn(platformStore, 'getPlatformForClient').mockReturnValue(mockPlatform)
+      await platformStore.updateClient(testClient.clientId, clientUpdate)
 
-      platformStore.registerPlatform(mockPlatform)
-      platformStore.updateClient('test-client', clientUpdate)
-
-      expect(mockPlatform.updateClient).toHaveBeenCalledWith('test-client', clientUpdate)
+      expect(mockPlatform.updateClient).toHaveBeenCalledWith(testClient.clientId, clientUpdate)
     })
-
     it('should broadcast data to all clients', async () => {
       const testData: DeskThingToDeviceCore = {
+        app: 'client',
         type: DESKTHING_DEVICE.APPS,
         request: 'manifest',
         payload: []
@@ -137,15 +166,27 @@ describe('PlatformStore', () => {
     })
 
     it('should handle socket data from clients', async () => {
-      const testData = {
-        app: 'test-app',
-        type: 'test-type',
-        payload: { test: true }
-      } as unknown as DeviceToDeskthingData & { clientId: string }
-
-      vi.spyOn(platformStore, 'getPlatformForClient').mockReturnValue(mockPlatform)
       await platformStore.registerPlatform(mockPlatform)
-      await platformStore.handleSocketData(testClient, testData)
+
+      // Simulate client connection through platform event
+      const platformEventHandler = mockPlatform.on as Mock
+      platformEventHandler.mock.calls.find(
+        (call) => call[0] === PlatformEvent.CLIENT_CONNECTED
+      )?.[1](testClient)
+
+      const testData: DeviceToDeskthingData & { clientId: string } = {
+        clientId: testClient.clientId,
+        app: 'test-app',
+        type: DEVICE_DESKTHING.PING,
+        request: 'set',
+        payload: { test: true }
+      } as DeviceToDeskthingData & { clientId: string }
+
+      await platformStore.handleSocketData(
+        testClient as Extract<Client, { connected: true }>,
+        testData
+      )
+
       expect(Logger.warn).not.toHaveBeenCalled()
     })
   })

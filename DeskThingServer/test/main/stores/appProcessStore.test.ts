@@ -60,9 +60,8 @@ describe('AppProcessStore', () => {
       expect(Logger.error).toHaveBeenCalled()
     })
     it('should handle postMessage errors', async () => {
-      await expect(
-        appProcessStore.postMessage('nonexistentApp', { type: 'start' })
-      ).rejects.toThrow('Process nonexistentApp not found')
+      await appProcessStore.postMessage('nonexistentApp', { type: 'start' })
+      expect(Logger.warn).toHaveBeenCalled()
     })
 
     it('should prevent spawning duplicate processes', async () => {

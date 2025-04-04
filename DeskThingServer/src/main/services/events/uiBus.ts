@@ -66,10 +66,10 @@ class UIEventBus extends EventEmitter<EventMap> {
   // }
 
   async sendIpcData({ type, payload, window }: ServerIPCData): Promise<void> {
-    if (window && window instanceof BrowserWindow) {
+    if (window && window instanceof BrowserWindow && !window.isDestroyed()) {
       window.webContents.send(type, payload)
-    } else {
-      this.mainWindow?.webContents.send(type, payload)
+    } else if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+      this.mainWindow.webContents.send(type, payload)
     }
   }
 }

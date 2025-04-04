@@ -106,6 +106,12 @@ vi.mock('../../src/main/stores/storeProvider', () => ({
   }
 }))
 
+vi.mock('../../src/main/services/events/uiBus', () => ({
+  uiEventBus: {
+    setMainWindow: vi.fn()
+  }
+}))
+
 describe('Main Process', () => {
   beforeEach(() => {
     vi.clearAllMocks()

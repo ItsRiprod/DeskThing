@@ -9,6 +9,7 @@ export enum IPC_CLIENT_TYPES {
   PUSH_STAGED = 'push-staged',
   PUSH_PROXY_SCRIPT = 'push-proxy-script',
   ADB = 'adb',
+  OPEN_CLIENT = 'open-client',
   RUN_DEVICE_COMMAND = 'run-device-command',
   ICON = 'icon'
 }
@@ -73,6 +74,9 @@ export type ClientIPCData = {
       request: 'set'
       payload: { id: string; icon: string }
     }
+  | {
+      type: IPC_CLIENT_TYPES.OPEN_CLIENT
+    }
 )
 export type ClientHandlerReturnMap = {
   [IPC_CLIENT_TYPES.ZIP]: { set: void }
@@ -89,6 +93,7 @@ export type ClientHandlerReturnMap = {
   [IPC_CLIENT_TYPES.ADB]: { set: string }
   [IPC_CLIENT_TYPES.RUN_DEVICE_COMMAND]: { set: string | undefined }
   [IPC_CLIENT_TYPES.ICON]: { set: void; get: string | null }
+  [IPC_CLIENT_TYPES.OPEN_CLIENT]: { set: boolean }
 }
 
 export type ClientHandlerReturnType<
