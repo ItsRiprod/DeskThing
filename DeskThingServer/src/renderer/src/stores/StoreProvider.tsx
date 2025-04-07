@@ -6,6 +6,7 @@ import useClientStore from './clientStore'
 import useReleaseStore from './releaseStore'
 import useTaskStore from './taskStore'
 import { useProgressStore } from './progressStore'
+import useMappingStore from './mappingStore'
 
 export const StoreProvider: React.FC = () => {
   const [initialized, setIsInitialized] = useState(false)
@@ -26,7 +27,8 @@ export const StoreProvider: React.FC = () => {
           useClientStore.getState().initialize(),
           useReleaseStore.getState().initialize(),
           useTaskStore.getState().initialize(),
-          useProgressStore.getState().initialize()
+          useProgressStore.getState().initialize(),
+          useMappingStore.getState().initialize()
         ])
 
         setIsInitialized(true)

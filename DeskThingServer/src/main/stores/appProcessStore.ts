@@ -145,6 +145,11 @@ export class AppProcessStore
           return false
         }
       } else {
+        Logger.debug(`App ${app.name} is using the old import method because $. Spawning process`, {
+          source: 'AppProcessStore',
+          function: 'spawnProcess'
+        })
+
         const process = new Worker(appProcessPath, {
           stdout: true,
           stderr: true,
@@ -236,14 +241,20 @@ export class AppProcessStore
         const packageJsonContent = await readFile(packageJsonPath, 'utf-8')
         const packageJson = JSON.parse(packageJsonContent)
 
-        if (!packageJson.type) {
-          packageJson.type = 'module'
-          await writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2))
-        }
+        packageJson.type = 'module'
+        await writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2))
+        Logger.debug(`Updated package.json for ${appPath}`, {
+          source: 'AppProcessStore',
+          function: 'assertModuleType'
+        })
         return true
       } catch {
         // No package.json, create one with type: module
         const newPackageJson = { type: 'module' }
+        Logger.debug(`Creating package.json for ${appPath}`, {
+          source: 'AppProcessStore',
+          function: 'assertModuleType'
+        })
         await writeFile(packageJsonPath, JSON.stringify(newPackageJson, null, 2))
         return true
       }

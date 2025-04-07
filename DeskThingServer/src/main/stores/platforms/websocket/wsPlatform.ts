@@ -12,7 +12,8 @@ import {
   Client,
   DeskThingToDeviceData,
   ProviderCapabilities,
-  ClientIdentifier
+  ClientIdentifier,
+  ConnectionState
 } from '@deskthing/types'
 import wsPath from './wsWebsocket?modulePath'
 import { app } from 'electron'
@@ -126,7 +127,18 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
             } else {
               this.clients.push(data)
             }
+
+            if (data.connected && data.connectionState !== ConnectionState.Connected) {
+              data.connectionState = ConnectionState.Connected
+            }
+
             this.emit(event, data)
+
+            logger.info(`Client ${data.clientId} connected via WebSocket`, {
+              domain: 'WebSocket',
+              source: 'wsPlatform',
+              function: 'clientConnected'
+            })
           }
           break
         case PlatformEvent.CLIENT_DISCONNECTED:
@@ -134,7 +146,25 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
           this.emit(event, data)
           break
         case PlatformEvent.DATA_RECEIVED:
-          this.emit(event, data)
+          {
+            const clientExists = this.clients.some((c) => c.clientId === data.client.clientId)
+            if (clientExists) {
+              this.emit(event, data)
+            } else {
+              logger.warn(`Received data for unknown client ${data.client.clientId}`, {
+                domain: 'WebSocket',
+                source: 'wsPlatform',
+                function: 'dataReceived'
+              })
+
+              // Request client refresh to fix the inconsistency
+              this.worker?.postMessage({
+                type: 'refreshClient',
+                clientId: data.client.clientId,
+                forceRefresh: true
+              })
+            }
+          }
           break
         case PlatformEvent.ERROR:
           this.emit(event, data)
@@ -207,6 +237,9 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
         id: client.clientId,
         active: true
       }
+    } else {
+      client.identifiers[this.id].id = client.clientId
+      client.identifiers[this.id].active = true
     }
 
     // Set primary provider if not set

@@ -26,20 +26,7 @@ export interface ProfileStoreEvents {
 }
 
 export interface ProfileStoreClass extends StoreInterface {
-  /**
-   * Gets all available profiles
-   */
-  getProfiles(): Promise<DeskThingProfile[]>
 
-  /**
-   * Gets a profile by its ID
-   * @param profileId ID of the profile to retrieve
-   */
-  getProfileById(profileId: string): Promise<DeskThingProfile | null>
-
-  /**
-   * Gets the currently active profile
-   */
   getActiveProfile(): Promise<DeskThingProfile | undefined>
 
   /**
@@ -54,8 +41,8 @@ export interface ProfileStoreClass extends StoreInterface {
    * @param updates Partial profile data to update
    */
   updateProfile(
-    profileId: string,
-    updates: Partial<DeskThingProfile>
+    updates: Partial<DeskThingProfile>,
+    profileId: string
   ): Promise<DeskThingProfile | null>
 
   /**

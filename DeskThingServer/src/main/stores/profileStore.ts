@@ -11,6 +11,9 @@ import logger from '@server/utils/logger'
 import { PlatformStoreClass, PlatformStoreEvent } from '@shared/stores/platformStore'
 import { DESKTHING_DEVICE, DEVICE_DESKTHING } from '@deskthing/types'
 import { v4 as uuidv4 } from 'uuid'
+import defaultProfile from '@server/static/defaultProfile'
+import { storeProvider } from './storeProvider'
+import { defaultMappingProfile } from '@server/static/defaultButtons'
 
 const PROFILE_FILE_PATH = 'profiles/profile.json'
 
@@ -67,15 +70,15 @@ export class ProfileStore
             source: 'profileStore'
           })
 
-          if (this._profile) {
-            this._profile.clientConfig = data.payload
-            this.saveToFile()
-            this.emit(ProfileStoreEvent.PROFILE_UPDATED, this._profile)
-          }
+          this.updateProfile({ clientConfig: data.payload })
         }
 
         if (data.type === DEVICE_DESKTHING.CONFIG && data.request === 'get') {
-          this.applyProfileToClient(client.clientId)
+          logger.debug(`Client ${client.clientId} requested server configuration`, {
+            function: 'handleConfigUpdate',
+            source: 'profileStore'
+          })
+          await this.applyProfileToClient(client.clientId)
         }
       } catch (error) {
         logger.error('Error handling client data', {
@@ -93,8 +96,9 @@ export class ProfileStore
 
   public saveToFile = async (): Promise<void> => {
     try {
-      if (this._profile) {
-        await writeToFile(this._profile, PROFILE_FILE_PATH)
+      const profile = await this.getActiveProfile()
+      if (profile) {
+        await writeToFile(profile, PROFILE_FILE_PATH)
         logger.debug('Saved profile to file', {
           function: 'saveToFile',
           source: 'profileStore'
@@ -113,33 +117,35 @@ export class ProfileStore
     try {
       this._profile = await readFromFile<DeskThingProfile>(PROFILE_FILE_PATH)
 
-      if (this._profile) {
-        logger.debug('Loaded profile from file', {
+      if (!this._profile) {
+        this._profile = defaultProfile
+        logger.debug('No profile loaded. Loading Default', {
           function: 'loadFromFile',
           source: 'profileStore'
         })
-        this.emit(ProfileStoreEvent.PROFILES_LOADED, [this._profile])
-        this.emit(ProfileStoreEvent.ACTIVE_PROFILE_CHANGED, this._profile)
       }
+
+      logger.debug('Loaded profile from file', {
+        function: 'loadFromFile',
+        source: 'profileStore'
+      })
+      this.emit(ProfileStoreEvent.PROFILES_LOADED, [this._profile])
+      this.emit(ProfileStoreEvent.ACTIVE_PROFILE_CHANGED, this._profile)
     } catch (error) {
       logger.error('Failed to load profile from file', {
         error: error as Error,
         function: 'loadFromFile',
         source: 'profileStore'
       })
-      this._profile = undefined
+      this._profile = defaultProfile
     }
   }
 
-  async getProfiles(): Promise<DeskThingProfile[]> {
-    return this._profile ? [this._profile] : []
-  }
-
-  async getProfileById(profileId: string): Promise<DeskThingProfile | null> {
-    return this._profile?.id === profileId ? this._profile : null
-  }
-
   async getActiveProfile(): Promise<DeskThingProfile | undefined> {
+    if (!this._profile) {
+      logger.debug('No profile loaded. Loading Default')
+      await this.loadFromFile()
+    }
     return this._profile
   }
 
@@ -152,36 +158,44 @@ export class ProfileStore
       ...profile
     }
 
-    this._profile = newProfile
-    await this.saveToFile()
+    this.setProfile(newProfile)
 
     this.emit(ProfileStoreEvent.PROFILE_CREATED, newProfile)
-    this.emit(ProfileStoreEvent.ACTIVE_PROFILE_CHANGED, newProfile)
-    logger.info(`Created new profile: ${newProfile.id}`, {
-      function: 'createProfile',
-      source: 'profileStore'
-    })
 
     return newProfile
   }
 
+  setProfile = async (profile: DeskThingProfile): Promise<void> => {
+    this._profile = profile
+
+    this.emit(ProfileStoreEvent.ACTIVE_PROFILE_CHANGED, profile)
+    logger.info(`Created new profile: ${profile.id}`, {
+      function: 'createProfile',
+      source: 'profileStore'
+    })
+  }
+
   async updateProfile(
-    profileId: string,
-    updates: Partial<DeskThingProfile>
+    updates: Partial<DeskThingProfile>,
+    profileId?: string
   ): Promise<DeskThingProfile | null> {
-    if (!this._profile || this._profile.id !== profileId) {
+    const profile = await this.getActiveProfile()
+
+    if (!profile || (profile.id !== profileId && profileId)) {
       return null
     }
 
-    this._profile = {
-      ...this._profile,
+    const newProfile = {
+      ...profile,
       ...updates
     }
 
-    await this.saveToFile()
-    this.emit(ProfileStoreEvent.PROFILE_UPDATED, this._profile)
+    this._profile = newProfile
 
-    return this._profile
+    await this.saveToFile()
+    this.emit(ProfileStoreEvent.PROFILE_UPDATED, newProfile)
+
+    return newProfile
   }
 
   async deleteProfile(): Promise<boolean> {
@@ -190,37 +204,46 @@ export class ProfileStore
     return true
   }
 
-  // private async applyProfileToAllClients(): Promise<void> {
-  //   if (!this._profile || !this._profile.clientConfig) {
-  //     return
-  //   }
-
-  //   const clients = this.platformStore.getClients()
-  //   for (const client of clients) {
-  //     await this.applyProfileToClient(client.clientId)
-  //   }
-  // }
-
   async applyProfileToClient(clientId: string): Promise<boolean> {
-    if (!this._profile || !this._profile.clientConfig) {
+    const profile = await this.getActiveProfile()
+
+    if (!profile) {
+      logger.debug('No profile found!')
       return false
     }
+    logger.debug(`Setting ${clientId}'s config to ${profile.id} because it was requested`)
 
     try {
-      await this.platformStore.sendDataToClient({
-        app: 'client',
-        clientId,
-        type: DESKTHING_DEVICE.CONFIG,
-        request: 'set',
-        payload: this._profile.clientConfig
-      })
+      if (profile.clientConfig) {
+        await this.platformStore.sendDataToClient({
+          app: 'client',
+          clientId,
+          type: DESKTHING_DEVICE.CONFIG,
+          request: 'set',
+          payload: profile.clientConfig
+        })
+      }
 
-      if (this._profile.mapping) {
+      // Rework in the Profile update. Currently just a hotfix legacy connector
+      const mappingStore = await storeProvider.getStore('mappingStore')
+
+      const mapping = await mappingStore.getMapping()
+
+      if (profile && mapping) {
+        if (!profile.mapping) {
+          profile.mapping = defaultMappingProfile
+        }
+
+        profile.mapping.mapping = mapping.mapping
+        profile.mapping.actions = await mappingStore.getActions()
+        profile.mapping.keys = await mappingStore.getKeys()
+        profile.mapping.profileId = (await mappingStore.getCurrentProfile()).id
+
         await this.platformStore.sendDataToClient({
           app: 'client',
           clientId,
           type: DESKTHING_DEVICE.MAPPINGS,
-          payload: this._profile.mapping
+          payload: profile.mapping
         })
       }
 

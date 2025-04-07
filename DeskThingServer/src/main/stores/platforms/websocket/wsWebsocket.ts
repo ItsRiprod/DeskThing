@@ -57,7 +57,7 @@ export class WSPlatform {
 
   private getInternalId(clientId: string): string | undefined {
     // Early quick lookup if the client hasn't been changed or taken
-    if (this.clients[clientId]) {
+    if (this.clients.has(clientId)) {
       return clientId
     }
 
@@ -138,8 +138,9 @@ export class WSPlatform {
   }
 
   private async handleConnection(socket: WebSocket, req: IncomingMessage): Promise<void> {
-    const platformConnectionId = crypto.randomUUID()
+    const platformConnectionId = 'pending-' + crypto.randomUUID()
 
+    // Temporary client that will be updated once the connection is established
     const pendingClient: Client = {
       connected: false,
       timestamp: Date.now(),
@@ -156,102 +157,81 @@ export class WSPlatform {
       userAgent: req.headers['user-agent'] || ''
     }
 
-    const clientRef: { id: string; client: Client } = {
-      id: platformConnectionId,
-      client: pendingClient
-    }
-
     this.clients.set(platformConnectionId, { client: pendingClient, socket })
 
-    this.sendToParent({ event: PlatformEvent.CLIENT_CONNECTED, data: pendingClient })
-
-    socket.on('close', () => {
-      const currentId = clientRef.id
-      const currentClient = this.clients.get(currentId)?.client
-
-      if (currentId && currentClient) {
-        this.clients.delete(currentId)
-        this.sendToParent({
-          event: PlatformEvent.CLIENT_DISCONNECTED,
-          data: currentClient
-        })
-      }
-    })
-
-    socket.on('ping', () => {
-      console.debug(`Ping received from client ${clientRef.id}`)
-      socket.pong()
-    })
-
-    socket.on('error', (error) => {
-      const currentId = clientRef.id
-      const currentClient = this.clients.get(currentId)?.client
-
-      console.error(`WebSocket error for client ${currentId}:`, error)
-      this.sendToParent({ event: PlatformEvent.ERROR, data: error })
-
-      // Clean up if the client is still in pending state
-      if (
-        currentId &&
-        this.clients.has(currentId) &&
-        this.clients.get(currentId)?.client.connectionState === ConnectionState.Connecting
-      ) {
-        this.clients.delete(currentId)
-        this.sendToParent({
-          event: PlatformEvent.CLIENT_DISCONNECTED,
-          data: {
-            ...(currentClient || pendingClient),
-            connectionState: ConnectionState.Failed
-          }
-        })
-      }
-    })
     try {
-      // wait half a second to let the client initialize
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      // wait half a second to let the client itself initialize any socket listeners
+      await new Promise((resolve) => setTimeout(resolve, 100))
 
       // Do a ping handshake to ensure it is connected
-      const result = await this.stabilizeConnection(platformConnectionId, socket)
 
-      if (result) {
-        const manifest = await this.getClientManifest(platformConnectionId, socket)
-        const clientObj = this.clients.get(platformConnectionId)!
+      const manifest = await this.getClientManifest(platformConnectionId, socket)
+      const clientObj = this.clients.get(platformConnectionId)
 
-        // Update clientId if manifest.connectionId exists
-        const finalClientId = manifest?.connectionId || platformConnectionId
-        if (manifest?.connectionId) {
-          manifest.connectionId = finalClientId
-          this.sendToParent({
-            event: PlatformEvent.CLIENT_DISCONNECTED,
-            data: {
-              ...pendingClient,
-              connectionState: ConnectionState.Failed
-            }
-          })
-          this.clients.delete(platformConnectionId)
-          clientObj.client.clientId = finalClientId
-          this.clients.set(finalClientId, clientObj)
-
-          clientRef.id = finalClientId
-          clientRef.client = clientObj.client
-        } else {
-          manifest && (manifest.connectionId = platformConnectionId)
-        }
-
-        clientObj.client.connected = true
-        clientObj.client.connectionState = ConnectionState.Connected
-        clientObj.client.manifest = manifest
-
-        // Update the connection state in the parent process
-        this.sendToParent({
-          event: PlatformEvent.CLIENT_CONNECTED,
-          data: clientObj.client
-        })
-        this.setupMessageHandling(finalClientId, socket)
-      } else {
-        console.error(`Failed to stabilize connection for client ${platformConnectionId}`)
-        this.handleClientDisconnected(platformConnectionId)
+      if (!clientObj) {
+        console.error(
+          `Failed to stabilize connection with ${platformConnectionId}. Did it get removed or disconnect?`
+        )
+        return
       }
+
+      // Update clientId if manifest.connectionId exists
+      let finalClientId = manifest?.connectionId || platformConnectionId
+
+      if (
+        manifest?.connectionId &&
+        this.clients.has(finalClientId) &&
+        finalClientId !== platformConnectionId
+      ) {
+        console.warn(`Connection ID ${finalClientId} is already in use, generating a new one`)
+        // Generate a new unique ID instead
+        const newId = `${manifest.connectionId}-${crypto.randomUUID().substring(0, 8)}`
+        manifest.connectionId = newId
+        finalClientId = newId
+      }
+
+      const finalClient: Client = {
+        timestamp: Date.now(),
+        ...clientObj.client,
+        clientId: finalClientId,
+        connected: true,
+        connectionState: ConnectionState.Connected,
+        primaryProviderId: this.identifier.providerId,
+        manifest: manifest,
+        identifiers: {
+          [this.identifier.providerId]: {
+            ...this.identifier,
+            id: finalClientId,
+            active: true
+          }
+        }
+      }
+
+      this.clients.delete(platformConnectionId)
+      this.clients.set(finalClientId, {
+        client: finalClient,
+        socket: clientObj.socket
+      })
+
+      const result = await this.pingClient(finalClientId, socket)
+
+      if (!result) {
+        console.error(`Failed establishing a connection with ${finalClientId}.`)
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.close()
+        }
+        this.clients.delete(finalClientId)
+        return
+      }
+
+      console.log(`Finished establishing connection with ${finalClientId}.`)
+
+      // Only update the parent process once the client has been established as connected
+      this.sendToParent({
+        event: PlatformEvent.CLIENT_CONNECTED,
+        data: finalClient
+      })
+      this.setupMessageHandling(finalClientId, socket)
     } catch (error) {
       console.error(`Failed to stabilize connection for client ${platformConnectionId}:`, error)
       if (socket.readyState === WebSocket.OPEN) {
@@ -259,11 +239,6 @@ export class WSPlatform {
       }
       this.clients.delete(platformConnectionId)
     }
-  }
-
-  private stabilizeConnection = async (clientId, socket): Promise<boolean> => {
-    const result = await this.pingClient(clientId, socket)
-    return result
   }
 
   private setupMessageHandling(clientId: string, socket: WebSocket): void {
@@ -282,10 +257,11 @@ export class WSPlatform {
         }
 
         const data = JSON.parse(messageStr) as DeviceToDeskthingData & { clientId: string }
-        const platformInternalId = this.getInternalId(data.clientId || clientId)
+        const platformInternalId = this.getInternalId(clientId || data.clientId)
 
         if (!platformInternalId) {
           console.error(`Unable to find record of ${clientId}. Cancelling message`)
+          console.log('Available clientIds:', Array.from(this.clients.keys()))
           return
         }
 
@@ -295,8 +271,22 @@ export class WSPlatform {
           const client = clientObj.client
           this.ensureConnected(client)
 
+          if (
+            !clientObj.client.connected ||
+            clientObj.client.connectionState !== ConnectionState.Connected
+          ) {
+            clientObj.client.connected = true
+            clientObj.client.connectionState = ConnectionState.Connected
+
+            // Notify about the updated client state
+            this.sendToParent({
+              event: PlatformEvent.CLIENT_UPDATED,
+              data: clientObj.client
+            })
+          }
+
           if (data.type == DEVICE_DESKTHING.PING) {
-            console.log('Got a ping from the client')
+            console.log(`Got a ping from the client`)
             this.sendData(client.clientId, {
               type: DESKTHING_DEVICE.PONG,
               payload: client.clientId,
@@ -318,6 +308,44 @@ export class WSPlatform {
         this.sendToParent({
           event: PlatformEvent.ERROR,
           data: new Error(`Invalid message format: ${error}`)
+        })
+      }
+    })
+
+    socket.on('close', () => {
+      const currentId = clientId
+      const currentClient = this.clients.get(currentId)?.client
+
+      if (currentId && currentClient) {
+        this.clients.delete(currentId)
+        this.sendToParent({
+          event: PlatformEvent.CLIENT_DISCONNECTED,
+          data: currentClient
+        })
+      }
+    })
+
+    socket.on('ping', () => {
+      console.debug(`Ping received from client ${clientId}`)
+      socket.pong()
+    })
+
+    socket.on('error', (error) => {
+      const currentId = clientId
+      const currentClient = this.clients.get(currentId)?.client
+
+      console.error(`WebSocket error for client ${currentId}:`, error)
+      this.sendToParent({ event: PlatformEvent.ERROR, data: error })
+
+      // Clean up if the client is still in pending state
+      if (currentId && currentClient) {
+        this.clients.delete(currentId)
+        this.sendToParent({
+          event: PlatformEvent.CLIENT_DISCONNECTED,
+          data: {
+            ...currentClient,
+            connectionState: ConnectionState.Failed
+          }
         })
       }
     })
@@ -554,16 +582,13 @@ export class WSPlatform {
 
       socket.on('message', messageHandler)
 
-      this.sendData(platformConnectionId, {
+      // Directly send the socket data so that the temporary id isn't included
+      const data: DeskThingToDeviceCore = {
         type: DESKTHING_DEVICE.GET,
         request: 'manifest',
         app: 'client'
-      }).catch((error) => {
-        clearTimeout(timeoutId)
-        socket.removeListener('message', messageHandler)
-        console.error(`Error getting manifest for client ${clientId}:`, error)
-        resolve(undefined)
-      })
+      }
+      socket.send(JSON.stringify(data))
     })
 
     return manifest

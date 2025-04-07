@@ -8,7 +8,7 @@ import {
   IconX
 } from '@renderer/assets/icons'
 import { ProgressChannel } from '@shared/types'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Button from '../Button'
 import ClientDetailsOverlay from '@renderer/overlays/ClientDetailsOverlay'
 import {
@@ -29,6 +29,42 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
   const [enabled, setEnabled] = useState(false)
   const { isLoading } = useChannelProgress(ProgressChannel.PLATFORM_CHANNEL)
 
+  const [connectedTimeText, setConnectedTimeText] = useState<string>('0s')
+
+  useEffect(() => {
+    const updateTime = (): number | undefined => {
+      if (!client.timestamp) {
+        setConnectedTimeText('0s')
+        return
+      }
+
+      const timeDiff = Math.floor((Date.now() - client.timestamp) / 1000)
+      let newText = '0s'
+      let interval = 1000
+
+      if (timeDiff < 5) {
+        const halfSecDiff = Math.floor((Date.now() - client.timestamp) / 100) / 10
+        newText = `${halfSecDiff}s`
+        interval = 100
+      } else if (timeDiff < 60) {
+        newText = `${timeDiff}s`
+      } else if (timeDiff < 3600) {
+        newText = `${Math.floor(timeDiff / 60)}m`
+        interval = 60000
+      } else {
+        newText = `${Math.floor(timeDiff / 3600)}h`
+        interval = 3600000
+      }
+
+      setConnectedTimeText(newText)
+      return interval
+    }
+
+    const interval = updateTime()
+    const timer = setInterval(updateTime, interval)
+
+    return () => clearInterval(timer)
+  }, [client.timestamp])
   const sendCommand = usePlatformStore((state) => state.runCommand)
   const disconnect = usePlatformStore((state) => state.disconnect)
   const ping = usePlatformStore((state) => state.ping)
@@ -108,6 +144,7 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
           {client.manifest?.context.method === ClientConnectionMethod.ADB && (
             <p className="text-sm text-gray-400">ADB: {client.manifest.context.adbId}</p>
           )}
+          <p className="text-sm text-gray-400">Connected for: {connectedTimeText}</p>
         </div>
       </div>
       <div className="flex gap-2 items-center">

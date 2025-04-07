@@ -71,11 +71,21 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
           connections: state.connections
         }))
       } else if (data.request === 'modified') {
-        set((state) => ({
-          clients: state.clients.map((client) =>
-            client.clientId === data.client.clientId ? data.client : client
+        set((state) => {
+          const existingClient = state.clients.find(
+            (client) => client.clientId === data.client.clientId
           )
-        }))
+          if (!existingClient) {
+            return {
+              clients: [...state.clients, data.client]
+            }
+          }
+          return {
+            clients: state.clients.map((client) =>
+              client.clientId === data.client.clientId ? data.client : client
+            )
+          }
+        })
       }
     }
 

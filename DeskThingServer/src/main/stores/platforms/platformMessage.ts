@@ -11,65 +11,43 @@ import {
 import Logger from '@server/utils/logger'
 import { PlatformInterface } from '@shared/interfaces/platformInterface'
 
-const alwaysAllow = ['preferences', 'ping', 'pong', 'manifest']
-const messageThrottles = new Map()
-const THROTTLE_DELAY = 300
-
 export async function handlePlatformMessage(
   platform: PlatformInterface,
   client: Client,
   messageData: DeviceToDeskthingData & { clientId: string }
 ): Promise<void> {
-  const messageKey = `${messageData.app}-${messageData.type}-${messageData['request']}`
-  const now = Date.now()
-
-  if (
-    !messageThrottles.has(messageKey) ||
-    now - messageThrottles.get(messageKey) > THROTTLE_DELAY ||
-    alwaysAllow.includes(messageData.type)
-  ) {
-    messageThrottles.set(messageKey, now)
-
-    try {
-      if (messageData.app === 'server') {
-        await handleServerMessage(platform, client, messageData)
-      } else if (messageData.app === 'utility' || messageData.app === 'music') {
-        // musicStore now listens directly
-        // const musicStore = await storeProvider.getStore('musicStore')
-        // await musicStore.handleClientRequest(messageData)
-      } else if (messageData.type == DEVICE_DESKTHING.SETTINGS) {
-        const appDataStore = await storeProvider.getStore('appDataStore')
-        if (messageData.request == 'set') {
-          await appDataStore.addSettings(messageData.app, messageData.payload)
-        } else if (messageData.request == 'update') {
-          await appDataStore.updateSetting(
-            messageData.app,
-            messageData.payload.id,
-            messageData.payload.value
-          )
-        }
-      } else if (messageData.type === DEVICE_DESKTHING.APP_PAYLOAD && messageData.payload) {
-        const appStore = await storeProvider.getStore('appStore')
-
-        await appStore.sendDataToApp(messageData.app.toLowerCase(), {
-          ...messageData.payload,
-          clientId: messageData.clientId
-        } as DeskThingToAppCore)
+  try {
+    if (messageData.app === 'server') {
+      await handleServerMessage(platform, client, messageData)
+    } else if (messageData.app === 'utility' || messageData.app === 'music') {
+      // musicStore now listens directly
+      // const musicStore = await storeProvider.getStore('musicStore')
+      // await musicStore.handleClientRequest(messageData)
+    } else if (messageData.type == DEVICE_DESKTHING.SETTINGS) {
+      const appDataStore = await storeProvider.getStore('appDataStore')
+      if (messageData.request == 'set') {
+        await appDataStore.addSettings(messageData.app, messageData.payload)
+      } else if (messageData.request == 'update') {
+        await appDataStore.updateSetting(
+          messageData.app,
+          messageData.payload.id,
+          messageData.payload.value
+        )
       }
+    } else if (messageData.type === DEVICE_DESKTHING.APP_PAYLOAD && messageData.payload) {
+      const appStore = await storeProvider.getStore('appStore')
 
-      // Cleanup throttle
-      messageThrottles.forEach((timestamp, key) => {
-        if (now - timestamp > THROTTLE_DELAY) {
-          messageThrottles.delete(key)
-        }
-      })
-    } catch (error) {
-      Logger.error('Error handling platform message', {
-        error: error as Error,
-        domain: client.clientId,
-        source: 'platformMessage'
-      })
+      await appStore.sendDataToApp(messageData.app.toLowerCase(), {
+        ...messageData.payload,
+        clientId: messageData.clientId
+      } as DeskThingToAppCore)
     }
+  } catch (error) {
+    Logger.error('Error handling platform message', {
+      error: error as Error,
+      domain: client.clientId,
+      source: 'platformMessage'
+    })
   }
 }
 

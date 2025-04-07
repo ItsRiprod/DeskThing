@@ -13,7 +13,8 @@ import {
   DESKTHING_EVENTS,
   DESKTHING_DEVICE,
   DeskThingToDeviceCore,
-  ConnectionState
+  ConnectionState,
+  TagTypes
 } from '@deskthing/types'
 import Logger from '@server/utils/logger'
 import {
@@ -37,13 +38,13 @@ import { ClientIdentificationService } from '@server/services/clients/clientIden
 
 export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements PlatformStoreClass {
   private platforms: Map<PlatformIDs, PlatformInterface> = new Map()
-  private clientPlatformMap: Map<string, PlatformIDs> = new Map()
+  private clientPlatformMap: Map<string, Set<PlatformIDs>> = new Map()
 
   private appStore: AppStoreClass
   private appDataStore: AppDataStoreClass
   private mappingStore: MappingStoreClass
 
-  private clientRegistry: Map<string, Client>
+  private clientRegistry: Map<string, Client> = new Map()
 
   private _initialized: boolean = false
   public get initialized(): boolean {
@@ -59,7 +60,6 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
     this.appStore = appStore
     this.appDataStore = appDataStore
     this.mappingStore = mappingStore
-    this.clientRegistry = new Map<string, Client>()
   }
   async sendPlatformData<T extends PlatformIPC>(data: T): Promise<ExtractPayloadFromIPC<T>> {
     return this.getPlatform(data.platform)?.handlePlatformEvent(data) as ExtractPayloadFromIPC<T>
@@ -89,7 +89,9 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
     })
 
     this.appStore.on('apps', (apps) => {
-      const filteredApps = apps.data.filter((app) => app.manifest?.isWebApp !== false)
+      const filteredApps = apps.data.filter(
+        (app) => !app.manifest?.tags.includes(TagTypes.UTILITY_ONLY)
+      )
       this.broadcastToClients({
         app: 'client',
         type: DESKTHING_DEVICE.APPS,
@@ -154,6 +156,23 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
     })
   }
 
+  private addClientPlatformMapping(clientId: string, platformId: PlatformIDs): void {
+    if (!this.clientPlatformMap.has(clientId)) {
+      this.clientPlatformMap.set(clientId, new Set())
+    }
+    this.clientPlatformMap.get(clientId)!.add(platformId)
+  }
+
+  private removeClientPlatformMapping(clientId: string, platformId: PlatformIDs): void {
+    const platforms = this.clientPlatformMap.get(clientId)
+    if (platforms) {
+      platforms.delete(platformId)
+      if (platforms.size === 0) {
+        this.clientPlatformMap.delete(clientId)
+      }
+    }
+  }
+
   async registerPlatform(platform: PlatformInterface): Promise<void> {
     if (this.platforms.has(platform.id)) {
       throw new Error(`Platform with ID ${platform.id} already exists`)
@@ -184,7 +203,7 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
 
     this.getClientsByPlatform(platformId).forEach((client) => {
       this.handleClientDisconnected(client.clientId, platformId)
-      this.clientPlatformMap.delete(client.clientId)
+      this.removeClientPlatformMapping(client.clientId, platformId)
     })
 
     this.platforms.delete(platformId)
@@ -357,15 +376,18 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
   }
 
   getPlatformForClient(clientId: string): PlatformInterface | undefined {
-    const platformId = this.clientPlatformMap.get(clientId)
-    if (platformId) {
-      return this.platforms.get(platformId)
-    }
-
-    // If not found directly, check if this is an identifier in a client
     const client = this.getClientById(clientId)
     if (client && client.primaryProviderId) {
       return this.platforms.get(client.primaryProviderId as PlatformIDs)
+    }
+
+    const platforms = this.clientPlatformMap.get(clientId)
+    if (platforms && platforms.size > 0) {
+      // Return the first available platform
+      for (const platformId of platforms) {
+        const platform = this.platforms.get(platformId)
+        if (platform) return platform
+      }
     }
 
     return undefined
@@ -386,9 +408,8 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
       })
       return
     }
-    // Get the platform for this client
-    const platformId = this.clientPlatformMap.get(clientId)
-    const platform = platformId ? this.platforms.get(platformId) : undefined
+
+    const platform = this.getPlatformForClient(clientId)
 
     if (!platform) {
       Logger.warn(`No platform found for client ${clientId}`, {
@@ -527,19 +548,44 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
   ): Promise<void> {
     const registeredClient = this.getClientById(client.clientId)
 
-    if (
-      !registeredClient ||
-      !registeredClient.connected ||
-      registeredClient.connectionState !== ConnectionState.Connected
-    ) {
+    if (!registeredClient) {
       Logger.warn(
-        `Received data from unregistered or disconnected client ${client.clientId} ${data.clientId}. ${registeredClient ? 'Connected' : 'Not Connected'}. Connection State: ${client.connectionState}`,
+        `Received data from unregistered client ${client.clientId}. Attempting to register.`,
         {
           domain: 'platform',
           source: 'platformStore',
           function: 'handleSocketData'
         }
       )
+
+      // Try to register the client
+      const platform = this.platforms.get(client.primaryProviderId as PlatformIDs)
+      if (platform) {
+        // Force a refresh of this client
+        await platform.refreshClient(client.clientId, true)
+
+        // Check again if client is now registered
+        const updatedClient = this.getClientById(client.clientId)
+        if (!updatedClient) {
+          // If still not registered, we can't process the message
+          Logger.error(`Failed to register client ${client.clientId}`, {
+            domain: 'platform',
+            source: 'platformStore',
+            function: 'handleSocketData'
+          })
+          return
+        }
+
+        // Continue with the registered client
+        return this.handleSocketData(updatedClient as Extract<Client, { connected: true }>, data)
+      } else {
+        Logger.error(`No platform found for client ${client.clientId}`, {
+          domain: 'platform',
+          source: 'platformStore',
+          function: 'handleSocketData'
+        })
+        return
+      }
     }
 
     const platform = this.getPlatformForClient(client.clientId)
@@ -666,8 +712,6 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
   private setupPlatformListeners(platform: PlatformInterface): void {
     // Connection
     platform.on(PlatformEvent.CLIENT_CONNECTED, (client: Client) => {
-      this.clientPlatformMap.set(client.clientId, platform.id)
-
       this.handleClientUpdate(platform, client)
 
       Logger.debug(`Client ${client.clientId} connected via ${platform.id}`, {
@@ -692,8 +736,6 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
         source: 'platformStore',
         function: 'clientDisconnected'
       })
-
-      this.clientPlatformMap.delete(client.clientId)
     })
 
     // Data received
@@ -750,60 +792,17 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
     // Client List
     platform.on(PlatformEvent.CLIENT_LIST, (clients: Client[]) => {
       // Get all clients currently registered for this platform
-      const existingPlatformClients = this.getClientsByPlatform(platform.id)
-      const existingClientIds = new Set(existingPlatformClients.map((client) => client.clientId))
       const incomingClientIds = new Set(clients.map((client) => client.clientId))
 
-      // Handle clients that are in the incoming list but not in our registry
+      // Add or update clients from the incoming list
       for (const client of clients) {
-        if (!existingClientIds.has(client.clientId)) {
-          // This is a new client, add it
-          this.handleClientUpdate(platform, client)
-
-          Logger.debug(`Added new client ${client.clientId} from CLIENT_LIST event`, {
-            domain: 'platform',
-            source: 'platformStore',
-            function: 'handleClientList'
-          })
-        } else {
-          // Client exists, update it
-          this.handleClientUpdate(platform, client)
-        }
+        this.handleClientUpdate(platform, client)
       }
 
-      // Handle clients that are in our registry but not in the incoming list
-      for (const existingClient of existingPlatformClients) {
-        if (!incomingClientIds.has(existingClient.clientId)) {
-          // This client is no longer connected to the platform
-          this.handleClientDisconnected(existingClient.clientId, platform.id)
-
-          Logger.debug(`Removed client ${existingClient.clientId} not found in CLIENT_LIST event`, {
-            domain: 'platform',
-            source: 'platformStore',
-            function: 'handleClientList'
-          })
-        }
-      }
-
-      // Check for clients with identifiers from this platform that might not be directly registered
+      // Handle disconnections for clients not in the list
       for (const [clientId, client] of this.clientRegistry.entries()) {
-        // If client has an identifier for this platform but isn't in the incoming list
-        if (
-          client.identifiers[platform.id] &&
-          client.identifiers[platform.id].active &&
-          !incomingClientIds.has(clientId)
-        ) {
-          // Mark this platform's identifier as inactive
+        if (client.identifiers[platform.id]?.active && !incomingClientIds.has(clientId)) {
           this.handleClientDisconnected(clientId, platform.id)
-
-          Logger.debug(
-            `Marked client ${clientId} with identifier for ${platform.id} as disconnected`,
-            {
-              domain: 'platform',
-              source: 'platformStore',
-              function: 'handleClientList'
-            }
-          )
         }
       }
     })
@@ -824,15 +823,10 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
     }
 
     if (existingClient && existingClientId) {
-      // check if the device is now connected
-      if (!existingClient.connected && client.connected) {
-        Logger.debug(`Client ${client.clientId} connected. Sending initial data`, {
-          domain: 'platform',
-          source: 'platformStore',
-          function: 'handleClientUpdate'
-        })
-        this.sendInitialDataToClient(client.clientId)
-      }
+      // Client exists - update it
+
+      // Check if the device is now connected
+      const wasConnected = existingClient.connected
 
       // Merge the clients
       const mergedClient = ClientIdentificationService.mergeClients(existingClient, client)
@@ -840,20 +834,57 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
       // Update the registry
       this.clientRegistry.set(existingClientId, mergedClient)
 
-      // Update the client-platform mapping for both IDs
-      this.clientPlatformMap.set(client.clientId, platform.id)
+      if (client.clientId !== existingClientId) {
+        this.clientRegistry.set(client.clientId, mergedClient)
+
+        for (const platformId in mergedClient.identifiers) {
+          const identifier = mergedClient.identifiers[platformId]
+          if (identifier.id) {
+            this.addClientPlatformMapping(identifier.id, platform.id)
+          }
+        }
+        Logger.debug(
+          `Added additional registry entry for ${client.clientId} -> ${existingClientId}`,
+          {
+            domain: 'platform',
+            source: 'platformStore',
+            function: 'handleClientUpdate'
+          }
+        )
+      }
+
+      // Update the client-platform mappings for both IDs
+      this.addClientPlatformMapping(existingClientId, platform.id)
+      if (client.clientId !== existingClientId) {
+        this.addClientPlatformMapping(client.clientId, platform.id)
+      }
+
+      // Add all identifiers to the platform map for easier lookup
+      for (const identifier of Object.values(mergedClient.identifiers)) {
+        this.addClientPlatformMapping(identifier.id, platform.id)
+      }
 
       // Notify platforms about the merged client
       this.platforms.forEach((p) => {
         if (p.id !== platform.id) {
-          p.updateClient(client.clientId, mergedClient, false)
+          p.updateClient(existingClientId, mergedClient, false)
         }
       })
 
       // Emit the updated client event
       this.emit(PlatformStoreEvent.CLIENT_UPDATED, mergedClient)
 
-      Logger.debug(`Merged client ${client.clientId} with existing client ${existingClientId}`, {
+      // If the client wasn't connected before but is now, send initial data
+      if (!wasConnected && mergedClient.connected) {
+        Logger.debug(`Client ${existingClientId} connected. Sending initial data`, {
+          domain: 'platform',
+          source: 'platformStore',
+          function: 'handleClientUpdate'
+        })
+        this.sendInitialDataToClient(existingClientId)
+      }
+
+      Logger.debug(`Updated client ${client.clientId} (merged with ${existingClientId})`, {
         domain: 'platform',
         source: 'platformStore',
         function: 'handleClientUpdate'
@@ -864,21 +895,24 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
         ...client,
         connectionState: client.connected ? ConnectionState.Connected : ConnectionState.Disconnected
       }
+
       this.clientRegistry.set(client.clientId, newClient)
-      this.clientPlatformMap.set(client.clientId, platform.id)
+      this.addClientPlatformMapping(client.clientId, platform.id)
+
+      // Add all identifiers to the platform map for easier lookup
+      for (const identifier of Object.values(newClient.identifiers)) {
+        this.addClientPlatformMapping(identifier.id, platform.id)
+      }
 
       // Emit the new client event
       this.emit(PlatformStoreEvent.CLIENT_CONNECTED, newClient)
 
       if (newClient.connected && newClient.connectionState === ConnectionState.Connected) {
-        Logger.debug(
-          `Client ${client.clientId} connected for the first time. Sending initial data`,
-          {
-            domain: 'platform',
-            source: 'platformStore',
-            function: 'handleClientUpdate'
-          }
-        )
+        Logger.debug(`New client ${client.clientId} connected. Sending initial data`, {
+          domain: 'platform',
+          source: 'platformStore',
+          function: 'handleClientUpdate'
+        })
         this.sendInitialDataToClient(client.clientId)
       }
 
@@ -893,7 +927,9 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
   private async sendConfigToClient(clientId?: string): Promise<void> {
     try {
       const appData = await this.appStore.getAll()
-      const filteredAppData = appData.filter((app) => app.manifest?.isWebApp !== false)
+      const filteredAppData = appData.filter(
+        (app) => !app.manifest?.tags.includes(TagTypes.UTILITY_ONLY)
+      )
 
       if (clientId) {
         this.sendDataToClient({
