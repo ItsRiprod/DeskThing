@@ -160,8 +160,36 @@ export class WSPlatform {
     this.clients.set(platformConnectionId, { client: pendingClient, socket })
 
     try {
+      console.debug(
+        `Got the connection for ${platformConnectionId}. Waiting 100ms before configuring`
+      )
       // wait half a second to let the client itself initialize any socket listeners
       await new Promise((resolve) => setTimeout(resolve, 100))
+
+      // Check if socket is still open before proceeding
+      if (socket.readyState !== WebSocket.OPEN) {
+        console.error(`Socket for ${platformConnectionId} is not open. State: ${socket.readyState}`)
+        this.clients.delete(platformConnectionId)
+        return
+      }
+
+      socket.ping()
+
+      const pingResult = await Promise.race([
+        new Promise<boolean>((resolve) => {
+          socket.once('pong', () => resolve(true))
+        }),
+        new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 2000))
+      ])
+
+      if (!pingResult) {
+        console.error(`Simple ping failed for ${platformConnectionId}`)
+        socket.terminate()
+        this.clients.delete(platformConnectionId)
+        return
+      } else {
+        console.log(`Simple ping successful for ${platformConnectionId}`)
+      }
 
       // Do a ping handshake to ensure it is connected
 
@@ -217,9 +245,8 @@ export class WSPlatform {
 
       if (!result) {
         console.error(`Failed establishing a connection with ${finalClientId}.`)
-        if (socket.readyState === WebSocket.OPEN) {
-          socket.close()
-        }
+        socket?.close?.()
+        socket?.terminate?.()
         this.clients.delete(finalClientId)
         return
       }
@@ -558,6 +585,7 @@ export class WSPlatform {
 
     // Check if socket is open before attempting ping
     if (socket.readyState !== WebSocket.OPEN) {
+      console.debug(`Socket is not open for client ${clientId}. The state is ${socket.readyState}`)
       return
     }
 
@@ -599,6 +627,8 @@ export class WSPlatform {
     const platformConnectionId = this.getInternalId(clientId)
     if (!platformConnectionId) return false
 
+    console.debug(`Pinging client ${clientId}`)
+
     const clientObj = this.clients.get(platformConnectionId)
     if (!clientObj) {
       console.error(`Unable to find the client for id ${clientId}`)
@@ -610,6 +640,7 @@ export class WSPlatform {
 
     // Check if socket is open before attempting ping
     if (socket.readyState !== WebSocket.OPEN) {
+      console.debug(`Socket is not open for client ${clientId}. The state is ${socket.readyState}`)
       return false
     }
 
