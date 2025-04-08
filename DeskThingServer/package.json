@@ -105,10 +105,10 @@
       "!{.env,.npmrc,pnpm-lock.yaml}",
       "!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}"
     ],
-    "extraFiles": [
+    "extraResources": [
       {
-        "from": ".env.production",
-        "to": ".env.production"
+        "from": "src/main/config.json",
+        "to": "config.json"
       }
     ],
     "asarUnpack": [

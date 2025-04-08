@@ -2,7 +2,24 @@ import { ClientConnectionMethod } from '@deskthing/types'
 import { storeProvider } from '@server/stores/storeProvider'
 import logger from '@server/utils/logger'
 import { FeedbackReport, FeedbackType, SystemInfo } from '@shared/types'
+import { readFileSync } from 'fs'
 import os from 'os'
+import { join } from 'path'
+
+let appConfig: { discordWebhookUrl: string }
+try {
+  // In development
+  if (process.env.NODE_ENV === 'development') {
+    appConfig = { discordWebhookUrl: process.env.DISCORD_WEBHOOK_URL || '' }
+  } else {
+    // In production - read from bundled config
+    const configPath = join(process.resourcesPath, 'config.json')
+    appConfig = JSON.parse(readFileSync(configPath, 'utf8'))
+  }
+} catch (error) {
+  logger.error('Failed to load config:', { source: 'feedbackService', error: error as Error })
+  appConfig = { discordWebhookUrl: '' }
+}
 
 export class FeedbackService {
   private static readonly SUBMISSION_ID = Math.floor(Math.random() * 900) + 100
@@ -11,7 +28,7 @@ export class FeedbackService {
    * This will be updated later for an actual webhook edge server smth smth fancy instead of directly to the discord channel
    * If you could be a real one and not abuse this, that would be awesome. Thanks!
    */
-  private static readonly WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || 'fallback-webhook-url'
+  private static readonly WEBHOOK_URL = appConfig.discordWebhookUrl || 'fallback-webhook-url'
 
   private static readonly TYPE_COLORS: Record<FeedbackType, number> = {
     bug: 0xff0000,

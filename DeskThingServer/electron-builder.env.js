@@ -6,18 +6,14 @@ import { fileURLToPath } from 'url'
 
 config()
 
-const env = {
-  DISCORD_WEBHOOK_URL: process.env.DISCORD_WEBHOOK_URL
+const appConfig = {
+  discordWebhookUrl: process.env.DISCORD_WEBHOOK_URL || ''
 }
 
 // Write env file
 const _filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(_filename)
-const envPath = path.resolve(__dirname, '.env.production')
+const configPath = path.resolve(__dirname, 'src/main/config.json')
 
-writeFileSync(
-  envPath,
-  Object.entries(env)
-    .map(([key, val]) => `${key}=${val}`)
-    .join('\n')
-)
+writeFileSync(configPath, JSON.stringify(appConfig, null, 2))
+console.log(`Config file written to ${configPath}`)
