@@ -11,20 +11,46 @@
  * - Handles application lifecycle events
  * - Manages module loading and initialization
  */
-import {
-  AppIPCData,
-  UtilityIPCData,
-  ServerIPCData,
-  ClientIPCData,
-  IPCData,
-  UTILITY_TYPES
-} from '@shared/types'
+/**
+ * Main entry point for the Electron application.
+ * Delegates responsibilities to specialized modules.
+ */
+// import { app } from 'electron'
+// import { setupSingleInstance } from './system/singleInstance'
+// import { initializeAppLifecycle } from './lifecycle/appLifecycle'
+// import { getLoadingWindow } from './windows/windowManager'
+
+// // Initialize environment variables
+// import './utils/environment'
+
+// // Ensure single instance
+// if (!setupSingleInstance()) {
+//   app.quit()
+// } else {
+//   // Application initialization
+//   app.whenReady().then(async () => {
+//     // Show loading window first
+//     await getLoadingWindow()
+
+//     // Initialize app lifecycle (which will handle the rest of the startup)
+//     await initializeAppLifecycle()
+//   })
+// }
+
+// // Export necessary functions for backward compatibility
+// export { handleUrl } from './system/protocol'
+// export { createMainWindow } from './windows/mainWindow'
+// export { createClientWindow } from './windows/clientWindow'
+// export { sendIpcData } from './ipc/ipcSender'
+
+import { ServerIPCData } from '@shared/types'
 import { App } from '@deskthing/types'
 import { app, shell, BrowserWindow, ipcMain, Tray, Menu, nativeImage } from 'electron'
 import { join, resolve, dirname } from 'node:path'
 import icon from '../../resources/icon.png?asset'
 import dotenv from 'dotenv'
 import { nextTick } from 'node:process'
+import { uiEventBus } from './services/events/uiBus'
 
 if (process.env.NODE_ENV === 'development') {
   dotenv.config()
@@ -200,6 +226,7 @@ async function initializeTray(): Promise<void> {
       mainWindow.focus()
     } else {
       mainWindow = createMainWindow()
+      uiEventBus.setMainWindow(mainWindow)
     }
   })
 
@@ -212,6 +239,7 @@ async function initializeTray(): Promise<void> {
           mainWindow.focus()
         } else {
           mainWindow = createMainWindow()
+          uiEventBus.setMainWindow(mainWindow)
         }
       }
     },
@@ -254,6 +282,7 @@ async function initializeDoc(): Promise<void> {
           mainWindow.focus()
         } else {
           mainWindow = createMainWindow()
+          uiEventBus.setMainWindow(mainWindow)
         }
       }
     },
@@ -286,99 +315,12 @@ async function initializeDoc(): Promise<void> {
 /**
  * Sets up IPC handlers for communication between main and renderer processes
  */
-async function setupIpcHandlers(): Promise<void> {
+async function setupListeners(): Promise<void> {
   // Import required stores
-  const { default: Logger, ResponseLogger } = await import('./utils/logger')
+  const { default: Logger } = await import('./utils/logger')
   // Default handler for unimplemented IPC messages
-  const defaultHandler = async (data: IPCData): Promise<void> => {
-    Logger.error(`No handler implemented for type: ${data.type}`, {
-      domain: 'server',
-      source: 'ipcHandlers',
-      function: 'defaultHandler',
-      error: new Error(`Unhandled type: ${data.type}`)
-    })
-  }
-
-  // Handle app-related IPC messages
-  ipcMain.handle('APPS', async (event, data: AppIPCData) => {
-    const { appHandler } = await import('./handlers/appHandler')
-    const handler = appHandler[data.type] || defaultHandler
-    const replyFn = ResponseLogger(event.sender.send.bind(event.sender))
-    try {
-      if (handler) {
-        return await handler(data as Extract<AppIPCData, { type: keyof UTILITY_TYPES }>, replyFn)
-      } else {
-        Logger.error(`No handler found for type: ${data.type}`, {
-          domain: 'server',
-          source: 'ipcHandlers',
-          function: 'APPS',
-          error: new Error(`Unhandled type: ${data.type}`)
-        })
-      }
-    } catch (error) {
-      Logger.error(`Error in IPC handler with event ${data.type}: ${error}`, {
-        domain: 'server',
-        source: 'ipcHandlers',
-        function: 'APPS',
-        error: error instanceof Error ? error : new Error(String(error))
-      })
-    }
-  })
-
-  // Handle client-related IPC messages
-  ipcMain.handle('CLIENT', async (event, data: ClientIPCData) => {
-    const { clientHandler } = await import('./handlers/clientHandler')
-    const handler = clientHandler[data.type] || defaultHandler
-    const replyFn = ResponseLogger(event.sender.send.bind(event.sender))
-    try {
-      if (handler) {
-        return await handler(data, replyFn)
-      } else {
-        Logger.error(`No handler found for type: ${data.type}`, {
-          domain: 'server',
-          source: 'ipcHandlers',
-          function: 'CLIENT',
-          error: new Error(`Unhandled type: ${data.type}`)
-        })
-      }
-    } catch (error) {
-      Logger.error(`Error in IPC handler with event ${data.type}: ${error}`, {
-        domain: 'server',
-        source: 'ipcHandlers',
-        function: 'CLIENT',
-        error: error instanceof Error ? error : new Error(String(error))
-      })
-    }
-  })
-
-  // Handle utility-related IPC messages
-  ipcMain.handle('UTILITY', async (event, data: UtilityIPCData) => {
-    const { utilityHandler } = await import('./handlers/utilityHandler')
-    const replyFn = ResponseLogger(event.sender.send.bind(event.sender))
-    const handler = utilityHandler[data.type]
-
-    try {
-      if (handler) {
-        return await handler(
-          data as Extract<UtilityIPCData, { type: keyof UTILITY_TYPES }>,
-          replyFn
-        )
-      } else {
-        Logger.error(`No handler found for type: ${data.type}`, {
-          domain: 'server',
-          source: 'ipcHandlers',
-          function: 'UTILITY',
-          error: new Error(`Unhandled type: ${data.type}`)
-        })
-      }
-    } catch (error) {
-      Logger.error(`Error in IPC handler with event ${data.type}: ${error}`, {
-        domain: 'server',
-        source: 'ipcHandlers',
-        function: 'UTILITY',
-        error: error instanceof Error ? error : new Error(String(error))
-      })
-    }
+  import('./services/ipc/initializer').then(({ initializeIpcHandlers }) => {
+    initializeIpcHandlers(ipcMain)
   })
 
   // Set up logging store listener
@@ -387,11 +329,6 @@ async function setupIpcHandlers(): Promise<void> {
       type: 'log',
       payload: logData
     })
-  })
-
-  import('./services/updater/autoUpdater').then(async ({ checkForUpdates }) => {
-    Logger.debug('[INDEX] Checking for updates...')
-    checkForUpdates()
   })
 }
 
@@ -411,6 +348,7 @@ if (!app.requestSingleInstanceLock()) {
       mainWindow.focus()
     } else {
       mainWindow = createMainWindow()
+      uiEventBus.setMainWindow(mainWindow)
     }
   })
 
@@ -438,6 +376,7 @@ if (!app.requestSingleInstanceLock()) {
 
     // Create main window and set up handlers
     mainWindow = createMainWindow()
+    uiEventBus.setMainWindow(mainWindow)
 
     mainWindow.on('ready-to-show', () => {
       mainWindow?.show()
@@ -445,7 +384,7 @@ if (!app.requestSingleInstanceLock()) {
 
     nextTick(async () => {
       loadModules()
-      setupIpcHandlers()
+      setupListeners()
     })
 
     // Handle window recreation on macOS
@@ -514,7 +453,7 @@ async function loadModules(): Promise<void> {
     // const expressServerStore = await storeProvider.getStore('expressServerStore')
     // expressServerStore.start()
 
-    const { initializePlatforms } = await import('./services/platforms/platformInitializer')
+    const { initializePlatforms } = await import('./stores/platforms/platformInitializer')
     await initializePlatforms()
 
     const { initializeStores } = await import('./services/cache/storeInitializer')
@@ -529,6 +468,7 @@ export type IpcDataTypes = {
   data: App[]
 }
 
+/**@depreciated - use uiBus instead */
 async function sendIpcData({ type, payload, window }: ServerIPCData): Promise<void> {
   if (window && window instanceof BrowserWindow) {
     window.webContents.send(type, payload)

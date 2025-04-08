@@ -1,8 +1,7 @@
-console.log('[AppState Service] Starting')
 // Types
 import {
   AppDataFilters,
-  AppProcessEvents,
+  AppProcessTypes,
   AppProcessListener,
   AppProcessStoreClass
 } from '@shared/stores/appProcessStore'
@@ -10,11 +9,11 @@ import {
   App,
   AppManifest,
   LOGGING_LEVELS,
-  EventPayload,
-  ServerEvent,
-  SEND_TYPES
-} from '@DeskThing/types'
-import { ReplyFn, AppInstance, StagedAppManifest, CacheableStore } from '@shared/types'
+  APP_REQUESTS,
+  DESKTHING_EVENTS,
+  DeskThingToAppData
+} from '@deskthing/types'
+import { StagedAppManifest, CacheableStore, ProgressChannel } from '@shared/types'
 import {
   AppStoreClass,
   AppStoreListeners,
@@ -39,62 +38,52 @@ import { setAppData, setAppsData } from '../services/files/appFileService'
 import { sanitizeAppMeta } from '@server/services/apps/appValidator'
 import { AuthStoreClass } from '@shared/stores/authStore'
 import { nextTick } from 'node:process'
-
-// Mock functions
-// const getIcon = () => 'mock-icon-path'
-// const executeStagedFile = async () => ({ success: true })
-// const stageAppFile = async () => ({ success: true })
-// const stageAppFileType = { INSTALL: 'install', UPDATE: 'update' }
-// const loadAndRunEnabledApps = async () => ({ success: true })
-// const setAppData = async () => ({ success: true })
-// const setAppsData = async () => ({ success: true })
-// const sanitizeAppMeta = (meta: any) => {}
+import { progressBus } from '@server/services/events/progressBus'
 
 export class AppStore implements CacheableStore, AppStoreClass {
-  private apps: Record<string, AppInstance> = {}
+  private apps: Record<string, App> = {}
   private order: string[] = []
   private listeners: AppStoreListeners = {
-    apps: []
+    apps: [],
+    purging: []
   }
   private appProcessStore: AppProcessStoreClass
   private authStore: AuthStoreClass
   private functionTimeouts: Record<string, NodeJS.Timeout> = {}
+  private _initialized: boolean = false
+  public get initialized(): boolean {
+    return this._initialized
+  }
 
   constructor(appProcessStore: AppProcessStoreClass, authStore: AuthStoreClass) {
     this.appProcessStore = appProcessStore
     this.authStore = authStore
-    this.initializeListeners()
+  }
 
-    nextTick(async () => {
-      await this.loadApps()
-    })
+  async initialize(): Promise<void> {
+    if (this._initialized) return
+    this._initialized = true
+    this.appProcessStore.initialize()
+    this.initializeListeners()
+    await this.loadApps()
   }
 
   private initializeListeners = (): void => {
-    this.appProcessStore.onProcessEvent(
-      AppProcessEvents.STARTED,
-      this.handleProcessStarted.bind(this)
-    )
-    this.appProcessStore.onProcessEvent(
-      AppProcessEvents.RUNNING,
-      this.handleProcessRunning.bind(this)
-    )
-    this.appProcessStore.onProcessEvent(
-      AppProcessEvents.STOPPED,
-      this.handleProcessStopped.bind(this)
-    )
-    this.appProcessStore.onProcessEvent(AppProcessEvents.ERROR, this.handleProcessError.bind(this))
-    this.appProcessStore.onProcessEvent(AppProcessEvents.EXITED, this.handleProcessExit.bind(this))
+    this.appProcessStore.on(AppProcessTypes.STARTED, this.handleProcessStarted.bind(this))
+    this.appProcessStore.on(AppProcessTypes.RUNNING, this.handleProcessRunning.bind(this))
+    this.appProcessStore.on(AppProcessTypes.STOPPED, this.handleProcessStopped.bind(this))
+    this.appProcessStore.on(AppProcessTypes.ERROR, this.handleProcessError.bind(this))
+    this.appProcessStore.on(AppProcessTypes.EXITED, this.handleProcessExit.bind(this))
 
     // App Handling
-    this.onAppMessage(SEND_TYPES.TOAPP, (data) => {
-      this.sendDataToApp(data.source, data)
+    this.onAppMessage(APP_REQUESTS.TOAPP, (data) => {
+      this.sendDataToApp(data.source, data.payload)
     })
 
     this.authStore.on('appData', (data) => {
       if (this.apps[data.app]) {
         this.sendDataToApp(data.app, {
-          type: ServerEvent.CALLBACK_DATA,
+          type: DESKTHING_EVENTS.CALLBACK_DATA,
           payload: data.callbackData
         })
       }
@@ -198,7 +187,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
 
   async notifyApps(apps?: App[]): Promise<void> {
     if (!apps) {
-      apps = this.getAllBase()
+      apps = this.getAll()
     }
 
     // If there is a timeout running
@@ -242,23 +231,27 @@ export class AppStore implements CacheableStore, AppStoreClass {
    * @param listener The callback function to execute when message is received
    * @returns A function to unsubscribe the listener
    */
-  onAppMessage<T extends SEND_TYPES>(
+  onAppMessage<T extends APP_REQUESTS>(
     type: T,
     listener: AppProcessListener<T>,
     filters?: AppDataFilters<T>
   ): () => void {
     // Create a wrapper for the listener
     const wrappedListener: AppProcessListener<T> = async (data) => {
+      Logger.debug(`Received message from ${data.source}: ${data.type}:${data.request}`, {
+        source: 'AppStore',
+        function: 'onAppMessage'
+      })
+
+      Logger.debug(JSON.stringify(data.payload), {
+        source: 'AppStore',
+        function: 'onAppMessage'
+      })
+
       try {
-        if (this.apps[data.source]?.running) {
-          await listener(data)
-        } else {
-          Logger.error(`App ${data.source} is not running, not sending data`, {
-            source: 'AppStore',
-            function: 'onAppMessage',
-            domain: data.source
-          })
-        }
+        if (filters?.request && data.request !== filters.request) return
+        if (filters?.app && data.source !== filters.app) return
+        await listener(data)
       } catch (error) {
         Logger.error(`Error in app message listener for type ${type}`, {
           error: error as Error,
@@ -269,9 +262,9 @@ export class AppStore implements CacheableStore, AppStoreClass {
     }
 
     // Register with the process store using wrapped listener
-    const unsubscribe = this.appProcessStore.onMessage(type, wrappedListener, filters)
+    this.appProcessStore.on(type as APP_REQUESTS, wrappedListener)
 
-    return unsubscribe
+    return () => this.appProcessStore.off(type as APP_REQUESTS, wrappedListener)
   }
 
   on<K extends keyof AppStoreListenerEvents>(event: K, listener: AppStoreListener<K>): () => void {
@@ -377,7 +370,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
    * @param name The ID of the app
    * @returns
    */
-  get(name: string): AppInstance | undefined {
+  get(name: string): App | undefined {
     return this.apps[name]
   }
 
@@ -386,7 +379,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
    * @description Gets all apps
    * @returns all apps
    */
-  getAll(): AppInstance[] {
+  getAll(): App[] {
     return this.order.map((name) => this.apps[name])
   }
 
@@ -407,7 +400,13 @@ export class AppStore implements CacheableStore, AppStoreClass {
     if (!(name in this.apps)) {
       return false
     }
-    this.appProcessStore.postMessage(name, { type: 'purge' })
+    try {
+      this.appProcessStore.postMessage(name, { type: 'purge' })
+    } catch {
+      Logger.info(`It doesn't appear that ${name} was running`)
+    }
+
+    await this.notifyListeners('purging', { appName: name })
     // Wait for the app to fully purge
     await new Promise((resolve) => setTimeout(resolve, 500))
 
@@ -459,20 +458,30 @@ export class AppStore implements CacheableStore, AppStoreClass {
     return this.order
   }
 
-  async sendDataToApp(name: string, data: EventPayload): Promise<void> {
+  async broadcastToApps(data: DeskThingToAppData): Promise<void> {
+    const apps = this.getOrder()
+    Logger.debug(
+      `Broadcasting to ${apps.length} apps: ${JSON.stringify({ ...data, payload: 'Scrubbed Payload' })}`
+    )
+    apps.forEach((appId) => {
+      this.appProcessStore.postMessage(appId, {
+        type: 'data',
+        payload: data
+      })
+    })
+  }
+
+  async sendDataToApp(name: string, data: DeskThingToAppData): Promise<void> {
     try {
-      if (this.apps[name]?.running) {
-        await this.appProcessStore.postMessage(name, {
-          type: 'data',
-          payload: data
-        })
-      } else {
-        Logger.debug(`App ${name} is not running, not sending data`, {
-          source: 'AppStore',
-          function: 'sendDataToApp',
-          domain: name
-        })
-      }
+      Logger.debug(`Sending data to ${name}`, {
+        source: 'AppStore',
+        function: 'sendDataToApp',
+        domain: name
+      })
+      await this.appProcessStore.postMessage(name, {
+        type: 'data',
+        payload: data
+      })
     } catch (error) {
       Logger.error(`Error sending data to app ${name}: ${error}`, {
         source: 'AppStore',
@@ -488,11 +497,12 @@ export class AppStore implements CacheableStore, AppStoreClass {
    * @returns
    */
   async enable(name: string): Promise<boolean> {
-    if (!(name in this.apps)) {
+    const app = this.apps[name]
+    if (!app) {
       return false
     }
 
-    const result = await this.appProcessStore.spawnProcess(name)
+    const result = await this.appProcessStore.spawnProcess(app)
     return result
   }
 
@@ -530,9 +540,13 @@ export class AppStore implements CacheableStore, AppStoreClass {
       return false
     }
 
-    await this.appProcessStore.postMessage(name, {
-      type: ServerEvent.STOP
-    })
+    try {
+      await this.appProcessStore.postMessage(name, {
+        type: DESKTHING_EVENTS.STOP
+      })
+    } catch {
+      Logger.info(`It doesn't appear ${name} was running`)
+    }
 
     return true
   }
@@ -621,9 +635,18 @@ export class AppStore implements CacheableStore, AppStoreClass {
       domain: 'SERVER.' + name.toUpperCase()
     })
 
-    this.appProcessStore.postMessage(name, {
-      type: ServerEvent.START
-    })
+    try {
+      this.appProcessStore.postMessage(name, {
+        type: DESKTHING_EVENTS.START
+      })
+    } catch (error) {
+      Logger.error(`Error starting ${name}: ${error}`, {
+        source: 'AppStore',
+        function: 'start',
+        error: error as Error,
+        domain: 'SERVER.' + name.toUpperCase()
+      })
+    }
 
     return true
   }
@@ -633,31 +656,41 @@ export class AppStore implements CacheableStore, AppStoreClass {
    * @returns Promise<void>
    */
   async runStagedApp({
-    reply,
     overwrite,
     appId,
     run = true
   }: {
-    reply?: ReplyFn
     overwrite?: boolean
     appId?: string
     run?: boolean
   }): Promise<void> {
+    progressBus.startOperation(
+      ProgressChannel.ST_APP_INITIALIZE,
+      'Running App',
+      'Initializing app run',
+      [
+        {
+          channel: ProgressChannel.FN_APP_INITIALIZE,
+          weight: 9
+        }
+      ]
+    )
+
     try {
       // TODO: Update to use the process
-      return await executeStagedFile({ reply, overwrite, appId, run })
+      await executeStagedFile({ overwrite, appId, run })
+      progressBus.complete(ProgressChannel.ST_APP_INITIALIZE, 'Run App', 'App run successfully')
     } catch (error) {
+      progressBus.error(
+        ProgressChannel.ST_APP_INITIALIZE,
+        'Error running app',
+        'Error while trying to run staged app'
+      )
       Logger.error('Error while trying to run staged app', {
         function: 'runStagedApp',
         source: 'AppStore',
         error: error as Error
       })
-      reply &&
-        reply('logging', {
-          status: false,
-          data: 'Error while trying to run staged app',
-          final: true
-        })
     }
   }
 
@@ -668,58 +701,45 @@ export class AppStore implements CacheableStore, AppStoreClass {
    */
   async addApp({
     filePath,
-    releaseMeta,
-    reply
+    releaseMeta
   }: stageAppFileType): Promise<StagedAppManifest | undefined> {
     Logger.log(LOGGING_LEVELS.LOG, `[store.addApp]: Running addApp for ${filePath}`)
 
     try {
-      reply &&
-        reply('logging', {
-          status: true,
-          data: 'Staging file...',
-          final: false
-        })
-      const newAppManifest = await stageAppFile({ filePath, releaseMeta, reply })
+      progressBus.startOperation(
+        ProgressChannel.ST_APP_INSTALL,
+        'Adding App',
+        'Initializing app installation',
+        [
+          {
+            channel: ProgressChannel.FN_APP_INSTALL,
+            weight: 8
+          }
+        ]
+      )
+      const newAppManifest = await stageAppFile({ filePath, releaseMeta })
 
       if (!newAppManifest) {
-        reply &&
-          reply('logging', {
-            status: false,
-            data: 'Unable to stage app',
-            final: true
-          })
+        progressBus.error(
+          ProgressChannel.ST_APP_INSTALL,
+          'Error staging app',
+          'Unable to find the new app manifest'
+        )
         return
       }
 
-      reply &&
-        reply('logging', {
-          status: true,
-          data: 'Finalizing...',
-          final: true
-        })
+      progressBus.complete(ProgressChannel.ST_APP_INSTALL, 'Add App', 'App added successfully')
 
       return newAppManifest
     } catch (e) {
       if (e instanceof Error) {
-        Logger.log(LOGGING_LEVELS.ERROR, `[store.addApp]: ${e.message}`)
-        reply &&
-          reply('logging', {
-            status: false,
-            data: 'Unable to stage app',
-            error: e.message,
-            final: true
-          })
+        Logger.error(`[store.addApp]: ${e.message}`)
+        progressBus.error(ProgressChannel.ST_APP_INSTALL, 'Error staging app', e.message)
       } else {
-        Logger.log(LOGGING_LEVELS.ERROR, `[store.addApp]: Unknown error ` + String(e))
-        reply &&
-          reply('logging', {
-            status: false,
-            data: 'Unable to stage app',
-            error: String(e),
-            final: true
-          })
+        Logger.error(`[store.addApp]: Unknown error ` + String(e))
+        progressBus.error(ProgressChannel.ST_APP_INSTALL, 'Error staging app', String(e))
       }
+
       return
     }
   }

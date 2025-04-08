@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { LOGGING_LEVELS } from '@DeskThing/types'
+import { LOGGING_LEVELS } from '@deskthing/types'
 import { Log } from '@shared/types'
 
 export interface AuthScopes {
@@ -137,7 +137,7 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
   },
 
   resolveRequest: async (requestId: string, formData: Record<string, string>): Promise<void> => {
-    await window.electron.ping()
+    await window.electron.utility.ping()
 
     set((state) => ({
       requestQueue: state.requestQueue.filter((request) => request.appName !== requestId)

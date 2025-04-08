@@ -11,7 +11,7 @@ const AppDetails: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
     <div className="w-full h-full p-4 flex flex-col divide-y-2 divide-gray-500">
       <div className="w-full bg-black shadow-2xl rounded-2xl p-5">
         <div className="flex items-center gap-4 mb-4">
-          <AppIcon appId={app.manifest.id} className="text-white w-16 h-16" />
+          <AppIcon appId={app.manifest.id} className="text-white !w-16 !h-16" />
           <h2 className="text-xl font-bold text-white">{app.manifest.label}</h2>
         </div>
         <div className="space-y-2">

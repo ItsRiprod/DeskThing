@@ -7,36 +7,79 @@ import {
   IconRefresh,
   IconX
 } from '@renderer/assets/icons'
-import { Client, LoggingData } from '@shared/types'
-import React, { useState } from 'react'
+import { ProgressChannel } from '@shared/types'
+import React, { useEffect, useState } from 'react'
 import Button from '../Button'
-// import { useSettingsStore } from '@renderer/stores'
 import ClientDetailsOverlay from '@renderer/overlays/ClientDetailsOverlay'
-import DownloadNotification from '@renderer/overlays/DownloadNotification'
+import {
+  Client,
+  ClientConnectionMethod,
+  ClientPlatformIDs,
+  ConnectionState
+} from '@deskthing/types'
+import usePlatformStore from '@renderer/stores/platformStore'
+import { useChannelProgress } from '@renderer/hooks/useProgress'
 
 interface ConnectionComponentProps {
   client: Client
 }
 
 const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => {
-  // const port = useSettingsStore((settings) => settings.settings.devicePort)
-  const [loading, setLoading] = useState(false)
   const [animatingIcons, setAnimatingIcons] = useState<Record<string, boolean>>({})
-  const [logging, setLogging] = useState<LoggingData | null>()
   const [enabled, setEnabled] = useState(false)
-  const [showLogging, setShowLogging] = useState(false)
+  const { isLoading } = useChannelProgress(ProgressChannel.PLATFORM_CHANNEL)
+
+  const [connectedTimeText, setConnectedTimeText] = useState<string>('0s')
+
+  useEffect(() => {
+    const updateTime = (): number | undefined => {
+      if (!client.timestamp) {
+        setConnectedTimeText('0s')
+        return
+      }
+
+      const timeDiff = Math.floor((Date.now() - client.timestamp) / 1000)
+      let newText = '0s'
+      let interval = 1000
+
+      if (timeDiff < 5) {
+        const halfSecDiff = Math.floor((Date.now() - client.timestamp) / 100) / 10
+        newText = `${halfSecDiff}s`
+        interval = 100
+      } else if (timeDiff < 60) {
+        newText = `${timeDiff}s`
+      } else if (timeDiff < 3600) {
+        newText = `${Math.floor(timeDiff / 60)}m`
+        interval = 60000
+      } else {
+        newText = `${Math.floor(timeDiff / 3600)}h`
+        interval = 3600000
+      }
+
+      setConnectedTimeText(newText)
+      return interval
+    }
+
+    const interval = updateTime()
+    const timer = setInterval(updateTime, interval)
+
+    return () => clearInterval(timer)
+  }, [client.timestamp])
+  const sendCommand = usePlatformStore((state) => state.runCommand)
+  const disconnect = usePlatformStore((state) => state.disconnect)
+  const ping = usePlatformStore((state) => state.ping)
 
   const renderIcon = (): JSX.Element => {
-    if (!client.device_type) return <IconComputer iconSize={128} />
+    if (!client.manifest?.context) return <IconComputer iconSize={128} />
 
-    switch (client.device_type.id) {
-      case 1:
+    switch (client.manifest?.context.id) {
+      case ClientPlatformIDs.Desktop:
         return <IconComputer iconSize={128} />
-      case 2:
+      case ClientPlatformIDs.Tablet:
         return <IconComputer iconSize={128} />
-      case 3:
+      case ClientPlatformIDs.Iphone:
         return <IconMobile iconSize={128} />
-      case 4:
+      case ClientPlatformIDs.CarThing:
         return <IconCarThingSmall iconSize={128} />
       default:
         return <IconComputer iconSize={128} />
@@ -44,126 +87,83 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
   }
 
   const handleAdbCommand = async (command: string): Promise<string | undefined> => {
-    try {
-      setShowLogging(true)
-      setLogging({ status: true, final: false, data: command })
-      setLoading(true)
-      const response = await window.electron.handleClientADB(command)
-      if (response) {
-        setLoading(false)
-        setLogging({ status: true, final: true, data: response })
-        console.log('Response from adb command:', response)
-        return response
-      } else {
-        setLogging({ status: true, final: true, data: 'Sent Successfully!' })
-        setLoading(false)
-      }
-      return undefined
-    } catch (Error) {
-      setLogging({
-        status: false,
-        error: `${Error}`,
-        final: true,
-        data: 'Unable to send ADB command!'
-      })
-      console.log(Error)
-      return undefined
-    }
-  }
+    if (client.manifest?.context?.method !== ClientConnectionMethod.ADB) return
 
-  const onPushFinish = (): void => {
-    setLoading(false)
-    setShowLogging(false)
+    return await sendCommand(client.manifest.context.adbId, command)
   }
 
   const restartChromium = async (): Promise<void> => {
-    if (!client.adbId) return
+    if (client.manifest?.context.method !== ClientConnectionMethod.ADB) return
 
     setAnimatingIcons((prev) => ({ ...prev, chromium: true }))
-    await handleAdbCommand(`-s ${client.adbId.split(' ')[0]} shell supervisorctl restart chromium`)
+    await handleAdbCommand(
+      `-s ${client.manifest.context.adbId} shell supervisorctl restart chromium`
+    )
     setAnimatingIcons((prev) => ({ ...prev, chromium: false }))
   }
 
   const handlePing = async (): Promise<void> => {
     setAnimatingIcons((prev) => ({ ...prev, ping: true }))
-    await window.electron.pingClient(client.connectionId)
-
-    setShowLogging(true)
-    setLogging({ status: true, final: false, data: 'Pinging client...' })
-
-    const pongPromise = new Promise<void>((resolve) => {
-      const onPong = (_event: Electron.IpcRendererEvent, payload: string): void => {
-        console.log(`Got ping response from ${client.connectionId}: `, payload)
-        setLogging({ status: true, final: true, data: `Ping successful: ${payload}` })
-        setTimeout(() => {
-          setAnimatingIcons((prev) => ({ ...prev, ping: false }))
-        }, 1000)
-        resolve()
-      }
-      window.electron.ipcRenderer.once(`pong-${client.connectionId}`, onPong)
-    })
-
-    const timeoutPromise = new Promise<void>((resolve) => {
-      setTimeout(() => {
-        console.log(`Ping timed out for ${client.connectionId}`)
-        setLogging({ status: false, final: true, data: 'Ping timed out' })
-        setAnimatingIcons((prev) => ({ ...prev, ping: false }))
-        resolve()
-      }, 5000)
-    })
-
-    try {
-      await Promise.race([pongPromise, timeoutPromise])
-    } finally {
-      window.electron.ipcRenderer.removeAllListeners(`pong-${client.connectionId}`)
-    }
+    await ping(client.clientId)
   }
 
   const handleDisconnect = (): void => {
-    window.electron.disconnectClient(client.connectionId)
+    disconnect(client.clientId)
+  }
+
+  const getConnectionStateColor = (state: ConnectionState): string => {
+    switch (state) {
+      case ConnectionState.Connected:
+      case ConnectionState.Established:
+        return 'text-green-500'
+      case ConnectionState.Connecting:
+        return 'text-yellow-500'
+      case ConnectionState.Failed:
+        return 'text-red-500'
+      default:
+        return 'text-gray-500'
+    }
   }
 
   return (
     <div className="w-full p-4 border rounded-xl border-zinc-900 flex flex-col lg:flex-row gap-4 justify-center items-center lg:justify-between bg-zinc-950">
       {enabled && <ClientDetailsOverlay client={client} onClose={() => setEnabled(false)} />}
-      {logging && showLogging && (
-        <DownloadNotification
-          loggingData={logging}
-          onClose={onPushFinish}
-          title="Running command"
-        />
-      )}
-      <div className="flex gap-2 items-center">
+      <div className="flex gap-4 items-center">
         {renderIcon()}
         <div>
-          <p>Platform</p>
-          <h2 className="text-2xl">{client.device_type?.name || 'Unknown Platform'}</h2>
-          <h2 className="text-sm text-gray-500 font-geistMono">
-            {client.adbId || client.connectionId}
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl">{client.manifest?.name || 'Unknown Device'}</h2>
+            <span className={`text-sm ${getConnectionStateColor(client.connectionState)}`}>
+              {ConnectionState[client.connectionState]}
+            </span>
+          </div>
+          <p className="text-gray-400">
+            {client.manifest?.context.ip}:{client.manifest?.context.port}
+          </p>
+          <p className="text-sm text-gray-500 font-geistMono">{client.clientId}</p>
+          {client.manifest?.context.method === ClientConnectionMethod.ADB && (
+            <p className="text-sm text-gray-400">ADB: {client.manifest.context.adbId}</p>
+          )}
+          <p className="text-sm text-gray-400">Connected for: {connectedTimeText}</p>
         </div>
       </div>
       <div className="flex gap-2 items-center">
-        {client.adbId && (
-          <>
-            <Button
-              title="Restart Chromium on the Device"
-              className="group hover:bg-zinc-900 gap-2"
-              onClick={restartChromium}
-              disabled={loading}
-            >
-              <IconRefresh
-                className={
-                  animatingIcons.chromium
-                    ? 'rotate-[360deg] transition-transform duration-1000'
-                    : ''
-                }
-              />
-              <p className="hidden group-hover:block">
-                Restart <span className="hidden lg:inline">Chromium</span>
-              </p>
-            </Button>
-          </>
+        {client.manifest?.context.method === ClientConnectionMethod.ADB && (
+          <Button
+            title="Restart Chromium on the Device"
+            className="group hover:bg-zinc-900 gap-2"
+            onClick={restartChromium}
+            disabled={isLoading}
+          >
+            <IconRefresh
+              className={
+                animatingIcons.chromium ? 'rotate-[360deg] transition-transform duration-1000' : ''
+              }
+            />
+            <p className="hidden group-hover:block">
+              Restart <span className="hidden lg:inline">Chromium</span>
+            </p>
+          </Button>
         )}
         <Button
           title="Client Details and Settings"
@@ -174,13 +174,13 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
           <p className="hidden group-hover:block">Details</p>
         </Button>
         <Button title="Ping Client" className="group hover:bg-zinc-900 gap-2" onClick={handlePing}>
-          <IconPing className={animatingIcons.ping ? 'animate-ping' : ''} />
+          <IconPing className={isLoading ? 'animate-ping' : ''} />
           <p className="hidden group-hover:block">Ping</p>
         </Button>
         <Button
           title="Disconnect Client"
           className="group bg-red-700 gap-2"
-          disabled={loading}
+          disabled={isLoading}
           onClick={handleDisconnect}
         >
           <IconX />

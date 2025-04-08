@@ -1,4 +1,4 @@
-import { SettingOption } from '@DeskThing/types'
+import { SettingOption } from '@deskthing/types'
 import React from 'react'
 import ReactSelect, { MenuPlacement, MultiValue, SingleValue } from 'react-select'
 

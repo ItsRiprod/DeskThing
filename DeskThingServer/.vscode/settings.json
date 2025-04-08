@@ -10,6 +10,8 @@
   },
   "cSpell.words": [
     "norndis",
-    "Reflash"
-  ]
+    "Reflash",
+    "TOAPP"
+  ],
+  "typescript.tsdk": "node_modules\\typescript\\lib"
 }

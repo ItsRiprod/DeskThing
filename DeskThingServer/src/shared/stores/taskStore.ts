@@ -1,4 +1,5 @@
 import { Task, Step } from '@deskthing/types'
+import { StoreInterface } from '@shared/interfaces/storeInterface'
 import { FullTaskList } from '@shared/types'
 
 export type TaskStoreEvents = {
@@ -21,7 +22,7 @@ export type TaskStoreListeners = {
   [K in keyof TaskStoreEvents]: TaskStoreListener<K>[]
 }
 
-export interface TaskStoreClass {
+export interface TaskStoreClass extends StoreInterface {
   /**
    * Clears the task store cache
    */

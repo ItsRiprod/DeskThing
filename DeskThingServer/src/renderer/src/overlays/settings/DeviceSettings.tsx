@@ -14,7 +14,7 @@ const DeviceSettings: React.FC = () => {
   }
 
   const handleRefreshFirewall = (): void => {
-    window.electron.refreshFirewall()
+    window.electron.utility.refreshFirewall()
     setFirewallOutput([])
     console.log('Refreshing firewall')
     const unsubscribe = window.electron.ipcRenderer.on('logging', (_event, reply) => {

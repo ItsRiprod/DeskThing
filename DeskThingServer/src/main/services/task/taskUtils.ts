@@ -1,5 +1,5 @@
 import { isValidAction } from '../mappings/mapsValidation'
-import { Step, STEP_TYPES, Task } from '@DeskThing/types'
+import { Step, STEP_TYPES, Task } from '@deskthing/types'
 import { TaskReference, FullTaskList } from '@shared/types'
 
 export function isValidTaskList(taskList: unknown): asserts taskList is FullTaskList {
@@ -205,7 +205,7 @@ export const sanitizeStep = (step: Partial<Step>, source?: string, parentId?: st
         ...newStep,
         type: STEP_TYPES.ACTION,
         // Should be fixed with a sanitized action but that does not exist yet
-        action: step.action ? step.action : 'unknown'
+        action: step.action ? step.action : { id: 'unknown', source: 'server' }
       }
     case STEP_TYPES.SHORTCUT:
       return {
@@ -218,14 +218,13 @@ export const sanitizeStep = (step: Partial<Step>, source?: string, parentId?: st
         ...newStep,
         type: STEP_TYPES.SETTING,
         // Should be fixed with a sanitized setting but that does not exist yet
-        setting: step.setting ? step.setting : 'unknown'
+        setting: step.setting ? step.setting : { id: 'unknown' }
       }
     case STEP_TYPES.TASK:
       return {
         ...newStep,
         type: STEP_TYPES.TASK,
-        taskId: step.taskId || '',
-        taskSource: step.taskSource || source || ''
+        taskReference: step.taskReference
       }
     case STEP_TYPES.EXTERNAL:
       return {
@@ -307,7 +306,8 @@ export function isValidTaskSetting(
     'color'
   ] as const
 
-  if (typeof s.setting === 'string') {
+  if (!('type' in s.setting)) {
+    if (!s.setting.id) throw new Error(`[ValidateTaskSetting] Step ${s.id} does not have an id`)
     return // early break for string types
   }
 
@@ -325,7 +325,7 @@ export function isValidTaskTask(
   validateStepBase(step, STEP_TYPES.TASK)
   const s = step as Partial<Extract<Step, { type: STEP_TYPES.TASK }>>
 
-  if (!s.taskId) {
+  if (!s.taskReference || !s.taskReference.source || !s.taskReference.id) {
     throw new Error(`[ValidateTaskTask] Step ${s.id} does not have a taskId`)
   }
 }

@@ -9,16 +9,17 @@ import {
   IconLoading,
   IconRefresh
 } from '@renderer/assets/icons'
-import { useClientStore, useGithubStore, usePageStore } from '@renderer/stores'
+import { useClientStore, useReleaseStore, usePageStore } from '@renderer/stores'
 import MainElement from '@renderer/nav/MainElement'
-import DownloadNotification from '@renderer/overlays/DownloadNotification'
 import { useSearchParams } from 'react-router-dom'
 import useTaskStore from '@renderer/stores/taskStore'
-import { ClientReleaseMeta } from '@DeskThing/types'
+import { ClientReleaseMeta } from '@deskthing/types'
+import { ProgressChannel } from '@shared/types'
+import ProgressOverlay from '@renderer/overlays/ProgressOverlay'
 
 const ClientDownloads: React.FC = () => {
-  const clientReleases = useGithubStore((githubStore) => githubStore.clientReleases)
-  const refresh = useGithubStore((githubStore) => githubStore.refreshData)
+  const clientReleases = useReleaseStore((releaseStore) => releaseStore.clientReleases)
+  const refresh = useReleaseStore((releaseStore) => releaseStore.refreshData)
 
   const installedClient = useClientStore((clientStore) => clientStore.clientManifest)
   const refreshClient = useClientStore((clientStore) => clientStore.requestClientManifest)
@@ -30,11 +31,8 @@ const ClientDownloads: React.FC = () => {
 
   const resolveStep = useTaskStore((store) => store.resolveStep)
 
-  const logging = useClientStore((clientStore) => clientStore.logging)
-
   const [searchParams, setSearchParams] = useSearchParams()
   // Displaying overlays
-  const [showLogging, setShowLogging] = useState(false)
   const [selectingFile, setSelectingFile] = useState(false)
   const [loading, setLoading] = useState(false)
 
@@ -48,12 +46,11 @@ const ClientDownloads: React.FC = () => {
   const handleUploadClick = async (): Promise<void> => {
     setSelectingFile(true)
     setLoading(true)
-    const file = await window.electron.selectZipFile()
+    const file = await window.electron.utility.selectZipFile()
     setLoading(false)
     setSelectingFile(false)
     if (file) {
       setLoading(true)
-      setShowLogging(true)
       try {
         await loadClientZip(file)
       } catch {
@@ -61,30 +58,27 @@ const ClientDownloads: React.FC = () => {
       } finally {
         setTimeout(() => {
           setLoading(false)
-          setShowLogging(false)
         }, 5000)
       }
     }
   }
 
   const handleDownloadFinalized = (): void => {
-    setShowLogging(false)
+    setLoading(false)
+    resolveStep('client', 'download')
+  }
+
+  const handleDownloadError = (): void => {
+    setLoading(false)
   }
 
   const handleDownloadClick = async (url: string): Promise<void> => {
-    setShowLogging(true)
     setLoading(true)
     try {
       await loadClientUrl(url)
-      setTimeout(() => {
-        setLoading(false)
-        resolveStep('client', 'download')
-      }, 2000)
-    } catch {
-      setTimeout(() => {
-        setLoading(false)
-        setShowLogging(false)
-      }, 2000)
+    } catch (error) {
+      setLoading(false)
+      console.error('Failed to download client', error)
     }
   }
 
@@ -107,13 +101,11 @@ const ClientDownloads: React.FC = () => {
 
   return (
     <div className="flex h-full w-full">
-      {logging && showLogging && (
-        <DownloadNotification
-          title="Loading Client..."
-          loggingData={logging}
-          onClose={handleDownloadFinalized}
-        />
-      )}
+      <ProgressOverlay
+        channel={ProgressChannel.IPC_CLIENT}
+        onError={handleDownloadError}
+        onClose={handleDownloadFinalized}
+      />
       <Sidebar className="flex justify-between flex-col h-full max-h-full md:items-stretch xs:items-center">
         <div className="flex flex-col gap-2 items-center justify-center">
           {installedClient ? (
@@ -125,7 +117,7 @@ const ClientDownloads: React.FC = () => {
               </div>
               <div className="md:hidden xs:flex hidden flex-col items-center">
                 <p>{installedClient.short_name}</p>
-                <p>{installedClient.version_code}</p>
+                <p>{installedClient.version}</p>
               </div>
             </div>
           ) : (

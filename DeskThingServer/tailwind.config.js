@@ -38,13 +38,28 @@ export default {
             opacity: '1',
             transform: 'translateY(0)'
           }
+        },
+        'pop-in': {
+          '0%': {
+            opacity: '0',
+            transform: 'scale(0.7)'
+          },
+          '80%': {
+            opacity: '1',
+            transform: 'scale(1.02)'
+          },
+          '100%': {
+            opacity: '1',
+            transform: 'scale(1)'
+          }
         }
       },
       animation: {
         'spin-smooth': 'spin 1.3s ease-in-out infinite;',
         'fade-in-down': 'fade-in-down 0.5s ease-out',
         'fade-out': 'fade-in-down 0.2s ease-out reverse forwards',
-        fade: 'fade 0.2s ease-out forwards'
+        fade: 'fade 0.2s ease-out forwards',
+        'pop-in': 'pop-in 0.2s ease-out forwards'
       }
     }
   }

@@ -5,8 +5,8 @@
  * @version 0.9.4
  */
 import { create } from 'zustand'
-import { ButtonMapping, Profile } from '@shared/types'
-import { Action, Key, ActionReference } from '@deskthing/types'
+import { Action, Key, ActionReference, ButtonMapping, Profile } from '@deskthing/types'
+import { IpcRendererCallback } from '@shared/types'
 
 const DefaultProfile: Profile = {
   id: 'default',
@@ -21,7 +21,9 @@ interface MappingStoreState {
   profiles: Profile[]
   actions: Action[]
   keys: Key[]
+  initialized: boolean
 
+  initialize: () => Promise<void>
   getProfiles: () => Promise<Profile[]>
   getProfile: (profileName: string) => Promise<ButtonMapping>
   saveProfile: (profile: ButtonMapping) => Promise<void>
@@ -40,7 +42,7 @@ interface MappingStoreState {
   setKeys: (keys: Key[]) => Promise<void>
   getKeyById: (keyId: string) => Promise<Key | undefined>
   setActions: (actions: Action[]) => Promise<void>
-  getActions: () => Promise<Action[]>
+  getActions: () => Promise<Action[] | undefined>
 
   getActionFromReference: (
     action: ActionReference | { id: string; source: string }
@@ -59,31 +61,64 @@ const useMappingStore = create<MappingStoreState>(
     actions: [],
     keys: [],
     profiles: [],
+    initialized: false,
+
+    initialize: async () => {
+      if (get().initialized) return
+
+      const handleKeyUpdate: IpcRendererCallback<'key'> = (_event, key): void => {
+        get().setKeys(key)
+      }
+      const handleActionUpdate: IpcRendererCallback<'action'> = async (
+        _event,
+        action
+      ): Promise<void> => {
+        get().setActions(action)
+      }
+      const handleProfileUpdate: IpcRendererCallback<'profile'> = async (
+        _event,
+        profile
+      ): Promise<void> => {
+        get().setProfile(profile)
+        const currentProfile = await window.electron.utility.getCurrentProfile()
+        if (currentProfile) {
+          get().setCurrentProfile(currentProfile)
+        }
+      }
+
+      window.electron.ipcRenderer.on('key', handleKeyUpdate)
+      window.electron.ipcRenderer.on('action', handleActionUpdate)
+      window.electron.ipcRenderer.on('profile', handleProfileUpdate)
+
+      await get().requestMappings()
+
+      set({ initialized: true })
+    },
 
     getProfiles: async (): Promise<Profile[]> => {
-      const profileList = await window.electron.getProfiles()
+      const profileList = await window.electron.utility.getProfiles()
       set({ profiles: profileList })
       return profileList
     },
 
     getProfile: async (profileName): Promise<ButtonMapping> => {
-      const profile = (await window.electron.getProfile(profileName)) as ButtonMapping
+      const profile = (await window.electron.utility.getProfile(profileName)) as ButtonMapping
       return profile
     },
 
     saveProfile: async (profile): Promise<void> => {
-      await window.electron.saveProfile(profile)
+      await window.electron.utility.saveProfile(profile)
     },
 
     addProfile: async (profile): Promise<void> => {
-      await window.electron.addProfile(profile)
+      await window.electron.utility.addProfile(profile)
       await get().setCurrentProfile(profile)
       await get().requestMappings()
       set({ profiles: [...get().profiles, profile] })
     },
 
     deleteProfile: async (profile): Promise<void> => {
-      await window.electron.deleteProfile(profile)
+      await window.electron.utility.deleteProfile(profile)
     },
 
     setProfile: async (mapping): Promise<void> => {
@@ -91,22 +126,29 @@ const useMappingStore = create<MappingStoreState>(
     },
 
     setCurrentProfile: async (profile: Profile): Promise<void> => {
-      window.electron.setCurrentProfile(profile)
+      window.electron.utility.setCurrentProfile(profile)
       set({ currentProfile: profile })
     },
 
     requestMappings: async (): Promise<void> => {
-      const actions = await window.electron.getActions()
-      const keys = await window.electron.getKeys()
-      const currentProfile = (await window.electron.getCurrentProfile()) || 'default'
-      const profile = await window.electron.getProfile(currentProfile.id)
-      set({ actions, keys, currentMapping: profile, currentProfile })
+      const actions = await window.electron.utility.getActions()
+      const keys = await window.electron.utility.getKeys()
+      const currentProfile = await window.electron.utility.getCurrentProfile()
+      if (currentProfile) {
+        const profile = await window.electron.utility.getProfile(currentProfile.id)
+        set({
+          actions: actions || undefined,
+          keys: keys || undefined,
+          currentMapping: profile || undefined,
+          currentProfile: currentProfile || undefined
+        })
+      }
     },
 
     getKeys: async (): Promise<Key[]> => {
-      const keys = await window.electron.getKeys()
-      set({ keys })
-      return keys
+      const keys = await window.electron.utility.getKeys()
+      set({ keys: keys || [] })
+      return keys || []
     },
 
     getKeyById: async (keyId: string): Promise<Key | undefined> => {
@@ -118,10 +160,10 @@ const useMappingStore = create<MappingStoreState>(
       set({ keys })
     },
 
-    getActions: async (): Promise<Action[]> => {
-      const actions = await window.electron.getActions()
-      set({ actions })
-      return actions
+    getActions: async (): Promise<Action[] | undefined> => {
+      const actions = await window.electron.utility.getActions()
+      set({ actions: actions || undefined })
+      return actions || undefined
     },
 
     getActionFromReference: (
@@ -136,7 +178,7 @@ const useMappingStore = create<MappingStoreState>(
     getIcon: async (actionRef: Action | ActionReference): Promise<string | null> => {
       const action = get().actions.find((a) => a.id === actionRef.id)
 
-      return window.electron.getIcon(action)
+      return (action && window.electron.client.getIcon(action)) || null
     },
 
     setActions: async (actions): Promise<void> => {
@@ -144,15 +186,15 @@ const useMappingStore = create<MappingStoreState>(
     },
 
     addKey: async (key): Promise<void> => {
-      await window.electron.addKey(key)
+      await window.electron.utility.addKey(key)
     },
 
     removeKey: async (keyId): Promise<void> => {
-      await window.electron.deleteKey(keyId)
+      await window.electron.utility.deleteKey(keyId)
     },
 
     executeAction: async (action): Promise<void> => {
-      await window.electron.runAction(action)
+      await window.electron.utility.runAction(action)
     }
   })
 )

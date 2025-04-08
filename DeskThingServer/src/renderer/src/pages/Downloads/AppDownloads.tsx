@@ -13,17 +13,18 @@ import {
   IconStop,
   IconUpload
 } from '@renderer/assets/icons'
-import { useAppStore, useGithubStore, usePageStore } from '@renderer/stores'
+import { useAppStore, useReleaseStore, usePageStore } from '@renderer/stores'
 import MainElement from '@renderer/nav/MainElement'
-import DownloadNotification from '@renderer/overlays/DownloadNotification'
 import { SuccessNotification } from '@renderer/overlays/SuccessNotification'
-import { AppReleaseCommunity, AppReleaseMeta, AppReleaseSingleMeta } from '@DeskThing/types'
+import { AppReleaseCommunity, AppReleaseMeta, AppReleaseSingleMeta } from '@deskthing/types'
 import AddRepoOverlay from '@renderer/overlays/AddRepoOverlay'
+import { ProgressChannel } from '@shared/types'
+import ProgressOverlay from '@renderer/overlays/ProgressOverlay'
 
 /**
  * The `AppDownloads` component is responsible for rendering the downloads page of the application. It displays a list of available app downloads, allows users to upload their own app, and provides a link to the client downloads page.
  *
- * The component uses various hooks from the `useAppStore`, `useGithubStore`, and `usePageStore` stores to manage the state and functionality of the page. It also uses several custom components, such as `Sidebar`, `Button`, and various overlay components.
+ * The component uses various hooks from the `useAppStore`, `useReleaseStore`, and `usePageStore` stores to manage the state and functionality of the page. It also uses several custom components, such as `Sidebar`, `Button`, and various overlay components.
  *
  * The main features of the `AppDownloads` component include:
  * - Displaying a list of available app downloads, with the ability to download the latest version of each app
@@ -33,23 +34,21 @@ import AddRepoOverlay from '@renderer/overlays/AddRepoOverlay'
  * - Handling errors and edge cases, such as when the GitHub API limit is reached
  */
 const AppDownloads: React.FC = () => {
-  const appReleases = useGithubStore((githubStore) => githubStore.appReleases)
-  const communityApps = useGithubStore((githubStore) => githubStore.communityApps)
-  const getApps = useGithubStore((githubStore) => githubStore.getApps)
-  const getAppReferences = useGithubStore((githubStore) => githubStore.getAppReferences)
-  const addRepo = useGithubStore((githubStore) => githubStore.addAppRepo)
-  const removeRepo = useGithubStore((githubStore) => githubStore.removeAppRepo)
-  const refresh = useGithubStore((githubStore) => githubStore.refreshData)
-  const addApp = useAppStore((appStore) => appStore.addApp)
+  const appReleases = useReleaseStore((releaseStore) => releaseStore.appReleases)
+  const communityApps = useReleaseStore((releaseStore) => releaseStore.communityApps)
+  const getApps = useReleaseStore((releaseStore) => releaseStore.getApps)
+  const getAppReferences = useReleaseStore((releaseStore) => releaseStore.getAppReferences)
+  const addRepo = useReleaseStore((releaseStore) => releaseStore.addAppRepo)
+  const removeRepo = useReleaseStore((releaseStore) => releaseStore.removeAppRepo)
+  const refresh = useReleaseStore((releaseStore) => releaseStore.refreshData)
+  const addApp = useAppStore((state) => state.addApp)
   const stagedAppManifest = useAppStore((appStore) => appStore.stagedManifest)
-  const logging = useAppStore((appStore) => appStore.logging)
 
   const [uiState, setUiState] = useState({
     showCommunity: false,
     refreshingApps: false
   })
 
-  const [showLogging, setShowLogging] = useState(false)
   const [selectingFile, setSelectingFile] = useState(false)
   const [loading, setLoading] = useState(false)
   const [addAppRepoOverlay, setAddAppRepoOverlay] = useState(false)
@@ -66,36 +65,35 @@ const AppDownloads: React.FC = () => {
   }
 
   const handleDownloadFinalized = (): void => {
-    setShowLogging(false)
+    setLoading(false)
+  }
+
+  const handleDownloadError = (): void => {
     setLoading(false)
   }
 
   const handleUploadClick = async (): Promise<void> => {
     setSelectingFile(true)
     setLoading(true)
-    const file = await window.electron.selectZipFile()
+    const file = await window.electron.utility.selectZipFile()
     setSelectingFile(false)
     setLoading(false)
     if (file) {
-      setShowLogging(true)
       setLoading(true)
       try {
         await addApp({ appPath: file })
       } catch {
-        setShowLogging(false)
         setLoading(false)
       }
     }
   }
 
   const handleDownloadClick = async (releaseMeta: AppReleaseSingleMeta): Promise<void> => {
-    setShowLogging(true)
     setLoading(true)
     try {
       await addApp({ releaseMeta: releaseMeta })
     } catch {
       await setTimeout(() => {
-        setShowLogging(false)
         setLoading(false)
       }, 2000)
     }
@@ -145,9 +143,16 @@ const AppDownloads: React.FC = () => {
 
   return (
     <div className="flex h-full w-full">
-      {logging && showLogging && (
-        <DownloadNotification loggingData={logging} onClose={handleDownloadFinalized} />
-      )}
+      <ProgressOverlay
+        channel={ProgressChannel.IPC_APPS}
+        onError={handleDownloadError}
+        onClose={handleDownloadFinalized}
+      />
+      <ProgressOverlay
+        channel={ProgressChannel.IPC_RELEASES}
+        onError={handleDownloadError}
+        onClose={handleDownloadFinalized}
+      />
       {addAppRepoOverlay && <AddRepoOverlay onClose={handleToggleAddRepo} onAdd={addRepo} />}
       {stagedAppManifest && <SuccessNotification />}
       <Sidebar className="flex justify-end flex-col h-full max-h-full md:items-stretch xs:items-center">

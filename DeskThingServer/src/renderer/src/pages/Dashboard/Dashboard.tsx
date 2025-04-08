@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import LogsWidget from './LogsWidget'
-import ClientsWidget from './ClientsWidget'
 import InfoWidget from './InfoWidget.tsx'
 import Sidebar from '@renderer/nav/Sidebar'
 import MainElement from '@renderer/nav/MainElement'
@@ -39,7 +38,6 @@ const DashboardItem: React.FC<DashboardItemProps> = ({ size, Component }) => {
 
 const Dashboard: React.FC = () => {
   const [items] = useState<DashboardItemProps[]>([
-    { size: 'small', Component: ClientsWidget },
     { size: 'horizontal', Component: WelcomeWidget },
     { size: 'vertical', Component: LogsWidget },
     { size: 'horizontal', Component: LogsWidget },

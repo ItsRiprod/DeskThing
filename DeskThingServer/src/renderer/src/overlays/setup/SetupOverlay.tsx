@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react'
 import Overlay from '../Overlay'
 import Button from '@renderer/components/Button'
-import { IconBluetooth, IconCarThingSmall, IconMobile } from '@renderer/assets/icons'
+import { IconBluetooth, IconCarThingSmall, IconLink, IconMobile } from '@renderer/assets/icons'
 import { useSearchParams } from 'react-router-dom'
 import ErrorBoundary from '@renderer/components/ErrorBoundary'
 import BluetoothPage from './BluetoothPage'
@@ -34,6 +34,10 @@ const SetupOverlay: React.FC = () => {
     setSearchParams(searchParams)
   }
 
+  const openClient = (): void => {
+    window.electron.client.openClient()
+  }
+
   return (
     <Overlay
       onClose={onClose}
@@ -59,6 +63,10 @@ const SetupOverlay: React.FC = () => {
             Icon={IconCarThingSmall}
             className="relative"
           />
+          <Button onClick={openClient} className={`relative gap-2 bg-zinc-900 hover:bg-zinc-800`}>
+            <IconLink iconSize="28" strokeWidth={2} />
+            <p className="hidden md:block">Client</p>
+          </Button>
         </div>
         <div className="flex w-full max-h-full h-full overflow-y-scroll">
           <ErrorBoundary key={page}>

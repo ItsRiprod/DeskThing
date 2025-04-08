@@ -14,7 +14,7 @@ import {
 } from '@renderer/assets/icons'
 import { useReward } from 'react-rewards'
 import { Log } from '@shared/types'
-import { LOGGING_LEVELS } from '@DeskThing/types'
+import { LOGGING_LEVELS } from '@deskthing/types'
 
 const colorMap = {
   [LOGGING_LEVELS.ERROR]: 'text-red-500',
@@ -27,7 +27,6 @@ const colorMap = {
 
 const Logs: React.FC = () => {
   const logList = useLogStore((state) => state.logList)
-  const getLogs = useLogStore((state) => state.getLogs)
   const [filter, setFilter] = useState<LOGGING_LEVELS | null>(null)
   const logContainerRef = useRef<HTMLDivElement>(null)
   const [autoScroll, setAutoScroll] = useState(true)
@@ -40,17 +39,13 @@ const Logs: React.FC = () => {
   )
 
   useEffect(() => {
-    getLogs()
-  }, [getLogs])
-
-  useEffect(() => {
     if (logContainerRef.current && autoScroll) {
       logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight
     }
   }, [filteredLogs, autoScroll])
 
   const handleLogsOpen = (): void => {
-    window.electron.openLogsFolder()
+    window.electron.utility.openLogsFolder()
   }
 
   const handleCopyLogs = (): void => {

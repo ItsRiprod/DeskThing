@@ -18,8 +18,8 @@ export default defineConfig({
       rollupOptions: {
         input: {
           index: resolve(__dirname, 'src/main/index.ts'),
-          expressProcess: resolve(__dirname, 'src/main/utilities/expressProcess.ts'),
-          appProcess: resolve(__dirname, 'src/main/utilities/appProcess.ts')
+          expressProcess: resolve(__dirname, 'src/main/processes/expressProcess.ts'),
+          appProcess: resolve(__dirname, 'src/main/processes/appProcess.ts')
         }
       }
     },
@@ -27,7 +27,7 @@ export default defineConfig({
       alias: {
         '@shared': resolve('src/shared'),
         '@server': resolve('src/main'),
-        '@utilities': resolve('src/main/utilities')
+        '@processes': resolve('src/main/processes')
       }
     }
   },

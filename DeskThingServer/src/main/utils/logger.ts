@@ -3,11 +3,10 @@
  * It writes log messages to a JSON file and a readable log file, and also logs messages to the console with colored output.
  * The log level can be configured through the `Settings` store.
  */
-console.log('[Logging Store] Starting')
 import fs, { existsSync } from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
-import { LOGGING_LEVELS } from '@DeskThing/types'
+import { LOGGING_LEVELS } from '@deskthing/types'
 import { Log, LOG_FILTER, ReplyData, ReplyFn, LoggingOptions } from '@shared/types'
 import { access, mkdir, readFile, rename, writeFile } from 'fs/promises'
 import { SettingsStoreClass } from '@shared/stores/settingsStore'

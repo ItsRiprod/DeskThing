@@ -1,0 +1,62 @@
+import { PlatformIPC } from '@shared/types/ipc/ipcPlatform'
+import Logger from '@server/utils/logger'
+import { storeProvider } from '@server/stores/storeProvider'
+import { PlatformIDs, PlatformStoreClass } from '@shared/stores/platformStore'
+import { progressBus } from '../events/progressBus'
+import { ProgressChannel } from '@shared/types'
+
+export const platformHandler = async <T extends PlatformIPC>(data: T): Promise<T['data']> => {
+  const platformStore = (await storeProvider.getStore('platformStore')) as PlatformStoreClass
+
+  progressBus.startOperation(
+    ProgressChannel.IPC_PLATFORM,
+    `Running ${data.type}`,
+    'Initializing request',
+    [
+      {
+        channel: ProgressChannel.PLATFORM_CHANNEL,
+        weight: 100
+      }
+    ]
+  )
+
+  try {
+    Logger.debug(`Handling platform event for ${data.platform} with data ${JSON.stringify(data)}`, {
+      domain: 'platform',
+      source: 'platformHandler'
+    })
+
+    let returnData: T['data']
+
+    if (data.platform === PlatformIDs.MAIN) {
+      switch (data.type) {
+        case 'refresh-clients':
+          await platformStore.refreshClients()
+          returnData = await platformStore.fetchClients()
+      }
+    } else {
+      returnData = await platformStore.sendPlatformData(data)
+    }
+
+    progressBus.complete(
+      ProgressChannel.IPC_PLATFORM,
+      `Completed the operation`,
+      `Finished ${data.type}`
+    )
+    return returnData
+  } catch (error) {
+    progressBus.error(
+      ProgressChannel.IPC_PLATFORM,
+      `Error handling ${data.type}`,
+      'Error handling request',
+      'Platform Error'
+    )
+
+    Logger.error(`Error handling platform event for ${data.platform}`, {
+      error: error as Error,
+      domain: 'platform',
+      source: 'platformHandler'
+    })
+    return
+  }
+}

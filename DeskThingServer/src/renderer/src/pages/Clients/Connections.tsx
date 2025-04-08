@@ -8,13 +8,12 @@ import { deviceMessages } from '@renderer/assets/refreshMessages'
 import ConnectionComponent from '@renderer/components/Client/Connection'
 import { useSearchParams } from 'react-router-dom'
 import ADBDevice from '@renderer/components/Client/ADBDevice'
+import ProgressOverlay from '@renderer/overlays/ProgressOverlay'
+import { ProgressChannel } from '@shared/types'
 
 const ClientConnections: React.FC = () => {
   const settings = useSettingsStore((settings) => settings.settings)
-  const clients = useClientStore((clients) => clients.clients)
-  const stagedClient = useClientStore((clients) => clients.clientManifest)
-  const devices = useClientStore((clients) => clients.ADBDevices)
-  const refreshClients = useClientStore((clients) => clients.requestADBDevices)
+  const { clients, clientManifest, devices, refreshConnections } = useClientStore((state) => state)
   const setPage = usePageStore((pageStore) => pageStore.setPage)
 
   // Visibility States
@@ -47,10 +46,11 @@ const ClientConnections: React.FC = () => {
     }
   }, [refreshCount])
 
-  const handleRefresh = (): void => {
+  const handleRefresh = async (): Promise<void> => {
     if (!isRefreshing) {
       setIsRefreshing(true)
-      refreshClients()
+      const res = await refreshConnections()
+      console.log('Found', res)
       setTimeout(
         () => {
           setIsRefreshing(false)
@@ -77,14 +77,16 @@ const ClientConnections: React.FC = () => {
 
   const handleRestartServerClick = async (): Promise<void> => {
     setIsRestarting(true)
-    await window.electron.restartServer()
-    await setTimeout(() => {
+    await window.electron.utility.restartServer()
+    setTimeout(() => {
       setIsRestarting(false)
     }, 1000)
   }
 
   return (
     <div className="flex h-full w-full">
+      <ProgressOverlay channel={ProgressChannel.IPC_PLATFORM} />
+      <ProgressOverlay channel={ProgressChannel.PLATFORM_CHANNEL} />
       <Sidebar className="flex justify-between flex-col h-full md:items-stretch xs:items-center">
         <div>
           <div className="md:block xs:hidden block">
@@ -96,10 +98,10 @@ const ClientConnections: React.FC = () => {
               ))}
             <div className="border-t border-gray-500 mt-4 pt-4">
               <p className="">Staged Client</p>
-              {stagedClient ? (
+              {clientManifest ? (
                 <>
-                  <p className="text-gray-500">{stagedClient.name}</p>
-                  <p className="text-gray-500">Version: {stagedClient.version}</p>
+                  <p className="text-gray-500">{clientManifest.name}</p>
+                  <p className="text-gray-500">Version: {clientManifest.version}</p>
                 </>
               ) : (
                 <p className="text-red-500 font-semibold">No Client Downloaded</p>
@@ -138,7 +140,7 @@ const ClientConnections: React.FC = () => {
             >
               <IconRefresh strokeWidth={1.5} className={isRefreshing ? 'animate-spin' : ''} />
               <p className="md:block hidden text-center flex-grow">
-                {isRefreshing ? 'Searching...' : 'Refresh ADB'}
+                {isRefreshing ? 'Searching...' : 'Refresh'}
               </p>
             </Button>
             <Button
@@ -163,9 +165,7 @@ const ClientConnections: React.FC = () => {
           )}
           <div className="font-geistMono w-full h-full items-center flex flex-col gap-2 justify-center">
             {clients.length > 0 ? (
-              clients.map((client) => (
-                <ConnectionComponent key={client.connectionId} client={client} />
-              ))
+              clients.map((client) => <ConnectionComponent key={client.clientId} client={client} />)
             ) : (
               <div className="first-letter:">
                 <p>{deviceMessages[currentMessageIndex].message}</p>

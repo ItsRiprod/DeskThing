@@ -2,7 +2,7 @@ import { IconX } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
 import ErrorBoundary from '@renderer/components/ErrorBoundary'
 import FeedbackButton from '@renderer/components/FeedbackButton'
-import React, { useRef, useEffect, useState } from 'react'
+import React, { useRef, useEffect, useState, useMemo } from 'react'
 
 interface DownloadConfirmationProps {
   onClose: () => void
@@ -40,6 +40,8 @@ const Overlay: React.FC<DownloadConfirmationProps> = ({
     }
   }, [handleClose])
 
+  const memoChildren = useMemo(() => children, [children])
+
   return (
     <div
       className={`fixed ${isClosing ? 'animate-fade-out' : 'animate-fade'} inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50`}
@@ -57,7 +59,7 @@ const Overlay: React.FC<DownloadConfirmationProps> = ({
             <IconX />
           </Button>
         </div>
-        <ErrorBoundary>{children}</ErrorBoundary>
+        <ErrorBoundary>{memoChildren}</ErrorBoundary>
       </div>
     </div>
   )

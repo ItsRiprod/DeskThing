@@ -1,6 +1,5 @@
-console.log('[Settings Store] Starting')
 // Types
-import { LOGGING_LEVELS } from '@DeskThing/types'
+import { LOGGING_LEVELS } from '@deskthing/types'
 import { Settings, LOG_FILTER, CacheableStore } from '@shared/types'
 import { SettingsStoreClass, SettingsStoreListener } from '@shared/stores/settingsStore'
 
@@ -18,7 +17,14 @@ export class SettingsStore implements CacheableStore, SettingsStoreClass {
   private settingsFilePath: string = 'settings.json'
   private listeners: SettingsStoreListener[] = []
 
-  constructor() {
+  private _initialized: boolean = false
+  public get initialized(): boolean {
+    return this._initialized
+  }
+
+  async initialize(): Promise<void> {
+    if (this._initialized) return
+    this._initialized = true
     this.setupSettings()
   }
 
@@ -86,22 +92,26 @@ export class SettingsStore implements CacheableStore, SettingsStoreClass {
    */
   public async updateSetting(
     key: string,
-    value: boolean | undefined | string | number | string[],
-    atmps: number = 0
+    value: boolean | undefined | string | number | string[]
   ): Promise<void> {
     if (!this.settings) {
-      await this.getSettings()
-      // call update setting again to avoid null check
-      if (atmps < 3) {
-        return await this.updateSetting(key, value, atmps + 1)
-      } else return
+      try {
+        this.settings = await this.loadSettings()
+      } catch (error) {
+        Logger.error('Failed to load settings before update', {
+          source: 'settingsStore',
+          function: 'updateSetting',
+          error: error as Error
+        })
+        throw new Error('Failed to load settings before update')
+      }
     }
 
     if (key === 'autoStart' && typeof value === 'boolean') {
       this.updateAutoLaunch(value)
     }
     this.settings[key] = value
-    this.saveSettings()
+    await this.saveSettings()
   }
 
   /**
@@ -186,7 +196,11 @@ export class SettingsStore implements CacheableStore, SettingsStoreClass {
       )
       this.notifyListeners()
     } catch (err) {
-      console.error('Error saving settings:', err)
+      Logger.error('Unable to save settings!', {
+        source: 'settingsStore',
+        function: 'saveSettings',
+        error: err as Error
+      })
     }
   }
 

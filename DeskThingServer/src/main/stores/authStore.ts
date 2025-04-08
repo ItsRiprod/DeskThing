@@ -13,9 +13,20 @@ export class AuthStore extends EventEmitter<authStoreEventTypes> implements Auth
   private callbackPort: number = 8888
   private settingStore: SettingsStoreClass
 
+  private _initialized: boolean = false
+  public get initialized(): boolean {
+    return this._initialized
+  }
+
   constructor(settingStore: SettingsStoreClass) {
     super()
     this.settingStore = settingStore
+  }
+
+  async initialize(): Promise<void> {
+    if (this._initialized) return
+    this._initialized = true
+    this.settingStore.initialize()
     this.initializeServer()
     this.initializeListeners()
   }

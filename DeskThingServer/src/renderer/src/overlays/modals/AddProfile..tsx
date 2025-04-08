@@ -2,7 +2,7 @@ import { IconArrowRight } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
 import Overlay from '@renderer/overlays/Overlay'
 import useMappingStore from '@renderer/stores/mappingStore'
-import { Profile } from '@shared/types'
+import { Profile } from '@deskthing/types'
 import { FC, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 

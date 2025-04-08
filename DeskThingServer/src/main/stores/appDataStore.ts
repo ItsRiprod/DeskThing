@@ -3,22 +3,16 @@ import {
   AppDataInterface,
   SettingsType,
   AppSettings,
-  ServerEvent,
+  DESKTHING_EVENTS,
   Step,
   Task,
-  SEND_TYPES
-} from '@DeskThing/types'
+  APP_REQUESTS,
+  SavedData
+} from '@deskthing/types'
 import { TaskReference, CacheableStore, FullTaskList } from '@shared/types'
 import { TaskStoreClass } from '@shared/stores/taskStore'
 import { AppStoreClass } from '@shared/stores/appStore'
-import {
-  addSettingsOptions,
-  AppDataStoreClass,
-  AppDataStoreListener,
-  AppDataStoreListenerEvents,
-  AppDataStoreListeners,
-  NotifyListenersType
-} from '@shared/stores/appDataStore'
+import { addSettingsOptions, AppDataStoreClass, AppStoreEvents } from '@shared/stores/appDataStore'
 
 // Utils
 import Logger from '@server/utils/logger'
@@ -35,54 +29,78 @@ import { isValidAppDataInterface, isValidAppSettings } from '@server/services/ap
 
 // Validation
 import { isValidStep, isValidTask } from '@server/services/task'
+import EventEmitter from 'node:events'
 
-export class AppDataStore implements CacheableStore, AppDataStoreClass {
-  private listeners: AppDataStoreListeners = {
-    appData: [],
-    settings: [],
-    data: [],
-    tasks: [],
-    keys: [],
-    actions: []
-  }
-
+export class AppDataStore
+  extends EventEmitter<AppStoreEvents>
+  implements CacheableStore, AppDataStoreClass
+{
   private appDataCache: Record<string, AppDataInterface> = {}
 
   private functionTimeouts: Record<string, NodeJS.Timeout> = {}
 
   private appStore: AppStoreClass
 
+  private _initialized: boolean = false
+  public get initialized(): boolean {
+    return this._initialized
+  }
+
   constructor(appStore: AppStoreClass) {
+    super()
     this.appStore = appStore
-    this.initAppCache()
     this.initAppListeners()
   }
 
+  async initialize(): Promise<void> {
+    if (this._initialized) return
+    this._initialized = true
+    this.appStore.initialize()
+    this.initAppCache()
+  }
+
   private initAppListeners = (): void => {
-    this.appStore.onAppMessage(SEND_TYPES.GET, async (data) => {
+    this.appStore.onAppMessage(APP_REQUESTS.GET, async (data) => {
+      await this.initialize()
       switch (data.request) {
         case 'data': {
-          const appData = await this.getData(data.source)
+          const savedData = await this.getSavedData(data.source)
+          if (!savedData) {
+            Logger.warn(`Attempted to retrieve data for ${data.source} but it does not exist`)
+            return
+          }
           this.appStore.sendDataToApp(data.source, {
-            type: ServerEvent.DATA,
+            type: DESKTHING_EVENTS.DATA,
             request: 'data',
-            payload: appData
+            payload: savedData
           })
           break
         }
         case 'appData': {
           const appData = await this.getAppData(data.source)
+          if (!appData) {
+            Logger.warn(`Attempted to retrieve data for ${data.source} but it does not exist`)
+            return
+          }
           this.appStore.sendDataToApp(data.source, {
-            type: ServerEvent.APPDATA,
+            type: DESKTHING_EVENTS.APPDATA,
             request: 'data',
             payload: appData
           })
           break
         }
         case 'settings': {
+          Logger.debug(`Received settings request from ${data.source}`, {
+            source: 'AppDataStore',
+            function: 'onAppMessage'
+          })
           const settings = await this.getSettings(data.source)
+          if (!settings) {
+            Logger.warn(`Attempted to retrieve settings for ${data.source} but it does not exist`)
+            return
+          }
           this.appStore.sendDataToApp(data.source, {
-            type: ServerEvent.SETTINGS,
+            type: DESKTHING_EVENTS.SETTINGS,
             request: 'data',
             payload: settings
           })
@@ -102,12 +120,25 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
       }
     })
 
-    this.appStore.onAppMessage(SEND_TYPES.SET, async (data) => {
+    this.appStore.onAppMessage(APP_REQUESTS.SET, async (data) => {
+      await this.initialize()
       switch (data.request) {
         case 'appData': {
           try {
-            isValidAppDataInterface(data.payload)
-            await this.addAppData(data.source, data.payload)
+            if (data.legacy) {
+              Logger.debug(`Attempting to repair legacy app ${data.source} and set the data`, {
+                source: 'AppDataStore',
+                domain: 'SERVER.' + data.source.toUpperCase(),
+                function: 'handleRequestSetAppData'
+              })
+              const app = this.appStore.get(data.source)
+              await this.addAppData(data.source, {
+                ...data.payload,
+                version: app?.manifest?.version || '0.0.0'
+              })
+            } else {
+              await this.addAppData(data.source, data.payload)
+            }
           } catch (error) {
             Logger.error(`[handleRequestSetAppData]: Error setting app data`, {
               error: error as Error,
@@ -128,7 +159,8 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
       }
     })
 
-    this.appStore.onAppMessage(SEND_TYPES.DELETE, async (data) => {
+    this.appStore.onAppMessage(APP_REQUESTS.DELETE, async (data) => {
+      await this.initialize()
       switch (data.request) {
         case 'data': {
           await this.delData(data.source, data.payload)
@@ -139,6 +171,11 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
           break
         }
       }
+    })
+
+    this.appStore.on('purging', async ({ appName }) => {
+      await this.initialize()
+      await this.purgeAppData(appName)
     })
   }
   private initAppCache = async (): Promise<void> => {
@@ -168,7 +205,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
       source: 'AppDataStore',
       function: 'saveAppsToFile'
     })
-    this.notifyListeners('appData', this.appDataCache)
+    this.emit('appData', this.appDataCache)
   }
 
   private notifyAppFields = async (name: string, notifyApp = true): Promise<void> => {
@@ -189,29 +226,29 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
     fieldsToUpdate.forEach((field) => {
       if (!this.appDataCache[name][field]) return
 
-      this.notifyListeners(field, {
+      this.emit(field, {
         appId: name,
         data: this.appDataCache[name][field]
-      } as AppDataStoreListenerEvents[typeof field])
+      })
       if (notifyApp && name != 'server') {
         switch (field) {
           case 'data':
             this.appStore.sendDataToApp(name, {
-              type: ServerEvent.DATA,
+              type: DESKTHING_EVENTS.DATA,
               request: '',
               payload: this.appDataCache[name][field]
             })
             break
           case 'settings':
             this.appStore.sendDataToApp(name, {
-              type: ServerEvent.SETTINGS,
+              type: DESKTHING_EVENTS.SETTINGS,
               request: '',
               payload: this.appDataCache[name][field]
             })
             break
           case 'tasks':
             this.appStore.sendDataToApp(name, {
-              type: ServerEvent.TASKS,
+              type: DESKTHING_EVENTS.TASKS,
               request: 'update',
               payload: this.appDataCache[name][field]
             })
@@ -310,34 +347,6 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
     })
   }
 
-  private notifyListeners: NotifyListenersType = async (event, payload): Promise<void> => {
-    if (this.listeners[event]) {
-      await Promise.all(this.listeners[event].map((listener) => listener(payload)))
-    }
-  }
-
-  on<K extends keyof AppDataStoreListenerEvents>(
-    event: K,
-    listener: AppDataStoreListener<K>
-  ): () => void {
-    if (!this.listeners[event]) {
-      this.listeners[event] = []
-    }
-    this.listeners[event].push(listener)
-    return () => this.off(event, listener)
-  }
-
-  off<K extends keyof AppDataStoreListenerEvents>(
-    event: K,
-    listener: AppDataStoreListener<K>
-  ): void {
-    if (this.listeners[event]) {
-      this.listeners[event] = this.listeners[event].filter(
-        (l) => l !== listener
-      ) as AppDataStoreListeners[K]
-    }
-  }
-
   async purgeAppData(name: string): Promise<boolean> {
     try {
       Logger.debug(`Purging app data for ${name}`, {
@@ -401,22 +410,29 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
       function: 'getData'
     })
     const data = await getData(name)
-    if (!data) return
+    if (!data) {
+      Logger.debug(`No data found for ${name}`, {
+        source: 'AppDataStore',
+        domain: name,
+        function: 'getAppData'
+      })
+      return
+    }
 
     this.appDataCache[name] = data
     return data
   }
 
-  async getData(name: string): Promise<Record<string, string> | undefined> {
+  async getSavedData(name: string): Promise<SavedData | undefined> {
     this.initCacheVersion(name)
 
     if (this.appDataCache[name].data) {
       return this.appDataCache[name].data
     } else {
-      Logger.debug('Getting Data', {
+      Logger.debug(`Getting saved data for ${name}`, {
         source: 'AppDataStore',
-        domain: name,
-        function: 'getData'
+        domain: 'SERVER.' + name.toUpperCase(),
+        function: 'getSavedData'
       })
       const data = await getData(name)
       this.appDataCache[name].data = data?.data
@@ -433,7 +449,14 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
     }
 
     const data = await getData(name)
-    if (!data) return
+    if (!data) {
+      Logger.debug(`No settings found for ${name}`, {
+        source: 'AppDataStore',
+        domain: 'SERVER.' + name.toUpperCase(),
+        function: 'getSettings'
+      })
+      return
+    }
     this.appDataCache[name].settings = data?.settings
     return data?.settings
   }
@@ -446,10 +469,11 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
     }
     const data = await getData(name)
     if (!data) {
-      Logger.debug(`Unable to find tasks for ${name} in filesystem for`, {
+      Logger.debug(`Unable to find tasks for ${name} in filesystem`, {
         source: 'AppDataStore',
         function: 'getTasks'
       })
+      this.appDataCache[name].tasks = {}
       return
     }
     this.appDataCache[name].tasks = data.tasks
@@ -519,7 +543,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
     }
 
     this.appStore.sendDataToApp(app, {
-      type: ServerEvent.TASKS,
+      type: DESKTHING_EVENTS.TASKS,
       request: 'update',
       payload: updatedTasks
     })
@@ -554,7 +578,11 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
 
     task.steps[step.id] = step
 
-    this.appStore.sendDataToApp(app, { type: ServerEvent.TASKS, request: 'step', payload: step })
+    this.appStore.sendDataToApp(app, {
+      type: DESKTHING_EVENTS.TASKS,
+      request: 'step',
+      payload: step
+    })
 
     this.saveData(app)
   }
@@ -615,10 +643,10 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
     await this.saveData(app, true)
   }
 
-  async addData(app: string, data: Record<string, string>): Promise<void> {
+  async addData(app: string, data: SavedData): Promise<void> {
     this.initCacheVersion(app)
 
-    this.appDataCache[app].data = data
+    this.appDataCache[app].data = { ...this.appDataCache[app].data, ...data }
 
     await this.saveData(app, true)
   }
@@ -626,18 +654,32 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
   async addAppData(app: string, data: AppDataInterface): Promise<void> {
     try {
       isValidAppDataInterface(data)
-    } catch {
+    } catch (error) {
       Logger.error('Invalid app data interface', {
         source: 'AppDataStore',
         domain: 'SERVER.' + app.toUpperCase(),
+        error: error as Error,
         function: 'addAppData'
       })
       return
     }
 
     if (this.appDataCache[app]) {
+      const mergeProperty = <T>(existing: T | undefined, update: T | undefined): T | undefined => {
+        if (!update) return existing
+        if (!existing) return update
+        return { ...existing, ...update }
+      }
       // deepest of merges
-      this.appDataCache[app] = { ...this.appDataCache[app], ...data }
+      this.appDataCache[app] = {
+        ...this.appDataCache[app],
+        version: data.version || this.appDataCache[app].version,
+        settings: mergeProperty(this.appDataCache[app].settings, data.settings),
+        data: mergeProperty(this.appDataCache[app].data, data.data),
+        tasks: mergeProperty(this.appDataCache[app].tasks, data.tasks),
+        keys: mergeProperty(this.appDataCache[app].keys, data.keys),
+        actions: mergeProperty(this.appDataCache[app].actions, data.actions)
+      }
     } else {
       this.appDataCache[app] = data
     }
@@ -794,7 +836,7 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
     task.steps[stepId].completed = true
 
     this.appStore.sendDataToApp(task.source, {
-      type: ServerEvent.TASKS,
+      type: DESKTHING_EVENTS.TASKS,
       payload: { ...task.steps[stepId], parentId: task.id },
       request: 'step'
     })
@@ -806,10 +848,10 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
     let appSettings = await this.getSettings(app)
 
     if (appSettings && appSettings[id]) {
-      appSettings[id] = setting
+      appSettings[id] = { ...setting, id }
     } else {
       appSettings = {
-        [id]: setting
+        [id]: { ...setting, id }
       }
     }
 
@@ -817,6 +859,15 @@ export class AppDataStore implements CacheableStore, AppDataStoreClass {
 
     this.saveData(app)
   }
+
+  async updateSetting(app: string, id: string, value: SettingsType['value']): Promise<void> {
+    const appSettings = await this.getSettings(app)
+    if (!appSettings) return
+    appSettings[id].value = value
+    this.appDataCache[app].settings = appSettings
+    this.saveData(app)
+  }
+
   /**
    * Fetches the icon.svg from the file system and returns the file:// path for it
    */

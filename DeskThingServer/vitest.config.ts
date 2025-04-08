@@ -12,8 +12,8 @@ export default defineConfig({
       '@renderer': resolve('src/renderer/src'),
       '@server': resolve('src/main'),
       '@shared': resolve('src/shared'),
-      '@utilities': resolve('src/main/utilities')
-
+      '@utilities': resolve('src/main/utilities'),
+      '@processes': resolve('src/main/processes')
     }
   }
 })

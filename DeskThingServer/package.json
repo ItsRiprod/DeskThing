@@ -9,6 +9,7 @@
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint ./src",
+    "lint:fix": "eslint ./src --fix",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
@@ -51,6 +52,7 @@
     "zustand": "^5.0.0-rc.2"
   },
   "devDependencies": {
+    "@deskthing/types": "file:../../deskthing-types",
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",
     "@electron-toolkit/eslint-config-ts": "^3.0.0",
     "@electron-toolkit/preload": "^3.0.1",

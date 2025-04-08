@@ -1,4 +1,4 @@
-import { DebugStep, Step, STEP_TYPES } from '@DeskThing/types'
+import { DebugStep, Step, STEP_TYPES } from '@deskthing/types'
 import { FC, lazy, memo, Suspense, useMemo, useState } from 'react'
 import Button from '../Button'
 import {

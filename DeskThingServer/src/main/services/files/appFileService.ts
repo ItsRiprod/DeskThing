@@ -13,12 +13,11 @@
  * If the configuration file doesn't exist, it will be created with default values.
  */
 
-console.log('[App File Service] Starting')
-import { App, LOGGING_LEVELS, AppManifest } from '@DeskThing/types'
+import { App, LOGGING_LEVELS, AppManifest } from '@deskthing/types'
 import Logger from '@server/utils/logger'
 import { AppData } from '@shared/types'
 import { readFromFile, writeToFile } from './fileService'
-import { verifyAppDataStructure, sanitizeAppStructure } from '../apps/appValidator'
+import { verifyAppInstanceStructure, sanitizeAppStructure } from '../apps/appValidator'
 
 const defaultData: AppData = {}
 
@@ -33,7 +32,7 @@ const readData = async (): Promise<AppData> => {
   const dataFilePath = 'apps.json'
   try {
     const data = (await readFromFile<AppData>(dataFilePath)) || undefined
-    verifyAppDataStructure(data)
+    verifyAppInstanceStructure(data)
     // If data is of type AppData, return it
     return data
   } catch (err) {
@@ -58,9 +57,12 @@ const readData = async (): Promise<AppData> => {
  */
 const writeData = async (data: AppData): Promise<void> => {
   try {
-    Logger.log(LOGGING_LEVELS.LOG, '[Config Handler] Writing data')
+    Logger.info('Writing App data', {
+      source: 'AppFileService',
+      function: 'writeData'
+    })
 
-    verifyAppDataStructure(data)
+    verifyAppInstanceStructure(data)
 
     await writeToFile<AppData>(data, 'apps.json')
   } catch (err) {
@@ -82,6 +84,12 @@ export const setAppData = async (newApp: Partial<App>): Promise<void> => {
     Logger.log(LOGGING_LEVELS.WARN, 'Unable to save app. Missing name!')
     return
   }
+
+  Logger.debug('[setAppData] Saving app', {
+    source: 'AppFileService',
+    function: 'setAppData',
+    domain: 'SERVER.' + newApp.name
+  })
 
   // Find existing app by name
   const existingApp = data[newApp.name]

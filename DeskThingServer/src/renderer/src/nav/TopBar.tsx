@@ -1,10 +1,10 @@
 import React from 'react'
 import Nav from './Nav'
-import { useClientStore } from '@renderer/stores'
 import { IconLogo, IconWifi } from '@renderer/assets/icons'
+import { useClientStore } from '@renderer/stores'
 
 const TopBar: React.FC = () => {
-  const connections = useClientStore((clientStore) => clientStore.connections)
+  const connections = useClientStore((state) => state.connections)
   const version = process.env.PACKAGE_VERSION
   return (
     <div className="bg-zinc-950 border-zinc-800 border-b text-white flex items-center justify-between">

@@ -1,7 +1,8 @@
-import { EventPayload, SEND_TYPES, ToServerData } from '@deskthing/types'
-import { Log } from '@shared/types'
+import { App, APP_REQUESTS, AppToDeskThingData, DeskThingProcessData } from '@deskthing/types'
+import { StoreInterface } from '@shared/interfaces/storeInterface'
+import EventEmitter from 'node:events'
 
-export enum AppProcessEvents {
+export enum AppProcessTypes {
   STARTED = 'started',
   STOPPED = 'stopped',
   EXITED = 'exit',
@@ -9,63 +10,42 @@ export enum AppProcessEvents {
   ERROR = 'error'
 }
 
-export type FAppProcessPayload =
-  | { type: 'data'; payload: ToServerData }
-  | { type: 'started' }
-  | { type: 'stopped' }
-  | { type: 'server:error'; payload: Error }
-  | { type: 'server:log'; payload: Log }
+type AppProcessEvent = {
+  [AppProcessTypes.STARTED]: [string]
+  [AppProcessTypes.STOPPED]: [string]
+  [AppProcessTypes.EXITED]: [string]
+  [AppProcessTypes.RUNNING]: [string]
+  [AppProcessTypes.ERROR]: [string]
+}
 
-export type TAppProcessPayload =
-  | { type: 'data'; payload: EventPayload }
-  | { type: 'start' }
-  | { type: 'stop' }
-  | { type: 'purge' }
+export type AppProcessEvents = AppProcessEvent & {
+  [T in APP_REQUESTS]: [Extract<AppToDeskThingData, { type: T; source: string }>]
+}
 
-export type AppDataFilters<T extends SEND_TYPES> = {
-  request?: Extract<ToServerData, { type: T }>['request']
+export type AppDataFilters<T extends APP_REQUESTS> = {
+  request?: Extract<AppToDeskThingData, { type: T }>['request']
   app?: string
 }
 
 export type AppProcessEventListener = (appName: string, reason?: string) => void
 
-export type AppProcessListener<T extends SEND_TYPES> = (
-  appData: Extract<ToServerData, { type: T }> & { source: string }
+export type AppProcessListener<T extends APP_REQUESTS> = (
+  appData: Extract<AppToDeskThingData, { type: T }> & { source: string }
 ) => void | Promise<void>
 
 export type AppProcessListeners = {
-  [key in SEND_TYPES]: AppProcessListener<key>
+  [key in APP_REQUESTS]: AppProcessListener<key>
 }
 
 /**
  * The AppProcessStore class is focused solely on process communication
  * and handling the direct lifecycle of electron processes.
  */
-export interface AppProcessStoreClass {
+export interface AppProcessStoreClass extends StoreInterface, EventEmitter<AppProcessEvents> {
   /**
    * Post a message to a specific app process
    */
-  postMessage(appName: string, data: TAppProcessPayload): Promise<void>
-
-  /**
-   * Subscribe to process lifecycle events
-   */
-  onProcessEvent(type: AppProcessEvents, callback: AppProcessEventListener): () => void
-
-  /**
-   * Subscribe to messages from processes
-   * Use '*' to subscribe to all types
-   */
-  onMessage<T extends SEND_TYPES>(
-    type: T,
-    listener: AppProcessListener<T>,
-    filters?: AppDataFilters<T>
-  ): () => void
-
-  /**
-   * Unsubscribe from messages
-   */
-  offMessage<T extends SEND_TYPES>(type: T, listener: AppProcessListener<T>): void
+  postMessage(appName: string, data: DeskThingProcessData): Promise<void>
 
   /**
    * Get list of process IDs that are currently running
@@ -75,7 +55,7 @@ export interface AppProcessStoreClass {
   /**
    * Spawn a new process for an app
    */
-  spawnProcess(appName: string, options?: unknown): Promise<boolean>
+  spawnProcess(app: App, options?: unknown): Promise<boolean>
 
   /**
    * Terminate a process

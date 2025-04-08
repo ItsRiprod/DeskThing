@@ -6,7 +6,7 @@
  * @returns A React component that renders the App UI.
  */
 import React from 'react'
-import { App as AppType, TagTypes } from '@DeskThing/types'
+import { App as AppType, TagTypes } from '@deskthing/types'
 import { IconGrip, IconPause, IconPlay, IconPulsing, IconWrench } from '@renderer/assets/icons'
 import Button from './Button'
 import { useAppStore } from '@renderer/stores'

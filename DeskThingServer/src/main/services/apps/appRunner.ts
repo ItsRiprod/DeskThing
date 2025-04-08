@@ -1,6 +1,6 @@
 console.log('[AppRnr Service] Starting')
 import Logger from '@server/utils/logger'
-import { LOGGING_LEVELS } from '@DeskThing/types'
+import { LOGGING_LEVELS } from '@deskthing/types'
 import { storeProvider } from '@server/stores/storeProvider'
 
 /**

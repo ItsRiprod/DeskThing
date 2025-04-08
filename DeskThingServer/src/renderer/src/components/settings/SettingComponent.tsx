@@ -1,4 +1,4 @@
-import { SettingsType } from '@DeskThing/types'
+import { SettingsType } from '@deskthing/types'
 
 interface SettingComponentProps {
   setting: SettingsType

@@ -1,23 +1,23 @@
 import { create } from 'zustand'
-import { ADBClient, Client, LoggingData } from '@shared/types'
-import { ClientManifest } from '@deskthing/types'
+import { IpcRendererCallback, LoggingData } from '@shared/types'
+import { ClientManifest, Client, ADBClientType, ClientConnectionMethod } from '@deskthing/types'
 import useNotificationStore from './notificationStore'
+import { PlatformIDs } from '@shared/stores/platformStore'
 
 interface ClientStoreState {
-  ADBDevices: ADBClient[]
+  devices: ADBClientType[]
   connections: number
   clients: Client[]
   logging: LoggingData | null
   clientManifest: ClientManifest | null
+  initialized: boolean
 
   // Actions
-  setADBDevices: (devices: ADBClient[]) => void
-  setConnections: (connections: number) => Promise<void>
-  setClients: (clients: Client[]) => void
-  setClientManifest: (client: ClientManifest) => void
+  initialize: () => Promise<void>
   requestClientManifest: () => Promise<Partial<Client>>
-  requestADBDevices: () => Promise<ADBClient[]>
+  requestADBDevices: () => Promise<Client[] | undefined>
   requestConnections: () => Promise<void>
+  refreshConnections: () => Promise<boolean>
   loadClientUrl: (url: string) => Promise<void>
   loadClientZip: (zip: string) => Promise<void>
   updateClientManifest: (client: Partial<ClientManifest>) => void
@@ -25,27 +25,82 @@ interface ClientStoreState {
 
 // Create Zustand store
 const useClientStore = create<ClientStoreState>((set, get) => ({
-  ADBDevices: [],
+  devices: [],
   connections: 0,
   clients: [],
   logging: null,
   clientManifest: null,
+  initialized: false,
 
-  // Setters
-  setADBDevices: async (clients: ADBClient[]): Promise<void> => {
-    set({ ADBDevices: clients })
-  },
+  initialize: async () => {
+    if (get().initialized) return
 
-  setConnections: async (connections: number): Promise<void> => set({ connections }),
-  setClients: async (clients: Client[]): Promise<void> => {
-    set({ clients })
-    get().requestADBDevices() // update adb mapping
+    const handleClientData: IpcRendererCallback<'clients'> = (_event, data) => {
+      set(() => ({
+        clients: data,
+        connections: data.length
+      }))
+    }
+
+    const handleNewClient: IpcRendererCallback<'platform:client'> = (_event, data) => {
+      if (data.request === 'added') {
+        if (data.client.manifest?.context.method === ClientConnectionMethod.ADB) {
+          set((state) => ({
+            devices: [...state.devices, (data.client?.manifest?.context as ADBClientType) || []]
+          }))
+        }
+        set((state) => {
+          const existingClientIndex = state.clients.findIndex(
+            (client) => client.clientId === data.client.clientId
+          )
+          if (existingClientIndex !== -1) {
+            return {
+              clients: state.clients,
+              connections: state.clients.length
+            }
+          }
+
+          return {
+            clients: [...state.clients, data.client],
+            connections: state.connections
+          }
+        })
+      } else if (data.request === 'removed') {
+        set((state) => ({
+          clients: state.clients.filter((client) => client.clientId !== data.clientId),
+          connections: state.connections
+        }))
+      } else if (data.request === 'modified') {
+        set((state) => {
+          const existingClient = state.clients.find(
+            (client) => client.clientId === data.client.clientId
+          )
+          if (!existingClient) {
+            return {
+              clients: [...state.clients, data.client]
+            }
+          }
+          return {
+            clients: state.clients.map((client) =>
+              client.clientId === data.client.clientId ? data.client : client
+            )
+          }
+        })
+      }
+    }
+
+    window.electron.ipcRenderer.on('clients', handleClientData)
+    window.electron.ipcRenderer.on('platform:client', handleNewClient)
+
+    await get().requestConnections()
+    await get().requestADBDevices()
+    await get().requestClientManifest()
+
+    set({ initialized: true })
   },
-  setClientManifest: async (client: ClientManifest): Promise<void> =>
-    set({ clientManifest: client }),
 
   requestClientManifest: async (): Promise<Partial<ClientManifest>> => {
-    const clientManifest = await window.electron.getClientManifest()
+    const clientManifest = await window.electron.client.getClientManifest()
 
     if (!clientManifest) {
       const addIssue = useNotificationStore.getState().addIssue
@@ -80,13 +135,22 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
         ? { ...state.clientManifest, ...client }
         : (client as ClientManifest)
     }))
-    window.electron.updateClientManifest(client)
+    window.electron.client.updateClientManifest(client)
   },
 
-  // Request ADB Devices
-  requestADBDevices: async (): Promise<ADBClient[]> => {
+  requestADBDevices: async (): Promise<Client[] | undefined> => {
     try {
-      return await window.electron.getDevices()
+      const devices = await window.electron.platform.send({
+        platform: PlatformIDs.ADB,
+        type: 'refresh',
+        request: 'adb'
+      })
+
+      set({
+        devices: devices?.map((client) => client.manifest?.context as ADBClientType)
+      })
+
+      return devices
     } catch (error) {
       console.error('Error fetching ADB devices:', error)
       return []
@@ -96,15 +160,35 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
   // Request Connections
   requestConnections: async (): Promise<void> => {
     try {
-      const connections = await window.electron.getConnections()
-      set({ connections: connections.length })
+      const connections = await window.electron.utility.getConnections()
+      console.debug('Got the connections', connections)
+      set({
+        connections: connections.length,
+        clients: connections
+      })
     } catch (error) {
       console.error('Error fetching connections:', error)
     }
   },
 
+  refreshConnections: async (): Promise<boolean> => {
+    try {
+      const clients = await window.electron.platform.refreshConnections()
+      console.debug('Got the connections', clients)
+      if (!clients) return false
+      set(() => ({
+        clients: clients,
+        connections: clients.length
+      }))
+      return true
+    } catch (error) {
+      console.error('Error fetching connections:', error)
+      return false
+    }
+  },
+
   loadClientUrl: async (url: string): Promise<void> => {
-    const promise = window.electron.handleClientURL(url)
+    const promise = window.electron.client.handleClientURL(url)
 
     const loggingListener = (_event: Electron.Event, reply: LoggingData): void => {
       set({ logging: reply })
@@ -119,7 +203,7 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
   },
 
   loadClientZip: async (zip: string): Promise<void> => {
-    const promise = window.electron.handleClientZip(zip)
+    const promise = window.electron.client.handleClientZip(zip)
 
     const loggingListener = (_event: Electron.Event, reply: LoggingData): void => {
       set({ logging: reply })
@@ -133,5 +217,4 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
     return promise
   }
 }))
-
 export default useClientStore

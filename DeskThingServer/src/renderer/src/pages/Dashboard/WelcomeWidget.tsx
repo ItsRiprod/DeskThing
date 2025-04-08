@@ -34,7 +34,7 @@ const WelcomeWidget: React.FC = () => {
           </Button>
           <Button
             onClick={() => window.open('https://deskthing.app/youtube', '_blank')}
-            className={`delay-300 text-sm items-center border-[#ff0033] border gap-1 hover:bg-[#ff0033] group hover:text-white transition-[transform,opacity] duration-500 overflow-hidden text-nowrap ${showText ? 'opacity-100' : '-translate-y-10 opacity-0'}`}
+            className={`delay-200 text-sm items-center border-[#ff0033] border gap-1 hover:bg-[#ff0033] group hover:text-white transition-[transform,opacity] duration-500 overflow-hidden text-nowrap ${showText ? 'opacity-100' : '-translate-y-10 opacity-0'}`}
           >
             <IconYoutube className="fill-[#ff0033] group-hover:fill-white" />
             <p className="group-hover:hidden">Youtube</p>
@@ -57,7 +57,7 @@ const WelcomeWidget: React.FC = () => {
           </Button>
           <Button
             onClick={() => navigate('?notifications=true&page=task')}
-            className={`delay-200 text-sm bg-zinc-900 hover:bg-zinc-800 items-center gap-2 transition-[opacity,transform] duration-500 overflow-hidden text-nowrap ${showText ? 'opacity-100' : '-translate-y-10 opacity-0'}`}
+            className={`delay-500 text-sm bg-zinc-900 hover:bg-zinc-800 items-center gap-2 transition-[opacity,transform] duration-500 overflow-hidden text-nowrap ${showText ? 'opacity-100' : '-translate-y-10 opacity-0'}`}
           >
             Get Started
             <IconLink />

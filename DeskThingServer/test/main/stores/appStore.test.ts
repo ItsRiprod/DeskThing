@@ -1,8 +1,9 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { AppStore } from '@server/stores/appStore'
 import { AppProcessStoreClass } from '@shared/stores/appProcessStore'
-import { App, SEND_TYPES } from '@DeskThing/types'
+import { App, APP_REQUESTS } from '@deskthing/types'
 import Logger from '@server/utils/logger'
+import { AuthStoreClass } from '@shared/stores/authStore'
 
 vi.mock('electron', () => ({
   app: {
@@ -55,18 +56,22 @@ vi.mock('node:fs/promises', () => ({
 describe('AppStore', () => {
   let appStore: AppStore
   let mockAppProcessStore: AppProcessStoreClass
+  let mockAuthStore: AuthStoreClass
 
   beforeEach(() => {
     mockAppProcessStore = {
-      onProcessEvent: vi.fn(),
-      onMessage: vi.fn(),
+      on: vi.fn(),
       postMessage: vi.fn(),
       spawnProcess: vi.fn(),
       terminateProcess: vi.fn(),
       getActiveProcessIds: vi.fn().mockReturnValue(['testApp'])
     } as unknown as AppProcessStoreClass
 
-    appStore = new AppStore(mockAppProcessStore)
+    mockAuthStore = {
+      on: vi.fn()
+    } as unknown as AuthStoreClass
+
+    appStore = new AppStore(mockAppProcessStore, mockAuthStore)
   })
 
   afterEach(() => {
@@ -204,15 +209,11 @@ describe('AppStore', () => {
       const mockListener = vi.fn()
       const mockFilters = { app: 'testApp' }
 
-      appStore.onAppMessage(SEND_TYPES.TOAPP, mockListener, mockFilters)
+      const result = appStore.onAppMessage(APP_REQUESTS.TOAPP, mockListener, mockFilters)
 
-      expect(mockAppProcessStore.onMessage).toHaveBeenCalledWith(
-        SEND_TYPES.TOAPP,
-        mockListener,
-        mockFilters
-      )
+      expect(mockAppProcessStore.on).toHaveBeenCalledWith(APP_REQUESTS.TOAPP, expect.any(Function))
+      expect(typeof result).toBe('function')
     })
-
     it('should validate required apps before starting', async () => {
       const app: App = {
         name: 'testApp',

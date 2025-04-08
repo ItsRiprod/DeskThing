@@ -3,9 +3,20 @@
  * Does not hold the current list of apps, their manifests, or their functions
  */
 
-import { AppSettings, Task, AppDataInterface, Step, SettingsType } from '@deskthing/types'
+import {
+  AppSettings,
+  Task,
+  AppDataInterface,
+  Step,
+  SettingsType,
+  SavedData,
+  Action,
+  Key
+} from '@deskthing/types'
 import { FullTaskList, TaskReference } from '../types'
 import { TaskStoreClass } from './taskStore'
+import { StoreInterface } from '@shared/interfaces/storeInterface'
+import { EventEmitter } from 'node:events'
 
 /** Options for adding settings including notification flags */
 export type addSettingsOptions = {
@@ -17,47 +28,21 @@ export type addSettingsOptions = {
 type AppPayload<T> = { appId: string; data: T }
 
 /** Listener types for each field in AppDataInterface except version */
-export type FieldListeners = {
-  [k in keyof Omit<AppDataInterface, 'version'>]: AppPayload<AppDataInterface[k]>
+export type AppStoreEvents = {
+  appData: [Record<string, AppDataInterface>]
+  settings: [AppPayload<AppSettings>]
+  data: [AppPayload<SavedData>]
+  tasks: [AppPayload<Record<string, Task>>]
+  actions: [AppPayload<Record<string, Action>>]
+  keys: [AppPayload<Record<string, Key>>]
 }
-
-/** Events that can be listened to, including all fields and full app data */
-export type AppDataStoreListenerEvents = FieldListeners & {
-  appData: Record<string, AppDataInterface>
-}
-
-/** Generic listener type */
-export type Listener<T> = (payload: T) => void
-/** Specific listener type for AppDataStore events */
-export type AppDataStoreListener<K extends keyof AppDataStoreListenerEvents> = Listener<
-  AppDataStoreListenerEvents[K]
->
-
-/** Collection of listeners for each event type */
-export type AppDataStoreListeners = {
-  [K in keyof AppDataStoreListenerEvents]: AppDataStoreListener<K>[]
-}
-
-/** Type for notifying listeners of events */
-export type NotifyListenersType = <K extends keyof AppDataStoreListenerEvents>(
-  event: K,
-  payload: AppDataStoreListenerEvents[K]
-) => Promise<void>
 
 /** Main AppDataStore interface defining all available methods */
-export interface AppDataStoreClass {
+export interface AppDataStoreClass extends StoreInterface, EventEmitter<AppStoreEvents> {
   /** Clears the cache */
   clearCache(): Promise<void>
   /** Saves all cached data to files */
   saveToFile(): Promise<void>
-  /** Adds an event listener */
-  on<K extends keyof AppDataStoreListenerEvents>(
-    event: K,
-    listener: AppDataStoreListener<K>
-  ): () => void
-  /** Removes an event listener */
-  off<K extends keyof AppDataStoreListenerEvents>(event: K, listener: AppDataStoreListener<K>): void
-
   /** Sets up task store listeners */
   setupListeners(taskStore: TaskStoreClass): Promise<void>
 
@@ -69,9 +54,9 @@ export interface AppDataStoreClass {
   addAppData(app: string, data: AppDataInterface): Promise<void>
 
   /** Gets app's data field */
-  getData(name: string): Promise<Record<string, string> | undefined>
+  getSavedData(name: string): Promise<SavedData | undefined>
   /** Adds data to app's data field */
-  addData(app: string, data: Record<string, string>): Promise<void>
+  addData(app: string, data: SavedData): Promise<void>
   /** Deletes specific data entries */
   delData(app: string, dataIds: string[] | string): Promise<void>
 
@@ -83,6 +68,8 @@ export interface AppDataStoreClass {
   addSetting(app: string, id: string, setting: SettingsType): Promise<void>
   /** Deletes specific settings */
   delSettings(app: string, settings: string[] | string): Promise<void>
+  /** Updates a single setting */
+  updateSetting(app: string, id: string, setting: SettingsType['value']): Promise<void>
 
   /** Gets all tasks for an app */
   getTasks(name: string): Promise<Record<string, Task> | undefined>

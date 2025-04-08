@@ -1,6 +1,6 @@
 // types
 import { FullTaskList, CacheableStore } from '@shared/types'
-import { LOGGING_LEVELS, SEND_TYPES, ServerEvent, Step, Task } from '@DeskThing/types'
+import { LOGGING_LEVELS, APP_REQUESTS, Step, Task, DESKTHING_EVENTS } from '@deskthing/types'
 import {
   TaskStoreClass,
   TaskStoreEvents,
@@ -19,6 +19,10 @@ import { AppStoreClass } from '@shared/stores/appStore'
 export class TaskStore implements CacheableStore, TaskStoreClass {
   // This never gets saved to file
   private currentTask?: { source: string; id: string }
+  private _initialized: boolean = false
+  public get initialized(): boolean {
+    return this._initialized
+  }
 
   private listeners: TaskStoreListeners = {
     taskList: [],
@@ -34,12 +38,18 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
   constructor(appDataStore: AppDataStoreClass, appStore: AppStoreClass) {
     this.appDataStore = appDataStore
     this.appStore = appStore
+  }
+
+  async initialize(): Promise<void> {
+    if (this._initialized) return
+    this._initialized = true
+    this.appDataStore.initialize()
     this.initializeServerTasks()
     this.initializeListeners()
   }
 
   private initializeListeners = (): void => {
-    this.appStore.onAppMessage(SEND_TYPES.TASK, async (data) => {
+    this.appStore.onAppMessage(APP_REQUESTS.TASK, async (data) => {
       try {
         const source = data.source
 
@@ -54,11 +64,13 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
           case 'get': {
             // Get tasks for the requesting app
             const tasks = await this.appDataStore.getTasks(data.payload?.source || source)
-            this.appStore.sendDataToApp(source, {
-              type: ServerEvent.TASKS,
-              payload: tasks,
-              request: 'update'
-            })
+            if (tasks) {
+              this.appStore.sendDataToApp(source, {
+                type: DESKTHING_EVENTS.TASKS,
+                payload: tasks,
+                request: 'update'
+              })
+            }
             break
           }
 
@@ -131,7 +143,7 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
     })
 
     // Handle step operations
-    this.appStore.onAppMessage(SEND_TYPES.STEP, async (data) => {
+    this.appStore.onAppMessage(APP_REQUESTS.STEP, async (data) => {
       try {
         const source = data.source
 
@@ -145,7 +157,7 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
               )
               if (step) {
                 this.appStore.sendDataToApp(source, {
-                  type: ServerEvent.TASKS,
+                  type: DESKTHING_EVENTS.TASKS,
                   payload: step,
                   request: 'step'
                 })
@@ -734,6 +746,11 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
       console.log(task)
       return
     } else {
+      if (task.steps[stepId].completed) {
+        Logger.info(`Step ${stepId} has already been completed`)
+        return
+      }
+
       task.steps[stepId].completed = true
     }
 

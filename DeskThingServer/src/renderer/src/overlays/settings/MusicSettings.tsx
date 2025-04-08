@@ -6,7 +6,7 @@ import { IconLoading, IconSave, IconToggle } from '@renderer/assets/icons'
 import Select from '@renderer/components/Select'
 import { SingleValue } from 'react-select'
 import { Settings } from '@shared/types'
-import { SettingOption } from '@DeskThing/types'
+import { SettingOption } from '@deskthing/types'
 
 const MusicSettings: React.FC = () => {
   const saveSettings = useSettingsStore((settings) => settings.saveSettings)

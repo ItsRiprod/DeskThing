@@ -3,7 +3,7 @@ import useTaskStore from '@renderer/stores/taskStore'
 import Button from '../Button'
 import { useSearchParams } from 'react-router-dom'
 import { IconCheck, IconLink, IconX } from '@renderer/assets/icons'
-import { STEP_TYPES } from '@DeskThing/types'
+import { STEP_TYPES } from '@deskthing/types'
 import { StepPropsMap } from '@shared/types'
 
 export const TaskTaskComponent: FC<StepPropsMap[STEP_TYPES.TASK]> = ({ step, source }) => {
@@ -12,11 +12,13 @@ export const TaskTaskComponent: FC<StepPropsMap[STEP_TYPES.TASK]> = ({ step, sou
   const startTask = useTaskStore((state) => state.acceptTask)
   const [searchParams, setSearchParams] = useSearchParams()
 
+  const taskSource = step.taskReference?.source || source
+
   const stepCompleted = useMemo(() => {
-    const tasks = appTasks[source]
-    const task = Object.values(tasks).find((task) => task.id === step.taskId)
-    return task?.completed || false
-  }, [appTasks, step.taskId, source])
+    const tasks = appTasks[taskSource]
+    const task = Object.values(tasks).find((task) => task.id === step.taskReference?.id)
+    return task?.completed ?? true
+  }, [appTasks, step.taskReference?.id, step.taskReference?.source, source])
 
   const handleComplete = (): void => {
     if (!step.parentId) {
@@ -27,9 +29,8 @@ export const TaskTaskComponent: FC<StepPropsMap[STEP_TYPES.TASK]> = ({ step, sou
   }
 
   const openTasks = (): void => {
-    const taskSource = step.taskSource || source
     const tasks = appTasks[taskSource]
-    const task = Object.values(tasks).find((task) => task.id === step.taskId)
+    const task = Object.values(tasks).find((task) => task.id === step.taskReference?.id)
     if (task) {
       startTask(task.id, task.source)
     } else {
@@ -51,7 +52,7 @@ export const TaskTaskComponent: FC<StepPropsMap[STEP_TYPES.TASK]> = ({ step, sou
             className="gap-2 bg-cyan-700 hover:bg-cyan-600"
             onClick={openTasks}
           >
-            <p>Open {step.taskId} task</p>
+            <p>Open {step.taskReference?.id} task</p>
             <IconLink />
           </Button>
         </div>
@@ -62,7 +63,11 @@ export const TaskTaskComponent: FC<StepPropsMap[STEP_TYPES.TASK]> = ({ step, sou
             title={`${step.strict ? 'Complete task first' : 'Continue Anyway'}`}
             onClick={handleComplete}
           >
-            {stepCompleted ? <p>Confirm Completion</p> : <p>Complete task {step.taskId} first</p>}
+            {stepCompleted ? (
+              <p>Confirm Completion</p>
+            ) : (
+              <p>Complete task {step.taskReference?.id} first</p>
+            )}
             {stepCompleted ? <IconCheck /> : <IconX />}
           </Button>
         )}

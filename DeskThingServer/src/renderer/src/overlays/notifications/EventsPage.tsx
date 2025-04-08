@@ -2,7 +2,7 @@ import React from 'react'
 import { useNotificationStore, usePageStore } from '@renderer/stores'
 import { IconLink, IconTrash } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
-import { LOGGING_LEVELS } from '@DeskThing/types'
+import { LOGGING_LEVELS } from '@deskthing/types'
 
 const colorMap = {
   [LOGGING_LEVELS.ERROR]: 'text-red-500',

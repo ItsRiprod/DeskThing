@@ -1,7 +1,8 @@
-import { App, EventPayload, AppManifest, SEND_TYPES } from '@deskthing/types'
+import { App, AppManifest, APP_REQUESTS, DeskThingToAppData } from '@deskthing/types'
 import { stageAppFileType } from '@server/services/apps/appInstaller'
 import { ReplyFn, StagedAppManifest } from '../types'
 import { AppDataFilters, AppProcessListener } from './appProcessStore'
+import { StoreInterface } from '@shared/interfaces/storeInterface'
 
 export type addSettingsOptions = {
   notifyApp?: boolean
@@ -10,6 +11,7 @@ export type addSettingsOptions = {
 
 export type AppStoreListenerEvents = {
   apps: { data: App[] }
+  purging: { appName: string }
 }
 
 // Create listener types automatically from event map
@@ -23,14 +25,14 @@ export type AppStoreListeners = {
   [K in keyof AppStoreListenerEvents]: AppStoreListener<K>[]
 }
 
-export interface AppStoreClass {
+export interface AppStoreClass extends StoreInterface {
   // Utility
 
   clearCache(): Promise<void>
   saveToFile(): Promise<void>
   on<K extends keyof AppStoreListenerEvents>(event: K, listener: AppStoreListener<K>): () => void
   off<K extends keyof AppStoreListenerEvents>(event: K, listener: AppStoreListener<K>): void
-  onAppMessage<T extends SEND_TYPES>(
+  onAppMessage<T extends APP_REQUESTS>(
     type: T,
     listener: AppProcessListener<T>,
     filters?: AppDataFilters<T>
@@ -59,7 +61,8 @@ export interface AppStoreClass {
   getOrder(): string[]
 
   // App communication / management
-  sendDataToApp(name: string, data: EventPayload): Promise<void>
+  sendDataToApp(name: string, data: DeskThingToAppData): Promise<void>
+  broadcastToApps(data: DeskThingToAppData): Promise<void>
   purge(name: string): Promise<boolean>
 
   /**

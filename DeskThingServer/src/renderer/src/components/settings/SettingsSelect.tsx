@@ -1,6 +1,6 @@
 import React from 'react'
 import SettingComponent from './SettingComponent'
-import { SettingOption, SettingsSelect } from '@DeskThing/types'
+import { SettingOption, SettingsSelect } from '@deskthing/types'
 import { SingleValue } from 'react-select'
 import Select from '../Select'
 

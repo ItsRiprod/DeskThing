@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>DeskThing - Loading</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: transparent;
+      color: #ffffff;
+      overflow: hidden;
+    }
+    .container {
+      text-align: center;
+      background: rgba(30, 30, 30, 0.9);
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      width: 300px;
+    }
+    .logo {
+      width: 120px;
+      height: 120px;
+      margin-bottom: 20px;
+    }
+    .status {
+      margin-top: 15px;
+      font-size: 14px;
+    }
+    .spinner {
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top: 4px solid #ffffff;
+      width: 30px;
+      height: 30px;
+      margin: 15px auto;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>DeskThing</h2>
+    <div class="spinner"></div>
+    <div id="status" class="status">Initializing...</div>
+  </div>
+  <script>
+    // This will be connected via the preload script
+    window.addEventListener('message', (event) => {
+      if (event.data && event.data.type === 'loading-status') {
+        document.getElementById('status').textContent = event.data.message;
+      }
+    });
+  </script>
+</body>
+</html>

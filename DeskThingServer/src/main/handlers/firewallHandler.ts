@@ -5,8 +5,9 @@ import Logger from '@server/utils/logger'
 import fs from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
-import { LOGGING_LEVELS } from '@DeskThing/types'
-import { ReplyFn } from '@shared/types'
+import { LOGGING_LEVELS } from '@deskthing/types'
+import { ProgressChannel } from '@shared/types'
+import { progressBus } from '@server/services/events/progressBus'
 
 /**
  * Executes a shell command and returns the stdout output as a Promise.
@@ -74,26 +75,26 @@ async function checkFirewallRuleExists(port: number): Promise<boolean> {
  * This function checks if the firewall rule for the specified port already exists, and if not, it creates the necessary rules for both inbound and outbound traffic. The function handles the setup process for different operating systems (Windows, Linux, macOS) using platform-specific commands.
  *
  * @param port - The port number to set up the firewall rules for.
- * @param reply - An optional callback function to provide logging information during the setup process.
+ * @channel - {@link ProgressChannel.FIREWALL}
  * @returns A Promise that resolves when the firewall setup is complete.
  */
-async function setupFirewall(port: number, reply?: ReplyFn): Promise<void> {
+export async function setupFirewall(port: number): Promise<void> {
   const platform = os.platform()
   const inboundRuleName = 'Deskthing Server Inbound'
   const outboundRuleName = 'Deskthing Server Outbound'
 
+  progressBus.start(ProgressChannel.FIREWALL, 'Configure Firewall', 'Initializing')
+
   try {
-    reply && reply('logging', { status: true, data: 'Checking if rules exist', final: false })
+    progressBus.update(ProgressChannel.FIREWALL, 'Checking if rules exist', 10)
     const ruleExists = await checkFirewallRuleExists(port)
     if (ruleExists) {
       Logger.debug(` Firewall rule for port ${port} verified successfully`, {
         source: 'setupFirewall'
       })
-      reply &&
-        reply('logging', { status: true, data: 'Verified that the rule exists!', final: false })
+      progressBus.update(ProgressChannel.FIREWALL, 'Verified that the rule exists!', 20)
     } else {
       Logger.log(LOGGING_LEVELS.ERROR, `FIREWALL: Failed to verify firewall rule for port ${port}!`)
-      console.error(`Failed to verify firewall rule for port ${port}`)
     }
 
     if (platform === 'win32') {
@@ -105,7 +106,7 @@ async function setupFirewall(port: number, reply?: ReplyFn): Promise<void> {
 
 
       */
-      reply && reply('logging', { status: true, data: 'Running setup for windows', final: false })
+      progressBus.update(ProgressChannel.FIREWALL, 'Writing temp script', 30)
       const script = `
         $inboundRuleName = "${inboundRuleName}"
         $outboundRuleName = "${outboundRuleName}"
@@ -127,19 +128,18 @@ async function setupFirewall(port: number, reply?: ReplyFn): Promise<void> {
       fs.writeFileSync(tempScriptPath, script)
 
       try {
+        progressBus.update(ProgressChannel.FIREWALL, 'Running setup for windows', 40)
         await runCommand(`powershell -ExecutionPolicy Bypass -File "${tempScriptPath}"`)
         Logger.debug('Firewall rules set up successfully on Windows', {
           source: 'setupFirewall'
         })
 
-        reply &&
-          reply('logging', { status: true, data: 'Firewall ran without error', final: false })
+        progressBus.update(ProgressChannel.FIREWALL, 'Firewall ran without error', 60)
       } finally {
         fs.unlinkSync(tempScriptPath)
       }
     } else if (platform === 'linux') {
-      reply &&
-        reply('logging', { status: true, data: 'Running setup scripts for Linux', final: false })
+      progressBus.update(ProgressChannel.FIREWALL, 'Running setup scripts for Linux', 30)
       // Bash script for iptables on Linux
       const script = `
         #!/bin/bash
@@ -153,34 +153,37 @@ async function setupFirewall(port: number, reply?: ReplyFn): Promise<void> {
         fi
       `
 
+      progressBus.update(ProgressChannel.FIREWALL, 'Running setup scripts for Linux', 50)
       await runCommand(`echo "${script}" | bash`)
       Logger.debug('Firewall rules set up successfully on Linux', {
         source: 'setupFirewall'
       })
     } else if (platform === 'darwin') {
-      reply &&
-        reply('logging', {
-          status: true,
-          data: 'Running setup scripts for MacOS (WARN: RNDIS does not work on MacOS)',
-          final: false
-        })
+      progressBus.update(
+        ProgressChannel.FIREWALL,
+        'Running setup scripts for MacOS (WARN: RNDIS does not work on MacOS)',
+        50
+      )
+
       // Bash script for pfctl on macOS
       const script = `
-        #!/bin/bash
-        port=${port}
-        anchorName="DeskthingServerAnchor"
+      #!/bin/bash
+      port=${port}
+      anchorName="DeskthingServerAnchor"
 
         if ! sudo pfctl -s all | grep -q "rdr pass on lo0 inet proto tcp from any to any port $port -> 127.0.0.1 port $port"; then
-          echo "rdr pass on lo0 inet proto tcp from any to any port $port -> 127.0.0.1 port $port" | sudo pfctl -a $anchorName -f -
-          sudo pfctl -e
+        echo "rdr pass on lo0 inet proto tcp from any to any port $port -> 127.0.0.1 port $port" | sudo pfctl -a $anchorName -f -
+        sudo pfctl -e
         fi
       `
 
       await runCommand(`echo "${script}" | bash`)
+      progressBus.update(ProgressChannel.FIREWALL, 'Finished configuring firewall', 70)
       Logger.debug('Firewall rules set up successfully on macOS', {
         source: 'setupFirewall'
       })
     } else {
+      progressBus.error(ProgressChannel.FIREWALL, 'Configure Firewall', 'Unsupported OS')
       console.error('Unsupported OS')
     }
   } catch (error) {
@@ -188,18 +191,13 @@ async function setupFirewall(port: number, reply?: ReplyFn): Promise<void> {
       LOGGING_LEVELS.ERROR,
       `FIREWALL: Error encountered trying to setup firewall for ${port}! Run administrator and try again`
     )
-    if (error instanceof Error) {
-      reply &&
-        reply('logging', {
-          status: false,
-          data: 'Error in firewall',
-          error: error.message,
-          final: true
-        })
-    }
-    console.error(error)
+    progressBus.error(
+      ProgressChannel.FIREWALL,
+      'Configure Firewall',
+      'Error in firewall',
+      error instanceof Error ? error.message : 'Unknown error'
+    )
   }
 
-  reply && reply('logging', { status: true, data: 'Firewall run successfully!', final: true })
+  progressBus.complete(ProgressChannel.FIREWALL, 'Finished configuring firewall')
 }
-export { setupFirewall }

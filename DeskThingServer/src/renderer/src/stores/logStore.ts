@@ -1,12 +1,14 @@
 import { create } from 'zustand'
 import { Log } from '@shared/types'
+import { IpcRendererCallback } from '@shared/types'
 
 interface LogStoreState {
   logList: Log[]
   maxLogLength: number
   maxNumLogs: number
+  initialized: boolean
 
-  getLogs: () => Promise<Log[]>
+  initialize: () => Promise<void>
   addLog: (log: Log) => void
   addLogsFromFile: (logs: Log[]) => void
 }
@@ -15,16 +17,21 @@ const useLogStore = create<LogStoreState>((set, get) => ({
   logList: [],
   maxLogLength: 1000,
   maxNumLogs: 500,
+  initialized: false,
 
-  getLogs: async (): Promise<Log[]> => {
-    const { logList } = get()
-    if (logList.length > 0) {
-      return logList
-    } else {
-      const logs = await window.electron.getLogs()
-      get().addLogsFromFile(logs)
-      return get().logList
+  initialize: async () => {
+    if (get().initialized) return
+
+    const handleLog: IpcRendererCallback<'log'> = (_event, log) => {
+      get().addLog(log)
     }
+
+    window.electron.ipcRenderer.on('log', handleLog)
+
+    const logs = await window.electron.utility.getLogs()
+    get().addLogsFromFile(logs)
+
+    set({ initialized: true })
   },
 
   addLog: async (log: Log): Promise<void> => {

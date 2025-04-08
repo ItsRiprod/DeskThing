@@ -1,5 +1,5 @@
 // Ik this is bad practice but I don't have time to fix it right now
-import { App, AppManifest, EventPayload } from '@deskthing/types'
+import { App, AppManifest, AppToDeskThingData } from '@deskthing/types'
 
 /**
  * The AppInstance interface represents an instance of an app.
@@ -9,7 +9,7 @@ import { App, AppManifest, EventPayload } from '@deskthing/types'
 export type AppInstance = App
 
 // Type that sets up the expected format for data sent to and from main
-export type ToClientType = (data: EventPayload) => void
+export type ToClientType = (data: AppToDeskThingData) => void
 
 export interface Config {
   [appName: string]: string | string[]

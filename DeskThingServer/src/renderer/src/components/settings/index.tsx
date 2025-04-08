@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react'
-import { SettingsType } from '@DeskThing/types'
+import { SettingsType } from '@deskthing/types'
 import { SettingsBooleanComponent } from './SettingsBoolean'
 import { SettingsListComponent } from './SettingsList'
 import { SettingsMultiSelectComponent } from './SettingsMultiSelect'

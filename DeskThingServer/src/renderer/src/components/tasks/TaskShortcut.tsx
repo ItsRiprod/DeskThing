@@ -4,7 +4,7 @@ import Button from '../Button'
 import { usePageStore } from '@renderer/stores'
 import { useSearchParams } from 'react-router-dom'
 import useTaskStore from '@renderer/stores/taskStore'
-import { STEP_TYPES } from '@DeskThing/types'
+import { STEP_TYPES } from '@deskthing/types'
 import { StepPropsMap } from '@shared/types'
 
 export const TaskShortcutComponent: FC<StepPropsMap[STEP_TYPES.SHORTCUT]> = ({ step, source }) => {

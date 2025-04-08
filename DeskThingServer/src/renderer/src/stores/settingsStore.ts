@@ -1,9 +1,12 @@
 import { create } from 'zustand'
 import { LinkRequest, LOG_FILTER, Settings } from '@shared/types'
+import { IpcRendererCallback } from '@shared/types'
 
 interface SettingsStoreState {
   settings: Settings
   activeRequests: LinkRequest[]
+  initialized: boolean
+  initialize: () => Promise<void>
   getSettings: () => Promise<Settings>
   requestSettings: () => Promise<Settings>
   getSetting: (key: keyof Settings) => Settings[keyof Settings]
@@ -17,6 +20,7 @@ interface SettingsStoreState {
 
 const useSettingsStore = create<SettingsStoreState>((set, get) => ({
   activeRequests: [],
+  initialized: false,
   settings: {
     version: '0.0.0',
     version_code: 0,
@@ -34,6 +38,30 @@ const useSettingsStore = create<SettingsStoreState>((set, get) => ({
     localIp: ['-.-.-.-'],
     appRepos: ['https://github.com/ItsRiprod/deskthing-apps'],
     clientRepos: ['https://github.com/ItsRiprod/deskthing-client']
+  },
+
+  initialize: async () => {
+    if (get().initialized) return
+
+    const handleSettingsUpdate: IpcRendererCallback<'settings-updated'> = async (
+      _event,
+      settings
+    ): Promise<void> => {
+      await get().setSettings(settings)
+    }
+
+    const handleLinkRequest: IpcRendererCallback<'link-request'> = async (
+      _event,
+      request
+    ): Promise<void> => {
+      get().addRequest(request)
+    }
+
+    window.electron.ipcRenderer.on('settings-updated', handleSettingsUpdate)
+    window.electron.ipcRenderer.on('link-request', handleLinkRequest)
+
+    const settings = await window.electron.utility.getSettings()
+    set({ settings, initialized: true })
   },
 
   addRequest: (request: LinkRequest): void => {
@@ -69,8 +97,8 @@ const useSettingsStore = create<SettingsStoreState>((set, get) => ({
   },
 
   requestSettings: async (): Promise<Settings> => {
-    const settings = await window.electron.getSettings()
-    set(settings)
+    const settings = await window.electron.utility.getSettings()
+    set({ settings })
     return settings
   },
 
@@ -80,14 +108,14 @@ const useSettingsStore = create<SettingsStoreState>((set, get) => ({
 
   saveSettings: async (settings: Settings): Promise<void> => {
     set({ settings })
-    window.electron.saveSettings(settings)
+    window.electron.utility.saveSettings(settings)
   },
 
   savePartialSettings: async (settings: Partial<Settings>): Promise<void> => {
     const currentSettings = get().settings
     const updatedSettings = { ...currentSettings, ...settings }
     set({ settings: updatedSettings })
-    window.electron.saveSettings(updatedSettings)
+    window.electron.utility.saveSettings(updatedSettings)
   },
 
   setSettings: async (settings: Settings): Promise<void> => {

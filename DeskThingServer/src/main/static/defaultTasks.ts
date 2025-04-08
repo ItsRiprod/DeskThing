@@ -1,4 +1,4 @@
-import { Task, STEP_TYPES } from '@DeskThing/types'
+import { Task, STEP_TYPES } from '@deskthing/types'
 
 export const ServerTasks: Record<string, Task> = {
   gettingstarted: {
@@ -15,8 +15,7 @@ export const ServerTasks: Record<string, Task> = {
         id: 'client',
         type: STEP_TYPES.TASK,
         label: 'Setup the Client',
-        taskId: 'client',
-        taskSource: 'server',
+        taskReference: { id: 'client', source: 'server' },
         instructions: 'Ensure you have a client setup',
         completed: false
       },
@@ -24,8 +23,7 @@ export const ServerTasks: Record<string, Task> = {
         id: 'device',
         type: STEP_TYPES.TASK,
         label: 'Setup the Car Thing',
-        taskId: 'device',
-        taskSource: 'server',
+        taskReference: { id: 'client', source: 'server' },
         instructions: 'Finish setting up a device!',
         completed: false
       },
@@ -53,8 +51,7 @@ export const ServerTasks: Record<string, Task> = {
         id: 'client',
         type: STEP_TYPES.TASK,
         label: 'Install the Client',
-        taskId: 'client',
-        taskSource: 'server',
+        taskReference: { id: 'client', source: 'server' },
         instructions: 'Ensure you have a client setup',
         completed: false
       },

@@ -7,6 +7,20 @@ import { join } from 'path'
 import fs from 'node:fs'
 import Logger from '@server/utils/logger'
 
+class FileServiceError extends Error {
+  constructor(
+    message: string,
+    public cause?: unknown
+  ) {
+    super(message)
+    this.name = 'FileServiceError'
+    // Capture original stack if possible
+    if (cause instanceof Error) {
+      this.stack = `${this.stack}\nCaused by: ${cause.stack}`
+    }
+  }
+}
+
 class FileOperationQueue {
   private queues: Map<string, Array<() => Promise<void>>> = new Map()
   private processingQueues: Set<string> = new Set()
@@ -79,22 +93,22 @@ export const readFromFile = async <T>(filename: string): Promise<T | undefined> 
   return fileQueue.enqueue(filename, async () => {
     const dataFilePath = join(app.getPath('userData'), filename)
     try {
-      try {
-        await fs.promises.access(dataFilePath)
-      } catch (err) {
-        throw new Error(`[readFromFile]: File ${filename} does not exist or do not have access`, {
-          cause: err
-        })
-      }
-
       const rawData = await fs.promises.readFile(dataFilePath)
       return JSON.parse(rawData.toString())
-    } catch (err) {
-      Logger.error('Error reading data', {
-        error: err as Error,
-        source: 'readFromFile'
-      })
-      throw new Error(`[readFromFile]: Error reading data from file ${filename}`, { cause: err })
+    } catch (error) {
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+        Logger.debug(`File not found: ${filename}`, {
+          source: 'readFromFile'
+        })
+        // Return undefined or create default data
+        return undefined
+      }
+
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      throw new FileServiceError(
+        `[readFromFile] Failed to read data ${filename} with: ${errorMessage}`,
+        error
+      )
     }
   })
 }
@@ -119,21 +133,20 @@ export const writeToFile = async <T>(data: T, filepath: string): Promise<void> =
         .then(() => true)
         .catch(() => false)
 
+      await fs.promises.mkdir(dirPath, { recursive: true })
+
       if (!fileExists) {
         // If file doesn't exist, write directly
-        await fs.promises.mkdir(dirPath, { recursive: true })
         await fs.promises.writeFile(finalPath, JSON.stringify(data, null, 2))
         return
       }
 
       // If file exists, use temp file for safe writing
       const uniqueId = `${Date.now()}-${Math.random().toString(36).slice(2)}`
-      const tempPath = join(app.getPath('temp'), `${filepath}-${uniqueId}.tmp`)
-      const tempDir = join(app.getPath('temp'), ...filepath.split(/[/\\]/).slice(0, -1))
+      const tempFilename = `deskthing-${filepath.replace(/[/\\]/g, '-')}-${uniqueId}.tmp`
+      const tempPath = join(app.getPath('temp'), tempFilename)
 
       try {
-        await fs.promises.mkdir(tempDir, { recursive: true })
-        await fs.promises.mkdir(dirPath, { recursive: true })
         await fs.promises.writeFile(tempPath, JSON.stringify(data, null, 2))
         await fs.promises.copyFile(tempPath, finalPath)
       } catch (err) {
@@ -144,10 +157,7 @@ export const writeToFile = async <T>(data: T, filepath: string): Promise<void> =
         throw new Error('[writeToFile]: failed with ', { cause: err })
       } finally {
         try {
-          await Promise.allSettled([
-            fs.promises.rm(tempPath, { force: true }),
-            fs.promises.rm(tempDir, { force: true, recursive: true })
-          ])
+          await fs.promises.rm(tempPath, { force: true })
         } catch (err) {
           Logger.error('Error deleting temp files', {
             error: err as Error,
