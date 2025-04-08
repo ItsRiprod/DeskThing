@@ -1,18 +1,34 @@
 import { create } from 'zustand'
 import { UpdateInfoType } from '@shared/types'
+import { IpcRendererCallback } from '@shared/types'
 
 interface UpdateStoreState {
   update: UpdateInfoType
+  initialized: boolean
+  initialize: () => Promise<void>
   checkForUpdates: () => Promise<void>
   quitAndInstall: () => Promise<void>
   downloadUpdate: () => Promise<void>
   updateStatus: (updateInfo: UpdateInfoType) => Promise<void>
 }
 
-const useUpdateStore = create<UpdateStoreState>((set) => ({
+const useUpdateStore = create<UpdateStoreState>((set, get) => ({
   update: {
     updateAvailable: false,
     updateDownloaded: false
+  },
+  initialized: false,
+
+  initialize: async () => {
+    if (get().initialized) return
+
+    const handleUpdateStatus: IpcRendererCallback<'update-status'> = async (_event, update) => {
+      await get().updateStatus(update)
+    }
+
+    window.electron.ipcRenderer.on('update-status', handleUpdateStatus)
+
+    set({ initialized: true })
   },
 
   updateStatus: async (updateInfo: UpdateInfoType): Promise<void> => {
@@ -31,5 +47,6 @@ const useUpdateStore = create<UpdateStoreState>((set) => ({
     window.electron.update.download()
   }
 }))
+
 
 export default useUpdateStore
