@@ -5,6 +5,7 @@ import { AppStoreClass } from '@shared/stores/appStore'
 import { MusicEventPayloads } from '@deskthing/types'
 import { PlatformStoreClass } from '@shared/stores/platformStore'
 import { MusicService } from '../../../src/main/services/music/MusicService'
+import { MediaStore } from '@server/stores/mediaStore'
 
 vi.mock('@server/utils/logger', () => ({
   default: {
@@ -23,13 +24,14 @@ describe('MusicStore', () => {
   let mockSettingsStore: SettingsStoreClass
   let mockAppStore: AppStoreClass
   let mockPlatformStore: PlatformStoreClass
+  let mockMediaStore: MediaStore
 
   beforeEach(() => {
     mockSettingsStore = {} as SettingsStoreClass
     mockAppStore = {} as AppStoreClass
     mockPlatformStore = {} as PlatformStoreClass
-
-    musicStore = new MusicStore(mockSettingsStore, mockAppStore, mockPlatformStore)
+    mockMediaStore = {} as MediaStore
+    musicStore = new MusicStore(mockSettingsStore, mockAppStore, mockPlatformStore, mockMediaStore)
   })
 
   afterEach(() => {

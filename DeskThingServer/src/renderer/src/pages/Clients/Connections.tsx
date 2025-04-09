@@ -7,13 +7,12 @@ import MainElement from '@renderer/nav/MainElement'
 import { deviceMessages } from '@renderer/assets/refreshMessages'
 import ConnectionComponent from '@renderer/components/Client/Connection'
 import { useSearchParams } from 'react-router-dom'
-import ADBDevice from '@renderer/components/Client/ADBDevice'
 import ProgressOverlay from '@renderer/overlays/ProgressOverlay'
 import { ProgressChannel } from '@shared/types'
 
 const ClientConnections: React.FC = () => {
   const settings = useSettingsStore((settings) => settings.settings)
-  const { clients, clientManifest, devices, refreshConnections } = useClientStore((state) => state)
+  const { clients, clientManifest, refreshConnections } = useClientStore((state) => state)
   const setPage = usePageStore((pageStore) => pageStore.setPage)
 
   // Visibility States
@@ -151,18 +150,6 @@ const ClientConnections: React.FC = () => {
               <p className="md:block hidden text-center flex-grow">Add Device</p>
             </Button>
           </div>
-          {devices.length > 0 && (
-            <details className="font-geistMono w-full h-full items-center flex flex-col gap-2 justify-center border border-zinc-700">
-              <summary className="cursor-pointer select-none p-2 bg-zinc-800 hover:bg-zinc-700">
-                ADB Devices
-              </summary>
-              <div className="p-2">
-                {devices.map((adbClient) => (
-                  <ADBDevice adbDevice={adbClient} key={adbClient.adbId} />
-                ))}
-              </div>
-            </details>
-          )}
           <div className="font-geistMono w-full h-full items-center flex flex-col gap-2 justify-center">
             {clients.length > 0 ? (
               clients.map((client) => <ConnectionComponent key={client.clientId} client={client} />)

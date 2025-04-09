@@ -47,6 +47,7 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
   }
 
   fetchClients = async (): Promise<Client[]> => {
+    this.refreshClients()
     return this.clients
   }
 
@@ -263,13 +264,16 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
       // Mark clients not found in ADB as disconnected
       this.clients.forEach((client) => {
         if (!adbDevices.find((adb) => adb.adbId === client.identifiers[this.id]?.id)) {
-          this.updateClient(client.identifiers[this.id].id, {
-            connected: false,
-            timestamp: Date.now()
-          })
           this.emit(PlatformEvent.CLIENT_DISCONNECTED, client)
         }
       })
+
+      // ensure the local list of clients is up to date
+      this.clients = this.clients.filter((client) => {
+        return adbDevices.find((adb) => adb.adbId === client.identifiers[this.id]?.id)
+      })
+
+      this.emit(PlatformEvent.CLIENT_LIST, this.clients)
       progressBus.complete(ProgressChannel.REFRESH_DEVICES, 'Refresh complete')
     } catch (error) {
       progressBus.error(ProgressChannel.REFRESH_DEVICES, 'Refresh failed', 'Refresh failed')

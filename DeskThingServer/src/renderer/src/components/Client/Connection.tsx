@@ -3,33 +3,27 @@ import {
   IconComputer,
   IconLogs,
   IconMobile,
-  IconPing,
-  IconRefresh,
   IconX
 } from '@renderer/assets/icons'
 import { ProgressChannel } from '@shared/types'
 import React, { useEffect, useState } from 'react'
 import Button from '../Button'
 import ClientDetailsOverlay from '@renderer/overlays/ClientDetailsOverlay'
-import {
-  Client,
-  ClientConnectionMethod,
-  ClientPlatformIDs,
-  ConnectionState
-} from '@deskthing/types'
+import { Client, ClientPlatformIDs, ConnectionState } from '@deskthing/types'
 import usePlatformStore from '@renderer/stores/platformStore'
 import { useChannelProgress } from '@renderer/hooks/useProgress'
+import { PlatformIDs } from '@shared/stores/platformStore'
+import { WebSocketControls, ADBControls } from './ConnectionControls/'
 
 interface ConnectionComponentProps {
   client: Client
 }
 
 const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => {
-  const [animatingIcons, setAnimatingIcons] = useState<Record<string, boolean>>({})
   const [enabled, setEnabled] = useState(false)
   const { isLoading } = useChannelProgress(ProgressChannel.PLATFORM_CHANNEL)
-
   const [connectedTimeText, setConnectedTimeText] = useState<string>('0s')
+  const disconnect = usePlatformStore((state) => state.disconnect)
 
   useEffect(() => {
     const updateTime = (): number | undefined => {
@@ -65,9 +59,6 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
 
     return () => clearInterval(timer)
   }, [client.timestamp])
-  const sendCommand = usePlatformStore((state) => state.runCommand)
-  const disconnect = usePlatformStore((state) => state.disconnect)
-  const ping = usePlatformStore((state) => state.ping)
 
   const renderIcon = (): JSX.Element => {
     if (!client.manifest?.context) return <IconComputer iconSize={128} />
@@ -84,27 +75,6 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
       default:
         return <IconComputer iconSize={128} />
     }
-  }
-
-  const handleAdbCommand = async (command: string): Promise<string | undefined> => {
-    if (client.manifest?.context?.method !== ClientConnectionMethod.ADB) return
-
-    return await sendCommand(client.manifest.context.adbId, command)
-  }
-
-  const restartChromium = async (): Promise<void> => {
-    if (client.manifest?.context.method !== ClientConnectionMethod.ADB) return
-
-    setAnimatingIcons((prev) => ({ ...prev, chromium: true }))
-    await handleAdbCommand(
-      `-s ${client.manifest.context.adbId} shell supervisorctl restart chromium`
-    )
-    setAnimatingIcons((prev) => ({ ...prev, chromium: false }))
-  }
-
-  const handlePing = async (): Promise<void> => {
-    setAnimatingIcons((prev) => ({ ...prev, ping: true }))
-    await ping(client.clientId)
   }
 
   const handleDisconnect = (): void => {
@@ -125,6 +95,10 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
     }
   }
 
+  // Determine which provider controls to show
+  const hasAdbProvider = client.identifiers[PlatformIDs.ADB] !== undefined
+  const hasWebSocketProvider = client.identifiers[PlatformIDs.WEBSOCKET] !== undefined
+
   return (
     <div className="w-full p-4 border rounded-xl border-zinc-900 flex flex-col lg:flex-row gap-4 justify-center items-center lg:justify-between bg-zinc-950">
       {enabled && <ClientDetailsOverlay client={client} onClose={() => setEnabled(false)} />}
@@ -141,30 +115,19 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
             {client.manifest?.context.ip}:{client.manifest?.context.port}
           </p>
           <p className="text-sm text-gray-500 font-geistMono">{client.clientId}</p>
-          {client.manifest?.context.method === ClientConnectionMethod.ADB && (
-            <p className="text-sm text-gray-400">ADB: {client.manifest.context.adbId}</p>
+          {hasAdbProvider && (
+            <p className="text-sm text-gray-400">ADB: {client.identifiers[PlatformIDs.ADB]?.id}</p>
           )}
           <p className="text-sm text-gray-400">Connected for: {connectedTimeText}</p>
         </div>
       </div>
       <div className="flex gap-2 items-center">
-        {client.manifest?.context.method === ClientConnectionMethod.ADB && (
-          <Button
-            title="Restart Chromium on the Device"
-            className="group hover:bg-zinc-900 gap-2"
-            onClick={restartChromium}
-            disabled={isLoading}
-          >
-            <IconRefresh
-              className={
-                animatingIcons.chromium ? 'rotate-[360deg] transition-transform duration-1000' : ''
-              }
-            />
-            <p className="hidden group-hover:block">
-              Restart <span className="hidden lg:inline">Chromium</span>
-            </p>
-          </Button>
-        )}
+        {/* Provider-specific controls */}
+        {hasAdbProvider && <ADBControls client={client} isLoading={isLoading} />}
+
+        {hasWebSocketProvider && <WebSocketControls client={client} isLoading={isLoading} />}
+
+        {/* Common buttons for all clients */}
         <Button
           title="Client Details and Settings"
           className="group hover:bg-zinc-900 gap-2"
@@ -173,10 +136,7 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
           <IconLogs />
           <p className="hidden group-hover:block">Details</p>
         </Button>
-        <Button title="Ping Client" className="group hover:bg-zinc-900 gap-2" onClick={handlePing}>
-          <IconPing className={isLoading ? 'animate-ping' : ''} />
-          <p className="hidden group-hover:block">Ping</p>
-        </Button>
+
         <Button
           title="Disconnect Client"
           className="group bg-red-700 gap-2"

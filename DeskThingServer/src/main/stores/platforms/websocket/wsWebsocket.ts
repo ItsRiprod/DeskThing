@@ -458,13 +458,13 @@ export class WSPlatform {
     try {
       const platformConnectionId = this.getInternalId(clientId)
       if (!platformConnectionId) {
-        console.error(`Unable to find the client for id ${clientId}`)
+        console.error(`[updateClient] Unable to find the client for id ${clientId}`)
         return
       }
 
       const clientObj = this.clients.get(platformConnectionId)
       if (!clientObj) {
-        console.error(`Unable to find the client for id ${clientId}`)
+        console.error(`[updateClient] Unable to find the internal client for id ${clientId}`)
         return
       }
 
@@ -493,15 +493,15 @@ export class WSPlatform {
       clientObj.client = updatedClient
       if (notify) this.sendToParent({ event: PlatformEvent.CLIENT_UPDATED, data: updatedClient })
       this.clients.set(platformConnectionId, clientObj)
-      console.log('Updated the client')
+      console.debug('[updateClient] Updated the client')
     } catch (error) {
-      console.error('Error updating client:', error)
+      console.error('[updateClient] Error updating client:', error)
       this.sendToParent({
         event: PlatformEvent.ERROR,
         data:
           error instanceof Error
             ? error
-            : new Error('Unknown error occurred updating client', { cause: error })
+            : new Error('[updateClient] Unknown error occurred updating client', { cause: error })
       })
     }
   }
@@ -546,7 +546,21 @@ export class WSPlatform {
   async handleClientDisconnected(clientId: string, client?: Client): Promise<void> {
     try {
       const platformConnectionId = this.getInternalId(clientId)
-      if (!platformConnectionId) return
+      if (!platformConnectionId) {
+        console.error(
+          `[handleClientDisconnected] Unable to find the internal client for id ${clientId}. Disconnecting`
+        )
+        this.sendToParent({
+          event: PlatformEvent.CLIENT_DISCONNECTED,
+          data: client || {
+            clientId,
+            connected: false,
+            identifiers: {},
+            connectionState: ConnectionState.Disconnected
+          }
+        })
+        return
+      }
       const clientConnection = this.clients.get(platformConnectionId)
 
       if (clientConnection) {
@@ -631,7 +645,8 @@ export class WSPlatform {
 
     const clientObj = this.clients.get(platformConnectionId)
     if (!clientObj) {
-      console.error(`Unable to find the client for id ${clientId}`)
+      console.error(`[pingClient] Unable to find the client for id ${clientId}`)
+      this.handleClientDisconnected(clientId)
       return false
     }
 

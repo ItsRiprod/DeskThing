@@ -1,11 +1,10 @@
 import { create } from 'zustand'
 import { IpcRendererCallback, LoggingData } from '@shared/types'
-import { ClientManifest, Client, ADBClientType, ClientConnectionMethod } from '@deskthing/types'
+import { ClientManifest, Client } from '@deskthing/types'
 import useNotificationStore from './notificationStore'
 import { PlatformIDs } from '@shared/stores/platformStore'
 
 interface ClientStoreState {
-  devices: ADBClientType[]
   connections: number
   clients: Client[]
   logging: LoggingData | null
@@ -25,7 +24,6 @@ interface ClientStoreState {
 
 // Create Zustand store
 const useClientStore = create<ClientStoreState>((set, get) => ({
-  devices: [],
   connections: 0,
   clients: [],
   logging: null,
@@ -38,54 +36,68 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
     const handleClientData: IpcRendererCallback<'clients'> = (_event, data) => {
       set(() => ({
         clients: data,
-        connections: data.length
+        connections: data?.length || 0
       }))
     }
 
     const handleNewClient: IpcRendererCallback<'platform:client'> = (_event, data) => {
-      if (data.request === 'added') {
-        if (data.client.manifest?.context.method === ClientConnectionMethod.ADB) {
-          set((state) => ({
-            devices: [...state.devices, (data.client?.manifest?.context as ADBClientType) || []]
-          }))
-        }
-        set((state) => {
-          const existingClientIndex = state.clients.findIndex(
-            (client) => client.clientId === data.client.clientId
-          )
-          if (existingClientIndex !== -1) {
-            return {
-              clients: state.clients,
-              connections: state.clients.length
-            }
-          }
-
-          return {
-            clients: [...state.clients, data.client],
-            connections: state.connections
-          }
-        })
-      } else if (data.request === 'removed') {
-        set((state) => ({
-          clients: state.clients.filter((client) => client.clientId !== data.clientId),
-          connections: state.connections
-        }))
-      } else if (data.request === 'modified') {
-        set((state) => {
-          const existingClient = state.clients.find(
-            (client) => client.clientId === data.client.clientId
-          )
-          if (!existingClient) {
-            return {
-              clients: [...state.clients, data.client]
-            }
-          }
-          return {
-            clients: state.clients.map((client) =>
-              client.clientId === data.client.clientId ? data.client : client
+      switch (data.request) {
+        case 'added': {
+          set((state) => {
+            const existingClientIndex = state.clients.findIndex(
+              (client) => client.clientId === data.client.clientId
             )
-          }
-        })
+
+            if (existingClientIndex !== -1) {
+              state.clients[existingClientIndex] = data.client
+              return {
+                clients: state.clients,
+                connections: state.connections
+              }
+            }
+
+            return {
+              clients: [...state.clients, data.client],
+              connections: state.connections
+            }
+          })
+          break
+        }
+        case 'removed': {
+          set((state) => ({
+            clients: state.clients.filter((client) => client.clientId !== data.clientId),
+            connections: state.connections
+          }))
+          break
+        }
+        case 'modified': {
+          set((state) => {
+            const existingClientIndex = state.clients.findIndex(
+              (client) => client.clientId === data.client.clientId
+            )
+            if (existingClientIndex === -1) {
+              return {
+                clients: [...state.clients, data.client]
+              }
+            }
+
+            state.clients[existingClientIndex] = data.client
+
+            return {
+              clients: state.clients.map((client) =>
+                client.clientId === data.client.clientId ? data.client : client
+              )
+            }
+          })
+          break
+        }
+        case 'list': {
+          set({
+            clients: data.clients,
+            connections: data.clients?.length || 0
+          })
+          break
+        }
       }
     }
 
@@ -146,10 +158,6 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
         request: 'adb'
       })
 
-      set({
-        devices: devices?.map((client) => client.manifest?.context as ADBClientType)
-      })
-
       return devices
     } catch (error) {
       console.error('Error fetching ADB devices:', error)
@@ -163,7 +171,7 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
       const connections = await window.electron.utility.getConnections()
       console.debug('Got the connections', connections)
       set({
-        connections: connections.length,
+        connections: connections?.length || 0,
         clients: connections
       })
     } catch (error) {
@@ -178,7 +186,7 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
       if (!clients) return false
       set(() => ({
         clients: clients,
-        connections: clients.length
+        connections: clients?.length || 0
       }))
       return true
     } catch (error) {

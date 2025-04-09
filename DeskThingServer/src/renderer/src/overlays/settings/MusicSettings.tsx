@@ -112,6 +112,10 @@ const MusicSettings: React.FC = () => {
               value: 'none',
               label: 'None'
             },
+            // { TODO Native Local Audio
+            //   value: 'local',
+            //   label: 'Local Audio'
+            // },
             {
               value: 'disabled',
               label: 'Disabled'

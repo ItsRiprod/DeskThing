@@ -292,8 +292,19 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
     await this.stopPlatform(platformId)
     return await this.startPlatform(platformId, options)
   }
-
   getClients(): Client[] {
+    // Remove clients without any providers
+    for (const client of this.clientRegistry.values()) {
+      if (!client.primaryProviderId && !client.identifiers?.length) {
+        Logger.debug(`Removing client ${client.clientId} as it has no providers`, {
+          domain: 'platformStore',
+          function: 'getClients',
+          source: 'platformStore'
+        })
+        this.clientRegistry.delete(client.clientId)
+      }
+    }
+
     return Array.from(this.clientRegistry.values())
   }
 
