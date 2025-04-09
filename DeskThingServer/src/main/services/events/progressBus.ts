@@ -297,6 +297,13 @@ class ProgressEventBus extends EventEmitter {
 
     const errorEvent = { operation, status: ProgressStatus.ERROR, message, error }
 
+    if (error) {
+      logger.error(`Error while completing ${channel}. Message: ${error}`, {
+        source: channel,
+        function: 'error'
+      })
+    }
+
     if (this.activeContext && this.activeContext.channel === channel) {
       this.clearContext()
     }

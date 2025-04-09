@@ -48,5 +48,4 @@ const useUpdateStore = create<UpdateStoreState>((set, get) => ({
   }
 }))
 
-
 export default useUpdateStore
