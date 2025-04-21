@@ -32,7 +32,7 @@ export async function createLoadingWindow(): Promise<BrowserWindow> {
   if (process.env.ELECTRON_RENDERER_URL) {
     window.loadURL(`${process.env.ELECTRON_RENDERER_URL}/loading.html`)
   } else {
-    window.loadFile(join(__dirname, '../../renderer/loading.html'))
+    window.loadFile(join(__dirname, '../renderer/loading.html'))
   }
 
   return window

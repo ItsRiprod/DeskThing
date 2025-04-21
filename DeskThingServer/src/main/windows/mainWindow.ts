@@ -18,7 +18,7 @@ export function createMainWindow(): BrowserWindow {
     minWidth: 500,
     minHeight: 400,
     icon: icon,
-    show: false,
+    show: true,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon: icon } : {}),
     webPreferences: {
@@ -64,7 +64,7 @@ export function createMainWindow(): BrowserWindow {
   if (process.env.ELECTRON_RENDERER_URL) {
     window.loadURL(process.env.ELECTRON_RENDERER_URL)
   } else {
-    window.loadFile(join(__dirname, '../../renderer/index.html'))
+    window.loadFile(join(__dirname, '../renderer/index.html'))
   }
 
   return window

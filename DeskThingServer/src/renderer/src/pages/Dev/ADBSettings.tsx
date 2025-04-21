@@ -4,13 +4,18 @@ import MainElement from '@renderer/nav/MainElement'
 import { IconPlay, IconRefresh, IconReload, IconToggle } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
 import { useClientStore, useSettingsStore } from '@renderer/stores'
+import { ClientConnectionMethod } from '@deskthing/types'
+import { PlatformIDs } from '@shared/stores/platformStore'
 
 const ADBSettings: React.FC = () => {
   const [inputValue, setInputValue] = useState('')
   const [pastCommands, setPastCommands] = useState<string[]>([])
   const [commandType, setCommandType] = useState('adb')
   const [adbDevice, setAdbDevice] = useState('')
-  const adbDevices = useClientStore((store) => store.devices)
+  const clients = useClientStore((store) => store.clients)
+  const adbDevices = clients.filter(
+    (client) => client.manifest?.context.method === ClientConnectionMethod.ADB
+  )
   const refreshDevices = useClientStore((store) => store.requestADBDevices)
   const saveSettings = useSettingsStore((store) => store.savePartialSettings)
   const adbSetting = useSettingsStore((store) => store.settings.globalADB)
@@ -110,8 +115,11 @@ const ADBSettings: React.FC = () => {
               onChange={(e) => setAdbDevice(e.target.value)}
             >
               {adbDevices.map((device) => (
-                <option key={device.adbId} value={device.adbId}>
-                  {device.adbId}
+                <option
+                  key={device.identifiers[PlatformIDs.ADB].id}
+                  value={device.identifiers[PlatformIDs.ADB].id}
+                >
+                  {device.identifiers[PlatformIDs.ADB].id}
                 </option>
               ))}
               <option value="None">None</option>

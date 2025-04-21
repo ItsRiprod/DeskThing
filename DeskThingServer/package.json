@@ -137,12 +137,16 @@
       ]
     },
     "nsis": {
+      "oneClick": true,
+      "allowToChangeInstallationDirectory": true,
       "artifactName": "${name}-${os}-${version}-setup.${ext}",
       "shortcutName": "${productName}",
       "uninstallDisplayName": "${productName}",
       "createDesktopShortcut": "always",
-      "oneClick": true,
-      "perMachine": false
+      "deleteAppDataOnUninstall": true,
+      "perMachine": false,
+      "allowElevation": true
+
     },
     "mac": {
       "gatekeeperAssess": false,
