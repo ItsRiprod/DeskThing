@@ -132,13 +132,13 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
               data.connectionState = ConnectionState.Connected
             }
 
-            this.emit(event, data)
-
             logger.info(`Client ${data.clientId} connected via WebSocket`, {
               domain: 'WebSocket',
               source: 'wsPlatform',
               function: 'clientConnected'
             })
+
+            this.emit(event, data)
           }
           break
         case PlatformEvent.CLIENT_DISCONNECTED:

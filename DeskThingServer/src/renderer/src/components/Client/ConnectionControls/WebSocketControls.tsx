@@ -31,7 +31,6 @@ const WebSocketControls: React.FC<WebSocketControlsProps> = ({ client, isLoading
   return (
     <Button title="Ping Client" className="group hover:bg-zinc-900 gap-2" onClick={handlePing}>
       <IconPing className={isLoading ? 'animate-ping' : ''} />
-      <p className="hidden group-hover:block">Ping</p>
     </Button>
   )
 }

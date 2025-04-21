@@ -91,6 +91,9 @@ export class ExpressServer extends EventEmitter<ExpressServerEvents> {
 
         manifest.connectionId = crypto.randomUUID()
 
+        // Asset that this manifest has been finalized
+        manifest.final = true
+
         this.emit('client-connected', manifest)
 
         console.log('Sending manifest:', manifest)
@@ -269,6 +272,55 @@ export class ExpressServer extends EventEmitter<ExpressServerEvents> {
       } catch (error) {
         console.log('Error fetching resource', error)
         res.status(500).send('Error fetching resource')
+      }
+    })
+
+    // General-purpose proxy that can handle any content type
+    this.app.get('/proxy/v1', async (req: Request, res: Response) => {
+      try {
+        const url = req.query.url as string
+
+        if (!url) {
+          res.status(400).send('Missing url query parameter')
+          return
+        }
+
+        console.log('Proxying resource from:', url)
+
+        const response = await fetch(url)
+
+        if (!response.ok) {
+          res.status(response.status).send(`Upstream resource responded with ${response.status}`)
+          return
+        }
+
+        // Copy all headers from the original response
+        response.headers.forEach((value, key) => {
+          res.setHeader(key, value)
+        })
+
+        if (!response.body) {
+          res.sendStatus(204)
+          return
+        }
+
+        // Stream the response directly to the client
+        const reader = response.body.getReader()
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          res.write(value)
+        }
+
+        res.end()
+      } catch (error) {
+        console.error('Error proxying resource:', error)
+        res
+          .status(500)
+          .send(
+            `Error fetching resource: ${error instanceof Error ? error.message : String(error)}`
+          )
       }
     })
   }

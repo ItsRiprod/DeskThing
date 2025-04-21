@@ -182,6 +182,7 @@ export class ADBService {
       // Modify the manifest
       await setManifestJS({
         connectionId: deviceId,
+        final: true, // assert that the manifest has been updated
         context: {
           method: ClientConnectionMethod.ADB,
           name: 'Car Thing',
@@ -194,6 +195,7 @@ export class ADBService {
 
       await updateManifest({
         connectionId: deviceId,
+        final: true,
         context: {
           method: ClientConnectionMethod.ADB,
           name: 'Car Thing',
@@ -209,6 +211,7 @@ export class ADBService {
 
       // revert the manifest changes
       await setManifestJS({
+        final: false, // undo the change
         connectionId: clientManifest.connectionId,
         context: clientManifest.context
       })

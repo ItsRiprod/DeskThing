@@ -1,7 +1,7 @@
-import { ClientConnectionMethod } from '@deskthing/types'
+import { ClientConnectionMethod, LOGGING_LEVELS } from '@deskthing/types'
 import { storeProvider } from '@server/stores/storeProvider'
 import logger from '@server/utils/logger'
-import { FeedbackReport, FeedbackType, SystemInfo } from '@shared/types'
+import { DiscordWebhookData, FeedbackReport, FeedbackType, SystemInfo } from '@shared/types'
 import { readFileSync } from 'fs'
 import os from 'os'
 import { join } from 'path'
@@ -37,23 +37,41 @@ export class FeedbackService {
     other: 0x808080
   }
 
+  static getEmojiForType(type: FeedbackType): string {
+    switch (type) {
+      case 'bug':
+        return ':bug:'
+      case 'feature':
+        return ':rocket:'
+      case 'question':
+        return ':question:'
+      case 'other':
+        return ':shrug:'
+    }
+  }
+
   static async sendFeedback(report: FeedbackReport): Promise<void> {
     const systemInfo = report.type === 'bug' || report.type === 'other' ? report.feedback : null
 
     const enrichedReport = await this.enrichFeedbackData(report)
 
-    const message = {
-      content: `[${this.SUBMISSION_ID}] **New Feedback Received** 🎉`,
+    const message: DiscordWebhookData = {
+      content: `[${this.SUBMISSION_ID}] **New ${report.type.toUpperCase()} Feedback** ${this.getEmojiForType(report.type)}`,
       embeds: [
         {
           title: `${enrichedReport.feedback.title} - ${enrichedReport.type.toUpperCase()}`,
           description: enrichedReport.feedback.feedback,
           color: this.TYPE_COLORS[enrichedReport.type],
+          author: {
+            name: enrichedReport.feedback.discordId || 'Anonymous User'
+          },
           fields: await this.generateFields(enrichedReport, systemInfo),
           timestamp: new Date().toISOString()
         }
       ]
     }
+
+    logger.debug(`Sending feedback to Discord: ${JSON.stringify(message)}`)
 
     try {
       const response = await fetch(this.WEBHOOK_URL, {
@@ -124,7 +142,8 @@ export class FeedbackService {
       arch: os.arch(),
       loadAverage: os.loadavg(),
       apps: [],
-      clients: []
+      clients: [],
+      recentLogs: []
     }
 
     const runningApps = await appStore.getAllBase()
@@ -149,7 +168,32 @@ export class FeedbackService {
         : 'unknown'
     }))
 
+    const logs = await logger.getLogs(7)
+
+    systemInfo.recentLogs = logs
+      .map(
+        (log) =>
+          `${this.getLogColor(log.type)}[${log.options.date && new Date(log.options.date).toLocaleString()}:${log.type}] ${log.options.source}.${log.options.function} ${log.log.substring(0, 100)}\u001b[0m`
+      )
+      .slice(0, 7)
+
     return systemInfo
+  }
+  private static getLogColor(type: LOGGING_LEVELS): string {
+    switch (type) {
+      case LOGGING_LEVELS.ERROR:
+        return '\u001b[31m' // Red
+      case LOGGING_LEVELS.WARN:
+        return '\u001b[33m' // Yellow
+      case LOGGING_LEVELS.FATAL:
+        return '\u001b[32m' // Green
+      case LOGGING_LEVELS.DEBUG:
+        return '\u001b[34m' // Blue
+      case LOGGING_LEVELS.LOG:
+        return '\u001b[37m' // White
+      default:
+        return '\u001b[37m' // White
+    }
   }
 
   private static formatDuration(ms: number): string {
@@ -248,6 +292,20 @@ export class FeedbackService {
             inline: false
           })
       }
+    }
+
+    if (systemInfo && systemInfo.recentLogs && systemInfo.recentLogs.length > 0) {
+      fields.push({
+        name: 'Recent Logs',
+        value:
+          '```ansi\n' +
+          systemInfo.recentLogs.slice(0, 10).join('\n') +
+          (systemInfo.recentLogs.length > 10
+            ? '\n... and ' + (systemInfo.recentLogs.length - 10) + ' more'
+            : '') +
+          '\n```',
+        inline: false
+      })
     }
 
     return fields

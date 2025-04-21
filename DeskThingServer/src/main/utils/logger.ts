@@ -290,7 +290,7 @@ class Logger {
    *
    * @returns A Promise that resolves with an array of log entries, or an empty array if the log file does not exist.
    */
-  public async getLogs(): Promise<Log[]> {
+  public async getLogs(num_logs: number = 20): Promise<Log[]> {
     return new Promise((resolve, reject) => {
       if (!fs.existsSync(logFile)) {
         resolve([])
@@ -303,7 +303,7 @@ class Logger {
         }
         try {
           const logs = data ? JSON.parse(data) : []
-          resolve(logs)
+          resolve(logs.slice(-num_logs))
         } catch (error) {
           reject(error)
         }

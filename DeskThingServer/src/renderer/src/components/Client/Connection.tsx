@@ -96,8 +96,8 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
   }
 
   // Determine which provider controls to show
-  const hasAdbProvider = client.identifiers[PlatformIDs.ADB] !== undefined
-  const hasWebSocketProvider = client.identifiers[PlatformIDs.WEBSOCKET] !== undefined
+  const hasAdbProvider = client.identifiers[PlatformIDs.ADB]?.active
+  const hasWebSocketProvider = client.identifiers[PlatformIDs.WEBSOCKET]?.active
 
   return (
     <div className="w-full p-4 border rounded-xl border-zinc-900 flex flex-col lg:flex-row gap-4 justify-center items-center lg:justify-between bg-zinc-950">
@@ -111,13 +111,34 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
               {ConnectionState[client.connectionState]}
             </span>
           </div>
-          <p className="text-gray-400">
-            {client.manifest?.context.ip}:{client.manifest?.context.port}
-          </p>
-          <p className="text-sm text-gray-500 font-geistMono">{client.clientId}</p>
-          {hasAdbProvider && (
-            <p className="text-sm text-gray-400">ADB: {client.identifiers[PlatformIDs.ADB]?.id}</p>
+          {client.manifest?.context.ip && (
+            <p className="text-gray-400">
+              {client.manifest?.context.ip}:{client.manifest?.context.port}
+            </p>
           )}
+          <p className="text-sm text-gray-500 font-geistMono">ClientID: {client.clientId}</p>
+          {hasAdbProvider && (
+            <p className="text-xs flex items-center gap-1">
+              <span
+                className={`${client.primaryProviderId === PlatformIDs.ADB ? 'text-green-800' : 'text-gray-400'}`}
+              >
+                ●
+              </span>
+              <span className="text-gray-500">ADB: {client.identifiers[PlatformIDs.ADB]?.id}</span>
+            </p>
+          )}
+          {hasWebSocketProvider && (
+            <p className="text-xs flex items-center gap-1">
+              <span
+                className={`${client.primaryProviderId === PlatformIDs.WEBSOCKET ? 'text-green-800' : 'text-gray-400'}`}
+              >
+                ●
+              </span>
+              <span className="text-gray-500">
+                WebSocket: {client.identifiers[PlatformIDs.WEBSOCKET]?.id}
+              </span>
+            </p>
+          )}{' '}
           <p className="text-sm text-gray-400">Connected for: {connectedTimeText}</p>
         </div>
       </div>
@@ -134,17 +155,15 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
           onClick={() => setEnabled(true)}
         >
           <IconLogs />
-          <p className="hidden group-hover:block">Details</p>
         </Button>
 
         <Button
           title="Disconnect Client"
-          className="group bg-red-700 gap-2"
+          className="group bg-red-700 gap-2 hover:bg-red-800"
           disabled={isLoading}
           onClick={handleDisconnect}
         >
           <IconX />
-          <p className="hidden group-hover:block">Disconnect</p>
         </Button>
       </div>
     </div>

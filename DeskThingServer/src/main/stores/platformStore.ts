@@ -725,7 +725,7 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
     platform.on(PlatformEvent.CLIENT_CONNECTED, (client: Client) => {
       this.handleClientUpdate(platform, client)
 
-      Logger.debug(`Client ${client.clientId} connected via ${platform.id}`, {
+      Logger.info(`Client ${client.clientId} connected via ${platform.id}`, {
         domain: 'platform',
         source: 'platformStore',
         function: 'clientConnected'
@@ -736,6 +736,9 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
         source: 'platformStore',
         function: 'clientConnected'
       })
+
+      // Send data to that client
+      this.sendInitialDataToClient(client.clientId)
     })
 
     // Disconnection
@@ -820,7 +823,7 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
   }
 
   private handleClientUpdate(platform: PlatformInterface, client: Client): void {
-    // First, check if this client already exists in our registry
+    // First, check if this client already exists in the registry
     let existingClientId: string | undefined
     let existingClient: Client | undefined
 
@@ -837,7 +840,7 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
       // Client exists - update it
 
       // Check if the device is now connected
-      const wasConnected = existingClient.connected
+      const wasConnected = existingClient.connectionState == ConnectionState.Connected
 
       // Merge the clients
       const mergedClient = ClientIdentificationService.mergeClients(existingClient, client)
@@ -887,12 +890,12 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
 
       // If the client wasn't connected before but is now, send initial data
       if (!wasConnected && mergedClient.connected) {
-        Logger.debug(`Client ${existingClientId} connected. Sending initial data`, {
+        Logger.debug(`Client ${mergedClient.clientId} connected. Sending initial data`, {
           domain: 'platform',
           source: 'platformStore',
           function: 'handleClientUpdate'
         })
-        this.sendInitialDataToClient(existingClientId)
+        this.sendInitialDataToClient(mergedClient.clientId)
       }
 
       Logger.debug(`Updated client ${client.clientId} (merged with ${existingClientId})`, {
@@ -1148,6 +1151,10 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
   }
 
   private async sendInitialDataToClient(clientId?: string): Promise<void> {
+    Logger.debug(`Sending initial data to ${clientId}`, {
+      function: 'sendInitialDataToClient',
+      source: 'platformStore'
+    })
     await this.sendConfigToClient(clientId)
     await this.sendSettingsToClient(clientId)
     await this.sendMappingsToClient(clientId)

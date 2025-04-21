@@ -99,7 +99,6 @@ const ADBControls: React.FC<ADBControlsProps> = ({ client, isLoading }) => {
             animatingIcons.chromium ? 'rotate-[360deg] transition-transform duration-1000' : ''
           }
         />
-        <p className="hidden group-hover:block">Push</p>
       </Button>
       <Button
         title="Restart Chromium on the Device"
@@ -112,9 +111,6 @@ const ADBControls: React.FC<ADBControlsProps> = ({ client, isLoading }) => {
             animatingIcons.chromium ? 'rotate-[360deg] transition-transform duration-1000' : ''
           }
         />
-        <p className="hidden group-hover:block">
-          Restart <span className="hidden lg:inline">Chromium</span>
-        </p>
       </Button>
     </>
   )
