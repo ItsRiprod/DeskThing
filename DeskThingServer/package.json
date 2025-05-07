@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@electron-toolkit/utils": "^3.0.0",
+    "@electron/rebuild": "^4.0.1",
     "@floating-ui/react-dom": "^2.1.2",
     "@types/auto-launch": "^5.0.5",
     "adm-zip": "^0.5.16",
@@ -70,7 +71,6 @@
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.19",
     "electron-builder": "^24.9.1",
-    "electron-rebuild": "^3.2.9",
     "electron-vite": "^3.0.0",
     "esbuild": "^0.25.0",
     "eslint": "^9.21.0",
@@ -146,7 +146,6 @@
       "deleteAppDataOnUninstall": true,
       "perMachine": false,
       "allowElevation": true
-
     },
     "mac": {
       "gatekeeperAssess": false,

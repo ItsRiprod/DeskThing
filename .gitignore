@@ -38,3 +38,4 @@ CommunityApps
 /DeskThingServer/src/renderer/srcBackup
 /DeskThingServer/docs
 DeskThingServer/.env.production
+DeskThingServer/src/main/config.json
