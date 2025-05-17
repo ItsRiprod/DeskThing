@@ -3,6 +3,7 @@ import {
   IconComputer,
   IconLogs,
   IconMobile,
+  IconRefresh,
   IconX
 } from '@renderer/assets/icons'
 import { ProgressChannel } from '@shared/types'
@@ -24,6 +25,9 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
   const { isLoading } = useChannelProgress(ProgressChannel.PLATFORM_CHANNEL)
   const [connectedTimeText, setConnectedTimeText] = useState<string>('0s')
   const disconnect = usePlatformStore((state) => state.disconnect)
+  const resendData = usePlatformStore((state) => state.resendInitialData)
+  const [isSendingData, setIsSendingData] = useState(false)
+
 
   useEffect(() => {
     const updateTime = (): number | undefined => {
@@ -95,6 +99,12 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
     }
   }
 
+  const resendInitialData = async (): Promise<void> => {
+    setIsSendingData(true)
+    await resendData(client.clientId)
+    setIsSendingData(false)
+  }
+
   // Determine which provider controls to show
   const hasAdbProvider = client.identifiers[PlatformIDs.ADB]?.active
   const hasWebSocketProvider = client.identifiers[PlatformIDs.WEBSOCKET]?.active
@@ -103,7 +113,10 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
     <div className="w-full p-4 border rounded-xl border-zinc-900 flex flex-col lg:flex-row gap-4 justify-center items-center lg:justify-between bg-zinc-950">
       {enabled && <ClientDetailsOverlay client={client} onClose={() => setEnabled(false)} />}
       <div className="flex gap-4 items-center">
-        {renderIcon()}
+        <button disabled={isSendingData} onClick={resendInitialData} className="relative group flex items-center justify-center rounded-lg">
+          {renderIcon()}
+          <IconRefresh className={`absolute hidden group-hover:block text-zinc-300 ${isSendingData ? 'animate-spin-smooth' : ''}`} iconSize="34" />
+        </button>
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-2xl">{client.manifest?.name || 'Unknown Device'}</h2>

@@ -31,7 +31,7 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
   private clients: Client[] = []
   private options: PlatformConnectionOptions | undefined = undefined
 
-  private readonly identifier: Omit<ClientIdentifier, 'id' | 'active'> = {
+  readonly identifier: Omit<ClientIdentifier, 'id' | 'active'> = {
     providerId: PlatformIDs.WEBSOCKET,
     capabilities: [ProviderCapabilities.COMMUNICATE, ProviderCapabilities.PING]
   }
@@ -298,7 +298,10 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
     clientId: string,
     data: DeskThingToDeviceData & { app: T }
   ): Promise<boolean> {
-    if (!this.isActive) return false
+    if (!this.isActive) {
+      logger.warn('Socket is not active! Failed to send data')
+      return false
+    }
     this.worker?.postMessage({ type: 'sendData', clientId, data })
     return true
   }

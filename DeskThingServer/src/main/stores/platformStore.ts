@@ -15,7 +15,8 @@ import {
   DeskThingToDeviceCore,
   ConnectionState,
   TagTypes,
-  App
+  App,
+  ProviderCapabilities
 } from '@deskthing/types'
 import Logger from '@server/utils/logger'
 import {
@@ -148,6 +149,13 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
         payload: clientId
       })
     })
+  }
+
+  private calculateCapabilityScore(capabilities: number[] | undefined): number {
+    if (!capabilities || capabilities.length === 0) return 0
+
+    // Sum the capability values - this gives higher weight to more important capabilities
+    return capabilities.reduce((sum, capability) => sum + capability, 0)
   }
 
   private addClientPlatformMapping(clientId: string, platformId: PlatformIDs): void {
@@ -380,9 +388,12 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
     )
   }
 
-  getPlatformForClient(clientId: string): PlatformInterface | undefined {
+  getPlatformForClient(
+    clientId: string,
+    requiredCapabilites?: ProviderCapabilities
+  ): PlatformInterface | undefined {
     const client = this.getClientById(clientId)
-    if (client && client.primaryProviderId) {
+    if (client && client.primaryProviderId && !requiredCapabilites) {
       return this.platforms.get(client.primaryProviderId as PlatformIDs)
     }
 
@@ -391,9 +402,25 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
       // Return the first available platform
       for (const platformId of platforms) {
         const platform = this.platforms.get(platformId)
-        if (platform) return platform
+
+        if (platform) {
+          if (requiredCapabilites) {
+            if (platform.identifier.capabilities?.includes(requiredCapabilites)) return platform
+          } else {
+            return platform
+          }
+        }
       }
     }
+
+    Logger.warn(
+      `Unable to find a platform for ${clientId}${requiredCapabilites && ` with capability ${requiredCapabilites}`}`,
+      {
+        domain: 'platform',
+        source: 'platformStore',
+        function: 'getPlatformForClient'
+      }
+    )
 
     return undefined
   }
@@ -434,7 +461,9 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
     if (Object.values(updatedClient.identifiers).length > 0) {
       const providers = Object.values(updatedClient.identifiers).filter((id) => id.active)
       const primaryProvider = providers.sort(
-        (a, b) => (b.capabilities?.length || 0) - (a.capabilities?.length || 0)
+        (a, b) =>
+          this.calculateCapabilityScore(b.capabilities) -
+          this.calculateCapabilityScore(a.capabilities)
       )[0]
 
       if (primaryProvider) {
@@ -516,7 +545,9 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
     } else {
       // Still has active providers, update primary provider
       const primaryProvider = activeProviders.sort(
-        (a, b) => (b.capabilities?.length || 0) - (a.capabilities?.length || 0)
+        (a, b) =>
+          this.calculateCapabilityScore(b.capabilities) -
+          this.calculateCapabilityScore(a.capabilities)
       )[0]
 
       const platform = this.platforms.get(primaryProvider.providerId as PlatformIDs)
@@ -593,7 +624,7 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
       }
     }
 
-    const platform = this.getPlatformForClient(client.clientId)
+    const platform = this.getPlatformForClient(client.clientId, ProviderCapabilities.COMMUNICATE)
     if (!platform) {
       Logger.warn(`No platform found for client ${client.clientId}`, {
         domain: 'platform',
@@ -643,7 +674,7 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
       return false
     }
 
-    const platform = this.getPlatformForClient(client.clientId)
+    const platform = this.getPlatformForClient(client.clientId, ProviderCapabilities.COMMUNICATE)
     if (!platform) {
       Logger.warn(`Cannot send data: No platform found for client ${data.clientId}`, {
         domain: 'platform',
@@ -1165,7 +1196,7 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
     })
   }
 
-  private async sendInitialDataToClient(clientId?: string): Promise<void> {
+  async sendInitialDataToClient(clientId?: string): Promise<void> {
     Logger.debug(`Sending initial data to ${clientId}`, {
       function: 'sendInitialDataToClient',
       source: 'platformStore'

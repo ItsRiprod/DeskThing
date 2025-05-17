@@ -388,12 +388,21 @@ export class WSPlatform {
 
   async sendData(clientId: string, data: DeskThingToDeviceCore): Promise<boolean> {
     const platformConnectionId = this.getInternalId(clientId)
-    if (!platformConnectionId) return false
+    if (!platformConnectionId) {
+      console.warn(`Client ${clientId} does not have an internal id`)
+      return false
+    }
 
     const clientConnection = this.clients.get(platformConnectionId)
-    if (!clientConnection) return false
+    if (!clientConnection) {
+      console.warn('(wsWebsocket) Connection does not exist!')
+      return false
+    }
 
     try {
+      console.log(
+        `Sending data type ${data.type} with request ${data.request} to client ${clientId}`
+      )
       clientConnection.socket.send(JSON.stringify(data))
       return true
     } catch (error) {

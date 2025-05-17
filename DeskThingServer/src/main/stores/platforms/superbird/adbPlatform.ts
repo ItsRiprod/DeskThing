@@ -3,7 +3,8 @@ import {
   DeskThingToDeviceCore,
   ClientManifest,
   ProviderCapabilities,
-  ConnectionState
+  ConnectionState,
+  ClientIdentifier
 } from '@deskthing/types'
 import {
   PlatformEvents,
@@ -36,10 +37,10 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
   public readonly id: PlatformIDs = PlatformIDs.ADB
   public readonly name: string = 'ADB'
 
-  private readonly capabilities: ProviderCapabilities[] = [
-    ProviderCapabilities.CONFIGURE,
-    ProviderCapabilities.PING
-  ]
+  readonly identifier: Omit<ClientIdentifier, 'id' | 'active'> = {
+    providerId: PlatformIDs.ADB,
+    capabilities: [ProviderCapabilities.CONFIGURE, ProviderCapabilities.PING]
+  }
 
   constructor() {
     super()
@@ -363,7 +364,7 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
             id: adbDevice.adbId,
             active: true,
             providerId: this.id,
-            capabilities: this.capabilities
+            capabilities: this.identifier.capabilities
           }
         },
         connected: false,
@@ -503,6 +504,7 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
     _data: DeskThingToDeviceCore & { app?: string }
   ): Promise<boolean> {
     const internalId = this.getInternalId(clientId)
+    logger.warn('Unable to send data via ADB! Failed.')
     if (!internalId) return false
     return false
   }
