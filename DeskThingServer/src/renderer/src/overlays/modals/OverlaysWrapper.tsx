@@ -13,6 +13,8 @@ import FeedbackOverlay from './FeedbackOverlay'
 import SetupOverlay from '../setup/SetupOverlay'
 import { useSettingsStore } from '@renderer/stores'
 import LinkRequestOverlay from './LinkRequestOverlay'
+import ProgressPopup from '../ProgressPopup'
+import ViewProgressLogs from './ViewProgressLogs'
 
 const overlays = {
   qr: QROverlay,
@@ -21,7 +23,8 @@ const overlays = {
   app: AppsOverlay,
   addProfile: AddProfileOverlay,
   feedback: FeedbackOverlay,
-  setup: SetupOverlay
+  setup: SetupOverlay,
+  progress: ViewProgressLogs
 }
 
 const OverlayWrapper: React.FC<React.PropsWithChildren> = ({
@@ -50,6 +53,7 @@ const OverlayWrapper: React.FC<React.PropsWithChildren> = ({
         const OverlayComponent = overlays[key]
         return <OverlayComponent key={key} />
       })}
+      <ProgressPopup />
       {memoizedChildren}
       {currentTask && <TaskOverlay />}
     </>

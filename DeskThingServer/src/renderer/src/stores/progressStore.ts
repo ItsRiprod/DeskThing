@@ -1,22 +1,12 @@
 import { create } from 'zustand'
 import { ProgressChannel, ProgressEvent, ProgressStatus } from '@shared/types'
 
-export interface ProgressState {
-  operation: string
-  status: ProgressStatus
-  message: string
-  progress?: number
-  metadata?: Record<string, unknown>
-  isLoading?: boolean
-  id: string
-  error?: string
-  timestamp: number
-}
-
 interface ProgressStore {
   // State
-  progressMap: Map<ProgressChannel, ProgressState>
+  progressMap: Map<ProgressChannel, ProgressEvent>
   initialized: boolean
+  subscribed_channels: ProgressChannel[]
+  currentProgressEvent: ProgressEvent | undefined
 
   // Actions
   initialize: () => Promise<void>
@@ -24,8 +14,11 @@ interface ProgressStore {
   clearProgress: (channel: ProgressChannel) => void
   clearAllProgress: () => void
 
+  subscribe_channel: (channel: ProgressChannel) => void
+  unsubscribe_channel: (channel: ProgressChannel) => void
+
   // Selectors (computed values)
-  getChannelProgress: (channel: ProgressChannel) => ProgressState | undefined
+  getChannelProgress: (channel: ProgressChannel) => ProgressEvent | undefined
   isAnyLoading: () => boolean
   getAllActiveChannels: () => ProgressChannel[]
 }
@@ -33,7 +26,9 @@ interface ProgressStore {
 export const useProgressStore = create<ProgressStore>()((set, get) => ({
   // Initial state
   progressMap: new Map(),
+  currentProgressEvent: undefined,
   initialized: false,
+  subscribed_channels: [],
 
   initialize: async () => {
     if (get().initialized) return
@@ -45,6 +40,20 @@ export const useProgressStore = create<ProgressStore>()((set, get) => ({
     set({ initialized: true })
   },
 
+  subscribe_channel: (channel: ProgressChannel) =>
+    set((state) => {
+      if (!state.subscribed_channels.includes(channel)) {
+        state.subscribed_channels.push(channel)
+      }
+      return { subscribed_channels: state.subscribed_channels }
+    }),
+
+  unsubscribe_channel: (channel: ProgressChannel) =>
+    set((state) => {
+      state.subscribed_channels = state.subscribed_channels.filter((c) => c !== channel)
+      return { subscribed_channels: state.subscribed_channels }
+    }),
+
   // Actions
   updateProgress: (event: ProgressEvent) =>
     set((state) => {
@@ -53,15 +62,10 @@ export const useProgressStore = create<ProgressStore>()((set, get) => ({
       const existingProgress = state.progressMap.get(event.channel)
 
       // Create new progress state by merging existing state with new event data
-      const updatedProgress: ProgressState = {
+      const updatedProgress: ProgressEvent = {
         // Keep existing values if available
         ...existingProgress,
-        // Override with new values from the event
-        operation: event.operation,
-        status: event.status,
-        message: event.message,
-        // Generate a new ID only for new messages
-        id: existingProgress?.id || Math.random().toString(24),
+        ...event,
         // Use new progress if provided, otherwise keep existing
         progress:
           (event.progress ?? event.status == ProgressStatus.COMPLETE)
@@ -76,18 +80,19 @@ export const useProgressStore = create<ProgressStore>()((set, get) => ({
         isLoading: [ProgressStatus.INFO, ProgressStatus.RUNNING, ProgressStatus.WARN].includes(
           event.status
         ),
+        id: crypto.randomUUID(),
         error: event.status === ProgressStatus.ERROR ? event.error : undefined,
         timestamp: Date.now()
       }
 
       const newMap = new Map(state.progressMap)
       newMap.set(event.channel, updatedProgress)
-
-      return { progressMap: newMap }
+      return { progressMap: newMap, currentProgressEvent: updatedProgress }
     }),
 
   clearProgress: (channel: ProgressChannel) =>
     set((state) => {
+      console.debug(`Clearing progress for channel: ${channel}`)
       const newMap = new Map(state.progressMap)
       newMap.delete(channel)
       return { progressMap: newMap }

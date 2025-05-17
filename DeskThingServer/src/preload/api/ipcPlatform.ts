@@ -125,6 +125,13 @@ export const platform = {
       platform: PlatformIDs.MAIN,
       type: 'refresh-clients'
     })
+  },
+  resendInitialData: async (clientId: string): Promise<void> => {
+    return sendPlatformData({
+      platform: PlatformIDs.MAIN,
+      type: 'initial-data',
+      request: clientId
+    })
   }
 }
 

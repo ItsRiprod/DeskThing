@@ -25,6 +25,7 @@ interface PlatformStoreState {
 
   // Actions
   initialize: () => Promise<void>
+  resendInitialData: (clientId: string) => Promise<void>
 }
 
 const usePlatformStore = create<PlatformStoreState>((set, get) => ({
@@ -89,6 +90,10 @@ const usePlatformStore = create<PlatformStoreState>((set, get) => ({
   initialize: async () => {
     if (get().initialized) return
     set({ initialized: true })
+  },
+
+  resendInitialData: async (clientId: string): Promise<void> => {
+    return await window.electron.platform.resendInitialData(clientId)
   }
 }))
 

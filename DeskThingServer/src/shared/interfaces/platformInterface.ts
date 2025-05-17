@@ -10,7 +10,12 @@
  * - The client interface (for the connections store)
  */
 
-import { Client, DeskThingToDeviceCore, DeviceToDeskthingData } from '@deskthing/types'
+import {
+  Client,
+  ClientIdentifier,
+  DeskThingToDeviceCore,
+  DeviceToDeskthingData
+} from '@deskthing/types'
 import { PlatformIDs } from '@shared/stores/platformStore'
 import { PlatformIPC } from '@shared/types/ipc/ipcPlatform'
 import EventEmitter from 'node:events'
@@ -74,6 +79,7 @@ export interface PlatformInterface<E extends Record<string, unknown> = Record<st
   // Core identity properties
   readonly id: PlatformIDs
   readonly name: string
+  readonly identifier: Omit<ClientIdentifier, 'id' | 'active'>
 
   // Server management
   start(options?: PlatformConnectionOptions<E>): Promise<void>

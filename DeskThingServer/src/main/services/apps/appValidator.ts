@@ -336,7 +336,7 @@ export const sanitizeAppStructure: (app: Partial<App>) => asserts app is App = (
     if (app.manifest) {
       app.name = app.manifest.id
     } else {
-      throw new Error('App does not have a name!' + JSON.stringify(app))
+      throw new Error('App does not have a name! ' + JSON.stringify(app))
     }
   }
 
@@ -414,6 +414,9 @@ export const constructManifest = (manifestData?: Partial<AppManifest>): AppManif
       client: manifestData?.requiredVersions?.client || '>=0.0.0',
       server: manifestData?.requiredVersions?.server || '>=0.0.0'
     },
+    postinstall: manifestData?.postinstall || false,
+    postinstall_message: manifestData?.postinstall_message || '',
+    postinstall_script: manifestData?.postinstall_script || 'postinstall.js',
     template: manifestData?.template || 'default',
     version_code: manifestData?.version_code || 0,
     compatible_server: manifestData?.compatible_server || [0],

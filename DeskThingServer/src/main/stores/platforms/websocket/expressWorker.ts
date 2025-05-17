@@ -91,9 +91,6 @@ export class ExpressServer extends EventEmitter<ExpressServerEvents> {
 
         manifest.connectionId = crypto.randomUUID()
 
-        // Asset that this manifest has been finalized
-        manifest.final = true
-
         this.emit('client-connected', manifest)
 
         console.log('Sending manifest:', manifest)
@@ -216,6 +213,26 @@ export class ExpressServer extends EventEmitter<ExpressServerEvents> {
         res.sendFile(imagePath)
       } else {
         res.status(404).send('Image not found')
+      }
+    })
+
+    this.app.get('/resource/thumbnail/:id', (req: Request, res: Response) => {
+      const thumbnailId = req.params.id
+      const thumbnailsDir = join(this.userDataPath, 'thumbnails')
+      const thumbnailPath = join(thumbnailsDir, thumbnailId)
+
+      // Add .jpg extension if not present
+      const fullPath = thumbnailPath.endsWith('.jpg') ? thumbnailPath : `${thumbnailPath}.jpg`
+
+      if (fs.existsSync(fullPath)) {
+        res.sendFile(fullPath, {
+          maxAge: '1d',
+          immutable: true,
+          etag: true,
+          lastModified: true
+        })
+      } else {
+        res.status(404).send('Thumbnail not found')
       }
     })
 

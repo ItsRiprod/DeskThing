@@ -19,6 +19,7 @@ export enum ProgressChannel {
   /** The process of staging an app */
   FN_APP_INSTALL = 'fn-app-install',
   /** The process of running a staged app */
+  FN_APP_POSTINSTALL = 'fn-app-postinstall',
   FN_APP_INITIALIZE = 'fn-app-initialize',
 
   ST_APP_INSTALL = 'st-app-install',
@@ -69,17 +70,13 @@ export type ProgressEvent = {
   progress?: number
   metadata?: Record<string, unknown>
   lastUpdate?: number
-} & (
-  | {
-      status: ProgressStatus.ERROR
-      error: string
-      message: string
-    }
-  | {
-      status: Exclude<ProgressStatus, ProgressStatus.ERROR>
-      message: string
-    }
-)
+  status: ProgressStatus
+  error?: string
+  message: string
+  id?: string
+  isLoading?: boolean
+  timestamp?: number
+}
 
 export enum ProgressStatus {
   RUNNING = 'running',

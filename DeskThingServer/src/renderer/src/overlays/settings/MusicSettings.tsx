@@ -6,7 +6,7 @@ import { IconLoading, IconSave, IconToggle } from '@renderer/assets/icons'
 import Select from '@renderer/components/Select'
 import { SingleValue } from 'react-select'
 import { Settings } from '@shared/types'
-import { SettingOption } from '@deskthing/types'
+import { SettingOption, TagTypes } from '@deskthing/types'
 
 const MusicSettings: React.FC = () => {
   const saveSettings = useSettingsStore((settings) => settings.saveSettings)
@@ -18,7 +18,11 @@ const MusicSettings: React.FC = () => {
 
   useEffect(() => {
     const sources = appsList
-      .filter((app) => app.manifest && app.manifest.isAudioSource)
+      .filter(
+        (app) =>
+          app.manifest &&
+          (app.manifest.isAudioSource || app.manifest?.tags.includes(TagTypes.AUDIO_SOURCE))
+      )
       .map((app) => ({
         id: app.name,
         name: app.manifest?.label || app.name

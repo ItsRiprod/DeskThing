@@ -111,11 +111,18 @@ export type BluetoothPlatformIPC = {
 
 export type MainProcessIPC = {
   platform: PlatformIDs.MAIN
-} & {
-  type: 'refresh-clients'
-  request?: undefined
-  data?: Client[]
-}
+} & (
+  | {
+      type: 'refresh-clients'
+      request?: undefined
+      data?: Client[]
+    }
+  | {
+      type: 'initial-data'
+      request?: string // the id of the client
+      data?: undefined
+    }
+)
 
 type BasePlatformIPC = {
   channel?: string
