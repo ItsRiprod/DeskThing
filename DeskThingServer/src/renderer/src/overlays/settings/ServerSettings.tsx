@@ -53,6 +53,7 @@ const ServerSettings: React.FC = () => {
       <div className="w-full px-4 p-3 flex justify-between items-center">
         <h2 className="text-xl">Check for updates</h2>
         <Button
+          title="Manually check for updates to the system"
           className={`bg-zinc-900 ${!downloadLoading && 'hover:bg-green-500'}`}
           onClick={checkForUpdate}
           disabled={downloadLoading}
@@ -91,6 +92,7 @@ const ServerSettings: React.FC = () => {
         <h2 className="text-xl">Auto Start</h2>
         <Button
           className="bg-transparent p-0"
+          title="Automatically start deskthing when the computer boots"
           onClick={() => handleSettingChange('autoStart', !settings.autoStart)}
         >
           <IconToggle
@@ -114,8 +116,9 @@ const ServerSettings: React.FC = () => {
         />
       </div>
       <div className="w-full px-4 flex justify-between items-center">
-        <h2 className="text-xl">Close To Taskbar</h2>
+        <h2 className="text-xl">Run In Background</h2>
         <Button
+          title="Will let DeskThing run even while the GUI is not open"
           className="bg-transparent p-0"
           onClick={() => handleSettingChange('minimizeApp', !settings.minimizeApp)}
         >
