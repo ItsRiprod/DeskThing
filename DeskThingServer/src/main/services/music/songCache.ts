@@ -1,6 +1,9 @@
 import { EventEmitter } from 'events'
-import { SongData } from '@deskthing/types'
+import { SongAbilities, SongData } from '@deskthing/types'
 import Logger from '@server/utils/logger'
+import { join } from 'path'
+import { app } from 'electron'
+import { copyFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
 
 export enum SongCacheEvents {
   SONG_CHANGED = 'songChanged',
@@ -78,11 +81,123 @@ export class SongCache extends EventEmitter<SongCacheEventMap> {
     }
   }
 
+  private encodeSongThumbnail(thumbnail: string, song: SongData): string {
+    // Handle base64 encodings
+    if (thumbnail.startsWith('data:image/')) {
+      // For base64 data, store it in a temporary file and serve it through our own endpoint
+      const imageId = (song.id || `${song.track_name}-${song.artist}`).replace(/[<>:"/\\|?*]/g, '_')
+      const imageBuffer = Buffer.from(thumbnail.split(',')[1], 'base64')
+
+      // Store in a dedicated thumbnails directory
+      const thumbnailsDir = join(app.getPath('userData'), 'thumbnails')
+      if (!existsSync(thumbnailsDir)) {
+        mkdirSync(thumbnailsDir, { recursive: true })
+      }
+
+      const imagePath = join(thumbnailsDir, `${imageId}.jpg`)
+      writeFileSync(imagePath, imageBuffer)
+
+      // Return a URL to our own endpoint
+      return `/resource/thumbnail/${imageId}`
+    }
+
+    // Handle local file paths
+    if (thumbnail.startsWith('file://')) {
+      const localPath = thumbnail.startsWith('file://') ? thumbnail.substring(7) : thumbnail
+
+      // Create a symbolic link or copy to our resource directory
+      const imageId = (song.id || `${song.track_name}-${song.artist}`).replace(/[<>:"/\\|?*]/g, '_')
+      const thumbnailsDir = join(app.getPath('userData'), 'thumbnails')
+      if (!existsSync(thumbnailsDir)) {
+        mkdirSync(thumbnailsDir, { recursive: true })
+      }
+
+      const destPath = join(thumbnailsDir, `${imageId}.jpg`)
+      copyFileSync(localPath, destPath)
+
+      return `/resource/thumbnail/${imageId}`
+    }
+
+    // Make URLs point to the proxy
+    // For external URLs, use the proxy
+    if (thumbnail.startsWith('http://') || thumbnail.startsWith('https://')) {
+      return `/proxy/v1?url=${encodeURIComponent(thumbnail)}`
+    }
+
+    // Return as-is if we can't determine the type
+    return thumbnail
+  }
+
+  private ensureUpdatedSong = (song: SongData): SongData => {
+    if (!song.version || song.version === 1) {
+      // Convert v1 to v2
+      const abilities: SongAbilities[] = []
+
+      if (song.can_fast_forward) abilities.push(SongAbilities.FAST_FORWARD)
+      if (song.can_like) abilities.push(SongAbilities.LIKE)
+      if (song.can_skip) abilities.push(SongAbilities.NEXT)
+      if (song.can_change_volume) abilities.push(SongAbilities.CHANGE_VOLUME)
+      if (song.can_set_output) abilities.push(SongAbilities.SET_OUTPUT)
+
+      return {
+        version: 2,
+        track_name: song.track_name,
+        album: song.album,
+        artist: song.artist,
+        playlist: song.playlist,
+        playlist_id: song.playlist_id,
+        shuffle_state: song.shuffle_state,
+        repeat_state: song.repeat_state === 'context' ? 'all' : song.repeat_state,
+        is_playing: song.is_playing,
+        source: 'unknown',
+        abilities,
+        track_duration: song.track_duration,
+        track_progress: song.track_progress,
+        volume: song.volume,
+        thumbnail: song.thumbnail,
+        device: song.device,
+        device_id: song.device_id,
+        id: song.id,
+        liked: song.liked,
+        color: song.color,
+
+        // depreciated version info
+        can_fast_forward: song.can_fast_forward,
+        can_like: song.can_like,
+        can_skip: song.can_skip,
+        can_change_volume: song.can_change_volume,
+        can_set_output: song.can_set_output
+      }
+    }
+
+    if (song.version === 2) {
+      return {
+        ...song,
+        // fill in depreciated song info with abilities
+        can_fast_forward:
+          song.can_fast_forward || song.abilities.includes(SongAbilities.FAST_FORWARD),
+        can_like: song.can_like || song.abilities.includes(SongAbilities.LIKE),
+        can_skip: song.can_skip || song.abilities.includes(SongAbilities.NEXT),
+        can_change_volume:
+          song.can_change_volume || song.abilities.includes(SongAbilities.CHANGE_VOLUME),
+        can_set_output: song.can_set_output || song.abilities.includes(SongAbilities.SET_OUTPUT)
+      }
+    }
+
+    // Else just return the song object - assuming it is updated or smth
+    return song
+  }
+
   /**
    * Sets a new song and schedules the song end event
    */
   private setNewSong(song: SongData): void {
-    this.currentSong = song
+    this.currentSong = this.ensureUpdatedSong(song)
+
+    if (song.thumbnail) {
+      this.currentSong.thumbnail = this.encodeSongThumbnail(song.thumbnail, song)
+    }
+
     this.emit(SongCacheEvents.SONG_CHANGED, song)
 
     // Clear existing timeouts if any

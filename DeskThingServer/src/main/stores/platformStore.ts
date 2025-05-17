@@ -14,7 +14,8 @@ import {
   DESKTHING_DEVICE,
   DeskThingToDeviceCore,
   ConnectionState,
-  TagTypes
+  TagTypes,
+  App
 } from '@deskthing/types'
 import Logger from '@server/utils/logger'
 import {
@@ -89,14 +90,7 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
     })
 
     this.appStore.on('apps', (apps) => {
-      const filteredApps = apps.data.filter(
-        (app) => !app.manifest?.tags.includes(TagTypes.UTILITY_ONLY)
-      )
-      this.broadcastToClients({
-        app: 'client',
-        type: DESKTHING_DEVICE.APPS,
-        payload: filteredApps
-      })
+      this.sendAppsToClient(apps.data)
     })
 
     this.appStore.onAppMessage(
@@ -1077,6 +1071,27 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
     }
   }
 
+  private async sendAppsToClient(apps: App[], clientId?: string): Promise<void> {
+    try {
+      const filteredApps = apps.filter((app) => !app.manifest?.tags.includes(TagTypes.UTILITY_ONLY))
+      this.broadcastToClients({
+        app: 'client',
+        type: DESKTHING_DEVICE.APPS,
+        payload: filteredApps
+      })
+    } catch (error) {
+      Logger.error(
+        `Error sending mappings data ${clientId ? `to client ${clientId}` : 'to all clients'}`,
+        {
+          error: error as Error,
+          domain: 'platform',
+          source: 'platformStore',
+          function: 'sendMappingsToClient'
+        }
+      )
+    }
+  }
+
   private async sendTimeToClient(clientId?: string): Promise<void> {
     try {
       const now = new Date()
@@ -1160,6 +1175,9 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
     await this.sendMappingsToClient(clientId)
     await this.sendTimeToClient(clientId)
     await this.sendManifestRequest(clientId)
+
+    const apps = this.appStore.getAll()
+    await this.sendAppsToClient(apps, clientId)
     if (clientId) {
       await this.sendclientIdToClient(clientId)
     }

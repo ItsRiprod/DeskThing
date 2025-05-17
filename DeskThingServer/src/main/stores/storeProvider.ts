@@ -18,7 +18,6 @@ import { UpdateStoreClass } from '@shared/stores/updateStore'
 // import { ExpressServerManager } from './_expressServerStore'
 import logger from '@server/utils/logger'
 import { ProfileStoreClass } from '@shared/stores/profileStore'
-import { MediaStore } from './mediaStore'
 
 interface Stores {
   appDataStore: AppDataStoreClass
@@ -93,8 +92,7 @@ export class StoreProvider {
         new (await storeImports.musicStore())(
           await this.getStore('settingsStore', false),
           await this.getStore('appStore', false),
-          await this.getStore('platformStore', false),
-          new MediaStore()
+          await this.getStore('platformStore', false)
         ),
       clientStore: async () => new (await storeImports.clientStore())(),
       profileStore: async () =>

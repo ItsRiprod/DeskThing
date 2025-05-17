@@ -5,7 +5,9 @@ import { IconPlay, IconToggle } from '@renderer/assets/icons'
 import { useEffect, useState } from 'react'
 import { useAppStore, useClientStore } from '@renderer/stores'
 import { App, PlatformTypes } from '@deskthing/types'
-import { StagedAppManifest } from '@shared/types'
+import { ProgressChannel, StagedAppManifest } from '@shared/types'
+import { LogEntry } from '@renderer/components/LogEntry'
+import { useChannelProgress } from '@renderer/hooks/useProgress'
 
 type Issues =
   | 'checksum'
@@ -145,6 +147,7 @@ export function SuccessNotification(): JSX.Element {
     pending: 0,
     issues: []
   })
+  const downloadChannel = useChannelProgress(ProgressChannel.ST_APP_INITIALIZE)
 
   useEffect(() => {
     if (stagedManifest) {
@@ -188,6 +191,8 @@ export function SuccessNotification(): JSX.Element {
     }))
   }
 
+  const isExistingApp = compatibility.issues.some((issue) => issue.id === 'existing-app')
+
   return (
     <Overlay
       onClose={onClose}
@@ -222,15 +227,17 @@ export function SuccessNotification(): JSX.Element {
             )}
           </div>
         </div>
-        <Button
-          onClick={toggleOverwrite}
-          title={`${overwrite ? 'Disable' : 'Enable'} Overwrite`}
-          className={`${overwrite ? 'text-red-500' : 'text-green-500'} justify-between items-center gap-2 bg-black rounded-xl`}
-        >
-          <p>Overwrite Existing App Files?</p>
-          <IconToggle checked={overwrite} iconSize={48} />
-        </Button>
-        {!compatibility.isCompatible && (
+        {!loading && isExistingApp && (
+          <Button
+            onClick={toggleOverwrite}
+            title={`${overwrite ? 'Disable' : 'Enable'} Overwrite`}
+            className={`${overwrite ? 'text-red-500' : 'text-green-500'} justify-between items-center gap-2 bg-black rounded-xl`}
+          >
+            <p>Overwrite Existing App Files?</p>
+            <IconToggle checked={overwrite} iconSize={48} />
+          </Button>
+        )}
+        {!loading && !compatibility.isCompatible && (
           <div>
             <h1 className="w-full flex justify-center text-lg border-b border-gray-500">
               Potential Issues Found
@@ -242,16 +249,20 @@ export function SuccessNotification(): JSX.Element {
             ))}
           </div>
         )}
-        <Button
-          className="hover:bg-zinc-700 disabled:bg-zinc-800 relative flex gap-2 w-full bg-black border border-zinc-900"
-          onClick={onRunClick}
-          disabled={loading || compatibility.pending > 0}
-        >
-          <IconPlay
-            className={`fill-white absolute duration-500 inset transition-all ${loading ? 'left-1/2 opacity-0' : 'left-4'}`}
-          />
-          <p className={`${loading ? 'opacity-0' : ''} transition-all ml-10`}>Initialize App</p>
-        </Button>
+        {!loading && (
+
+          <Button
+            className="hover:bg-zinc-700 disabled:bg-zinc-800 relative flex gap-2 w-full bg-black border border-zinc-900"
+            onClick={onRunClick}
+            disabled={loading || compatibility.pending > 0}
+          >
+            <IconPlay
+              className={`fill-white absolute duration-500 inset transition-all ${loading ? 'left-1/2 opacity-0' : 'left-4'}`}
+            />
+            <p className={`${loading ? 'opacity-0' : ''} transition-all ml-10`}>Initialize App</p>
+          </Button>
+        )}
+        {loading && downloadChannel.progress && <LogEntry progressEvent={downloadChannel.progress} />}
       </div>
     </Overlay>
   )

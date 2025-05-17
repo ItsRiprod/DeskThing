@@ -9,7 +9,6 @@ import { SettingsStoreClass } from '@shared/stores/settingsStore'
 import { AppStoreClass } from '@shared/stores/appStore'
 import { PlatformStoreClass } from '@shared/stores/platformStore'
 import { MusicService } from '../services/music/MusicService'
-import { MediaStore } from './mediaStore'
 
 export class MusicStore implements CacheableStore, MusicStoreClass {
   private musicService: MusicService
@@ -17,10 +16,9 @@ export class MusicStore implements CacheableStore, MusicStoreClass {
   constructor(
     settingsStore: SettingsStoreClass,
     appStore: AppStoreClass,
-    platformStore: PlatformStoreClass,
-    mediaStore: MediaStore
+    platformStore: PlatformStoreClass
   ) {
-    this.musicService = new MusicService(settingsStore, appStore, platformStore, mediaStore)
+    this.musicService = new MusicService(settingsStore, appStore, platformStore)
     this.musicService.initialize()
   }
 

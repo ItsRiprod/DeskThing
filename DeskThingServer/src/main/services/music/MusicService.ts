@@ -18,7 +18,6 @@ import { getAppByName } from '../files/appFileService'
 import { MusicStoreClass } from '@shared/stores/musicStore'
 import { SongCache, SongCacheEvents } from './songCache'
 import { ColorExtractor } from './ColorExtractor'
-import { MediaStore } from '@server/stores/mediaStore'
 
 /**
  * Core service that manages music playback functionality
@@ -37,8 +36,7 @@ export class MusicService implements MusicStoreClass {
   constructor(
     private settingsStore: SettingsStoreClass,
     private appStore: AppStoreClass,
-    private platformStore: PlatformStoreClass,
-    private mediaStore: MediaStore
+    private platformStore: PlatformStoreClass
   ) {
     this.songCache = new SongCache()
     this.colorExtractor = new ColorExtractor()
@@ -56,7 +54,6 @@ export class MusicService implements MusicStoreClass {
 
   async clearCache(): Promise<void> {
     this.songCache.clear()
-    await this.mediaStore.cleanup()
   }
 
   async saveToFile(): Promise<void> {
@@ -101,7 +98,6 @@ export class MusicService implements MusicStoreClass {
     // if (source === 'local') { TODO Native Local Audio
     //   await this.mediaStore.initialize()
     // } else {
-    await this.mediaStore.cleanup()
     // }
 
     await this.refreshMusicData()
@@ -243,10 +239,6 @@ export class MusicService implements MusicStoreClass {
     this.songCache.on(SongCacheEvents.SONG_CHANGED, (data) => {
       this.refreshMusicData(data)
     })
-
-    this.mediaStore.on('update', (data) => {
-      this.handleMusicPayload(data)
-    })
   }
 
   private handleMusicPayload = async (songData: SongData): Promise<void> => {
@@ -266,10 +258,17 @@ export class MusicService implements MusicStoreClass {
 
       // Update cache and broadcast to clients
       this.songCache.updateSong(songDataWithColor)
+      const currentSong = this.songCache.getCurrentSong() // ensures the song is correctly filled with available data
+
+      if (!currentSong) {
+        Logger.debug(`No song data available to broadcast`)
+        return
+      }
+
       await this.platformStore.broadcastToClients({
         type: DESKTHING_DEVICE.MUSIC,
         app: 'client',
-        payload: songDataWithColor
+        payload: currentSong
       })
 
       Logger.log(LOGGING_LEVELS.LOG, `Song data sent to clients`)

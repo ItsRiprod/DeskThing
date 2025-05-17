@@ -39,6 +39,7 @@ import { sanitizeAppMeta } from '@server/services/apps/appValidator'
 import { AuthStoreClass } from '@shared/stores/authStore'
 import { nextTick } from 'node:process'
 import { progressBus } from '@server/services/events/progressBus'
+import { runPostInstall } from '@server/services/apps/appPostinstall'
 
 export class AppStore implements CacheableStore, AppStoreClass {
   private apps: Record<string, App> = {}
@@ -670,11 +671,31 @@ export class AppStore implements CacheableStore, AppStoreClass {
       'Initializing app run',
       [
         {
+          channel: ProgressChannel.FN_APP_POSTINSTALL,
+          weight: 3
+        },
+        {
           channel: ProgressChannel.FN_APP_INITIALIZE,
-          weight: 9
+          weight: 7
         }
       ]
     )
+
+    try {
+      // Runs the postinstall script
+      await runPostInstall()
+    } catch (error) {
+      progressBus.error(
+        ProgressChannel.ST_APP_INITIALIZE,
+        'Error running app',
+        'Error while trying to run staged app'
+      )
+      Logger.error('Error while trying to run staged app', {
+        function: 'runStagedApp',
+        source: 'AppStore',
+        error: error as Error
+      })
+    }
 
     try {
       // TODO: Update to use the process

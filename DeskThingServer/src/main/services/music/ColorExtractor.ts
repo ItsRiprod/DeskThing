@@ -1,6 +1,9 @@
 import { ThemeColor } from '@deskthing/types'
 import sharp from 'sharp'
 import Logger from '@server/utils/logger'
+import { join } from 'node:path'
+import { promises } from 'node:fs'
+import { app } from 'electron'
 
 /**
  * Service for extracting color information from images
@@ -34,13 +37,33 @@ export class ColorExtractor {
       // Extract base64 data after the comma
       const base64Data = input.split(',')[1]
       return Buffer.from(base64Data, 'base64')
+    } else if (input.startsWith('file://')) {
+      // Handle local file paths
+      const filePath = input.replace('file://', '')
+      return await promises.readFile(filePath)
+    } else if (input.startsWith('/resource/thumbnail/')) {
+      // Handle internal resource paths by reading directly from thumbnails directory
+      const thumbnailId = input.replace('/resource/thumbnail/', '')
+      const thumbnailPath = join(app.getPath('userData'), 'thumbnails', thumbnailId)
+      const fullPath = thumbnailPath.endsWith('.jpg') ? thumbnailPath : `${thumbnailPath}.jpg`
+      return await promises.readFile(fullPath)
+    } else if (input.startsWith('/resource/image/')) {
+      // Handle internal resource image paths from apps directory
+      const pathParts = input.replace('/resource/image/', '').split('/')
+      const appName = pathParts[0]
+      const imageName = pathParts.slice(1).join('/')
+      const imagePath = join(app.getPath('userData'), 'apps', appName, 'images', imageName)
+      return await promises.readFile(imagePath)
+    } else if (input.startsWith('/proxy/')) {
+      // For proxy requests, still need to fetch externally
+      const response = await fetch(input)
+      return Buffer.from(await response.arrayBuffer())
     } else {
       // Assume it's a URL and fetch it
       const response = await fetch(input)
       return Buffer.from(await response.arrayBuffer())
     }
   }
-
   /**
    * Processes an image buffer to extract color information
    */

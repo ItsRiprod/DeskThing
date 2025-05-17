@@ -61,6 +61,7 @@ export class AppProcessStore
   getActiveProcessIds(): string[] {
     return Object.keys(this.processes)
   }
+
   private async getAppPath(appName: string): Promise<string> {
     const possiblePaths = [
       'index.js',
@@ -112,6 +113,8 @@ export class AppProcessStore
         coerce(app.manifest?.requiredVersions.server)?.version || '0.0.0'
       )
 
+      let process: Worker
+
       if (satisfiesVersion) {
         // This means the app can use the new import
         Logger.debug(`App ${app.name} is using the new import method. Importing directly`, {
@@ -122,7 +125,7 @@ export class AppProcessStore
           // Assert the type to module
           await this.assertModuleType(deskthingUrl)
 
-          const process = new Worker(deskthingUrl, {
+          process = new Worker(deskthingUrl, {
             stdout: true,
             stderr: true,
             env: {
@@ -131,10 +134,6 @@ export class AppProcessStore
             },
             name: `DeskThing ${app.name} App`
           })
-
-          this.processes[app.name] = {
-            process
-          }
         } catch (error) {
           Logger.debug(`Error spawning ${app.name} process}`, {
             source: 'AppProcessStore',
@@ -150,7 +149,7 @@ export class AppProcessStore
           function: 'spawnProcess'
         })
 
-        const process = new Worker(appProcessPath, {
+        process = new Worker(appProcessPath, {
           stdout: true,
           stderr: true,
           env: {
@@ -159,60 +158,17 @@ export class AppProcessStore
           },
           name: `DeskThing ${app.name} App`
         })
-
-        this.processes[app.name] = {
-          process
-        }
       }
 
-      this.processes[app.name].process.stdout?.on('data', (data) => {
-        Logger.info(`${data.toString().trim()}`, {
-          domain: app.name.toUpperCase()
-        })
-      })
+      this.processes[app.name] = {
+        process
+      }
 
-      this.processes[app.name].process.stderr?.on('data', (data) => {
-        Logger.error(`${data.toString().trim()}`, {
-          domain: app.name.toUpperCase()
-        })
-      })
+      this.setupProcessLogging(app.name, process)
 
-      this.processes[app.name].process.on('message', (data: AppProcessData) => {
-        this.handleProcessMessage(app.name, data)
-      })
+      this.setupProcessMessageHandling(app.name, process)
 
-      this.processes[app.name].process.on('online', () => {
-        this.emit(AppProcessTypes.STARTED, app.name)
-      })
-
-      this.processes[app.name].process.on('exit', (code) => {
-        Logger.warn(`Process ${app.name} exited with code: ${code}`, {
-          source: 'AppProcessStore',
-          function: 'spawnProcess'
-        })
-
-        if (code !== 0) {
-          Logger.error(`Process ${app.name} exited with non-zero code: ${code}`, {
-            source: 'AppProcessStore',
-            function: 'spawnProcess'
-          })
-
-          this.emit(AppProcessTypes.ERROR, app.name)
-        }
-
-        this.emit(AppProcessTypes.STOPPED, app.name)
-        this.emit(AppProcessTypes.EXITED, app.name)
-        delete this.processes[app.name]
-      })
-
-      this.processes[app.name].process.on('error', (error) => {
-        Logger.error(`Process ${app.name} encountered an error`, {
-          source: 'AppProcessStore',
-          function: 'spawnProcess',
-          error: error instanceof Error ? error : new Error(String(error))
-        })
-        this.emit(AppProcessTypes.ERROR, app.name)
-      })
+      this.setupProcessErrorHandling(app.name, process)
 
       return true
     } catch (error) {
@@ -225,6 +181,129 @@ export class AppProcessStore
       this.emit(AppProcessTypes.ERROR, app.name)
       return false
     }
+  }
+
+  private setupProcessErrorHandling(appName: string, process: Worker): void {
+    // Handle uncaught exceptions in the worker thread
+    process.on('error', (error) => {
+      Logger.error(`Process ${appName} encountered an error`, {
+        source: 'AppProcessStore',
+        function: 'spawnProcess',
+        error: error instanceof Error ? error : new Error(String(error))
+      })
+
+      // Just emit the error event but don't let it propagate up
+      this.emit(AppProcessTypes.ERROR, appName)
+
+      // Attempt to gracefully terminate the process
+      try {
+        this.terminateProcess(appName).catch((err) => {
+          Logger.error(`Failed to terminate process ${appName} after error`, {
+            source: 'AppProcessStore',
+            function: 'setupProcessErrorHandling',
+            error: err instanceof Error ? err : new Error(String(err))
+          })
+        })
+      } catch (terminateError) {
+        // Ensure termination errors don't propagate either
+        Logger.error(`Error during termination of process ${appName}`, {
+          source: 'AppProcessStore',
+          function: 'setupProcessErrorHandling',
+          error:
+            terminateError instanceof Error ? terminateError : new Error(String(terminateError))
+        })
+      }
+    })
+
+    // Handle process exit
+    process.on('exit', (code) => {
+      Logger.warn(`Process ${appName} exited with code: ${code}`, {
+        source: 'AppProcessStore',
+        function: 'spawnProcess'
+      })
+
+      if (code !== 0) {
+        Logger.error(`Process ${appName} exited with non-zero code: ${code}`, {
+          source: 'AppProcessStore',
+          function: 'spawnProcess'
+        })
+
+        this.emit(AppProcessTypes.ERROR, appName)
+      }
+
+      this.emit(AppProcessTypes.STOPPED, appName)
+      this.emit(AppProcessTypes.EXITED, appName)
+
+      // Safely remove the process from our tracking
+      try {
+        delete this.processes[appName]
+      } catch (error) {
+        Logger.error(`Error cleaning up process ${appName}`, {
+          source: 'AppProcessStore',
+          function: 'setupProcessErrorHandling',
+          error: error instanceof Error ? error : new Error(String(error))
+        })
+      }
+    })
+  }
+
+  private setupProcessLogging(appName: string, process: Worker): void {
+    process.stdout?.on('data', (data) => {
+      try {
+        Logger.info(`${data.toString().trim()}`, {
+          domain: appName.toUpperCase()
+        })
+      } catch (error) {
+        // Ensure logging errors don't propagate
+        Logger.error(`Error logging stdout from ${appName}`, {
+          source: 'AppProcessStore',
+          function: 'setupProcessLogging',
+          error: error instanceof Error ? error : new Error(String(error))
+        })
+      }
+    })
+
+    process.stderr?.on('data', (data) => {
+      try {
+        Logger.error(`${data.toString().trim()}`, {
+          domain: appName.toUpperCase()
+        })
+      } catch (error) {
+        // Ensure logging errors don't propagate
+        Logger.error(`Error logging stderr from ${appName}`, {
+          source: 'AppProcessStore',
+          function: 'setupProcessLogging',
+          error: error instanceof Error ? error : new Error(String(error))
+        })
+      }
+    })
+  }
+
+  private setupProcessMessageHandling(appName: string, process: Worker): void {
+    process.on('message', (data: AppProcessData) => {
+      try {
+        this.handleProcessMessage(appName, data)
+      } catch (error) {
+        // Ensure message handling errors don't propagate
+        Logger.error(`Error handling message from ${appName}`, {
+          source: 'AppProcessStore',
+          function: 'setupProcessMessageHandling',
+          error: error instanceof Error ? error : new Error(String(error))
+        })
+      }
+    })
+
+    process.on('online', () => {
+      try {
+        this.emit(AppProcessTypes.STARTED, appName)
+      } catch (error) {
+        Logger.error(`Error emitting STARTED event for ${appName}`, {
+          source: 'AppProcessStore',
+          function: 'setupProcessMessageHandling',
+          error: error instanceof Error ? error : new Error(String(error))
+        })
+      }
+    })
   }
 
   private async assertModuleType(appPath: string): Promise<boolean> {
@@ -278,48 +357,56 @@ export class AppProcessStore
    * @version 0.11.0
    */
   private async handleProcessMessage(appName: string, data: AppProcessData): Promise<void> {
-    if (lt(data.version, this.version)) {
-      Logger.debug(
-        `Received message from outdated app ${appName} (because ${data.version} < ${this.version})`,
-        {
-          source: 'AppProcessStore',
-          function: 'handleProcessMessage'
-        }
-      )
-      this.handleLegacyProcessMessage(appName, data)
-      return
-    }
+    try {
+      if (lt(data.version, this.version)) {
+        Logger.debug(
+          `Received message from outdated app ${appName} (because ${data.version} < ${this.version})`,
+          {
+            source: 'AppProcessStore',
+            function: 'handleProcessMessage'
+          }
+        )
+        this.handleLegacyProcessMessage(appName, data)
+        return
+      }
 
-    switch (data.type) {
-      case 'data':
-        this.emit(data.payload.type, {
-          ...data.payload,
-          source: appName
-        } as Extract<AppToDeskThingData, { type: typeof data.payload.type; source: string }>)
-        break
-      case 'started':
-        this.emit(AppProcessTypes.RUNNING, appName)
-        break
-      case 'stopped':
-        this.emit(AppProcessTypes.STOPPED, appName)
-        break
-      case 'server:error':
-        Logger.error(data.payload.message, {
-          source: 'AppProcessStore',
-          function: 'handleProcessMessage',
-          error: data.payload
-        })
-        this.emit(AppProcessTypes.ERROR, appName)
-        break
-      case 'server:log':
-        Logger.log(data.payload.level, data.payload.message, data.payload)
-        break
-      default:
-        Logger.warn(`Received unknown message type '${String(data)}' from ${appName}`, {
-          source: 'AppProcessStore',
-          function: 'handleProcessMessage'
-        })
-        break
+      switch (data.type) {
+        case 'data':
+          this.emit(data.payload.type, {
+            ...data.payload,
+            source: appName
+          } as Extract<AppToDeskThingData, { type: typeof data.payload.type; source: string }>)
+          break
+        case 'started':
+          this.emit(AppProcessTypes.RUNNING, appName)
+          break
+        case 'stopped':
+          this.emit(AppProcessTypes.STOPPED, appName)
+          break
+        case 'server:error':
+          Logger.error(data.payload.message, {
+            source: 'AppProcessStore',
+            function: 'handleProcessMessage',
+            error: data.payload
+          })
+          this.emit(AppProcessTypes.ERROR, appName)
+          break
+        case 'server:log':
+          Logger.log(data.payload.level, data.payload.message, data.payload)
+          break
+        default:
+          Logger.warn(`Received unknown message type '${String(data)}' from ${appName}`, {
+            source: 'AppProcessStore',
+            function: 'handleProcessMessage'
+          })
+          break
+      }
+    } catch (error) {
+      Logger.error(`Unhandled error processing message from ${appName}`, {
+        source: 'AppProcessStore',
+        function: 'handleProcessMessage',
+        error: error instanceof Error ? error : new Error(String(error))
+      })
     }
   }
 
@@ -395,18 +482,46 @@ export class AppProcessStore
         source: 'AppProcessStore',
         function: 'terminateProcess'
       })
+
       if (!this.processes[appName]) {
         return false
       }
 
-      this.processes[appName].process.terminate()
-      delete this.processes[appName]
+      try {
+        // First try to gracefully terminate
+        this.processes[appName].process.terminate()
+      } catch (terminateError) {
+        Logger.error(`Error during termination of process ${appName}`, {
+          source: 'AppProcessStore',
+          function: 'terminateProcess',
+          error:
+            terminateError instanceof Error ? terminateError : new Error(String(terminateError))
+        })
+      } finally {
+        // Always clean up our reference, even if termination failed
+        delete this.processes[appName]
+      }
+
       return true
     } catch (error) {
-      Logger.error(`Failed to terminate process ${appName}: ${error}`, {
+      Logger.error(`Failed to terminate process ${appName}`, {
         source: 'AppProcessStore',
-        function: 'terminateProcess'
+        function: 'terminateProcess',
+        error: error instanceof Error ? error : new Error(String(error))
       })
+
+      // Try to clean up anyway
+      try {
+        delete this.processes[appName]
+      } catch (cleanupError) {
+        // Just log, don't throw
+        Logger.error(`Failed to clean up process reference for ${appName}`, {
+          source: 'AppProcessStore',
+          function: 'terminateProcess',
+          error: cleanupError instanceof Error ? cleanupError : new Error(String(cleanupError))
+        })
+      }
+
       return false
     }
   }
