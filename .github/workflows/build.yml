@@ -34,7 +34,7 @@ jobs:
       - name: Install Node.js, NPM
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '22.15.0'
       - name: Install the Apple certificate and provisioning profile
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
@@ -113,7 +113,7 @@ jobs:
       - name: Install Node.js, NPM
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '22.15.0'
 
       - name: Install dependencies
         run: |
