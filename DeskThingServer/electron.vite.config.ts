@@ -33,6 +33,14 @@ export default defineConfig({
   },
   preload: {
     plugins: [externalizeDepsPlugin()],
+    build: {
+      rollupOptions: {
+        input: {
+          index: resolve(__dirname, 'src/preload/index.ts'),
+          loading: resolve(__dirname, 'src/preload/loading.ts')
+        }
+      }
+    },
     resolve: {
       alias: {
         '@shared': resolve('src/shared')

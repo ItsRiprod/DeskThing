@@ -12,7 +12,7 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
-      background: transparent;
+      background: #0000006c;
       color: #ffffff;
       overflow: hidden;
     }
@@ -56,10 +56,9 @@
   </div>
   <script>
     // This will be connected via the preload script
-    window.addEventListener('message', (event) => {
-      if (event.data && event.data.type === 'loading-status') {
-        document.getElementById('status').textContent = event.data.message;
-      }
+    window.electron.loading.onStatusUpdate((message) => {
+      document.getElementById('status').textContent = message;
+      console.log('Status updated:', message);
     });
   </script>
 </body>

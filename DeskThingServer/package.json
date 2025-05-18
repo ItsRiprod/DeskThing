@@ -17,7 +17,7 @@
     "dev": "electron-vite dev",
     "debug": "electron-vite dev --inspect=8893",
     "build": "node electron-builder.env.js && npm run typecheck && electron-vite build && electron-builder",
-    "postinstall": "electron-builder install-app-deps && electron-rebuild",
+    "postinstall": "electron-builder install-app-deps && electron-rebuild && npm rebuild sharp",
     "build:unpack": "npm run build && electron-builder --dir",
     "test": "vitest"
   },
@@ -47,7 +47,6 @@
     "react-tag-input": "^6.10.3",
     "semver": "^7.6.3",
     "sharp": "^0.33.5",
-    "update-electron-app": "^3.1.0",
     "uuid": "^10.0.0",
     "ws": "^8.17.1",
     "zustand": "^5.0.0-rc.2"
@@ -114,7 +113,9 @@
     "asarUnpack": [
       "resources/**",
       "bin/**",
-      "!resources/{,/**/}*.{h,hpp,cpp,cc,cxx}"
+      "!resources/{,/**/}*.{h,hpp,cpp,cc,cxx}",
+      "**/node_modules/sharp/**/*",
+      "**/node_modules/@img/**/*"
     ],
     "protocols": [
       {

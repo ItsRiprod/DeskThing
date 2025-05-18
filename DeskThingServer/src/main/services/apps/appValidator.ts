@@ -340,7 +340,6 @@ export const sanitizeAppStructure: (app: Partial<App>) => asserts app is App = (
     }
   }
 
-  app.name = app.name || ''
   app.enabled = app.enabled ?? false
   app.running = app.running ?? false
   app.prefIndex = app.prefIndex ?? 1
@@ -356,7 +355,7 @@ export const sanitizeAppStructure: (app: Partial<App>) => asserts app is App = (
 export const sanitizeAppMeta: (
   app: Partial<App>
 ) => asserts app is Required<Pick<App, 'meta' | 'manifest'>> = (app) => {
-  const currentMetaVersion = '0.10.4' // find a better way to do this
+  const currentMetaVersion = '0.11.0' // find a better way to do this
 
   if (!app.meta) {
     app.manifest = constructManifest(app.manifest)

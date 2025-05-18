@@ -1,4 +1,5 @@
 import logger from '@server/utils/logger'
+import { updateLoadingStatus } from '@server/windows/loadingWindow'
 import {
   IPC_HANDLERS,
   AppIPCData,
@@ -16,6 +17,8 @@ import {
 } from '@shared/types'
 
 export const initializeIpcHandlers = async (ipcMain: Electron.IpcMain): Promise<void> => {
+  updateLoadingStatus('Setting up IPC handlers...')
+
   ipcMain.handle(
     IPC_HANDLERS.APPS,
     async <T extends IPC_APP_TYPES>(_event: unknown, data: Extract<AppIPCData, { type: T }>) => {

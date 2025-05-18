@@ -18,7 +18,7 @@ export function createMainWindow(): BrowserWindow {
     minWidth: 500,
     minHeight: 400,
     icon: icon,
-    show: true,
+    show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon: icon } : {}),
     webPreferences: {

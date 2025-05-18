@@ -57,6 +57,11 @@ jobs:
           # Import certificate to keychain
           security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
           security list-keychain -d user -s $KEYCHAIN_PATH
+      - name: Install Sharp dependencies
+        run: |
+          if [ "${{ runner.os }}" == "macOS" ]; then
+            brew install vips
+          fi
       - name: Install dependencies
         run: |
           cd DeskThingServer
@@ -114,6 +119,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22.15.0'
+
+          # Installs the sharp deps
+      - name: Install Sharp dependencies  
+        run: |
+          if [ "${{ runner.os }}" == "Linux" ]; then
+            sudo apt-get update
+            sudo apt-get install -y libvips-dev
+          fi
 
       - name: Install dependencies
         run: |

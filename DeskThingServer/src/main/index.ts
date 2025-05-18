@@ -11,6 +11,7 @@
  * - Handles application lifecycle events
  * - Manages module loading and initialization
  */
+
 /**
  * Main entry point for the Electron application.
  * Delegates responsibilities to specialized modules.
@@ -19,6 +20,7 @@ import { app } from 'electron'
 import { setupSingleInstance } from './system/singleInstance'
 import { initializeAppLifecycle } from './lifecycle/appLifecycle'
 import { getLoadingWindow } from './windows/windowManager'
+import { initializationCheck } from './services/initialize'
 
 // Initialize environment variables
 import './utils/environment'
@@ -30,18 +32,24 @@ if (!setupSingleInstance()) {
   // Application initialization
   app.whenReady().then(async () => {
     // Show loading window first
-    await getLoadingWindow()
+    const loadingWindow = await getLoadingWindow()
 
-    // Initialize app lifecycle (which will handle the rest of the startup)
-    await initializeAppLifecycle()
+    loadingWindow.once('ready-to-show', async () => {
+      // Clears any old installs
+      await initializationCheck()
+
+      // Initialize app lifecycle (which will handle the rest of the startup)
+      await initializeAppLifecycle()
+    })
+
   })
 }
 
 // Export necessary functions for backward compatibility
-export { handleUrl } from './system/protocol'
-export { createMainWindow } from './windows/mainWindow'
-export { createClientWindow } from './windows/clientWindow'
-export { sendIpcData } from './ipc/ipcSender'
+// export { handleUrl } from './system/protocol'
+// export { createMainWindow } from './windows/mainWindow'
+// export { createClientWindow } from './windows/clientWindow'
+// export { sendIpcData } from './ipc/ipcSender'
 
 // import { ServerIPCData } from '@shared/types'
 // import { App } from '@deskthing/types'

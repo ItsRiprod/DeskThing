@@ -9,6 +9,7 @@ import { setupIpcHandlers } from '../ipc/ipcManager'
 import { loadModules } from './moduleLoader'
 import { getMainWindow, closeLoadingWindow } from '../windows/windowManager'
 import { nextTick } from 'node:process'
+import { updateLoadingStatus } from '@server/windows/loadingWindow'
 
 /**
  * Initialize the application lifecycle
@@ -38,12 +39,15 @@ export async function initializeAppLifecycle(): Promise<void> {
     await loadModules()
     await setupIpcHandlers()
 
+    updateLoadingStatus('Creating main window')
+
     // Create main window after loading is complete
     const mainWindow = getMainWindow()
 
     // Close loading window once main window is ready
     mainWindow.once('ready-to-show', () => {
       closeLoadingWindow()
+      updateLoadingStatus('Finishing Up...')
       mainWindow.show()
     })
   })

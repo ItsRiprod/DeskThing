@@ -16,16 +16,11 @@ export async function createLoadingWindow(): Promise<BrowserWindow> {
     frame: false,
     transparent: true,
     icon: icon,
-    show: false,
+    show: true,
     webPreferences: {
       preload: join(__dirname, '../preload/loading.mjs'),
       sandbox: false
     }
-  })
-
-  // Show window when ready
-  window.on('ready-to-show', () => {
-    window.show()
   })
 
   // Load loading screen content
@@ -47,10 +42,17 @@ export function showLoadingWindow(): Promise<BrowserWindow> {
 
 /**
  * Updates the loading window with a progress message
+ * 
+ * @param message The message to display
+ * @param error The error to display in the console (optional)
  */
-export async function updateLoadingStatus(message: string): Promise<void> {
+export async function updateLoadingStatus(message: string, error?: unknown): Promise<void> {
+  console.log('[preload]: ', message, error)
+
   const { loadingWindow } = await import('./windowManager')
   if (loadingWindow && !loadingWindow.isDestroyed()) {
     loadingWindow.webContents.send('loading-status', message)
+  } else {
+    console.error('[preload]: No loading window found')
   }
 }

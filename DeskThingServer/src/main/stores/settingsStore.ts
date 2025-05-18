@@ -8,9 +8,7 @@ import { readFromFile, writeToFile } from '../services/files/fileService'
 import Logger from '@server/utils/logger'
 import os from 'os'
 import semverSatisfies from 'semver/functions/satisfies.js'
-
-// Consts
-const settingsVersion = '0.10.4'
+import { app } from 'electron'
 
 export class SettingsStore implements CacheableStore, SettingsStoreClass {
   private settings: Settings | undefined
@@ -131,7 +129,7 @@ export class SettingsStore implements CacheableStore, SettingsStoreClass {
         function: 'loadSettings'
       })
 
-      if (!data || !data.version || !semverSatisfies(data.version, '>=' + settingsVersion)) {
+      if (!data || !data.version || !semverSatisfies(data.version, '>=' + app.getVersion())) {
         // File does not exist, create it with default settings
         console.log('Unable to find settings. ', data)
         const defaultSettings = this.getDefaultSettings()
@@ -210,7 +208,7 @@ export class SettingsStore implements CacheableStore, SettingsStoreClass {
    */
   private getDefaultSettings(): Settings {
     return {
-      version: settingsVersion,
+      version: app.getVersion(),
       callbackPort: 8888,
       devicePort: 8891,
       address: '0.0.0.0',

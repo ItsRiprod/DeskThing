@@ -26,7 +26,11 @@ class Logger {
   private saveTimeout: NodeJS.Timeout | null = null
 
   private constructor() {
-    this.setupFiles()
+    try {
+      this.setupFiles()
+    } catch (error) {
+      console.error('Failed to setup logging files!', error)
+    }
   }
 
   public setupSettingsListener = async (settingsStore: SettingsStoreClass): Promise<void> => {
@@ -41,7 +45,7 @@ class Logger {
   }
 
   private setupFiles = async (): Promise<void> => {
-    await mkdir(logDir, { recursive: true })
+    await mkdir(logDir, { recursive: true, mode: 0o755 })
 
     const rotateFile = async (filePath: string): Promise<void> => {
       if (existsSync(filePath)) {
@@ -85,7 +89,10 @@ class Logger {
   }
 
   private saveLogs = async (): Promise<void> => {
-    if (!this.filesSetup) return
+    if (!this.filesSetup) {
+      console.warn('Attempted to save logs before the log file was setup')
+      return
+    }
 
     try {
       access(logFile)
@@ -199,12 +206,12 @@ class Logger {
       }
     }
 
-    options = this.reconstructOptions(options)
-    if (!this.shouldLog(options.domain || 'server', level)) {
-      return
-    }
-
     try {
+      options = this.reconstructOptions(options)
+      if (!this.shouldLog(options.domain || 'server', level)) {
+        return
+      }
+
       if (options.error instanceof Error) {
         options.error = {
           name: options.error.name,
@@ -225,7 +232,11 @@ class Logger {
       }
 
       this.logs.push(logData)
-      await this.notifyListeners(logData)
+      try {
+        await this.notifyListeners(logData)
+      } catch (error) {
+        console.warn('Failed to notify listeners', error)
+      }
 
       const readableTimestamp = new Date(options.date).toLocaleString()
       const readableMessage = `${options.domain || 'Unknown:'} ${readableTimestamp} ${level.toUpperCase()} [${options.source || 'server'}${options.function ? '.' + options.function : ''}]: ${message}\n${options.error ? options.error.message + '\n' : ''}`
@@ -258,7 +269,6 @@ class Logger {
         await fs.promises.appendFile(readableLogFile, readableMessage)
       } catch (appendErr) {
         console.error('Failed to write to readable log file:', appendErr)
-        throw appendErr
       }
     } catch (error) {
       console.error('Failed to log message:', error)
