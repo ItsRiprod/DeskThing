@@ -1,6 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { BrowserWindow } from 'electron'
-import { createMainWindow, createClientWindow, sendIpcData } from '../../src/main'
 import { ServerIPCData } from '@shared/types'
 
 // Mock electron modules
@@ -123,7 +122,8 @@ describe('Main Process', () => {
   })
 
   describe('Window Creation', () => {
-    it('should create main window and handle lifecycle events', () => {
+    it('should create main window and handle lifecycle events', async () => {
+      const { createMainWindow } = await import('../../src/main/windows/mainWindow')
       const window = createMainWindow()
 
       expect(window.webContents.session.webRequest.onHeadersReceived).toHaveBeenCalled()
@@ -134,6 +134,7 @@ describe('Main Process', () => {
     })
 
     it('should create client window with custom configuration', async () => {
+      const { createClientWindow } = await import('../../src/main/windows/clientWindow')
       const port = 8080
       const window = createClientWindow(port)
 
@@ -145,6 +146,7 @@ describe('Main Process', () => {
 
   describe('IPC Communication', () => {
     it('should send IPC messages to specific window', async () => {
+      const { sendIpcData } = await import('../../src/main/ipc/ipcSender')
       const mockWindow = new BrowserWindow()
       const testPayload = { data: 'test' }
 
@@ -158,6 +160,7 @@ describe('Main Process', () => {
     })
 
     it('should handle undefined window gracefully', async () => {
+      const { sendIpcData } = await import('../../src/main/ipc/ipcSender')
       const mockWindow = { webContents: { send: vi.fn() } } as unknown as BrowserWindow
       const testPayload = { data: 'test' }
 
