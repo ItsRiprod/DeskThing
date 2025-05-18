@@ -60,12 +60,12 @@ jobs:
       - name: Install dependencies
         run: |
           cd DeskThingServer
-          npm ci
+          npm install
 
-      - name: Print Environment Variables
-        run: |
-          echo "APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}"
-          echo "APPLE_ID: ${{ secrets.APPLE_ID }}"
+      # - name: Print Environment Variables
+      #   run: |
+      #     echo "APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}"
+      #     echo "APPLE_ID: ${{ secrets.APPLE_ID }}"
 
       - name: Build/release Electron app
         uses: paneron/action-electron-builder@v1.8.1
@@ -118,7 +118,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd DeskThingServer
-          npm ci
+          npm install
 
       - name: Build/release Electron app
         uses: paneron/action-electron-builder@v1.8.1
