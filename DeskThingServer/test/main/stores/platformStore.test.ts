@@ -68,6 +68,9 @@ describe('PlatformStore', () => {
       id: PlatformIDs.ADB,
       name: 'Test Platform',
       type: 'test',
+      identifier: {
+        capabilities: [ProviderCapabilities.COMMUNICATE],
+      },
       isRunning: vi.fn().mockReturnValue(true),
       start: vi.fn(),
       stop: vi.fn(),

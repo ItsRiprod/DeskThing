@@ -26,6 +26,14 @@ vi.mock('@server/services/files/fileService', () => ({
   readFromFile: vi.fn()
 }))
 
+vi.mock('electron', () => {
+  return {
+    app: {
+      getVersion: vi.fn().mockReturnValue('0.10.4')
+    }
+  }
+})
+
 vi.mock('auto-launch', () => {
   return {
     default: vi.fn().mockImplementation(() => ({

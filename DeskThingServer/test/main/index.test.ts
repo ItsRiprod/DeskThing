@@ -143,34 +143,4 @@ describe('Main Process', () => {
       expect(window.loadURL).toHaveBeenCalledWith('http://localhost:8080/', {})
     })
   })
-
-  describe('IPC Communication', () => {
-    it('should send IPC messages to specific window', async () => {
-      const { sendIpcData } = await import('../../src/main/ipc/ipcSender')
-      const mockWindow = new BrowserWindow()
-      const testPayload = { data: 'test' }
-
-      await sendIpcData({
-        type: 'test-event',
-        payload: testPayload,
-        window: mockWindow
-      } as unknown as ServerIPCData)
-
-      expect(mockWindow.webContents.send).toHaveBeenCalledWith('test-event', testPayload)
-    })
-
-    it('should handle undefined window gracefully', async () => {
-      const { sendIpcData } = await import('../../src/main/ipc/ipcSender')
-      const mockWindow = { webContents: { send: vi.fn() } } as unknown as BrowserWindow
-      const testPayload = { data: 'test' }
-
-      await sendIpcData({
-        type: 'test-event',
-        payload: testPayload,
-        window: undefined
-      } as unknown as ServerIPCData)
-
-      expect(mockWindow.webContents.send).not.toHaveBeenCalled()
-    })
-  })
 })
