@@ -58,6 +58,14 @@ export default defineConfig({
     plugins: [react()],
     define: {
       'process.env.PACKAGE_VERSION': JSON.stringify(packageJson.version)
+    },
+    build: {
+      rollupOptions: {
+        input: {
+          index: resolve(__dirname, 'src/renderer/index.html'),
+          loading: resolve(__dirname, 'src/renderer/loading.html')
+        }
+      }
     }
   }
 })
