@@ -1,6 +1,4 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { BrowserWindow } from 'electron'
-import { ServerIPCData } from '@shared/types'
 
 // Mock electron modules
 vi.mock('electron', () => {
