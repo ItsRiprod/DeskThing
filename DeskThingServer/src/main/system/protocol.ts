@@ -29,7 +29,7 @@ export function setupProtocolHandler(): void {
  */
 export async function handleUrl(
   url: string | undefined,
-  window: BrowserWindow | null = getMainWindow()
+  window: BrowserWindow | undefined = getMainWindow()
 ): Promise<void> {
   if (url && url.startsWith('deskthing://')) {
     const path = url.replace('deskthing://', '')
