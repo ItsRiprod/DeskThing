@@ -15,21 +15,21 @@ export async function setupDock(): Promise<void> {
     {
       label: 'Open Desktop',
       click: (): void => {
-              const mainWindow = getMainWindow()
-      
-              // Ensure the window is visible and focused
-              if (mainWindow) {
-                if (mainWindow.isMinimized()) {
-                  mainWindow.restore()
-                }
-                if (!mainWindow.isVisible()) {
-                  mainWindow.show()
-                }
-                mainWindow.focus()
-              } else {
-                buildMainWindow()
-              }
-            }
+        const mainWindow = getMainWindow()
+
+        // Ensure the window is visible and focused
+        if (mainWindow) {
+          if (mainWindow.isMinimized()) {
+            mainWindow.restore()
+          }
+          if (!mainWindow.isVisible()) {
+            mainWindow.show()
+          }
+          mainWindow.focus()
+        } else {
+          buildMainWindow()
+        }
+      }
     },
     {
       label: 'Open DeskThing Client',
@@ -59,6 +59,4 @@ export async function setupDock(): Promise<void> {
   ])
 
   app.dock.setMenu(contextMenu)
-
-  app.applicationMenu
 }

@@ -1,67 +1,38 @@
-import { IconBell } from '@renderer/assets/icons'
+import { IconDetails } from '@renderer/assets/icons'
 import React, { useEffect, useState } from 'react'
 import Button from './Button'
-import { useNotificationStore } from '@renderer/stores'
 import { useSearchParams } from 'react-router-dom'
-import { useFloating, autoUpdate } from '@floating-ui/react-dom'
+import useTaskStore from '@renderer/stores/taskStore'
 
 const NotificationButton: React.FC = () => {
   const [_searchParams, setSearchParams] = useSearchParams()
-  const { refs, floatingStyles } = useFloating({
-    placement: 'right',
-    strategy: 'fixed',
-    whileElementsMounted: autoUpdate
-  })
-
-  const taskNum = useNotificationStore((state) => state.totalTasks)
-  const logs = useNotificationStore((state) => state.logs)
-  const requests = useNotificationStore((state) => state.requestQueue)
-  const issues = useNotificationStore((state) => state.issues.length)
-  const [errors, setErrors] = useState(0)
+  const [bounce, setBounce] = useState(false)
+  const taskList = useTaskStore((state) => state.taskList)
+  const taskNum = Object.values(taskList).reduce((acc, tasks) => acc + Object.keys(tasks).length, 0)
+  const [prevTaskNum, setPrevTaskNum] = useState(taskNum)
 
   useEffect(() => {
-    setErrors(0)
-    logs.forEach((log) => {
-      if (log.type === 'error') {
-        setErrors((prev) => prev + 1)
-      }
-    })
-  }, [logs])
+    if (taskNum != prevTaskNum) {
+      setPrevTaskNum(taskNum)
+      setBounce(true)
+      console.log('New num of tasks: ', taskNum)
+    }
+  }, [taskNum, prevTaskNum])
 
   const handleOpenNotifications = (): void => {
     setSearchParams({ notifications: 'true' })
+    setBounce(false)
   }
 
   return (
-    <div ref={refs.setReference}>
+    <div>
       <Button
         title="System Notifications"
         onClick={handleOpenNotifications}
-        className={`gap-2 hover:bg-zinc-900`}
+        className={`gap-2 hover:bg-zinc-900 items-center justify-center w-full ${bounce && 'animate-highlight border'}`}
       >
-        {taskNum > 0 ? (
-          <div
-            className={`${errors > 0 || issues > 0 ? 'bg-red-500' : 'bg-green-500'} relative p-1 w-full rounded text-xs group`}
-          >
-            {requests.length > 0 && (
-              <div className="absolute inset-0 rounded w-full h-full animate-ping border-2 border-blue-500"></div>
-            )}
-            {taskNum}
-            <div
-              ref={refs.setFloating}
-              style={floatingStyles}
-              className="z-50 hidden group-hover:flex bg-black flex-col items-start gap-2 p-2 rounded-md shadow-md"
-            >
-              <p>Logs: {logs.length}</p>
-              <p>Errors: {errors}</p>
-              <p>Requests: {requests.length}</p>
-              <p>issues: {issues}</p>
-            </div>
-          </div>
-        ) : (
-          <IconBell iconSize={24} strokeWidth={2} />
-        )}
-        <p className="flex-grow text-center text-lg md:block hidden">Notifications</p>
+        <IconDetails iconSize={24} strokeWidth={2} />
+        <p className="flex-grow text-center text-lg md:block hidden">Tasks</p>
       </Button>
     </div>
   )

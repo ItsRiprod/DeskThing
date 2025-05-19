@@ -68,6 +68,23 @@ export default {
             opacity: '1',
             transform: 'scale(1)'
           }
+        },
+        highlight: {
+          '0%': {
+            borderColor: 'rgb(59 130 246)',
+            borderWidth: '2px',
+            boxShadow: '0 0 0 rgba(59, 130, 246, 0)'
+          },
+          '50%': {
+            borderColor: 'rgb(29 78 216)',
+            borderWidth: '0.5px',
+            boxShadow: '0 0 8px rgba(29, 78, 216, 0.4)'
+          },
+          '100%': {
+            borderColor: 'rgb(59 130 246)',
+            borderWidth: '2px',
+            boxShadow: '0 0 0 rgba(59, 130, 246, 0)'
+          }
         }
       },
       animation: {
@@ -76,6 +93,7 @@ export default {
         'fade-out': 'fade-in-down 0.2s ease-out reverse forwards',
         'slide-in': 'slide-in 0.2s ease-out',
         'slide-out': 'slide-out 0.2s ease-out',
+        highlight: 'highlight 5s ease-in-out infinite',
         fade: 'fade 0.2s ease-out forwards',
         'pop-in': 'pop-in 0.2s ease-out forwards'
       }

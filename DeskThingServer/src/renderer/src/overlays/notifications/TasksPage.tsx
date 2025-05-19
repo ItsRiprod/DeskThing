@@ -6,6 +6,8 @@ import { useSearchParams } from 'react-router-dom'
 import TaskComponent from '@renderer/components/tasks/TaskComponent'
 import Button from '@renderer/components/Button'
 import { IconRefresh } from '@renderer/assets/icons'
+import { useAppStore } from '@renderer/stores'
+import { AppIcon } from '@renderer/components/AppIcon'
 
 const sortTasks = (tasks: FullTaskList): Record<string, Task[]> => {
   return Object.fromEntries(
@@ -39,6 +41,7 @@ const TasksPage: React.FC = () => {
   const requestTasks = useTaskStore((state) => state.requestTasks)
   const [searchParams, setSearchParams] = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
+  const apps = useAppStore((state) => state.appsList)
 
   const sortedTasks = useMemo(() => sortTasks(tasks), [tasks])
 
@@ -58,6 +61,10 @@ const TasksPage: React.FC = () => {
     )
   }
 
+  const findAppName = (appId: string): string => {
+    return apps.find((app) => app.name === appId)?.manifest?.label || appId
+  }
+
   return (
     <div className="w-full h-full p-4 flex flex-col">
       <div className="flex justify-between">
@@ -70,27 +77,27 @@ const TasksPage: React.FC = () => {
           <IconRefresh className={`${isLoading ? 'animate-spin-smooth text-gray-500' : ''}`} />
         </Button>
       </div>
-      <div className="bg-red-950 px-4 py-1 rounded-lg shadow-lg my-2">
+      <div className="bg-red-950 px-4 py-1 rounded-lg shadow-lg mb-2">
         <p className="text-xs italic text-gray-300">Tasks are still under development</p>
       </div>
       <div className="w-full h-full relative overflow-y-auto">
         <div className="absolute inset-0 w-full h-full">
-          {Object.entries(sortedTasks).map(([appId, tasks]) => (
-            <div key={appId}>
-              <p>{appId}</p>
-              {tasks.length > 0 ? (
-                <div>
-                  {tasks.map((task) => (
-                    <TaskComponent key={task.id} task={task} onClose={onClose} />
-                  ))}
+          {Object.entries(sortedTasks).map(
+            ([appId, tasks]) =>
+              tasks.length > 0 && (
+                <div key={appId}>
+                  <div className="flex gap-3 w-full py-4 border-t border-zinc-800">
+                    <AppIcon appId={appId} className="!w-6 !h-6" />
+                    <p>{findAppName(appId)}</p>
+                  </div>
+                  <div>
+                    {tasks.map((task) => (
+                      <TaskComponent key={task.id} task={task} onClose={onClose} />
+                    ))}
+                  </div>
                 </div>
-              ) : (
-                <div>
-                  <p className="text-gray-500">No tasks found.</p>
-                </div>
-              )}
-            </div>
-          ))}
+              )
+          )}
         </div>
       </div>
     </div>

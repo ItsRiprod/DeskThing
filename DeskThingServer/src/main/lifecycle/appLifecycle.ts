@@ -7,7 +7,7 @@ import { setupTray } from '../system/tray'
 import { setupDock } from '../system/dock'
 import { setupIpcHandlers } from '../ipc/ipcManager'
 import { loadModules } from './moduleLoader'
-import { getMainWindow, closeLoadingWindow, buildMainWindow } from '../windows/windowManager'
+import { closeLoadingWindow, buildMainWindow } from '../windows/windowManager'
 import { nextTick } from 'node:process'
 import { updateLoadingStatus } from '@server/windows/loadingWindow'
 

@@ -16,7 +16,7 @@ const NotificationOverlay: React.FC = () => {
 
   const notificationState = useNotificationStore((state) => state)
   const taskList = useTaskStore((state) => state.taskList)
-  const page = searchParams.get('page') || 'event'
+  const page = searchParams.get('page') || 'task'
 
   const NotificationPage = useMemo(() => {
     switch (page) {
@@ -35,7 +35,7 @@ const NotificationOverlay: React.FC = () => {
 
   const activeTasks = Object.values(taskList)
     .flatMap((appTasks) => Object.values(appTasks))
-    .filter((task) => task.completed === false && task.available === false)
+    .filter((task) => task.completed === false && task.available === true)
 
   const setPage = (page: string): void => {
     searchParams.set('page', page)
@@ -57,40 +57,43 @@ const NotificationOverlay: React.FC = () => {
       </div>
       <div className="flex h-full">
         <div className="border-r border-gray-500 p-2 bg-zinc-900 flex flex-col gap-2">
-          <NavComponent
-            setPage={setPage}
-            page="Event"
-            curPage={page}
-            value={notificationState.logs.length}
-            Icon={<IconLogs />}
-          />
-          <NavComponent
-            setPage={setPage}
-            page="Issue"
-            curPage={page}
-            value={notificationState.issues.length}
-            Icon={<IconWarning />}
-            className={notificationState.issues.length > 0 ? 'bg-red-600' : ''}
-          />
-          <NavComponent
-            setPage={setPage}
-            page="Request"
-            curPage={page}
-            value={notificationState.requestQueue.length}
-            Icon={<IconBell />}
-            className="relative"
-          >
-            {notificationState.requestQueue.length > 0 && (
-              <div className="absolute inset-0 rounded w-full h-full animate-pulse border-2 border-blue-500"></div>
-            )}
-          </NavComponent>
-          <NavComponent
-            setPage={setPage}
-            page="Task"
-            curPage={page}
-            value={activeTasks.length}
-            Icon={<IconLayoutgrid />}
-          />
+          <ErrorBoundary>
+
+            <NavComponent
+              setPage={setPage}
+              page="Task"
+              curPage={page}
+              value={activeTasks.length}
+              Icon={<IconLayoutgrid />}
+            />
+            <NavComponent
+              setPage={setPage}
+              page="Event"
+              curPage={page}
+              value={notificationState.logs.length}
+              Icon={<IconLogs />}
+            />
+            <NavComponent
+              setPage={setPage}
+              page="Issue"
+              curPage={page}
+              value={notificationState.issues.length}
+              Icon={<IconWarning />}
+              className={notificationState.issues.length > 0 ? 'bg-red-600' : ''}
+            />
+            <NavComponent
+              setPage={setPage}
+              page="Request"
+              curPage={page}
+              value={notificationState.requestQueue.length}
+              Icon={<IconBell />}
+              className="relative"
+            >
+              {notificationState.requestQueue.length > 0 && (
+                <div className="absolute inset-0 rounded w-full h-full animate-pulse border-2 border-blue-500"></div>
+              )}
+            </NavComponent>
+          </ErrorBoundary>
         </div>
         <div className="w-full">
           <ErrorBoundary key={page}>{NotificationPage}</ErrorBoundary>

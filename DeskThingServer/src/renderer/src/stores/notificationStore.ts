@@ -35,7 +35,6 @@ interface NotificationStoreState {
   requestQueue: Request[]
   logs: Log[]
   issues: Task[]
-  totalTasks: number
 
   // Logs
 
@@ -52,9 +51,6 @@ interface NotificationStoreState {
   resolveRequest: (requestId: string, formData: Record<string, string>) => Promise<void>
   addRequest: (appName: string, scopes: AuthScopes) => void
   triggerRequestDisplay: (appName: string) => void
-
-  // Total Tasks
-  calculateTotalTasks: () => void
 }
 
 // Create Zustand store
@@ -62,15 +58,6 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
   requestQueue: [],
   logs: [],
   issues: [],
-  totalTasks: 0,
-
-  // Tasks
-
-  calculateTotalTasks: async (): Promise<void> => {
-    set((state) => ({
-      totalTasks: state.issues.length + state.logs.length + state.requestQueue.length
-    }))
-  },
 
   // Logs
 
@@ -82,7 +69,6 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
         return { logs: [] }
       }
     })
-    get().calculateTotalTasks()
   },
 
   addLog: async (log: Log): Promise<void> => {
@@ -95,7 +81,6 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
         logs: [log, ...state.logs].slice(0, 99)
       }))
 
-      get().calculateTotalTasks()
     }
   },
 
@@ -104,7 +89,6 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
       issues: state.issues.some((t) => t.id === task.id) ? state.issues : [task, ...state.issues]
     }))
 
-    get().calculateTotalTasks()
   },
 
   updateIssue: async (task: Task): Promise<void> => {
@@ -116,14 +100,12 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
         return t
       })
     }))
-    get().calculateTotalTasks()
   },
 
   removeIssue: async (taskId: string): Promise<void> => {
     set((state) => ({
       issues: state.issues.filter((task) => task.id !== taskId)
     }))
-    get().calculateTotalTasks()
   },
 
   // Requests
@@ -143,8 +125,6 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
       requestQueue: state.requestQueue.filter((request) => request.appName !== requestId)
     }))
 
-    get().calculateTotalTasks()
-
     try {
       console.log(`Sending response for request ${requestId}`)
       window.electron.ipcRenderer.send(`user-data-response-${requestId}`, formData)
@@ -160,8 +140,6 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
       set((state) => ({
         requestQueue: [...state.requestQueue, newRequest]
       }))
-
-      get().calculateTotalTasks()
     }
   },
 
