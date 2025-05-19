@@ -13,15 +13,19 @@ export const migrateDeskThing = async (prevVersion: string | undefined): Promise
   const currentVersion = app.getVersion()
   if (prevVersion == currentVersion) return // the apps are the same version - early break
 
-  if (!prevVersion) {
-    // Ensure the data is wiped (no version found)
-    await wipeData()
-  } else if (semverSatisfies(prevVersion, '<0.11.0')) {
-    // migrate from before v0.11.0
-    await preEleven()
-  } else {
-    // Become more specific for v0.11.0 to v0.11.X migration Headers
-    await elevenComp(prevVersion)
+  try {
+    if (!prevVersion) {
+      // Ensure the data is wiped (no version found)
+      await wipeData()
+    } else if (semverSatisfies(prevVersion, '<0.11.0')) {
+      // migrate from before v0.11.0
+      await preEleven()
+    } else {
+      // Become more specific for v0.11.0 to v0.11.X migration Headers
+      await elevenComp(prevVersion)
+    }
+  } catch (error) {
+    console.error(`An error was encountered while initializing. This may be expected: `, error)
   }
 }
 
@@ -31,7 +35,14 @@ export const migrateDeskThing = async (prevVersion: string | undefined): Promise
 const wipeData = async (): Promise<void> => {
   updateLoadingStatus('Wiping data...')
   const path = app.getPath('userData')
-  await rm(path, { recursive: true, force: true })
+  try {
+    await rm(path, { recursive: true, force: true })
+  } catch (error) {
+    console.error(
+      `An error was encountered while wiping data. This could be due to it being a fresh install`,
+      error
+    )
+  }
 }
 
 /**
@@ -56,7 +67,6 @@ const preEleven = async (): Promise<void> => {
   updateLoadingStatus('Disabling and Deleting Apps...')
 
   await disableApps()
-
 }
 
 /**

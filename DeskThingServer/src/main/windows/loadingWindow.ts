@@ -4,6 +4,8 @@
 import { BrowserWindow } from 'electron'
 import { join } from 'node:path'
 import icon from '../../../resources/icon.png?asset'
+import logger from '@server/utils/logger'
+import { getLoadingWindow } from './windowManager'
 
 /**
  * Creates a minimal loading window
@@ -36,14 +38,18 @@ export async function createLoadingWindow(): Promise<BrowserWindow> {
 
 /**
  * Updates the loading window with a progress message
- * 
  * @param message The message to display
  * @param error The error to display in the console (optional)
  */
 export async function updateLoadingStatus(message: string, error?: unknown): Promise<void> {
-  console.log('[preload]: ', message, error)
+  logger.info(message, {
+    source: 'loading window'
+  })
+  if (error) {
+    console.log(error)
+  }
 
-  const loadingWindow = await (await import('./windowManager')).getLoadingWindow()
+  const loadingWindow = await getLoadingWindow()
   if (loadingWindow && !loadingWindow.isDestroyed()) {
     loadingWindow.webContents.send('loading-status', message)
   } else {
