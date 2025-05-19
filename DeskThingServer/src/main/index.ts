@@ -41,7 +41,6 @@ if (!setupSingleInstance()) {
       // Initialize app lifecycle (which will handle the rest of the startup)
       await initializeAppLifecycle()
     })
-
   })
 }
 
