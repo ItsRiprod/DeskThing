@@ -19,7 +19,7 @@
 import { app } from 'electron'
 import { setupSingleInstance } from './system/singleInstance'
 import { initializeAppLifecycle } from './lifecycle/appLifecycle'
-import { getLoadingWindow } from './windows/windowManager'
+import { buildLoadingWindow } from './windows/windowManager'
 import { initializationCheck } from './services/initialize'
 
 // Initialize environment variables
@@ -32,7 +32,7 @@ if (!setupSingleInstance()) {
   // Application initialization
   app.whenReady().then(async () => {
     // Show loading window first
-    const loadingWindow = await getLoadingWindow()
+    const loadingWindow = await buildLoadingWindow()
 
     loadingWindow.once('ready-to-show', async () => {
       // Clears any old installs

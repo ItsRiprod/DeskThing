@@ -5,6 +5,7 @@ import { BrowserWindow, shell } from 'electron'
 import { join } from 'node:path'
 import icon from '../../../resources/icon.png?asset'
 import { handleUrl } from '../system/protocol'
+import { getMainWindow } from './windowManager'
 
 /**
  * Creates and configures the main application window
@@ -12,6 +13,7 @@ import { handleUrl } from '../system/protocol'
  */
 export function createMainWindow(): BrowserWindow {
   // Create window with specific dimensions and settings
+  console.log('Creating a main window')
   const window = new BrowserWindow({
     width: 1130,
     height: 730,
@@ -39,11 +41,16 @@ export function createMainWindow(): BrowserWindow {
     })
   })
 
+  window.on('ready-to-show', () => {
+    window.focus()
+    window.show()
+  })
+
   // Clean up reference when window is closed
   window.on('closed', async () => {
-    const { mainWindow } = await import('./windowManager')
+    const mainWindow = getMainWindow()
     if (mainWindow === window) {
-      ;(await import('./windowManager')).mainWindow = null
+      mainWindow.destroy()
     }
   })
 

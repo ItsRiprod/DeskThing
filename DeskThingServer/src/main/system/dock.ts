@@ -1,8 +1,8 @@
 /**
  * Dock menu implementation (macOS only)
  */
-import { app, Menu } from 'electron'
-import { getMainWindow, getClientWindow } from '../windows/windowManager'
+import { app, BrowserWindow, Menu } from 'electron'
+import { getMainWindow, getClientWindow, buildMainWindow } from '../windows/windowManager'
 
 /**
  * Initializes the dock menu (macOS only)
@@ -13,13 +13,26 @@ export async function setupDock(): Promise<void> {
   // Create dock context menu
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: 'Open Server',
+      label: 'Open Desktop',
       click: (): void => {
-        getMainWindow()
-      }
+              const mainWindow = getMainWindow()
+      
+              // Ensure the window is visible and focused
+              if (mainWindow) {
+                if (mainWindow.isMinimized()) {
+                  mainWindow.restore()
+                }
+                if (!mainWindow.isVisible()) {
+                  mainWindow.show()
+                }
+                mainWindow.focus()
+              } else {
+                buildMainWindow()
+              }
+            }
     },
     {
-      label: 'Open Client',
+      label: 'Open DeskThing Client',
       click: async (): Promise<void> => {
         const { storeProvider } = await import('../stores/storeProvider')
         const settingsStore = await storeProvider.getStore('settingsStore')
@@ -30,12 +43,22 @@ export async function setupDock(): Promise<void> {
       }
     },
     {
-      label: 'Quit',
+      label: 'Hide Tray Icon',
       click: (): void => {
+        app.dock.hide()
+      }
+    },
+    {
+      label: 'Force Quit',
+      click: (): void => {
+        console.log('Quitting')
+        BrowserWindow.getAllWindows().forEach((window) => window.destroy())
         app.quit()
       }
     }
   ])
 
   app.dock.setMenu(contextMenu)
+
+  app.applicationMenu
 }

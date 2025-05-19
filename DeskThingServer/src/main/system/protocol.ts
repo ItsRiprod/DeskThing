@@ -3,7 +3,7 @@
  */
 import { app, BrowserWindow } from 'electron'
 import { resolve } from 'node:path'
-import { mainWindow, clientWindow } from '../windows/windowManager'
+import { getMainWindow, getClientWindow } from '../windows/windowManager'
 
 /**
  * Set up the custom protocol handler
@@ -29,7 +29,7 @@ export function setupProtocolHandler(): void {
  */
 export async function handleUrl(
   url: string | undefined,
-  window: BrowserWindow | null = mainWindow
+  window: BrowserWindow | null = getMainWindow()
 ): Promise<void> {
   if (url && url.startsWith('deskthing://')) {
     const path = url.replace('deskthing://', '')
@@ -48,6 +48,8 @@ export async function handleUrl(
       return
     }
     console.log('Sending path to webContents for handling')
+
+    const clientWindow = await getClientWindow()
 
     const targetWindow = clientWindow && !clientWindow.isDestroyed() ? clientWindow : window
 

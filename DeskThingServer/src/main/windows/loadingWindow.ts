@@ -4,7 +4,6 @@
 import { BrowserWindow } from 'electron'
 import { join } from 'node:path'
 import icon from '../../../resources/icon.png?asset'
-import { getLoadingWindow } from './windowManager'
 
 /**
  * Creates a minimal loading window
@@ -16,7 +15,9 @@ export async function createLoadingWindow(): Promise<BrowserWindow> {
     frame: false,
     transparent: true,
     icon: icon,
+    title: 'DeskThing - Pending',
     show: true,
+    movable: true,
     webPreferences: {
       preload: join(__dirname, '../preload/loading.mjs'),
       sandbox: false
@@ -34,13 +35,6 @@ export async function createLoadingWindow(): Promise<BrowserWindow> {
 }
 
 /**
- * Shows the loading window and returns it
- */
-export function showLoadingWindow(): Promise<BrowserWindow> {
-  return getLoadingWindow()
-}
-
-/**
  * Updates the loading window with a progress message
  * 
  * @param message The message to display
@@ -49,7 +43,7 @@ export function showLoadingWindow(): Promise<BrowserWindow> {
 export async function updateLoadingStatus(message: string, error?: unknown): Promise<void> {
   console.log('[preload]: ', message, error)
 
-  const { loadingWindow } = await import('./windowManager')
+  const loadingWindow = await (await import('./windowManager')).getLoadingWindow()
   if (loadingWindow && !loadingWindow.isDestroyed()) {
     loadingWindow.webContents.send('loading-status', message)
   } else {

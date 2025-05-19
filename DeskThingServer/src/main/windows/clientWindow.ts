@@ -68,9 +68,10 @@ export function createClientWindow(port: number): BrowserWindow {
 
   // Clean up reference when window is closed
   window.on('closed', async () => {
-    const { clientWindow } = await import('./windowManager')
+    const clientWindow = await (await import('./windowManager')).getClientWindow()
     if (clientWindow === window) {
-      ;(await import('./windowManager')).clientWindow = null
+      clientWindow.close()
+      clientWindow.destroy()
     }
   })
 

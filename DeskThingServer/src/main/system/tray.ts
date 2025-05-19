@@ -1,9 +1,9 @@
 /**
  * System tray implementation
  */
-import { Tray, Menu, app, nativeImage } from 'electron'
+import { Tray, Menu, app, nativeImage, NativeImage } from 'electron'
 import { join } from 'node:path'
-import { getMainWindow, getClientWindow } from '../windows/windowManager'
+import { getMainWindow, getClientWindow, buildMainWindow } from '../windows/windowManager'
 
 // Global tray reference to prevent garbage collection
 let tray: Tray | null = null
@@ -12,7 +12,13 @@ let tray: Tray | null = null
  * Initializes the system tray icon and menu
  */
 export async function setupTray(): Promise<void> {
-  const trayIcon = nativeImage.createFromPath(join(__dirname, '../../resources/icon2.png'))
+  let trayIcon: NativeImage
+
+  if (process.platform === 'darwin') {
+    trayIcon = nativeImage.createFromPath(join(__dirname, '../../resources/iconTrayMacSm.png'))
+  } else {
+    trayIcon = nativeImage.createFromPath(join(__dirname, '../../resources/iconTray.png'))
+  }
 
   tray = new Tray(trayIcon)
 
@@ -29,13 +35,15 @@ export async function setupTray(): Promise<void> {
         mainWindow.show()
       }
       mainWindow.focus()
+    } else {
+      buildMainWindow()
     }
   })
 
   // Create tray context menu
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: 'Open Server',
+      label: 'Open Desktop',
       click: (): void => {
         const mainWindow = getMainWindow()
 
@@ -48,11 +56,13 @@ export async function setupTray(): Promise<void> {
             mainWindow.show()
           }
           mainWindow.focus()
+        } else {
+          buildMainWindow()
         }
       }
     },
     {
-      label: 'Open Client',
+      label: 'Open DeskThing Client',
       click: async (): Promise<void> => {
         const { storeProvider } = await import('../stores/storeProvider')
         const settingsStore = await storeProvider.getStore('settingsStore')
@@ -62,10 +72,22 @@ export async function setupTray(): Promise<void> {
         }
       }
     },
+    ...(process.platform === 'darwin' ? [
+          {
+            label: 'Toggle Dock Icon',
+            click: (): void => {
+              app.dock.isVisible() ? app.dock.hide() : app.dock.show()
+            },
+            id: 'show-hide-icon'
+          }
+        ] : []),    
     {
-      label: 'Quit',
+      label: 'Quit Application',
       click: async (): Promise<void> => {
         app.quit()
+        if (process.platform == 'darwin') { // force quit on mac for some reason
+          app.exit()
+        }
       }
     }
   ])

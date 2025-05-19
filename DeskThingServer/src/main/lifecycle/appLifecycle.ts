@@ -7,7 +7,7 @@ import { setupTray } from '../system/tray'
 import { setupDock } from '../system/dock'
 import { setupIpcHandlers } from '../ipc/ipcManager'
 import { loadModules } from './moduleLoader'
-import { getMainWindow, closeLoadingWindow } from '../windows/windowManager'
+import { getMainWindow, closeLoadingWindow, buildMainWindow } from '../windows/windowManager'
 import { nextTick } from 'node:process'
 import { updateLoadingStatus } from '@server/windows/loadingWindow'
 
@@ -21,9 +21,9 @@ export async function initializeAppLifecycle(): Promise<void> {
   // Set up platform-specific UI elements
   if (process.platform === 'darwin') {
     setupDock()
-  } else {
-    setupTray()
   }
+
+  setupTray()
 
   // Set app ID for Windows
   app.setAppUserModelId('com.deskthing')
@@ -42,7 +42,7 @@ export async function initializeAppLifecycle(): Promise<void> {
     updateLoadingStatus('Creating main window')
 
     // Create main window after loading is complete
-    const mainWindow = getMainWindow()
+    const mainWindow = buildMainWindow()
 
     // Close loading window once main window is ready
     mainWindow.once('ready-to-show', () => {
@@ -54,8 +54,12 @@ export async function initializeAppLifecycle(): Promise<void> {
 
   // Handle window recreation on macOS
   app.on('activate', function () {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      getMainWindow()
+    console.log('Handling recreation on MacOS')
+    const windows = BrowserWindow.getAllWindows()
+    if (windows.length === 0) {
+      buildMainWindow()
+    } else {
+      console.log(`Not creating due to ${windows.length} already existing. The window is `, windows.map((w) => w.getTitle()))
     }
   })
 
