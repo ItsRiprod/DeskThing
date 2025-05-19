@@ -7,7 +7,8 @@ import {
   IconUpload,
   IconDownload,
   IconLoading,
-  IconRefresh
+  IconRefresh,
+  IconLogoGear
 } from '@renderer/assets/icons'
 import { useClientStore, useReleaseStore, usePageStore } from '@renderer/stores'
 import MainElement from '@renderer/nav/MainElement'
@@ -99,6 +100,17 @@ const ClientDownloads: React.FC = () => {
     handleDownloadClick(release.updateUrl)
   }
 
+  const formatSize = (size: number): string => {
+    if (size < 1024) {
+      return `${size} B`
+    } else if (size < 1024 * 1024) {
+      return `${(size / 1024).toFixed(2)} KB`
+    } else {
+      return `${(size / (1024 * 1024)).toFixed(2)} MB`
+    }
+  }
+
+
   return (
     <div className="flex h-full w-full">
       <ProgressOverlay
@@ -160,20 +172,36 @@ const ClientDownloads: React.FC = () => {
               clientReleases.map((release) => (
                 <div
                   key={release.id}
-                  className="flex bg-zinc-900 rounded-lg justify-between items-center p-2"
+                  className="flex hover:bg-zinc-800 bg-zinc-900 rounded-lg justify-between items-center p-2"
                 >
-                  <div>
-                    <h1 className="text-xl">{release.label}</h1>
-                    <p className="text-sm text-gray-500">{release.downloads} downloads</p>
+                  <div className="flex gap-4 items-center">
+                    {release.icon ? (
+                      <img src={release.icon} alt={release.label} className="w-12 h-12 rounded" />
+                    ) : (
+                      <div className="w-12 h-12 rounded items-center flex justify-center">
+                        <IconLogoGear className="text-white w-12 h-12" />
+                      </div>
+                    )}
+                    <div>
+                      <h1 className="text-xl">{release.label}</h1>
+                      <div className="flex gap-2 text-sm text-gray-500">
+                        <p>v{release.version}</p>
+                        <p>•</p>
+                        <p>By {release.author}</p>
+                        <p>•</p>
+                        <p>{release.downloads || 0} downloads</p>
+                      </div>
+                      <p className="text-sm text-gray-400">{release.description}</p>
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     <Button
-                      className="group gap-2"
-                      onClick={() => handleDownloadLatestClick(release)}
+                      className={`${loading ? 'text-gray-600' : 'group'} gap-2`}
                       disabled={loading}
+                      onClick={() => handleDownloadLatestClick(release)}
                     >
-                      <p className="group-hover:block hidden text-center flex-grow">
-                        Download Latest
+                      <p className="group-hover:block hidden text-center flex-grow text-nowrap">
+                        Download Latest ({release.size ? formatSize(release.size) : 'Unknown'})
                       </p>
                       {loading ? (
                         <IconLoading />
