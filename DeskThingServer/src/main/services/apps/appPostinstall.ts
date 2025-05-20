@@ -3,7 +3,9 @@ import { progressBus } from '../events/progressBus'
 import { getAppFilePath, getManifest } from './appUtils'
 import { spawn } from 'child_process'
 import { join } from 'path'
-import { stat } from 'fs/promises'
+import { rename, stat } from 'fs/promises'
+import { app } from 'electron'
+import { existsSync } from 'fs'
 
 export const runPostInstall = async (): Promise<void> => {
   progressBus.start(
@@ -27,7 +29,17 @@ export const runPostInstall = async (): Promise<void> => {
   try {
     await stat(scriptPath) // will throw if the path doesn't exist
 
-    const child = spawn('node', ['--experimental-modules', scriptPath], {
+    const mjsScriptPath = scriptPath.replace(/\.js$/, '.mjs')
+
+    // Only rename if it's not already an .mjs file
+    if (scriptPath !== mjsScriptPath) {
+      // Check if the file already exists (from a previous attempt)
+      if (!existsSync(mjsScriptPath)) {
+        await rename(scriptPath, mjsScriptPath)
+      }
+    }
+
+    const child = spawn(app.getPath('exe'), ['--experimental-modules', mjsScriptPath], {
       cwd: extractedPath,
       stdio: ['pipe', 'pipe', 'pipe'],
       env: {
