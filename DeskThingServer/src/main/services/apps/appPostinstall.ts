@@ -1,10 +1,9 @@
 import { ProgressChannel } from '@shared/types'
 import { progressBus } from '../events/progressBus'
 import { getAppFilePath, getManifest } from './appUtils'
-import { spawn } from 'child_process'
+import { fork } from 'child_process'
 import { join } from 'path'
 import { mkdir, rename, stat } from 'fs/promises'
-import { app } from 'electron'
 import { existsSync } from 'fs'
 import logger from '@server/utils/logger'
 import { handleError } from '@server/utils/errorHandler'
@@ -76,13 +75,9 @@ export const runPostInstall = async (appId?: string): Promise<void> => {
       }
     }
 
-    const exePath = app.getPath('exe') || process.execPath || 'node'
-
-    logger.debug(`Using path ${exePath} for NodeJS instance`)
-
-    const child = spawn(exePath, [mjsScriptPath], {
+    const child = fork(mjsScriptPath, {
       cwd: extractedPath,
-      stdio: ['pipe', 'pipe', 'pipe'],
+      silent: true,
       env: {
         ...process.env
       }
