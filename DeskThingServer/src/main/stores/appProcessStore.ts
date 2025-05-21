@@ -19,6 +19,7 @@ import { readFile, stat, writeFile } from 'node:fs/promises'
 import { translateLegacyTypeRequest } from '@server/services/apps/legacyAppComs'
 import { coerce, lt } from 'semver'
 import { EventEmitter } from 'node:events'
+import { handleError } from '@server/utils/errorHandler'
 
 export class AppProcessStore
   extends EventEmitter<AppProcessEvents>
@@ -186,10 +187,10 @@ export class AppProcessStore
   private setupProcessErrorHandling(appName: string, process: Worker): void {
     // Handle uncaught exceptions in the worker thread
     process.on('error', (error) => {
-      Logger.error(`Process ${appName} encountered an error`, {
+      Logger.error(`Process ${appName} encountered the error: ${handleError(error)}`, {
         source: 'AppProcessStore',
         function: 'spawnProcess',
-        error: error instanceof Error ? error : new Error(String(error))
+        error: error instanceof Error ? error : new Error(handleError(error))
       })
 
       // Just emit the error event but don't let it propagate up
@@ -198,10 +199,10 @@ export class AppProcessStore
       // Attempt to gracefully terminate the process
       try {
         this.terminateProcess(appName).catch((err) => {
-          Logger.error(`Failed to terminate process ${appName} after error`, {
+          Logger.error(`Failed to terminate process ${appName} after error ${handleError(err)}`, {
             source: 'AppProcessStore',
             function: 'setupProcessErrorHandling',
-            error: err instanceof Error ? err : new Error(String(err))
+            error: err instanceof Error ? err : new Error(handleError(err))
           })
         })
       } catch (terminateError) {

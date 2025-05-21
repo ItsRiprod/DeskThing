@@ -95,6 +95,8 @@ export interface AppStoreClass extends StoreInterface {
   run(name: string): Promise<boolean>
   start(name: string): Promise<boolean>
 
+  runPostinstallScript(appId?: string): Promise<boolean>
+
   /**
    * Runs the currently staged app
    * @returns Promise<void>

@@ -191,11 +191,11 @@ export async function setupFirewall(port: number): Promise<void> {
       LOGGING_LEVELS.ERROR,
       `FIREWALL: Error encountered trying to setup firewall for ${port}! Run administrator and try again`
     )
-    progressBus.error(
+    progressBus.warn(
       ProgressChannel.FIREWALL,
       'Configure Firewall',
-      'Error in firewall',
-      error instanceof Error ? error.message : 'Unknown error'
+      error instanceof Error ? error.message : String(error),
+      'Error in Firewall Setup'
     )
   }
 

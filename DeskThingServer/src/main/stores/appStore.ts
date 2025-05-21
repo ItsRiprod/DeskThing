@@ -32,7 +32,7 @@ import {
   stageAppFileType
 } from '@server/services/apps/appInstaller'
 import { loadAndRunEnabledApps } from '@server/services/apps/appRunner'
-import { setAppData, setAppsData } from '../services/files/appFileService'
+import { deleteAppPath, setAppData, setAppsData } from '../services/files/appFileService'
 
 // // Validation
 import { sanitizeAppMeta } from '@server/services/apps/appValidator'
@@ -40,6 +40,7 @@ import { AuthStoreClass } from '@shared/stores/authStore'
 import { nextTick } from 'node:process'
 import { progressBus } from '@server/services/events/progressBus'
 import { runPostInstall } from '@server/services/apps/appPostinstall'
+import { handleError } from '@server/utils/errorHandler'
 
 export class AppStore implements CacheableStore, AppStoreClass {
   private apps: Record<string, App> = {}
@@ -117,7 +118,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
 
   // Could be non-fatal
   private handleProcessError(appName: string, error?: string): void {
-    Logger.error(`Process error for ${appName}: ${error || 'Unknown error'}`, {
+    Logger.error(`Process error for ${appName}: ${handleError(error)}`, {
       source: 'AppStore',
       function: 'handleProcessError',
       domain: appName
@@ -126,7 +127,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
 
   // Always runs if the process exists
   private handleProcessExit(appName: string, error?: string): void {
-    Logger.error(`Process error for ${appName}: ${error || 'Unknown error'}`, {
+    Logger.error(`Process exited for ${appName}: ${handleError(error)}`, {
       source: 'AppStore',
       function: 'handleProcessError',
       domain: appName
@@ -410,11 +411,13 @@ export class AppStore implements CacheableStore, AppStoreClass {
 
     await this.notifyListeners('purging', { appName: name })
     // Wait for the app to fully purge
-    await new Promise((resolve) => setTimeout(resolve, 500))
+    await new Promise((resolve) => setTimeout(resolve, 3000))
 
     // Forcibly kill it
     await this.disable(name)
     await this.remove(name)
+
+    await this.deleteAppFile(name)
     return true
   }
 
@@ -431,6 +434,20 @@ export class AppStore implements CacheableStore, AppStoreClass {
     this.order = this.order.filter((app) => app !== name)
     await this.saveAppsToFile()
     return true
+  }
+
+  private async deleteAppFile(name: string): Promise<boolean> {
+    try {
+      await deleteAppPath(name)
+      return true
+    } catch (error) {
+      Logger.error(`Failed to delete app file ${handleError(error)} `, {
+        source: 'AppStore',
+        function: 'deleteAppFile',
+        domain: name
+      })
+      return false
+    }
   }
 
   reorder(order: string[]): void {
@@ -653,6 +670,20 @@ export class AppStore implements CacheableStore, AppStoreClass {
     return true
   }
 
+  public runPostinstallScript = async (appId?: string): Promise<boolean> => {
+    try {
+      await runPostInstall(appId)
+      return true
+    } catch (error) {
+      Logger.error('Error running postinstall script', {
+        source: 'AppStore',
+        function: 'runPostinstallScript',
+        error: error as Error
+      })
+      return false
+    }
+  }
+
   /**
    * Runs the currently staged app
    * @returns Promise<void>
@@ -684,9 +715,9 @@ export class AppStore implements CacheableStore, AppStoreClass {
 
     try {
       // Runs the postinstall script
-      await runPostInstall()
+      await this.runPostinstallScript()
     } catch (error) {
-      progressBus.error(
+      progressBus.warn(
         ProgressChannel.ST_APP_INITIALIZE,
         'Error running app',
         'Error while trying to run staged app'
@@ -758,8 +789,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
         Logger.error(`[store.addApp]: ${e.message}`)
         progressBus.error(ProgressChannel.ST_APP_INSTALL, 'Error staging app', e.message)
       } else {
-        Logger.error(`[store.addApp]: Unknown error ` + String(e))
-        progressBus.error(ProgressChannel.ST_APP_INSTALL, 'Error staging app', String(e))
+        progressBus.error(ProgressChannel.ST_APP_INSTALL, 'Error staging app', handleError(e))
       }
 
       return

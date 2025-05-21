@@ -4,6 +4,7 @@ import EventEmitter from 'node:events'
 import electronUpdater, { type AppUpdater } from 'electron-updater'
 import Logger from '@server/utils/logger'
 import { LOGGING_LEVELS } from '@deskthing/types'
+import { handleError } from '@server/utils/errorHandler'
 
 export class UpdateStore
   extends EventEmitter<UpdateStoreEvents>
@@ -121,7 +122,7 @@ export class UpdateStore
         this.setUpdateStatus(updateInfo)
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      const errorMessage = handleError(error)
       const errorStatus: UpdateInfoType = {
         updateAvailable: false,
         updateDownloaded: false,
@@ -142,7 +143,7 @@ export class UpdateStore
         await this._autoUpdater.downloadUpdate()
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      const errorMessage = handleError(error)
       const errorStatus: UpdateInfoType = {
         updateAvailable: true,
         updateDownloaded: false,

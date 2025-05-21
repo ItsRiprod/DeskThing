@@ -55,7 +55,7 @@ export async function downloadAndInstallClient(url: string): Promise<void> {
     if (!response.ok) {
       const errorMessage = `Failed to download client: ${response.status}`
       logger.error(errorMessage)
-      progressBus.error(
+      progressBus.warn(
         ProgressChannel.FN_CLIENT_INSTALL,
         'Download-Client',
         'Download failed',

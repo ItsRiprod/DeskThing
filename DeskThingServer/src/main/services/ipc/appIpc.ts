@@ -191,6 +191,38 @@ export const appHandler: {
     return null
   },
 
+  postinstall: async (data) => {
+    progressBus.startOperation(
+      ProgressChannel.IPC_APPS,
+      'Running Postinstall',
+      'Initializing Postinstall Script',
+      [
+        {
+          channel: ProgressChannel.FN_APP_POSTINSTALL,
+          weight: 10
+        }
+      ]
+    )
+
+    const appStore = await storeProvider.getStore('appStore')
+    const result = await appStore.runPostinstallScript(data.payload)
+
+    if (!result) {
+      progressBus.warn(
+        ProgressChannel.IPC_APPS,
+        'Check logs for details',
+        'Something went wrong during the postinstall process',
+        'Error Running Postinstall'
+      )
+
+      await new Promise((resolve) => setTimeout(resolve, 5000))
+    }
+
+    progressBus.complete(ProgressChannel.IPC_APPS, 'Postinstall Completed', 'Running Postinstall')
+
+    return result
+  },
+
   add: async (data) => {
     progressBus.startOperation(ProgressChannel.IPC_APPS, 'Installing App', 'Installing App', [
       {
@@ -221,12 +253,28 @@ export const appHandler: {
   },
 
   staged: async (data) => {
+    progressBus.startOperation(ProgressChannel.IPC_APPS, 'Initializing App', 'Running Staged', [
+      {
+        channel: ProgressChannel.ST_APP_INITIALIZE,
+        weight: 100
+      }
+    ])
     const appStore = await storeProvider.getStore('appStore')
     Logger.log(
       LOGGING_LEVELS.LOG,
       `Handling staged app with id "${data.payload.appId || 'Unknwon'}" and overwrite set to ${data.payload.overwrite ? 'true' : 'false'}...`
     )
-    return await appStore.runStagedApp({ ...data.payload })
+    try {
+      await appStore.runStagedApp({ ...data.payload })
+    } catch (error) {
+      progressBus.warn(
+        ProgressChannel.IPC_APPS,
+        'Error Initializing App',
+        error instanceof Error ? error.message : String(error),
+        'Error Initializing App'
+      )
+    }
+    progressBus.complete(ProgressChannel.IPC_APPS, 'Initializing App', 'App Initialized')
   },
 
   'user-data-response': async (data) => {

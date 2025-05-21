@@ -24,6 +24,7 @@ import {
 import { ExpressServer } from './expressWorker'
 import { WebsocketPlatformIPC } from '@shared/types'
 import { PlatformIDs } from '@shared/stores/platformStore'
+import { handleError } from '@server/utils/errorHandler'
 
 type AdditionalOptions = {
   port?: number
@@ -432,9 +433,9 @@ export class WSPlatform {
           data:
             error instanceof Error
               ? error
-              : new Error('Unknown error occurred broadcasting data to websocket clients', {
-                  cause: error
-                })
+              : new Error('Unknown error occurred broadcasting data to websocket clients' + handleError(error), {
+                cause: error
+              })
         })
       }
     })
@@ -507,10 +508,7 @@ export class WSPlatform {
       console.error('[updateClient] Error updating client:', error)
       this.sendToParent({
         event: PlatformEvent.ERROR,
-        data:
-          error instanceof Error
-            ? error
-            : new Error('[updateClient] Unknown error occurred updating client', { cause: error })
+        data: new Error(handleError(error))
       })
     }
   }

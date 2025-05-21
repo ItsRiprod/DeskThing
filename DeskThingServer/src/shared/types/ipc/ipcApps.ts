@@ -25,6 +25,7 @@ export enum IPC_APP_TYPES {
   USER_DATA_RESPONSE = 'user-data-response',
   SELECT_ZIP_FILE = 'select-zip-file',
   DEV_ADD_APP = 'dev-add-app',
+  POSTINSTALL = 'postinstall',
   SEND_TO_APP = 'send-to-app',
   APP_ORDER = 'app-order',
   ICON = 'icon'
@@ -86,6 +87,10 @@ export type AppIPCData = {
       payload: string
     }
   | {
+      type: IPC_APP_TYPES.POSTINSTALL
+      payload: string
+    }
+  | {
       type: IPC_APP_TYPES.ADD
       payload: { filePath?: string; meta?: AppReleaseSingleMeta }
     }
@@ -130,6 +135,7 @@ export type AppHandlerReturnMap = {
   [IPC_APP_TYPES.ZIP]: { set: AppManifest | null }
   [IPC_APP_TYPES.URL]: { set: AppManifest | null }
   [IPC_APP_TYPES.ADD]: { set: StagedAppManifest | null }
+  [IPC_APP_TYPES.POSTINSTALL]: { set: boolean }
   [IPC_APP_TYPES.STAGED]: { set: void }
   [IPC_APP_TYPES.USER_DATA_RESPONSE]: { set: void }
   [IPC_APP_TYPES.SELECT_ZIP_FILE]: { set: { path: string; name: string } | null }

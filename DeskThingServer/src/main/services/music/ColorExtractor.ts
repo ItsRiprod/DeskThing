@@ -4,6 +4,7 @@ import Logger from '@server/utils/logger'
 import { join } from 'node:path'
 import { promises } from 'node:fs'
 import { app } from 'electron'
+import { handleError } from '@server/utils/errorHandler'
 
 /**
  * Service for extracting color information from images
@@ -19,7 +20,7 @@ export class ColorExtractor {
       const imageBuffer = await this.getImageBuffer(input)
       return await this.processImageBuffer(imageBuffer)
     } catch (error) {
-      Logger.error('Failed to extract color from image', {
+      Logger.error(`Failed to extract color from image ${handleError(error)}`, {
         error: error as Error,
         source: 'ColorExtractor'
       })
@@ -101,7 +102,7 @@ export class ColorExtractor {
       hexa: '#000000ff',
       isDark: true,
       isLight: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: error instanceof Error ? error.message : handleError(error)
     }
   }
 }

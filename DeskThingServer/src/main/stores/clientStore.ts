@@ -71,7 +71,7 @@ export class ClientStore
     const result = await this.refreshClient()
 
     if (!result) {
-      progressBus.error(ProgressChannel.ST_CLIENT_DOWNLOAD, 'Load-Client', 'Client is not valid')
+      progressBus.warn(ProgressChannel.ST_CLIENT_DOWNLOAD, 'Load-Client', 'Client is not valid')
     }
 
     progressBus.complete(

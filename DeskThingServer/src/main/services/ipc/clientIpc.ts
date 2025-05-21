@@ -12,6 +12,7 @@ import { storeProvider } from '@server/stores/storeProvider'
 import { progressBus } from '@server/services/events/progressBus'
 import { PlatformIDs } from '@shared/stores/platformStore'
 import { getClientWindow } from '@server/windows/windowManager'
+import { handleError } from '@server/utils/errorHandler'
 
 /**
  * The `clientHandler` object is a mapping of client IPC (Inter-Process Communication) data types to handler functions. These handlers are responsible for processing various client-related requests, such as pinging clients, handling URL-based web app downloads, configuring devices, managing client manifests, and more.
@@ -58,11 +59,11 @@ export const clientHandler: {
     try {
       await clientStore.loadClientFromZip(data.payload)
     } catch (error) {
-      progressBus.error(
+      progressBus.warn(
         ProgressChannel.IPC_CLIENT,
         'zip',
         'Error loading zip file',
-        error instanceof Error ? error.message : 'Unknown error'
+        handleError(error)
       )
     }
 
@@ -91,11 +92,11 @@ export const clientHandler: {
     try {
       await clientStore.loadClientFromURL(data.payload)
     } catch (error) {
-      progressBus.error(
+      progressBus.warn(
         ProgressChannel.IPC_CLIENT,
         'url',
         'Error loading URL',
-        error instanceof Error ? error.message : 'Unknown error'
+        handleError(error)
       )
     }
 
@@ -125,15 +126,7 @@ export const clientHandler: {
         source: 'clientHandler',
         error: error as Error
       })
-      if (error instanceof Error) {
-        return error.message
-      } else if (error instanceof String) {
-        return String(error)
-      } else if (error instanceof Object) {
-        return JSON.stringify(error)
-      } else {
-        return 'Unknown error'
-      }
+      return handleError(error)
     }
   },
 

@@ -24,6 +24,7 @@ import { join } from 'node:path'
 import { readFile, writeFile } from 'node:fs/promises'
 import { progressBus } from '@server/services/events/progressBus'
 import { ProgressChannel } from '@shared/types'
+import { handleError } from '@server/utils/errorHandler'
 
 export class ADBPlatform extends EventEmitter<PlatformEvents> implements PlatformInterface {
   private adbService: ADBService
@@ -116,7 +117,7 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
                 progressBus.error(
                   ProgressChannel.PLATFORM_CHANNEL,
                   'Error pushing staged client',
-                  error instanceof Error ? error.message : 'Unknown error',
+                  handleError(error),
                   'ADB Error'
                 )
               }
@@ -488,7 +489,7 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
         PlatformEvent.ERROR,
         error instanceof Error
           ? error
-          : new Error('Unknown error occurred updating client', { cause: error })
+          : new Error('Unknown error occurred updating client: ' + handleError(error), { cause: error })
       )
     }
     return undefined

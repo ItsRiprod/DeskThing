@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { LOGGING_LEVELS } from '@deskthing/types'
-import { Log } from '@shared/types'
+import { IpcRendererCallback, Log } from '@shared/types'
 
 export interface AuthScopes {
   [key: string]: {
@@ -35,6 +35,10 @@ interface NotificationStoreState {
   requestQueue: Request[]
   logs: Log[]
   issues: Task[]
+  initialized: boolean
+
+  // Initialization
+  initialize: () => Promise<void>
 
   // Logs
 
@@ -58,7 +62,29 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
   requestQueue: [],
   logs: [],
   issues: [],
+  initialized: false,
 
+  // Initialization
+  initialize: async (): Promise<void> => {
+    if (get().initialized) return
+
+    const handleLog: IpcRendererCallback<'log'> = (_event, log) => {
+      get().addLog(log)
+    }
+
+    window.electron.ipcRenderer.on('log', handleLog)
+
+    const handleDisplayUserForm: IpcRendererCallback<'display-user-form'> = async (
+      _event,
+      { requestId, scope }
+    ): Promise<void> => {
+      get().addRequest(requestId, scope)
+    }
+    window.electron.ipcRenderer.on('display-user-form', handleDisplayUserForm)
+    
+
+    set({ initialized: true })
+  },
   // Logs
 
   readLog: async (index?: number): Promise<void> => {

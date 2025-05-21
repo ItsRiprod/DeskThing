@@ -5,6 +5,8 @@ import { IconDownload, IconLink } from '@renderer/assets/icons'
 import { useAppStore, useNotificationStore, usePageStore } from '@renderer/stores'
 import App from '@renderer/components/App'
 import MainElement from '@renderer/nav/MainElement'
+import { useChannelProgress } from '@renderer/hooks/useProgress'
+import { ProgressChannel } from '@shared/types'
 
 /**
  * The `AppsList` component is the main component that renders the list of installed apps in the application.
@@ -14,6 +16,7 @@ import MainElement from '@renderer/nav/MainElement'
  * The component also includes a sidebar with a button to navigate to the downloads page.
  */
 const AppsList: React.FC = () => {
+  useChannelProgress(ProgressChannel.IPC_APPS)
   const appsList = useAppStore((appStore) => appStore.appsList)
   const order = useAppStore((appStore) => appStore.order)
   const setOrder = useAppStore((appStore) => appStore.setOrder)

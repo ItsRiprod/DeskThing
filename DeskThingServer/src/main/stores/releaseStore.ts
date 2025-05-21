@@ -501,7 +501,7 @@ export class ReleaseStore implements CacheableStore, ReleaseStoreClass {
         source: 'releaseStore',
         error: error as Error
       })
-      progressBus.error(
+      progressBus.warn(
         ProgressChannel.REFRESH_CLIENT_RELEASES,
         'Failed to process client releases',
         error instanceof Error ? error.message : String(error)

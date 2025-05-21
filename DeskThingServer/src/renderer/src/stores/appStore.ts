@@ -23,11 +23,12 @@ interface AppStoreState {
   runStagedApp: (overwrite?: boolean) => Promise<void>
   setOrder: (order: string[]) => void
   addAppToList: (appName: string) => void
-  disableApp: (appName: string) => void
-  stopApp: (appName: string) => void
-  runApp: (appName: string) => void
-  enableApp: (appName: string) => void
-  purgeApp: (appName: string) => void
+  disableApp: (appName: string) => Promise<boolean>
+  stopApp: (appName: string) => Promise<boolean>
+  runApp: (appName: string) => Promise<boolean>
+  runPostinstall: (appName: string) => Promise<boolean>
+  enableApp: (appName: string) => Promise<boolean>
+  purgeApp: (appName: string) => Promise<boolean>
   getAppData: (appName: string) => Promise<SavedData | null>
   setAppData: (appName: string, data: SavedData) => void
   getAppSettings: (appName: string) => Promise<AppSettings | null>
@@ -124,7 +125,7 @@ const useAppStore = create<AppStoreState>((set, get) => ({
     set({ order })
   },
 
-  // Adds a new app to the list
+  // Adds a new app to the list on just the frontend
   addAppToList: (appName: string): void => {
     set((state) => {
       let newAppName = appName
@@ -145,45 +146,28 @@ const useAppStore = create<AppStoreState>((set, get) => ({
     })
   },
   // Disables an app (set enabled to false)
-  disableApp: (appName: string): void => {
-    window.electron.app.disable(appName)
-    set((state) => ({
-      appsList: state.appsList.map((app) =>
-        app.name === appName ? { ...app, enabled: false } : app
-      )
-    }))
-    window.electron.app.get()
+  disableApp: async (appName: string): Promise<boolean> => {
+    return await window.electron.app.disable(appName)
   },
 
-  purgeApp: (appName: string): void => {
-    window.electron.app.purge(appName)
+  purgeApp: async (appName: string): Promise<boolean> => {
+    return await window.electron.app.purge(appName)
   },
 
-  stopApp: (appName: string): void => {
-    window.electron.app.stop(appName)
-    set((state) => ({
-      appsList: state.appsList.map((app) =>
-        app.name === appName ? { ...app, running: false } : app
-      )
-    }))
+  stopApp: async (appName: string): Promise<boolean> => {
+    return await window.electron.app.stop(appName)
   },
 
-  enableApp: (appName: string): void => {
-    window.electron.app.enable(appName)
-    set((state) => ({
-      appsList: state.appsList.map((app) =>
-        app.name === appName ? { ...app, enabled: true } : app
-      )
-    }))
+  enableApp: async (appName: string): Promise<boolean> => {
+    return await window.electron.app.enable(appName)
   },
 
-  runApp: (appName: string): void => {
-    window.electron.app.run(appName)
-    set((state) => ({
-      appsList: state.appsList.map((app) =>
-        app.name === appName ? { ...app, running: true } : app
-      )
-    }))
+  runApp: async (appName: string): Promise<boolean> => {
+    return await window.electron.app.run(appName)
+  },
+
+  runPostinstall: (appName: string): Promise<boolean> => {
+    return window.electron.app.runPostinstall(appName)
   },
 
   getAppData: async (appName: string): Promise<SavedData | null> => {

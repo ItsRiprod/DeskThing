@@ -1,7 +1,7 @@
 import { IconCheckCircle, IconLoading, IconTrash } from '@renderer/assets/icons'
 import { useProgressStore } from '@renderer/stores/progressStore'
 import { ProgressEvent, ProgressStatus } from '@shared/types'
-import React from 'react'
+import React, { useState } from 'react'
 import Button from './Button'
 
 interface LogEntryProps {
@@ -16,11 +16,20 @@ export const LogEntry: React.FC<LogEntryProps> = ({
   allowClosing = false
 }) => {
   const clearProgress = useProgressStore((state) => state.clearProgress)
+  const pastEvents = useProgressStore((state) => state.pastEvents)
+  const pastMessages = pastEvents.get(progressEvent.channel)
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  const handleExpand = (): void => {
+    setIsExpanded((prev) => !prev)
+  }
 
   return (
-    <div
+    <button
       key={progressEvent.id}
-      className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700 group relative"
+      onClick={handleExpand}
+      disabled={!allowClosing}
+      className="bg-zinc-800/50 transition-[height] flex flex-col rounded-lg p-4 border border-zinc-700 group relative"
     >
       <div className="flex items-center gap-3 mb-2">
         <div className="h-5 w-5 flex-shrink-0">
@@ -35,13 +44,13 @@ export const LogEntry: React.FC<LogEntryProps> = ({
           )}
         </div>
         <div className="flex-grow">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between gap-2 items-center">
             <span className="text-sm font-medium text-zinc-300">{progressEvent.operation}</span>
             <span className="text-xs text-zinc-500">
-              {new Date(progressEvent.timestamp || 0).toLocaleString()}
+              {new Date(progressEvent.timestamp || 0).toLocaleTimeString()}
             </span>
           </div>
-          <p className="text-sm text-zinc-400">{progressEvent.message}</p>
+          <p className="text-sm justify-self-start text-zinc-400">{progressEvent.message}</p>
           {progressEvent.error && (
             <p className="text-sm text-red-500 mt-1">{progressEvent.error}</p>
           )}
@@ -77,6 +86,15 @@ export const LogEntry: React.FC<LogEntryProps> = ({
           </Button>
         </div>
       )}
-    </div>
+      {isExpanded && (
+        <div className="animate-slide-in flex flex-col-reverse justify-start items-start mt-2 text-xs text-zinc-500">
+          {pastMessages?.map((message, index) => (
+            <p className="break-words text-wrap" key={index}>
+              {message}
+            </p>
+          ))}
+        </div>
+      )}
+    </button>
   )
 }

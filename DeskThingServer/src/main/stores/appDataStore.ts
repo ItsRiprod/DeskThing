@@ -33,8 +33,7 @@ import EventEmitter from 'node:events'
 
 export class AppDataStore
   extends EventEmitter<AppStoreEvents>
-  implements CacheableStore, AppDataStoreClass
-{
+  implements CacheableStore, AppDataStoreClass {
   private appDataCache: Record<string, AppDataInterface> = {}
 
   private functionTimeouts: Record<string, NodeJS.Timeout> = {}
@@ -355,6 +354,11 @@ export class AppDataStore
         function: 'purgeAppData'
       })
       await purgeAppData(name)
+      Logger.debug(`Successfully purged ${name}`, {
+        source: 'AppDataStore',
+        domain: name,
+        function: 'purgeAppData'
+      })
       return true
     } catch (error) {
       Logger.error('There was an error purging app data: ', {
@@ -686,7 +690,9 @@ export class AppDataStore
     await this.saveData(app, true)
   }
 
-  // merge with existing settings
+  /**
+   * Merges app settings with the existing settings shallowly. Any overlap, the new settings will overwrite the existing settings.
+   */
   addSettings = async (
     app: string,
     settings: AppSettings,
@@ -755,6 +761,14 @@ export class AppDataStore
 
     // Ensures it is deleted
     await overwriteData(app, curData)
+
+    if (this.appDataCache[app].settings) {
+      this.appStore.sendDataToApp(app, {
+        type: DESKTHING_EVENTS.SETTINGS,
+        request: '',
+        payload: this.appDataCache[app].settings
+      })
+    }
   }
 
   /**

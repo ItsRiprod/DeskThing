@@ -6,6 +6,7 @@ import { app } from 'electron'
 import { join } from 'path'
 import fs from 'node:fs'
 import Logger from '@server/utils/logger'
+import { handleError } from '@server/utils/errorHandler'
 
 class FileServiceError extends Error {
   constructor(
@@ -247,10 +248,12 @@ export const deleteFile = async (filename: string): Promise<void> => {
     try {
       const fileStats = await fs.promises.stat(filePath)
       if (!fileStats.isFile()) {
-        throw new Error('[deleteFile] Path exists but is not a file: ' + filePath)
+        // If it's a directory, we'll remove it recursively
+        await fs.promises.rm(filePath, { recursive: true, force: true })
+        return
       }
 
-      await fs.promises.unlink(filePath)
+      await fs.promises.rm(filePath, { recursive: true })
     } catch (error: unknown) {
       if (
         typeof error === 'object' &&
@@ -264,7 +267,7 @@ export const deleteFile = async (filename: string): Promise<void> => {
       if (error instanceof Error) {
         throw new Error('[deleteFile] Error deleting file: ' + error.message)
       } else {
-        throw new Error('[deleteFile] Unknown error deleting file: ', { cause: error })
+        throw new Error('[deleteFile] Unknown error deleting file: ' + handleError(error), { cause: error })
       }
     }
   })

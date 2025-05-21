@@ -16,8 +16,10 @@
 import { App, LOGGING_LEVELS, AppManifest } from '@deskthing/types'
 import Logger from '@server/utils/logger'
 import { AppData } from '@shared/types'
-import { readFromFile, writeToFile } from './fileService'
+import { deleteFile, readFromFile, writeToFile } from './fileService'
 import { verifyAppInstanceStructure, sanitizeAppStructure } from '../apps/appValidator'
+import { handleError } from '@server/utils/errorHandler'
+import { join } from 'node:path'
 
 const defaultData: AppData = {}
 
@@ -39,11 +41,8 @@ const readData = async (): Promise<AppData> => {
     if (err instanceof Error) {
       Logger.log(LOGGING_LEVELS.WARN, '[ReadData] Failed with ' + err.message)
     } else {
-      Logger.log(
-        LOGGING_LEVELS.WARN,
-        '[ReadData] Failed with unknown error. See full logs for details'
-      )
-      console.error('Error reading data:', err)
+      Logger.warn(`[ReadData] Failed with ${handleError(err)}. See full logs for details`)
+      console.warn(err)
     }
     return defaultData
   }
@@ -66,7 +65,7 @@ const writeData = async (data: AppData): Promise<void> => {
 
     await writeToFile<AppData>(data, 'apps.json')
   } catch (err) {
-    Logger.error('[writeData] Error writing data' + err)
+    Logger.error('[writeData] Error writing data' + handleError(err))
     console.error('Error writing data:', err)
   }
 }
@@ -107,7 +106,10 @@ export const setAppData = async (newApp: Partial<App>): Promise<void> => {
         Logger.log(LOGGING_LEVELS.ERROR, `Failed to save app: ${error.message}`)
         console.error('App save error:', error.stack)
       } else {
-        Logger.log(LOGGING_LEVELS.ERROR, 'Failed to save app: Unknown error occurred')
+        Logger.log(
+          LOGGING_LEVELS.ERROR,
+          'Failed to save app: Unknown error occurred' + handleError(error)
+        )
         console.error('Unexpected app save error:', error)
       }
       return
@@ -179,6 +181,18 @@ export const getAppByName = async (appName: string): Promise<App | undefined> =>
   return foundApp
 }
 
+export const deleteAppPath = async (appName: string): Promise<boolean> => {
+  try {
+    const appFolder = join('apps', appName)
+    Logger.info(`[deleteAppPath]: Purging the folder ${appFolder}`)
+    await deleteFile(appFolder)
+    return true
+  } catch (error) {
+    Logger.error(`Failed to purge the folder ${appName}: ${handleError(error)}`)
+    return false
+  }
+}
+
 /**
  * Purges the app data from file.
  *
@@ -197,7 +211,7 @@ export const purgeAppConfig = async (appName: string): Promise<void> => {
     delete data[appName]
     await writeData(data)
   } catch (error) {
-    Logger.log(LOGGING_LEVELS.ERROR, `Failed to purge app ${appName}: ${error}`)
+    Logger.log(LOGGING_LEVELS.ERROR, `Failed to purge app ${appName}: ${handleError(error)}`)
     throw error
   }
 }

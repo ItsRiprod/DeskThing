@@ -13,13 +13,7 @@ const RequestDataListener = (): null => {
   getTaskList()
 
   useEffect(() => {
-    const handleDisplayUserForm: IpcRendererCallback<'display-user-form'> = async (
-      _event,
-      { requestId, scope }
-    ): Promise<void> => {
-      addRequest(requestId, scope)
-    }
-
+    
     const handleTasks: IpcRendererCallback<'taskList'> = async (_event, tasks): Promise<void> => {
       setAppTasks(tasks.source, tasks.taskList)
     }
@@ -35,7 +29,13 @@ const RequestDataListener = (): null => {
     ): Promise<void> => {
       setCurrentTask(task)
     }
-
+    
+    const handleDisplayUserForm: IpcRendererCallback<'display-user-form'> = async (
+      _event,
+      { requestId, scope }
+    ): Promise<void> => {
+      addRequest(requestId, scope)
+    }
     window.electron.ipcRenderer.on('display-user-form', handleDisplayUserForm)
     window.electron.ipcRenderer.on('taskList', handleTasks)
     window.electron.ipcRenderer.on('task', handleTask)

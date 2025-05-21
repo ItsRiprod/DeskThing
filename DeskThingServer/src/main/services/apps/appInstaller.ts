@@ -16,6 +16,7 @@ import { overwriteData } from '../files/dataFileService'
 // Stores
 import { storeProvider } from '@server/stores/storeProvider'
 import { progressBus } from '../events/progressBus'
+import { handleError } from '@server/utils/errorHandler'
 
 interface ExecuteStagedFileType {
   overwrite?: boolean
@@ -163,11 +164,7 @@ export const executeStagedFile = async ({
       error: error as Error
     })
 
-    progressBus.error(
-      ProgressChannel.FN_APP_INITIALIZE,
-      'Error Running App',
-      error instanceof Error ? error.message : 'Unknown error'
-    )
+    progressBus.error(ProgressChannel.FN_APP_INITIALIZE, 'Error Running App', handleError(error))
 
     throw error
   }
@@ -325,7 +322,7 @@ export const stageAppFile = async ({
 
     // Check if error
     if (!response.ok) {
-      const errorMessage = `Failed to download zip file: ${response.status}`
+      const errorMessage = `Failed to download zip file: ${response.status} ${response.statusText}`
       Logger.error(errorMessage, {
         function: 'stageAppFile',
         source: 'stageAppFile'
@@ -373,11 +370,11 @@ export const stageAppFile = async ({
     // Handle case where it's a local file upload
     try {
       if (!existsSync(filePath)) {
-        progressBus.error(ProgressChannel.FN_APP_INSTALL, 'File not found!', filePath)
+        progressBus.warn(ProgressChannel.FN_APP_INSTALL, 'File not found!', filePath)
         throw new Error(`Local file not found: ${path}`)
       }
       if (!filePath.toLowerCase().endsWith('.zip')) {
-        progressBus.error(ProgressChannel.FN_APP_INSTALL, 'File must be a .zip file')
+        progressBus.warn(ProgressChannel.FN_APP_INSTALL, 'File must be a .zip file')
         throw new Error(`File must be a .zip file: ${path}`)
       }
       progressBus.update(ProgressChannel.FN_APP_INSTALL, 'Copying file...', 90)
@@ -397,7 +394,7 @@ export const stageAppFile = async ({
           errorMessage
         )
       } else {
-        console.error(`[handleZipFromFile] Unknown error copying local file: ${error}`)
+        console.error(`[handleZipFromFile] Unknown error copying local file: ${handleError(error)}`)
         progressBus.error(
           ProgressChannel.FN_APP_INSTALL,
           'Download App',
@@ -435,7 +432,7 @@ export const stageAppFile = async ({
         resolve()
       } catch (error) {
         Logger.log(LOGGING_LEVELS.ERROR, `[handleZipFromFile]: Error extracting ${extractedPath}`)
-        progressBus.error(ProgressChannel.FN_APP_INSTALL, 'Extraction failed!')
+        progressBus.warn(ProgressChannel.FN_APP_INSTALL, 'Extraction failed!')
         reject(error)
       }
     })
@@ -448,7 +445,7 @@ export const stageAppFile = async ({
     progressBus.error(
       ProgressChannel.FN_APP_INSTALL,
       'Extraction failed!',
-      error instanceof Error ? error.message : 'Unknown error'
+      handleError(error)
     )
   }
 

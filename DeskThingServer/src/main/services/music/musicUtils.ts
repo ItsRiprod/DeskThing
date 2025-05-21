@@ -1,4 +1,5 @@
 import { ThemeColor } from '@deskthing/types'
+import { handleError } from '@server/utils/errorHandler'
 import sharp from 'sharp'
 
 export const getColorFromImage = async (input: string): Promise<ThemeColor> => {
@@ -44,7 +45,7 @@ export const getColorFromImage = async (input: string): Promise<ThemeColor> => {
       hexa: '#000000ff',
       isDark: true,
       isLight: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: handleError(error)
     }
   }
 }

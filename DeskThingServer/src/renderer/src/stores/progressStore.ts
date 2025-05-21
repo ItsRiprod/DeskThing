@@ -7,6 +7,7 @@ interface ProgressStore {
   initialized: boolean
   subscribed_channels: ProgressChannel[]
   currentProgressEvent: ProgressEvent | undefined
+  pastEvents: Map<ProgressChannel, string[]>
 
   // Actions
   initialize: () => Promise<void>
@@ -29,11 +30,16 @@ export const useProgressStore = create<ProgressStore>()((set, get) => ({
   currentProgressEvent: undefined,
   initialized: false,
   subscribed_channels: [],
+  pastEvents: new Map(),
 
   initialize: async () => {
     if (get().initialized) return
 
     window.electron.onProgress((event: ProgressEvent) => {
+      if (!get().subscribed_channels.includes(event.channel)) { // ignore any channels not subscribed to
+        console.log(`Ignoring channel ${event.channel}`)
+        return
+      }
       get().updateProgress(event)
     })
 
@@ -42,15 +48,17 @@ export const useProgressStore = create<ProgressStore>()((set, get) => ({
 
   subscribe_channel: (channel: ProgressChannel) =>
     set((state) => {
-      if (!state.subscribed_channels.includes(channel)) {
-        state.subscribed_channels.push(channel)
-      }
+      state.subscribed_channels.push(channel)
+      console.debug(`Subscribed to progress channel: ${channel}`, state.subscribed_channels)
       return { subscribed_channels: state.subscribed_channels }
     }),
 
   unsubscribe_channel: (channel: ProgressChannel) =>
     set((state) => {
-      state.subscribed_channels = state.subscribed_channels.filter((c) => c !== channel)
+      if (!state.subscribed_channels.includes(channel)) return state
+
+      state.subscribed_channels.splice(state.subscribed_channels.indexOf(channel), 1)
+      console.debug(`Unsubscribed from progress channel: ${channel}`, state.subscribed_channels)
       return { subscribed_channels: state.subscribed_channels }
     }),
 
@@ -59,35 +67,20 @@ export const useProgressStore = create<ProgressStore>()((set, get) => ({
     set((state) => {
       console.debug(`[${event.operation}] [${event.channel}]: ${event.message}`, event)
 
-      const existingProgress = state.progressMap.get(event.channel)
+      event.id = crypto.randomUUID()
 
-      // Create new progress state by merging existing state with new event data
-      const updatedProgress: ProgressEvent = {
-        // Keep existing values if available
-        ...existingProgress,
-        ...event,
-        // Use new progress if provided, otherwise keep existing
-        progress:
-          (event.progress ?? event.status == ProgressStatus.COMPLETE)
-            ? 100
-            : event.status == ProgressStatus.RUNNING
-              ? 0
-              : (existingProgress?.progress ?? 0),
-        // Merge metadata if both exist, otherwise use new or existing
-        metadata: event.metadata
-          ? { ...existingProgress?.metadata, ...event.metadata }
-          : existingProgress?.metadata,
-        isLoading: [ProgressStatus.INFO, ProgressStatus.RUNNING, ProgressStatus.WARN].includes(
-          event.status
-        ),
-        id: crypto.randomUUID(),
-        error: event.status === ProgressStatus.ERROR ? event.error : undefined,
-        timestamp: Date.now()
+      if (state.pastEvents.has(event.channel)) {
+        if (state.currentProgressEvent?.channel != event.channel) {
+          // state.pastEvents.delete(event.channel)
+        }
+        state.pastEvents.get(event.channel)?.push(`(${event.progress || 0}) ${event.message}`)
+      } else {
+        state.pastEvents.set(event.channel, [`(${event.progress || 0}) ${event.message}`])
       }
 
-      const newMap = new Map(state.progressMap)
-      newMap.set(event.channel, updatedProgress)
-      return { progressMap: newMap, currentProgressEvent: updatedProgress }
+
+      state.progressMap.set(event.channel, event)
+      return { progressMap: state.progressMap, currentProgressEvent: event }
     }),
 
   clearProgress: (channel: ProgressChannel) =>

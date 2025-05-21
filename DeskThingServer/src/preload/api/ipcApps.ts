@@ -91,6 +91,13 @@ export const app = {
       payload: appId
     }),
 
+  runPostinstall: async (appId: string): Promise<boolean> =>
+    await sendCommand({
+      kind: IPC_HANDLERS.APPS,
+      type: IPC_APP_TYPES.POSTINSTALL,
+      payload: appId
+    }),
+
   /** @depreciated */
   handleZip: async (path: string): Promise<AppManifest | null> =>
     await sendCommand({

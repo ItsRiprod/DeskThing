@@ -1,15 +1,30 @@
 import { EventEmitter } from 'events'
 import logger from '@server/utils/logger'
-import { OperationContext, ProgressChannel, ProgressEvent, ProgressStatus } from '@shared/types'
+import { ProgressOperation, ProgressChannel, ProgressEvent, ProgressStatus } from '@shared/types'
 
 class ProgressEventBus extends EventEmitter {
   private static instance: ProgressEventBus
-  private operationHierarchy: Map<ProgressChannel, OperationContext> = new Map()
-  private activeContext: OperationContext | null = null
+
+  /**
+   * The hierarchy of operations similar to a binary tree
+   * Reverse maps Channels to their Operation parents
+   */
+  private operationHierarchy: Map<ProgressChannel, Set<ProgressOperation>> = new Map()
+
+  /**
+   * The map of the progress channels (i.e. simply just a key-val pair of channel name and progress %)
+   */
   private channelProgressMap: Map<ProgressChannel, number> = new Map()
-  private channelMap: Map<ProgressChannel, ProgressChannel> = new Map()
-  private channelOperationMap: Map<ProgressChannel, string> = new Map()
+
+  /**
+   * A quick way to get the last recorded status of a channel (i.e. info, complete, error, etc)
+   */
   private channelStatusMap: Map<ProgressChannel, ProgressStatus> = new Map()
+
+  /**
+   * A quick way to get the last recorded operation string
+   */
+  private channelOperationMap: Map<ProgressChannel, string> = new Map()
 
   static getInstance(): ProgressEventBus {
     if (!ProgressEventBus.instance) {
@@ -18,60 +33,58 @@ class ProgressEventBus extends EventEmitter {
     return ProgressEventBus.instance
   }
 
+  /**
+   * Starts a new operation that can have sub-operations beneath it
+   * @param channel
+   * @param operation
+   * @param message
+   * @param subOperations
+   */
   startOperation(
     channel: ProgressChannel,
     operation: string,
     message: string,
     subOperations: Array<{ channel: ProgressChannel; weight: number }> = []
   ): void {
-    const context: OperationContext = {
+    const operationContext: ProgressOperation = {
       channel,
       operation,
-      subOperations: new Map(),
-      totalWeight: 0,
-      startTime: Date.now(),
-      parentContext: null
+      message,
+      status: ProgressStatus.RUNNING,
+      subOperations: new Map(), // will be filled in later
+      totalWeight: 0, // will be filled in later
+      startTime: Date.now()
     }
 
     let totalWeight = 0
-    let progressOffset = 0
 
     subOperations.forEach((sub) => {
-      context.subOperations.set(sub.channel, {
+      operationContext.subOperations.set(sub.channel, {
         weight: sub.weight,
-        progressOffset
+        progress: 0
       })
       totalWeight += sub.weight
 
-      // Map child to parent context for proper bubbling
-      this.operationHierarchy.set(sub.channel, context)
+      // clear any existing sub-channel cache (lets it get re-created by the sub channel)
+      this.channelProgressMap.delete(sub.channel)
+      this.channelStatusMap.delete(sub.channel)
+      this.channelOperationMap.delete(sub.channel)
 
-      progressOffset += (sub.weight / totalWeight) * 100
+      // Map child to parent context for proper bubbling
+      if (!this.operationHierarchy.has(sub.channel)) {
+        this.operationHierarchy.set(sub.channel, new Set([operationContext]))
+      } else {
+        this.operationHierarchy.get(sub.channel)?.add(operationContext)
+      }
     })
 
-    context.totalWeight = totalWeight
-
-    if (this.activeContext) {
-      // If we already have an active context, we need to handle nesting
-      if (this.operationHierarchy.has(channel)) {
-        // This is a child operation of a parent
-        context.parentContext = this.operationHierarchy.get(channel) || null
-      } else {
-        // This is a new top-level operation
-        this.clearContext()
-      }
-    }
-
-    this.activeContext = context
+    operationContext.totalWeight = totalWeight
 
     this.channelProgressMap.set(channel, 0)
     this.channelStatusMap.set(channel, ProgressStatus.RUNNING)
 
     this.emit(channel, {
-      operation,
-      status: ProgressStatus.RUNNING,
-      message,
-      progress: 0,
+      ...operationContext,
       metadata: {
         subOperations: subOperations.map((s) => s.channel),
         totalWeight
@@ -79,176 +92,206 @@ class ProgressEventBus extends EventEmitter {
     })
   }
 
-  clearContext(): void {
-    if (this.activeContext) {
-      // Clean up channel mappings
-      this.activeContext.subOperations.forEach((_, channel) => {
-        this.channelMap.delete(channel)
+  /**
+   * Provides cleanup operation logic for once it has been completed
+   */
+  private completeOperation(event: ProgressEvent | ProgressOperation): void {
+    // mark it as complete
+    this.channelStatusMap.set(event.channel, ProgressStatus.COMPLETE)
+
+    // set the progress to 100
+    this.channelProgressMap.set(event.channel, 100)
+
+    // remove it from the channelOperationMap
+    this.channelOperationMap.delete(event.channel)
+
+    // If this is an operation - delete it from every channel's mapping that this is under
+    if ('subOperations' in event) {
+      event.subOperations.keys().forEach((channel) => {
+        // Remove it from the operation hierarchy
+        this.operationHierarchy.get(channel)?.delete(event)
+
+        // delete any channels that are empty as well
+        if (this.operationHierarchy.get(channel)?.size === 0) {
+          this.operationHierarchy.delete(channel)
+        }
+
+        // remove it from the channel operation map
+        this.channelOperationMap.delete(channel)
+
+        // remove it from the channel progress map
+        this.channelProgressMap.delete(channel)
+
+        // remove it from the channel status map
+        this.channelStatusMap.delete(channel)
       })
-      this.activeContext = null
     }
   }
 
-  private transformProgress(
-    channel: ProgressChannel,
-    progress?: number
-  ): {
-    channel: ProgressChannel
-    progress?: number
-    bubbleEvents: Array<{ channel: ProgressChannel; progress: number }>
-  } {
-    if (!progress || !this.activeContext) return { channel, progress, bubbleEvents: [] }
+  /**
+   * Handles propogating the progress of a specific channel up to the parent-channels
+   */
+  private getParentOperationChannels = (
+    event: ProgressEvent
+  ): Set<ProgressOperation> | undefined => {
+    const parentOperations = this.operationHierarchy.get(event.channel)
+    if (!parentOperations) return // no bubbling needed (top level event)
 
-    const directContext = this.operationHierarchy.get(channel)
-    if (!directContext) return { channel, progress, bubbleEvents: [] }
+    const transformedOperations = new Set<ProgressOperation>()
 
-    // Calculate progress for the direct parent
-    const subOp = directContext.subOperations.get(channel)
-    if (!subOp) return { channel, progress, bubbleEvents: [] }
+    // update the parent operations with the new progress
+    parentOperations.forEach((parentOp) => {
+      const operationalContext = parentOp.subOperations.get(event.channel)
 
-    const scaledDirectProgress = (progress / 100) * (subOp.weight / directContext.totalWeight) * 100
-    const adjustedDirectProgress = subOp.progressOffset + scaledDirectProgress
-
-    // Prepare to bubble up through all ancestors
-    const bubbleEvents: Array<{ channel: ProgressChannel; progress: number }> = [
-      {
-        channel: directContext.channel,
-        progress: Math.min(Math.round(adjustedDirectProgress), 100)
-      }
-    ]
-
-    // Recursively bubble up to all parent contexts
-    let currentContext = directContext.parentContext
-    let currentProgress = adjustedDirectProgress
-
-    while (currentContext) {
-      const parentSubOp = currentContext.subOperations.get(directContext.channel)
-      if (parentSubOp) {
-        const scaledParentProgress =
-          (currentProgress / 100) * (parentSubOp.weight / currentContext.totalWeight) * 100
-        const adjustedParentProgress = parentSubOp.progressOffset + scaledParentProgress
-
-        bubbleEvents.push({
-          channel: currentContext.channel,
-          progress: Math.min(Math.round(adjustedParentProgress), 100)
+      if (operationalContext && event.progress) {
+        parentOp.subOperations.set(event.channel, {
+          weight: operationalContext.weight,
+          progress: event.progress
         })
-
-        currentProgress = adjustedParentProgress
       }
+      parentOp.message = event.message
+      parentOp.operation = event.operation
+      transformedOperations.add(parentOp)
+    })
 
-      currentContext = currentContext.parentContext
+    // return the new progresses
+    return transformedOperations
+  }
+  private syncStatusMaps = (event: ProgressEvent): void => {
+    if (event.progress) {
+      this.channelProgressMap.set(event.channel, event.progress)
     }
 
-    return {
-      channel,
-      progress,
-      bubbleEvents
+    if (event.status == ProgressStatus.COMPLETE || event.status == ProgressStatus.ERROR) {
+      this.channelProgressMap.set(event.channel, 100)
+    }
+
+    if (event.status) {
+      this.channelStatusMap.set(event.channel, event.status)
+    }
+
+    if (event.operation) {
+      this.channelOperationMap.set(event.channel, event.operation)
     }
   }
 
-  emit(channel: ProgressChannel, event: Omit<ProgressEvent, 'channel'>): boolean {
-    const {
-      channel: transformedChannel,
-      progress: transformedProgress,
-      bubbleEvents
-    } = this.transformProgress(channel, event.progress)
+  /**
+   * Emits to all listeners of the progress bus as well as updates any parent channels of updates
+   * @param channel
+   * @param event
+   * @returns
+   */
+  emit<T extends ProgressChannel>(
+    channel: T,
+    event: Extract<ProgressEvent, { channel: T }>
+  ): boolean {
+    // first sync the constants
+    this.syncStatusMaps(event)
 
-    const finalEvent = {
-      ...event,
-      progress: transformedProgress,
-      channel: transformedChannel
+    // Emit the event
+    super.emit('progress', event)
+
+    // get parent operations
+    const operations = this.getParentOperationChannels(event)
+
+    event.progress = this.channelProgressMap.get(channel) || 0
+
+    // top level operation
+    if (!operations) {
+      logger.info(`(${event.progress}%) ${event.message}`, {
+        function: event.operation,
+        source: channel
+      })
+      return true
+    } else {
+      logger.debug(`(${event.progress}%) ${event.operation} - ${event.message}`, {
+        function: event.channel,
+        source: 'Progress'
+      })
     }
 
-    if (typeof finalEvent.progress === 'number') {
-      this.channelProgressMap.set(transformedChannel, finalEvent.progress)
-    }
+    // sub-operation propagation
+    operations.forEach((operation) => {
+      // Update the total progress based on the sub-operation progress
+      let totalProgress = 0
 
-    if (finalEvent.status) {
-      this.channelStatusMap.set(transformedChannel, finalEvent.status)
-    }
+      operation.subOperations.forEach((subOp) => {
+        totalProgress += subOp.progress
+      })
 
-    logger.debug(
-      `Progress event: ${transformedChannel} - ${event.message} - ${finalEvent.progress}`,
-      {
-        domain: 'progress',
-        source: 'progressBus'
+      operation.progress = totalProgress
+
+      // recursively emit this operation
+      this.emit(operation.channel, operation)
+
+      // Check if the operation is complete
+      if (operation.progress >= 100) {
+        this.completeOperation(operation)
       }
-    )
-
-    // Emit the original event
-    super.emit('progress', finalEvent)
-
-    // Also emit all the bubbled up events to parent operations
-    bubbleEvents.forEach((bubbleEvent) => {
-      const bubbledFinalEvent = {
-        ...event,
-        progress: bubbleEvent.progress,
-        channel: bubbleEvent.channel
-      }
-
-      this.channelProgressMap.set(bubbleEvent.channel, bubbleEvent.progress)
-
-      super.emit('progress', bubbledFinalEvent)
     })
 
     return true
   }
 
+  /**
+   * Starts a new operation that doesn't have any sub-operations
+   * @param channel - the channel to start the operation on
+   * @param operation - the name of the operation only used in the frontend and any following progress updates
+   * @param message - the message to be displayed under the operation - usually more details
+   * @param metadata - any additional metadata to be stored with the operation
+   */
   start(
     channel: ProgressChannel,
     operation: string,
     message: string,
     metadata?: Record<string, unknown>
   ): void {
-    const finalEvent = { operation, status: ProgressStatus.RUNNING, message, metadata }
-
-    this.channelOperationMap.set(channel, operation)
-    this.channelProgressMap.set(channel, 0)
-    this.channelStatusMap.set(channel, ProgressStatus.RUNNING)
+    const finalEvent: ProgressEvent = {
+      operation,
+      status: ProgressStatus.RUNNING,
+      message,
+      progress: 0,
+      metadata,
+      channel
+    }
 
     this.emit(channel, finalEvent)
   }
 
-  getProgress(channel: ProgressChannel): number {
-    return this.channelProgressMap.get(channel) ?? 0
-  }
-
-  getStatus(channel: ProgressChannel): ProgressStatus {
-    return this.channelStatusMap.get(channel) ?? ProgressStatus.COMPLETE
-  }
-
-  getOperation(channel: ProgressChannel): string {
-    return this.channelOperationMap.get(channel) ?? ''
-  }
-
-  getChannelInfo(channel: ProgressChannel): {
-    progress: number
-    status: ProgressStatus
-    operation: string
-  } {
-    return {
-      progress: this.getProgress(channel),
-      status: this.getStatus(channel),
-      operation: this.getOperation(channel)
-    }
-  }
-
+  /**
+   * Used to update the progress / event / message of a channel
+   * @param channel - the channel to update the progress of
+   * @param message - the message to be displayed under the operation - usually more details
+   * @param progress - the progress of the operation - should be a value between 0 and 100
+   * @param operation - the name of the operation only used in the frontend and any following progress updates
+   */
   update(channel: ProgressChannel, message: string, progress?: number, operation?: string): void {
     if (!operation) {
       operation = this.channelOperationMap.get(channel) ?? ''
-    } else {
-      this.channelOperationMap.set(channel, operation)
     }
 
-    if (typeof progress === 'number') {
-      this.channelProgressMap.set(channel, progress)
+    if (!progress) {
+      progress = this.channelProgressMap.get(channel) || 0
     }
 
-    const finalEvent = { operation, status: ProgressStatus.INFO, message, progress }
+    const finalEvent: ProgressEvent = {
+      operation,
+      status: ProgressStatus.INFO,
+      message,
+      progress,
+      channel
+    }
 
     this.emit(channel, finalEvent)
   }
 
+  /**
+   * Increments the progress of a running operation by a given amount
+   * @param channel - the channel to increment the progress of
+   * @param message - the message to be displayed under the operation - usually more details
+   * @param increment - the amount to increment the progress by
+   * @param operation - the name of the operation only used in the frontend and any following progress updates
+   */
   incrementProgress(
     channel: ProgressChannel,
     message: string,
@@ -260,14 +303,19 @@ class ProgressEventBus extends EventEmitter {
     this.update(channel, message, newProgress, operation)
   }
 
-  warn(channel: ProgressChannel, message: string, operation?: string): void {
+  warn(channel: ProgressChannel, message: string, error?: string, operation?: string): void {
     if (!operation) {
       operation = this.channelOperationMap.get(channel) ?? ''
-    } else {
-      this.channelOperationMap.set(channel, operation)
     }
 
-    const finalEvent = { operation, status: ProgressStatus.WARN, message }
+    if (error) {
+      logger.error(`Error while completing ${channel}. Message: ${error}`, {
+        source: channel,
+        function: 'error'
+      })
+    }
+
+    const finalEvent: ProgressEvent = { operation, status: ProgressStatus.WARN, message, channel }
 
     this.emit(channel, finalEvent)
   }
@@ -279,10 +327,12 @@ class ProgressEventBus extends EventEmitter {
       this.channelOperationMap.set(channel, operation)
     }
 
-    const finalEvent = { operation, status: ProgressStatus.COMPLETE, message }
-
-    if (this.activeContext && this.activeContext.channel === channel) {
-      this.clearContext()
+    const finalEvent: ProgressEvent = {
+      operation,
+      status: ProgressStatus.COMPLETE,
+      message,
+      progress: 100,
+      channel
     }
 
     this.emit(channel, finalEvent)
@@ -295,17 +345,21 @@ class ProgressEventBus extends EventEmitter {
       this.channelOperationMap.set(channel, operation)
     }
 
-    const errorEvent = { operation, status: ProgressStatus.ERROR, message, error }
+    const errorEvent: ProgressEvent = {
+      operation,
+      status: ProgressStatus.ERROR,
+      message,
+      error,
+      progress: 100,
+      channel
+    }
 
     if (error) {
       logger.error(`Error while completing ${channel}. Message: ${error}`, {
         source: channel,
-        function: 'error'
+        function: 'error',
+        error: new Error(error)
       })
-    }
-
-    if (this.activeContext && this.activeContext.channel === channel) {
-      this.clearContext()
     }
 
     this.emit(channel, errorEvent)

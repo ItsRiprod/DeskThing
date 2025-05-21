@@ -67,12 +67,12 @@ export enum ProgressChannel {
 export type ProgressEvent = {
   channel: ProgressChannel
   operation: string
+  status: ProgressStatus
+  message: string
   progress?: number
   metadata?: Record<string, unknown>
   lastUpdate?: number
-  status: ProgressStatus
   error?: string
-  message: string
   id?: string
   isLoading?: boolean
   timestamp?: number
@@ -87,11 +87,8 @@ export enum ProgressStatus {
   ERROR = 'error'
 }
 
-export interface OperationContext {
-  channel: ProgressChannel
-  operation: string
-  subOperations: Map<ProgressChannel, { weight: number; progressOffset: number }>
+export type ProgressOperation = ProgressEvent & {
+  subOperations: Map<ProgressChannel, { weight: number; progress: number }>
   totalWeight: number
   startTime: number
-  parentContext: OperationContext | null
 }
