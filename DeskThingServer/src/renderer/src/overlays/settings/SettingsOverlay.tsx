@@ -3,6 +3,7 @@ import Overlay from '../Overlay'
 import {
   IconCarThingSmall,
   IconComputer,
+  IconInfo,
   IconLayoutgrid,
   IconMusic,
   IconServer
@@ -14,13 +15,16 @@ import ServerSettings from './ServerSettings'
 import { useSearchParams } from 'react-router-dom'
 import MusicSettings from './MusicSettings'
 import AppsSettings from './AppSettings'
+import AboutSettings from './About'
+import ErrorBoundary from '@renderer/components/ErrorBoundary'
 
 const settingsPages = [
   { key: 'server', label: 'Server', Icon: IconServer },
   { key: 'client', label: 'Client', Icon: IconComputer },
   { key: 'device', label: 'Device', Icon: IconCarThingSmall },
   { key: 'music', label: 'Music', Icon: IconMusic },
-  { key: 'apps', label: 'Apps', Icon: IconLayoutgrid }
+  { key: 'apps', label: 'Apps', Icon: IconLayoutgrid },
+  { key: 'about', label: 'About', Icon: IconInfo }
 ]
 
 /**
@@ -66,11 +70,14 @@ const SettingsOverlay: React.FC = () => {
           ))}
         </div>
         <div className="w-full relative overflow-y-auto">
-          {currentPage == 'client' && <ClientSettings />}
-          {currentPage == 'device' && <DeviceSettings />}
-          {currentPage == 'server' && <ServerSettings />}
-          {currentPage == 'music' && <MusicSettings />}
-          {currentPage == 'apps' && <AppsSettings />}
+          <ErrorBoundary>
+            {currentPage == 'client' && <ClientSettings />}
+            {currentPage == 'device' && <DeviceSettings />}
+            {currentPage == 'server' && <ServerSettings />}
+            {currentPage == 'music' && <MusicSettings />}
+            {currentPage == 'apps' && <AppsSettings />}
+            {currentPage == 'about' && <AboutSettings />}
+          </ErrorBoundary>
         </div>
       </div>
     </Overlay>

@@ -18,6 +18,7 @@ import { UpdateStoreClass } from '@shared/stores/updateStore'
 // import { ExpressServerManager } from './_expressServerStore'
 import logger from '@server/utils/logger'
 import { ProfileStoreClass } from '@shared/stores/profileStore'
+import { SupporterStoreClass } from '@shared/stores/supporterStore'
 
 interface Stores {
   appDataStore: AppDataStoreClass
@@ -33,6 +34,7 @@ interface Stores {
   settingsStore: SettingsStoreClass
   taskStore: TaskStoreClass
   updateStore: UpdateStoreClass
+  supporterStore: SupporterStoreClass
 }
 
 export class StoreProvider {
@@ -59,7 +61,8 @@ export class StoreProvider {
       appProcessStore: () => import('./appProcessStore').then((m) => m.AppProcessStore),
       platformStore: () => import('./platformStore').then((m) => m.PlatformStore),
       clientStore: () => import('./clientStore').then((m) => m.ClientStore),
-      updateStore: () => import('./updateStore').then((m) => m.UpdateStore)
+      updateStore: () => import('./updateStore').then((m) => m.UpdateStore),
+      supporterStore: () => import('./supporterStore').then((m) => m.SupporterStore)
     }
 
     this.storeInitializers = {
@@ -97,7 +100,8 @@ export class StoreProvider {
       clientStore: async () => new (await storeImports.clientStore())(),
       profileStore: async () =>
         new (await storeImports.profileStore())(await this.getStore('platformStore', false)),
-      updateStore: async () => new (await storeImports.updateStore())()
+      updateStore: async () => new (await storeImports.updateStore())(),
+      supporterStore: async () => new (await storeImports.supporterStore())()
     }
 
     this.initialize()

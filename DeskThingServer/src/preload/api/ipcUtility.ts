@@ -16,6 +16,7 @@ import {
   UtilityHandlerReturnType,
   UtilityHandlerReturnMap
 } from '@shared/types'
+import { PaginatedResponse, SupporterData, SupporterFetchOptions } from '@shared/types/supporter'
 import { ipcRenderer } from 'electron'
 
 export const utility = {
@@ -213,6 +214,14 @@ export const utility = {
       kind: IPC_HANDLERS.UTILITY,
       type: IPC_UTILITY_TYPES.RUN,
       payload: action
+    }),
+
+  getSupporters: async (opts: SupporterFetchOptions): Promise<PaginatedResponse<SupporterData>> =>
+    await sendCommand({
+      kind: IPC_HANDLERS.UTILITY,
+      type: IPC_UTILITY_TYPES.SUPPORTERS,
+      payload: opts,
+      request: 'get'
     })
 }
 

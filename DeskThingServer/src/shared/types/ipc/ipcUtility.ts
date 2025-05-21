@@ -15,6 +15,7 @@ import {
 // import { FeedbackReport, SystemInfo } from '../feedback'
 import { Log, Settings } from '../types'
 import { IPC_HANDLERS } from './ipcTypes'
+import { PaginatedResponse, SupporterData, SupporterFetchOptions } from '../supporter'
 // import { FullTaskList } from '../taskTypes'
 
 export enum IPC_UTILITY_TYPES {
@@ -36,7 +37,8 @@ export enum IPC_UTILITY_TYPES {
   KEYS = 'keys',
   PROFILES = 'profiles',
   RUN = 'run',
-  MAP = 'map'
+  MAP = 'map',
+  SUPPORTERS = 'supporters'
   // FEEDBACK = 'feedback',
   // TASK = 'task',
   // UPDATE = 'update',
@@ -140,6 +142,11 @@ export type UtilityIPCData = {
   | {
       type: IPC_UTILITY_TYPES.RUN
       payload: Action | ActionReference
+    }
+  | {
+      type: IPC_UTILITY_TYPES.SUPPORTERS
+      payload: SupporterFetchOptions
+      request: 'get'
     }
 )
 // | {
@@ -263,6 +270,7 @@ export type UtilityHandlerReturnMap = {
   }
   [IPC_UTILITY_TYPES.MAP]: { get: Profile | null; set: void; delete: void }
   [IPC_UTILITY_TYPES.RUN]: { set: void }
+  [IPC_UTILITY_TYPES.SUPPORTERS]: { get: PaginatedResponse<SupporterData> }
   // [IPC_UTILITY_TYPES.FEEDBACK]: { set: void; get: SystemInfo }
   // [IPC_UTILITY_TYPES.TASK]: {
   //   get: FullTaskList
