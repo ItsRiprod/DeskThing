@@ -283,7 +283,11 @@ class Logger {
    * @returns A Promise that resolves when the notification process is complete.
    */
   async notifyListeners(data: Log): Promise<void> {
-    await Promise.all(this.listeners.map((listener) => listener(data)))
+    try {
+      await Promise.all(this.listeners.map((listener) => listener(data)))
+    } catch (error) {
+      console.error('[Logger]: Failed to notify some listeners', error)
+    }
   }
 
   /**
@@ -301,24 +305,21 @@ class Logger {
    * @returns A Promise that resolves with an array of log entries, or an empty array if the log file does not exist.
    */
   public async getLogs(num_logs: number = 20): Promise<Log[]> {
-    return new Promise((resolve, reject) => {
-      if (!fs.existsSync(logFile)) {
-        resolve([])
-        return
-      }
+    if (!fs.existsSync(logFile)) {
+      return []
+    }
 
-      fs.readFile(logFile, 'utf8', (err, data) => {
-        if (err) {
-          return reject(err)
-        }
-        try {
-          const logs = data ? JSON.parse(data) : []
-          resolve(logs.slice(-num_logs))
-        } catch (error) {
-          reject(error)
-        }
-      })
-    })
+    try {
+      const data = await readFile(logFile, 'utf8')
+      if (!data) {
+        return []
+      }
+      const logs = data ? JSON.parse(data) : []
+      return logs.slice(-num_logs)
+    } catch (error) {
+      console.error('Error reading existing log data', error)
+      return []
+    }
   }
 }
 
