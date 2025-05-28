@@ -116,10 +116,16 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
       if (!settings?.data) return
 
       isValidAppSettings(settings.data)
+
+      const combinedPayload: { settings: AppSettings; app: string } = {
+        settings: settings.data,
+        app: settings.appId
+      }
+
       this.broadcastToClients({
         app: 'client',
         type: DESKTHING_DEVICE.SETTINGS,
-        payload: settings.data
+        payload: combinedPayload
       })
     })
 

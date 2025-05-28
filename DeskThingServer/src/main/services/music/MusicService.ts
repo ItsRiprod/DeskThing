@@ -107,13 +107,13 @@ export class MusicService implements MusicStoreClass {
     const currentApp = await this.getPlaybackSource()
 
     if (!currentApp) {
-      Logger.debug(`No audio source app available`)
+      Logger.warn(`No audio source app available`)
       return
     }
 
     // Validate request data
     if (!songData.app || !songData.request || !songData.type) {
-      Logger.debug(`Invalid song data received: ${JSON.stringify(songData)}`)
+      Logger.warn(`Invalid song data received: ${JSON.stringify(songData)}`)
       return
     }
 
@@ -289,6 +289,8 @@ export class MusicService implements MusicStoreClass {
         await this.refreshMusicData()
         return
       }
+
+      Logger.debug(`Received request for song data from client ${data?.client?.clientId}`)
 
       const cachedSong = this.songCache.getCurrentSong()
       if (cachedSong) {

@@ -267,7 +267,9 @@ export const deleteFile = async (filename: string): Promise<void> => {
       if (error instanceof Error) {
         throw new Error('[deleteFile] Error deleting file: ' + error.message)
       } else {
-        throw new Error('[deleteFile] Unknown error deleting file: ' + handleError(error), { cause: error })
+        throw new Error('[deleteFile] Unknown error deleting file: ' + handleError(error), {
+          cause: error
+        })
       }
     }
   })

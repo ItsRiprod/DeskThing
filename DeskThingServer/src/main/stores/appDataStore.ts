@@ -33,7 +33,8 @@ import EventEmitter from 'node:events'
 
 export class AppDataStore
   extends EventEmitter<AppStoreEvents>
-  implements CacheableStore, AppDataStoreClass {
+  implements CacheableStore, AppDataStoreClass
+{
   private appDataCache: Record<string, AppDataInterface> = {}
 
   private functionTimeouts: Record<string, NodeJS.Timeout> = {}
