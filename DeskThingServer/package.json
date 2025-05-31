@@ -1,6 +1,6 @@
 {
   "name": "deskthing",
-  "version": "0.11.7",
+  "version": "0.11.8",
   "description": "A DeskThing server UI to interface with the DeskThing car thing app",
   "main": "./out/main/index.js",
   "author": "Riprod",
@@ -51,7 +51,7 @@
     "zustand": "^5.0.0-rc.2"
   },
   "devDependencies": {
-    "@deskthing/types": "^0.11.0",
+    "@deskthing/types": "^0.11.1",
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",
     "@electron-toolkit/eslint-config-ts": "^3.0.0",
     "@electron-toolkit/preload": "^3.0.1",

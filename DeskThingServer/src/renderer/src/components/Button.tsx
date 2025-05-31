@@ -23,6 +23,7 @@ interface ButtonProps {
   ref?: Ref<HTMLButtonElement>
   style?: React.CSSProperties
   title?: string
+  type?: 'button' | 'submit' | 'reset'
   disabled?: boolean
   onMouseEnter?: () => void
   onMouseDown?: (e: React.MouseEvent) => void
@@ -36,6 +37,7 @@ const Button: React.FC<ButtonProps> = ({
   target,
   rel,
   ref,
+  type,
   style,
   disabled,
   onMouseEnter,
@@ -53,6 +55,7 @@ const Button: React.FC<ButtonProps> = ({
         title={title}
         aria-label={title}
         rel={rel}
+        type={type}
         className={combinedClasses}
         onClick={onClick}
         onMouseEnter={onMouseEnter}
@@ -69,6 +72,7 @@ const Button: React.FC<ButtonProps> = ({
       className={combinedClasses}
       onClick={onClick}
       ref={ref}
+      type={type}
       title={title}
       aria-label={title}
       onMouseEnter={onMouseEnter}

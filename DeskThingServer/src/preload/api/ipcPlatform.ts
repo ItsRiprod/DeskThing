@@ -1,6 +1,5 @@
-import { Client, ClientManifest } from '@deskthing/types'
-import { PlatformIDs } from '@shared/stores/platformStore'
-import { IPC_HANDLERS } from '@shared/types'
+import { Client, ClientManifest, PlatformIDs } from '@deskthing/types'
+import { IPC_HANDLERS, SCRIPT_IDs } from '@shared/types'
 import { PlatformIPC, ExtractPayloadFromIPC } from '@shared/types/ipc/ipcPlatform'
 import { ipcRenderer } from 'electron'
 
@@ -43,6 +42,15 @@ export const platform = {
       })
     },
 
+    setBrightness: async (adbId: string, brightness: number): Promise<boolean> =>
+      (await sendPlatformData({
+        platform: PlatformIDs.ADB,
+        type: 'set',
+        request: 'brightness',
+        adbId,
+        brightness
+      })) || false,
+
     pushStaged: async (adbId: string): Promise<boolean> =>
       (await sendPlatformData({
         platform: PlatformIDs.ADB,
@@ -50,14 +58,19 @@ export const platform = {
         request: 'staged',
         adbId
       })) || false,
-    pushScript: async (adbId: string, scriptId: 'proxy' | 'restart'): Promise<boolean> =>
-      (await sendPlatformData({
+    pushScript: async (
+      adbId: string,
+      scriptId: SCRIPT_IDs,
+      force = false
+    ): Promise<string | undefined> =>
+      await sendPlatformData({
         platform: PlatformIDs.ADB,
         type: 'push',
         request: 'script',
         scriptId,
+        force,
         adbId
-      })) || false,
+      }),
     runCommand: async (adbId: string, command: string): Promise<string | undefined> =>
       await sendPlatformData({
         platform: PlatformIDs.ADB,

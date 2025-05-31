@@ -4,7 +4,8 @@ import {
   ClientManifest,
   ProviderCapabilities,
   ConnectionState,
-  ClientIdentifier
+  ClientIdentifier,
+  PlatformIDs
 } from '@deskthing/types'
 import {
   PlatformEvents,
@@ -17,7 +18,6 @@ import EventEmitter from 'node:events'
 import { ADBService } from './adbService'
 import { storeProvider } from '@server/stores/storeProvider'
 import logger from '@server/utils/logger'
-import { PlatformIDs } from '@shared/stores/platformStore'
 import { PlatformIPC } from '@shared/types/ipc/ipcPlatform'
 import { app } from 'electron'
 import { join } from 'node:path'
@@ -25,6 +25,7 @@ import { readFile, writeFile } from 'node:fs/promises'
 import { progressBus } from '@server/services/events/progressBus'
 import { ProgressChannel } from '@shared/types'
 import { handleError } from '@server/utils/errorHandler'
+import { ClientIdentificationService } from '@server/services/clients/clientIdentificationService'
 
 export class ADBPlatform extends EventEmitter<PlatformEvents> implements PlatformInterface {
   private adbService: ADBService
@@ -90,6 +91,11 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
             await this.refreshClient(data.adbId, true)
             return true
           }
+          case 'brightness': {
+            await this.adbService.setBrightness(data.adbId, data.brightness)
+            await this.refreshClient(data.adbId, true)
+            return true
+          }
           default:
             break
         }
@@ -122,6 +128,38 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
                 )
               }
               return
+            case 'script': {
+              progressBus.startOperation(
+                ProgressChannel.PLATFORM_CHANNEL,
+                'Running Script',
+                `Running ${data.scriptId}`,
+                [
+                  {
+                    channel: ProgressChannel.PUSH_SCRIPT,
+                    weight: 100
+                  }
+                ]
+              )
+              try {
+                const result = await this.adbService.runScript(
+                  data.adbId,
+                  data.scriptId,
+                  data.force
+                )
+                progressBus.complete(
+                  ProgressChannel.PLATFORM_CHANNEL,
+                  `Script complete. Result: ${result}`
+                )
+                return result
+              } catch (error) {
+                progressBus.error(
+                  ProgressChannel.PLATFORM_CHANNEL,
+                  'Error running script',
+                  handleError(error),
+                  'Script Error'
+                )
+              }
+            }
           }
         }
         break
@@ -178,9 +216,17 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
           ]
         )
 
-        await this.adbService.configureDevice(data.adbId, this.adbPort)
+        try {
+          await this.adbService.configureDevice(data.adbId, this.adbPort)
 
-        progressBus.complete(ProgressChannel.PLATFORM_CHANNEL, 'Completed Operation')
+          progressBus.complete(ProgressChannel.PLATFORM_CHANNEL, 'Completed Operation')
+        } catch (error) {
+          progressBus.error(
+            ProgressChannel.PLATFORM_CHANNEL,
+            'Error configuring device',
+            handleError(error)
+          )
+        }
       }
     }
 
@@ -258,21 +304,21 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
       progressBus.update(ProgressChannel.REFRESH_DEVICES, `Found ${adbDevices.length} devices`, 30)
 
       for (const adbDevice of adbDevices) {
-        await this.refreshClient(adbDevice.adbId)
+        await this.refreshClient(adbDevice, false, false)
       }
 
       progressBus.update(ProgressChannel.REFRESH_DEVICES, 'Cleaning up old devices', 60)
 
       // Mark clients not found in ADB as disconnected
       this.clients.forEach((client) => {
-        if (!adbDevices.find((adb) => adb.adbId === client.identifiers[this.id]?.id)) {
+        if (!adbDevices.find((adb) => adb === client.identifiers[this.id]?.id)) {
           this.emit(PlatformEvent.CLIENT_DISCONNECTED, client)
         }
       })
 
       // ensure the local list of clients is up to date
       this.clients = this.clients.filter((client) => {
-        return adbDevices.find((adb) => adb.adbId === client.identifiers[this.id]?.id)
+        return adbDevices.find((adb) => adb === client.identifiers[this.id]?.id)
       })
 
       this.emit(PlatformEvent.CLIENT_LIST, this.clients)
@@ -287,137 +333,132 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
     }
   }
 
-  async refreshClient(adbId: string, forceRefresh = false): Promise<Client | undefined> {
-    const adbDevice = (await this.adbService.getDevices()).find((device) => device.adbId === adbId)
-    if (!adbDevice) return
+  async refreshClient(
+    adbId: string,
+    forceRefresh = false,
+    notify = true
+  ): Promise<Client | undefined> {
+    const existingClient = this.clients.find((client) => client.identifiers[this.id]?.id === adbId)
 
-    const existingClient = this.clients.find(
-      (client) => client.identifiers[this.id]?.id === adbDevice.adbId
-    )
+    try {
+      const deviceVersion = await this.adbService.getDeviceVersion(adbId)
+      const usid = await this.adbService.getDeviceUSID(adbId)
+      const macBt = await this.adbService.getDeviceMacBT(adbId)
+      const brightness = await this.adbService.getDeviceBrightness(adbId)
+      const services = await this.adbService.getSupervisorStatus(adbId)
 
-    if (existingClient && !forceRefresh) {
-      const updates: Partial<Client> = {
-        connected: !adbDevice.offline,
-        timestamp: Date.now()
-      }
+      const transformedServices: Record<string, boolean> = Object.entries(services).reduce(
+        (acc, [key, val]) => {
+          return {
+            ...acc,
+            [key]: val === 'RUNNING'
+          }
+        },
+        {}
+      )
 
-      if (!existingClient.manifest) {
-        try {
-          progressBus.update(
-            ProgressChannel.REFRESH_DEVICES,
-            `Getting manifest for ${adbDevice.adbId}`
-          )
-          const version = await this.adbService.getDeviceManifestVersion(adbDevice.adbId)
-          const deviceVersion = await this.adbService.getDeviceVersion(adbDevice.adbId)
-          const usid = await this.adbService.getDeviceUSID(adbDevice.adbId)
-          const macBt = await this.adbService.getDeviceMacBT(adbDevice.adbId)
-          const services = await this.adbService.getSupervisorStatus(adbDevice.adbId)
-
-          const transformedServices: Record<string, boolean> = Object.entries(services).reduce(
-            (acc, [key, val]) => {
-              return {
-                ...acc,
-                [key]: val === 'RUNNING'
-              }
-            },
-            {}
-          )
-
-          const manifest: ClientManifest = {
-            id: adbDevice.adbId,
-            name: 'Superbird Device',
-            short_name: 'Superbird',
-            description: 'Spotify Car Thing Device',
-            reactive: true,
-            repository: '',
-            author: 'Spotify',
-            version: version,
-            compatibility: {
-              server: '>=0.0.0',
-              app: '>=0.0.0'
-            },
-            context: {
-              ...adbDevice,
-              app_version: deviceVersion,
+      if (existingClient && !forceRefresh) {
+        // Updates the existing client
+        const updates: Client = {
+          ...existingClient,
+          connected: false,
+          timestamp: Date.now(),
+          meta: {
+            [this.id]: {
+              adbId: adbId,
+              device_version: deviceVersion,
               usid,
+              offline: false,
+              brightness: brightness,
               mac_bt: macBt,
               services: transformedServices
             }
+          },
+          identifiers: {
+            [this.id]: {
+              id: adbId,
+              active: true,
+              providerId: this.id,
+              capabilities: this.identifier.capabilities
+            }
           }
-          updates.manifest = manifest
+        }
+
+        if (!existingClient.manifest) {
+          try {
+            progressBus.update(ProgressChannel.REFRESH_DEVICES, `Getting manifest for ${adbId}`)
+            const manifest = await this.adbService.getDeviceManifest(adbId)
+
+            updates.manifest = manifest || undefined
+          } catch (error) {
+            logger.warn(`Failed to get manifest for device ${adbId}`, {
+              error: error as Error,
+              function: 'refreshDevices',
+              source: 'adbPlatform'
+            })
+            // Continue without manifest updates if device is unreachable
+          }
+        }
+
+        // This will eventually update this platform for the global client changes to take affect
+        if (notify) {
+          this.emit(PlatformEvent.CLIENT_UPDATED, updates)
+        }
+        return updates
+      } else {
+        const newClient: Client = {
+          clientId: adbId,
+          connectionState: ConnectionState.Established, // not actually connected
+          identifiers: {
+            [this.id]: {
+              id: adbId,
+              active: true,
+              providerId: this.id,
+              capabilities: this.identifier.capabilities
+            }
+          },
+          meta: {
+            [this.id]: {
+              adbId: adbId,
+              device_version: deviceVersion,
+              usid,
+              offline: false,
+              brightness: brightness,
+              mac_bt: macBt,
+              services: transformedServices
+            }
+          },
+          connected: false,
+          timestamp: Date.now()
+        }
+
+        try {
+          const manifest = await this.adbService.getDeviceManifest(adbId)
+
+          if (manifest) {
+            newClient.manifest = manifest
+          }
         } catch (error) {
-          logger.warn(`Failed to get manifest for device ${adbDevice.adbId}`, {
+          logger.warn(`Failed to get manifest for device ${adbId}`, {
             error: error as Error,
             function: 'refreshDevices',
             source: 'adbPlatform'
           })
-          // Continue without manifest updates if device is unreachable
         }
-      }
 
-      return await this.updateClient(existingClient.identifiers[this.id].id, updates)
-    } else {
-      const newClient: Client = {
-        clientId: adbDevice.adbId,
-        connectionState: ConnectionState.Established, // not actually connected
-        identifiers: {
-          [this.id]: {
-            id: adbDevice.adbId,
-            active: true,
-            providerId: this.id,
-            capabilities: this.identifier.capabilities
-          }
-        },
-        connected: false,
-        timestamp: Date.now()
-      }
+        progressBus.update(ProgressChannel.REFRESH_DEVICES, `Getting version for ${adbId}`)
 
-      try {
-        const manifest = await this.adbService.getDeviceManifest(adbDevice.adbId)
-
-        if (manifest) {
-          const deviceVersion = await this.adbService.getDeviceVersion(adbDevice.adbId)
-          const usid = await this.adbService.getDeviceUSID(adbDevice.adbId)
-          const macBt = await this.adbService.getDeviceMacBT(adbDevice.adbId)
-          const services = await this.adbService.getSupervisorStatus(adbDevice.adbId)
-
-          const transformedServices: Record<string, boolean> = Object.entries(services).reduce(
-            (acc, [key, val]) => {
-              return {
-                ...acc,
-                [key]: val === 'RUNNING'
-              }
-            },
-            {}
-          )
-          newClient.manifest = {
-            ...manifest,
-            context: {
-              ...adbDevice,
-              app_version: deviceVersion,
-              usid,
-              mac_bt: macBt,
-              services: transformedServices
-            }
-          }
+        this.clients.push(newClient)
+        if (notify) {
+          this.emit(PlatformEvent.CLIENT_CONNECTED, newClient)
         }
-      } catch (error) {
-        logger.warn(`Failed to get manifest for device ${adbDevice.adbId}`, {
-          error: error as Error,
-          function: 'refreshDevices',
-          source: 'adbPlatform'
-        })
+        return newClient
       }
-
-      progressBus.update(
-        ProgressChannel.REFRESH_DEVICES,
-        `Getting version for ${adbDevice.adbId}`,
-        50
-      )
-
-      this.clients.push(newClient)
-      this.emit(PlatformEvent.CLIENT_CONNECTED, newClient)
-      return newClient
+    } catch (error) {
+      logger.error(`Error refreshing devices: ${error}`, {
+        function: 'refreshDevices',
+        source: 'adbPlatform'
+      })
     }
   }
   private pushStagedClient(clientId: string, port: number): Promise<void> {
@@ -443,7 +484,7 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
     return this.clients.find((client) => client.identifiers[this.id]?.id === internalId)
   }
 
-  async updateClient(
+  public async updateClient(
     clientId: string,
     newClient: Partial<Client>,
     notify = true
@@ -459,26 +500,8 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
       }
 
       const client = this.clients[index]
-      const updatedClient = { ...client, ...newClient } as Client
-
-      if (Object.values(updatedClient.identifiers).length > 0) {
-        const providers = Object.values(updatedClient.identifiers).filter((id) => id.active)
-        const primaryProvider = providers.sort(
-          (a, b) => (b.capabilities?.length || 0) - (a.capabilities?.length || 0)
-        )[0]
-
-        if (primaryProvider) {
-          updatedClient.connected = true
-          updatedClient.primaryProviderId = primaryProvider.providerId
-          updatedClient.timestamp = Date.now()
-        } else {
-          updatedClient.connected = false
-          delete updatedClient.primaryProviderId
-        }
-      } else {
-        updatedClient.connected = false
-        delete updatedClient.primaryProviderId
-      }
+      // a deeper merge of clients ensuring no important data is lost
+      const updatedClient = ClientIdentificationService.mergeClients(client, newClient as Client)
 
       this.clients[index] = updatedClient
       if (notify) this.emit(PlatformEvent.CLIENT_UPDATED, updatedClient)
@@ -489,7 +512,9 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
         PlatformEvent.ERROR,
         error instanceof Error
           ? error
-          : new Error('Unknown error occurred updating client: ' + handleError(error), { cause: error })
+          : new Error('Unknown error occurred updating client: ' + handleError(error), {
+              cause: error
+            })
       )
     }
     return undefined

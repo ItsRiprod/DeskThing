@@ -1,0 +1,43 @@
+#!/bin/sh
+
+printToKmsg() { echo $1 && echo $1 > /dev/kmsg; } # Log to dmesg for easier debugging
+
+# Keeps this script from interfering with S49usbgadget on boot
+if [ -e /var/run/usb_gadget_done ]; then
+   printToKmsg "restart_usb: usb_gadget is done"
+else
+   printToKmsg "restart_usb: usb_gadget hasn't run. Exiting"
+   exit 1
+fi
+
+if [ -e /sys/class/android_usb/android0/state ]; then
+   printToKmsg "restart_usb: android0 exists"
+else
+   printToKmsg "restart_usb: android0 doesn't exist. Something is wrong. Exiting."
+   exit 1
+fi
+
+if [ -d /sys/kernel/config/usb_gadget/g1 ]; then
+   printToKmsg "restart_usb: USB gadget exists"
+else
+   printToKmsg "restart_usb: USB gadget doesn't exist. Something is wrong. Exiting."
+   exit 1
+fi
+
+
+USB_STATE="$(cat /sys/class/android_usb/android0/state)"
+printToKmsg "restart_usb: USB is $USB_STATE"
+
+if [[ "$USB_STATE" == "CONFIGURED" ]]; then
+   printToKmsg "restart_usb: Do nothing."
+elif [[ "$USB_STATE" == "CONNECTED" ]]; then
+   printToKmsg "Configuring without restarting"
+   echo $(ls -1 /sys/class/udc/) > /sys/kernel/config/usb_gadget/g1/UDC
+else
+   printToKmsg "restart_usb: Restarting USB"
+   sleep 5 # Give the computer time to fully wake up
+   echo "" > /sys/kernel/config/usb_gadget/g1/UDC
+   echo $(ls -1 /sys/class/udc/) > /sys/kernel/config/usb_gadget/g1/UDC
+fi
+
+printToKmsg "restart_usb: done"

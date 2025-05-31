@@ -8,12 +8,14 @@ interface LogEntryProps {
   progressEvent: ProgressEvent
   allowClosing?: boolean
   showMetadata?: boolean
+  className?: string
 }
 
 export const LogEntry: React.FC<LogEntryProps> = ({
   progressEvent,
   showMetadata = false,
-  allowClosing = false
+  allowClosing = false,
+  className
 }) => {
   const clearProgress = useProgressStore((state) => state.clearProgress)
   const pastEvents = useProgressStore((state) => state.pastEvents)
@@ -29,7 +31,7 @@ export const LogEntry: React.FC<LogEntryProps> = ({
       key={progressEvent.id}
       onClick={handleExpand}
       disabled={!allowClosing}
-      className="bg-zinc-800/50 transition-[height] flex flex-col rounded-lg p-4 border border-zinc-700 group relative"
+      className={`bg-zinc-800/50 transition-[height] flex flex-col rounded-lg p-4 border border-zinc-700 group relative ${className}`}
     >
       <div className="flex items-center gap-3 mb-2">
         <div className="h-5 w-5 flex-shrink-0">

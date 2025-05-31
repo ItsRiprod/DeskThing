@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { Client, ClientManifest } from '@deskthing/types'
+import { SCRIPT_IDs } from '@shared/types'
 
 interface PlatformStoreState {
   initialized: boolean
@@ -8,9 +9,10 @@ interface PlatformStoreState {
   getManifest: (adbId: string) => Promise<ClientManifest | undefined>
   setManifest: (adbId: string, manifest: Partial<ClientManifest>) => Promise<void>
   pushStaged: (adbId: string) => Promise<boolean>
-  pushScript: (adbId: string, scriptId: 'proxy' | 'restart') => Promise<boolean>
+  pushScript: (adbId: string, scriptId: SCRIPT_IDs, force?: boolean) => Promise<string | undefined>
   runCommand: (adbId: string, command: string) => Promise<string | undefined>
   refreshADB: () => Promise<Client[] | undefined>
+  setBrightness: (adbId: string, brightness: number) => Promise<boolean>
   configure: (adbId: string) => Promise<boolean>
   setServiceStatus: (adbId: string, service: string, status: boolean) => Promise<boolean>
 
@@ -36,6 +38,10 @@ const usePlatformStore = create<PlatformStoreState>((set, get) => ({
     return window.electron.platform.adb.getManifest(adbId)
   },
 
+  setBrightness: async (adbId: string, brightness: number) => {
+    return window.electron.platform.adb.setBrightness(adbId, brightness)
+  },
+
   setManifest: async (adbId: string, manifest: Partial<ClientManifest>) => {
     return window.electron.platform.adb.setManifest(adbId, manifest)
   },
@@ -48,8 +54,8 @@ const usePlatformStore = create<PlatformStoreState>((set, get) => ({
     return window.electron.platform.adb.configure(adbId)
   },
 
-  pushScript: async (adbId: string, scriptId: 'proxy' | 'restart') => {
-    return window.electron.platform.adb.pushScript(adbId, scriptId)
+  pushScript: async (adbId: string, scriptId: SCRIPT_IDs, force = false) => {
+    return window.electron.platform.adb.pushScript(adbId, scriptId, force)
   },
 
   runCommand: async (adbId: string, command: string) => {

@@ -1,4 +1,4 @@
-import { Client } from '@deskthing/types'
+import { Client, ConnectionState } from '@deskthing/types'
 import logger from '@server/utils/logger'
 
 export class ClientIdentificationService {
@@ -44,16 +44,25 @@ export class ClientIdentificationService {
    */
   static mergeClients(primary: Client, secondary: Client): Client {
     // Create a new client object with primary as the base
-    const mergedClient: Client = { ...primary }
-
-    // Merge identifiers
-    mergedClient.identifiers = {
-      ...primary.identifiers,
-      ...secondary.identifiers
+    const mergedClient: Client = {
+      ...primary,
+      ...secondary,
+      meta: {
+        ...primary.meta,
+        ...secondary.meta
+      },
+      identifiers: {
+        ...primary.identifiers,
+        ...secondary.identifiers
+      }
     }
 
     // Use the most recent timestamp
-    if (primary.connected && secondary.connected && secondary.timestamp > primary.timestamp) {
+    if (
+      primary.connected &&
+      secondary.connected &&
+      (secondary?.timestamp || 0) > primary.timestamp
+    ) {
       mergedClient.timestamp = secondary.timestamp
     }
 
@@ -78,18 +87,32 @@ export class ClientIdentificationService {
     if (Object.values(mergedClient.identifiers).length > 0) {
       const providers = Object.values(mergedClient.identifiers).filter((id) => id.active)
       const primaryProvider = providers.sort(
-        (a, b) => (b.capabilities?.length || 0) - (a.capabilities?.length || 0)
+        (a, b) =>
+          this.calculateCapabilityScore(b.capabilities) -
+          this.calculateCapabilityScore(a.capabilities)
       )[0]
+
+      mergedClient.connectionState = Math.min(
+        primary.connectionState ?? ConnectionState.Established,
+        secondary.connectionState ?? ConnectionState.Established
+      )
 
       if (primaryProvider) {
         mergedClient.connected = true
-        mergedClient.connectionState = Math.min(primary.connectionState, secondary.connectionState)
         mergedClient.primaryProviderId = primaryProvider.providerId
       } else {
-        mergedClient.connectionState = Math.min(primary.connectionState, secondary.connectionState)
+        mergedClient.connected = false
+        delete mergedClient.primaryProviderId
       }
     }
 
     return mergedClient
+  }
+
+  private static calculateCapabilityScore(capabilities: number[] | undefined): number {
+    if (!capabilities || capabilities.length === 0) return 0
+
+    // Sum the capability values - this gives higher weight to more important capabilities
+    return capabilities.reduce((sum, capability) => sum + capability, 0)
   }
 }

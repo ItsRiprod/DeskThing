@@ -5,7 +5,6 @@ import { IconPlay, IconRefresh, IconReload, IconToggle } from '@renderer/assets/
 import Button from '@renderer/components/Button'
 import { useClientStore, useSettingsStore } from '@renderer/stores'
 import { ClientConnectionMethod } from '@deskthing/types'
-import { PlatformIDs } from '@shared/stores/platformStore'
 
 const ADBSettings: React.FC = () => {
   const [inputValue, setInputValue] = useState('')
@@ -115,11 +114,8 @@ const ADBSettings: React.FC = () => {
               onChange={(e) => setAdbDevice(e.target.value)}
             >
               {adbDevices.map((device) => (
-                <option
-                  key={device.identifiers[PlatformIDs.ADB].id}
-                  value={device.identifiers[PlatformIDs.ADB].id}
-                >
-                  {device.identifiers[PlatformIDs.ADB].id}
+                <option key={device.meta.adb?.adbId} value={device.meta.adb?.adbId}>
+                  {device.meta.adb?.adbId}
                 </option>
               ))}
               <option value="None">None</option>

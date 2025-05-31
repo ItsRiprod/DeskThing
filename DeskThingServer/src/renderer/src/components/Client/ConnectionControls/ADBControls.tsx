@@ -1,10 +1,9 @@
 import React, { useState } from 'react'
-import { Client, ConnectionState } from '@deskthing/types'
+import { Client, ConnectionState, PlatformIDs } from '@deskthing/types'
 import { IconConfig, IconRefresh, IconUpload } from '@renderer/assets/icons'
 import Button from '../../Button'
 import usePlatformStore from '@renderer/stores/platformStore'
 import { useClientStore, useSettingsStore } from '@renderer/stores'
-import { PlatformIDs } from '@shared/stores/platformStore'
 
 interface ADBControlsProps {
   client: Client
@@ -20,7 +19,7 @@ const ADBControls: React.FC<ADBControlsProps> = ({ client, isLoading }) => {
   const configure = usePlatformStore((state) => state.configure)
   const pushStaged = usePlatformStore((state) => state.pushStaged)
 
-  const adbId = client.identifiers[PlatformIDs.ADB]?.id
+  const adbId = client.identifiers[PlatformIDs.ADB]?.id || client.meta.adb?.adbId
 
   const handleAdbCommand = async (command: string): Promise<string | undefined> => {
     if (!adbId) return

@@ -1,16 +1,16 @@
 console.log('[Auth Handler] Starting')
-import { LOGGING_LEVELS, DESKTHING_DEVICE } from '@deskthing/types'
+import { LOGGING_LEVELS, DESKTHING_DEVICE, PlatformIDs } from '@deskthing/types'
 import {
   IPC_CLIENT_TYPES,
   ClientHandlerReturnType,
   ClientIPCData,
-  ProgressChannel
+  ProgressChannel,
+  SCRIPT_IDs
 } from '@shared/types'
 import Logger from '@server/utils/logger'
 import { handleAdbCommands } from '../../handlers/adbHandler'
 import { storeProvider } from '@server/stores/storeProvider'
 import { progressBus } from '@server/services/events/progressBus'
-import { PlatformIDs } from '@shared/stores/platformStore'
 import { getClientWindow } from '@server/windows/windowManager'
 import { handleError } from '@server/utils/errorHandler'
 
@@ -196,7 +196,7 @@ export const clientHandler: {
   'push-staged': async (data) => {
     try {
       progressBus.startOperation(
-        ProgressChannel.CONFIGURE_DEVICE,
+        ProgressChannel.PUSH_SCRIPT,
         'push-staged',
         'Pushing staged app...',
         [
@@ -214,7 +214,7 @@ export const clientHandler: {
         adbId: data.payload.adbId
       })
       // HandlePushWebApp(data.payload)
-      progressBus.complete(ProgressChannel.CONFIGURE_DEVICE, 'push-staged', 'Staged app pushed!')
+      progressBus.complete(ProgressChannel.PUSH_SCRIPT, 'push-staged', 'Staged app pushed!')
     } catch (error) {
       progressBus.error(
         ProgressChannel.IPC_CLIENT,
@@ -248,7 +248,7 @@ export const clientHandler: {
         platform: PlatformIDs.ADB,
         type: 'push',
         request: 'script',
-        scriptId: 'proxy',
+        scriptId: SCRIPT_IDs.PROXY,
         adbId: data.payload
       })
       progressBus.complete(

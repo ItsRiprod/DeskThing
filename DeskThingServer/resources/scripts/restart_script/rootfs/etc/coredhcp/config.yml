@@ -1,0 +1,6 @@
+server4:
+    plugins:
+        - server_id: 192.168.7.2
+        - lease_time: 3600s
+        - netmask: 255.255.255.0
+        - file: "/etc/coredhcp/leases.txt"

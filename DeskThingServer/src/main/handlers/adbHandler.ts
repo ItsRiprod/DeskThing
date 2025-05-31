@@ -53,7 +53,7 @@ export const handleAdbCommands = async (command: string): Promise<string> => {
       (error, stdout, stderr) => {
         if (error) {
           progressBus.error(ProgressChannel.ADB, 'Error Encountered!', error.message)
-          Logger.error(`ADB Error: ${stderr}, ${command}, ${adbPath}`, {
+          Logger.error(`ADB Error: STDERR: ${stderr}  STDOUT: ${stdout}, COMMAND: ${command}, PATH: ${adbPath}`, {
             error: error as Error,
             function: 'adbHandler',
             source: 'adbHandler'

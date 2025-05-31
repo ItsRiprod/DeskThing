@@ -3,17 +3,10 @@ import {
   PlatformConnectionOptions,
   PlatformStatus
 } from '@shared/interfaces/platformInterface'
-import { Client, DeviceToDeskthingData, DeskThingToDeviceCore } from '@deskthing/types'
+import { Client, DeviceToDeskthingData, DeskThingToDeviceCore, PlatformIDs } from '@deskthing/types'
 import { StoreInterface } from '@shared/interfaces/storeInterface'
 import { EventEmitter } from 'node:stream'
 import { ExtractPayloadFromIPC, PlatformIPC } from '@shared/types/ipc/ipcPlatform'
-
-export enum PlatformIDs {
-  ADB = 'adb',
-  WEBSOCKET = 'websocket',
-  BLUETOOTH = 'bluetooth',
-  MAIN = 'main'
-}
 
 export enum PlatformStoreEvent {
   PLATFORM_ADDED = 'platform_added',

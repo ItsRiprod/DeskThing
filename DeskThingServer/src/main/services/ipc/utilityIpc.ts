@@ -1,4 +1,4 @@
-import { LOGGING_LEVELS, Client } from '@deskthing/types'
+import { LOGGING_LEVELS, Client, PlatformIDs } from '@deskthing/types'
 import { UtilityIPCData, UtilityHandlerReturnType, IPC_UTILITY_TYPES } from '@shared/types'
 import Logger from '@server/utils/logger'
 import path from 'path'
@@ -7,7 +7,6 @@ import { setupFirewall } from '../../handlers/firewallHandler'
 import { storeProvider } from '@server/stores/storeProvider'
 import { progressBus } from '@server/services/events/progressBus'
 import { ProgressChannel } from '@shared/types'
-import { PlatformIDs } from '@shared/stores/platformStore'
 
 /**
  * The `utilityHandler` object is an exported module that provides a set of utility functions for handling various tasks in the application. It is structured as a record type, where the keys correspond to the `UtilityIPCData['type']` union type, and the values are asynchronous functions that handle the corresponding request.

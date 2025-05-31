@@ -1,9 +1,9 @@
 import { PlatformIPC } from '@shared/types/ipc/ipcPlatform'
 import Logger from '@server/utils/logger'
 import { storeProvider } from '@server/stores/storeProvider'
-import { PlatformIDs } from '@shared/stores/platformStore'
 import { progressBus } from '../events/progressBus'
 import { ProgressChannel } from '@shared/types'
+import { PlatformIDs } from '@deskthing/types'
 
 export const platformHandler = async <T extends PlatformIPC>(data: T): Promise<T['data']> => {
   const platformStore = await storeProvider.getStore('platformStore')

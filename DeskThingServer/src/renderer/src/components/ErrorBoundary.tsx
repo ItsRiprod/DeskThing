@@ -7,6 +7,7 @@ import { IconRefresh } from '@renderer/assets/icons'
 interface ErrorBoundaryProps {
   children: ReactNode
   fallback?: ReactNode
+  className?: string
 }
 
 interface ErrorBoundaryState {

@@ -1,8 +1,7 @@
 import { create } from 'zustand'
 import { IpcRendererCallback, LoggingData } from '@shared/types'
-import { ClientManifest, Client } from '@deskthing/types'
+import { ClientManifest, Client, PlatformIDs } from '@deskthing/types'
 import useNotificationStore from './notificationStore'
-import { PlatformIDs } from '@shared/stores/platformStore'
 
 interface ClientStoreState {
   connections: number

@@ -1,6 +1,6 @@
 import { handleAdbCommands } from '../../../handlers/adbHandler'
 import logger from '@server/utils/logger'
-import { ADBClientType, ClientConnectionMethod, ClientPlatformIDs } from '@deskthing/types'
+import { ClientConnectionMethod } from '@deskthing/types'
 import { join } from 'path'
 import { app } from 'electron'
 import * as fs from 'fs'
@@ -11,9 +11,13 @@ import {
   updateManifest
 } from '@server/services/client/clientService'
 import { progressBus } from '@server/services/events/progressBus'
-import { ProgressChannel } from '@shared/types'
+import { ProgressChannel, SCRIPT_IDs } from '@shared/types'
+import { ADBServiceClass } from '@shared/stores/adbServiceClass'
+import { restartScript } from '@server/services/adb/restartScript'
+import { handleError } from '@server/utils/errorHandler'
+import { proxyScript } from '@server/services/adb/proxyScript'
 
-export class ADBService {
+export class ADBService implements ADBServiceClass {
   private commandQueues: {
     [deviceId: string]: {
       command: string
@@ -61,7 +65,46 @@ export class ADBService {
       }
     }
   }
-  public async getDevices(): Promise<ADBClientType[]> {
+
+  public async runScript(deviceId: string, scriptId: SCRIPT_IDs, force = false): Promise<string> {
+    try {
+      switch (scriptId) {
+        case SCRIPT_IDs.RESTART: {
+          logger.info(`Running Restart Script on device ${deviceId}`, {
+            function: 'runScript',
+            source: 'ADBService'
+          })
+          const result = await restartScript(this, deviceId, force)
+          logger.info(`Completed Restart Script for ${deviceId} with result: ${result}`, {
+            function: 'runScript',
+            source: 'ADBService'
+          })
+          return result
+        }
+        case SCRIPT_IDs.PROXY: {
+          logger.info(`Running Restart Script on device ${deviceId}`, {
+            function: 'runScript',
+            source: 'ADBService'
+          })
+          const result = await proxyScript(this, deviceId, force)
+          logger.info(`Completed Restart Script for ${deviceId} with result: ${result}`, {
+            function: 'runScript',
+            source: 'ADBService'
+          })
+          return result
+        }
+      }
+    } catch (error) {
+      logger.error(`Error running script ${scriptId} on device ${deviceId}`, {
+        error: error as Error,
+        function: 'runScript',
+        source: 'ADBService'
+      })
+      return handleError(error)
+    }
+  }
+
+  public async getDevices(): Promise<string[]> {
     try {
       const response = await this.sendCommand('devices -l')
       const lines = response
@@ -70,25 +113,17 @@ export class ADBService {
           (line) => line && !line.startsWith('List of devices attached') && line.trim() !== ''
         )
 
-      const adbDevices: ADBClientType[] = lines.reduce((acc, line) => {
+      const adbDevices: string[] = lines.reduce((acc, line) => {
         if (line.includes('device')) {
           const deviceId = line.replace('device', '').trim()
 
-          const adbClient: ADBClientType = {
-            id: ClientPlatformIDs.CarThing,
-            name: 'Superbird Device',
-            ip: '',
-            port: -1,
-            adbId: deviceId.split(' ')[0],
-            offline: deviceId.includes('offline'),
-            method: ClientConnectionMethod.ADB
-          }
+          const adbId = deviceId.split(' ')[0]
 
-          return [...acc, adbClient]
+          return [...acc, adbId]
         } else {
           return acc
         }
-      }, [] as ADBClientType[])
+      }, [] as string[])
 
       return adbDevices
     } catch (error) {
@@ -110,16 +145,16 @@ export class ADBService {
   }
 
   public async pushWebApp(deviceId: string, sourcePath: string): Promise<void> {
-    progressBus.update(ProgressChannel.CONFIGURE_DEVICE, 'Remounting filesystem', 60)
+    progressBus.update(ProgressChannel.PUSH_SCRIPT, 'Remounting filesystem', 60)
     await this.sendCommand('shell mount -o remount,rw /', deviceId)
 
-    progressBus.update(ProgressChannel.CONFIGURE_DEVICE, 'Moving existing webapp', 65)
+    progressBus.update(ProgressChannel.PUSH_SCRIPT, 'Moving existing webapp', 65)
     await this.sendCommand('shell mv /usr/share/qt-superbird-app/webapp /tmp/webapp-orig', deviceId)
 
-    progressBus.update(ProgressChannel.CONFIGURE_DEVICE, 'Remounting', 70)
+    progressBus.update(ProgressChannel.PUSH_SCRIPT, 'Remounting', 70)
     await this.sendCommand('shell rm -r /tmp/webapp-orig', deviceId)
 
-    progressBus.update(ProgressChannel.CONFIGURE_DEVICE, 'Pushing new webapp', 80)
+    progressBus.update(ProgressChannel.PUSH_SCRIPT, 'Pushing new webapp', 80)
     await this.sendCommand(`push "${sourcePath}/" /usr/share/qt-superbird-app/webapp`, deviceId)
   }
 
@@ -187,8 +222,7 @@ export class ADBService {
           name: 'Car Thing',
           id: 4,
           ip: 'localhost',
-          port: 8891,
-          adbId: deviceId
+          port: 8891
         }
       })
 
@@ -199,8 +233,7 @@ export class ADBService {
           name: 'Car Thing',
           id: 4,
           ip: 'localhost',
-          port: 8891,
-          adbId: deviceId
+          port: 8891
         }
       })
 
@@ -270,6 +303,13 @@ export class ADBService {
     }
   }
 
+  /**
+   * Sets the device screen brightness for a specific device.
+   *
+   * @param deviceId The unique identifier of the device
+   * @param value Brightness level from 0-100 (percentage)
+   * @throws {Error} If the command to set brightness fails
+   */
   public async setBrightness(deviceId: string, value: number): Promise<void> {
     const transformedValue = Math.round(245 - (value * (245 - 1)) / 100)
     await this.sendCommand(
@@ -284,6 +324,22 @@ export class ADBService {
 
   public async shutdownDevice(deviceId: string): Promise<void> {
     await this.sendCommand('shell poweroff', deviceId)
+  }
+
+  /**
+   * Retrieves the current screen brightness of a specific device.
+   *
+   * @param deviceId The unique identifier of the device
+   * @returns A number representing the brightness level from 0-100 (percentage)
+   * @throws {Error} If the command to read brightness fails
+   */
+  public async getDeviceBrightness(deviceId: string): Promise<number> {
+    const response = await this.sendCommand(
+      'shell cat /sys/devices/platform/backlight/backlight/aml-bl/brightness',
+      deviceId
+    )
+    const transformedValue = parseInt(response)
+    return Math.round((245 - transformedValue) * (100 / 245))
   }
 
   public async getSupervisorStatus(deviceId: string): Promise<Record<string, string>> {

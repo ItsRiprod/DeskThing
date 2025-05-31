@@ -13,13 +13,13 @@ import {
   DeskThingToDeviceData,
   ProviderCapabilities,
   ClientIdentifier,
-  ConnectionState
+  ConnectionState,
+  PlatformIDs
 } from '@deskthing/types'
 import wsPath from './wsWebsocket?modulePath'
 import { app } from 'electron'
 import logger from '@server/utils/logger'
 import EventEmitter from 'node:events'
-import { PlatformIDs } from '@shared/stores/platformStore'
 import { PlatformIPC } from '@shared/types/ipc/ipcPlatform'
 import { progressBus } from '@server/services/events/progressBus'
 import { ProgressChannel } from '@shared/types'
@@ -94,7 +94,7 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
     return undefined
   }
 
-  public readonly id: PlatformIDs = PlatformIDs.WEBSOCKET
+  public readonly id = PlatformIDs.WEBSOCKET
   public readonly name: string = 'WebSocket'
 
   private setupWorkerListeners(): void {
@@ -237,9 +237,9 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
         id: client.clientId,
         active: true
       }
-    } else {
-      client.identifiers[this.id].id = client.clientId
-      client.identifiers[this.id].active = true
+    } else if (client.identifiers[this.id]) {
+      client.identifiers[this.id]!.id = client.clientId
+      client.identifiers[this.id]!.active = true
     }
 
     // Set primary provider if not set

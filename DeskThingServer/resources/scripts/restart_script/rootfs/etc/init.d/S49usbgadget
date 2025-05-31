@@ -1,0 +1,101 @@
+#!/bin/sh
+
+# RNDIS Configuration
+# Possible modes are static, dhclient and dhserver
+# static will configure usb0 with a static IP address
+# dhclient will use DHCP to request an IP from whatever you plug the car thing into
+# dhserver will start a DHCP server on the carthing. Your PC will get an IP of 192.168.7.1
+
+rndisEnable="true" # Set to false if you only want ADBa
+ipMode="dhserver"
+
+printToKmsg() { echo $1 && echo $1 > /dev/kmsg; } # Log to dmesg for easier debugging
+usbGadgetDir="/sys/kernel/config/usb_gadget/g1"
+printToKmsg "USB_GADGET: configuring USB Gadget with adb and rndis (if enabled)"
+# Create device nodes
+mkdir -p /dev/usb-ffs/adb
+mount -t configfs none /sys/kernel/config/
+
+# Create USB gadget
+printToKmsg "USB_GADGET: Creating USB gadget"
+mkdir -p /sys/kernel/config/usb_gadget/g1
+echo 0x1d6b > "${usbGadgetDir}"/idVendor  # Linux Vendor ID
+echo 0x1014 > "${usbGadgetDir}"/idProduct # Multifunction Device ID
+echo 0x0100 > "${usbGadgetDir}"/bcdDevice # Device Version/Revision
+echo 0x0200 > "${usbGadgetDir}"/bcdUSB    # USB Version
+mkdir -p "${usbGadgetDir}"/strings/0x409  # English strings
+cat /sys/class/efuse/usid > "${usbGadgetDir}"/strings/0x409/serialnumber # Serial Number
+echo Spotify > "${usbGadgetDir}"/strings/0x409/manufacturer              # Manufacturer string
+echo Superbird > "${usbGadgetDir}"/strings/0x409/product                 # Device string
+
+# Convinces Windows to properly load RNDIS driver
+echo 1       > "${usbGadgetDir}"/os_desc/use # Tells gadget to use values in os_desc
+echo 0xcd    > "${usbGadgetDir}"/os_desc/b_vendor_code
+echo MSFT100 > "${usbGadgetDir}"/os_desc/qw_sign
+
+# Create the gadget config
+printToKmsg "USB_GADGET: Creating gadget config"
+mkdir "${usbGadgetDir}"/configs/c.1
+echo "500" > "${usbGadgetDir}"/configs/c.1/MaxPower
+
+# ------ ADB Configuration ------
+printToKmsg "USB_GADGET: Configuring ADB function"
+mkdir -p "${usbGadgetDir}"/functions/ffs.adb
+mount -t functionfs adb /dev/usb-ffs/adb
+printToKmsg "USB_GADGET: Starting adb daemon"
+/usr/bin/adbd &
+sleep 3s # Give adbd some time to exist
+# -------------------------------
+
+# ----- RNDIS Configuration -----
+if [[ $rndisEnable = "true" ]]; then
+    printToKmsg "USB_GADGET: Configuring RNDIS function"
+    mkdir -p "${usbGadgetDir}"/functions/rndis.usb0
+    echo "a0:b1:c2:d3:e4:00" > "${usbGadgetDir}"/functions/rndis.usb0/dev_addr
+    echo "a0:b1:c2:d3:e4:01" > "${usbGadgetDir}"/functions/rndis.usb0/host_addr
+    echo RNDIS   > "${usbGadgetDir}"/functions/rndis.usb0/os_desc/interface.rndis/compatible_id
+    echo 5162001 > "${usbGadgetDir}"/functions/rndis.usb0/os_desc/interface.rndis/sub_compatible_id
+    sleep 1s
+fi
+
+# -------------------------------
+
+printToKmsg "USB_GADGET: Attaching functions to gadget config"
+if [[ $rndisEnable = "true" ]]; then ln -s "${usbGadgetDir}"/functions/rndis.usb0 "${usbGadgetDir}"/configs/c.1; fi
+ln -s "${usbGadgetDir}"/functions/ffs.adb "${usbGadgetDir}"/configs/c.1
+ln -s "${usbGadgetDir}"/configs/c.1 "${usbGadgetDir}"/os_desc
+# Bind gadget to the USB device
+printToKmsg "USB_GADGET: Binding gadget to USB device"
+UDC_DEVICE=$(ls -1 /sys/class/udc/)
+echo "$UDC_DEVICE" > /sys/kernel/config/usb_gadget/g1/UDC
+
+# ----- usb0 Configuration
+if [[ $rndisEnable = "true" ]]; then
+    printToKmsg "USB_GADGET: Configuring usb0"
+    ntpd # Start NTPd. If we get an IP thru DHCP this will sync the clock
+    sleep 3s # Wait a few seconds to allow the interface to come up
+    ifconfig usb0 up
+    if [[ $ipMode = "static" ]] || [[ $ipMode = "dhserver" ]]; then
+        # If you edit these values, you also need to edit the files in /etc/coredhcp to match
+        staticIp="192.168.7.2"
+        staticBroadcast="192.168.7.255"
+        staticRoute="192.168.7.1"
+        printToKmsg "USB_GADGET: Configuring static IP as ${staticIp}"
+        ifconfig usb0 ${staticIp} netmask 255.255.255.0 broadcast ${staticBroadcast}
+        ip route add default via ${staticRoute} dev usb0
+        if [[ $ipMode = "dhserver" ]]; then
+            printToKmsg "USB_GADGET: Starting DHCP Server"
+            coredhcp -N &
+        fi
+    elif [[ $ipMode = "dhclient" ]]; then
+        printToKmsg "USB_GADGET: Starting DHCP Client"
+        udhcpc -b -i usb0 -p /var/run/lan_udhcpc.pid -R -s /etc/udhcpc/default.script -t 1 -T 3 -A 3 &
+    fi
+fi
+
+# Prevent the restart_usb script from interfering
+printToKmsg "USB_GADGET: Creating complete flag"
+echo 1 > /var/run/usb_gadget_done
+chattr +i /var/run/usb_gadget_done
+
+printToKmsg "USB_GADGET: USB done"

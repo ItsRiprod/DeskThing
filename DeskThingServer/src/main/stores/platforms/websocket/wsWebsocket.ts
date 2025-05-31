@@ -19,11 +19,11 @@ import {
   ClientManifest,
   DESKTHING_DEVICE,
   DeskThingToDeviceCore,
-  DEVICE_DESKTHING
+  DEVICE_DESKTHING,
+  PlatformIDs
 } from '@deskthing/types'
 import { ExpressServer } from './expressWorker'
 import { WebsocketPlatformIPC } from '@shared/types'
-import { PlatformIDs } from '@shared/stores/platformStore'
 import { handleError } from '@server/utils/errorHandler'
 
 type AdditionalOptions = {
@@ -49,11 +49,10 @@ export class WSPlatform {
     capabilities: [ProviderCapabilities.COMMUNICATE, ProviderCapabilities.PING]
   }
 
-  public readonly id: string
+  public readonly id = PlatformIDs.WEBSOCKET
 
   constructor(userDataPath: string) {
     this.userDataPath = userDataPath
-    this.id = crypto.randomUUID()
   }
 
   private getInternalId(clientId: string): string | undefined {
@@ -153,6 +152,11 @@ export class WSPlatform {
           ...this.identifier,
           id: platformConnectionId,
           active: true
+        }
+      },
+      meta: {
+        [this.id]: {
+          wsId: platformConnectionId
         }
       },
       userAgent: req.headers['user-agent'] || ''
@@ -299,20 +303,6 @@ export class WSPlatform {
           const client = clientObj.client
           this.ensureConnected(client)
 
-          if (
-            !clientObj.client.connected ||
-            clientObj.client.connectionState !== ConnectionState.Connected
-          ) {
-            clientObj.client.connected = true
-            clientObj.client.connectionState = ConnectionState.Connected
-
-            // Notify about the updated client state
-            this.sendToParent({
-              event: PlatformEvent.CLIENT_UPDATED,
-              data: clientObj.client
-            })
-          }
-
           if (data.type == DEVICE_DESKTHING.PING) {
             console.log(`Got a ping from the client`)
             this.sendData(client.clientId, {
@@ -433,9 +423,13 @@ export class WSPlatform {
           data:
             error instanceof Error
               ? error
-              : new Error('Unknown error occurred broadcasting data to websocket clients' + handleError(error), {
-                cause: error
-              })
+              : new Error(
+                  'Unknown error occurred broadcasting data to websocket clients' +
+                    handleError(error),
+                  {
+                    cause: error
+                  }
+                )
         })
       }
     })
@@ -563,6 +557,7 @@ export class WSPlatform {
             clientId,
             connected: false,
             identifiers: {},
+            meta: {},
             connectionState: ConnectionState.Disconnected
           }
         })

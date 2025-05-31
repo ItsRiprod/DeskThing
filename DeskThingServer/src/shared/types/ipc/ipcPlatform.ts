@@ -1,5 +1,5 @@
-import { Client, ClientManifest } from '@deskthing/types'
-import { PlatformIDs } from '@shared/stores/platformStore'
+import { PlatformIDs, Client, ClientManifest } from '@deskthing/types'
+import { SCRIPT_IDs } from '../adb'
 
 export type WebsocketPlatformIPC = {
   platform: PlatformIDs.WEBSOCKET
@@ -54,6 +54,13 @@ export type ADBPlatformIPC = {
       data?: boolean
     }
   | {
+      type: 'set'
+      request: 'brightness'
+      brightness: number
+      adbId: string
+      data?: boolean
+    }
+  | {
       type: 'push'
       request: 'staged'
       adbId: string
@@ -68,9 +75,10 @@ export type ADBPlatformIPC = {
   | {
       type: 'push'
       request: 'script'
-      scriptId: 'proxy' | 'restart'
+      scriptId: SCRIPT_IDs
       adbId: string
-      data?: boolean
+      force?: boolean
+      data?: string
     }
   | {
       type: 'run'

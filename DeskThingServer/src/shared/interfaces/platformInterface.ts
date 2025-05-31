@@ -14,9 +14,9 @@ import {
   Client,
   ClientIdentifier,
   DeskThingToDeviceCore,
-  DeviceToDeskthingData
+  DeviceToDeskthingData,
+  PlatformIDs
 } from '@deskthing/types'
-import { PlatformIDs } from '@shared/stores/platformStore'
 import { PlatformIPC } from '@shared/types/ipc/ipcPlatform'
 import EventEmitter from 'node:events'
 
