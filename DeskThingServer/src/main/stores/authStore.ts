@@ -33,9 +33,9 @@ export class AuthStore extends EventEmitter<authStoreEventTypes> implements Auth
 
   private async initializeServer(): Promise<void> {
     try {
-      const settings = await this.settingStore.getSettings()
-      if (settings && settings.callbackPort) {
-        this.setCallbackPort(settings.callbackPort)
+      const callbackPort = await this.settingStore.getSetting('server_callbackPort')
+      if (callbackPort) {
+        this.setCallbackPort(callbackPort)
       }
     } catch (error) {
       Logger.error('Failed to start the server', {
@@ -47,9 +47,9 @@ export class AuthStore extends EventEmitter<authStoreEventTypes> implements Auth
   }
 
   private async initializeListeners(): Promise<void> {
-    this.settingStore.addListener((settings) => {
-      if (settings?.callbackPort && settings.callbackPort != this.callbackPort) {
-        this.setCallbackPort(settings.callbackPort)
+    this.settingStore.on('server_callbackPort', async (callbackPort) => {
+      if (callbackPort && callbackPort != this.callbackPort) {
+        this.setCallbackPort(callbackPort)
       }
     })
   }

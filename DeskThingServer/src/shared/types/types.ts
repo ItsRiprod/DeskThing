@@ -117,23 +117,26 @@ export interface RepoReleases {
 // The settings for the app
 export type Settings = {
   version: string
-  /** @depreciated - use semver off the main settings */
-  version_code?: number
-  callbackPort: number
-  LogLevel: LOG_FILTER
-  devicePort: number
-  address: string
-  autoStart: boolean
-  autoConfig: boolean
-  minimizeApp: boolean
-  localIp: string[]
-  globalADB: boolean
-  appRepos: string[]
-  autoDetectADB: boolean
-  clientRepos: string[]
-  playbackLocation?: string
-  refreshInterval: number
-  [key: string]: any // For any additional settings
+
+  // server
+  server_LogLevel: LOG_FILTER
+  server_autoStart: boolean
+  server_minimizeApp: boolean
+  server_localIp: string[]
+  server_callbackPort: number
+  // device
+  device_devicePort: number
+  device_address: string
+  // music
+  music_playbackLocation?: string
+  music_refreshInterval: number
+  // adb
+  adb_useGlobal: boolean
+  adb_autoConfig: boolean
+  adb_autoDetect: boolean
+  // flags
+  flag_firstClose: boolean
+  flag_hasOpened: boolean
 }
 
 // Used in the Refresh ADB screen to display little messages for the user

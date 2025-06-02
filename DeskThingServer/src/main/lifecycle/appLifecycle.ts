@@ -1,7 +1,7 @@
 /**
  * Manages application lifecycle events
  */
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, Notification } from 'electron'
 import { setupProtocolHandler } from '../system/protocol'
 import { setupTray } from '../system/tray'
 import { setupDock } from '../system/dock'
@@ -59,7 +59,10 @@ export async function initializeAppLifecycle(): Promise<void> {
     if (windows.length === 0) {
       buildMainWindow()
     } else {
-      console.log(`Not creating due to ${windows.length} already existing. The window is `, windows.map((w) => w.getTitle()))
+      console.log(
+        `Not creating due to ${windows.length} already existing. The window is `,
+        windows.map((w) => w.getTitle())
+      )
     }
   })
 
@@ -68,7 +71,16 @@ export async function initializeAppLifecycle(): Promise<void> {
     const { storeProvider } = await import('../stores/storeProvider')
     const settingsStore = await storeProvider.getStore('settingsStore')
     const settings = await settingsStore.getSettings()
-    if (settings?.minimizeApp) {
+
+    if (settings?.flag_firstClose === true) {
+      new Notification({
+        title: 'Still Running!',
+        body: 'GlanceThing has been minimized to the system tray, and is still running in the background!'
+      }).show()
+      settingsStore.saveSetting('flag_firstClose', false)
+    }
+
+    if (settings?.server_minimizeApp) {
       // Clear cache from everywhere
       const { default: cacheManager } = await import('../services/cache/cacheManager')
       await cacheManager.hibernateAll()

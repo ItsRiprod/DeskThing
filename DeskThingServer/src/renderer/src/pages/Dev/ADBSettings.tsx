@@ -17,7 +17,7 @@ const ADBSettings: React.FC = () => {
   )
   const refreshDevices = useClientStore((store) => store.requestADBDevices)
   const saveSettings = useSettingsStore((store) => store.savePartialSettings)
-  const adbSetting = useSettingsStore((store) => store.settings.globalADB)
+  const adbSetting = useSettingsStore((store) => store.settings.adb_useGlobal)
   const [restarting, setRestarting] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -61,7 +61,7 @@ const ADBSettings: React.FC = () => {
   }
 
   const handleToggleAdb = (): void => {
-    saveSettings({ globalADB: !adbSetting })
+    saveSettings({ adb_useGlobal: !adbSetting })
   }
 
   return (

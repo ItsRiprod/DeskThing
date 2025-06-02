@@ -37,7 +37,7 @@ const MusicSettings: React.FC = () => {
     fetchSettings()
   }, [appsList])
 
-  const handleSettingChange = (key: string, value: string | boolean | number | string[]): void => {
+  const handleSettingChange = <K extends keyof Settings>(key: K, value: Settings[K]): void => {
     if (!settings) return
     setSettings({ ...settings, [key]: value })
     console.log('Settings Updated:', settings)
@@ -60,20 +60,20 @@ const MusicSettings: React.FC = () => {
           <Button
             className="bg-transparent p-0"
             onClick={() =>
-              handleSettingChange('refreshInterval', settings?.refreshInterval === -1 ? 15000 : -1)
+              handleSettingChange('music_refreshInterval', settings?.music_refreshInterval === -1 ? 15000 : -1)
             }
           >
             <IconToggle
               iconSize={48}
               disabled={!settings}
-              checked={settings?.refreshInterval !== -1}
-              className={`transition-color ${settings?.refreshInterval !== -1 ? 'text-green-500' : 'text-gray-500'}`}
+              checked={settings?.music_refreshInterval !== -1}
+              className={`transition-color ${settings?.music_refreshInterval !== -1 ? 'text-green-500' : 'text-gray-500'}`}
             />
           </Button>
         </div>
       </div>
       <div
-        className={`transition-[height,opacity,border] border-t overflow-hidden ${!settings || settings?.refreshInterval === -1 ? 'h-0 opacity-50 border-black' : 'h-20 opacity-100 border-gray-500'}`}
+        className={`transition-[height,opacity,border] border-t overflow-hidden ${!settings || settings?.music_refreshInterval === -1 ? 'h-0 opacity-50 border-black' : 'h-20 opacity-100 border-gray-500'}`}
       >
         <div className={`w-full p-4 flex justify-between items-center`}>
           <h2 className="text-xl">Refresh Interval (seconds)</h2>
@@ -82,17 +82,17 @@ const MusicSettings: React.FC = () => {
               type="number"
               value={
                 settings
-                  ? settings?.refreshInterval === -1
+                  ? settings?.music_refreshInterval === -1
                     ? ''
-                    : settings.refreshInterval / 1000
+                    : settings.music_refreshInterval / 1000
                   : 15000
               }
               onChange={(e) =>
-                handleSettingChange('refreshInterval', Number(e.target.value) * 1000)
+                handleSettingChange('music_refreshInterval', Number(e.target.value) * 1000)
               }
               className="focus:text-white bg-zinc-900 text-white rounded px-2 py-2"
               placeholder="Enter A Value"
-              disabled={!settings || settings.refreshInterval === -1}
+              disabled={!settings || settings.music_refreshInterval === -1}
             />
           </div>
         </div>
@@ -100,12 +100,12 @@ const MusicSettings: React.FC = () => {
       <div className="border-t border-gray-500 w-full p-4 flex justify-between items-center">
         <h2 className="text-xl w-full">Playback Sources</h2>
         <Select
-          placeholder={settings ? settings.playbackLocation || '' : 'Loading...'}
+          placeholder={settings ? settings.music_playbackLocation || '' : 'Loading...'}
           onChange={(e) => {
             const value = e as SingleValue<SettingOption>
-            handleSettingChange('playbackLocation', value?.value || '')
+            handleSettingChange('music_playbackLocation', value?.value || '')
           }}
-          value={settings ? settings.playbackLocation || '' : 'Disabled'}
+          value={settings ? settings.music_playbackLocation || '' : 'Disabled'}
           className="bg-zinc-900 rounded hover:cursor-pointer text-white px-2 py-2 w-full"
           options={[
             ...audioSources.map((app) => ({

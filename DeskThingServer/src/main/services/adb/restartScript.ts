@@ -46,9 +46,9 @@ export const restartScript: ScriptInterface = async (adbService, deviceId, force
     }
 
     progressBus.update(ProgressChannel.PUSH_SCRIPT, 'Starting USB gadget configuration', 5)
-    
+
     const resourcePath = getResourcesPath('scripts', 'restart_script')
-    
+
     progressBus.update(ProgressChannel.PUSH_SCRIPT, `Using the path ${resourcePath}`, 5)
 
     // Remount filesystem as read-write

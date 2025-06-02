@@ -23,7 +23,7 @@ interface ClientDetailsOverlayProps {
 }
 
 const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, client }) => {
-  const port = useSettingsStore((settings) => settings.settings.devicePort)
+  const port = useSettingsStore((settings) => settings.settings.device_devicePort)
   const sendCommand = usePlatformStore((state) => state.runCommand)
   const disconnect = usePlatformStore((state) => state.disconnect)
   const pushStaged = usePlatformStore((state) => state.pushStaged)

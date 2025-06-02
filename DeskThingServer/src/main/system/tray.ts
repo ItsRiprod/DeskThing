@@ -43,6 +43,13 @@ export async function setupTray(): Promise<void> {
   // Create tray context menu
   const contextMenu = Menu.buildFromTemplate([
     {
+      label: `DeskThing v${app.getVersion()}`,
+      enabled: false
+    },
+    {
+      type: 'separator'
+    },
+    {
       label: 'Open Desktop',
       click: (): void => {
         const mainWindow = getMainWindow()
@@ -66,13 +73,14 @@ export async function setupTray(): Promise<void> {
       click: async (): Promise<void> => {
         const { storeProvider } = await import('../stores/storeProvider')
         const settingsStore = await storeProvider.getStore('settingsStore')
-        const data = await settingsStore.getSettings()
+        const data = await settingsStore.getSetting('device_devicePort')
         if (data) {
-          getClientWindow(data.devicePort)
+          getClientWindow(data)
         }
       }
     },
-    ...(process.platform === 'darwin' ? [
+    ...(process.platform === 'darwin'
+      ? [
           {
             label: 'Toggle Dock Icon',
             click: (): void => {
@@ -80,12 +88,14 @@ export async function setupTray(): Promise<void> {
             },
             id: 'show-hide-icon'
           }
-        ] : []),    
+        ]
+      : []),
     {
       label: 'Quit Application',
       click: async (): Promise<void> => {
         app.quit()
-        if (process.platform == 'darwin') { // force quit on mac for some reason
+        if (process.platform == 'darwin') {
+          // force quit on mac for some reason
           app.exit()
         }
       }

@@ -1,19 +1,23 @@
 // Types
-import { LOGGING_LEVELS } from '@deskthing/types'
-import { Settings, LOG_FILTER, CacheableStore } from '@shared/types'
-import { SettingsStoreClass, SettingsStoreListener } from '@shared/stores/settingsStore'
+import { Settings, CacheableStore } from '@shared/types'
+import {
+  SettingsListener,
+  SettingsStoreClass,
+  SettingsStoreListener
+} from '@shared/stores/settingsStore'
 
 // Utils
 import { readFromFile, writeToFile } from '../services/files/fileService'
 import Logger from '@server/utils/logger'
-import os from 'os'
 import semverSatisfies from 'semver/functions/satisfies.js'
-import { app } from 'electron'
+import { defaultSettings } from '@server/static/defaultSettings'
+
+const LAST_SETTINGS_UPDATE = '0.11.8'
 
 export class SettingsStore implements CacheableStore, SettingsStoreClass {
   private settings: Settings | undefined
   private settingsFilePath: string = 'settings.json'
-  private listeners: SettingsStoreListener[] = []
+  private globalListeners: SettingsListener[] = []
 
   private _initialized: boolean = false
   public get initialized(): boolean {
@@ -30,7 +34,7 @@ export class SettingsStore implements CacheableStore, SettingsStoreClass {
    * @implements CacheableStore
    */
   clearCache = async (): Promise<void> => {
-    // this.settings = undefined - it's not worth the performance overhead of loading them again
+    // do nothing
   }
 
   /**
@@ -41,158 +45,44 @@ export class SettingsStore implements CacheableStore, SettingsStoreClass {
   }
 
   private setupSettings = async (): Promise<void> => {
-    this.loadSettings()
-      .then((settings) => {
-        if (settings) {
-          this.settings = settings as Settings
-          this.settings.localIp = getLocalIpAddress()
-          this.notifyListeners()
-        }
-      })
-      .catch((err) => {
-        console.error('SETTINGS: Error initializing settings:', err)
-      })
+    const settings = await this.loadSettings()
+    this.settings = settings
   }
 
-  /**
-   * Adds a listener function that will be called whenever the settings are updated.
-   * @param listener - A function that will be called with the updated settings.
-   */
-  public addListener(listener: SettingsStoreListener): void {
-    this.listeners.push(listener)
-  }
-
-  /**
-   * Notifies all registered listeners of the updated settings.
-   * This method is called internally whenever the settings are updated.
-   */
-  private async notifyListeners(): Promise<void> {
-    if (!this.settings) {
-      // Ensures settings are loaded
-      await this.getSettings()
-    }
-
-    await Promise.all(this.listeners.map((listener) => listener(this.settings as Settings)))
-  }
-
-  public async getSettings(): Promise<Settings | undefined> {
-    if (this.settings) {
-      return this.settings
-    } else {
-      return await this.loadSettings()
-    }
-  }
-
-  /**
-   * Updates a specific setting and saves it to file
-   * @param key - The key of the setting to update
-   * @param value - The new value for the setting
-   */
-  public async updateSetting(
-    key: string,
-    value: boolean | undefined | string | number | string[]
-  ): Promise<void> {
-    if (!this.settings) {
+  private notifyListeners = async (): Promise<void> => {
+    if (!this.settings) return
+    this.globalListeners.forEach(async (listener) => {
       try {
-        this.settings = await this.loadSettings()
+        if (!this.settings) return
+        await listener(this.settings)
       } catch (error) {
-        Logger.error('Failed to load settings before update', {
+        Logger.error('Error in notifyListeners', {
           source: 'settingsStore',
-          function: 'updateSetting',
+          function: 'notifyListeners',
           error: error as Error
         })
-        throw new Error('Failed to load settings before update')
       }
-    }
-
-    if (key === 'autoStart' && typeof value === 'boolean') {
-      this.updateAutoLaunch(value)
-    }
-    this.settings[key] = value
-    await this.saveSettings()
+    })
   }
 
-  /**
-   * Loads the application settings from a file. If the file does not exist or the
-   * version code is outdated, it creates a new file with the default settings.
-   * If the `autoStart` setting is defined, it also updates the auto-launch
-   * configuration.
-   *
-   * @returns The loaded settings, or the default settings if the file could not be
-   * loaded.
-   */
-  public async loadSettings(): Promise<Settings> {
-    try {
-      const data = await readFromFile<Settings>(this.settingsFilePath)
-      Logger.debug('Loaded Settings!', {
-        source: 'settingStore',
-        function: 'loadSettings'
-      })
-
-      if (!data || !data.version || !semverSatisfies(data.version, '>=' + app.getVersion())) {
-        // File does not exist, create it with default settings
-        console.log('Unable to find settings. ', data)
-        const defaultSettings = this.getDefaultSettings()
-        await writeToFile(defaultSettings, this.settingsFilePath)
-        console.log('SETTINGS: Returning default settings')
-        return defaultSettings
-      }
-
-      if (data.autoStart !== undefined) {
-        await this.updateAutoLaunch(data.autoStart)
-      }
-
-      return data
-    } catch (err) {
-      console.error('Error loading settings:', err)
-      const defaultSettings = this.getDefaultSettings()
-      defaultSettings.localIp = getLocalIpAddress()
-      writeToFile(defaultSettings, this.settingsFilePath)
-      return defaultSettings
-    }
-  }
-
-  private async updateAutoLaunch(enable: boolean): Promise<void> {
-    try {
-      const AutoLaunch = await import('auto-launch')
-      const autoLaunch = new AutoLaunch.default({
-        name: 'DeskThing',
-        path: process.execPath
-      })
-
-      if (enable) {
-        await autoLaunch.enable()
-      } else {
-        await autoLaunch.disable()
-      }
-    } catch (err) {
-      Logger.error('Failed to enable auto launching', {
-        source: 'settingsStore',
-        function: 'updateAutoLaunch',
-        error: err as Error
-      })
-    }
-  }
   /**
    * Saves the current settings to file. Emits an update if settings are passed
    * @param settings - Overrides the current settings with the passed settings if passed
    */
-  public async saveSettings(settings?: Settings): Promise<void> {
+  public async saveSettings(settings?: Settings, notify?: boolean): Promise<void> {
     try {
       if (settings) {
         this.settings = settings
       }
 
       await writeToFile(this.settings, this.settingsFilePath)
-      Logger.log(
-        LOGGING_LEVELS.LOG,
-        'SETTINGS: Updated settings!' + JSON.stringify(this.settings),
-        {
-          source: 'settingsStore',
-          function: 'saveSettings'
-        }
-      )
-      this.notifyListeners()
+      Logger.debug('SETTINGS: Updated settings!' + JSON.stringify(this.settings), {
+        source: 'settingsStore',
+        function: 'saveSettings'
+      })
+      if (notify) {
+        this.notifyListeners()
+      }
     } catch (err) {
       Logger.error('Unable to save settings!', {
         source: 'settingsStore',
@@ -207,58 +97,90 @@ export class SettingsStore implements CacheableStore, SettingsStoreClass {
    * @returns Returns the default settings for the application
    */
   private getDefaultSettings(): Settings {
-    return {
-      version: app.getVersion(),
-      callbackPort: 8888,
-      devicePort: 8891,
-      address: '0.0.0.0',
-      LogLevel: LOG_FILTER.INFO,
-      autoStart: false,
-      autoConfig: false,
-      minimizeApp: true,
-      globalADB: false,
-      autoDetectADB: false,
-      refreshInterval: -1,
-      playbackLocation: 'none',
-      localIp: getLocalIpAddress(),
-      appRepos: ['https://github.com/ItsRiprod/deskthing-apps'],
-      clientRepos: ['https://github.com/ItsRiprod/deskthing-client']
-    }
-  }
-}
-
-/**
- * Retrieves the local IP addresses of the system, excluding internal and certain reserved IP addresses.
- * @returns An array of local IP addresses as strings.
- */
-const getLocalIpAddress = (): string[] => {
-  const interfaces = os.networkInterfaces()
-  const localIps: string[] = []
-
-  if (!interfaces) {
-    return ['127.0.0.1']
+    return { ...defaultSettings }
   }
 
-  for (const name of Object.keys(interfaces)) {
-    const ifaceGroup = interfaces[name]
-    if (ifaceGroup) {
-      for (const iface of ifaceGroup) {
-        if (iface.family === 'IPv4' && !iface.internal) {
-          if (
-            iface.address.startsWith('10.') ||
-            (iface.address.startsWith('172.') &&
-              parseInt(iface.address.split('.')[1]) >= 16 &&
-              parseInt(iface.address.split('.')[1]) <= 31) ||
-            iface.address.startsWith('192.168.')
-          ) {
-            localIps.push(iface.address)
-          }
-        }
+  /**
+   * Loads the application settings from a file. If the file does not exist or the
+   * version code is outdated, it creates a new file with the default settings.
+   * If the `autoStart` setting is defined, it also updates the auto-launch
+   * configuration.
+   *
+   * @returns The loaded settings, or the default settings if the file could not be
+   * loaded.
+   */
+  private async loadSettings(): Promise<Settings> {
+    try {
+      const data = await readFromFile<Settings>(this.settingsFilePath)
+      Logger.debug('Loaded Settings!', {
+        source: 'settingStore',
+        function: 'loadSettings'
+      })
+
+      if (!data || !data.version || !semverSatisfies(data.version, '>=' + LAST_SETTINGS_UPDATE)) {
+        // File does not exist, create it with default settings
+        console.log('Unable to find settings. ', data)
+        const defaultSettings = this.getDefaultSettings()
+        await writeToFile(defaultSettings, this.settingsFilePath)
+        console.log('SETTINGS: Returning default settings')
+        return defaultSettings
       }
+
+      return data
+    } catch (err) {
+      console.error('Error loading settings:', err)
+
+      const defaultSettings = this.getDefaultSettings()
+
+      writeToFile(defaultSettings, this.settingsFilePath)
+
+      return defaultSettings
     }
   }
-  if (localIps.length === 0) {
-    localIps.push('127.0.0.1')
+
+  public getSettings = async (): Promise<Settings> => {
+    if (this.settings) {
+      return this.settings
+    }
+    return this.loadSettings()
   }
-  return localIps
+
+  public getSetting = async <K extends keyof Settings>(
+    key: K
+  ): Promise<Settings[K] | undefined> => {
+    const settings = await this.getSettings()
+    return settings[key]
+  }
+
+  public addSettingsListener(listener: SettingsListener): () => void {
+    this.globalListeners.push(listener)
+    return () => {
+      this.globalListeners = this.globalListeners.filter((l) => l !== listener)
+    }
+  }
+
+  public on<K extends keyof Settings>(key: K, listener: SettingsStoreListener<K>): () => void {
+    let currentSetting = this.settings?.[key]
+
+    const remove = this.addSettingsListener(async (settings) => {
+      // Ensures the new setting is not the same as it was before - unless it is a reference
+      if (settings[key] === currentSetting && typeof currentSetting != 'object') return
+
+      currentSetting = settings[key]
+      await listener(settings[key])
+    })
+
+    return remove
+  }
+
+  /**
+   * Updates a specific setting and saves it to file
+   * @param key - The key of the setting to update
+   * @param value - The new value for the setting
+   */
+  public async saveSetting<K extends keyof Settings>(key: K, value: Settings[K]): Promise<void> {
+    const settings = await this.getSettings()
+    settings[key] = value
+    await this.saveSettings(settings, false)
+  }
 }

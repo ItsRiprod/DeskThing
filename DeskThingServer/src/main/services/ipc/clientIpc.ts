@@ -92,12 +92,7 @@ export const clientHandler: {
     try {
       await clientStore.loadClientFromURL(data.payload)
     } catch (error) {
-      progressBus.warn(
-        ProgressChannel.IPC_CLIENT,
-        'url',
-        'Error loading URL',
-        handleError(error)
-      )
+      progressBus.warn(ProgressChannel.IPC_CLIENT, 'url', 'Error loading URL', handleError(error))
     }
 
     progressBus.complete(ProgressChannel.IPC_CLIENT, 'Download Client', 'Web app loaded from URL')
@@ -312,9 +307,9 @@ export const clientHandler: {
   [IPC_CLIENT_TYPES.OPEN_CLIENT]: async () => {
     const { storeProvider } = await import('@server/stores/storeProvider')
     const settingsStore = await storeProvider.getStore('settingsStore')
-    const data = await settingsStore.getSettings()
-    if (data) {
-      getClientWindow(data.devicePort)
+    const devicePort = await settingsStore.getSetting('device_devicePort')
+    if (devicePort) {
+      getClientWindow(devicePort)
     }
     return true
   }

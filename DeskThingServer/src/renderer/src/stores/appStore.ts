@@ -246,7 +246,7 @@ const useAppStore = create<AppStoreState>((set, get) => ({
 
   getIconUrl: (appName: string, icon?: string): string => {
     const settings = useSettingsStore.getState().settings
-    const url = `http://localhost:${settings.devicePort}/icons/${appName}/icons/${icon || appName}.svg`
+    const url = `http://localhost:${settings.device_devicePort}/icons/${appName}/icons/${icon || appName}.svg`
     return url
   }
 }))

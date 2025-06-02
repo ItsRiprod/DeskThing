@@ -11,10 +11,10 @@ export const initializationCheck = async (): Promise<void> => {
   // Check the current version (if it exists)
   try {
     const currentVersion = await getCurrentVersion()
-    
+
     // Migrate the fs to the current version
     await migrateDeskThing(currentVersion)
-    
+
     await updateLoadingStatus('Finalizing...')
   } catch (error) {
     console.error('An error was found while initializing - skipping', error)

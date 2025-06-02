@@ -11,14 +11,15 @@ import { PlatformStoreClass } from '@shared/stores/platformStore'
 import { AuthStoreClass } from '@shared/stores/authStore'
 import { ClientStoreClass } from '@shared/stores/clientStore'
 import { UpdateStoreClass } from '@shared/stores/updateStore'
+import { ProfileStoreClass } from '@shared/stores/profileStore'
+import { SupporterStoreClass } from '@shared/stores/supporterStore'
+import { AutoLaunchStoreClass } from '@shared/stores/autoLaunchStore'
 
 // Stores
 
 // import { ExpressServerStoreClass } from '@shared/stores/expressServerStore'
 // import { ExpressServerManager } from './_expressServerStore'
 import logger from '@server/utils/logger'
-import { ProfileStoreClass } from '@shared/stores/profileStore'
-import { SupporterStoreClass } from '@shared/stores/supporterStore'
 
 interface Stores {
   appDataStore: AppDataStoreClass
@@ -35,6 +36,7 @@ interface Stores {
   taskStore: TaskStoreClass
   updateStore: UpdateStoreClass
   supporterStore: SupporterStoreClass
+  autoLaunchStore: AutoLaunchStoreClass
 }
 
 export class StoreProvider {
@@ -62,7 +64,8 @@ export class StoreProvider {
       platformStore: () => import('./platformStore').then((m) => m.PlatformStore),
       clientStore: () => import('./clientStore').then((m) => m.ClientStore),
       updateStore: () => import('./updateStore').then((m) => m.UpdateStore),
-      supporterStore: () => import('./supporterStore').then((m) => m.SupporterStore)
+      supporterStore: () => import('./supporterStore').then((m) => m.SupporterStore),
+      autoLaunchStore: () => import('./autoLaunchStore').then((m) => m.AutoLaunchStore)
     }
 
     this.storeInitializers = {
@@ -101,7 +104,9 @@ export class StoreProvider {
       profileStore: async () =>
         new (await storeImports.profileStore())(await this.getStore('platformStore', false)),
       updateStore: async () => new (await storeImports.updateStore())(),
-      supporterStore: async () => new (await storeImports.supporterStore())()
+      supporterStore: async () => new (await storeImports.supporterStore())(),
+      autoLaunchStore: async () =>
+        new (await storeImports.autoLaunchStore())(await this.getStore('settingsStore', false))
     }
 
     this.initialize()

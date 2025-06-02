@@ -10,10 +10,11 @@ import {
   DeskThingToDeviceCore,
   ConnectionState,
   ProviderCapabilities,
-  DEVICE_DESKTHING
+  DEVICE_DESKTHING,
+  PlatformIDs
 } from '@deskthing/types'
 import Logger from '@server/utils/logger'
-import { PlatformIDs, PlatformStoreEvent } from '@shared/stores/platformStore'
+import { PlatformStoreEvent } from '@shared/stores/platformStore'
 import { MappingStoreClass } from '@shared/stores/mappingStore'
 
 vi.mock('@server/utils/logger', () => ({

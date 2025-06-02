@@ -26,7 +26,8 @@ export async function initializeStores(): Promise<void> {
     AppDataStore: await storeProvider.getStore('appDataStore', false),
     updateStore: await storeProvider.getStore('updateStore', false),
     clientStore: await storeProvider.getStore('clientStore', false),
-    profileStore: await storeProvider.getStore('profileStore', true)
+    profileStore: await storeProvider.getStore('profileStore', true),
+    autoLaunchStore: await storeProvider.getStore('autoLaunchStore', true)
   }
 
   const platformStore = await storeProvider.getStore('platformStore', false)
@@ -104,7 +105,7 @@ export async function initializeStores(): Promise<void> {
     })
   })
 
-  storeList.settingsStore.addListener((newSettings) => {
+  storeList.settingsStore.addSettingsListener((newSettings) => {
     uiEventBus.sendIpcData({
       type: 'settings-updated',
       payload: newSettings

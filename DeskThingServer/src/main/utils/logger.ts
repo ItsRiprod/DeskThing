@@ -34,13 +34,13 @@ class Logger {
   }
 
   public setupSettingsListener = async (settingsStore: SettingsStoreClass): Promise<void> => {
-    const settings = await settingsStore.getSettings()
-    if (settings) {
-      this.logLevel = settings?.logLevel || LOG_FILTER.INFO
+    const logLevel = await settingsStore.getSetting('server_LogLevel')
+    if (logLevel) {
+      this.logLevel = logLevel || LOG_FILTER.INFO
     }
 
-    settingsStore.addListener((settings) => {
-      this.logLevel = settings?.logLevel || LOG_FILTER.INFO
+    settingsStore.on('server_LogLevel', (loggingLevel) => {
+      this.logLevel = loggingLevel || LOG_FILTER.INFO
     })
   }
 

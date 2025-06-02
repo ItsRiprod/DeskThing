@@ -23,23 +23,21 @@ const useSettingsStore = create<SettingsStoreState>((set, get) => ({
   initialized: false,
   settings: {
     version: '0.0.0',
-    version_code: 0,
-    callbackPort: -1,
-    devicePort: -1,
-    address: '-.-.-.-',
-    autoStart: true,
-    LogLevel: LOG_FILTER.INFO,
-    minimizeApp: true,
-    autoConfig: false,
-    globalADB: false,
-    autoDetectADB: false,
-    refreshInterval: -1,
-    playbackLocation: undefined,
-    localIp: ['-.-.-.-'],
-    appRepos: ['https://github.com/ItsRiprod/deskthing-apps'],
-    clientRepos: ['https://github.com/ItsRiprod/deskthing-client']
+    server_LogLevel: LOG_FILTER.INFO,
+    server_autoStart: true,
+    server_minimizeApp: true,
+    server_localIp: ['-.-.-.-'],
+    server_callbackPort: -1,
+    device_devicePort: -1,
+    device_address: '-.-.-.-',
+    music_playbackLocation: undefined,
+    music_refreshInterval: -1,
+    adb_useGlobal: false,
+    adb_autoConfig: false,
+    adb_autoDetect: false,
+    flag_firstClose: false,
+    flag_hasOpened: false
   },
-
   initialize: async () => {
     if (get().initialized) return
 
@@ -90,7 +88,7 @@ const useSettingsStore = create<SettingsStoreState>((set, get) => ({
 
   getSettings: async (): Promise<Settings> => {
     const state = get()
-    if (state.settings.callbackPort === -1 || state.settings.devicePort === -1) {
+    if (state.settings.server_callbackPort === -1 || state.settings.device_devicePort === -1) {
       await get().requestSettings()
     }
     return state.settings

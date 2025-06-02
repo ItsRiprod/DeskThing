@@ -11,7 +11,7 @@ import {
 } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
 import React, { useState, useRef, useMemo } from 'react'
-import { Client, ClientConnectionMethod } from '@deskthing/types'
+import { Client } from '@deskthing/types'
 import usePlatformStore from '@renderer/stores/platformStore'
 import { useSettingsStore } from '@renderer/stores'
 import { ProgressChannel, SCRIPT_IDs } from '@shared/types'
@@ -23,7 +23,7 @@ interface ClientDetailsOverlayProps {
 }
 
 const ADBDeviceDetails: React.FC<ClientDetailsOverlayProps> = ({ client }) => {
-  const port = useSettingsStore((settings) => settings.settings.devicePort)
+  const port = useSettingsStore((settings) => settings.settings.device_devicePort)
   const sendCommand = usePlatformStore((state) => state.runCommand)
   const modifyBrightness = usePlatformStore((state) => state.setBrightness)
   const setServiceStatus = usePlatformStore((state) => state.setServiceStatus)
@@ -42,7 +42,7 @@ const ADBDeviceDetails: React.FC<ClientDetailsOverlayProps> = ({ client }) => {
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null)
 
   const adbId = useMemo(() => {
-    if (client.manifest?.context.method === ClientConnectionMethod.ADB) {
+    if (client.meta.adb) {
       return client.meta.adb?.adbId
     } else {
       return undefined
@@ -129,7 +129,10 @@ const ADBDeviceDetails: React.FC<ClientDetailsOverlayProps> = ({ client }) => {
   }
 
   const openPort = async (): Promise<void> => {
-    if (!adbId) return
+    if (!adbId) {
+      console.error('Unable to find ADB ID', adbId)
+      return
+    }
     await sendCommand(adbId, `reverse tcp:${port} tcp:${port}`)
   }
 

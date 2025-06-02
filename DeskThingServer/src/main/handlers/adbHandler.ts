@@ -42,8 +42,7 @@ const splitArgs = (str: string): string[] => {
 export const handleAdbCommands = async (command: string): Promise<string> => {
   progressBus.start(ProgressChannel.ADB, 'ADB - Runner', 'Executing ADB Command')
   const settingsStore = await storeProvider.getStore('settingsStore')
-  const settings = await settingsStore.getSettings()
-  const useGlobalADB = settings?.globalADB === true
+  const useGlobalADB = await settingsStore.getSetting('adb_useGlobal')
   Logger.info(useGlobalADB ? 'Using Global ADB' : 'Using Local ADB')
   return new Promise((resolve, reject) => {
     execFile(
@@ -53,11 +52,14 @@ export const handleAdbCommands = async (command: string): Promise<string> => {
       (error, stdout, stderr) => {
         if (error) {
           progressBus.error(ProgressChannel.ADB, 'Error Encountered!', error.message)
-          Logger.error(`ADB Error: STDERR: ${stderr}  STDOUT: ${stdout}, COMMAND: ${command}, PATH: ${adbPath}`, {
-            error: error as Error,
-            function: 'adbHandler',
-            source: 'adbHandler'
-          })
+          Logger.error(
+            `ADB Error: STDERR: ${stderr}  STDOUT: ${stdout}, COMMAND: ${command}, PATH: ${adbPath}`,
+            {
+              error: error as Error,
+              function: 'adbHandler',
+              source: 'adbHandler'
+            }
+          )
           reject(new Error(`ADB Error: ${stderr}, ${command}, ${adbPath}`))
         } else {
           progressBus.complete(ProgressChannel.ADB, 'ADB Success!')

@@ -13,6 +13,13 @@ export async function setupDock(): Promise<void> {
   // Create dock context menu
   const contextMenu = Menu.buildFromTemplate([
     {
+      label: `DeskThing v${app.getVersion()}`,
+      enabled: false
+    },
+    {
+      type: 'separator'
+    },
+    {
       label: 'Open Desktop',
       click: (): void => {
         const mainWindow = getMainWindow()
@@ -36,9 +43,9 @@ export async function setupDock(): Promise<void> {
       click: async (): Promise<void> => {
         const { storeProvider } = await import('../stores/storeProvider')
         const settingsStore = await storeProvider.getStore('settingsStore')
-        const data = await settingsStore.getSettings()
+        const data = await settingsStore.getSetting('device_devicePort')
         if (data) {
-          getClientWindow(data.devicePort)
+          getClientWindow(data)
         }
       }
     },

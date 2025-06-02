@@ -5,7 +5,7 @@ import { IconLoading, IconPlay, IconSave, IconToggle } from '@renderer/assets/ic
 import Select from '@renderer/components/Select'
 import { SingleValue } from 'react-select'
 import { SettingOption } from '@deskthing/types'
-import { LOG_FILTER } from '@shared/types'
+import { LOG_FILTER, Settings } from '@shared/types'
 import useUpdateStore from '@renderer/stores/updateStore'
 
 const ServerSettings: React.FC = () => {
@@ -28,7 +28,7 @@ const ServerSettings: React.FC = () => {
     { value: LOG_FILTER.APPSONLY, label: 'Apps Only' }
   ]
 
-  const handleSettingChange = (key: string, value: string | boolean | number): void => {
+  const handleSettingChange = <K extends keyof Settings>(key: K, value: Settings[K]): void => {
     setSettings({ ...settings, [key]: value })
   }
 
@@ -65,8 +65,8 @@ const ServerSettings: React.FC = () => {
         <h2 className="text-xl">Callback Port</h2>
         <input
           type="number"
-          value={settings.callbackPort}
-          onChange={(e) => handleSettingChange('callbackPort', Number(e.target.value))}
+          value={settings.server_callbackPort}
+          onChange={(e) => handleSettingChange('server_callbackPort', Number(e.target.value))}
           className="border border-gray-300 focus:text-black text-gray-500 rounded px-2 py-1"
         />
       </div>
@@ -74,8 +74,8 @@ const ServerSettings: React.FC = () => {
         <h2 className="text-xl">Device Port</h2>
         <input
           type="number"
-          value={settings.devicePort}
-          onChange={(e) => handleSettingChange('devicePort', Number(e.target.value))}
+          value={settings.device_devicePort}
+          onChange={(e) => handleSettingChange('device_devicePort', Number(e.target.value))}
           className="border border-gray-300 rounded focus:text-black text-gray-500 px-2 py-1"
         />
       </div>
@@ -83,8 +83,8 @@ const ServerSettings: React.FC = () => {
         <h2 className="text-xl">Server Address</h2>
         <input
           type="text"
-          value={settings.address}
-          onChange={(e) => handleSettingChange('address', e.target.value)}
+          value={settings.device_address}
+          onChange={(e) => handleSettingChange('device_address', e.target.value)}
           className="border border-gray-300 focus:text-black text-gray-500 rounded px-2 py-1"
         />
       </div>
@@ -93,12 +93,12 @@ const ServerSettings: React.FC = () => {
         <Button
           className="bg-transparent p-0"
           title="Automatically start deskthing when the computer boots"
-          onClick={() => handleSettingChange('autoStart', !settings.autoStart)}
+          onClick={() => handleSettingChange('server_autoStart', !settings.server_autoStart)}
         >
           <IconToggle
             iconSize={48}
-            checked={settings.autoStart}
-            className={`transition-color ${settings.autoStart ? 'text-green-500' : 'text-gray-500'}`}
+            checked={settings.server_autoStart}
+            className={`transition-color ${settings.server_autoStart ? 'text-green-500' : 'text-gray-500'}`}
           />
         </Button>
       </div>
@@ -106,12 +106,12 @@ const ServerSettings: React.FC = () => {
         <h2 className="text-xl w-full">Logging Level</h2>
         <Select
           options={logLevelOptions}
-          value={settings.logLevel}
-          placeholder={settings.LogLevel}
+          value={settings.server_LogLevel}
+          placeholder={settings.server_LogLevel}
           className="w-full"
           onChange={(selected) => {
             const selectedValue = selected as SingleValue<SettingOption>
-            handleSettingChange('logLevel', selectedValue?.value || LOG_FILTER.INFO)
+            handleSettingChange('server_LogLevel', selectedValue?.value as LOG_FILTER || LOG_FILTER.INFO)
           }}
         />
       </div>
@@ -120,12 +120,12 @@ const ServerSettings: React.FC = () => {
         <Button
           title="Will let DeskThing run even while the GUI is not open"
           className="bg-transparent p-0"
-          onClick={() => handleSettingChange('minimizeApp', !settings.minimizeApp)}
+          onClick={() => handleSettingChange('server_minimizeApp', !settings.server_minimizeApp)}
         >
           <IconToggle
             iconSize={48}
-            checked={settings.minimizeApp}
-            className={`transition-color ${settings.minimizeApp ? 'text-green-500' : 'text-gray-500'}`}
+            checked={settings.server_minimizeApp}
+            className={`transition-color ${settings.server_minimizeApp ? 'text-green-500' : 'text-gray-500'}`}
           />
         </Button>
       </div>

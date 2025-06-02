@@ -13,7 +13,7 @@ interface ADBControlsProps {
 const ADBControls: React.FC<ADBControlsProps> = ({ client, isLoading }) => {
   const [animatingIcons, setAnimatingIcons] = useState<Record<string, boolean>>({})
   const refreshADbClients = useClientStore((store) => store.requestADBDevices)
-  const devicePort = useSettingsStore((store) => store.settings.devicePort)
+  const devicePort = useSettingsStore((store) => store.settings.device_devicePort)
 
   const sendCommand = usePlatformStore((state) => state.runCommand)
   const configure = usePlatformStore((state) => state.configure)

@@ -442,11 +442,7 @@ export const stageAppFile = async ({
       function: 'handleZipFromFile',
       source: 'appInstaller'
     })
-    progressBus.error(
-      ProgressChannel.FN_APP_INSTALL,
-      'Extraction failed!',
-      handleError(error)
-    )
+    progressBus.error(ProgressChannel.FN_APP_INSTALL, 'Extraction failed!', handleError(error))
   }
 
   progressBus.update(ProgressChannel.FN_APP_INSTALL, 'Getting Manifest...', 96)

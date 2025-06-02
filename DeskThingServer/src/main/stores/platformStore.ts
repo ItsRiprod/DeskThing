@@ -537,7 +537,8 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
       const updatedClient: Client = {
         ...client,
         connected: updatedState?.connected ?? client.connected,
-        connectionState: updatedState?.connectionState ?? client.connectionState ?? ConnectionState.Established,
+        connectionState:
+          updatedState?.connectionState ?? client.connectionState ?? ConnectionState.Established,
         primaryProviderId: primaryProvider.providerId,
         timestamp: Date.now()
       }
@@ -796,7 +797,6 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
         source: 'platformStore',
         function: 'clientUpdated'
       })
-
 
       this.handleClientUpdate(platform, client)
 

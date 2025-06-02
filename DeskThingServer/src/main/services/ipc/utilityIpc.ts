@@ -183,7 +183,7 @@ export const utilityHandler: {
       if (payload) {
         Logger.debug('[firewall] Setting up firewall')
         try {
-          await setupFirewall(payload.devicePort)
+          await setupFirewall(payload.device_devicePort)
         } catch (firewallError) {
           if (!(firewallError instanceof Error)) return
 

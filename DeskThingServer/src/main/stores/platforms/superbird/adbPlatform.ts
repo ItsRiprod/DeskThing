@@ -265,10 +265,12 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
 
   private async initialize(): Promise<void> {
     const settingStore = await storeProvider.getStore('settingsStore')
-    const settings = await settingStore.getSettings()
-    this.restartInterval(settings?.autoDetectADB)
-    settingStore.addListener((settings) => {
-      this.restartInterval(settings?.autoDetectADB)
+    const autoDetectADB = await settingStore.getSetting('adb_autoDetect')
+
+    this.restartInterval(autoDetectADB)
+
+    settingStore.on('adb_autoDetect', (autoDetect) => {
+      this.restartInterval(autoDetect)
     })
   }
 
@@ -459,6 +461,7 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
         function: 'refreshDevices',
         source: 'adbPlatform'
       })
+      return
     }
   }
   private pushStagedClient(clientId: string, port: number): Promise<void> {

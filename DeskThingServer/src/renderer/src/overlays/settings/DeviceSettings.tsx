@@ -2,14 +2,14 @@ import React, { useState } from 'react'
 import useSettingsStore from '../../stores/settingsStore'
 import Button from '@renderer/components/Button'
 import { IconLoading, IconPlay, IconToggle } from '@renderer/assets/icons'
-import { ReplyData } from '@shared/types'
+import { ReplyData, Settings } from '@shared/types'
 
 const DeviceSettings: React.FC = () => {
   const { settings, saveSettings } = useSettingsStore()
   const [firewallOutput, setFirewallOutput] = useState<ReplyData[]>([])
   const [loading, setLoading] = useState(false)
 
-  const handleSettingChange = (key: string, value: boolean): void => {
+  const handleSettingChange = <K extends keyof Settings>(key: K, value: Settings[K]): void => {
     saveSettings({ ...settings, [key]: value })
   }
 
@@ -43,12 +43,12 @@ const DeviceSettings: React.FC = () => {
         <h2 className="text-xl">Auto Detect ADB</h2>
         <Button
           className="bg-transparent p-0"
-          onClick={() => handleSettingChange('autoDetectADB', !settings.autoDetectADB)}
+          onClick={() => handleSettingChange('adb_autoDetect', !settings.adb_autoDetect)}
         >
           <IconToggle
             iconSize={48}
-            checked={settings.autoDetectADB}
-            className={`transition-color ${settings.autoDetectADB ? 'text-green-500' : 'text-gray-500'}`}
+            checked={settings.adb_autoDetect}
+            className={`transition-color ${settings.adb_autoDetect ? 'text-green-500' : 'text-gray-500'}`}
           />
         </Button>
       </div>
@@ -57,12 +57,12 @@ const DeviceSettings: React.FC = () => {
         <h2 className="text-xl">Use Global ADB</h2>
         <Button
           className="bg-transparent p-0"
-          onClick={() => handleSettingChange('globalADB', !settings.globalADB)}
+          onClick={() => handleSettingChange('adb_useGlobal', !settings.adb_useGlobal)}
         >
           <IconToggle
             iconSize={48}
-            checked={settings.globalADB}
-            className={`transition-color ${settings.globalADB ? 'text-green-500' : 'text-gray-500'}`}
+            checked={settings.adb_useGlobal}
+            className={`transition-color ${settings.adb_useGlobal ? 'text-green-500' : 'text-gray-500'}`}
           />
         </Button>
       </div>
@@ -71,12 +71,12 @@ const DeviceSettings: React.FC = () => {
         <h2 className="text-xl">Auto Config</h2>
         <Button
           className="bg-transparent p-0"
-          onClick={() => handleSettingChange('autoConfig', !settings.autoConfig)}
+          onClick={() => handleSettingChange('adb_autoConfig', !settings.adb_autoConfig)}
         >
           <IconToggle
             iconSize={48}
-            checked={settings.autoConfig}
-            className={`transition-color ${settings.autoConfig ? 'text-green-500' : 'text-gray-500'}`}
+            checked={settings.adb_autoConfig}
+            className={`transition-color ${settings.adb_autoConfig ? 'text-green-500' : 'text-gray-500'}`}
           />
         </Button>
       </div>

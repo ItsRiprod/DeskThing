@@ -92,7 +92,7 @@ export class MusicService implements MusicStoreClass {
     }
 
     Logger.log(LOGGING_LEVELS.LOG, `Setting playback location to ${source}`)
-    await this.settingsStore.updateSetting('playbackLocation', source)
+    await this.settingsStore.saveSetting('music_playbackLocation', source)
     this.currentApp = source
 
     // if (source === 'local') { TODO Native Local Audio
@@ -226,7 +226,7 @@ export class MusicService implements MusicStoreClass {
     })
 
     // Listen for settings changes
-    this.settingsStore.addListener((data) => {
+    this.settingsStore.addSettingsListener((data) => {
       this.initialize()
       this.handleSettingsUpdate(data)
     })
@@ -313,19 +313,21 @@ export class MusicService implements MusicStoreClass {
     const settings = await this.settingsStore.getSettings()
     if (!settings) return
 
-    this.currentApp = settings.playbackLocation || 'none'
+    this.currentApp = settings.music_playbackLocation || 'none'
     Logger.debug(`Initializing current app to ${this.currentApp}`)
 
-    await this.updateRefreshInterval(settings.refreshInterval)
+    await this.updateRefreshInterval(settings.music_refreshInterval)
     await this.refreshMusicData()
   }
 
   private async handleSettingsUpdate(settings: Settings): Promise<void> {
-    await this.updateRefreshInterval(settings.refreshInterval)
+    await this.updateRefreshInterval(settings.music_refreshInterval)
 
-    if (settings.playbackLocation && settings.playbackLocation !== this.currentApp) {
-      Logger.info(`Changing playback source: ${this.currentApp} → ${settings.playbackLocation}`)
-      this.currentApp = settings.playbackLocation
+    if (settings.music_playbackLocation && settings.music_playbackLocation !== this.currentApp) {
+      Logger.info(
+        `Changing playback source: ${this.currentApp} → ${settings.music_playbackLocation}`
+      )
+      this.currentApp = settings.music_playbackLocation
       await this.refreshMusicData()
     }
   }
@@ -340,9 +342,9 @@ export class MusicService implements MusicStoreClass {
 
     // Try to get from settings
     const settings = await this.settingsStore.getSettings()
-    if (settings?.playbackLocation && settings.playbackLocation !== 'none') {
-      Logger.log(LOGGING_LEVELS.LOG, `Found ${settings.playbackLocation} in settings`)
-      return settings.playbackLocation
+    if (settings?.music_playbackLocation && settings.music_playbackLocation !== 'none') {
+      Logger.log(LOGGING_LEVELS.LOG, `Found ${settings.music_playbackLocation} in settings`)
+      return settings.music_playbackLocation
     }
 
     // Try to find an audio source app automatically
@@ -363,8 +365,8 @@ export class MusicService implements MusicStoreClass {
     if (this.currentApp === 'disabled') {
       Logger.log(LOGGING_LEVELS.LOG, `Music is disabled`)
       const settings = await this.settingsStore.getSettings()
-      if (!settings || settings.refreshInterval > 0) {
-        await this.settingsStore.updateSetting('refreshInterval', -1)
+      if (!settings || settings.music_refreshInterval > 0) {
+        await this.settingsStore.saveSetting('music_refreshInterval', -1)
       }
       return null
     }
@@ -374,7 +376,7 @@ export class MusicService implements MusicStoreClass {
       const app = await this.findCurrentPlaybackSource()
       if (app) {
         this.currentApp = app
-        await this.settingsStore.updateSetting('playbackLocation', app)
+        await this.settingsStore.saveSetting('music_playbackLocation', app)
         return app
       } else {
         Logger.log(LOGGING_LEVELS.ERROR, `No audio source found. Please install an audio app.`)
@@ -385,7 +387,7 @@ export class MusicService implements MusicStoreClass {
     // Handle empty current app
     if (!this.currentApp) {
       const settings = await this.settingsStore.getSettings()
-      const currentApp = settings?.playbackLocation
+      const currentApp = settings?.music_playbackLocation
 
       if (!currentApp) {
         Logger.log(LOGGING_LEVELS.ERROR, `No playback location set in settings`)

@@ -21,7 +21,7 @@ const InfoWidget: React.FC = () => {
           {connections} client{connections != 1 && 's'} connected
         </p>
         <p>
-          {settings.address}:{settings.devicePort}
+          {settings.device_address}:{settings.device_devicePort}
         </p>
         <div>
           <h4>{apps.length} apps installed</h4>
