@@ -1,7 +1,7 @@
 /**
  * Manages application lifecycle events
  */
-import { app, BrowserWindow, Notification } from 'electron'
+import { app, BrowserWindow, NativeImage, nativeImage, Notification } from 'electron'
 import { setupProtocolHandler } from '../system/protocol'
 import { setupTray } from '../system/tray'
 import { setupDock } from '../system/dock'
@@ -10,6 +10,7 @@ import { loadModules } from './moduleLoader'
 import { closeLoadingWindow, buildMainWindow } from '../windows/windowManager'
 import { nextTick } from 'node:process'
 import { updateLoadingStatus } from '@server/windows/loadingWindow'
+import { join } from 'node:path'
 
 /**
  * Initialize the application lifecycle
@@ -73,9 +74,17 @@ export async function initializeAppLifecycle(): Promise<void> {
     const settings = await settingsStore.getSettings()
 
     if (settings?.flag_firstClose === true) {
+      let trayIcon: NativeImage
+      if (process.platform === 'darwin') {
+        trayIcon = nativeImage.createFromPath(join(__dirname, '../../resources/iconTrayMacSm.png'))
+      } else {
+        trayIcon = nativeImage.createFromPath(join(__dirname, '../../resources/iconTray.png'))
+      }
+
       new Notification({
-        title: 'Still Running!',
-        body: 'GlanceThing has been minimized to the system tray, and is still running in the background!'
+        title: 'DeskThing is now in the background!',
+        body: 'DeskThing will continue to work.',
+        icon: trayIcon
       }).show()
       settingsStore.saveSetting('flag_firstClose', false)
     }

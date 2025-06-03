@@ -69,7 +69,7 @@ export class SettingsStore implements CacheableStore, SettingsStoreClass {
    * Saves the current settings to file. Emits an update if settings are passed
    * @param settings - Overrides the current settings with the passed settings if passed
    */
-  public async saveSettings(settings?: Settings, notify?: boolean): Promise<void> {
+  public async saveSettings(settings?: Settings): Promise<void> {
     try {
       if (settings) {
         this.settings = settings
@@ -80,9 +80,7 @@ export class SettingsStore implements CacheableStore, SettingsStoreClass {
         source: 'settingsStore',
         function: 'saveSettings'
       })
-      if (notify) {
-        this.notifyListeners()
-      }
+      this.notifyListeners()
     } catch (err) {
       Logger.error('Unable to save settings!', {
         source: 'settingsStore',
@@ -181,6 +179,6 @@ export class SettingsStore implements CacheableStore, SettingsStoreClass {
   public async saveSetting<K extends keyof Settings>(key: K, value: Settings[K]): Promise<void> {
     const settings = await this.getSettings()
     settings[key] = value
-    await this.saveSettings(settings, false)
+    await this.saveSettings(settings)
   }
 }

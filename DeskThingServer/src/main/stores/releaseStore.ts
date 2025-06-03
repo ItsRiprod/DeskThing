@@ -51,7 +51,6 @@ import { progressBus } from '@server/services/events/progressBus'
 
 /**
  * Temporarily holds the entire repo response information in memory unless manually refreshed
- *
  * Holds the AppReleaseMeta information and properly stores it when needed
  */
 export class ReleaseStore implements CacheableStore, ReleaseStoreClass {

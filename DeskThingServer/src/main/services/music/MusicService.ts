@@ -9,7 +9,6 @@ import {
   DeviceToDeskthingData,
   LOGGING_LEVELS
 } from '@deskthing/types'
-import { Settings } from '@shared/types'
 import { SettingsStoreClass } from '@shared/stores/settingsStore'
 import { AppStoreClass } from '@shared/stores/appStore'
 import { PlatformStoreClass, PlatformStoreEvent } from '@shared/stores/platformStore'
@@ -70,9 +69,9 @@ export class MusicService implements MusicStoreClass {
       return
     }
 
-    if (refreshRate < 5) {
+    if (refreshRate < 5000) {
       Logger.log(LOGGING_LEVELS.WARN, `Refresh interval of ${refreshRate}s may impact performance`)
-      if (refreshRate < 1) {
+      if (refreshRate < 1000) {
         Logger.log(
           LOGGING_LEVELS.WARN,
           `Extremely low refresh interval (${refreshRate}s) could cause system issues`
@@ -226,9 +225,16 @@ export class MusicService implements MusicStoreClass {
     })
 
     // Listen for settings changes
-    this.settingsStore.addSettingsListener((data) => {
-      this.initialize()
-      this.handleSettingsUpdate(data)
+    this.settingsStore.on('music_playbackLocation', async (data) => {
+      if (data && data !== this.currentApp) {
+        Logger.info(`Changing playback source: ${this.currentApp} → ${data}`)
+        this.currentApp = data
+        await this.refreshMusicData()
+      }
+    })
+
+    this.settingsStore.on('music_refreshInterval', async (data) => {
+      await this.updateRefreshInterval(data)
     })
 
     // Listen for song end events
@@ -318,18 +324,6 @@ export class MusicService implements MusicStoreClass {
 
     await this.updateRefreshInterval(settings.music_refreshInterval)
     await this.refreshMusicData()
-  }
-
-  private async handleSettingsUpdate(settings: Settings): Promise<void> {
-    await this.updateRefreshInterval(settings.music_refreshInterval)
-
-    if (settings.music_playbackLocation && settings.music_playbackLocation !== this.currentApp) {
-      Logger.info(
-        `Changing playback source: ${this.currentApp} → ${settings.music_playbackLocation}`
-      )
-      this.currentApp = settings.music_playbackLocation
-      await this.refreshMusicData()
-    }
   }
 
   private async findCurrentPlaybackSource(): Promise<string | null> {
