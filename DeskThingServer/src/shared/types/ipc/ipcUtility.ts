@@ -19,18 +19,18 @@ import { PaginatedResponse, SupporterData, SupporterFetchOptions } from '../supp
 // import { FullTaskList } from '../taskTypes'
 
 export enum IPC_UTILITY_TYPES {
-  /** @depreciated */
+  /** @deprecated */
   PING = 'ping',
-  /** @depreciated */
+  /** @deprecated */
   CONNECTIONS = 'connections',
   SETTINGS = 'settings',
   LOGS = 'logs',
   SHUTDOWN = 'shutdown',
   OPEN_LOG_FOLDER = 'open-log-folder',
   REFRESH_FIREWALL = 'refresh-firewall',
-  /** @depreciated */
+  /** @deprecated */
   RESTART_SERVER = 'restart-server',
-  /** @depreciated */
+  /** @deprecated */
   ZIP = 'zip',
   ACTIONS = 'actions',
   BUTTONS = 'buttons',

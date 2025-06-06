@@ -4,46 +4,58 @@ import {
   ReleaseHandlerReturnMap,
   ReleaseIPCData
 } from '@shared/types'
-import { AppReleaseMeta, AppReleaseCommunity, ClientReleaseMeta } from '@deskthing/types'
+import { AppLatestServer, ClientLatestServer } from '@shared/types/releases'
 import { ipcRenderer } from 'electron'
 
 export const releases = {
-  refreshApp: async (repoUrl: string): Promise<void> =>
+  refreshReleases: async (options?: { force?: boolean }): Promise<void> =>
     await sendCommand({
       kind: IPC_HANDLERS.RELEASE,
-      type: IPC_RELEASE_TYPES.GITHUB_REFRESH_APP,
+      type: IPC_RELEASE_TYPES.REFRESH_RELEASES,
+      options
+    }),
+  getApps: async (): Promise<AppLatestServer[] | AppLatestServer> =>
+    await sendCommand({
+      kind: IPC_HANDLERS.RELEASE,
+      type: IPC_RELEASE_TYPES.GET_APPS
+    }),
+  getAppRepositories: async (): Promise<string[]> =>
+    await sendCommand({
+      kind: IPC_HANDLERS.RELEASE,
+      type: IPC_RELEASE_TYPES.GET_APP_REPOSITORIES
+    }),
+  addAppRepo: async (repoUrl: string): Promise<AppLatestServer | void> =>
+    await sendCommand({
+      kind: IPC_HANDLERS.RELEASE,
+      type: IPC_RELEASE_TYPES.ADD_APP_REPOSITORY,
       payload: repoUrl
-    }),
-  refreshApps: async (): Promise<void> =>
-    await sendCommand({
-      kind: IPC_HANDLERS.RELEASE,
-      type: IPC_RELEASE_TYPES.GITHUB_REFRESH_APPS
-    }),
-  getApps: async (): Promise<AppReleaseMeta[] | AppReleaseMeta> =>
-    await sendCommand({
-      kind: IPC_HANDLERS.RELEASE,
-      type: IPC_RELEASE_TYPES.GITHUB_GET_APPS
-    }),
-  getAppReferences: async (): Promise<AppReleaseCommunity[]> =>
-    await sendCommand({
-      kind: IPC_HANDLERS.RELEASE,
-      type: IPC_RELEASE_TYPES.GITHUB_GET_APP_REFERENCES
-    }),
-  addAppRepo: async (repoUrl: string): Promise<AppReleaseMeta | void> =>
-    await sendCommand({
-      kind: IPC_HANDLERS.RELEASE,
-      type: IPC_RELEASE_TYPES.GITHUB_ADD_APP_REPO,
-      payload: repoUrl
-    }),
-  getClients: async (): Promise<ClientReleaseMeta[]> =>
-    await sendCommand({
-      kind: IPC_HANDLERS.RELEASE,
-      type: IPC_RELEASE_TYPES.GITHUB_GET_CLIENTS
     }),
   removeAppRepo: async (repoUrl: string): Promise<void> =>
     await sendCommand({
       kind: IPC_HANDLERS.RELEASE,
-      type: IPC_RELEASE_TYPES.GITHUB_REMOVE_APP_REPO,
+      type: IPC_RELEASE_TYPES.REMOVE_APP_REPOSITORY,
+      payload: repoUrl
+    }),
+  getClients: async (): Promise<ClientLatestServer[]> =>
+    await sendCommand({
+      kind: IPC_HANDLERS.RELEASE,
+      type: IPC_RELEASE_TYPES.GET_CLIENTS
+    }),
+  getClientRepositories: async (): Promise<string[]> =>
+    await sendCommand({
+      kind: IPC_HANDLERS.RELEASE,
+      type: IPC_RELEASE_TYPES.GET_CLIENT_REPOSITORIES
+    }),
+  addClientRepo: async (repoUrl: string): Promise<ClientLatestServer | void> =>
+    await sendCommand({
+      kind: IPC_HANDLERS.RELEASE,
+      type: IPC_RELEASE_TYPES.ADD_CLIENT_REPOSITORY,
+      payload: repoUrl
+    }),
+  removeClientRepo: async (repoUrl: string): Promise<void> =>
+    await sendCommand({
+      kind: IPC_HANDLERS.RELEASE,
+      type: IPC_RELEASE_TYPES.REMOVE_CLIENT_REPOSITORY,
       payload: repoUrl
     })
 }

@@ -27,7 +27,7 @@ export type AppData = {
 }
 
 /**
- * @depreciated - use AppManifest instead
+ * @deprecated - use AppManifest instead
  */
 export interface AppReturnData {
   appId: string

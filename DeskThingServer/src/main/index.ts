@@ -475,7 +475,7 @@ if (!setupSingleInstance()) {
 //   data: App[]
 // }
 
-// /**@depreciated - use uiBus instead */
+// /**@deprecated - use uiBus instead */
 // async function sendIpcData({ type, payload, window }: ServerIPCData): Promise<void> {
 //   if (window && window instanceof BrowserWindow) {
 //     window.webContents.send(type, payload)

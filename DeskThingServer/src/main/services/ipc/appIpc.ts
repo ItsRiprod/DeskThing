@@ -163,13 +163,13 @@ export const appHandler: {
    * successful, it logs the completion of the process and returns the processed
    * data. If there is an error, it logs the error and returns the error data.
    *
-   * @depreciated - use add() instead
+   * @deprecated - use add() instead
    * @param data - The payload data for the zipped app to be processed.
    * @param replyFn - The function to call to send a response back to the client.
    * @returns The processed data from the zipped app, or `null` if there was an error.
    */
   zip: async (_data) => {
-    Logger.fatal('appHandler.zip() is depreciated, use add() instead')
+    Logger.fatal('appHandler.zip() is deprecated, use add() instead')
     return null
   },
   /**
@@ -181,13 +181,13 @@ export const appHandler: {
    * is successful, it logs the completion of the process and returns the processed
    * data. If there is an error, it logs the error and returns the error data.
    *
-   * @depreciated - use add() instead
+   * @deprecated - use add() instead
    * @param data - The payload data for the app to be processed from a URL.
    * @param replyFn - The function to call to send a response back to the client.
    * @returns The processed data from the app, or `null` if there was an error.
    */
   url: async (_data) => {
-    Logger.fatal('appHandler.zip() is depreciated, use add() instead')
+    Logger.fatal('appHandler.zip() is deprecated, use add() instead')
     return null
   },
 

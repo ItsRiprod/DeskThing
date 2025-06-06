@@ -108,7 +108,7 @@ export class AppDataStore
         }
         case 'config': {
           Logger.warn(
-            `[handleAppData]: ${data.source} tried accessing "Config" data type which is depreciated and no longer in use!`,
+            `[handleAppData]: ${data.source} tried accessing "Config" data type which is deprecated and no longer in use!`,
             {
               source: 'AppDataStore',
               domain: 'SERVER.' + data.source,

@@ -49,6 +49,17 @@ export enum ProgressChannel {
   GET_APP_RELEASES = 'get-app-releases',
   PROCESS_APP_RELEASES = 'process-app-releases',
 
+  // Release Functions
+  FN_RELEASE_APP_REFRESH = 'fn-release-app-refresh',
+  FN_RELEASE_APP_MIGRATE = 'fn-release-app-migrate',
+  FN_RELEASE_APP_STATS = 'fn-release-app-stats',
+  FN_RELEASE_CLIENT_REFRESH = 'fn-release-client-refresh',
+  FN_RELEASE_CLIENT_MIGRATE = 'fn-release-client-migrate',
+  FN_RELEASE_CLIENT_STATS = 'fn-release-client-stats',
+  ST_RELEASE_REFRESH = 'st-release-refresh',
+  ST_RELEASE_APP_REFRESH = 'st-release-app-refresh',
+  ST_RELEASE_CLIENT_REFRESH = 'st-release-client-refresh',
+
   // Top-Level routines
 
   /** IPC Channels */

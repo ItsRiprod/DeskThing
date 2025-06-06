@@ -153,7 +153,7 @@ export async function initializeStores(): Promise<void> {
     (data) => {
       if (data.request != 'input') return
       Logger.warn(
-        `[handleRequestGetInput]: ${data.source} tried accessing "Input" data type which is depreciated and may be removed at any time!`,
+        `[handleRequestGetInput]: ${data.source} tried accessing "Input" data type which is deprecated and may be removed at any time!`,
         {
           source: 'appCommunication',
           function: 'handleRequestGetInput',

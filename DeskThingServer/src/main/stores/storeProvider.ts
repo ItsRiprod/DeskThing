@@ -14,6 +14,7 @@ import { UpdateStoreClass } from '@shared/stores/updateStore'
 import { ProfileStoreClass } from '@shared/stores/profileStore'
 import { SupporterStoreClass } from '@shared/stores/supporterStore'
 import { AutoLaunchStoreClass } from '@shared/stores/autoLaunchStore'
+import { GithubStoreClass } from '@shared/stores/githubStore'
 
 // Stores
 
@@ -37,6 +38,7 @@ interface Stores {
   updateStore: UpdateStoreClass
   supporterStore: SupporterStoreClass
   autoLaunchStore: AutoLaunchStoreClass
+  githubStore: GithubStoreClass
 }
 
 export class StoreProvider {
@@ -65,7 +67,8 @@ export class StoreProvider {
       clientStore: () => import('./clientStore').then((m) => m.ClientStore),
       updateStore: () => import('./updateStore').then((m) => m.UpdateStore),
       supporterStore: () => import('./supporterStore').then((m) => m.SupporterStore),
-      autoLaunchStore: () => import('./autoLaunchStore').then((m) => m.AutoLaunchStore)
+      autoLaunchStore: () => import('./autoLaunchStore').then((m) => m.AutoLaunchStore),
+      githubStore: () => import('./githubStore').then((m) => m.GithubStore)
     }
 
     this.storeInitializers = {
@@ -106,7 +109,8 @@ export class StoreProvider {
       updateStore: async () => new (await storeImports.updateStore())(),
       supporterStore: async () => new (await storeImports.supporterStore())(),
       autoLaunchStore: async () =>
-        new (await storeImports.autoLaunchStore())(await this.getStore('settingsStore', false))
+        new (await storeImports.autoLaunchStore())(await this.getStore('settingsStore', false)),
+      githubStore: async () => new (await storeImports.githubStore())()
     }
 
     this.initialize()

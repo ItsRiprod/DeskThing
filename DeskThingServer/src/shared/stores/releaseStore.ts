@@ -1,49 +1,28 @@
-import {
-  AppReleaseMeta,
-  ClientReleaseMeta,
-  AppReleaseCommunity,
-  AppReleaseSingleMeta
-} from '@deskthing/types'
-import { GithubRelease } from '../types/types'
+import { AppLatestJSONLatest, ClientLatestJSONLatest } from '@deskthing/types'
 import { StoreInterface } from '@shared/interfaces/storeInterface'
-
-export type CacheEntry = {
-  timestamp: number
-  data: GithubRelease[] | Promise<GithubRelease[]>
-  isError?: boolean
-}
+import { AppLatestServer, ClientLatestServer } from '@shared/types'
+import EventEmitter from 'node:events'
 
 export type AssetAppCacheEntry = {
   timestamp: number
-  data: AppReleaseMeta
+  data: AppLatestJSONLatest
 }
 
 export type AssetClientCacheEntry = {
   timestamp: number
-  data: ClientReleaseMeta
+  data: ClientLatestJSONLatest
 }
 
 export type GithubListenerEvents = {
-  app: AppReleaseMeta[]
-  community: AppReleaseCommunity[]
-  client: ClientReleaseMeta[]
-}
-
-// Create listener types automatically from event map
-export type Listener<T> = (payload: T) => void
-export type releaseStoreListener<K extends keyof GithubListenerEvents> = Listener<
-  GithubListenerEvents[K]
->
-
-// Create listeners collection type automatically
-export type releaseStoreListeners = {
-  [K in keyof GithubListenerEvents]: releaseStoreListener<K>[]
+  app: [AppLatestJSONLatest[]]
+  community: [string]
+  client: [ClientLatestJSONLatest[]]
 }
 
 /**
  * Interface representing the public methods of releaseStore
  */
-export interface ReleaseStoreClass extends StoreInterface {
+export interface ReleaseStoreClass extends StoreInterface, EventEmitter<GithubListenerEvents> {
   /**
    * Clears all cached data
    */
@@ -55,21 +34,6 @@ export interface ReleaseStoreClass extends StoreInterface {
   saveToFile(): Promise<void>
 
   /**
-   * Registers an event listener
-   * @param type Event type to listen for
-   * @param listener Function to call when event occurs
-   * @returns Function to unregister the listener
-   */
-  on<K extends keyof GithubListenerEvents>(type: K, listener: releaseStoreListener<K>): () => void
-
-  /**
-   * Unregisters an event listener
-   * @param type Event type to stop listening for
-   * @param listener Function to remove
-   */
-  off<K extends keyof GithubListenerEvents>(type: K, listener: releaseStoreListener<K>): void
-
-  /**
    * Refreshes all GitHub data
    * @param force If true, bypasses cache validation
    * @channel - {@link ProgressChannel.REFRESH_RELEASES}
@@ -77,30 +41,36 @@ export interface ReleaseStoreClass extends StoreInterface {
   refreshData(force?: boolean): Promise<void>
 
   /**
-   * Gets the list of community app references
+   * Gets the list of community app URLs
    * @returns Promise resolving to array of app community references
    */
-  getAppReferences(): Promise<AppReleaseCommunity[] | undefined>
+  getCommunityApps(): Promise<string[] | undefined>
+
+  /**
+   * Gets the list of community client URLs
+   * @returns Promise resolving to array of client community references
+   */
+  getCommunityClients(): Promise<string[] | undefined>
 
   /**
    * Gets the list of app releases
    * @returns Promise resolving to array of app releases
    */
-  getAppReleases(): Promise<AppReleaseMeta[] | undefined>
+  getAppReleases(): Promise<AppLatestServer[] | undefined>
 
   /**
    * Gets a specific app release by ID
    * @param appId ID of the app to retrieve
    * @returns Promise resolving to the app release or undefined
    */
-  getAppRelease(appId: string): Promise<(AppReleaseSingleMeta & { type?: string }) | undefined>
+  getAppRelease(appId: string): Promise<AppLatestServer | undefined>
 
   /**
    * Adds a new app repository
    * @param repoUrl GitHub repository URL
    * @returns Promise resolving to the added app release or undefined
    */
-  addAppRepository(repoUrl: string): Promise<AppReleaseMeta | undefined>
+  addAppRepository(repoUrl: string): Promise<AppLatestServer | undefined>
 
   /**
    * Removes an app release by repository URL
@@ -112,5 +82,25 @@ export interface ReleaseStoreClass extends StoreInterface {
    * Gets the list of client releases
    * @returns Promise resolving to array of client releases
    */
-  getClientReleases(): Promise<ClientReleaseMeta[] | undefined>
+  getClientReleases(): Promise<ClientLatestServer[] | undefined>
+
+  /**
+   * Gets a specific client release by ID
+   * @param clientId ID of the client to retrieve
+   * @returns Promise resolving to the client release or undefined
+   */
+  getClientRelease(clientId: string): Promise<ClientLatestServer | undefined>
+
+  /**
+   * Adds a new client repository
+   * @param repoUrl GitHub repository URL
+   * @returns Promise resolving to the added client release or undefined
+   */
+  addClientRepository(repoUrl: string): Promise<ClientLatestServer | undefined>
+
+  /**
+   * Removes a client release by repository URL
+   * @param repoUrl GitHub repository URL
+   */
+  removeClientRelease(repoUrl: string): Promise<void>
 }

@@ -8,6 +8,13 @@ import Logger from '@server/utils/logger'
 import { storeProvider } from '@server/stores/storeProvider'
 import { progressBus } from '../events/progressBus'
 
+/**
+ * TODO: Finish updating this to use the new ReleaseStore - and then test it
+ *
+ * You got this! I believe in you
+ * It's almost 5am rigght now - so go I'm going to go to sleep and finish this tomorrow
+ */
+
 export const releaseHandler = async (
   data: ReleaseIPCData
 ): Promise<ReleaseHandlerReturnMap[(typeof data)['type']]> => {

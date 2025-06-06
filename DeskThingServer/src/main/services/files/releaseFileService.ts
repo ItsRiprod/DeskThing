@@ -1,12 +1,19 @@
-import { AppReleaseFile, ClientReleaseFile } from '@shared/types'
+import {
+  AppReleaseFile,
+  AppReleaseFile0118,
+  ClientReleaseFile,
+  ClientReleaseFile0118
+} from '@shared/types'
 import { readFromFile, writeToFile } from './fileService'
 import { join } from 'node:path'
 import logger from '@server/utils/logger'
-import { isValidAppReleaseFile, isValidClientReleaseFile } from '../github/githubUtils'
+import { handleRefreshAppReleaseFile } from '../releases/appReleaseUtils'
+import { handleRefreshClientReleaseFile } from '../releases/clientReleaseUtils'
+import { sanitizeReleaseMeta } from '../releases/releaseUtils'
 
 export const saveAppReleaseData = async (appReleaseFile: AppReleaseFile): Promise<void> => {
   try {
-    isValidAppReleaseFile(appReleaseFile)
+    sanitizeReleaseMeta(appReleaseFile)
     const appReleasePath = join('system', 'appReleases.json')
     await writeToFile(appReleaseFile, appReleasePath)
   } catch (error) {
@@ -23,7 +30,7 @@ export const saveClientReleaseData = async (
   clientReleaseFile: ClientReleaseFile
 ): Promise<void> => {
   try {
-    isValidClientReleaseFile(clientReleaseFile)
+    sanitizeReleaseMeta(clientReleaseFile)
     const clientReleasePath = join('system', 'clientReleases.json')
     await writeToFile(clientReleaseFile, clientReleasePath)
   } catch (error) {
@@ -36,15 +43,15 @@ export const saveClientReleaseData = async (
   }
 }
 
-export const readAppReleaseData = async (): Promise<AppReleaseFile | undefined> => {
+export const readAppReleaseData = async (): Promise<AppReleaseFile0118 | undefined> => {
   try {
     const appReleasePath = join('system', 'appReleases.json')
 
     const appReleaseFile = await readFromFile<AppReleaseFile>(appReleasePath)
 
-    isValidAppReleaseFile(appReleaseFile)
+    if (!appReleaseFile) throw new Error('Invalid app release file (does not exist)')
 
-    return appReleaseFile
+    return handleRefreshAppReleaseFile(appReleaseFile, { force: false, updateStates: false })
   } catch (error) {
     logger.error(`Failed to read app release files`, {
       error: error as Error,
@@ -55,15 +62,15 @@ export const readAppReleaseData = async (): Promise<AppReleaseFile | undefined> 
   }
 }
 
-export const readClientReleaseData = async (): Promise<ClientReleaseFile | undefined> => {
+export const readClientReleaseData = async (): Promise<ClientReleaseFile0118 | undefined> => {
   try {
     const clientReleasePath = join('system', 'clientReleases.json')
 
     const clientReleaseFile = await readFromFile<ClientReleaseFile>(clientReleasePath)
 
-    isValidClientReleaseFile(clientReleaseFile)
+    if (!clientReleaseFile) throw new Error('Invalid client release file (does not exist)')
 
-    return clientReleaseFile
+    return handleRefreshClientReleaseFile(clientReleaseFile, { force: false, updateStates: false })
   } catch (error) {
     logger.error(`Failed to read client release files`, {
       error: error as Error,

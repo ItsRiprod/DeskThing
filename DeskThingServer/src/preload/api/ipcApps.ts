@@ -98,7 +98,7 @@ export const app = {
       payload: appId
     }),
 
-  /** @depreciated */
+  /** @deprecated */
   handleZip: async (path: string): Promise<AppManifest | null> =>
     await sendCommand({
       kind: IPC_HANDLERS.APPS,
@@ -106,7 +106,7 @@ export const app = {
       payload: path
     }),
 
-  /** @depreciated */
+  /** @deprecated */
   handleUrl: async (url: string): Promise<AppManifest | null> =>
     await sendCommand({
       kind: IPC_HANDLERS.APPS,

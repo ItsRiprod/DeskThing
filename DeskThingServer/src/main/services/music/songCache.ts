@@ -161,7 +161,7 @@ export class SongCache extends EventEmitter<SongCacheEventMap> {
         liked: song.liked,
         color: song.color,
 
-        // depreciated version info
+        // deprecated version info
         can_fast_forward: song.can_fast_forward,
         can_like: song.can_like,
         can_skip: song.can_skip,
@@ -173,7 +173,7 @@ export class SongCache extends EventEmitter<SongCacheEventMap> {
     if (song.version === 2) {
       return {
         ...song,
-        // fill in depreciated song info with abilities
+        // fill in deprecated song info with abilities
         can_fast_forward:
           song.can_fast_forward || song.abilities.includes(SongAbilities.FAST_FORWARD),
         can_like: song.can_like || song.abilities.includes(SongAbilities.LIKE),

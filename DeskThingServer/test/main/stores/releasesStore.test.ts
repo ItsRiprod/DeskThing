@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { ReleaseStore } from '../../../src/main/stores/releaseStore'
-import { getLatestRelease, fetchAssetContent } from '@server/services/github/githubService'
+import { getLatestRelease, fetchAssetContent } from '@server/services/releases/githubService'
 import { readAppReleaseData } from '@server/services/files/releaseFileService'
 import Logger from '@server/utils/logger'
 

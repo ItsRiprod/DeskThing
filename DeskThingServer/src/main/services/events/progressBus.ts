@@ -289,7 +289,7 @@ class ProgressEventBus extends EventEmitter {
    * Increments the progress of a running operation by a given amount
    * @param channel - the channel to increment the progress of
    * @param message - the message to be displayed under the operation - usually more details
-   * @param increment - the amount to increment the progress by
+   * @param increment - the amount to increment the progress by from 0 - 100
    * @param operation - the name of the operation only used in the frontend and any following progress updates
    */
   incrementProgress(

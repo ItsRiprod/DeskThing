@@ -127,7 +127,7 @@ export const sanitizeTaskList = (taskList: Partial<FullTaskList>): FullTaskList 
 }
 
 /**
- * Do not use this - its depreciated and should never be implemented
+ * Do not use this - its deprecated and should never be implemented
  * @param taskList
  * @returns
  * @deprecated - The task list is never saved as a global file

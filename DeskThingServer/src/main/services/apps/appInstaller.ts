@@ -171,7 +171,7 @@ export const executeStagedFile = async ({
 }
 
 /**
- * @depreciated - This is not needed as the run staged will use the already-extracted data
+ * @deprecated - This is not needed as the run staged will use the already-extracted data
  */
 export const findTempZipPath = async (
   tempPath: string,

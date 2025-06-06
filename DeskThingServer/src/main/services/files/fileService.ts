@@ -196,7 +196,7 @@ export const addToFile = async (data: string | Buffer, filepath: string): Promis
  *
  * @param data - The data to be written to the file.
  * @param filepath - The full path of the file to write the data to.
- * @depreciated - use {@link writeToFile} instead
+ * @deprecated - use {@link writeToFile} instead
  * @throws - Error or Unknown
  */
 export const writeToGlobalFile = async <T>(data: T, filepath: string): Promise<void> => {
@@ -207,7 +207,7 @@ export const writeToGlobalFile = async <T>(data: T, filepath: string): Promise<v
  * Reads data from a file at the specified global filepath.
  *
  * @param filename - The name of the file to read from the user's application data directory.
- * @depreciated - use {@link readFromFile} instead
+ * @deprecated - use {@link readFromFile} instead
  * @returns The parsed data from the file, or `false` if the file does not exist or an error occurs.
  */
 export const readFromGlobalFile = async <T>(filename: string): Promise<T | false> => {
