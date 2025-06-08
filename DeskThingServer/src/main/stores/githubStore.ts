@@ -1,7 +1,7 @@
 console.log('[Github Handler] Starting')
 import logger from '@server/utils/logger'
 import { CacheableStore, GithubAsset, CacheEntry, GithubRelease } from '@shared/types'
-import { isCacheValid } from '@server/services/releases/releaseUtils'
+import { isCacheValid } from '@server/services/releases/releaseValidation'
 import { GithubStoreClass } from '@shared/stores/githubStore'
 import { handleError } from '@server/utils/errorHandler'
 
@@ -134,9 +134,10 @@ export class GithubStore implements CacheableStore, GithubStoreClass {
     await new Promise((resolve) => setTimeout(resolve, waitTime))
   }
 
-  private async queueRequest(url: string, headers?: RequestInit): Promise<Response> {
+  private async queueRequest(url: string, options?: RequestInit): Promise<Response> {
     if (this.fetchQueue.has(url)) {
-      return this.fetchQueue.get(url) as Promise<Response>
+      const sharedResponse = (await this.fetchQueue.get(url)) as Response
+      return sharedResponse.clone()
     }
 
     const request = (async () => {
@@ -146,7 +147,14 @@ export class GithubStore implements CacheableStore, GithubStoreClass {
           if (Date.now() < this.rateLimitReset) {
             await new Promise((resolve) => setTimeout(resolve, this.retryAfter))
           }
-          const response = await fetch(url, headers)
+          const response = await fetch(url, {
+            ...options,
+            headers: {
+              Accept: 'application/vnd.github.v3+json',
+              'User-Agent': 'DeskThing-Server',
+              ...options?.headers
+            }
+          })
 
           if (response.status === 403 || response.status === 429) {
             await this.handleRateLimit(response, retryCount)
@@ -168,24 +176,65 @@ export class GithubStore implements CacheableStore, GithubStoreClass {
     return request
   }
 
-  async getLatestRelease(repoUrl: string, force?: boolean): Promise<GithubRelease | undefined> {
+  public getLatestRelease = async (
+    repoUrl: string,
+    force?: boolean
+  ): Promise<GithubRelease | undefined> => {
     const releases = await this.getAllReleases(repoUrl, force)
     return releases[0]
   }
 
   /**
+   * Converts a GitHub repository URL to the API releases endpoint
+   * @param repoUrl - The GitHub repository URL (e.g., https://github.com/user/repo)
+   * @returns The API endpoint for releases
+   */
+  private convertToApiUrl(repoUrl: string): string {
+    try {
+      // Handle different URL formats
+      const cleanUrl = repoUrl.replace(/\/$/, '') // Remove trailing slash
+
+      // Extract owner and repo from URL
+      let owner, repo
+
+      // Check if the input is already an API URL
+      const apiMatch = cleanUrl.match(/api\.github\.com\/repos\/([^/]+)\/([^/]+)/)
+      if (apiMatch) {
+        [, owner, repo] = apiMatch
+      } else {
+        // Extract from regular GitHub URL
+        const match = cleanUrl.match(/github\.com\/([^/]+)\/([^/]+)/)
+        if (!match) {
+          throw new Error(`Invalid GitHub repository URL: ${repoUrl}`)
+        }
+        [, owner, repo] = match
+      }
+
+      return `https://api.github.com/repos/${owner}/${repo}/releases`
+    } catch (error) {
+      logger.error(`Failed to convert repository URL to API endpoint: ${repoUrl}`, {
+        function: 'convertToApiUrl',
+        source: 'githubStore',
+        error: error as Error
+      })
+      throw error
+    }
+  }  /**
    * Fetches all releases for the specified GitHub repository.
    *
    * @param repoUrl - The URL of the GitHub repository.
    * @returns A Promise that resolves to an array of the latest releases for the repository.
    * @throws {Error} If the GitHub repository URL is invalid or there is an error fetching the release information.
    */
-  async getAllReleases(repoUrl: string, force?: boolean): Promise<GithubRelease[]> {
+  public getAllReleases = async (repoUrl: string, force?: boolean): Promise<GithubRelease[]> => {
     try {
+      const apiUrl = this.convertToApiUrl(repoUrl)
+      logger.debug(`Converted url ${repoUrl} to ${apiUrl}`)
+
       // Checking the cache first
-      const result = this.checkCache(repoUrl)
+      const result = this.checkCache(apiUrl)
       if (result && result?.exists && isCacheValid(result) && !force) {
-        logger.debug(`Cache hit for ${repoUrl}`, {
+        logger.debug(`Cache hit for ${apiUrl}`, {
           function: 'getAllReleases',
           source: 'githubStore'
         })
@@ -204,40 +253,34 @@ export class GithubStore implements CacheableStore, GithubStoreClass {
       }
 
       // Handle the request
-      try {
-        const response = await this.queueRequest(repoUrl)
+      const response = await this.queueRequest(apiUrl)
 
-        if (!response.ok) {
-          const cacheData: CacheEntry<GithubRelease[]> = {
-            exists: response.status !== 404,
-            timestamp: Date.now(),
-            data: [],
-            errorCode: response.status,
-            isError: true
-          }
-          this.addToCache(repoUrl, cacheData)
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-        }
-
-        const data = await response.json()
+      if (!response.ok) {
         const cacheData: CacheEntry<GithubRelease[]> = {
-          exists: true,
+          exists: response.status !== 404,
           timestamp: Date.now(),
-          data,
-          isError: false
+          data: [],
+          errorCode: response.status,
+          isError: true
         }
-        this.addToCache(repoUrl, cacheData)
-        return data
-      } catch (error) {
-        logger.error(` Error fetching releases ${repoUrl}. ${handleError(error)}!`, {
-          function: 'getAllReleases',
-          source: 'githubStore'
-        })
+        this.addToCache(apiUrl, cacheData)
+        throw new Error(`HTTP ERROR fetching ${apiUrl}: ${response.status}: ${response.statusText}`)
       }
 
-      return []
+      const data = await response.json()
+      const cacheData: CacheEntry<GithubRelease[]> = {
+        exists: true,
+        timestamp: Date.now(),
+        data,
+        isError: false
+      }
+      this.addToCache(apiUrl, cacheData)
+      return data
     } catch (error) {
-      console.error('Error fetching releases:', error)
+      logger.error(`Error fetching releases ${repoUrl}. ${handleError(error)}!`, {
+        function: 'getAllReleases',
+        source: 'githubStore'
+      })
       throw error
     }
   }
@@ -309,8 +352,28 @@ export class GithubStore implements CacheableStore, GithubStoreClass {
       )
     }
 
-    if (response.headers.get('content-type') !== 'application/json') {
-      throw new Error(`Asset for ${asset.browser_download_url} is not valid JSON!`)
+    const contentType = response.headers.get('content-type') || ''
+    const hasJsonContentType = contentType.includes('application/json')
+    if (!hasJsonContentType) {
+      // Allow JSON files by extension even if content-type is wrong
+      const isJsonFile = asset.name.endsWith('.json')
+
+      if (!hasJsonContentType && !isJsonFile) {
+        throw new Error(
+          `Asset for ${asset.browser_download_url} is not valid JSON!. Received ${contentType}.`
+        )
+      }
+
+      const text = await response.text()
+
+      try {
+        const parsed = JSON.parse(text) as T
+        return parsed
+      } catch (parseError) {
+        throw new Error(
+          `Asset for ${asset.browser_download_url} contains invalid JSON: ${parseError}`
+        )
+      }
     }
 
     const data = await response.json()

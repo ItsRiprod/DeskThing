@@ -18,7 +18,7 @@ import {
   AppDataInterface,
   PlatformTypes,
   TagTypes,
-  AppReleaseSingleMeta
+  AppLatestJSONLatest
 } from '@deskthing/types'
 import { AppData, LegacyAppData } from '@shared/types'
 
@@ -430,7 +430,7 @@ export const constructManifest = (manifestData?: Partial<AppManifest>): AppManif
 
 export const validateSha512 = async (
   zipLocation: string,
-  app?: AppReleaseSingleMeta
+  app?: AppLatestJSONLatest
 ): Promise<boolean> => {
   if (!app) {
     Logger.warn(`Could not find release for app ${zipLocation}`, {
@@ -441,12 +441,12 @@ export const validateSha512 = async (
   const { createHash } = await import('crypto')
   const { readFileSync } = await import('node:fs')
 
-  Logger.debug(`Validating the checksum for ${app.id}`, {
+  Logger.debug(`Validating the checksum for ${app.appManifest.id}`, {
     source: 'validateSha512'
   })
 
-  if (app.hash.length === 0) {
-    Logger.warn(`Could not find release for app ${app.id}`, {
+  if (app.hash?.length === 0) {
+    Logger.warn(`Could not find release for app ${app.appManifest.id}`, {
       source: 'validateSha512'
     })
     return false
@@ -468,9 +468,12 @@ export const validateSha512 = async (
     hashSum.update(fileBuffer)
     const fileHash = hashSum.digest('hex')
 
-    Logger.info(`Validated checksum for ${app.id}. Result is ${fileHash === app.hash}`, {
-      source: 'validateSha512'
-    })
+    Logger.info(
+      `Validated checksum for ${app.appManifest.id}. Result is ${fileHash === app.hash}`,
+      {
+        source: 'validateSha512'
+      }
+    )
     Logger.debug(`Expected hash: ${app.hash}`, {
       source: 'validateSha512'
     })

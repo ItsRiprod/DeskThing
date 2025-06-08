@@ -3,19 +3,16 @@ import {
   Action,
   App,
   AppManifest,
-  AppReleaseCommunity,
-  AppReleaseMeta,
   AppSettings,
   AuthScopes,
   ButtonMapping,
   Client,
   ClientManifest,
-  ClientReleaseMeta,
   Task,
   Key
 } from '@deskthing/types'
 import { BrowserWindow, IpcRendererEvent } from 'electron'
-import { ProgressEvent, Log, Settings } from '..'
+import { ProgressEvent, Log, Settings, AppLatestServer, ClientLatestServer } from '..'
 
 export type IpcRendererCallback<T extends ServerIPCData['type']> = (
   event: IpcRendererEvent,
@@ -129,19 +126,23 @@ export type ServerIPCData = {
     }
   | {
       type: 'github-apps'
-      payload: AppReleaseMeta[]
+      payload: AppLatestServer[]
     }
   | {
       type: 'link-request'
       payload: LinkRequest
     }
   | {
-      type: 'github-community'
-      payload: AppReleaseCommunity[]
+      type: 'github-app-repos'
+      payload: string[]
+    }
+  | {
+      type: 'github-client-repos'
+      payload: string[]
     }
   | {
       type: 'github-client'
-      payload: ClientReleaseMeta[]
+      payload: ClientLatestServer[]
     }
   | {
       type: 'staged-manifest'

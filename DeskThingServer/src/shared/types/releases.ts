@@ -67,14 +67,6 @@ export type AppReleaseFile = AppReleaseFile0118 | AppReleaseFile0108
 // Extracted union of the versions
 export type ClientReleaseFile = ClientReleaseFile0118 | ClientReleaseFile0108
 
-export type PastReleaseInfo = {
-  tag: string
-  downloads: number
-  size: number
-  name: string
-  download_url: string
-  created_at: string
-}
 
 export type AppReleaseFile0118 = {
   version: '0.11.8'
@@ -101,6 +93,7 @@ export type ClientReleaseFile0118 = {
  */
 export type ClientLatestServer = {
   id: string
+  type: 'client'
   mainRelease: ClientLatestJSONLatest
   lastUpdated: number
   totalDownloads: number
@@ -109,9 +102,11 @@ export type ClientLatestServer = {
 
 /**
  * The app latest object to be used by the server
+ * This object is stored in the file system and is never stored up on, say, github. This is a wrapper for each app that will collect all of the past releases as well
  */
 export type AppLatestServer = {
   id: string
+  type: 'app'
   mainRelease: AppLatestJSONLatest
   lastUpdated: number
   totalDownloads: number
@@ -133,16 +128,25 @@ export type AppReleaseFile0108 = {
   timestamp: number
 }
 
+export type PastReleaseInfo = {
+  tag: string
+  downloads: number
+  size: number
+  name: string
+  download_url: string
+  created_at: string
+}
+
 /**
  * @deprecated - will be updated to the global types soon
  */
 export type GitRepoUrl =
-  | `https://github.com/${string}/${string}`
+  | `https://api.github.com/repos/${string}/${string}`
   | `git@github.com:${string}/${string}.git`
   | `https://gitlab.com/${string}/${string}`
 
 export type GitDownloadUrl =
-  `https://github.com/${string}/${string}/releases/download/${string}/${string}`
+  `https://api.github.com/repos/${string}/${string}/releases/download/${string}/${string}`
 
 /**
  * The outdated version of the release file used for legacy migrations

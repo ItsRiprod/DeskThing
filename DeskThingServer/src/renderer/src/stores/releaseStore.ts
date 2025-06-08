@@ -13,18 +13,16 @@ interface releaseStoreState {
   initialized: boolean
 
   initialize: () => Promise<void>
-  refreshApp: (repoUrl: string) => Promise<void>
-  refreshData: () => Promise<void>
+  refreshReleases: (force?: boolean) => Promise<void>
   getApps: () => Promise<AppLatestServer[]>
   getAppReferences: () => Promise<string[]>
   addAppRepo: (repoUrl: string) => Promise<AppLatestServer | void>
   removeAppRepo: (repoUrl: string) => Promise<void>
-  setAppReleases: (releases: AppLatestServer[]) => void
 
   getClients: () => Promise<ClientLatestServer[]>
-  getClientRepo: (repoUrl: string) => Promise<ClientLatestServer | void>
+  getClientRepos: () => Promise<string[]>
   removeClientRepo: (repoUrl: string) => Promise<void>
-  setClientReleases: (releases: ClientLatestServer[]) => void
+  addClientRepo: (repoUrl: string) => void
 }
 
 const useReleaseStore = create<releaseStoreState>((set, get) => ({
@@ -36,7 +34,7 @@ const useReleaseStore = create<releaseStoreState>((set, get) => ({
     if (get().initialized) return
 
     const handleAppsUpdate: IpcRendererCallback<'github-apps'> = (_event, data) => {
-      set({ appReleases: Array.isArray(data) ? data : [data] })
+      set({ appReleases: data })
     }
 
     const handleClientUpdate: IpcRendererCallback<'github-client'> = (_event, data) => {
@@ -46,33 +44,25 @@ const useReleaseStore = create<releaseStoreState>((set, get) => ({
     window.electron.ipcRenderer.on('github-apps', handleAppsUpdate)
     window.electron.ipcRenderer.on('github-client', handleClientUpdate)
 
-    const clients = await window.electron.releases.getClients()
-    const apps = await window.electron.releases.getApps()
-
     set({
-      clientReleases: clients,
-      appReleases: Array.isArray(apps) ? apps : [apps],
+      clientReleases: [],
+      appReleases: [],
       initialized: true
     })
   },
 
-  refreshApp: async (repoUrl: string): Promise<void> => {
-    await window.electron.releases.refreshApp(repoUrl)
-  },
-
-  refreshData: async (): Promise<void> => {
-    await window.electron.releases.refreshApps()
+  refreshReleases: async (force?: boolean): Promise<void> => {
+    await window.electron.releases.refreshReleases({ force })
   },
 
   getApps: async (): Promise<AppLatestServer[]> => {
     const apps = await window.electron.releases.getApps()
-    const appsArray = Array.isArray(apps) ? apps : [apps]
-    set({ appReleases: appsArray })
-    return appsArray
+    set({ appReleases: apps })
+    return apps
   },
 
   getAppReferences: async (): Promise<string[]> => {
-    const references = await window.electron.releases.getAppReferences()
+    const references = await window.electron.releases.getAppRepositories()
     return references
   },
 
@@ -91,8 +81,8 @@ const useReleaseStore = create<releaseStoreState>((set, get) => ({
     return clients
   },
 
-  getClientRepo: async (repoUrl: string): Promise<ClientLatestServer | void> => {
-    const client = await window.electron.releases.getClientRepo(repoUrl)
+  getClientRepos: async (): Promise<string[]> => {
+    const client = await window.electron.releases.getClientRepositories()
     return client
   },
 
@@ -100,12 +90,9 @@ const useReleaseStore = create<releaseStoreState>((set, get) => ({
     await window.electron.releases.removeClientRepo(repoUrl)
   },
 
-  setAppReleases: (releases: AppLatestServer[]): void => {
-    set({ appReleases: releases })
-  },
-
-  setClientReleases: (releases: ClientLatestServer[]): void => {
-    set({ clientReleases: releases })
+  addClientRepo: async (repoUrl: string): Promise<ClientLatestServer | void> => {
+    const client = await window.electron.releases.addClientRepo(repoUrl)
+    return client
   }
 }))
 

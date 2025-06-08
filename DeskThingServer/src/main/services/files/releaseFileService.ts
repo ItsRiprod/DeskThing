@@ -9,11 +9,9 @@ import { join } from 'node:path'
 import logger from '@server/utils/logger'
 import { handleRefreshAppReleaseFile } from '../releases/appReleaseUtils'
 import { handleRefreshClientReleaseFile } from '../releases/clientReleaseUtils'
-import { sanitizeReleaseMeta } from '../releases/releaseUtils'
 
 export const saveAppReleaseData = async (appReleaseFile: AppReleaseFile): Promise<void> => {
   try {
-    sanitizeReleaseMeta(appReleaseFile)
     const appReleasePath = join('system', 'appReleases.json')
     await writeToFile(appReleaseFile, appReleasePath)
   } catch (error) {
@@ -30,7 +28,6 @@ export const saveClientReleaseData = async (
   clientReleaseFile: ClientReleaseFile
 ): Promise<void> => {
   try {
-    sanitizeReleaseMeta(clientReleaseFile)
     const clientReleasePath = join('system', 'clientReleases.json')
     await writeToFile(clientReleaseFile, clientReleasePath)
   } catch (error) {
@@ -51,7 +48,7 @@ export const readAppReleaseData = async (): Promise<AppReleaseFile0118 | undefin
 
     if (!appReleaseFile) throw new Error('Invalid app release file (does not exist)')
 
-    return handleRefreshAppReleaseFile(appReleaseFile, { force: false, updateStates: false })
+    return handleRefreshAppReleaseFile(appReleaseFile, { force: false, updateStates: true })
   } catch (error) {
     logger.error(`Failed to read app release files`, {
       error: error as Error,

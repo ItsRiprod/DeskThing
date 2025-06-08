@@ -1,4 +1,4 @@
-import { App, AppReleaseSingleMeta, AppSettings, SavedData } from '@deskthing/types'
+import { App, AppLatestJSONLatest, AppSettings, SavedData } from '@deskthing/types'
 import { IpcRendererCallback, LoggingData, StagedAppManifest } from '@shared/types'
 import { create } from 'zustand'
 import useSettingsStore from './settingsStore'
@@ -18,7 +18,7 @@ interface AppStoreState {
   removeAppFromList: (appName: string) => void
   addApp: (data: {
     appPath?: string
-    releaseMeta?: AppReleaseSingleMeta
+    releaseMeta?: AppLatestJSONLatest
   }) => Promise<StagedAppManifest | void>
   runStagedApp: (overwrite?: boolean) => Promise<void>
   setOrder: (order: string[]) => void
@@ -191,7 +191,7 @@ const useAppStore = create<AppStoreState>((set, get) => ({
     releaseMeta
   }: {
     appPath?: string
-    releaseMeta?: AppReleaseSingleMeta
+    releaseMeta?: AppLatestJSONLatest
   }): Promise<StagedAppManifest | void> => {
     const loggingListener = async (_event: Electron.Event, reply: LoggingData): Promise<void> => {
       set({ logging: reply })

@@ -103,11 +103,9 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
     window.electron.ipcRenderer.on('clients', handleClientData)
     window.electron.ipcRenderer.on('platform:client', handleNewClient)
 
-    await get().requestConnections()
-    await get().requestADBDevices()
-    await get().requestClientManifest()
+    const clientManifest = await window.electron.client.getClientManifest()
 
-    set({ initialized: true })
+    set({ initialized: true, clientManifest: clientManifest })
   },
 
   requestClientManifest: async (): Promise<Partial<ClientManifest>> => {

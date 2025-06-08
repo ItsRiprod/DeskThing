@@ -97,11 +97,22 @@ export async function initializeStores(): Promise<void> {
       payload: clients
     })
   })
-  storeList.releaseStore.on('community', (community) => {
-    Logger.debug('[INDEX]: Sending updated community information with type github-community')
+  storeList.releaseStore.on('appRepos', (appRepos) => {
+    Logger.debug(
+      `[INDEX]: Sending ${appRepos?.length} app repos information with type github-app-repos`
+    )
     uiEventBus.sendIpcData({
-      type: 'github-community',
-      payload: community
+      type: 'github-app-repos',
+      payload: appRepos
+    })
+  })
+  storeList.releaseStore.on('clientRepos', (clientRepos) => {
+    Logger.debug(
+      `[INDEX]: Sending ${clientRepos?.length} client repos with type github-client-repos`
+    )
+    uiEventBus.sendIpcData({
+      type: 'github-client-repos',
+      payload: clientRepos
     })
   })
 

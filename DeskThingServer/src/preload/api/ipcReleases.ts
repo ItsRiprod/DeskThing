@@ -14,7 +14,7 @@ export const releases = {
       type: IPC_RELEASE_TYPES.REFRESH_RELEASES,
       options
     }),
-  getApps: async (): Promise<AppLatestServer[] | AppLatestServer> =>
+  getApps: async (): Promise<AppLatestServer[]> =>
     await sendCommand({
       kind: IPC_HANDLERS.RELEASE,
       type: IPC_RELEASE_TYPES.GET_APPS

@@ -81,7 +81,6 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
       get().addRequest(requestId, scope)
     }
     window.electron.ipcRenderer.on('display-user-form', handleDisplayUserForm)
-    
 
     set({ initialized: true })
   },

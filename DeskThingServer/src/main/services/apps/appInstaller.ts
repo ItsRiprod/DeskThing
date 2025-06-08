@@ -1,6 +1,6 @@
 console.log('[AppInst Service] Starting')
 // Types
-import { LOGGING_LEVELS, AppReleaseSingleMeta, App } from '@deskthing/types'
+import { LOGGING_LEVELS, AppReleaseSingleMeta, App, AppLatestJSONLatest } from '@deskthing/types'
 import { ProgressChannel, StagedAppManifest } from '@shared/types'
 
 // Utils
@@ -219,9 +219,12 @@ export const findTempZipPath = async (
   throw new Error('No matching zip file found in temp directory')
 }
 
-const getTempZipPath = (tempPath, releaseMeta?: AppReleaseSingleMeta): string => {
+const getTempZipPath = (tempPath: string, releaseMeta?: AppLatestJSONLatest): string => {
   if (releaseMeta) {
-    const standardizedFileName = getStandardizedFilename(releaseMeta.id, releaseMeta.version)
+    const standardizedFileName = getStandardizedFilename(
+      releaseMeta.appManifest.id,
+      releaseMeta.appManifest.version
+    )
     return path.join(tempPath, standardizedFileName)
   }
   return path.join(tempPath, 'temp.zip')
@@ -229,7 +232,7 @@ const getTempZipPath = (tempPath, releaseMeta?: AppReleaseSingleMeta): string =>
 
 export interface stageAppFileType {
   filePath?: string
-  releaseMeta?: AppReleaseSingleMeta
+  releaseMeta?: AppLatestJSONLatest
 }
 
 /**

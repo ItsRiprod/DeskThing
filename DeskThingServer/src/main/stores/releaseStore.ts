@@ -29,11 +29,16 @@ import {
 } from '@server/services/files/releaseFileService'
 import { progressBus } from '@server/services/events/progressBus'
 import EventEmitter from 'node:events'
-import { isCacheValid } from '@server/services/releases/releaseUtils'
+import { isCacheValid } from '@server/services/releases/releaseValidation'
 import {
   createAppReleaseFile,
   handleRefreshAppReleaseFile
 } from '@server/services/releases/appReleaseUtils'
+import {
+  createClientReleaseFile,
+  handleRefreshClientReleaseFile
+} from '@server/services/releases/clientReleaseUtils'
+import { handleError } from '@server/utils/errorHandler'
 
 /**
  * Temporarily holds the entire repo response information in memory unless manually refreshed
@@ -61,8 +66,8 @@ export class ReleaseStore
   }
 
   public clearCache = async (): Promise<void> => {
-    this.appReleases = undefined
-    this.clientReleases = undefined
+    await this.saveAppReleaseFile(true)
+    await this.saveClientReleaseFile(true)
   }
 
   public saveToFile = async (): Promise<void> => {
@@ -75,8 +80,21 @@ export class ReleaseStore
    */
   private getClientReleaseFile = async (): Promise<ClientReleaseFile0118 | undefined> => {
     if (this.clientReleases) return this.clientReleases
-    this.clientReleases = await readClientReleaseData()
-    return this.clientReleases
+    try {
+      this.clientReleases = await readClientReleaseData()
+      logger.debug(`Received ${this.clientReleases?.releases?.length} client releases from file`, {
+        function: 'getClientReleaseFile',
+        source: 'releaseStore'
+      })
+      return this.clientReleases
+    } catch (error) {
+      logger.warn(`There was an error reading appReleaseFile ${handleError(error)}`, {
+        error: error as Error,
+        function: 'getAppReleaseFile',
+        source: 'releaseStore'
+      })
+      return
+    }
   }
 
   /**
@@ -84,8 +102,21 @@ export class ReleaseStore
    */
   private getAppReleaseFile = async (): Promise<AppReleaseFile0118 | undefined> => {
     if (this.appReleases) return this.appReleases
-    this.appReleases = await readAppReleaseData()
-    return this.appReleases
+    try {
+      this.appReleases = await readAppReleaseData()
+      logger.debug(`Received ${this.appReleases?.releases?.length} app releases from file`, {
+        function: 'getAppReleaseFile',
+        source: 'releaseStore'
+      })
+      return this.appReleases
+    } catch (error) {
+      logger.warn(`There was an error reading appReleaseFile ${handleError(error)}`, {
+        error: error as Error,
+        function: 'getAppReleaseFile',
+        source: 'releaseStore'
+      })
+      return
+    }
   }
 
   private saveClientReleaseFile = async (clearCache = false): Promise<void> => {
@@ -96,10 +127,13 @@ export class ReleaseStore
 
     try {
       await saveClientReleaseData(this.clientReleases)
+
+      this.emit('client', this.clientReleases.releases)
+      this.emit('clientRepos', this.clientReleases.repositories)
       // Only clear the cache if the saveClientReleaseData is successful
       if (clearCache) this.clientReleases = undefined
     } catch (error) {
-      logger.error('Failed to save client release file', {
+      logger.error(`Failed to save client release file: ${handleError(error)}`, {
         error: error as Error,
         function: 'saveClientReleaseFile',
         source: 'releaseStore'
@@ -115,10 +149,13 @@ export class ReleaseStore
 
     try {
       await saveAppReleaseData(this.appReleases)
+
+      this.emit('app', this.appReleases.releases)
+      this.emit('appRepos', this.appReleases.repositories)
       // Only clear the cache if the saveClientReleaseData is successful
       if (clearCache) this.appReleases = undefined
     } catch (error) {
-      logger.error('Failed to save client release file', {
+      logger.error(`Failed to save app release file: ${handleError(error)}`, {
         error: error as Error,
         function: 'saveClientReleaseFile',
         source: 'releaseStore'
@@ -174,29 +211,67 @@ export class ReleaseStore
         }
       ]
     )
-    const appReleases = await this.getAppReleaseFile()
+    try {
+      const appReleases = await this.getAppReleaseFile()
 
-    // Check if we need to refresh the app releases
-    if (force || !appReleases) {
-      logger.debug('Fetching initial app file')
+      // Check if we need to refresh the app releases
+      if (!appReleases) {
+        throw new Error('AppReleases is undefined!')
+      }
+
+      // Handle refreshing the existing data
+      if (force || !isCacheValid(appReleases)) {
+        this.appReleases = await handleRefreshAppReleaseFile(appReleases, {
+          force,
+          updateStates: true
+        })
+        this.saveAppReleaseFile(false)
+        return
+      }
+    } catch (error) {
+      logger.debug(`Fetching initial app file because ${handleError(error)}`)
       this.appReleases = await createAppReleaseFile(force)
-      this.saveAppReleaseFile(true)
+      this.saveAppReleaseFile(false)
       logger.debug('Finished fetching initial app release file')
-      return
-    }
-
-    // Handle refreshing the existing data
-    if (force || !isCacheValid(appReleases)) {
-      this.appReleases = await handleRefreshAppReleaseFile(appReleases, { force })
-      this.saveAppReleaseFile(true)
       return
     }
   }
 
   private refreshClients = async (force?: boolean): Promise<void> => {
-    const clientReleases = await this.getClientReleaseFile()
+    progressBus.startOperation(
+      ProgressChannel.ST_RELEASE_CLIENT_REFRESH,
+      'Refreshing App Releases',
+      'Initializing',
+      [
+        {
+          channel: ProgressChannel.FN_RELEASE_CLIENT_REFRESH,
+          weight: 100
+        }
+      ]
+    )
 
-    if (force || !clientReleases || !isCacheValid(clientReleases)) {
+    try {
+      const clientReleases = await this.getClientReleaseFile()
+
+      // Check if we need to refresh the app releases
+      if (!clientReleases) {
+        throw new Error('ClientReleases is undefined!')
+      }
+
+      // Handle refreshing the existing data
+      if (force || !isCacheValid(clientReleases)) {
+        this.clientReleases = await handleRefreshClientReleaseFile(clientReleases, {
+          force,
+          updateStates: true
+        })
+        this.saveClientReleaseFile(false)
+        return
+      }
+    } catch (error) {
+      logger.debug(`Fetching initial client file because ${handleError(error)}`)
+      this.clientReleases = await createClientReleaseFile(force)
+      this.saveClientReleaseFile(false)
+      logger.debug('Finished fetching initial clientReleases release file')
       return
     }
   }
@@ -219,24 +294,16 @@ export class ReleaseStore
     return apps.releases
   }
 
-  public getAppRelease = async (appId: string): Promise<AppLatestServer | undefined> => {
-    const appReleases = await this.getAppReleaseFile()
-    if (!appReleases) return undefined
-    return appReleases.releases.find((app) => app.id === appId)
-  }
-
-  public addAppRepository = async (_repoUrl: string): Promise<AppLatestServer | undefined> => {
-    throw new Error('Method not implemented.')
-  }
-
-  public removeAppRelease = async (repoUrl: string): Promise<void> => {
-    throw new Error('Method not implemented.')
-  }
-
   public getClientReleases = async (): Promise<ClientLatestServer[] | undefined> => {
     const clients = await this.getClientReleaseFile()
     if (!clients) return undefined
     return clients.releases
+  }
+
+  public getAppRelease = async (appId: string): Promise<AppLatestServer | undefined> => {
+    const appReleases = await this.getAppReleaseFile()
+    if (!appReleases) return undefined
+    return appReleases.releases.find((app) => app.id === appId)
   }
 
   public getClientRelease = async (clientId: string): Promise<ClientLatestServer | undefined> => {
@@ -245,13 +312,27 @@ export class ReleaseStore
     return clients.releases.find((client) => client.id === clientId)
   }
 
-  public addClientRepository = async (
-    _repoUrl: string
-  ): Promise<ClientLatestServer | undefined> => {
+  public addAppRepository = async (_repoUrl: string): Promise<AppLatestServer | undefined> => {
+    throw new Error('Method not implemented.')
+  }
+
+  public addClientRepository = async (repoUrl: string): Promise<ClientLatestServer | undefined> => {
+    throw new Error('Method not implemented.')
+  }
+
+  public removeAppRelease = async (repoUrl: string): Promise<void> => {
     throw new Error('Method not implemented.')
   }
 
   public removeClientRelease = async (repoUrl: string): Promise<void> => {
+    throw new Error('Method not implemented.')
+  }
+
+  public downloadLatestApp = async (appId: string): Promise<void> => {
+    throw new Error('Method not implemented.')
+  }
+
+  public downloadLatestClient = async (clientId: string): Promise<void> => {
     throw new Error('Method not implemented.')
   }
 }

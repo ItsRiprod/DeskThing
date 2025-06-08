@@ -28,9 +28,6 @@ const useLogStore = create<LogStoreState>((set, get) => ({
 
     window.electron.ipcRenderer.on('log', handleLog)
 
-    const logs = await window.electron.utility.getLogs()
-    get().addLogsFromFile(logs)
-
     set({ initialized: true })
   },
 

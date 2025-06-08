@@ -8,32 +8,13 @@ import Logger from '@server/utils/logger'
 import { storeProvider } from '@server/stores/storeProvider'
 import { progressBus } from '../events/progressBus'
 
-/**
- * TODO: Finish updating this to use the new ReleaseStore - and then test it
- *
- * You got this! I believe in you
- * It's almost 5am rigght now - so go I'm going to go to sleep and finish this tomorrow
- */
-
 export const releaseHandler = async (
   data: ReleaseIPCData
 ): Promise<ReleaseHandlerReturnMap[(typeof data)['type']]> => {
   const releaseStore = await storeProvider.getStore('releaseStore')
 
   switch (data.type) {
-    case IPC_RELEASE_TYPES.GITHUB_REFRESH_APP:
-      try {
-        await releaseStore.addAppRepository(data.payload)
-        return
-      } catch (error) {
-        Logger.error('Unable to refresh repository!', {
-          error: error as Error,
-          function: 'github.refreshApp',
-          source: 'releaseHandler'
-        })
-        return
-      }
-    case IPC_RELEASE_TYPES.GITHUB_REFRESH_APPS:
+    case IPC_RELEASE_TYPES.REFRESH_RELEASES:
       try {
         progressBus.startOperation(
           ProgressChannel.IPC_RELEASES,
@@ -46,68 +27,101 @@ export const releaseHandler = async (
             }
           ]
         )
-        await releaseStore.refreshData(true)
+        await releaseStore.refreshData(data.options?.force)
         progressBus.complete(ProgressChannel.IPC_RELEASES, 'Refreshing Releases', 'complete')
         return
       } catch (error) {
         Logger.error('Unable to refresh repositories!', {
           error: error as Error,
-          function: 'github.refreshApps',
+          function: 'releases.refresh',
           source: 'releaseHandler'
         })
         return
       }
-    case IPC_RELEASE_TYPES.GITHUB_GET_APPS:
+    case IPC_RELEASE_TYPES.GET_APPS:
       try {
         return await releaseStore.getAppReleases()
       } catch (error) {
         Logger.error('Unable to get repositories!', {
           error: error as Error,
-          function: 'github.getApps',
+          function: 'releases.getApps',
           source: 'releaseHandler'
         })
         return
       }
-    case IPC_RELEASE_TYPES.GITHUB_GET_APP_REFERENCES:
+    case IPC_RELEASE_TYPES.GET_APP_REPOSITORIES:
       try {
-        return await releaseStore.getAppReferences()
+        return await releaseStore.getCommunityApps()
       } catch (error) {
         Logger.error('Unable to get app references!', {
           error: error as Error,
-          function: 'github.getAppReferences',
+          function: 'releases.getAppRepositories',
           source: 'releaseHandler'
         })
         return
       }
-    case IPC_RELEASE_TYPES.GITHUB_ADD_APP_REPO:
+    case IPC_RELEASE_TYPES.ADD_APP_REPOSITORY:
       try {
         return await releaseStore.addAppRepository(data.payload)
       } catch (error) {
         Logger.error('Unable to add repository!', {
           error: error as Error,
-          function: 'github.addAppRepo',
+          function: 'releases.addAppRepo',
           source: 'releaseHandler'
         })
         return
       }
-    case IPC_RELEASE_TYPES.GITHUB_REMOVE_APP_REPO:
+    case IPC_RELEASE_TYPES.REMOVE_APP_REPOSITORY:
       try {
         return await releaseStore.removeAppRelease(data.payload)
       } catch (error) {
         Logger.error('Unable to remove repository!', {
           error: error as Error,
-          function: 'github.removeAppRepo',
+          function: 'releases.removeAppRepo',
           source: 'releaseHandler'
         })
         return
       }
-    case IPC_RELEASE_TYPES.GITHUB_GET_CLIENTS:
+    case IPC_RELEASE_TYPES.GET_CLIENTS:
       try {
-        return releaseStore.getClientReleases()
+        return await releaseStore.getClientReleases()
       } catch (error) {
         Logger.error('Unable to get client releases!', {
           error: error as Error,
-          function: 'github.getClients',
+          function: 'releases.getClients',
+          source: 'releaseHandler'
+        })
+        return
+      }
+    case IPC_RELEASE_TYPES.GET_CLIENT_REPOSITORIES:
+      try {
+        return await releaseStore.getCommunityClients()
+      } catch (error) {
+        Logger.error('Unable to get client repositories!', {
+          error: error as Error,
+          function: 'releases.getClientRepositories',
+          source: 'releaseHandler'
+        })
+        return
+      }
+    case IPC_RELEASE_TYPES.ADD_CLIENT_REPOSITORY:
+      try {
+        return await releaseStore.addClientRepository(data.payload)
+      } catch (error) {
+        Logger.error('Unable to add client repository!', {
+          error: error as Error,
+          function: 'releases.addClientRepo',
+          source: 'releaseHandler'
+        })
+        return
+      }
+    case IPC_RELEASE_TYPES.REMOVE_CLIENT_REPOSITORY:
+      try {
+        return await releaseStore.removeClientRelease(data.payload)
+      } catch (error) {
+        Logger.error('Unable to remove client repository!', {
+          error: error as Error,
+          function: 'releases.removeClientRepo',
           source: 'releaseHandler'
         })
         return

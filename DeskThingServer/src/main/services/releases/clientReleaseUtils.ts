@@ -1,3 +1,16 @@
+/**
+ *
+ *
+ *  All of this has been deemed outdated and unusuable due to it being an initial proof of concept
+ * Unfortunately, the scope continued to grow and this became obsolete almost the moment it worked
+ * Refer to migrationUtils, releaseUtils, and releaseValidation instead as those work with both Clients and Apps and are more universal
+ *
+ * Additionaly, the seperation of migration logic and functional logic has been improved so there is less cross-domain errors
+ *
+ *
+ *
+ */
+
 import {
   ClientLatestJSONLatest,
   ClientManifest,
@@ -13,7 +26,7 @@ import {
   ProgressChannel,
   RefreshOptions
 } from '@shared/types'
-import { determineValidUpdateUrl, determineValidUrl, sanitizeReleaseMeta } from './releaseUtils'
+import { determineValidUpdateUrl, determineValidUrl, sanitizeLatestJSON } from './releaseValidation'
 import logger from '@server/utils/logger'
 import { handleError } from '@server/utils/errorHandler'
 import { satisfies } from 'semver'
@@ -56,17 +69,51 @@ export const createClientReleaseFile = async (
     }
 
     logger.debug(`Fetching latest.json from ${latestReleaseJsonAsset?.browser_download_url}`)
-    const latestJSON = await githubStore.fetchJSONAssetContent(latestReleaseJsonAsset)
+    const latestJSON = await githubStore.fetchJSONAssetContent<
+      ClientReleaseMeta | ClientLatestJSONLatest | MultiReleaseJSONLatest
+    >(latestReleaseJsonAsset)
 
     if (!latestJSON) {
       throw new Error('Unable to fetch latest.json. (error downloading)')
     }
 
     // Check that latestJSON is valid
-    const sanitizedJson = sanitizeReleaseMeta(latestJSON)
+    const sanitizedJson = await migrateReleaseMetaToJSON(latestJSON)
 
+    if (sanitizedJson.meta_type == 'client') {
+      const latestServer: ClientLatestServer = {
+        id: sanitizedJson.clientManifest.id,
+        mainRelease: sanitizedJson,
+        lastUpdated: Date.now(),
+        totalDownloads: 0,
+        pastReleases: []
+      }
+
+      const latestJson = await getUpdatedStats(latestServer, force)
+
+      // Temporary quick fix
+      const finalClientReleaseFile: ClientReleaseFile0118 = {
+        version: '0.11.8',
+        repositories: sanitizedJson.repository ? [sanitizedJson.repository] : [],
+        releases: [latestJson],
+        timestamp: Date.now()
+      }
+
+      progressBus.complete(
+        ProgressChannel.FN_RELEASE_CLIENT_STATS,
+        `Got ${finalClientReleaseFile.releases.length} releases from file and updated them all`
+      )
+
+      logger.debug(
+        `Successfully got ${finalClientReleaseFile.releases.length} releases from file and updated them all`
+      )
+
+      return finalClientReleaseFile
+    }
     if (sanitizedJson.meta_type != 'multi') {
-      throw new Error('latest.json is not a multi release')
+      throw new Error(
+        `latest.json is type ${sanitizedJson?.meta_type || 'Unknown'} which is not type client or multi. It's not supported!`
+      )
     }
 
     const finalClientReleaseFile: ClientReleaseFile0118 = {
@@ -352,7 +399,7 @@ const migrateReleaseMetaToJSON = async (
         `Unable to find out how to migrate ${clientReleaseMeta.meta_version} to v0.11.8. Sanitizing`
       )
       try {
-        const sanitizedMeta = sanitizeReleaseMeta(clientReleaseMeta)
+        const sanitizedMeta = sanitizeLatestJSON(clientReleaseMeta)
         if (sanitizedMeta.meta_type != 'client') {
           throw new Error('Sanitized meta is not an client')
         }
@@ -558,7 +605,7 @@ const getUpdatedStats = async (
               )
             }
           } catch (error) {
-            console.warn(`Failed to fetch JSON for ${clientLatestServer.id}:`, error)
+            logger.warn(`Failed to fetch JSON for ${clientLatestServer.id}: ${handleError(error)}`)
           }
         }
 
@@ -580,7 +627,9 @@ const getUpdatedStats = async (
         // Add to total downloads
         clientLatestServer.totalDownloads += zipAsset.download_count ?? 0
       } catch (error) {
-        console.error(`Failed to process latest release for ${clientLatestServer.id}:`, error)
+        logger.warn(
+          `Failed to process latest release for ${clientLatestServer.id}: ${handleError(error)}`
+        )
       }
     }
 

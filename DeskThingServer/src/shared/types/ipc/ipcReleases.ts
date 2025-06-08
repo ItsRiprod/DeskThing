@@ -3,7 +3,7 @@ import { AppLatestServer, ClientLatestServer, RefreshOptions } from '../releases
 
 export enum IPC_RELEASE_TYPES {
   REFRESH_RELEASES = 'github:refresh',
-  
+
   GET_APPS = 'github:getApps',
   GET_APP_REPOSITORIES = 'github:getAppRepositories',
   ADD_APP_REPOSITORY = 'github:addAppRepo',
@@ -55,7 +55,7 @@ export type ReleaseIPCData = {
 export type ReleaseHandlerReturnMap = {
   [IPC_RELEASE_TYPES.REFRESH_RELEASES]: void
 
-  [IPC_RELEASE_TYPES.GET_APPS]: AppLatestServer[] | AppLatestServer
+  [IPC_RELEASE_TYPES.GET_APPS]: AppLatestServer[]
   [IPC_RELEASE_TYPES.GET_APP_REPOSITORIES]: string[]
   [IPC_RELEASE_TYPES.ADD_APP_REPOSITORY]: AppLatestServer | void
   [IPC_RELEASE_TYPES.REMOVE_APP_REPOSITORY]: void

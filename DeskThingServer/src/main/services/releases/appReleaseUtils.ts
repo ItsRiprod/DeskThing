@@ -1,3 +1,16 @@
+/**
+ *
+ *
+ *  All of this has been deemed outdated and unusuable due to it being an initial proof of concept
+ * Unfortunately, the scope continued to grow and this became obsolete almost the moment it worked
+ * Refer to migrationUtils, releaseUtils, and releaseValidation instead as those work with both Clients and Apps and are more universal
+ *
+ * Additionaly, the seperation of migration logic and functional logic has been improved so there is less cross-domain errors
+ *
+ *
+ *
+ */
+
 import { AppLatestJSONLatest, AppReleaseMeta, MultiReleaseJSONLatest } from '@deskthing/types'
 import {
   AppLatestServer,
@@ -9,7 +22,7 @@ import {
   ProgressChannel,
   RefreshOptions
 } from '@shared/types'
-import { determineValidUpdateUrl, determineValidUrl, sanitizeReleaseMeta } from './releaseUtils'
+import { determineValidUpdateUrl, determineValidUrl, sanitizeLatestJSON } from './releaseValidation'
 import logger from '@server/utils/logger'
 import { handleError } from '@server/utils/errorHandler'
 import { satisfies } from 'semver'
@@ -50,14 +63,47 @@ export const createAppReleaseFile = async (force: boolean = false): Promise<AppR
     }
 
     logger.debug(`Fetching latest.json from ${latestReleaseJsonAsset?.browser_download_url}`)
-    const latestJSON = await githubStore.fetchJSONAssetContent(latestReleaseJsonAsset)
+    const latestJSON = await githubStore.fetchJSONAssetContent<
+      AppReleaseMeta | AppLatestJSONLatest | MultiReleaseJSONLatest
+    >(latestReleaseJsonAsset)
 
     if (!latestJSON) {
       throw new Error('Unable to fetch latest.json. (error downloading)')
     }
 
     // Check that latestJSON is valid
-    const sanitizedJson = sanitizeReleaseMeta(latestJSON)
+    const sanitizedJson = await migrateReleaseMetaToJSON(latestJSON)
+
+    if (sanitizedJson.meta_type == 'app') {
+      const latestServer: AppLatestServer = {
+        id: sanitizedJson.appManifest.id,
+        mainRelease: sanitizedJson,
+        lastUpdated: Date.now(),
+        totalDownloads: 0,
+        pastReleases: []
+      }
+
+      const latestJson = await getUpdatedStats(latestServer, force)
+
+      // Temporary quick fix
+      const finalAppReleaseFile: AppReleaseFile0118 = {
+        version: '0.11.8',
+        repositories: [sanitizedJson.repository],
+        releases: [latestJson],
+        timestamp: Date.now()
+      }
+
+      progressBus.complete(
+        ProgressChannel.FN_RELEASE_CLIENT_STATS,
+        `Got ${finalAppReleaseFile.releases.length} releases from file and updated them all`
+      )
+
+      logger.debug(
+        `Successfully got ${finalAppReleaseFile.releases.length} releases from file and updated them all`
+      )
+
+      return finalAppReleaseFile
+    }
 
     if (sanitizedJson.meta_type != 'multi') {
       throw new Error('latest.json is not a multi release')
@@ -154,47 +200,56 @@ export const handleRefreshAppReleaseFile = async (
   prevAppReleaseFile: AppReleaseFile,
   { force = false, updateStates = true }: RefreshOptions
 ): Promise<AppReleaseFile0118> => {
-  progressBus.startOperation(
-    ProgressChannel.FN_RELEASE_APP_REFRESH,
-    'Refreshing App Releases',
-    'Initializing Refresh',
-    [
-      {
-        channel: ProgressChannel.FN_RELEASE_APP_STATS,
-        weight: 10
-      }
-    ]
-  )
-
-  // Step 1: Handle the migration of the FILE
-  const migratedAppReleaseFile = await handleMigration(prevAppReleaseFile)
-
-  // Step 2: Update all of the apps
-  progressBus.start(ProgressChannel.FN_RELEASE_APP_STATS, 'Getting Stats', 'Getting Stats')
-
-  if (updateStates) {
-    const percentPerApp = 100 / migratedAppReleaseFile.releases.length
-
-    const updatedReleases = await Promise.all(
-      migratedAppReleaseFile.releases.map(async (release) => {
-        return await getUpdatedStats(release, force, percentPerApp)
-      })
+  try {
+    progressBus.startOperation(
+      ProgressChannel.FN_RELEASE_APP_REFRESH,
+      'Refreshing App Releases',
+      'Initializing Refresh',
+      [
+        {
+          channel: ProgressChannel.FN_RELEASE_APP_STATS,
+          weight: 10
+        }
+      ]
     )
-    progressBus.complete(
-      ProgressChannel.FN_RELEASE_APP_STATS,
-      `Successfully got ${updatedReleases.length} releases`,
-      'Completed Stat Retrieval'
+
+    // Step 1: Handle the migration of the FILE
+    const migratedAppReleaseFile = await handleMigration(prevAppReleaseFile)
+
+    // Step 2: Update all of the apps
+    progressBus.start(ProgressChannel.FN_RELEASE_APP_STATS, 'Getting Stats', 'Getting Stats')
+
+    if (updateStates) {
+      const percentPerApp = 100 / migratedAppReleaseFile.releases.length
+
+      const updatedReleases = await Promise.all(
+        migratedAppReleaseFile.releases.map(async (release) => {
+          return await getUpdatedStats(release, force, percentPerApp)
+        })
+      )
+      progressBus.complete(
+        ProgressChannel.FN_RELEASE_APP_STATS,
+        `Successfully got ${updatedReleases.length} releases`,
+        'Completed Stat Retrieval'
+      )
+      migratedAppReleaseFile.releases = updatedReleases
+    } else {
+      progressBus.complete(
+        ProgressChannel.FN_RELEASE_APP_STATS,
+        `Stat Refresh was disabled`,
+        'Completed Task'
+      )
+    }
+
+    return migratedAppReleaseFile
+  } catch (error) {
+    progressBus.error(
+      ProgressChannel.FN_RELEASE_APP_REFRESH,
+      'Failed to refresh app releases',
+      `Cause: ${handleError(error)}`
     )
-    migratedAppReleaseFile.releases = updatedReleases
-  } else {
-    progressBus.complete(
-      ProgressChannel.FN_RELEASE_APP_STATS,
-      `Stat Refresh was disabled`,
-      'Completed Task'
-    )
+    throw error
   }
-
-  return migratedAppReleaseFile
 }
 
 /**
@@ -341,7 +396,7 @@ const migrateReleaseMetaToJSON = async (
         `Unable to find out how to migrate ${appReleaseMeta.meta_version} to v0.11.8. Sanitizing`
       )
       try {
-        const sanitizedMeta = sanitizeReleaseMeta(appReleaseMeta)
+        const sanitizedMeta = sanitizeLatestJSON(appReleaseMeta)
         if (sanitizedMeta.meta_type != 'app') {
           throw new Error('Sanitized meta is not an app')
         }
@@ -421,6 +476,9 @@ const migrateAppLatestJSON = async (
   oldRelease?: AppLatestJSONLatest
 ): Promise<AppLatestJSONLatest> => {
   if ('meta_version' in appRelease) {
+    if (appRelease.meta_type != 'app')
+      throw new Error(`Invalid meta_type: ${appRelease.meta_type}! It's not 'app'`)
+
     if (appRelease.meta_version == '0.11.8') return { ...oldRelease, ...appRelease } // combine the two - prioritizing the appRelease
 
     // handle other migration here - as of right now there are no prior versions to have to migrate from
@@ -479,6 +537,9 @@ const getUpdatedStats = async (
       ProgressChannel.FN_RELEASE_APP_STATS,
       `Fetching stats for ${appLatestServer.id}`
     )
+    logger.debug(
+      `Percent Total for ${appLatestServer.id} Stat Refresh Operation is ${percentTotal}`
+    )
 
     const githubStore = await storeProvider.getStore('githubStore')
 
@@ -487,7 +548,7 @@ const getUpdatedStats = async (
       force
     )
 
-    if (!releaseData)
+    if (!releaseData || releaseData.length == 0)
       throw new Error(`No releases found at ${appLatestServer.mainRelease.repository}`)
 
     // inc to 25%
@@ -569,7 +630,9 @@ const getUpdatedStats = async (
               appMetadata = await migrateAppLatestJSON(jsonContent, appLatestServer.mainRelease)
             }
           } catch (error) {
-            console.warn(`Failed to fetch JSON for ${appLatestServer.id}:`, error)
+            logger.warn(
+              `Failed to fetch JSON stats for ${appLatestServer.id}: ${handleError(error)}`
+            )
           }
         }
 
@@ -601,6 +664,8 @@ const getUpdatedStats = async (
       `Collecting ${pastAppReleases.length} past installations`,
       25 * percentTotal
     )
+
+    appLatestServer.pastReleases = [] // clear it first before adding the new past releases to it
 
     // Step 6: Process past releases containing this app
     pastAppReleases.forEach((release) => {
@@ -635,7 +700,7 @@ const getUpdatedStats = async (
   } catch (error) {
     progressBus.warn(
       ProgressChannel.FN_RELEASE_APP_STATS,
-      'Failed to get App Stats',
+      `Failed to get ${appLatestServer.id} Stats`,
       handleError(error)
     )
     return appLatestServer

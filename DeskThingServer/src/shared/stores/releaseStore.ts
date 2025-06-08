@@ -14,9 +14,10 @@ export type AssetClientCacheEntry = {
 }
 
 export type GithubListenerEvents = {
-  app: [AppLatestJSONLatest[]]
-  community: [string]
-  client: [ClientLatestJSONLatest[]]
+  app: [AppLatestServer[]]
+  appRepos: [string[]]
+  clientRepos: [string[]]
+  client: [ClientLatestServer[]]
 }
 
 /**
@@ -59,30 +60,17 @@ export interface ReleaseStoreClass extends StoreInterface, EventEmitter<GithubLi
   getAppReleases(): Promise<AppLatestServer[] | undefined>
 
   /**
+   * Gets the list of client releases
+   * @returns Promise resolving to array of client releases
+   */
+  getClientReleases(): Promise<ClientLatestServer[] | undefined>
+
+  /**
    * Gets a specific app release by ID
    * @param appId ID of the app to retrieve
    * @returns Promise resolving to the app release or undefined
    */
   getAppRelease(appId: string): Promise<AppLatestServer | undefined>
-
-  /**
-   * Adds a new app repository
-   * @param repoUrl GitHub repository URL
-   * @returns Promise resolving to the added app release or undefined
-   */
-  addAppRepository(repoUrl: string): Promise<AppLatestServer | undefined>
-
-  /**
-   * Removes an app release by repository URL
-   * @param repoUrl GitHub repository URL
-   */
-  removeAppRelease(repoUrl: string): Promise<void>
-
-  /**
-   * Gets the list of client releases
-   * @returns Promise resolving to array of client releases
-   */
-  getClientReleases(): Promise<ClientLatestServer[] | undefined>
 
   /**
    * Gets a specific client release by ID
@@ -92,6 +80,13 @@ export interface ReleaseStoreClass extends StoreInterface, EventEmitter<GithubLi
   getClientRelease(clientId: string): Promise<ClientLatestServer | undefined>
 
   /**
+   * Adds a new app repository
+   * @param repoUrl GitHub repository URL
+   * @returns Promise resolving to the added app release or undefined
+   */
+  addAppRepository(repoUrl: string): Promise<AppLatestServer | undefined>
+
+  /**
    * Adds a new client repository
    * @param repoUrl GitHub repository URL
    * @returns Promise resolving to the added client release or undefined
@@ -99,8 +94,24 @@ export interface ReleaseStoreClass extends StoreInterface, EventEmitter<GithubLi
   addClientRepository(repoUrl: string): Promise<ClientLatestServer | undefined>
 
   /**
+   * Removes an app release by repository URL
+   * @param repoUrl GitHub repository URL
+   */
+  removeAppRelease(repoUrl: string): Promise<void>
+
+  /**
    * Removes a client release by repository URL
    * @param repoUrl GitHub repository URL
    */
   removeClientRelease(repoUrl: string): Promise<void>
+
+  /**
+   * Downloads the latest of a specific app from the release files
+   */
+  downloadLatestApp(appId: string): Promise<void>
+
+  /**
+   * Downloads the latest of a specific client from the release files
+   */
+  downloadLatestClient(clientId: string): Promise<void>
 }

@@ -9,11 +9,11 @@ import {
 } from '@shared/types'
 import {
   AppManifest,
-  AppReleaseSingleMeta,
   AppSettings,
   DeskThingToAppData,
   App,
-  SavedData
+  SavedData,
+  AppLatestJSONLatest
 } from '@deskthing/types'
 
 export const app = {
@@ -119,7 +119,7 @@ export const app = {
     releaseMeta
   }: {
     appPath?: string
-    releaseMeta?: AppReleaseSingleMeta
+    releaseMeta?: AppLatestJSONLatest
   }): Promise<StagedAppManifest | null> =>
     await sendCommand({
       kind: IPC_HANDLERS.APPS,

@@ -52,6 +52,11 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 
   render(): ReactNode {
     if (this.state.hasError) {
+
+      if (this.props.fallback) {
+        return this.props.fallback
+      }
+
       return (
         <div className="p-4 rounded-lg w-full h-full flex flex-col items-center justify-center">
           <h3 className="text-xl font-bold">Something went wrong</h3>

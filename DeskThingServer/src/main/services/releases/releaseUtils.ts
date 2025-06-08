@@ -1,295 +1,490 @@
+/**
+ * Top-level functions for doing simple IO and business-layer operations on release files
+ */
+import {
+  AppLatestServer,
+  AppReleaseFile,
+  AppReleaseFile0118,
+  ClientLatestServer,
+  ClientReleaseFile,
+  ClientReleaseFile0118,
+  GithubAsset,
+  GithubRelease,
+  PastReleaseInfo,
+  ProgressChannel,
+  RefreshOptions
+} from '@shared/types'
+import { progressBus } from '../events/progressBus'
+import { storeProvider } from '@server/stores/storeProvider'
+import logger from '@server/utils/logger'
 import {
   AppLatestJSONLatest,
-  AppManifest,
+  AppReleaseMeta,
   ClientLatestJSONLatest,
-  ClientManifest,
+  GitRepoUrl,
   MultiReleaseJSONLatest
 } from '@deskthing/types'
-import { storeProvider } from '@server/stores/storeProvider'
 import { handleError } from '@server/utils/errorHandler'
-import logger from '@server/utils/logger'
-import { GitDownloadUrl, GitRepoUrl } from '@shared/types'
+import { handleLatestValidation, handleReleaseJSONMigration } from './migrationUtils'
 
-/**
- * Checks if a release file is valid based on its timestamp.
- *
- * @param object - An object containing a timestamp property
- * @returns A boolean indicating whether the release file is considered valid (created within the last 24 hours)
- */
-export const isCacheValid = (object: { timestamp: number }): boolean => {
-  return object.timestamp > Date.now() - 1000 * 60 * 60 * 24
+/** Handles the creation of the release file */
+export async function createReleaseFile(type: 'app', force?: boolean): Promise<AppReleaseFile0118>
+export async function createReleaseFile(
+  type: 'client',
+  force?: boolean
+): Promise<ClientReleaseFile0118>
+export async function createReleaseFile(
+  type: 'client' | 'app',
+  force = false
+): Promise<AppReleaseFile0118 | ClientReleaseFile0118> {
+  if (type === 'app') {
+    return createAppReleaseFile(force)
+  } else {
+    return createClientReleaseFile(force)
+  }
 }
 
-/**
- * Finds a valid github URL
- * @param urls - An array of possible github URLs
- * @returns A valid github URL
- */
-export const determineValidUrl = async (urls: string[]): Promise<GitRepoUrl> => {
-  const githubStore = await storeProvider.getStore('githubStore')
-  const validUrls: GitRepoUrl[] = []
+export const createClientReleaseFile = async (force = false): Promise<ClientReleaseFile0118> => {
+  const { clientRepo, defaultClientLatestJSONFallback } = await import(
+    '@server/static/releaseMetadata'
+  )
+  try {
+    progressBus.startOperation(
+      ProgressChannel.FN_RELEASE_CLIENT_REFRESH,
+      'Refreshing Client Releases',
+      'Initializing Refresh',
+      [
+        {
+          channel: ProgressChannel.FN_RELEASE_CLIENT_STATS,
+          weight: 10
+        }
+      ]
+    )
+    const githubStore = await storeProvider.getStore('githubStore')
 
-  // First pass checks if any of the URLs are valid GitHub repository URLs
-  for (const url of urls) {
-    const res = await githubStore.checkUrlValidity(url)
-    if (res && url.includes('github.com')) {
-      validUrls.push(url as GitRepoUrl)
+    progressBus.update(
+      ProgressChannel.FN_RELEASE_CLIENT_REFRESH,
+      `Fetching latest release from ${clientRepo}`,
+      20
+    )
+    logger.debug(`Fetching latest release from ${clientRepo}`)
+    const latestReleaseAssets = await githubStore.getLatestRelease(clientRepo)
+
+    if (!latestReleaseAssets) {
+      throw new Error('Unable to find latest release assets')
     }
-  }
 
-  if (validUrls.length > 0) {
-    return validUrls[0] as GitRepoUrl
-  }
+    progressBus.update(
+      ProgressChannel.FN_RELEASE_CLIENT_REFRESH,
+      'Searching for latest.json asset',
+      30
+    )
+    const latestReleaseJsonAsset = latestReleaseAssets.assets.find(
+      (asset) => asset.name == 'latest.json'
+    )
 
-  // Try to reconstruct repository URL from various URL formats
-  for (const url of urls) {
-    try {
-      const urlParts = url.split('/')
-      let owner, repo
+    if (!latestReleaseJsonAsset) {
+      throw new Error('Unable to find latest.json asset in releases')
+    }
 
-      if (url.includes('api.github.com')) {
-        // Handle API URLs
-        const repoIndex = urlParts.findIndex((part) => part === 'repos' || part === 'repository')
-        if (repoIndex !== -1) {
-          owner = urlParts[repoIndex + 1]
-          repo = urlParts[repoIndex + 2]
+    progressBus.update(
+      ProgressChannel.FN_RELEASE_CLIENT_REFRESH,
+      'Fetching latest.json content',
+      40
+    )
+    const latestJSON = await githubStore.fetchJSONAssetContent<
+      ClientLatestJSONLatest | MultiReleaseJSONLatest | AppLatestJSONLatest
+    >(latestReleaseJsonAsset)
+
+    if (!latestJSON) {
+      throw new Error('Unable to fetch latest.json')
+    }
+
+    // Migration - as it could either be a Multi or a Client or an App
+
+    const adaptedRelease = await handleLatestValidation(latestJSON, undefined, force)
+
+    if (adaptedRelease.meta_type == 'app')
+      throw new Error(`Received meta type 'app' when expecting Multi or Client`)
+
+    if (adaptedRelease.meta_type == 'multi') {
+      const result = await convertMultiToReleaseServer(adaptedRelease)
+
+      if (result.type == 'none')
+        return {
+          version: '0.11.8',
+          repositories: result.repos,
+          releases: [],
+          timestamp: Date.now()
         }
-      } else if (url.includes('github.com')) {
-        // Handle direct GitHub URLs
-        const githubIndex = urlParts.findIndex((part) => part === 'github.com')
-        if (githubIndex !== -1) {
-          owner = urlParts[githubIndex + 1]
-          repo = urlParts[githubIndex + 2]
-        }
+
+      if (result.type == 'app')
+        throw new Error('Received "app" type when expecting multi or client')
+
+      const clientReleaseFile: ClientReleaseFile0118 = {
+        version: '0.11.8',
+        repositories: result.repos,
+        releases: result.releases,
+        timestamp: Date.now()
       }
 
-      if (owner && repo) {
-        return `https://github.com/${owner}/${repo}` as GitRepoUrl
-      }
-    } catch (error) {
+      return clientReleaseFile
+    }
+
+    const latestServer: ClientLatestServer = {
+      id: adaptedRelease.clientManifest.id,
+      type: 'client',
+      mainRelease: adaptedRelease,
+      lastUpdated: Date.now(),
+      totalDownloads: 0,
+      pastReleases: []
+    }
+
+    const finalClientReleaseFile: ClientReleaseFile0118 = {
+      version: '0.11.8',
+      repositories: adaptedRelease.repository ? [latestJSON.repository] : [],
+      releases: [latestServer],
+      timestamp: Date.now()
+    }
+
+    return finalClientReleaseFile
+  } catch (error) {
+    progressBus.error(
+      ProgressChannel.FN_RELEASE_CLIENT_REFRESH,
+      'Unable to create client release file',
       handleError(error)
-    }
+    )
+    return defaultClientLatestJSONFallback
   }
-
-  throw new Error('No valid GitHub repository URL found')
 }
 
-export const determineValidUpdateUrl = async (
-  urls: string[],
-  fileId: string
-): Promise<GitDownloadUrl> => {
-  const githubStore = await storeProvider.getStore('githubStore')
-  const validUrls: string[] = []
+export const createAppReleaseFile = async (force = false): Promise<AppReleaseFile0118> => {
+  const { appsRepo, defaultAppLatestJSONFallback } = await import('@server/static/releaseMetadata')
+  try {
+    progressBus.startOperation(
+      ProgressChannel.FN_RELEASE_APP_REFRESH,
+      'Refreshing App Releases',
+      'Initializing Refresh',
+      [
+        {
+          channel: ProgressChannel.FN_RELEASE_APP_REFRESH,
+          weight: 10
+        }
+      ]
+    )
+    const githubStore = await storeProvider.getStore('githubStore')
 
-  // First pass checks if any of the URLs are valid and do point to the zip file (i.e. includes the fileId and ends in .zip)
-  for (const url of urls) {
-    const res = await githubStore.checkUrlValidity(url)
-    if (res && url.includes(fileId) && url.toLowerCase().endsWith('.zip')) {
-      validUrls.push(url)
+    progressBus.update(
+      ProgressChannel.FN_RELEASE_APP_REFRESH,
+      `Fetching latest release from ${appsRepo}`,
+      20
+    )
+    logger.debug(`Fetching latest release from ${appsRepo}`)
+    const latestReleaseAssets = await githubStore.getLatestRelease(appsRepo)
+
+    if (!latestReleaseAssets) {
+      throw new Error('Unable to find latest release assets')
     }
-  }
 
-  if (validUrls.length > 0) {
-    return validUrls[0] as GitDownloadUrl
-  }
+    progressBus.update(
+      ProgressChannel.FN_RELEASE_APP_REFRESH,
+      'Searching for latest.json asset',
+      30
+    )
+    const latestReleaseJsonAsset = latestReleaseAssets.assets.find(
+      (asset) => asset.name == 'latest.json'
+    )
 
-  let index = 0
-  // Reconstruction logic for missing download URL
-  for (const url of urls) {
-    try {
-      index++
-      // Extract owner and repo from URL
-      const urlParts = url.split('/')
-      let owner, repo
+    if (!latestReleaseJsonAsset) {
+      throw new Error('Unable to find latest.json asset in releases')
+    }
 
-      if (url.includes('api.github.com')) {
-        // Handle API URLs
-        const repoIndex = urlParts.findIndex((part) => part === 'repos' || part === 'repository')
-        if (repoIndex !== -1) {
-          owner = urlParts[repoIndex + 1]
-          repo = urlParts[repoIndex + 2]
-        }
-      } else if (url.includes('github.com')) {
-        // Handle direct GitHub URLs
-        const githubIndex = urlParts.findIndex((part) => part === 'github.com')
-        if (githubIndex !== -1) {
-          owner = urlParts[githubIndex + 1]
-          repo = urlParts[githubIndex + 2]
-        }
-      } else {
-        logger.debug(`Invalid URL: ${url} ${index}/${urls.length}`)
-      }
+    progressBus.update(ProgressChannel.FN_RELEASE_APP_REFRESH, 'Fetching latest.json content', 40)
+    const latestJSON = await githubStore.fetchJSONAssetContent<
+      ClientLatestJSONLatest | MultiReleaseJSONLatest | AppLatestJSONLatest
+    >(latestReleaseJsonAsset)
 
-      if (!owner || !repo) continue
+    if (!latestJSON) {
+      throw new Error('Unable to fetch latest.json')
+    }
 
-      // Get latest release
-      const latestRelease = await githubStore.getLatestRelease(owner, repo)
-      if (!latestRelease?.assets) continue
+    progressBus.update(ProgressChannel.FN_RELEASE_APP_REFRESH, 'Validating latest.json content', 50)
+    const adaptedRelease = await handleLatestValidation(latestJSON, undefined, force)
 
-      // Find matching asset
-      const asset = latestRelease.assets.find(
-        (a) => a.name.includes(fileId) && a.name.toLowerCase().endsWith('.zip')
+    if (adaptedRelease.meta_type == 'client')
+      throw new Error(`Received meta type 'app' when expecting Multi or Client`)
+
+    if (adaptedRelease.meta_type == 'multi') {
+      progressBus.update(
+        ProgressChannel.FN_RELEASE_APP_REFRESH,
+        'Converting multi-release to release server format',
+        60
       )
+      const result = await convertMultiToReleaseServer(adaptedRelease)
 
-      if (asset?.browser_download_url) {
-        const reconstructedUrl = asset.browser_download_url
-        const isValid = await githubStore.checkUrlValidity(reconstructedUrl)
-
-        if (isValid) {
-          return reconstructedUrl as GitDownloadUrl
-        } else {
-          logger.debug(`Invalid URL: ${url} ${index}/${urls.length}`)
+      if (result.type == 'none') {
+        progressBus.update(
+          ProgressChannel.FN_RELEASE_APP_REFRESH,
+          'Creating empty release file',
+          80
+        )
+        return {
+          version: '0.11.8',
+          repositories: result.repos,
+          releases: [],
+          timestamp: Date.now()
         }
       }
-    } catch (error) {
-      logger.debug(`Invalid URL: ${url} ${index}/${urls.length}. ${handleError(error)}`)
-      continue
-    }
-  }
 
-  throw new Error('No valid download URL found for the specified asset')
+      if (result.type == 'client')
+        throw new Error('Received "client" type when expecting multi or client')
+
+      progressBus.update(
+        ProgressChannel.FN_RELEASE_APP_REFRESH,
+        'Creating app release file from multi-release',
+        90
+      )
+      const appReleaseFile: AppReleaseFile0118 = {
+        version: '0.11.8',
+        repositories: result.repos,
+        releases: result.releases,
+        timestamp: Date.now()
+      }
+
+      return appReleaseFile
+    }
+
+    progressBus.update(
+      ProgressChannel.FN_RELEASE_APP_REFRESH,
+      'Creating app server configuration',
+      70
+    )
+    const latestServer: AppLatestServer = {
+      id: adaptedRelease.appManifest.id,
+      type: 'app',
+      mainRelease: adaptedRelease,
+      lastUpdated: Date.now(),
+      totalDownloads: 0,
+      pastReleases: []
+    }
+
+    progressBus.update(ProgressChannel.FN_RELEASE_APP_REFRESH, 'Finalizing app release file', 90)
+    const finalAppReleaseFile: AppReleaseFile0118 = {
+      version: '0.11.8',
+      repositories: adaptedRelease.repository ? [latestJSON.repository] : [],
+      releases: [latestServer],
+      timestamp: Date.now()
+    }
+
+    progressBus.complete(
+      ProgressChannel.FN_RELEASE_APP_REFRESH,
+      'Successfully created app release file'
+    )
+
+    return finalAppReleaseFile
+  } catch (error) {
+    progressBus.error(
+      ProgressChannel.FN_RELEASE_APP_REFRESH,
+      'Unable to create app release file',
+      handleError(error)
+    )
+    return defaultAppLatestJSONFallback
+  }
 }
 
 /**
- * Sanitizes the release meta - no internet fetches for validation. Simply checks that all of the values are there
+ * Goes through and updates all of the apps with the latest from github and also updates the available repositories from and multis
  */
-export const sanitizeReleaseMeta = (
-  asset: unknown
-): AppLatestJSONLatest | MultiReleaseJSONLatest | ClientLatestJSONLatest => {
-  if (!asset || typeof asset !== 'object') {
-    throw new Error('Asset must be an object')
+export const handleRefreshReleaseFile = async <T extends AppReleaseFile | ClientReleaseFile>(
+  prevReleaseFile: T,
+  { force = false, updateStates = true }: RefreshOptions
+): Promise<Extract<T, { version: '0.11.8' }>> => {
+
+  throw new Error('Refreshing an app release file has not been implemented yet')
+}
+
+const findJsonAsset = (
+  release: GithubRelease,
+  appId: string,
+  strict = false
+): GithubAsset | undefined => {
+  // Priority: appId.json > latest.json
+  const appIdJson = release.assets.find((asset) => asset.name === `${appId}.json`)
+  if (appIdJson) return appIdJson
+
+  if (strict) return // return early if strict is enabled
+
+  const latestJson = release.assets.find((asset) => asset.name === 'latest.json')
+  return latestJson
+}
+
+const findZipAsset = (release: GithubRelease, appId: string): GithubAsset | undefined => {
+  return release.assets.find(
+    (asset) =>
+      asset.name.includes(appId) && (asset.name.endsWith('.zip') || asset.name.endsWith('.tar.gz'))
+  )
+}
+
+type ConversionReturnData =
+  | { repos: string[]; type: 'client'; releases: ClientLatestServer[] }
+  | { repos: string[]; type: 'app'; releases: AppLatestServer[] }
+  | { repos: string[]; type: 'none'; releases: [] }
+
+export const convertMultiToReleaseServer = async (
+  releaseMulti: MultiReleaseJSONLatest
+): Promise<ConversionReturnData> => {
+  // Handle iterating through all of the releases to generate
+  const githubStore = await storeProvider.getStore('githubStore')
+
+  const ghReleases = await githubStore.getAllReleases(releaseMulti.repository)
+
+  if (!ghReleases) throw new Error(`Releases at the end of ${releaseMulti.repository} were empty!`)
+
+  if (releaseMulti.fileIds && releaseMulti.fileIds.length > 0) {
+    // Convert all of the IDs to releases
+    const results = await Promise.allSettled(
+      releaseMulti.fileIds?.map(async (fileId) =>
+        convertIdToReleaseServer(fileId, releaseMulti.repository, ghReleases)
+      ) ?? []
+    )
+
+    // Get the successful results
+    const apps = results
+      .filter((result) => result.status === 'fulfilled')
+      .map((result) => result.value) as AppLatestServer[] | ClientLatestServer[]
+
+    // Handle logging the errors
+    results
+      .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
+      .forEach((result, index) => {
+        const fileId = releaseMulti.fileIds?.[index]
+        logger.warn(
+          `Unable to convert ${fileId} to a full release using ${releaseMulti.repository} because ${handleError(result.reason)}`,
+          { function: 'releaseUtils', source: 'convertIdToReleaseServer' }
+        )
+      })
+
+    const type = apps[0].type
+
+    return {
+      repos: releaseMulti.repositories || [],
+      type: type,
+      releases: apps
+    } as ConversionReturnData
   }
 
-  if (!('meta_type' in asset)) {
-    throw new Error('Asset must be an object')
+  return {
+    repos: releaseMulti.repositories || [],
+    type: 'none',
+    releases: []
+  }
+}
+
+export const convertIdToReleaseServer = async (
+  appId: string,
+  repository: GitRepoUrl,
+  ghReleases?: GithubRelease[]
+): Promise<ClientLatestServer | AppLatestServer> => {
+  const githubStore = await storeProvider.getStore('githubStore')
+
+  if (!ghReleases) {
+    ghReleases = await githubStore.getAllReleases(repository)
   }
 
-  const typedAsset = asset as Partial<
-    MultiReleaseJSONLatest | ClientLatestJSONLatest | AppLatestJSONLatest
-  >
+  if (!ghReleases) throw new Error('No releases found')
 
-  switch (typedAsset.meta_type) {
-    case 'multi': {
-      if (!('repository' in typedAsset)) {
-        throw new Error('Asset must be an object')
-      }
-
-      if (!('fileIds' in typedAsset) || !Array.isArray(typedAsset.fileIds)) {
-        logger.warn(`fileIds not found in ${typedAsset.meta_version}, setting to []`)
-        typedAsset.fileIds = []
-      }
-
-      if (!('repositories' in typedAsset) || !Array.isArray(typedAsset.repositories)) {
-        logger.warn(`repositories not found in ${typedAsset.meta_version}, setting to []`)
-        typedAsset.repositories = []
-      }
-
-      return {
-        meta_version: '0.11.8',
-        meta_type: 'multi',
-        repository: typedAsset.repository as GitRepoUrl,
-        fileIds: typedAsset.fileIds || [],
-        repositories: typedAsset.repositories || []
+  // Find first release containing the app ID
+  const findFirstJsonAsset = (): GithubAsset | undefined => {
+    for (const release of ghReleases) {
+      const jsonAsset = findJsonAsset(release, appId, true)
+      if (jsonAsset) {
+        return jsonAsset
       }
     }
-    case 'client': {
-      if (!('clientManifest' in typedAsset)) {
-        throw new Error('Asset must contain clientManifest')
-      }
-
-      if (!('repository' in typedAsset)) {
-        throw new Error('Asset must contain repository')
-      }
-
-      if (!('updateUrl' in typedAsset)) {
-        throw new Error('Asset must contain updateUrl')
-      }
-
-      if (!('downloads' in typedAsset)) {
-        logger.warn(`downloads not found in ${typedAsset.meta_version}, setting to 0`)
-        typedAsset.downloads = 0
-      }
-
-      if (!('size' in typedAsset)) {
-        logger.warn(`size not found in ${typedAsset.meta_version}, setting to 0`)
-        typedAsset.size = 0
-      }
-
-      if (!('updatedAt' in typedAsset)) {
-        logger.warn(`updatedAt not found in ${typedAsset.meta_version}, setting to 0`)
-        typedAsset.updatedAt = Date.now()
-      }
-
-      if (!('createdAt' in typedAsset)) {
-        logger.warn(`createdAt not found in ${typedAsset.meta_version}, setting to 0`)
-        typedAsset.createdAt = Date.now()
-      }
-
-      return {
-        meta_version: '0.11.8',
-        meta_type: 'client',
-        clientManifest: typedAsset.clientManifest as ClientManifest,
-        icon: 'icon' in typedAsset ? (typedAsset.icon as string) : undefined,
-        hash: 'hash' in typedAsset ? (typedAsset.hash as string) : undefined,
-        hashAlgorithm:
-          'hashAlgorithm' in typedAsset ? (typedAsset.hashAlgorithm as string) : undefined,
-        repository: typedAsset.repository as GitRepoUrl,
-        updateUrl: typedAsset.updateUrl as string,
-        downloads: typedAsset.downloads as number,
-        updatedAt: typedAsset.updatedAt as number,
-        createdAt: typedAsset.createdAt as number,
-        size: typedAsset.size as number
-      }
-    }
-    case 'app': {
-      if (!('appManifest' in typedAsset)) {
-        throw new Error('Asset must contain appManifest')
-      }
-
-      if (!('repository' in typedAsset)) {
-        throw new Error('Asset must contain repository')
-      }
-
-      if (!('updateUrl' in typedAsset)) {
-        throw new Error('Asset must contain updateUrl')
-      }
-
-      if (!('downloads' in typedAsset)) {
-        logger.warn(`downloads not found in ${typedAsset.meta_version}, setting to 0`)
-        typedAsset.downloads = 0
-      }
-
-      if (!('size' in typedAsset)) {
-        logger.warn(`size not found in ${typedAsset.meta_version}, setting to 0`)
-        typedAsset.size = 0
-      }
-
-      if (!('updatedAt' in typedAsset)) {
-        logger.warn(`updatedAt not found in ${typedAsset.meta_version}, setting to 0`)
-        typedAsset.updatedAt = Date.now()
-      }
-
-      if (!('createdAt' in typedAsset)) {
-        logger.warn(`createdAt not found in ${typedAsset.meta_version}, setting to 0`)
-        typedAsset.createdAt = Date.now()
-      }
-
-      return {
-        meta_version: '0.11.8',
-        meta_type: 'app',
-        appManifest: typedAsset.appManifest as AppManifest,
-        icon: 'icon' in typedAsset ? (typedAsset.icon as string) : undefined,
-        hash: 'hash' in typedAsset ? (typedAsset.hash as string) : undefined,
-        hashAlgorithm: 'hashAlgorithm' in asset ? (asset.hashAlgorithm as string) : undefined,
-        repository: typedAsset.repository as GitRepoUrl,
-        updateUrl: typedAsset.updateUrl as string,
-        downloads: typedAsset.downloads as number,
-        updatedAt: typedAsset.updatedAt as number,
-        createdAt: typedAsset.createdAt as number,
-        size: typedAsset.size as number
-      }
-    }
-    default:
-      throw new Error(`Asset meta_type is not supported: ${asset.meta_type}`)
+    return undefined
   }
+
+  const firstJsonAsset = findFirstJsonAsset()
+
+  let mainRelease: AppLatestJSONLatest | ClientLatestJSONLatest | MultiReleaseJSONLatest
+
+  // This will split the logic between migration logic and up-to-date logic
+
+  if (!firstJsonAsset && ghReleases.length > 0) {
+    // Handle the migration attempt - this is relatively likely to fail but an attempt is worth more than nothing
+
+    // check if the latest.json in the most recent release has it
+    const latestJson = findJsonAsset(ghReleases[0], appId, false)
+
+    // Assume it is outdated and is just the appReleaseMeta
+    const jsonContent = await githubStore.fetchJSONAssetContent<AppReleaseMeta>(latestJson)
+
+    if (!jsonContent) throw new Error(`No release found containing app ID: ${appId}`)
+
+    // Finally assign mainRelease
+    mainRelease = await handleReleaseJSONMigration(jsonContent, undefined, appId)
+  } else {
+    if (!firstJsonAsset) {
+      throw new Error(`No release found containing app ID: ${appId}`)
+    }
+
+    // We are relatively confident that this jsonAsset is up-to-date because it is name.json and not latest.json - which is the newer way of doing it
+
+    // Download and parse the JSON content
+    const preMainRelease = await githubStore.fetchJSONAssetContent<
+      AppLatestJSONLatest | ClientLatestJSONLatest | MultiReleaseJSONLatest
+    >(firstJsonAsset)
+
+    if (!preMainRelease) throw new Error(`No release found containing app ID: ${appId}`)
+
+    // Finally assign mainRelease - this will migrate it as well if need be
+    mainRelease = await handleLatestValidation(preMainRelease)
+  }
+
+  if (mainRelease.meta_type == 'multi') throw new Error('Unable to hande meta_type equaling multi')
+
+  // Collect past releases
+  const pastReleases: PastReleaseInfo[] = collectPastReleases(ghReleases, appId)
+
+  // Calculate total downloads
+  const totalDownloads = pastReleases.reduce((sum, release) => sum + release.downloads, 0)
+
+  // This is the way it must be done for type-safety despite the fact that it is the same as just a single return - oh well
+  if (mainRelease.meta_type === 'app') {
+    return {
+      type: mainRelease.meta_type,
+      id: appId,
+      mainRelease: mainRelease,
+      lastUpdated: Date.now(),
+      totalDownloads: totalDownloads,
+      pastReleases: pastReleases
+    }
+  } else {
+    return {
+      type: mainRelease.meta_type,
+      id: appId,
+      mainRelease: mainRelease,
+      lastUpdated: Date.now(),
+      totalDownloads: totalDownloads,
+      pastReleases: pastReleases
+    }
+  }
+}
+
+const collectPastReleases = (ghReleases: GithubRelease[], appId: string): PastReleaseInfo[] => {
+  return ghReleases.flatMap((release) => {
+    const zipAsset = findZipAsset(release, appId)
+    if (!zipAsset) return []
+
+    return [
+      {
+        tag: release.tag_name,
+        downloads: zipAsset.download_count,
+        size: zipAsset.size,
+        name: zipAsset.name,
+        download_url: zipAsset.browser_download_url,
+        created_at: release.created_at
+      }
+    ]
+  })
 }

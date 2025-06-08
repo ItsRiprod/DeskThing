@@ -20,7 +20,7 @@ import ProgressOverlay from '@renderer/overlays/ProgressOverlay'
 
 const ClientDownloads: React.FC = () => {
   const clientReleases = useReleaseStore((releaseStore) => releaseStore.clientReleases)
-  const refresh = useReleaseStore((releaseStore) => releaseStore.refreshData)
+  const refresh = useReleaseStore((releaseStore) => releaseStore.refreshReleases)
 
   const installedClient = useClientStore((clientStore) => clientStore.clientManifest)
   const refreshClient = useClientStore((clientStore) => clientStore.requestClientManifest)

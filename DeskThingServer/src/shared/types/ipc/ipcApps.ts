@@ -1,7 +1,7 @@
 import {
   App,
+  AppLatestJSONLatest,
   AppManifest,
-  AppReleaseSingleMeta,
   AppSettings,
   DeskThingToAppData,
   SavedData
@@ -92,7 +92,7 @@ export type AppIPCData = {
     }
   | {
       type: IPC_APP_TYPES.ADD
-      payload: { filePath?: string; meta?: AppReleaseSingleMeta }
+      payload: { filePath?: string; meta?: AppLatestJSONLatest }
     }
   | {
       type: IPC_APP_TYPES.STAGED

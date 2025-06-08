@@ -90,8 +90,6 @@ const useMappingStore = create<MappingStoreState>(
       window.electron.ipcRenderer.on('action', handleActionUpdate)
       window.electron.ipcRenderer.on('profile', handleProfileUpdate)
 
-      await get().requestMappings()
-
       set({ initialized: true })
     },
 
