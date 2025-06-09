@@ -23,7 +23,10 @@ export const FeedbackButton: FC<FeedbackButtonProps> = ({
   const handleOpenFeedback = (): void => {
     onClick?.()
     addSystemData({ page: currentPage + '?' + searchParams.get('page') })
-    setSearchParams({ feedback: 'true' })
+    setTimeout(() => {
+      searchParams.set('feedback', 'true')
+      setSearchParams({ feedback: 'true' })
+    }, 210)
   }
 
   return (

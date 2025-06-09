@@ -4,10 +4,11 @@ import Button from './Button'
 import { useSearchParams } from 'react-router-dom'
 
 const SettingsButton: React.FC = () => {
-  const [_searchParams, setSearchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const handleOpenSettings = (): void => {
-    setSearchParams({ settings: 'true' })
+    searchParams.set('settings', 'true')
+    setSearchParams(searchParams)
   }
 
   return (

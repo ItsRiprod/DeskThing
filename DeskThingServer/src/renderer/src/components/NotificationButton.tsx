@@ -6,12 +6,12 @@ import useTaskStore from '@renderer/stores/taskStore'
 import { useNotificationStore } from '@renderer/stores'
 
 const NotificationButton: React.FC = () => {
-  const [_searchParams, setSearchParams] = useSearchParams()
   const [bounce, setBounce] = useState(false)
   const taskList = useTaskStore((state) => state.taskList)
   const taskNum = Object.values(taskList).reduce((acc, tasks) => acc + Object.keys(tasks).length, 0)
   const [prevTaskNum, setPrevTaskNum] = useState(taskNum)
   const activeErrors = useNotificationStore((state) => state.issues)
+  const [searchParams, setSearchParams] = useSearchParams()
 
   useEffect(() => {
     if (taskNum != prevTaskNum) {
@@ -24,6 +24,8 @@ const NotificationButton: React.FC = () => {
   const handleOpenNotifications = (): void => {
     setSearchParams({ notifications: 'true' })
     setBounce(false)
+    searchParams.set('notifications', 'true')
+    setSearchParams(searchParams)
   }
 
   return (

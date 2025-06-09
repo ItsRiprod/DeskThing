@@ -114,7 +114,7 @@ const ClientMappingPage: React.FC = () => {
 
   const [selectedPage, setSelectedPage] = useState<Page>(pages['carthing'])
 
-  const [_searchParams, setSearchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   // Startup Stuff
 
@@ -142,7 +142,8 @@ const ClientMappingPage: React.FC = () => {
   // Functionality Stuff
 
   const handleAddProfile = async (): Promise<void> => {
-    setSearchParams({ addProfile: 'true' })
+    searchParams.set('addProfile', 'true')
+    setSearchParams(searchParams)
   }
 
   // UI Stuff
