@@ -16,7 +16,7 @@ const ClientConnections: React.FC = () => {
   const setPage = usePageStore((pageStore) => pageStore.setPage)
 
   // Visibility States
-  const [_searchParams, setSearchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   // Refreshing ADB Devices
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -62,12 +62,15 @@ const ClientConnections: React.FC = () => {
 
   // Functions
   const openQr = (): void => {
-    setSearchParams({ qr: 'true' })
+    searchParams.set('qr', 'true')
+    setSearchParams(searchParams)
   }
 
   // Functions
   const openSetup = (): void => {
-    setSearchParams({ setup: 'true', page: 'adb' })
+    searchParams.set('setup', 'true')
+    searchParams.set('page', 'adb')
+    setSearchParams(searchParams)
   }
 
   const handleDownloadsNav = (): void => {

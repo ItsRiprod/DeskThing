@@ -43,6 +43,7 @@ const FeedbackOverlay: FC = () => {
   }
 
   const onClose = (): void => {
+    console.log('Closing')
     searchParams.delete('feedback')
     setSearchParams(searchParams)
   }

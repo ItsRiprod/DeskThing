@@ -37,6 +37,7 @@ const OverlayWrapper: React.FC<React.PropsWithChildren> = ({
   const activeRequests = useSettingsStore((state) => state.activeRequests)
 
   useEffect(() => {
+    console.log('Current search params:', Object.fromEntries(searchParams))
     const newActiveOverlays = Object.keys(overlays).filter(
       (key) => searchParams.get(key) === 'true'
     )
