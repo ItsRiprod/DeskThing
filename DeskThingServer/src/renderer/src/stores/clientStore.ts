@@ -16,6 +16,9 @@ interface ClientStoreState {
   requestADBDevices: () => Promise<Client[] | undefined>
   requestConnections: () => Promise<void>
   refreshConnections: () => Promise<boolean>
+  /**
+   * @deprecated - use release store instead for URLs
+   */
   loadClientUrl: (url: string) => Promise<void>
   loadClientZip: (zip: string) => Promise<void>
   updateClientManifest: (client: Partial<ClientManifest>) => void

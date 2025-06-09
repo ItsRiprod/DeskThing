@@ -6,7 +6,6 @@ import {
   ClientLatestJSONLatest,
   ClientPlatformIDs,
   ClientReleaseMeta,
-  GitRepoUrl,
   MultiReleaseJSONLatest
 } from '@deskthing/types'
 import logger from '@server/utils/logger'
@@ -23,6 +22,7 @@ import { satisfies } from 'semver'
 import {
   determineValidUpdateUrl,
   determineValidUrl,
+  handleLatestMultiValidation,
   handleLatestValidation
 } from './releaseValidation'
 import { storeProvider } from '@server/stores/storeProvider'
@@ -180,13 +180,20 @@ export const handleReleaseJSONMigration = async <
             pastReleases?.meta_type == 'multi' ? pastReleases : undefined
           )) as T
         case 'multi':
-          return (await handleReleaseMultiToAppJSONMigration(
-            newRelease,
-            pastReleases?.meta_type == 'multi' || pastReleases?.meta_type == 'app'
-              ? pastReleases
-              : undefined,
-            appId
-          )) as T
+          if (appId) {
+            return (await handleReleaseMultiToAppJSONMigration(
+              newRelease,
+              pastReleases?.meta_type == 'multi' || pastReleases?.meta_type == 'app'
+                ? pastReleases
+                : undefined,
+              appId
+            )) as T
+          } else {
+            return (await handleReleaseMultiToAppMultiMigration(
+              newRelease,
+              pastReleases?.meta_type == 'multi' ? pastReleases : undefined
+            )) as T
+          }
         case 'single':
           return (await handleReleaseMetaToAppJSONMigration(
             newRelease,
@@ -396,36 +403,81 @@ export const handleReleaseMultiToAppJSONMigration = async (
     )
   }
 
-  const latestJson: AppLatestJSONLatest[] = releaseMeta.releases.map((release) => {
-    return {
-      meta_version: '0.11.8',
-      meta_type: 'app',
-      appManifest: {
-        id: release.id,
-        name: release.id,
-        version: release.version,
-        short_name: release.id,
-        requires: [],
-        tags: release.tags || '',
-        requiredVersions: release.requiredVersions || ''
-      },
-      icon: release.icon,
-      hash: release.hash,
-      hashAlgorithm: release.hashAlgorithm,
-      repository: release.repository as GitRepoUrl,
-      updateUrl: release.updateUrl,
-      downloads: release.downloads || 0,
-      size: release.size || 0,
-      createdAt: release.createdAt || 0,
-      updatedAt: release.updatedAt || 0
-    }
-  })
+  const latestJson: AppLatestJSONLatest[] = await Promise.all(
+    releaseMeta.releases.map(async (release) => {
+      return {
+        meta_version: '0.11.8',
+        meta_type: 'app',
+        appManifest: {
+          id: release.id,
+          name: release.id,
+          version: release.version,
+          short_name: release.id,
+          requires: [],
+          tags: release.tags || '',
+          requiredVersions: release.requiredVersions || ''
+        },
+        icon: release.icon,
+        hash: release.hash,
+        hashAlgorithm: release.hashAlgorithm,
+        repository: await determineValidUrl([
+          release.repository,
+          releaseMeta.repository,
+          pastRelease?.repository || ''
+        ]),
+        updateUrl: await determineValidUpdateUrl(
+          [
+            release.updateUrl,
+            release.repository,
+            releaseMeta.repository,
+            pastRelease?.repository || ''
+          ],
+          release.id
+        ),
+        downloads: release.downloads || 0,
+        size: release.size || 0,
+        createdAt: release.createdAt || 0,
+        updatedAt: release.updatedAt || 0
+      }
+    })
+  )
 
   if (appId) {
     return latestJson.filter((json) => json.appManifest.id === appId)[0]
   } else {
     return latestJson
   }
+}
+
+/**
+ * Handles the migration from the potentially outdated AppReleaseMeta to the AppLatestJSONLatest
+ */
+export const handleReleaseMultiToAppMultiMigration = async (
+  releaseMeta: AppReleaseMeta | MultiReleaseJSONLatest,
+  pastRelease?: MultiReleaseJSONLatest
+): Promise<MultiReleaseJSONLatest> => {
+  if ('meta_version' in releaseMeta) {
+    return await handleLatestMultiValidation(releaseMeta, pastRelease)
+  }
+
+  // Handle migration from appReleaseMeta to AppLatestJSON
+
+  if (releaseMeta.type == 'single')
+    throw new Error('Single type not supported in ReleaseMultitoMultiJson migration!')
+
+  if (releaseMeta.type == 'external') {
+    throw new Error(
+      `Unable to handle type 'external' when migrating - this is generally a community release`
+    )
+  }
+
+  const latestJson: MultiReleaseJSONLatest = {
+    meta_version: '0.11.8',
+    meta_type: 'multi',
+    fileIds: releaseMeta.releases.map((release) => release.id),
+    repository: await determineValidUrl([releaseMeta.repository])
+  }
+  return latestJson
 }
 
 export const handleReleaseMetaClientToClientJSONMigration = async (

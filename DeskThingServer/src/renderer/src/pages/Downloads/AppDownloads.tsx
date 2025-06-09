@@ -9,7 +9,6 @@ import AddRepoOverlay from '@renderer/overlays/releases/AddRepoOverlay'
 import { ProgressChannel } from '@shared/types'
 import { AppReleaseCard } from './AppDownloadCard'
 import { useChannelProgress } from '@renderer/hooks/useProgress'
-import ErrorBoundary from '@renderer/components/ErrorBoundary'
 
 // Defined outside scope so it persists between being unmounted and not
 let initialRender = true

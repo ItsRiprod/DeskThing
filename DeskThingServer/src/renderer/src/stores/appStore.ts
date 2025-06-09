@@ -16,6 +16,11 @@ interface AppStoreState {
   clearIconCache: () => void
   requestApps: () => void
   removeAppFromList: (appName: string) => void
+  /**
+   * @deprecated - use releaseStore instead
+   * @param data 
+   * @returns 
+   */
   addApp: (data: {
     appPath?: string
     releaseMeta?: AppLatestJSONLatest
@@ -33,6 +38,7 @@ interface AppStoreState {
   setAppData: (appName: string, data: SavedData) => void
   getAppSettings: (appName: string) => Promise<AppSettings | null>
   setAppSettings: (appName: string, settings: AppSettings) => void
+  setStagedManifest: (manifest: StagedAppManifest) => void
   setAppList: (apps: App[]) => void
   getIcon: (appName: string, icon?: string) => Promise<string | null>
   getIconUrl: (appName: string, icon?: string) => string
@@ -184,6 +190,10 @@ const useAppStore = create<AppStoreState>((set, get) => ({
 
   setAppSettings: (appName: string, settings: AppSettings): void => {
     window.electron.app.setSettings(appName, settings)
+  },
+
+  setStagedManifest: (manifest: StagedAppManifest | null): void => {
+    set({ stagedManifest: manifest })
   },
 
   addApp: async ({

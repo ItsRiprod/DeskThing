@@ -11,7 +11,8 @@ import {
   CacheableStore,
   ClientLatestServer,
   ClientReleaseFile0118,
-  ProgressChannel
+  ProgressChannel,
+  StagedAppManifest
 } from '@shared/types'
 import { GithubListenerEvents, ReleaseStoreClass } from '@shared/stores/releaseStore'
 
@@ -32,6 +33,8 @@ import EventEmitter from 'node:events'
 import { isCacheValid } from '@server/services/releases/releaseValidation'
 import { handleError } from '@server/utils/errorHandler'
 import { createReleaseFile, handleRefreshReleaseFile } from '@server/services/releases/releaseUtils'
+import { storeProvider } from './storeProvider'
+import { ClientManifest } from '@deskthing/types'
 
 /**
  * Temporarily holds the entire repo response information in memory unless manually refreshed
@@ -309,23 +312,69 @@ export class ReleaseStore
     throw new Error('Method not implemented.')
   }
 
-  public addClientRepository = async (repoUrl: string): Promise<ClientLatestServer | undefined> => {
+  public addClientRepository = async (
+    _repoUrl: string
+  ): Promise<ClientLatestServer | undefined> => {
     throw new Error('Method not implemented.')
   }
 
-  public removeAppRelease = async (repoUrl: string): Promise<void> => {
+  public removeAppRelease = async (_repoUrl: string): Promise<void> => {
     throw new Error('Method not implemented.')
   }
 
-  public removeClientRelease = async (repoUrl: string): Promise<void> => {
+  public removeClientRelease = async (_repoUrl: string): Promise<void> => {
     throw new Error('Method not implemented.')
   }
 
-  public downloadLatestApp = async (appId: string): Promise<void> => {
-    throw new Error('Method not implemented.')
+  public downloadLatestApp = async (appId: string): Promise<StagedAppManifest | undefined> => {
+    try {
+      const appRelease = await this.getAppRelease(appId)
+
+      if (!appRelease) return
+
+      const appStore = await storeProvider.getStore('appStore')
+      const appManifest = await appStore.addApp({
+        filePath: appRelease.mainRelease.updateUrl,
+        releaseMeta: appRelease.mainRelease
+      })
+
+      return appManifest
+    } catch (error) {
+      logger.error(
+        `There was an error trying to download the app ${appId}. ${handleError(error)}`,
+        {
+          function: 'downloadLatestApp',
+          source: 'releaseStore'
+        }
+      )
+      return
+    }
   }
 
-  public downloadLatestClient = async (clientId: string): Promise<void> => {
-    throw new Error('Method not implemented.')
+  public downloadLatestClient = async (clientId: string): Promise<ClientManifest | undefined> => {
+    try {
+      logger.debug('Downloading client')
+      const clientRelease = await this.getClientRelease(clientId)
+
+      if (!clientRelease) {
+        logger.debug('Client Release not found for ', clientId)
+        return
+      }
+
+      const clientStore = await storeProvider.getStore('clientStore')
+      const clientManifest = await clientStore.loadClientFromURL(
+        clientRelease.mainRelease.updateUrl
+      )
+      return clientManifest
+    } catch (error) {
+      logger.error(
+        `There was an error trying to download the client ${clientId}. ${handleError(error)}`,
+        {
+          function: 'downloadLatestClient',
+          source: 'releaseStore'
+        }
+      )
+      return
+    }
   }
 }

@@ -73,7 +73,9 @@ export const determineValidUrl = async (urls: string[]): Promise<GitRepoUrl> => 
         return `https://api.github.com/repos/${owner}/${repo}/releases`
       }
     } catch (error) {
-      handleError(error)
+      logger.debug(
+        `Error while trying to reconstruct repository URL from ${url}: ${error} ${handleError(error)}`
+      )
     }
   }
 
@@ -102,6 +104,7 @@ export const determineValidUpdateUrl = async (
   }
 
   if (validUrls.length > 0) {
+    logger.debug(`Found url ${validUrls[0]} as a valid download url for ${fileId}`)
     return validUrls[0] as GitDownloadUrl
   }
 
@@ -112,7 +115,7 @@ export const determineValidUpdateUrl = async (
       index++
       // Extract owner and repo from URL
       const urlParts = url.split('/')
-      let owner, repo
+      let owner: string | undefined, repo: string | undefined
 
       if (url.includes('api.github.com')) {
         // Handle API URLs
@@ -135,7 +138,8 @@ export const determineValidUpdateUrl = async (
       if (!owner || !repo) continue
 
       // Get latest release
-      const latestRelease = await githubStore.getLatestRelease(owner, repo)
+      const repoUrl = `https://api.github.com/repos/${owner}/${repo}`
+      const latestRelease = await githubStore.getLatestRelease(repoUrl)
       if (!latestRelease?.assets) continue
 
       // Find matching asset
@@ -150,7 +154,9 @@ export const determineValidUpdateUrl = async (
         if (isValid) {
           return reconstructedUrl as GitDownloadUrl
         } else {
-          logger.debug(`Invalid URL: ${url} ${index}/${urls.length}`)
+          logger.debug(
+            `Invalid URL: ${url} (turned to ${reconstructedUrl}) ${index}/${urls.length}`
+          )
         }
       }
     } catch (error) {
@@ -437,7 +443,12 @@ export const handleLatestAppValidation = async (
     ]),
     updateUrl: force
       ? await determineValidUpdateUrl(
-          [newRelease.updateUrl, pastReleases?.updateUrl || ''],
+          [
+            newRelease.updateUrl,
+            pastReleases?.updateUrl || '',
+            newRelease.repository,
+            pastReleases?.repository || ''
+          ],
           newRelease.appManifest.id || pastReleases?.appManifest.id || ''
         )
       : newRelease.updateUrl
@@ -466,7 +477,12 @@ export const handleLatestClientValidation = async (
     ]),
     updateUrl: force
       ? await determineValidUpdateUrl(
-          [newRelease.updateUrl, pastReleases?.updateUrl || ''],
+          [
+            newRelease.updateUrl,
+            pastReleases?.updateUrl || '',
+            newRelease.repository,
+            pastReleases?.repository || ''
+          ],
           newRelease.clientManifest.id || pastReleases?.clientManifest.id || ''
         )
       : newRelease.updateUrl

@@ -1,4 +1,3 @@
-import { storeProvider } from '@server/stores/storeProvider'
 import logger from '@server/utils/logger'
 import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'fs'
 import { join } from 'path'
@@ -7,26 +6,6 @@ import { progressBus } from '../events/progressBus'
 import { ProgressChannel } from '@shared/types'
 import { ClientManifest } from '@deskthing/types'
 import { readFile, writeFile } from 'fs/promises'
-
-/**
- * Installs the latest client
- * @channel - {@link ProgressChannel.ST_CLIENT_INSTALL}
- */
-export async function handleClientInstallation(): Promise<void> {
-  progressBus.start(ProgressChannel.FN_CLIENT_INSTALL, 'Install-Client', 'Installing client...')
-  const releaseStore = await storeProvider.getStore('releaseStore')
-  const clientReleases = await releaseStore.getClientReleases()
-
-  const latestRelease = clientReleases?.sort(
-    (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
-  )[0]
-
-  if (!latestRelease) {
-    throw new Error('No client releases found')
-  }
-
-  await downloadAndInstallClient(latestRelease.updateUrl)
-}
 
 /**
  * Downloads and installs a client from a given URL.

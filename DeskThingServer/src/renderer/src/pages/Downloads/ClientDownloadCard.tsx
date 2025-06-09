@@ -1,21 +1,23 @@
-import { AppLatestJSONLatest } from '@deskthing/types'
+import { ClientLatestJSONLatest } from '@deskthing/types'
 import { IconDownload, IconExpand, IconLogoGear } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
 import { ReleaseHistoryModal } from '@renderer/overlays/releases/AppReleaseOverlay'
-import { useAppStore, useReleaseStore } from '@renderer/stores'
-import { AppLatestServer, PastReleaseInfo } from '@shared/types'
+import { useClientStore, useReleaseStore } from '@renderer/stores'
+import { ClientLatestServer, PastReleaseInfo } from '@shared/types'
 import { FC, useState } from 'react'
 
-type AppReleaseCardProps = {
-  appReleaseServer: AppLatestServer
+type ClientDownloadCardProps = {
+  clientRelease: ClientLatestServer
+  loading: boolean
+  setLoading: (loading: boolean) => void
 }
 
-export const AppReleaseCard: FC<AppReleaseCardProps> = ({ appReleaseServer }) => {
+export const ClientDownloadCard: FC<ClientDownloadCardProps> = ({ clientRelease, loading, setLoading }) => {
   const [showPastReleases, setShowPastReleases] = useState<boolean>(false)
 
-  const downloadApp = useReleaseStore((releaseStore) => releaseStore.downloadApp)
-  const addStagedManifest = useAppStore((appStore) => appStore.setStagedManifest)
-  const addApp = useAppStore((appStore) => appStore.addApp)
+  const downloadClient = useReleaseStore((releaseStore) => releaseStore.downloadClient)
+  const loadClientUrl = useClientStore((clientStore) => clientStore.loadClientUrl)
+  const requestClientManifest = useClientStore((clientStore) => clientStore.requestClientManifest)
 
   const formatSize = (size: number): string => {
     if (size < 1024) {
@@ -27,27 +29,28 @@ export const AppReleaseCard: FC<AppReleaseCardProps> = ({ appReleaseServer }) =>
     }
   }
 
-  const handleDownload = async (asset: AppLatestJSONLatest | PastReleaseInfo): Promise<void> => {
-    console.log('Handling download of ', asset)
-    if ('meta_type' in asset) {
-      const manifest = await downloadApp(asset.appManifest.id)
-      if (manifest) {
-        addStagedManifest(manifest)
+  const handleDownload = async (release: ClientLatestJSONLatest | PastReleaseInfo): Promise<void> => {
+    setLoading(true)
+    try {
+      if ('meta_type' in release) {
+        await downloadClient(release.clientManifest.id)
+        await requestClientManifest()
+      } else {
+        await loadClientUrl(release.download_url)
+        await requestClientManifest()
       }
-    } else {
-      const manifest = await addApp({ appPath: asset.download_url })
-      if (manifest) {
-        addStagedManifest(manifest)
-      }
+    } catch (error) {
+      console.error('Failed to download client:', error)
+    } finally {
+      setLoading(false)
     }
   }
-
 
   const handleShowPastReleases = (): void => {
     setShowPastReleases(!showPastReleases)
   }
 
-  const latestRelease = appReleaseServer.mainRelease
+  const latestRelease = clientRelease.mainRelease
 
   return (
     <div className="w-full relative p-4 border rounded-xl border-zinc-900 bg-zinc-950">
@@ -62,26 +65,18 @@ export const AppReleaseCard: FC<AppReleaseCardProps> = ({ appReleaseServer }) =>
           </Button>
         </div>
         <div className="flex justify-center mb-6">
-          {latestRelease?.icon ? (
-            <img
-              src={latestRelease.icon}
-              alt={latestRelease.appManifest?.label || 'App icon'}
-              className="w-24 h-24 rounded-xl object-cover invert"
-            />
-          ) : (
-            <div className="w-24 h-24 rounded-xl bg-zinc-900 flex items-center justify-center">
-              <IconLogoGear className="w-16 h-16 text-zinc-300" />
-            </div>
-          )}
+          <div className="w-24 h-24 rounded-xl bg-zinc-900 flex items-center justify-center">
+            <IconLogoGear className="w-16 h-16 text-zinc-300" />
+          </div>
         </div>
 
         <div className="text-center mb-6">
           <h3 className="text-2xl mb-2">
-            {latestRelease?.appManifest?.label || latestRelease?.appManifest?.id || 'Unknown App'}
+            {latestRelease?.clientManifest?.name || latestRelease?.clientManifest?.id || 'Unknown Client'}
           </h3>
           <div className="text-gray-400">
-            <div>Version {latestRelease?.appManifest?.version || 'N/A'}</div>
-            <div>{appReleaseServer?.totalDownloads?.toLocaleString() || 0} downloads</div>
+            <div>Version {latestRelease?.clientManifest?.version || 'N/A'}</div>
+            <div>{clientRelease?.totalDownloads?.toLocaleString() || 0} downloads</div>
           </div>
         </div>
 
@@ -90,6 +85,7 @@ export const AppReleaseCard: FC<AppReleaseCardProps> = ({ appReleaseServer }) =>
             title="Download Latest"
             onClick={() => handleDownload(latestRelease)}
             className="w-full gap-2 group justify-center hover:bg-zinc-900"
+            disabled={loading}
           >
             <p className="group-hover:hidden">Download Latest</p>
             <p className="group-hover:block hidden">
@@ -103,7 +99,7 @@ export const AppReleaseCard: FC<AppReleaseCardProps> = ({ appReleaseServer }) =>
           <ReleaseHistoryModal
             onClose={handleShowPastReleases}
             onDownload={handleDownload}
-            appReleaseServer={appReleaseServer}
+            appReleaseServer={clientRelease}
           />
         )}
       </div>

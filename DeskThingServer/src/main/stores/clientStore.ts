@@ -5,12 +5,12 @@ import EventEmitter from 'node:events'
 import {
   downloadAndInstallClient,
   getClientManifest,
-  handleClientInstallation,
   loadClientFromZip,
   updateManifest
 } from '@server/services/client/clientService'
 import { progressBus } from '@server/services/events/progressBus'
 import logger from '@server/utils/logger'
+import { handleError } from '@server/utils/errorHandler'
 
 export class ClientStore
   extends EventEmitter<ClientStoreEvents>
@@ -50,35 +50,53 @@ export class ClientStore
    * @channel - {@link ProgressChannel.ST_CLIENT_DOWNLOAD}
    * @param url
    */
-  async loadClientFromURL(url: string): Promise<void> {
-    progressBus.startOperation(
-      ProgressChannel.ST_CLIENT_DOWNLOAD,
-      'Load-Client',
-      'Initializing load...',
-      [
-        {
-          channel: ProgressChannel.FN_CLIENT_INSTALL,
-          weight: 50
-        },
-        {
-          channel: ProgressChannel.ST_CLIENT_REFRESH,
-          weight: 50
-        }
-      ]
-    )
-    await downloadAndInstallClient(url)
+  async loadClientFromURL(url: string): Promise<ClientManifest | undefined> {
+    try {
+      progressBus.startOperation(
+        ProgressChannel.ST_CLIENT_DOWNLOAD,
+        'Load-Client',
+        'Initializing load...',
+        [
+          {
+            channel: ProgressChannel.FN_CLIENT_INSTALL,
+            weight: 50
+          },
+          {
+            channel: ProgressChannel.ST_CLIENT_REFRESH,
+            weight: 50
+          }
+        ]
+      )
+      try {
+        await downloadAndInstallClient(url)
+      } catch (error) {
+        logger.warn(`Failed to download client ${handleError(error)}`, {
+          function: 'loadClientFromURL',
+          source: 'ClientStore'
+        })
+      }
+      const result = await this.refreshClient()
 
-    const result = await this.refreshClient()
+      if (!result) {
+        progressBus.warn(ProgressChannel.ST_CLIENT_DOWNLOAD, 'Load-Client', 'Client is not valid')
+      }
 
-    if (!result) {
-      progressBus.warn(ProgressChannel.ST_CLIENT_DOWNLOAD, 'Load-Client', 'Client is not valid')
+      progressBus.complete(
+        ProgressChannel.ST_CLIENT_DOWNLOAD,
+        'Load-Client',
+        'Client loaded successfully!'
+      )
+
+      return result || undefined
+    } catch (error) {
+      progressBus.error(
+        ProgressChannel.ST_CLIENT_DOWNLOAD,
+        'Load-Client',
+        'Error loading client',
+        handleError(error)
+      )
+      return
     }
-
-    progressBus.complete(
-      ProgressChannel.ST_CLIENT_DOWNLOAD,
-      'Load-Client',
-      'Client loaded successfully!'
-    )
   }
 
   /**
@@ -121,30 +139,44 @@ export class ClientStore
    * @channel - {@link ProgressChannel.ST_CLIENT_REFRESH}
    */
   async refreshClient(): Promise<ClientManifest | null> {
-    progressBus.startOperation(
-      ProgressChannel.ST_CLIENT_REFRESH,
-      'Refresh Client',
-      'Getting client...'
-    )
-    const client = await getClientManifest()
+    try {
+      progressBus.startOperation(
+        ProgressChannel.ST_CLIENT_REFRESH,
+        'Refresh Client',
+        'Getting client...'
+      )
+      const client = await getClientManifest()
 
-    progressBus.update(ProgressChannel.ST_CLIENT_REFRESH, 'Validating client...', 50)
+      progressBus.update(ProgressChannel.ST_CLIENT_REFRESH, 'Validating client...', 50)
 
-    // TODO: Validate client
+      // TODO: Validate client
 
-    if (!client) {
-      progressBus.error(ProgressChannel.ST_CLIENT_REFRESH, 'Refresh Client', 'Client is not valid')
+      if (!client) {
+        progressBus.error(
+          ProgressChannel.ST_CLIENT_REFRESH,
+          'Refresh Client',
+          'Client is not valid'
+        )
+        return null
+      }
+
+      progressBus.update(ProgressChannel.ST_CLIENT_REFRESH, 'Saving client...', 75)
+      this.setClient(client)
+      progressBus.complete(
+        ProgressChannel.ST_CLIENT_REFRESH,
+        'Refresh-Client',
+        'Client refreshed successfully!'
+      )
+      return client
+    } catch (error) {
+      progressBus.error(
+        ProgressChannel.ST_CLIENT_REFRESH,
+        'Refresh-Client',
+        'Error refreshing client',
+        handleError(error)
+      )
       return null
     }
-
-    progressBus.update(ProgressChannel.ST_CLIENT_REFRESH, 'Saving client...', 75)
-    this.setClient(client)
-    progressBus.complete(
-      ProgressChannel.ST_CLIENT_REFRESH,
-      'Refresh-Client',
-      'Client refreshed successfully!'
-    )
-    return client
   }
 
   async setClient(_client: ClientManifest): Promise<void> {
@@ -154,37 +186,5 @@ export class ClientStore
 
   getClient(): ClientManifest | null {
     return this._client
-  }
-
-  /**
-   * @channel - {@link ProgressChannel.ST_CLIENT_INSTALL}
-   */
-  async downloadLatestClient(): Promise<void> {
-    try {
-      progressBus.startOperation(
-        ProgressChannel.ST_CLIENT_INSTALL,
-        'Download-Client',
-        'Initializing download...',
-        [
-          {
-            channel: ProgressChannel.FN_CLIENT_INSTALL,
-            weight: 100
-          }
-        ]
-      )
-      await handleClientInstallation()
-      progressBus.complete(
-        ProgressChannel.ST_CLIENT_INSTALL,
-        'Download-Client',
-        'Client downloaded successfully!'
-      )
-    } catch (error) {
-      progressBus.error(
-        ProgressChannel.ST_CLIENT_INSTALL,
-        'Download-Client',
-        'Failed to download client',
-        error instanceof Error ? error.message : String(error)
-      )
-    }
   }
 }

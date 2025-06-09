@@ -1,6 +1,6 @@
-import { AppLatestJSONLatest, ClientLatestJSONLatest } from '@deskthing/types'
+import { AppLatestJSONLatest, ClientLatestJSONLatest, ClientManifest } from '@deskthing/types'
 import { StoreInterface } from '@shared/interfaces/storeInterface'
-import { AppLatestServer, ClientLatestServer } from '@shared/types'
+import { AppLatestServer, ClientLatestServer, StagedAppManifest } from '@shared/types'
 import EventEmitter from 'node:events'
 
 export type AssetAppCacheEntry = {
@@ -108,10 +108,10 @@ export interface ReleaseStoreClass extends StoreInterface, EventEmitter<GithubLi
   /**
    * Downloads the latest of a specific app from the release files
    */
-  downloadLatestApp(appId: string): Promise<void>
+  downloadLatestApp(appId: string): Promise<StagedAppManifest | undefined>
 
   /**
    * Downloads the latest of a specific client from the release files
    */
-  downloadLatestClient(clientId: string): Promise<void>
+  downloadLatestClient(clientId: string): Promise<ClientManifest | undefined>
 }

@@ -5,7 +5,13 @@
  * @version 0.10.4
  */
 import { create } from 'zustand'
-import { AppLatestServer, ClientLatestServer, IpcRendererCallback } from '@shared/types'
+import {
+  AppLatestServer,
+  ClientLatestServer,
+  IpcRendererCallback,
+  StagedAppManifest
+} from '@shared/types'
+import { ClientManifest } from '@deskthing/types'
 
 interface releaseStoreState {
   appReleases: AppLatestServer[]
@@ -18,11 +24,13 @@ interface releaseStoreState {
   getAppReferences: () => Promise<string[]>
   addAppRepo: (repoUrl: string) => Promise<AppLatestServer | void>
   removeAppRepo: (repoUrl: string) => Promise<void>
+  downloadApp: (appId: string) => Promise<StagedAppManifest | undefined>
 
   getClients: () => Promise<ClientLatestServer[]>
   getClientRepos: () => Promise<string[]>
   removeClientRepo: (repoUrl: string) => Promise<void>
   addClientRepo: (repoUrl: string) => void
+  downloadClient: (clientId: string) => Promise<ClientManifest | undefined>
 }
 
 const useReleaseStore = create<releaseStoreState>((set, get) => ({
@@ -75,6 +83,11 @@ const useReleaseStore = create<releaseStoreState>((set, get) => ({
     await window.electron.releases.removeAppRepo(repoUrl)
   },
 
+  downloadApp: async (appId: string): Promise<StagedAppManifest | undefined> => {
+    const app = await window.electron.releases.downloadApp(appId)
+    return app
+  },
+
   getClients: async (): Promise<ClientLatestServer[]> => {
     const clients = await window.electron.releases.getClients()
     set({ clientReleases: clients })
@@ -92,6 +105,11 @@ const useReleaseStore = create<releaseStoreState>((set, get) => ({
 
   addClientRepo: async (repoUrl: string): Promise<ClientLatestServer | void> => {
     const client = await window.electron.releases.addClientRepo(repoUrl)
+    return client
+  },
+
+  downloadClient: async (clientId: string): Promise<ClientManifest | undefined> => {
+    const client = await window.electron.releases.downloadClient(clientId)
     return client
   }
 }))

@@ -7,6 +7,7 @@ import {
 import Logger from '@server/utils/logger'
 import { storeProvider } from '@server/stores/storeProvider'
 import { progressBus } from '../events/progressBus'
+import { handleError } from '@server/utils/errorHandler'
 
 export const releaseHandler = async (
   data: ReleaseIPCData
@@ -31,7 +32,7 @@ export const releaseHandler = async (
         progressBus.complete(ProgressChannel.IPC_RELEASES, 'Refreshing Releases', 'complete')
         return
       } catch (error) {
-        Logger.error('Unable to refresh repositories!', {
+        Logger.error(`Unable to refresh repositories! ${handleError(error)}`, {
           error: error as Error,
           function: 'releases.refresh',
           source: 'releaseHandler'
@@ -42,7 +43,7 @@ export const releaseHandler = async (
       try {
         return await releaseStore.getAppReleases()
       } catch (error) {
-        Logger.error('Unable to get repositories!', {
+        Logger.error(`Unable to get repositories! ${handleError(error)}`, {
           error: error as Error,
           function: 'releases.getApps',
           source: 'releaseHandler'
@@ -53,7 +54,7 @@ export const releaseHandler = async (
       try {
         return await releaseStore.getCommunityApps()
       } catch (error) {
-        Logger.error('Unable to get app references!', {
+        Logger.error(`Unable to get app references! ${handleError(error)}`, {
           error: error as Error,
           function: 'releases.getAppRepositories',
           source: 'releaseHandler'
@@ -64,7 +65,7 @@ export const releaseHandler = async (
       try {
         return await releaseStore.addAppRepository(data.payload)
       } catch (error) {
-        Logger.error('Unable to add repository!', {
+        Logger.error(`Unable to add repository! ${handleError(error)}`, {
           error: error as Error,
           function: 'releases.addAppRepo',
           source: 'releaseHandler'
@@ -75,9 +76,20 @@ export const releaseHandler = async (
       try {
         return await releaseStore.removeAppRelease(data.payload)
       } catch (error) {
-        Logger.error('Unable to remove repository!', {
+        Logger.error(`Unable to remove repository! ${handleError(error)}`, {
           error: error as Error,
           function: 'releases.removeAppRepo',
+          source: 'releaseHandler'
+        })
+        return
+      }
+    case IPC_RELEASE_TYPES.DOWNLOAD_APP:
+      try {
+        return await releaseStore.downloadLatestApp(data.payload)
+      } catch (error) {
+        Logger.error(`Unable to download app! ${handleError(error)}`, {
+          error: error as Error,
+          function: 'releases.downloadApp',
           source: 'releaseHandler'
         })
         return
@@ -86,7 +98,7 @@ export const releaseHandler = async (
       try {
         return await releaseStore.getClientReleases()
       } catch (error) {
-        Logger.error('Unable to get client releases!', {
+        Logger.error(`Unable to get client releases! ${handleError(error)}`, {
           error: error as Error,
           function: 'releases.getClients',
           source: 'releaseHandler'
@@ -97,7 +109,7 @@ export const releaseHandler = async (
       try {
         return await releaseStore.getCommunityClients()
       } catch (error) {
-        Logger.error('Unable to get client repositories!', {
+        Logger.error(`Unable to get client repositories! ${handleError(error)}`, {
           error: error as Error,
           function: 'releases.getClientRepositories',
           source: 'releaseHandler'
@@ -108,7 +120,7 @@ export const releaseHandler = async (
       try {
         return await releaseStore.addClientRepository(data.payload)
       } catch (error) {
-        Logger.error('Unable to add client repository!', {
+        Logger.error(`Unable to add client repository! ${handleError(error)}`, {
           error: error as Error,
           function: 'releases.addClientRepo',
           source: 'releaseHandler'
@@ -119,9 +131,20 @@ export const releaseHandler = async (
       try {
         return await releaseStore.removeClientRelease(data.payload)
       } catch (error) {
-        Logger.error('Unable to remove client repository!', {
+        Logger.error(`Unable to remove client repository! ${handleError(error)}`, {
           error: error as Error,
           function: 'releases.removeClientRepo',
+          source: 'releaseHandler'
+        })
+        return
+      }
+    case IPC_RELEASE_TYPES.DOWNLOAD_CLIENT:
+      try {
+        return await releaseStore.downloadLatestClient(data.payload)
+      } catch (error) {
+        Logger.error(`Unable to download client! ${handleError(error)}`, {
+          error: error as Error,
+          function: 'releases.downloadClient',
           source: 'releaseHandler'
         })
         return

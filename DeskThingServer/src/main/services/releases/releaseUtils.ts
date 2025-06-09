@@ -51,14 +51,8 @@ const createClientReleaseFile = async (force = false): Promise<ClientReleaseFile
   try {
     progressBus.startOperation(
       ProgressChannel.FN_RELEASE_CLIENT_REFRESH,
-      'Refreshing Client Releases',
-      'Initializing Refresh',
-      [
-        {
-          channel: ProgressChannel.FN_RELEASE_CLIENT_STATS,
-          weight: 10
-        }
-      ]
+      'Creating Client Releases File',
+      'Initializing Refresh'
     )
     const githubStore = await storeProvider.getStore('githubStore')
 
@@ -166,14 +160,8 @@ const createAppReleaseFile = async (force = false): Promise<AppReleaseFile0118> 
   try {
     progressBus.startOperation(
       ProgressChannel.FN_RELEASE_APP_REFRESH,
-      'Refreshing App Releases',
-      'Initializing Refresh',
-      [
-        {
-          channel: ProgressChannel.FN_RELEASE_APP_REFRESH,
-          weight: 10
-        }
-      ]
+      'Creating App Releases File',
+      'Initializing Refresh'
     )
     const githubStore = await storeProvider.getStore('githubStore')
 

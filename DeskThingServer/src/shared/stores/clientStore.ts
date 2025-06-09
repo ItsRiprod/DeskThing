@@ -15,11 +15,6 @@ export interface ClientStoreClass
 
   /**
    * @channel - {@link ProgressChannel.ST_CLIENT_INSTALL}
-   */
-  downloadLatestClient(): Promise<void>
-
-  /**
-   * @channel - {@link ProgressChannel.ST_CLIENT_INSTALL}
    * @param zipPath
    */
   loadClientFromZip(zipPath: string): Promise<void>
@@ -28,7 +23,7 @@ export interface ClientStoreClass
    * @channel - {@link ProgressChannel.ST_CLIENT_DOWNLOAD}
    * @param url
    */
-  loadClientFromURL(url: string): Promise<void>
+  loadClientFromURL(url: string): Promise<ClientManifest | undefined>
 
   /**
    * @channel - {@link ProgressChannel.ST_CLIENT_REFRESH}

@@ -11,7 +11,7 @@ export class GithubStore implements CacheableStore, GithubStoreClass {
   // Caches
   private jsonCache?: Map<string, CacheEntry<object>>
   private releaseCache?: Map<string, CacheEntry<GithubRelease[]>>
-  private validationCache?: Map<string, { isValid: boolean; timestamp: number }>
+  private validationCache?: Map<string, { isValid: Promise<boolean> | boolean; timestamp: number }>
 
   // Queues
   private fetchQueue = new Map<string, Promise<Response>>()
@@ -148,6 +148,7 @@ export class GithubStore implements CacheableStore, GithubStoreClass {
           if (Date.now() < this.rateLimitReset) {
             await new Promise((resolve) => setTimeout(resolve, this.retryAfter))
           }
+
           const response = await fetch(url, {
             ...options,
             headers: {
@@ -289,30 +290,33 @@ export class GithubStore implements CacheableStore, GithubStoreClass {
   public checkUrlValidity = async (url: string): Promise<boolean> => {
     try {
       // Check if we already validated this URL recently
-      const cached = this.validationCache?.get(url)
+      const cached = this.checkValidationCache(url)
       if (cached && isCacheValid(cached)) {
-        return cached.isValid
+        return await cached.isValid
       }
 
-      // Using a HEAD request - more efficient for just checking existence
-      const response = await fetch(url, {
-        method: 'HEAD',
-        // timeout to avoid hanging
-        signal: AbortSignal.timeout(10000) // 10 seconds
+      const isValid = new Promise<boolean>((resolve) => {
+        // Using a HEAD request - more efficient for just checking existence
+        fetch(url, {
+          method: 'HEAD',
+          // timeout to avoid hanging
+          signal: AbortSignal.timeout(10000) // 10 seconds
+        })
+          .then((response) => {
+            const isValid = response.ok
+
+            resolve(isValid)
+          })
+          .catch(() => resolve(false))
       })
 
-      const isValid = response.ok
-
       // Cache validation result separately
-      if (!this.validationCache) {
-        this.validationCache = new Map()
-      }
-      this.validationCache.set(url, {
+      this.addToValidationCache(url, {
         isValid,
         timestamp: Date.now()
       })
 
-      return isValid
+      return await isValid
     } catch {
       return false
     }
@@ -392,11 +396,35 @@ export class GithubStore implements CacheableStore, GithubStoreClass {
     if (!this.releaseCache) {
       this.releaseCache = new Map()
     }
-    this.releaseCache.set(assetUrl, assetResult)
+    this.releaseCache.set(assetUrl.toLowerCase(), assetResult)
   }
 
   public checkCache = (assetUrl: string): CacheEntry<GithubRelease[]> | undefined => {
-    return this.releaseCache?.get(assetUrl)
+    return this.releaseCache?.get(assetUrl.toLowerCase())
+  }
+
+  private addToValidationCache = (
+    assetUrl: string,
+    assetResult: {
+      isValid: boolean | Promise<boolean>
+      timestamp: number
+    }
+  ): void => {
+    if (!this.validationCache) {
+      this.validationCache = new Map()
+    }
+    this.validationCache.set(assetUrl.toLowerCase(), assetResult)
+  }
+
+  private checkValidationCache = (
+    assetUrl: string
+  ):
+    | {
+        isValid: Promise<boolean> | boolean
+        timestamp: number
+      }
+    | undefined => {
+    return this.validationCache?.get(assetUrl.toLowerCase())
   }
 
   public addToJSONCache = <T extends object = object>(
@@ -406,12 +434,12 @@ export class GithubStore implements CacheableStore, GithubStoreClass {
     if (!this.jsonCache) {
       this.jsonCache = new Map()
     }
-    this.jsonCache.set(assetUrl, assetResult)
+    this.jsonCache.set(assetUrl.toLowerCase(), assetResult)
   }
 
   public checkJSONCache = <T extends object = object>(
     assetUrl: string
   ): CacheEntry<T> | undefined => {
-    return this.jsonCache?.get(assetUrl) as CacheEntry<T> | undefined
+    return this.jsonCache?.get(assetUrl.toLowerCase()) as CacheEntry<T> | undefined
   }
 }
