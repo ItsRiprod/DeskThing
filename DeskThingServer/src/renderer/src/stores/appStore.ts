@@ -18,8 +18,8 @@ interface AppStoreState {
   removeAppFromList: (appName: string) => void
   /**
    * @deprecated - use releaseStore instead
-   * @param data 
-   * @returns 
+   * @param data
+   * @returns
    */
   addApp: (data: {
     appPath?: string
@@ -79,11 +79,13 @@ const useAppStore = create<AppStoreState>((set, get) => ({
 
     // Set up the event listener for app-data updates
     const handleAppData: IpcRendererCallback<'app-data'> = (_event, response) => {
-      set({ appsList: response })
+      const filteredApps = response.filter((app) => app != undefined)
+
+      set({ appsList: filteredApps })
 
       // Update order if needed
       const { order } = get()
-      const missingApps = response.filter((app) => !order.includes(app.name))
+      const missingApps = filteredApps.filter((app) => !order.includes(app.name))
       if (missingApps.length > 0) {
         set({ order: [...order, ...missingApps.map((app) => app.name)] })
       }
@@ -94,9 +96,11 @@ const useAppStore = create<AppStoreState>((set, get) => ({
 
     // Fetch initial data
     const apps = await window.electron.app.get()
+
+    const filteredApps = apps.filter((app) => app != undefined)
     set({
-      appsList: apps,
-      order: apps.map((app) => app.name),
+      appsList: filteredApps,
+      order: filteredApps.map((app) => app.name),
       initialized: true
     })
   },
@@ -104,7 +108,9 @@ const useAppStore = create<AppStoreState>((set, get) => ({
   // Requests the apps from Electron via IPC
   requestApps: async (): Promise<void> => {
     const apps = await window.electron.app.get() // Assuming this is wrapped in a promise
-    set({ appsList: apps, order: apps.map((app) => app.name), iconCache: {} })
+    const filteredApps = apps.filter((app) => app != undefined)
+
+    set({ appsList: filteredApps, order: filteredApps.map((app) => app.name), iconCache: {} })
   },
 
   // Sets the entire list of apps

@@ -7,13 +7,15 @@ import {
   AppManifest,
   ClientLatestJSONLatest,
   ClientManifest,
+  GitRepoUrl,
   MultiReleaseJSONLatest
 } from '@deskthing/types'
 import { storeProvider } from '@server/stores/storeProvider'
 import { handleError } from '@server/utils/errorHandler'
 import logger from '@server/utils/logger'
-import { GitDownloadUrl, GitRepoUrl } from '@shared/types'
+import { GitDownloadUrl } from '@shared/types'
 import { satisfies } from 'semver'
+
 
 /**
  * Checks if a release file is valid based on its timestamp.
@@ -70,7 +72,7 @@ export const determineValidUrl = async (urls: string[]): Promise<GitRepoUrl> => 
       }
 
       if (owner && repo) {
-        return `https://api.github.com/repos/${owner}/${repo}/releases`
+        return `https://api.github.com/repos/${owner}/${repo}/releases` as GitRepoUrl
       }
     } catch (error) {
       logger.debug(

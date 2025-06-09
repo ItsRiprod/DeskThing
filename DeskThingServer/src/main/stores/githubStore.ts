@@ -269,15 +269,23 @@ export class GithubStore implements CacheableStore, GithubStoreClass {
         throw new Error(`HTTP ERROR fetching ${apiUrl}: ${response.status}: ${response.statusText}`)
       }
 
-      const data = await response.json()
+      const data = (await response.json()) as GithubRelease[]
+
+      const sortedReleases = data.map((release) => ({
+        ...release,
+        assets: release.assets.sort(
+          (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+        )
+      }))
+
       const cacheData: CacheEntry<GithubRelease[]> = {
         exists: true,
         timestamp: Date.now(),
-        data,
+        data: sortedReleases,
         isError: false
       }
       this.addToCache(apiUrl, cacheData)
-      return data
+      return sortedReleases
     } catch (error) {
       logger.error(`Error fetching releases ${repoUrl}. ${handleError(error)}!`, {
         function: 'getAllReleases',

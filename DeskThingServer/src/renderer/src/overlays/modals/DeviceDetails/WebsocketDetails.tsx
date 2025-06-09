@@ -1,4 +1,4 @@
-import { IconHome, IconPing, IconX } from '@renderer/assets/icons'
+import { IconConfig, IconHome, IconPing, IconX } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
 import React from 'react'
 import { Client } from '@deskthing/types'
@@ -11,9 +11,14 @@ interface WebsocketDetailsProps {
 const WebsocketDetails: React.FC<WebsocketDetailsProps> = ({ client }) => {
   const disconnect = usePlatformStore((state) => state.disconnect)
   const ping = usePlatformStore((state) => state.ping)
+  const sendInitialData = usePlatformStore((state) => state.resendInitialData)
 
   const handlePing = async (): Promise<void> => {
     await ping(client.clientId)
+  }
+
+  const handleResync = async (): Promise<void> => {
+    await sendInitialData(client.clientId)
   }
 
   const handleDisconnect = (): void => {
@@ -49,6 +54,14 @@ const WebsocketDetails: React.FC<WebsocketDetailsProps> = ({ client }) => {
               >
                 <IconPing className="flex-shrink-0" />
                 <p className="sm:block text-ellipsis hidden text-nowrap">Ping</p>
+              </Button>
+              <Button
+                title="Send Initial Data"
+                className="bg-zinc-900 hover:bg-zinc-800 min-w-fit transition-colors duration-200 gap-2 rounded-lg p-3"
+                onClick={handleResync}
+              >
+                <IconConfig className="flex-shrink-0" />
+                <p className="sm:block text-ellipsis hidden text-nowrap">Resync</p>
               </Button>
               <Button
                 title="Disconnect the Client"
