@@ -13,6 +13,7 @@ import { storeProvider } from '@server/stores/storeProvider'
 import { handleError } from '@server/utils/errorHandler'
 import logger from '@server/utils/logger'
 import { GitDownloadUrl, GitRepoUrl } from '@shared/types'
+import { satisfies } from 'semver'
 
 /**
  * Checks if a release file is valid based on its timestamp.
@@ -274,8 +275,7 @@ export const sanitizeLatestClientJSON = (
     clientManifest: typedAsset.clientManifest as ClientManifest,
     icon: 'icon' in typedAsset ? (typedAsset.icon as string) : undefined,
     hash: 'hash' in typedAsset ? (typedAsset.hash as string) : undefined,
-    hashAlgorithm:
-      'hashAlgorithm' in typedAsset ? (typedAsset.hashAlgorithm as string) : undefined,
+    hashAlgorithm: 'hashAlgorithm' in typedAsset ? (typedAsset.hashAlgorithm as string) : undefined,
     repository: typedAsset.repository as GitRepoUrl,
     updateUrl: typedAsset.updateUrl as string,
     downloads: typedAsset.downloads as number,
@@ -340,4 +340,154 @@ export const sanitizeLatestAppJSON = (
     createdAt: typedAsset.createdAt as number,
     size: typedAsset.size as number
   }
+}
+
+/**
+ * Handles data validation and assertion of the latest version of the release files
+ * @param release - the release to validate
+ * @returns the validated release
+ */
+export const handleLatestValidation = async <
+  T extends ClientLatestJSONLatest | AppLatestJSONLatest | MultiReleaseJSONLatest =
+    | ClientLatestJSONLatest
+    | AppLatestJSONLatest
+    | MultiReleaseJSONLatest
+>(
+  newRelease: T,
+  pastReleases?: T,
+  force?: boolean
+): Promise<T> => {
+  // Switch between Client, App, and Multi
+  // Throw error if pastRelease and newRelease are different types
+  // Handle App -> App Migration
+  // Handle Client -> Client Migration
+  // Handle Multi -> Multi Migration
+
+  try {
+    if (!('meta_type' in newRelease)) throw new Error('meta_type not found in newRelease')
+
+    if (!('meta_version' in newRelease)) throw new Error('meta_version not found in newRelease')
+
+    if (!newRelease.meta_version || typeof newRelease.meta_version !== 'string')
+      throw new Error('meta_version is not a string or exist')
+
+    if (satisfies(newRelease.meta_version, '<0.11.8')) {
+      throw new Error(`meta_version of ${newRelease.meta_version} is not supported`)
+    }
+
+    if (satisfies(newRelease.meta_version, '>0.11.8')) {
+      logger.warn(
+        `meta_version of ${newRelease.meta_version} is newer and not fully supported. Will try anyways (maybe try updating?)`
+      )
+    }
+
+    if (pastReleases && newRelease.meta_type != pastReleases.meta_type)
+      throw new Error(
+        `meta_type mismatch between past and new releases with ${newRelease.meta_type} and ${pastReleases?.meta_type}`
+      )
+
+    switch (newRelease.meta_type) {
+      case 'client':
+        return (await handleLatestClientValidation(
+          newRelease,
+          pastReleases as ClientLatestJSONLatest | undefined,
+          force
+        )) as T
+      case 'app':
+        return (await handleLatestAppValidation(
+          newRelease,
+          pastReleases as AppLatestJSONLatest | undefined,
+          force
+        )) as T
+      case 'multi':
+        return (await handleLatestMultiValidation(
+          newRelease,
+          pastReleases as MultiReleaseJSONLatest | undefined,
+          force
+        )) as T
+      default:
+        throw new Error('meta_type not supported')
+    }
+  } catch (error) {
+    if (pastReleases) {
+      return pastReleases
+    }
+    throw error
+  }
+}
+
+export const handleLatestAppValidation = async (
+  newRelease: AppLatestJSONLatest,
+  pastReleases?: AppLatestJSONLatest,
+  force?: boolean
+): Promise<AppLatestJSONLatest> => {
+  const validatedRelease: AppLatestJSONLatest = {
+    ...newRelease,
+    downloads: pastReleases?.downloads || 0,
+    size: newRelease.size || pastReleases?.size || 0,
+    updatedAt: Date.now(),
+    createdAt: pastReleases?.createdAt || Date.now(),
+    meta_version: '0.11.8',
+    meta_type: 'app',
+    repository: await determineValidUrl([
+      newRelease.repository,
+      pastReleases?.repository || '',
+      newRelease.appManifest.repository || '',
+      pastReleases?.appManifest.repository || ''
+    ]),
+    updateUrl: force
+      ? await determineValidUpdateUrl(
+          [newRelease.updateUrl, pastReleases?.updateUrl || ''],
+          newRelease.appManifest.id || pastReleases?.appManifest.id || ''
+        )
+      : newRelease.updateUrl
+  }
+  return validatedRelease
+}
+
+export const handleLatestClientValidation = async (
+  newRelease: ClientLatestJSONLatest,
+  pastReleases?: ClientLatestJSONLatest,
+  force?: boolean
+): Promise<ClientLatestJSONLatest> => {
+  const validatedRelease: ClientLatestJSONLatest = {
+    ...newRelease,
+    downloads: pastReleases?.downloads || 0,
+    size: newRelease.size || pastReleases?.size || 0,
+    updatedAt: Date.now(),
+    createdAt: pastReleases?.createdAt || Date.now(),
+    meta_version: '0.11.8',
+    meta_type: 'client',
+    repository: await determineValidUrl([
+      newRelease.repository,
+      pastReleases?.repository || '',
+      newRelease.clientManifest.repository || '',
+      pastReleases?.clientManifest.repository || ''
+    ]),
+    updateUrl: force
+      ? await determineValidUpdateUrl(
+          [newRelease.updateUrl, pastReleases?.updateUrl || ''],
+          newRelease.clientManifest.id || pastReleases?.clientManifest.id || ''
+        )
+      : newRelease.updateUrl
+  }
+  return validatedRelease
+}
+
+export const handleLatestMultiValidation = async (
+  newRelease: MultiReleaseJSONLatest,
+  pastReleases?: MultiReleaseJSONLatest,
+  force?: boolean
+): Promise<MultiReleaseJSONLatest> => {
+  const validatedRelease: MultiReleaseJSONLatest = {
+    ...newRelease,
+    meta_version: '0.11.8',
+    meta_type: 'multi',
+    fileIds: newRelease.fileIds || pastReleases?.fileIds || [],
+    repositories: newRelease.repositories || pastReleases?.repositories || [],
+    repository: force
+      ? await determineValidUrl([newRelease.repository, pastReleases?.repository || ''])
+      : newRelease.repository
+  }
+  return validatedRelease
 }

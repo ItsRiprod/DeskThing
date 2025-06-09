@@ -30,15 +30,8 @@ import {
 import { progressBus } from '@server/services/events/progressBus'
 import EventEmitter from 'node:events'
 import { isCacheValid } from '@server/services/releases/releaseValidation'
-import {
-  createAppReleaseFile,
-  handleRefreshAppReleaseFile
-} from '@server/services/releases/appReleaseUtils'
-import {
-  createClientReleaseFile,
-  handleRefreshClientReleaseFile
-} from '@server/services/releases/clientReleaseUtils'
 import { handleError } from '@server/utils/errorHandler'
+import { createReleaseFile, handleRefreshReleaseFile } from '@server/services/releases/releaseUtils'
 
 /**
  * Temporarily holds the entire repo response information in memory unless manually refreshed
@@ -221,7 +214,7 @@ export class ReleaseStore
 
       // Handle refreshing the existing data
       if (force || !isCacheValid(appReleases)) {
-        this.appReleases = await handleRefreshAppReleaseFile(appReleases, {
+        this.appReleases = await handleRefreshReleaseFile('app', appReleases, {
           force,
           updateStates: true
         })
@@ -230,7 +223,7 @@ export class ReleaseStore
       }
     } catch (error) {
       logger.debug(`Fetching initial app file because ${handleError(error)}`)
-      this.appReleases = await createAppReleaseFile(force)
+      this.appReleases = await createReleaseFile('app', force)
       this.saveAppReleaseFile(false)
       logger.debug('Finished fetching initial app release file')
       return
@@ -260,7 +253,7 @@ export class ReleaseStore
 
       // Handle refreshing the existing data
       if (force || !isCacheValid(clientReleases)) {
-        this.clientReleases = await handleRefreshClientReleaseFile(clientReleases, {
+        this.clientReleases = await handleRefreshReleaseFile('client', clientReleases, {
           force,
           updateStates: true
         })
@@ -269,7 +262,7 @@ export class ReleaseStore
       }
     } catch (error) {
       logger.debug(`Fetching initial client file because ${handleError(error)}`)
-      this.clientReleases = await createClientReleaseFile(force)
+      this.clientReleases = await createReleaseFile('client', force)
       this.saveClientReleaseFile(false)
       logger.debug('Finished fetching initial clientReleases release file')
       return

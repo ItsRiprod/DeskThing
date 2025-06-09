@@ -34,6 +34,7 @@ export class GithubStore implements CacheableStore, GithubStoreClass {
 
   // Enforced by Cacheable Store Interface
   public clearCache = async (): Promise<void> => {
+    this.cleanupExpiredEntries()
     this.releaseCache?.clear()
     this.releaseCache = undefined
     this.jsonCache?.clear()
@@ -200,14 +201,14 @@ export class GithubStore implements CacheableStore, GithubStoreClass {
       // Check if the input is already an API URL
       const apiMatch = cleanUrl.match(/api\.github\.com\/repos\/([^/]+)\/([^/]+)/)
       if (apiMatch) {
-        [, owner, repo] = apiMatch
+        ;[, owner, repo] = apiMatch
       } else {
         // Extract from regular GitHub URL
         const match = cleanUrl.match(/github\.com\/([^/]+)\/([^/]+)/)
         if (!match) {
           throw new Error(`Invalid GitHub repository URL: ${repoUrl}`)
         }
-        [, owner, repo] = match
+        ;[, owner, repo] = match
       }
 
       return `https://api.github.com/repos/${owner}/${repo}/releases`
@@ -219,7 +220,7 @@ export class GithubStore implements CacheableStore, GithubStoreClass {
       })
       throw error
     }
-  }  /**
+  } /**
    * Fetches all releases for the specified GitHub repository.
    *
    * @param repoUrl - The URL of the GitHub repository.

@@ -70,6 +70,7 @@ export type ClientReleaseFile = ClientReleaseFile0118 | ClientReleaseFile0108
 
 export type AppReleaseFile0118 = {
   version: '0.11.8'
+  type: 'app'
   repositories: string[]
   releases: AppLatestServer[]
   timestamp: number
@@ -77,6 +78,7 @@ export type AppReleaseFile0118 = {
 
 export type ClientReleaseFile0118 = {
   version: '0.11.8'
+  type: 'client'
   /**
    * The array of repositories that are available to be used
    */
