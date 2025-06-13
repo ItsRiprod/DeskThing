@@ -1,18 +1,22 @@
 import { IconArrowRight, IconUpload, IconLoading } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
 import Overlay from '@renderer/overlays/Overlay'
+import { useReleaseStore } from '@renderer/stores'
+import { AppLatestServer, ClientLatestServer } from '@shared/types'
 import { FC, useState, useMemo } from 'react'
 
 interface AddRepoProps {
   onClose: () => void
-  onAdd: (url: string) => void
+  onZipUpload: (zipUrl: string) => void
   existingRepositories?: string[]
 }
 
-const AddRepoOverlay: FC<AddRepoProps> = ({ onClose, onAdd, existingRepositories }) => {
+const AddRepoOverlay: FC<AddRepoProps> = ({ onClose, onZipUpload, existingRepositories }) => {
   const [repoUrl, setRepoUrl] = useState('')
   const [selectingFile, setSelectingFile] = useState(false)
   const [loading, setLoading] = useState(false)
+  const addRepo = useReleaseStore((state) => state.addRepositoryUrl)
+  const [addedRepos, setAddedRepos] = useState<AppLatestServer[] | ClientLatestServer[]>([])
 
   const { processedUrl, isValid } = useMemo(() => {
     let processed = repoUrl
@@ -37,10 +41,12 @@ const AddRepoOverlay: FC<AddRepoProps> = ({ onClose, onAdd, existingRepositories
     return { processedUrl: processed, isValid: valid }
   }, [repoUrl])
 
-  const handleSubmit = (): void => {
+  const handleSubmit = async (): Promise<void> => {
     if (isValid) {
-      onAdd(processedUrl)
-      onClose()
+      const release = await addRepo(processedUrl)
+      if (release) {
+        setAddedRepos(release)
+      }
     }
   }
 
@@ -53,7 +59,7 @@ const AddRepoOverlay: FC<AddRepoProps> = ({ onClose, onAdd, existingRepositories
     if (file) {
       setLoading(true)
       try {
-        await window.electron.app.addApp({ appPath: file })
+        await onZipUpload(file)
         onClose()
       } catch {
         setLoading(false)
@@ -89,14 +95,22 @@ const AddRepoOverlay: FC<AddRepoProps> = ({ onClose, onAdd, existingRepositories
             </div>
           )}
         </div>
+        {addedRepos.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <label className="text-sm text-zinc-400">Added Repositories</label>
+            <div className="max-h-32 overflow-y-auto">
+              {addedRepos.map((repo, index) => (
+                <div key={index} className="text-sm text-white p-2 bg-zinc-800 rounded mb-1">
+                  {repo.repository}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="flex justify-between items-center">
-          <Button
-            onClick={handleUploadClick}
-            className="hover:bg-zinc-800"
-            disabled={loading}
-          >
+          <Button onClick={handleUploadClick} className="hover:bg-zinc-800" disabled={loading}>
             {selectingFile ? <IconLoading strokeWidth={1.5} /> : <IconUpload strokeWidth={1.5} />}
-            Upload Local App
+            Upload Local File
           </Button>
           <Button
             title="Add Repository"

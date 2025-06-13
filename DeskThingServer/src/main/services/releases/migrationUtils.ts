@@ -1,12 +1,17 @@
 import {
   AppLatestJSONLatest,
+  AppManifest,
   AppReleaseMeta,
   AppReleaseSingleMeta,
   ClientConnectionMethod,
   ClientLatestJSONLatest,
+  ClientManifest,
   ClientPlatformIDs,
   ClientReleaseMeta,
-  MultiReleaseJSONLatest
+  GitRepoUrl,
+  LOGGING_LEVELS,
+  MultiReleaseJSONLatest,
+  ReleaseMETAJson
 } from '@deskthing/types'
 import logger from '@server/utils/logger'
 import {
@@ -16,6 +21,7 @@ import {
   ClientLatestServer,
   ClientReleaseFile,
   ClientReleaseFile0118,
+  GithubAsset,
   PastReleaseInfo
 } from '@shared/types'
 import { satisfies } from 'semver'
@@ -28,6 +34,9 @@ import {
 import { storeProvider } from '@server/stores/storeProvider'
 import { handleError } from '@server/utils/errorHandler'
 import { collectPastReleases, convertIdToReleaseServer } from './releaseUtils'
+import path from 'node:path'
+import { app } from 'electron'
+import { unlink, writeFile } from 'node:fs/promises'
 
 /**
  * Handles the migration of any old file to the current file
@@ -308,7 +317,11 @@ export const handleReleaseMetaToAppJSONMigration = async (
         version: releaseMeta.version,
         requires: pastRelease?.appManifest?.requires || [],
         tags: releaseMeta.tags || pastRelease?.appManifest?.tags || [],
-        requiredVersions: releaseMeta.requiredVersions || pastRelease?.appManifest?.requiredVersions
+        requiredVersions:
+          releaseMeta.requiredVersions || pastRelease?.appManifest?.requiredVersions,
+        author: releaseMeta.author,
+        description: releaseMeta.description,
+        label: releaseMeta.label
       },
       repository: validatedRepository,
       updateUrl: validatedUpdateUrl,
@@ -412,10 +425,14 @@ export const handleReleaseMultiToAppJSONMigration = async (
           id: release.id,
           name: release.id,
           version: release.version,
-          short_name: release.id,
           requires: [],
           tags: release.tags || '',
-          requiredVersions: release.requiredVersions || ''
+          requiredVersions: release.requiredVersions || '',
+          author: release.author || '',
+          description: release.description || '',
+          homepage: release.homepage || '',
+          repository: release.repository || '',
+          updateUrl: release.updateUrl || ''
         },
         icon: release.icon,
         hash: release.hash,
@@ -558,5 +575,221 @@ export const handleReleaseMetaClientToClientJSONMigration = async (
     icon: releaseMeta.icon || pastRelease?.icon,
     hash: releaseMeta.hash,
     hashAlgorithm: releaseMeta.hashAlgorithm
+  }
+}
+
+/**
+ * Handles the migration of a legacy release
+ * @param repoUrl The repository URL
+ * @param appId The app ID
+ * @throws if there is any error. There is no recovery from this gracefully
+ */
+export const handleAddingLegacyRepo = async (
+  repoUrl: GitRepoUrl,
+  appId?: string
+): Promise<AppLatestServer | ClientLatestServer> => {
+  const githubStore = await storeProvider.getStore('githubStore')
+
+  const debug = logger.createLogger(LOGGING_LEVELS.DEBUG, {
+    function: 'handleAddingLegacyRepo',
+    source: 'migrationUtils'
+  })
+
+  debug('Fetching all releases')
+  const allReleases = await githubStore.getAllReleases(repoUrl)
+  debug(`Found ${allReleases.length} zip files`)
+  const latestRelease = allReleases[0]
+
+  debug(`Found ${latestRelease.assets.length} assets in the latest release`)
+  const zipFiles = latestRelease.assets.filter(
+    (asset) =>
+      asset.content_type.includes('zip') &&
+      (!appId || asset.name.toLowerCase().includes(appId.toLowerCase()))
+  )
+  debug(`Found ${zipFiles.length} zip in the latest release`)
+
+  const appFiles = zipFiles.filter((asset) => asset.name.toLowerCase().includes('-app'))
+  const clientFiles = zipFiles.filter((asset) => asset.name.toLowerCase().includes('-client'))
+
+  debug(
+    `Found ${appFiles.length} app assets and ${clientFiles.length} client assets in the latest release`
+  )
+
+  if (appFiles.length === 0 && clientFiles.length === 0) {
+    throw new Error('No app or client files found in the latest release')
+  }
+
+  // Try and find which one is "priority" in this case
+  const appPriority = appFiles.length
+  const clientPriority = clientFiles.length
+
+  const type = appPriority > clientPriority ? 'app' : 'client'
+
+  const releaseFile = type === 'app' ? appFiles[0] : clientFiles[0]
+
+  debug(`Chose ${releaseFile} ${type} out of ${appPriority} apps and ${clientPriority} clients`)
+
+  // now try reconstructing as much as we can about the release file
+
+  const fileId = appId || (releaseFile.name.split('-')[0] as string)
+
+  const pastReleases = collectPastReleases(allReleases, fileId)
+  const totalDownloads = pastReleases.reduce((acc, release) => acc + release.downloads, 0)
+
+  const latestJSON: ReleaseMETAJson = {
+    repository: repoUrl,
+    updateUrl: releaseFile.browser_download_url,
+    downloads: releaseFile.download_count,
+    size: releaseFile.size,
+    updatedAt: new Date(releaseFile.updated_at).getTime(),
+    createdAt: new Date(releaseFile.created_at).getTime()
+  }
+
+  const releaseServer: Partial<AppLatestServer | ClientLatestServer> = {
+    id: fileId,
+    type: type,
+    lastUpdated: Date.now(),
+    totalDownloads: totalDownloads,
+    pastReleases: pastReleases
+  }
+
+  // Now try and get any additional information
+  try {
+    const releaseManifest = await fetchAndUnzipFileToGetManifest(releaseFile)
+    if (type == 'app' && 'label' in releaseManifest) {
+      const latestAppJSON: AppLatestJSONLatest = {
+        ...latestJSON,
+        meta_type: 'app',
+        meta_version: '0.11.8',
+        appManifest: releaseManifest
+      }
+      releaseServer.type = type
+      releaseServer.mainRelease = latestAppJSON
+      return releaseServer as AppLatestServer
+    } else if (type == 'client' && 'name' in releaseManifest) {
+      const latestAppJSON: ClientLatestJSONLatest = {
+        ...latestJSON,
+        meta_type: 'client',
+        meta_version: '0.11.8',
+        clientManifest: releaseManifest
+      }
+      // add the last two values
+      releaseServer.type = type
+      releaseServer.mainRelease = latestAppJSON
+      return releaseServer as ClientLatestServer
+    } else {
+      throw new Error(`Failed to find the correct manifest.json. found ${releaseManifest.id}`)
+    }
+  } catch (error) {
+    logger.warn(`(Expected Error) Error fetching and unzipping file: ${handleError(error)}`)
+  }
+
+  const author = releaseFile?.uploader?.login || latestRelease.author.login || 'Unknown'
+  const version = latestRelease.tag_name || 'Unknown'
+
+  // Now try and just brute force reconstruct the release server
+  if (type == 'app') {
+    // handle app creation
+    const appRelease: AppLatestJSONLatest = {
+      ...latestJSON,
+      meta_type: 'app',
+      meta_version: '0.11.8',
+      appManifest: {
+        id: fileId,
+        label: fileId,
+        requires: [],
+        version: version,
+        description: 'Unknown Description',
+        author: author,
+        platforms: [],
+        tags: [],
+        requiredVersions: {
+          server: '0.0.0',
+          client: '0.0.0'
+        }
+      }
+    }
+    releaseServer.type = type
+    releaseServer.mainRelease = appRelease
+    return releaseServer as AppLatestServer
+  } else {
+    // handle client creation
+    const clientRelease: ClientLatestJSONLatest = {
+      ...latestJSON,
+      meta_type: 'client',
+      meta_version: '0.11.8',
+      clientManifest: {
+        id: fileId,
+        name: fileId,
+        short_name: fileId,
+        version: version,
+        description: 'Unknown',
+        author: author,
+        compatibility: {
+          server: '0.0.0',
+          app: '0.0.0'
+        },
+        reactive: false,
+        repository: '',
+        context: {
+          id: ClientPlatformIDs.Unknown,
+          name: '',
+          ip: '',
+          port: 0,
+          method: ClientConnectionMethod.Unknown
+        }
+      }
+    }
+    releaseServer.type = type
+    releaseServer.mainRelease = clientRelease
+    return releaseServer as ClientLatestServer
+  }
+}
+
+/**
+ * Will throw for a lot of reasons. This will fetch and unzip and return the manifest file of the client/app in the release file
+ * @param releaseFile
+ */
+const fetchAndUnzipFileToGetManifest = async (
+  releaseFile: GithubAsset
+): Promise<AppManifest | ClientManifest> => {
+  const debug = logger.createLogger(LOGGING_LEVELS.DEBUG, {
+    function: 'handleAddingLegacyRepo',
+    source: 'migrationUtils'
+  })
+  const tempPath = path.join(app.getPath('temp'), `release-${Date.now()}.zip`)
+
+  debug(`Downloading file: ${releaseFile.browser_download_url}`)
+  debug(`Saving to: ${tempPath}`)
+
+  // Download the file
+  const response = await fetch(releaseFile.browser_download_url)
+  const buffer = await response.arrayBuffer()
+  await writeFile(tempPath, Buffer.from(buffer))
+
+  debug(`Unzipping file: ${tempPath}`)
+
+  try {
+    // Dynamically import adm-zip
+    const AdmZip = (await import('adm-zip')).default
+    const zip = new AdmZip(tempPath)
+
+    // Find and parse manifest.json
+    const manifestEntry = zip
+      .getEntries()
+      .find((entry) => entry.entryName.endsWith('manifest.json'))
+    debug(`Found manifest entry: ${manifestEntry?.entryName}`)
+    if (!manifestEntry) {
+      throw new Error('manifest.json not found in zip file')
+    }
+
+    const manifestContent = manifestEntry.getData().toString('utf8')
+    debug(`Extracting manifest entry: ${manifestEntry.entryName}`)
+    const manifest = JSON.parse(manifestContent) as AppManifest | ClientManifest
+
+    return manifest
+  } finally {
+    // Cleanup temp file
+    await unlink(tempPath).catch(() => {})
   }
 }

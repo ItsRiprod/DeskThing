@@ -17,6 +17,7 @@ import { overwriteData } from '../files/dataFileService'
 import { storeProvider } from '@server/stores/storeProvider'
 import { progressBus } from '../events/progressBus'
 import { handleError } from '@server/utils/errorHandler'
+import { stageAppFileType } from '@shared/stores/appStore'
 
 interface ExecuteStagedFileType {
   overwrite?: boolean
@@ -228,11 +229,6 @@ const getTempZipPath = (tempPath: string, releaseMeta?: AppLatestJSONLatest): st
     return path.join(tempPath, standardizedFileName)
   }
   return path.join(tempPath, 'temp.zip')
-}
-
-export interface stageAppFileType {
-  filePath?: string
-  releaseMeta?: AppLatestJSONLatest
 }
 
 /**

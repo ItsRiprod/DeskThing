@@ -1,8 +1,12 @@
-import { App, AppManifest, APP_REQUESTS, DeskThingToAppData } from '@deskthing/types'
-import { stageAppFileType } from '@server/services/apps/appInstaller'
+import { App, AppManifest, APP_REQUESTS, DeskThingToAppData, AppLatestJSONLatest } from '@deskthing/types'
 import { ReplyFn, StagedAppManifest } from '../types'
 import { AppDataFilters, AppProcessListener } from './appProcessStore'
 import { StoreInterface } from '@shared/interfaces/storeInterface'
+
+export interface stageAppFileType {
+  filePath?: string
+  releaseMeta?: AppLatestJSONLatest
+}
 
 export type addSettingsOptions = {
   notifyApp?: boolean

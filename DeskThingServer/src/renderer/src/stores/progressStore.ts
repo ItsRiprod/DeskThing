@@ -36,8 +36,8 @@ export const useProgressStore = create<ProgressStore>()((set, get) => ({
     if (get().initialized) return
 
     window.electron.onProgress((event: ProgressEvent) => {
-      if (!get().subscribed_channels.includes(event.channel)) { // ignore any channels not subscribed to
-        console.log(`Ignoring channel ${event.channel}`)
+      if (!get().subscribed_channels.includes(event.channel)) {
+        // ignore any channels not subscribed to
         return
       }
       get().updateProgress(event)
@@ -77,7 +77,6 @@ export const useProgressStore = create<ProgressStore>()((set, get) => ({
       } else {
         state.pastEvents.set(event.channel, [`(${event.progress || 0}) ${event.message}`])
       }
-
 
       state.progressMap.set(event.channel, event)
       return { progressMap: state.progressMap, currentProgressEvent: event }

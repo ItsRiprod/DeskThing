@@ -32,9 +32,13 @@ import { progressBus } from '@server/services/events/progressBus'
 import EventEmitter from 'node:events'
 import { isCacheValid } from '@server/services/releases/releaseValidation'
 import { handleError } from '@server/utils/errorHandler'
-import { createReleaseFile, handleRefreshReleaseFile } from '@server/services/releases/releaseUtils'
+import {
+  addRepositoryUrl,
+  createReleaseFile,
+  handleRefreshReleaseFile
+} from '@server/services/releases/releaseUtils'
 import { storeProvider } from './storeProvider'
-import { ClientManifest } from '@deskthing/types'
+import { ClientManifest, LOGGING_LEVELS } from '@deskthing/types'
 
 /**
  * Temporarily holds the entire repo response information in memory unless manually refreshed
@@ -171,7 +175,7 @@ export class ReleaseStore
   public refreshData = async (force?: boolean): Promise<void> => {
     progressBus.startOperation(
       ProgressChannel.ST_RELEASE_REFRESH,
-      'Refreshing releases',
+      'Refreshing Both Releases',
       'Initializing',
       [
         {
@@ -221,14 +225,30 @@ export class ReleaseStore
           force,
           updateStates: true
         })
-        this.saveAppReleaseFile(false)
+        await this.saveAppReleaseFile(false)
+        progressBus.complete(
+          ProgressChannel.ST_RELEASE_APP_REFRESH,
+          'Finished fetching initial app release file'
+        )
+        return
+      } else {
+        progressBus.complete(
+          ProgressChannel.ST_RELEASE_APP_REFRESH,
+          'AppReleases is up to date (cache is up to date)'
+        )
         return
       }
     } catch (error) {
-      logger.debug(`Fetching initial app file because ${handleError(error)}`)
+      progressBus.warn(
+        ProgressChannel.ST_RELEASE_APP_REFRESH,
+        `Fetching initial app file because ${handleError(error)}`
+      )
       this.appReleases = await createReleaseFile('app', force)
-      this.saveAppReleaseFile(false)
-      logger.debug('Finished fetching initial app release file')
+      await this.saveAppReleaseFile(false)
+      progressBus.complete(
+        ProgressChannel.ST_RELEASE_APP_REFRESH,
+        'Finished fetching initial app release file'
+      )
       return
     }
   }
@@ -260,14 +280,30 @@ export class ReleaseStore
           force,
           updateStates: true
         })
-        this.saveClientReleaseFile(false)
+        await this.saveClientReleaseFile(false)
+        progressBus.complete(
+          ProgressChannel.ST_RELEASE_CLIENT_REFRESH,
+          'Finished fetching initial client release file'
+        )
+        return
+      } else {
+        progressBus.complete(
+          ProgressChannel.ST_RELEASE_CLIENT_REFRESH,
+          'ClientReleases is up to date (cache is up to date)'
+        )
         return
       }
     } catch (error) {
-      logger.debug(`Fetching initial client file because ${handleError(error)}`)
+      progressBus.warn(
+        ProgressChannel.ST_RELEASE_CLIENT_REFRESH,
+        `Fetching initial client file because ${handleError(error)}`
+      )
       this.clientReleases = await createReleaseFile('client', force)
-      this.saveClientReleaseFile(false)
-      logger.debug('Finished fetching initial clientReleases release file')
+      await this.saveClientReleaseFile(false)
+      progressBus.complete(
+        ProgressChannel.ST_RELEASE_CLIENT_REFRESH,
+        'Finished fetching initial clientReleases release file'
+      )
       return
     }
   }
@@ -308,26 +344,278 @@ export class ReleaseStore
     return clients.releases.find((client) => client.id === clientId)
   }
 
-  public addAppRepository = async (_repoUrl: string): Promise<AppLatestServer | undefined> => {
-    throw new Error('Method not implemented.')
+  public addRepositoryUrl = async (
+    repoUrl: string
+  ): Promise<AppLatestServer[] | ClientLatestServer[] | undefined> => {
+    try {
+      progressBus.startOperation(
+        ProgressChannel.ST_RELEASE_ADD_REPO,
+        'Adding Repo',
+        `Adding ${repoUrl}`,
+        [
+          {
+            weight: 100,
+            channel: ProgressChannel.FN_RELEASE_ADD_REPO
+          }
+        ]
+      )
+      logger.debug(`Adding client repository: ${repoUrl}`, {
+        function: 'addClientRepository',
+        source: 'releaseStore'
+      })
+
+      // Use the addRepositoryUrl utility to fetch and process the repository
+      const result = await addRepositoryUrl(repoUrl)
+
+      // Handle different result types
+      if (result.type === 'client') {
+        // Single client release
+        await this.addClientToReleases(result, repoUrl)
+        return [result]
+      } else if (result.type === 'converted-clients') {
+        // Multiple client releases from conversion
+
+        if (result.releases.length > 0) {
+          // Add all client releases
+          for (const clientRelease of result.releases) {
+            await this.addClientToReleases(clientRelease, repoUrl)
+          }
+
+          return result.releases
+        }
+      } else if (result.type === 'app') {
+        // This is an app repository, not a client repository
+        await this.addAppToReleases(result, repoUrl)
+        return undefined
+      } else if (result.type === 'converted-apps') {
+        // Multiple app releases - not what we want for client repository
+        if (result.releases.length > 0) {
+          // Add all client releases
+          for (const appRelease of result.releases) {
+            await this.addAppToReleases(appRelease, repoUrl)
+          }
+
+          return result.releases
+        }
+      }
+
+      logger.warn(`No client releases found in repository: ${repoUrl}`, {
+        function: 'addClientRepository',
+        source: 'releaseStore'
+      })
+      return undefined
+    } catch (error) {
+      logger.error(`Failed to add client repository ${repoUrl}: ${handleError(error)}`, {
+        error: error as Error,
+        function: 'addClientRepository',
+        source: 'releaseStore'
+      })
+      return undefined
+    }
   }
 
-  public addClientRepository = async (
-    _repoUrl: string
-  ): Promise<ClientLatestServer | undefined> => {
-    throw new Error('Method not implemented.')
+  private addClientToReleases = async (
+    clientRelease: ClientLatestServer,
+    repoUrl: string
+  ): Promise<void> => {
+    // Ensure we have a client releases structure
+
+    const clientReleases = await this.getClientReleaseFile()
+
+    const debug = logger.createLogger(LOGGING_LEVELS.DEBUG, {
+      function: 'addClientToReleases',
+      source: 'releaseStore'
+    })
+
+    if (!clientReleases) {
+      logger.error('Unable to find client release file!', {
+        function: 'addClientToReleases',
+        source: 'releaseStore'
+      })
+      return
+    }
+
+    // Check if this client already exists (avoid duplicates)
+    const existingIndex = clientReleases.releases.findIndex(
+      (existing) => existing.id === clientRelease.id
+    )
+
+    if (existingIndex !== -1) {
+      // Update existing client release
+      clientReleases.releases[existingIndex] = clientRelease
+      debug(`Updated existing client release: ${clientRelease.id}`)
+    } else {
+      // Add new client release
+      clientReleases.releases.push(clientRelease)
+      debug(`Added new client release: ${clientRelease.id}`)
+    }
+
+    // Update timestamp
+    clientReleases.timestamp = Date.now()
+
+    // Save the updated client releases
+    this.clientReleases = clientReleases
+
+    // Save and announce the changes
+    await this.saveClientReleaseFile(false)
+
+    logger.info(
+      `Successfully added/updated client ${clientRelease.id} from repository ${repoUrl}`,
+      {
+        function: 'addClientToReleases',
+        source: 'releaseStore'
+      }
+    )
+    this.emit('client', clientReleases.releases)
   }
 
-  public removeAppRelease = async (_repoUrl: string): Promise<void> => {
-    throw new Error('Method not implemented.')
+  private addAppToReleases = async (
+    appRelease: AppLatestServer,
+    repoUrl: string
+  ): Promise<void> => {
+    // Ensure we have a client releases structure
+    const appReleases = await this.getAppReleaseFile()
+
+    if (!appReleases) {
+      logger.error('Unable to find app release file!', {
+        function: 'addAppToReleases',
+        source: 'releaseStore'
+      })
+      return
+    }
+
+    const debug = logger.createLogger(LOGGING_LEVELS.DEBUG, {
+      function: 'addAppToReleases',
+      source: 'releaseStore'
+    })
+
+    // Check if this client already exists (avoid duplicates)
+    const existingIndex = appReleases.releases.findIndex(
+      (existing) => existing.id === appRelease.id
+    )
+
+    if (existingIndex !== -1) {
+      // Update existing client release
+      appReleases.releases[existingIndex] = appRelease
+      debug(`Updated existing app release: ${appRelease.id}`)
+    } else {
+      // Add new client release
+      appReleases.releases.push(appRelease)
+      debug(`Added new app release: ${appRelease.id}`)
+    }
+
+    // Update timestamp
+    appReleases.timestamp = Date.now()
+
+    // Save the updated app releases
+    this.appReleases = appReleases
+
+    // Save and announce the changes
+    await this.saveClientReleaseFile(false)
+
+    logger.info(`Successfully added/updated app ${appRelease.id} from repository ${repoUrl}`, {
+      function: 'addAppToReleases',
+      source: 'releaseStore'
+    })
+    this.emit('app', appReleases.releases)
   }
 
-  public removeClientRelease = async (_repoUrl: string): Promise<void> => {
-    throw new Error('Method not implemented.')
+  public removeAppRelease = async (appId: string): Promise<void> => {
+    progressBus.start(
+      ProgressChannel.ST_RELEASE_APP_REMOVE,
+      'Removing App Release',
+      `Removing ${appId}`
+    )
+
+    if (!appId) {
+      progressBus.error(
+        ProgressChannel.ST_RELEASE_APP_REMOVE,
+        'No repository URL or app ID provided'
+      )
+      return
+    }
+
+    const appReleases = await this.getAppReleaseFile()
+
+    if (!appReleases) {
+      progressBus.error(ProgressChannel.ST_RELEASE_APP_REMOVE, 'No app releases found')
+      return
+    }
+
+    const existingIndex = appReleases.releases.findIndex((existing) => existing.id === appId)
+
+    if (existingIndex !== -1) {
+      appReleases.releases.splice(existingIndex, 1)
+      appReleases.timestamp = Date.now()
+      this.appReleases = appReleases
+      await this.saveClientReleaseFile(false)
+      progressBus.complete(
+        ProgressChannel.ST_RELEASE_APP_REMOVE,
+        `Successfully removed app release ${appId}`
+      )
+    } else {
+      progressBus.error(
+        ProgressChannel.ST_RELEASE_APP_REMOVE,
+        `No app release found for app ID ${appId}`
+      )
+    }
+
+    this.emit('app', appReleases.releases)
   }
 
+  public removeClientRelease = async (clientId: string): Promise<void> => {
+    progressBus.start(
+      ProgressChannel.ST_RELEASE_CLIENT_REMOVE,
+      'Removing Client Release',
+      `Removing ${clientId}`
+    )
+
+    if (!clientId) {
+      progressBus.error(ProgressChannel.ST_RELEASE_CLIENT_REMOVE, 'No client ID provided')
+      return
+    }
+
+    const clientReleases = await this.getClientReleaseFile()
+
+    if (!clientReleases) {
+      progressBus.error(ProgressChannel.ST_RELEASE_CLIENT_REMOVE, 'No client releases found')
+      return
+    }
+
+    const existingIndex = clientReleases.releases.findIndex((existing) => existing.id === clientId)
+
+    if (existingIndex !== -1) {
+      clientReleases.releases.splice(existingIndex, 1)
+      clientReleases.timestamp = Date.now()
+      this.clientReleases = clientReleases
+      await this.saveClientReleaseFile(false)
+      progressBus.complete(
+        ProgressChannel.ST_RELEASE_CLIENT_REMOVE,
+        `Successfully removed client release ${clientId}`
+      )
+    } else {
+      progressBus.error(
+        ProgressChannel.ST_RELEASE_CLIENT_REMOVE,
+        `No client release found for client ID ${clientId}`
+      )
+    }
+
+    this.emit('client', clientReleases.releases)
+  }
   public downloadLatestApp = async (appId: string): Promise<StagedAppManifest | undefined> => {
     try {
+      progressBus.startOperation(
+        ProgressChannel.ST_RELEASE_APP_DOWNLOAD,
+        `Downloading ${appId}`,
+        'Initializing',
+        [
+          {
+            channel: ProgressChannel.ST_APP_INSTALL,
+            weight: 100
+          }
+        ]
+      )
+
       const appRelease = await this.getAppRelease(appId)
 
       if (!appRelease) return
@@ -338,14 +626,17 @@ export class ReleaseStore
         releaseMeta: appRelease.mainRelease
       })
 
+      progressBus.complete(
+        ProgressChannel.ST_RELEASE_APP_DOWNLOAD,
+        `Completed downloading ${appId}`
+      )
+
       return appManifest
     } catch (error) {
-      logger.error(
+      progressBus.error(
+        ProgressChannel.ST_RELEASE_APP_DOWNLOAD,
         `There was an error trying to download the app ${appId}. ${handleError(error)}`,
-        {
-          function: 'downloadLatestApp',
-          source: 'releaseStore'
-        }
+        'Error Downloading App'
       )
       return
     }
@@ -353,11 +644,23 @@ export class ReleaseStore
 
   public downloadLatestClient = async (clientId: string): Promise<ClientManifest | undefined> => {
     try {
+      progressBus.startOperation(
+        ProgressChannel.ST_RELEASE_CLIENT_DOWNLOAD,
+        'Downloading Client',
+        'Initializing',
+        [
+          {
+            channel: ProgressChannel.ST_CLIENT_DOWNLOAD,
+            weight: 100
+          }
+        ]
+      )
+
       logger.debug('Downloading client')
       const clientRelease = await this.getClientRelease(clientId)
 
       if (!clientRelease) {
-        logger.debug('Client Release not found for ', clientId)
+        logger.debug('Client Release not found for ' + clientId)
         return
       }
 
@@ -365,14 +668,13 @@ export class ReleaseStore
       const clientManifest = await clientStore.loadClientFromURL(
         clientRelease.mainRelease.updateUrl
       )
+      progressBus.complete(ProgressChannel.ST_RELEASE_CLIENT_DOWNLOAD, 'Completed the Download')
       return clientManifest
     } catch (error) {
-      logger.error(
+      progressBus.error(
+        ProgressChannel.ST_RELEASE_CLIENT_DOWNLOAD,
         `There was an error trying to download the client ${clientId}. ${handleError(error)}`,
-        {
-          function: 'downloadLatestClient',
-          source: 'releaseStore'
-        }
+        'Error Downloading Client'
       )
       return
     }

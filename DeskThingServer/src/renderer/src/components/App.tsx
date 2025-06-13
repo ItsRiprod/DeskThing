@@ -26,6 +26,7 @@ const App: React.FC<AppProps> = ({ app, activeRequest }) => {
   const showAppDetails = (): void => {
     searchParams.set('app', 'true')
     searchParams.set('appId', app.name)
+    if (app.meta?.updateAvailable) searchParams.set('page', 'update')
     setSearchParams(searchParams)
   }
 
@@ -91,13 +92,24 @@ const App: React.FC<AppProps> = ({ app, activeRequest }) => {
             </p>
           </Button>
         )}
+
         <Button
           title="App Settings"
           onClick={showAppDetails}
-          className="bg-slate-800 hover:bg-slate-700 items-center justify-center gap-1 sm:gap-2 rounded-full px-2 sm:px-4 py-1.5 sm:py-2 shadow-lg hover:shadow-slate-800/20 transition-all duration-200"
+          className={`bg-slate-800 hover:bg-slate-700 items-center justify-center gap-1 sm:gap-2 rounded-full px-2 sm:px-4 py-1.5 sm:py-2 shadow-lg hover:shadow-slate-800/20 transition-all duration-200 ${app.meta?.updateAvailable ? 'border md:border-0 border-emerald-500 hover:bg-emerald-600' : ''}`}
         >
-          <IconWrench className="text-gray-300" />
-          <p className="text-xs hidden md:block lg:text-base font-medium">Settings</p>
+          {app.meta?.updateAvailable ? (
+            <div className="flex gap-2 items-center">
+              <IconWrench className="text-gray-300 md:hidden" />
+              <div className="hidden md:block animate-pulse w-2 h-4 bg-emerald-500 rounded-full" />
+              <p className="text-xs hidden md:block lg:text-base font-medium">Update Available</p>
+            </div>
+          ) : (
+            <div className="flex gap-1 sm:gap-2 items-center justify-center">
+              <IconWrench className="text-gray-300" />
+              <p className="text-xs hidden md:block lg:text-base font-medium">Settings</p>
+            </div>
+          )}
         </Button>
         {app.running ? (
           <Button

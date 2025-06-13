@@ -1,6 +1,6 @@
 import { ProgressChannel, ProgressEvent } from '@shared/types'
 import { useProgressStore } from '@renderer/stores/progressStore'
-import { useEffect } from 'react';
+import { useEffect } from 'react'
 
 // Hook for specific channels
 export const useChannelProgress = (

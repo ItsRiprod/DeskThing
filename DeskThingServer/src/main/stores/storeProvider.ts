@@ -76,10 +76,12 @@ export class StoreProvider {
       appProcessStore: async () => new (await storeImports.appProcessStore())(),
       authStore: async () =>
         new (await storeImports.authStore())(await this.getStore('settingsStore', false)),
+      releaseStore: async () => new (await storeImports.releaseStore())(),
       appStore: async () =>
         new (await storeImports.appStore())(
           await this.getStore('appProcessStore', false),
-          await this.getStore('authStore', false)
+          await this.getStore('authStore', false),
+          await this.getStore('releaseStore', false)
         ),
       appDataStore: async () =>
         new (await storeImports.appDataStore())(await this.getStore('appStore', false)),
@@ -94,7 +96,6 @@ export class StoreProvider {
           await this.getStore('appDataStore', false),
           await this.getStore('appStore', false)
         ),
-      releaseStore: async () => new (await storeImports.releaseStore())(),
       mappingStore: async () =>
         new (await storeImports.mappingStore())(await this.getStore('appStore', false)),
       musicStore: async () =>
@@ -103,7 +104,8 @@ export class StoreProvider {
           await this.getStore('appStore', false),
           await this.getStore('platformStore', false)
         ),
-      clientStore: async () => new (await storeImports.clientStore())(),
+      clientStore: async () =>
+        new (await storeImports.clientStore())(await this.getStore('releaseStore', false)),
       profileStore: async () =>
         new (await storeImports.profileStore())(await this.getStore('platformStore', false)),
       updateStore: async () => new (await storeImports.updateStore())(),

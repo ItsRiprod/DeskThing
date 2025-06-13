@@ -133,7 +133,7 @@ export class FeedbackService {
 
     const systemInfo: SystemInfo = {
       serverVersion: 'v' + process.env.PACKAGE_VERSION || '0.0.0',
-      clientVersion: clientStore.getClient()?.version || '0.0.0',
+      clientVersion: (await clientStore.getClient())?.version || '0.0.0',
       os: `${os.platform()} ${os.release()}`,
       cpu: os.cpus()[0].model,
       ram: Math.round(os.totalmem() / (1024 * 1024)) + ' MB',

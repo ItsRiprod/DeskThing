@@ -50,15 +50,21 @@ export enum ProgressChannel {
   PROCESS_APP_RELEASES = 'process-app-releases',
 
   // Release Functions
+  ST_RELEASE_REFRESH = 'st-release-refresh',
+  ST_RELEASE_ADD_REPO = 'st-releasae-add-repo',
+  ST_RELEASE_APP_REMOVE = 'st-releasae-app-remove',
+  ST_RELEASE_APP_DOWNLOAD = 'st-release-app-download',
+  FN_RELEASE_ADD_REPO = 'fn-releasae-add-repo',
   FN_RELEASE_APP_REFRESH = 'fn-release-app-refresh',
   FN_RELEASE_APP_MIGRATE = 'fn-release-app-migrate',
   FN_RELEASE_APP_STATS = 'fn-release-app-stats',
+  ST_RELEASE_CLIENT_REMOVE = 'st-releasae-client-remove',
+  ST_RELEASE_APP_REFRESH = 'st-release-app-refresh',
+  ST_RELEASE_CLIENT_REFRESH = 'st-release-client-refresh',
+  ST_RELEASE_CLIENT_DOWNLOAD = 'st-release-client-download',
   FN_RELEASE_CLIENT_REFRESH = 'fn-release-client-refresh',
   FN_RELEASE_CLIENT_MIGRATE = 'fn-release-client-migrate',
   FN_RELEASE_CLIENT_STATS = 'fn-release-client-stats',
-  ST_RELEASE_REFRESH = 'st-release-refresh',
-  ST_RELEASE_APP_REFRESH = 'st-release-app-refresh',
-  ST_RELEASE_CLIENT_REFRESH = 'st-release-client-refresh',
 
   // Top-Level routines
 

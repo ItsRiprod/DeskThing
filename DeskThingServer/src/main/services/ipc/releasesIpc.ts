@@ -32,11 +32,33 @@ export const releaseHandler = async (
         progressBus.complete(ProgressChannel.IPC_RELEASES, 'Refreshing Releases', 'complete')
         return
       } catch (error) {
-        Logger.error(`Unable to refresh repositories! ${handleError(error)}`, {
-          error: error as Error,
-          function: 'releases.refresh',
-          source: 'releaseHandler'
-        })
+        progressBus.error(
+          ProgressChannel.IPC_RELEASES,
+          `Unable to refresh repositories! ${handleError(error)}`
+        )
+        return
+      }
+    case IPC_RELEASE_TYPES.ADD_REPOSITORY:
+      progressBus.startOperation(
+        ProgressChannel.IPC_RELEASES,
+        'Adding Repository',
+        'Initializing',
+        [
+          {
+            channel: ProgressChannel.ST_RELEASE_ADD_REPO,
+            weight: 100
+          }
+        ]
+      )
+      try {
+        const result = await releaseStore.addRepositoryUrl(data.payload)
+        progressBus.complete(ProgressChannel.IPC_RELEASES, 'Refreshing Releases', 'complete')
+        return result
+      } catch (error) {
+        progressBus.error(
+          ProgressChannel.IPC_RELEASES,
+          `Unable to add ${data.payload} repository! ${handleError(error)}`
+        )
         return
       }
     case IPC_RELEASE_TYPES.GET_APPS:
@@ -61,37 +83,60 @@ export const releaseHandler = async (
         })
         return
       }
-    case IPC_RELEASE_TYPES.ADD_APP_REPOSITORY:
-      try {
-        return await releaseStore.addAppRepository(data.payload)
-      } catch (error) {
-        Logger.error(`Unable to add repository! ${handleError(error)}`, {
-          error: error as Error,
-          function: 'releases.addAppRepo',
-          source: 'releaseHandler'
-        })
-        return
-      }
     case IPC_RELEASE_TYPES.REMOVE_APP_REPOSITORY:
       try {
-        return await releaseStore.removeAppRelease(data.payload)
+        progressBus.startOperation(
+          ProgressChannel.IPC_RELEASES,
+          'Removing App Repository',
+          'Initializing',
+          [
+            {
+              channel: ProgressChannel.ST_RELEASE_APP_REMOVE,
+              weight: 100
+            }
+          ]
+        )
+        const removed = await releaseStore.removeAppRelease(data.payload)
+        progressBus.complete(
+          ProgressChannel.IPC_RELEASES,
+          `Successfully removed ${removed} apps`,
+          'Operation Success'
+        )
+        return removed
       } catch (error) {
-        Logger.error(`Unable to remove repository! ${handleError(error)}`, {
-          error: error as Error,
-          function: 'releases.removeAppRepo',
-          source: 'releaseHandler'
-        })
+        progressBus.error(
+          ProgressChannel.IPC_RELEASES,
+          `Unable to remove repository! ${handleError(error)}`,
+          'Error Removing Repository'
+        )
         return
       }
     case IPC_RELEASE_TYPES.DOWNLOAD_APP:
       try {
-        return await releaseStore.downloadLatestApp(data.payload)
+        progressBus.startOperation(
+          ProgressChannel.IPC_RELEASES,
+          'Downloading App',
+          'Initializing',
+          [
+            {
+              channel: ProgressChannel.ST_RELEASE_APP_DOWNLOAD,
+              weight: 100
+            }
+          ]
+        )
+        const stagedApp = await releaseStore.downloadLatestApp(data.payload)
+        progressBus.complete(
+          ProgressChannel.IPC_RELEASES,
+          `Successfully downloaded app`,
+          'Operation Success'
+        )
+        return stagedApp
       } catch (error) {
-        Logger.error(`Unable to download app! ${handleError(error)}`, {
-          error: error as Error,
-          function: 'releases.downloadApp',
-          source: 'releaseHandler'
-        })
+        progressBus.error(
+          ProgressChannel.IPC_RELEASES,
+          `Unable to download app! ${handleError(error)}`,
+          'Error Downloading App'
+        )
         return
       }
     case IPC_RELEASE_TYPES.GET_CLIENTS:
@@ -107,46 +152,86 @@ export const releaseHandler = async (
       }
     case IPC_RELEASE_TYPES.GET_CLIENT_REPOSITORIES:
       try {
-        return await releaseStore.getCommunityClients()
+        progressBus.startOperation(
+          ProgressChannel.ST_RELEASE_CLIENT_REFRESH,
+          'Getting Client Repositories',
+          'Initializing',
+          [
+            {
+              channel: ProgressChannel.ST_RELEASE_CLIENT_REFRESH,
+              weight: 100
+            }
+          ]
+        )
+        const clients = await releaseStore.getCommunityClients()
+        progressBus.complete(
+          ProgressChannel.IPC_RELEASES,
+          `Successfully got ${clients && clients.length} clients`,
+          'Operation Success'
+        )
+        return clients
       } catch (error) {
-        Logger.error(`Unable to get client repositories! ${handleError(error)}`, {
-          error: error as Error,
-          function: 'releases.getClientRepositories',
-          source: 'releaseHandler'
-        })
-        return
-      }
-    case IPC_RELEASE_TYPES.ADD_CLIENT_REPOSITORY:
-      try {
-        return await releaseStore.addClientRepository(data.payload)
-      } catch (error) {
-        Logger.error(`Unable to add client repository! ${handleError(error)}`, {
-          error: error as Error,
-          function: 'releases.addClientRepo',
-          source: 'releaseHandler'
-        })
+        progressBus.error(
+          ProgressChannel.IPC_RELEASES,
+          `Unable to get client repositories! ${handleError(error)}`,
+          'Error Getting Clients'
+        )
         return
       }
     case IPC_RELEASE_TYPES.REMOVE_CLIENT_REPOSITORY:
       try {
-        return await releaseStore.removeClientRelease(data.payload)
+        progressBus.startOperation(
+          ProgressChannel.IPC_RELEASES,
+          'Removing Client Repository',
+          'Initializing',
+          [
+            {
+              channel: ProgressChannel.ST_RELEASE_CLIENT_REMOVE,
+              weight: 100
+            }
+          ]
+        )
+        const removed = await releaseStore.removeClientRelease(data.payload)
+        progressBus.complete(
+          ProgressChannel.IPC_RELEASES,
+          `Successfully removed ${removed} clients`,
+          'Operation Success'
+        )
+        return removed
       } catch (error) {
-        Logger.error(`Unable to remove client repository! ${handleError(error)}`, {
-          error: error as Error,
-          function: 'releases.removeClientRepo',
-          source: 'releaseHandler'
-        })
+        progressBus.error(
+          ProgressChannel.IPC_RELEASES,
+          `Unable to remove client repository! ${handleError(error)}`,
+          'Error Removing Client'
+        )
         return
       }
     case IPC_RELEASE_TYPES.DOWNLOAD_CLIENT:
       try {
-        return await releaseStore.downloadLatestClient(data.payload)
+        progressBus.startOperation(
+          ProgressChannel.IPC_RELEASES,
+          'Downloading Client',
+          'Initializing',
+          [
+            {
+              channel: ProgressChannel.ST_CLIENT_DOWNLOAD,
+              weight: 100
+            }
+          ]
+        )
+        const client = await releaseStore.downloadLatestClient(data.payload)
+        progressBus.complete(
+          ProgressChannel.IPC_RELEASES,
+          `Successfully downloaded client`,
+          'Operation Success'
+        )
+        return client
       } catch (error) {
-        Logger.error(`Unable to download client! ${handleError(error)}`, {
-          error: error as Error,
-          function: 'releases.downloadClient',
-          source: 'releaseHandler'
-        })
+        progressBus.error(
+          ProgressChannel.IPC_RELEASES,
+          `Unable to download client! ${handleError(error)}`,
+          'Error Downloading Client'
+        )
         return
       }
   }

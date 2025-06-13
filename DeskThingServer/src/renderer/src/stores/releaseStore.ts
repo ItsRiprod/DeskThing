@@ -20,16 +20,18 @@ interface releaseStoreState {
 
   initialize: () => Promise<void>
   refreshReleases: (force?: boolean) => Promise<void>
+  addRepositoryUrl: (
+    repoUrl: string
+  ) => Promise<AppLatestServer[] | ClientLatestServer[] | undefined>
+
   getApps: () => Promise<AppLatestServer[]>
   getAppReferences: () => Promise<string[]>
-  addAppRepo: (repoUrl: string) => Promise<AppLatestServer | void>
-  removeAppRepo: (repoUrl: string) => Promise<void>
+  removeAppRelease: (appID: string) => Promise<void>
   downloadApp: (appId: string) => Promise<StagedAppManifest | undefined>
 
   getClients: () => Promise<ClientLatestServer[]>
   getClientRepos: () => Promise<string[]>
-  removeClientRepo: (repoUrl: string) => Promise<void>
-  addClientRepo: (repoUrl: string) => void
+  removeClientRelease: (clientId: string) => Promise<void>
   downloadClient: (clientId: string) => Promise<ClientManifest | undefined>
 }
 
@@ -63,6 +65,13 @@ const useReleaseStore = create<releaseStoreState>((set, get) => ({
     await window.electron.releases.refreshReleases({ force })
   },
 
+  addRepositoryUrl: async (
+    repoUrl: string
+  ): Promise<AppLatestServer[] | ClientLatestServer[] | undefined> => {
+    const latestServer = await window.electron.releases.addRepositoryUrl(repoUrl)
+    return latestServer
+  },
+
   getApps: async (): Promise<AppLatestServer[]> => {
     const apps = await window.electron.releases.getApps()
     set({ appReleases: apps })
@@ -74,12 +83,7 @@ const useReleaseStore = create<releaseStoreState>((set, get) => ({
     return references
   },
 
-  addAppRepo: async (repoUrl: string): Promise<AppLatestServer | void> => {
-    const app = await window.electron.releases.addAppRepo(repoUrl)
-    return app
-  },
-
-  removeAppRepo: async (repoUrl: string): Promise<void> => {
+  removeAppRelease: async (repoUrl: string): Promise<void> => {
     await window.electron.releases.removeAppRepo(repoUrl)
   },
 
@@ -99,13 +103,8 @@ const useReleaseStore = create<releaseStoreState>((set, get) => ({
     return client
   },
 
-  removeClientRepo: async (repoUrl: string): Promise<void> => {
+  removeClientRelease: async (repoUrl: string): Promise<void> => {
     await window.electron.releases.removeClientRepo(repoUrl)
-  },
-
-  addClientRepo: async (repoUrl: string): Promise<ClientLatestServer | void> => {
-    const client = await window.electron.releases.addClientRepo(repoUrl)
-    return client
   },
 
   downloadClient: async (clientId: string): Promise<ClientManifest | undefined> => {

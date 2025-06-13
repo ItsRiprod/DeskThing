@@ -84,26 +84,19 @@ export interface ReleaseStoreClass extends StoreInterface, EventEmitter<GithubLi
    * @param repoUrl GitHub repository URL
    * @returns Promise resolving to the added app release or undefined
    */
-  addAppRepository(repoUrl: string): Promise<AppLatestServer | undefined>
-
-  /**
-   * Adds a new client repository
-   * @param repoUrl GitHub repository URL
-   * @returns Promise resolving to the added client release or undefined
-   */
-  addClientRepository(repoUrl: string): Promise<ClientLatestServer | undefined>
+  addRepositoryUrl(repoUrl: string): Promise<AppLatestServer[] | ClientLatestServer[] | undefined>
 
   /**
    * Removes an app release by repository URL
    * @param repoUrl GitHub repository URL
    */
-  removeAppRelease(repoUrl: string): Promise<void>
+  removeAppRelease(appId: string): Promise<void>
 
   /**
    * Removes a client release by repository URL
    * @param repoUrl GitHub repository URL
    */
-  removeClientRelease(repoUrl: string): Promise<void>
+  removeClientRelease(clientId: string): Promise<void>
 
   /**
    * Downloads the latest of a specific app from the release files

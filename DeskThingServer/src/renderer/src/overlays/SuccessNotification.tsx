@@ -141,6 +141,7 @@ export function SuccessNotification(): JSX.Element {
   const stagedManifest = useAppStore((appStore) => appStore.stagedManifest)
   const apps = useAppStore((appStore) => appStore.appsList)
   const runStagedApp = useAppStore((appStore) => appStore.runStagedApp)
+  const setStagedApp = useAppStore((appStore) => appStore.setStagedManifest)
   const [overwrite, setOverwrite] = useState(false)
   const [compatibility, setCompatibility] = useState<CompatibilityResult>({
     isCompatible: true,
@@ -168,7 +169,8 @@ export function SuccessNotification(): JSX.Element {
   }
 
   const onClose = (): void => {
-    runStagedApp(overwrite)
+    setStagedApp(null)
+    // runStagedApp(overwrite)
   }
 
   const toggleOverwrite = (): void => {
@@ -250,7 +252,6 @@ export function SuccessNotification(): JSX.Element {
           </div>
         )}
         {!loading && (
-
           <Button
             className="hover:bg-zinc-700 disabled:bg-zinc-800 relative flex gap-2 w-full bg-black border border-zinc-900"
             onClick={onRunClick}
@@ -262,7 +263,9 @@ export function SuccessNotification(): JSX.Element {
             <p className={`${loading ? 'opacity-0' : ''} transition-all ml-10`}>Initialize App</p>
           </Button>
         )}
-        {loading && downloadChannel.progress && <LogEntry progressEvent={downloadChannel.progress} />}
+        {loading && downloadChannel.progress && (
+          <LogEntry progressEvent={downloadChannel.progress} />
+        )}
       </div>
     </Overlay>
   )

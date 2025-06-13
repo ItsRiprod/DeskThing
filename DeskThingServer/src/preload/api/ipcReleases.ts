@@ -16,6 +16,14 @@ export const releases = {
       type: IPC_RELEASE_TYPES.REFRESH_RELEASES,
       options
     }),
+  addRepositoryUrl: async (
+    repoUrl: string
+  ): Promise<ClientLatestServer[] | AppLatestServer[] | undefined> =>
+    await sendCommand({
+      kind: IPC_HANDLERS.RELEASE,
+      type: IPC_RELEASE_TYPES.ADD_REPOSITORY,
+      payload: repoUrl
+    }),
   getApps: async (): Promise<AppLatestServer[]> =>
     await sendCommand({
       kind: IPC_HANDLERS.RELEASE,
@@ -25,12 +33,6 @@ export const releases = {
     await sendCommand({
       kind: IPC_HANDLERS.RELEASE,
       type: IPC_RELEASE_TYPES.GET_APP_REPOSITORIES
-    }),
-  addAppRepo: async (repoUrl: string): Promise<AppLatestServer | void> =>
-    await sendCommand({
-      kind: IPC_HANDLERS.RELEASE,
-      type: IPC_RELEASE_TYPES.ADD_APP_REPOSITORY,
-      payload: repoUrl
     }),
   removeAppRepo: async (repoUrl: string): Promise<void> =>
     await sendCommand({
@@ -53,12 +55,6 @@ export const releases = {
     await sendCommand({
       kind: IPC_HANDLERS.RELEASE,
       type: IPC_RELEASE_TYPES.GET_CLIENT_REPOSITORIES
-    }),
-  addClientRepo: async (repoUrl: string): Promise<ClientLatestServer | void> =>
-    await sendCommand({
-      kind: IPC_HANDLERS.RELEASE,
-      type: IPC_RELEASE_TYPES.ADD_CLIENT_REPOSITORY,
-      payload: repoUrl
     }),
   removeClientRepo: async (repoUrl: string): Promise<void> =>
     await sendCommand({

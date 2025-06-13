@@ -67,7 +67,6 @@ export type AppReleaseFile = AppReleaseFile0118 | AppReleaseFile0108
 // Extracted union of the versions
 export type ClientReleaseFile = ClientReleaseFile0118 | ClientReleaseFile0108
 
-
 export type AppReleaseFile0118 = {
   version: '0.11.8'
   type: 'app'

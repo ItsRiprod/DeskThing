@@ -1,6 +1,6 @@
 import { ClientManifest } from '@deskthing/types'
 import { ClientStoreClass, ClientStoreEvents } from '@shared/stores/clientStore'
-import { CacheableStore, ProgressChannel } from '@shared/types'
+import { CacheableStore, ClientLatestServer, ProgressChannel } from '@shared/types'
 import EventEmitter from 'node:events'
 import {
   downloadAndInstallClient,
@@ -11,6 +11,8 @@ import {
 import { progressBus } from '@server/services/events/progressBus'
 import logger from '@server/utils/logger'
 import { handleError } from '@server/utils/errorHandler'
+import { ReleaseStoreClass } from '@shared/stores/releaseStore'
+import { satisfies } from 'semver'
 
 export class ClientStore
   extends EventEmitter<ClientStoreEvents>
@@ -23,7 +25,7 @@ export class ClientStore
     return this._initialized
   }
 
-  constructor() {
+  constructor(private releaseStore: ReleaseStoreClass) {
     super()
   }
 
@@ -31,6 +33,39 @@ export class ClientStore
     if (this._initialized) return
     this._initialized = true
     this.refreshClient()
+    this.initializeListeners()
+  }
+
+  private initializeListeners = (): void => {
+    this.releaseStore.on('client', async (clientReleases) => {
+      /** Check for updates */
+      await this.checkForUpdates(clientReleases)
+    })
+  }
+
+  private checkForUpdates = async (clientReleases: ClientLatestServer[]): Promise<void> => {
+    // If this client is missing
+    const client = await this.getClient()
+
+    if (!client) return // there is no client to update
+
+    const updatedClientRelease = clientReleases.find((release) => release.id == client.id)
+
+    if (!updatedClientRelease) return // there was no found client to update
+
+    // if the existing version is less than the current
+    if (satisfies(client.version, `<${updatedClientRelease.mainRelease.clientManifest.version}`)) {
+      client.meta = {
+        updateAvailable: true, // if this is an error, update deskthing-types to v0.11.7 or later
+        updateVersion: updatedClientRelease.mainRelease.clientManifest.version
+      }
+      this.setClient(client)
+    } else {
+      logger.debug(`Client is up to date on version ${client.version}`, {
+        function: 'checkForUpdates',
+        source: 'client-store'
+      })
+    }
   }
 
   public clearCache = async (): Promise<void> => {
@@ -128,11 +163,14 @@ export class ClientStore
    * @param _client The client manifest to set.
    */
   async updateClient(_client: Partial<ClientManifest>): Promise<void> {
-    this._client = {
-      ...this._client,
+    const client = await this.getClient()
+
+    const updatedClient = {
+      ...client,
       ..._client
     } as ClientManifest
-    this.emit('client-updated', this._client)
+
+    this.setClient(updatedClient)
   }
 
   /**
@@ -179,12 +217,16 @@ export class ClientStore
     }
   }
 
-  async setClient(_client: ClientManifest): Promise<void> {
-    this._client = _client
-    this.emit('client-updated', _client)
+  async setClient(client: ClientManifest): Promise<void> {
+    this._client = client
+    this.emit('client-updated', client)
   }
 
-  getClient(): ClientManifest | null {
+  public getClient = async (): Promise<ClientManifest | null> => {
+    if (!this._client) {
+      this._client = await this.refreshClient()
+    }
+
     return this._client
   }
 }

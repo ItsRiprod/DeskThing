@@ -1,4 +1,3 @@
-console.log('[Github Handler] Starting')
 import logger from '@server/utils/logger'
 import { CacheableStore, GithubAsset, CacheEntry, GithubRelease } from '@shared/types'
 import { isCacheValid } from '@server/services/releases/releaseValidation'

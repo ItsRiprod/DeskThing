@@ -1,104 +1,176 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { ReleaseStore } from '../../../src/main/stores/releaseStore'
-import { getLatestRelease, fetchAssetContent } from '@server/services/releases/githubService'
-import { readAppReleaseData } from '@server/services/files/releaseFileService'
+import {
+  readAppReleaseData,
+  readClientReleaseData
+} from '@server/services/files/releaseFileService'
 import Logger from '@server/utils/logger'
+import { progressBus } from '@server/services/events/progressBus'
 
-vi.mock('@server/services/github/githubService', () => ({
-  getLatestRelease: vi.fn(),
-  fetchAssetContent: vi.fn()
+vi.mock('@server/services/files/releaseFileService')
+vi.mock('@server/services/events/progressBus')
+vi.mock('@server/services/releases/releaseUtils')
+vi.mock('@server/services/files/fileService', () => ({
+  writeToFile: vi.fn(),
+  readFromFile: vi.fn(),
+  readFile: vi.fn()
 }))
-
-vi.mock('@server/services/files/releaseFileService', () => ({
-  readAppReleaseData: vi.fn(),
-  readClientReleaseData: vi.fn(),
-  saveAppReleaseData: vi.fn(),
-  saveClientReleaseData: vi.fn()
-}))
-
 vi.mock('@server/utils/logger', () => ({
   default: {
-    info: vi.fn(),
+    debug: vi.fn(),
     error: vi.fn(),
     warn: vi.fn(),
-    debug: vi.fn()
+    log: vi.fn(),
+    info: vi.fn(),
+    setupSettingsListener: vi.fn(),
+    createLogger: vi.fn(() => ({
+      debug: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
+      log: vi.fn(),
+      info: vi.fn()
+    }))
   }
 }))
 
-describe('releaseStore', () => {
+vi.mock('electron', () => ({
+  app: {
+    getPath: vi.fn(() => '/'),
+    getVersion: vi.fn(() => '0.11.0')
+  }
+}))
+
+describe('ReleaseStore', () => {
   let releaseStore: ReleaseStore
 
   beforeEach(() => {
     vi.clearAllMocks()
     releaseStore = new ReleaseStore()
   })
+
   afterEach(() => {
     vi.resetModules()
   })
 
-  describe('Cache Management', () => {
-    it('should clear all caches when clearCache is called', async () => {
-      await releaseStore.clearCache()
-      expect(await releaseStore.getAppReleases()).toEqual([])
-      expect(await releaseStore.getClientReleases()).toEqual([])
-    })
-
-    it('should refresh data and clear existing cache', async () => {
-      const mockRelease = { type: 'single', id: 'test' }
-      vi.mocked(getLatestRelease).mockResolvedValueOnce({
-        assets: [{ name: 'latest.json' }]
-      } as any)
-      vi.mocked(fetchAssetContent).mockResolvedValueOnce(mockRelease as any)
-
-      await releaseStore.refreshData(true)
-      expect(getLatestRelease).toHaveBeenCalled()
+  describe('Initialization', () => {
+    it('should initialize only once', async () => {
+      expect(releaseStore.initialized).toBe(false)
+      await releaseStore.initialize()
+      expect(releaseStore.initialized).toBe(true)
+      await releaseStore.initialize()
+      expect(releaseStore.initialized).toBe(true)
     })
   })
 
-  describe('Release Management', () => {
-    it('should remove app release successfully', async () => {
-      const mockRelease = {
-        type: 'single',
-        id: 'test-app',
-        repository: 'test/repo'
-      }
-      vi.mocked(readAppReleaseData).mockResolvedValueOnce({
-        releases: [mockRelease],
-        references: [{ repository: 'test/repo', added: true }],
-        timestamp: Date.now()
-      } as any)
+  describe('Cache Management', () => {
+    it('should clear cache when requested', async () => {
+      await releaseStore.clearCache()
+      expect(vi.mocked(readAppReleaseData)).not.toHaveBeenCalled()
+      expect(vi.mocked(readClientReleaseData)).not.toHaveBeenCalled()
+    })
+  })
 
-      await releaseStore.removeAppRelease('test/repo')
-      expect(Logger.info).toHaveBeenCalledWith(
-        'App release removed successfully',
-        expect.any(Object)
+  describe('Release Data Management', () => {
+    it('should get app releases', async () => {
+      const mockReleases = {
+        releases: [{ id: 'test-app' }],
+        repositories: ['test-repo'],
+        timestamp: Date.now()
+      }
+      vi.mocked(readAppReleaseData).mockResolvedValueOnce(mockReleases as any)
+
+      const releases = await releaseStore.getAppReleases()
+      expect(releases).toEqual(mockReleases.releases)
+    })
+
+    it('should get client releases', async () => {
+      const mockReleases = {
+        releases: [{ id: 'test-client' }],
+        repositories: ['test-repo'],
+        timestamp: Date.now()
+      }
+      vi.mocked(readClientReleaseData).mockResolvedValueOnce(mockReleases as any)
+
+      const releases = await releaseStore.getClientReleases()
+      expect(releases).toEqual(mockReleases.releases)
+    })
+
+    it('should get specific app release', async () => {
+      const mockReleases = {
+        releases: [{ id: 'test-app' }],
+        repositories: ['test-repo'],
+        timestamp: Date.now()
+      }
+      vi.mocked(readAppReleaseData).mockResolvedValueOnce(mockReleases as any)
+
+      const release = await releaseStore.getAppRelease('test-app')
+      expect(release).toEqual(mockReleases.releases[0])
+    })
+
+    it('should get specific client release', async () => {
+      const mockReleases = {
+        releases: [{ id: 'test-client' }],
+        repositories: ['test-repo'],
+        timestamp: Date.now()
+      }
+      vi.mocked(readClientReleaseData).mockResolvedValueOnce(mockReleases as any)
+
+      const release = await releaseStore.getClientRelease('test-client')
+      expect(release).toEqual(mockReleases.releases[0])
+    })
+  })
+
+  describe('Repository Management', () => {
+    it('should get community apps', async () => {
+      const mockReleases = {
+        releases: [],
+        repositories: ['test-repo'],
+        timestamp: Date.now()
+      }
+      vi.mocked(readAppReleaseData).mockResolvedValueOnce(mockReleases as any)
+
+      const repos = await releaseStore.getCommunityApps()
+      expect(repos).toEqual(mockReleases.repositories)
+    })
+
+    it('should get community clients', async () => {
+      const mockReleases = {
+        releases: [],
+        repositories: ['test-repo'],
+        timestamp: Date.now()
+      }
+      vi.mocked(readClientReleaseData).mockResolvedValueOnce(mockReleases as any)
+
+      const repos = await releaseStore.getCommunityClients()
+      expect(repos).toEqual(mockReleases.repositories)
+    })
+  })
+
+  describe('Release Operations', () => {
+    it('should handle refresh data operation', async () => {
+      await releaseStore.refreshData()
+      expect(vi.mocked(progressBus.startOperation)).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(String),
+        expect.any(String),
+        expect.any(Array)
       )
     })
+
+    it('should handle forced refresh', async () => {
+      await releaseStore.refreshData(true)
+      expect(vi.mocked(progressBus.startOperation)).toHaveBeenCalled()
+    })
   })
 
-  describe('Event Listeners', () => {
-    it('should properly handle multiple listeners for different events', () => {
-      const appListener = vi.fn()
-      const communityListener = vi.fn()
-
-      const unsubscribeApp = releaseStore.on('app', appListener)
-      const unsubscribeCommunity = releaseStore.on('community', communityListener)
-
-      releaseStore['notifyListeners']('app', [])
-      releaseStore['notifyListeners']('community', [])
-
-      expect(appListener).toHaveBeenCalled()
-      expect(communityListener).toHaveBeenCalled()
-
-      unsubscribeApp()
-      unsubscribeCommunity()
-
-      releaseStore['notifyListeners']('app', [])
-      releaseStore['notifyListeners']('community', [])
-
-      expect(appListener).toHaveBeenCalledTimes(1)
-      expect(communityListener).toHaveBeenCalledTimes(1)
+  describe('Error Handling', () => {
+    it('should handle errors when reading releases', async () => {
+      vi.mocked(readAppReleaseData).mockRejectedValueOnce(new Error('Test error'))
+      
+      const releases = await releaseStore.getAppReleases()
+      expect(releases).toBeUndefined()
+      expect(vi.mocked(Logger.warn)).toHaveBeenCalled()
     })
   })
 })

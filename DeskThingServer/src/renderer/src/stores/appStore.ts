@@ -38,7 +38,7 @@ interface AppStoreState {
   setAppData: (appName: string, data: SavedData) => void
   getAppSettings: (appName: string) => Promise<AppSettings | null>
   setAppSettings: (appName: string, settings: AppSettings) => void
-  setStagedManifest: (manifest: StagedAppManifest) => void
+  setStagedManifest: (manifest: StagedAppManifest | null) => void
   setAppList: (apps: App[]) => void
   getIcon: (appName: string, icon?: string) => Promise<string | null>
   getIconUrl: (appName: string, icon?: string) => string

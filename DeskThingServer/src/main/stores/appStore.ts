@@ -13,12 +13,13 @@ import {
   DESKTHING_EVENTS,
   DeskThingToAppData
 } from '@deskthing/types'
-import { StagedAppManifest, CacheableStore, ProgressChannel } from '@shared/types'
+import { StagedAppManifest, CacheableStore, ProgressChannel, AppLatestServer } from '@shared/types'
 import {
   AppStoreClass,
   AppStoreListeners,
   AppStoreListenerEvents,
-  AppStoreListener
+  AppStoreListener,
+  stageAppFileType
 } from '@shared/stores/appStore'
 
 // Utils
@@ -26,11 +27,7 @@ import Logger from '@server/utils/logger'
 
 // Services
 import { getIcon } from '@server/services/apps/appUtils'
-import {
-  executeStagedFile,
-  stageAppFile,
-  stageAppFileType
-} from '@server/services/apps/appInstaller'
+import { executeStagedFile, stageAppFile } from '@server/services/apps/appInstaller'
 import { loadAndRunEnabledApps } from '@server/services/apps/appRunner'
 import { deleteAppPath, setAppData, setAppsData } from '../services/files/appFileService'
 
@@ -41,25 +38,39 @@ import { nextTick } from 'node:process'
 import { progressBus } from '@server/services/events/progressBus'
 import { runPostInstall } from '@server/services/apps/appPostinstall'
 import { handleError } from '@server/utils/errorHandler'
+import { ReleaseStoreClass } from '@shared/stores/releaseStore'
+import { satisfies } from 'semver'
 
 export class AppStore implements CacheableStore, AppStoreClass {
+  // State
   private apps: Record<string, App> = {}
   private order: string[] = []
+  // Utils
   private listeners: AppStoreListeners = {
     apps: [],
     purging: []
   }
+  private functionTimeouts: Record<string, NodeJS.Timeout> = {}
+
+  // Stores
   private appProcessStore: AppProcessStoreClass
   private authStore: AuthStoreClass
-  private functionTimeouts: Record<string, NodeJS.Timeout> = {}
+  private releaseStore: ReleaseStoreClass
+
+  // Initialization
   private _initialized: boolean = false
   public get initialized(): boolean {
     return this._initialized
   }
 
-  constructor(appProcessStore: AppProcessStoreClass, authStore: AuthStoreClass) {
+  constructor(
+    appProcessStore: AppProcessStoreClass,
+    authStore: AuthStoreClass,
+    releaseStore: ReleaseStoreClass
+  ) {
     this.appProcessStore = appProcessStore
     this.authStore = authStore
+    this.releaseStore = releaseStore
   }
 
   async initialize(): Promise<void> {
@@ -77,6 +88,11 @@ export class AppStore implements CacheableStore, AppStoreClass {
     this.appProcessStore.on(AppProcessTypes.STOPPED, this.handleProcessStopped.bind(this))
     this.appProcessStore.on(AppProcessTypes.ERROR, this.handleProcessError.bind(this))
     this.appProcessStore.on(AppProcessTypes.EXITED, this.handleProcessExit.bind(this))
+
+    this.releaseStore.on('app', async (appReleases) => {
+      /** Check for updates */
+      await this.checkForUpdates(appReleases)
+    })
 
     // App Handling
     this.onAppMessage(APP_REQUESTS.TOAPP, (data) => {
@@ -137,6 +153,82 @@ export class AppStore implements CacheableStore, AppStoreClass {
       this.apps[appName].running = false
       this.saveAppToFile(appName)
     }
+  }
+
+  private checkForUpdates = async (appReleases: AppLatestServer[]): Promise<void> => {
+    await Promise.all(
+      appReleases.map(async (appRelease) => {
+        // Check if the app exists
+        if (this.apps[appRelease.id]) {
+          // Check if the app is up to date
+
+          const app = this.apps[appRelease.id]
+
+          const incomingVersion = appRelease.mainRelease.appManifest.version
+          const existingVersion = app.manifest?.version
+
+          // Early break if the app already thinks there is an update
+          if (app.meta?.updateAvailable && app.meta?.updateAvailableVersion == incomingVersion) {
+            Logger.debug(`App ${appRelease.id} already thinks it has an update`, {
+              source: 'AppStore',
+              function: 'checkForUpdates',
+              domain: appRelease.id
+            })
+            return
+          }
+
+          if (satisfies(incomingVersion, `=${existingVersion}`)) {
+            // App is up to date
+            Logger.debug(`App ${appRelease.id} is up to date on version ${existingVersion}`, {
+              source: 'AppStore',
+              function: 'checkForUpdates',
+              domain: appRelease.id
+            })
+            return
+          }
+
+          // Check if the incoming app is newer than the one installed
+          if (satisfies(incomingVersion, `>${existingVersion}`)) {
+            // App is newer than the installed version
+            Logger.debug(
+              `App ${appRelease.id} is newer than the installed version ${existingVersion}`,
+              {
+                source: 'AppStore',
+                function: 'checkForUpdates',
+                domain: appRelease.id
+              }
+            )
+
+            sanitizeAppMeta(app)
+
+            if (!app.meta) {
+              return
+            }
+
+            app.meta.updateAvailable = true
+            app.meta.updateAvailableVersion = incomingVersion
+
+            this.apps[appRelease.id] = app
+
+            await this.saveAppToFile(appRelease.id)
+            return
+          }
+
+          // Check if the incoming app is older than the one installed
+          if (satisfies(incomingVersion, `<${existingVersion}`)) {
+            Logger.warn(
+              `Somehow got incoming version ${appRelease.mainRelease.appManifest.version} for ${appRelease.id} that is older than the installed version ${this.apps[appRelease.id].manifest?.version}`,
+              {
+                source: 'AppStore',
+                function: 'checkForUpdates',
+                domain: appRelease.id
+              }
+            )
+            return
+          }
+        }
+      })
+    )
   }
 
   clearCache = async (): Promise<void> => {

@@ -29,7 +29,7 @@ export interface ADBServiceClass {
   runScript(deviceId: string, scriptId: SCRIPT_IDs, force?: boolean): Promise<string>
 
   /**
-   * Retrieves a list of connected ADB devices.
+   * Retrieves a list of connected ADB devices via the ADB devices command
    * @returns A promise resolving to an array of device identifiers
    */
   getDevices(): Promise<string[]>

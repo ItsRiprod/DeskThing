@@ -16,7 +16,6 @@ import logger from '@server/utils/logger'
 import { GitDownloadUrl } from '@shared/types'
 import { satisfies } from 'semver'
 
-
 /**
  * Checks if a release file is valid based on its timestamp.
  *

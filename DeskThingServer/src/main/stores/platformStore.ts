@@ -899,7 +899,7 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
       this.emit(PlatformStoreEvent.CLIENT_UPDATED, mergedClient)
 
       // If the client wasn't connected before but is now, send initial data
-      if (!wasConnected && mergedClient.connected) {
+      if (!wasConnected && mergedClient.connectionState == ConnectionState.Connected) {
         Logger.debug(`Client ${mergedClient.clientId} connected. Sending initial data`, {
           domain: 'platform',
           source: 'platformStore',
@@ -917,10 +917,7 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
       // This is a new client
       const newClient = {
         ...client,
-        connectionState:
-          client.connectionState || client.connected
-            ? ConnectionState.Connected
-            : ConnectionState.Disconnected
+        connectionState: client.connectionState
       }
 
       this.clientRegistry.set(client.clientId, newClient)

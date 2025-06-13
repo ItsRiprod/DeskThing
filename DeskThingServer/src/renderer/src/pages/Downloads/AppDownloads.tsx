@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import Sidebar from '@renderer/nav/Sidebar'
 import Button from '@renderer/components/Button'
-import { IconLink, IconLoading, IconPlus, IconRefresh, IconUpload } from '@renderer/assets/icons'
+import { IconLink, IconPlus, IconRefresh } from '@renderer/assets/icons'
 import { useAppStore, useReleaseStore, usePageStore } from '@renderer/stores'
 import MainElement from '@renderer/nav/MainElement'
 import { SuccessNotification } from '@renderer/overlays/SuccessNotification'
@@ -28,10 +28,9 @@ let initialRender = true
 const AppDownloads: React.FC = () => {
   const appReleases = useReleaseStore((releaseStore) => releaseStore.appReleases)
   const getApps = useReleaseStore((releaseStore) => releaseStore.getApps)
-  const addRepo = useReleaseStore((releaseStore) => releaseStore.addAppRepo)
   const refreshReleases = useReleaseStore((releaseStore) => releaseStore.refreshReleases)
-  const addApp = useAppStore((state) => state.addApp)
   const stagedAppManifest = useAppStore((appStore) => appStore.stagedManifest)
+  const addApp = useAppStore((appStore) => appStore.addApp)
 
   useChannelProgress(ProgressChannel.IPC_APPS)
   useChannelProgress(ProgressChannel.IPC_RELEASES)
@@ -41,35 +40,18 @@ const AppDownloads: React.FC = () => {
     refreshingApps: false
   })
 
+  // Because of how React works, this will only run once due to the global initialRender function only ever being loaded once and then persisting
   if (initialRender) {
     getApps()
     initialRender = false
   }
 
-  const [selectingFile, setSelectingFile] = useState(false)
-  const [loading, setLoading] = useState(false)
   const [addAppRepoOverlay, setAddAppRepoOverlay] = useState(false)
 
   const setPage = usePageStore((pageStore) => pageStore.setPage)
 
   const gotoClientDownloads = (): void => {
     setPage('Downloads/Client')
-  }
-
-  const handleUploadClick = async (): Promise<void> => {
-    setSelectingFile(true)
-    setLoading(true)
-    const file = await window.electron.utility.selectZipFile()
-    setSelectingFile(false)
-    setLoading(false)
-    if (file) {
-      setLoading(true)
-      try {
-        await addApp({ appPath: file })
-      } catch {
-        setLoading(false)
-      }
-    }
   }
 
   const handleRefreshData = async (): Promise<void> => {
@@ -91,13 +73,19 @@ const AppDownloads: React.FC = () => {
     }
   }
 
+  const onZipAdd = async (fileUrl: string): Promise<void> => {
+    await addApp({ appPath: fileUrl })
+  }
+
   const handleToggleAddRepo = (): void => {
     setAddAppRepoOverlay((state) => !state)
   }
 
   return (
     <div className="flex h-full w-full">
-      {addAppRepoOverlay && <AddRepoOverlay onClose={handleToggleAddRepo} onAdd={addRepo} />}
+      {addAppRepoOverlay && (
+        <AddRepoOverlay onClose={handleToggleAddRepo} onZipUpload={onZipAdd} />
+      )}
       {stagedAppManifest && <SuccessNotification />}
       <Sidebar className="flex justify-end flex-col h-full max-h-full md:items-stretch xs:items-center">
         <div>
@@ -111,17 +99,13 @@ const AppDownloads: React.FC = () => {
                 className={`${uiState.refreshingApps ? 'animate-spin-smooth' : ''}`}
                 strokeWidth={1.5}
               />
-              <p className="md:block xs:hidden flex-grow xs:text-center">
-                Refresh<span className="hidden group-disabled:block">ing</span>
+              <p className="md:block xs:hidden flex flex-grow xs:text-center">
+                Refresh<span className="hidden group-disabled:inline">ing</span>
               </p>
             </Button>
             <Button onClick={handleToggleAddRepo} className="hover:bg-zinc-900">
               <IconPlus strokeWidth={1.5} />
               <p className="md:block xs:hidden xs:text-center flex-grow">Add App</p>
-            </Button>
-            <Button onClick={handleUploadClick} className="hover:bg-zinc-900">
-              {selectingFile ? <IconLoading strokeWidth={1.5} /> : <IconUpload strokeWidth={1.5} />}
-              <p className="md:block xs:hidden xs:text-center flex-grow">Upload App</p>
             </Button>
             <Button onClick={gotoClientDownloads} className="hover:bg-zinc-900">
               <IconLink strokeWidth={1.5} />

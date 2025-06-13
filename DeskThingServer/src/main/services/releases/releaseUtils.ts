@@ -25,7 +25,12 @@ import {
   MultiReleaseJSONLatest
 } from '@deskthing/types'
 import { handleError } from '@server/utils/errorHandler'
-import { handleReleaseJSONFileMigration, handleReleaseJSONMigration } from './migrationUtils'
+import {
+  handleAddingLegacyRepo,
+  handleReleaseJSONFileMigration,
+  handleReleaseJSONMigration
+} from './migrationUtils'
+import { determineValidUrl } from './releaseValidation'
 
 /** Handles the creation of the release file */
 export async function createReleaseFile(type: 'app', force?: boolean): Promise<AppReleaseFile0118>
@@ -104,7 +109,7 @@ const createClientReleaseFile = async (force = false): Promise<ClientReleaseFile
     if (adaptedRelease.meta_type == 'multi') {
       const result = await convertMultiToReleaseServer(adaptedRelease)
 
-      if (result.type == 'none')
+      if (result.type == 'converted-repos')
         return {
           version: '0.11.8',
           type: 'client',
@@ -113,7 +118,7 @@ const createClientReleaseFile = async (force = false): Promise<ClientReleaseFile
           timestamp: Date.now()
         }
 
-      if (result.type == 'app')
+      if (result.type == 'converted-apps')
         throw new Error('Received "app" type when expecting multi or client')
 
       const clientReleaseFile: ClientReleaseFile0118 = {
@@ -213,7 +218,7 @@ const createAppReleaseFile = async (force = false): Promise<AppReleaseFile0118> 
       )
       const result = await convertMultiToReleaseServer(adaptedRelease)
 
-      if (result.type == 'none') {
+      if (result.type == 'converted-repos') {
         progressBus.update(
           ProgressChannel.FN_RELEASE_APP_REFRESH,
           'Creating empty release file',
@@ -228,7 +233,7 @@ const createAppReleaseFile = async (force = false): Promise<AppReleaseFile0118> 
         }
       }
 
-      if (result.type == 'client')
+      if (result.type == 'converted-clients')
         throw new Error('Received "client" type when expecting multi or client')
 
       progressBus.update(
@@ -283,6 +288,132 @@ const createAppReleaseFile = async (force = false): Promise<AppReleaseFile0118> 
       handleError(error)
     )
     return defaultAppLatestJSONFallback
+  }
+}
+
+/**
+ * From a URL - it returns all of the apps at the end of that url as well as updated if needed
+ * @param url
+ * @param appId - if you want a specific app ID instead of just whatever is found
+ * @throws an error if the repo is wrong
+ */
+export const addRepositoryUrl = async (
+  repoUrl: string,
+  appId?: string
+): Promise<AppLatestServer | ClientLatestServer | ConversionReturnData> => {
+  try {
+    const updateProgress = progressBus.start(
+      ProgressChannel.FN_RELEASE_ADD_REPO,
+      `Adding Repository${appId ? ` for ${appId}` : ''}`,
+      `Adding ${repoUrl}`
+    )
+
+    const validatedUrl = await determineValidUrl([repoUrl])
+
+    const githubStore = await storeProvider.getStore('githubStore')
+
+    updateProgress(`Getting GitHub Releases for ${repoUrl}`, 10)
+
+    const githubReleases = await githubStore.getAllReleases(validatedUrl)
+
+    const latestGithubRelease = githubReleases[0]
+
+    const latestJson = findJsonAsset(latestGithubRelease, appId || 'latest')
+
+    // Handle the recovery with the file
+    if (!latestJson) {
+      updateProgress(`Release JSON not found! Attemting to migrate`, 75)
+      const releaseServer = await handleAddingLegacyRepo(validatedUrl, appId)
+      progressBus.complete(
+        ProgressChannel.FN_RELEASE_ADD_REPO,
+        `Found ${releaseServer.id} in releases`
+      )
+      return releaseServer
+    }
+
+    updateProgress(`Found ${latestJson.label} in releases`, 50)
+    updateProgress('Fetching JSON content', 60)
+    const jsonContent = await githubStore.fetchJSONAssetContent<
+      AppLatestJSONLatest | ClientLatestJSONLatest | MultiReleaseJSONLatest | AppReleaseMeta
+    >(latestJson)
+
+    if (!jsonContent) {
+      throw new Error('Unable to fetch JSON content from release asset')
+    }
+
+    updateProgress('Migrating and validating JSON content', 70)
+
+    // Handle migration to latest version
+    const migratedRelease = await handleReleaseJSONMigration(jsonContent, undefined, appId)
+
+    updateProgress('Processing migrated release', 80)
+
+    // Handle different meta types
+    if (migratedRelease.meta_type === 'multi') {
+      updateProgress('Converting multi-release to server format', 85)
+      const conversionResult = await convertMultiToReleaseServer(migratedRelease)
+
+      progressBus.complete(
+        ProgressChannel.FN_RELEASE_ADD_REPO,
+        `Successfully processed multi-release with ${conversionResult.releases.length} items`
+      )
+      return conversionResult
+    }
+
+    if (migratedRelease.meta_type === 'app') {
+      updateProgress('Creating app server configuration', 85)
+
+      // Collect past releases for statistics
+      const pastReleases = collectPastReleases(githubReleases, migratedRelease.appManifest.id)
+      const totalDownloads = pastReleases.reduce((sum, release) => sum + release.downloads, 0)
+
+      const appServer: AppLatestServer = {
+        id: migratedRelease.appManifest.id,
+        type: 'app',
+        mainRelease: migratedRelease,
+        lastUpdated: Date.now(),
+        totalDownloads,
+        pastReleases
+      }
+
+      progressBus.complete(
+        ProgressChannel.FN_RELEASE_ADD_REPO,
+        `Successfully added app: ${appServer.id}`
+      )
+      return appServer
+    }
+
+    if (migratedRelease.meta_type === 'client') {
+      updateProgress('Creating client server configuration', 85)
+
+      // Collect past releases for statistics
+      const pastReleases = collectPastReleases(githubReleases, migratedRelease.clientManifest.id)
+      const totalDownloads = pastReleases.reduce((sum, release) => sum + release.downloads, 0)
+
+      const clientServer: ClientLatestServer = {
+        id: migratedRelease.clientManifest.id,
+        type: 'client',
+        mainRelease: migratedRelease,
+        lastUpdated: Date.now(),
+        totalDownloads,
+        pastReleases
+      }
+
+      progressBus.complete(
+        ProgressChannel.FN_RELEASE_ADD_REPO,
+        `Successfully added client: ${clientServer.id}`
+      )
+      return clientServer
+    }
+
+    throw new Error(`Unsupported meta_type: ${(migratedRelease as AppLatestJSONLatest).meta_type}`)
+  } catch (error) {
+    progressBus.error(
+      ProgressChannel.FN_RELEASE_ADD_REPO,
+      'Unable to add repository',
+      handleError(error)
+    )
+    throw error
   }
 }
 
@@ -372,11 +503,20 @@ export const updateLatestServer = async <T extends AppLatestServer | ClientLates
       findJsonAsset(allReleases[0], releaseLatest.id, false)
 
     // Fetch the JSON
-    const releaseJSON = await githubStore.fetchJSONAssetContent<
-      AppReleaseMeta | AppLatestJSONLatest | ClientLatestJSONLatest | MultiReleaseJSONLatest
-    >(firstReleaseAsset)
+    const releaseJSON = firstReleaseAsset
+      ? await githubStore.fetchJSONAssetContent<
+          AppReleaseMeta | AppLatestJSONLatest | ClientLatestJSONLatest | MultiReleaseJSONLatest
+        >(firstReleaseAsset)
+      : undefined
 
-    if (!releaseJSON) throw new Error(`JSON file was unable to be found for ${releaseLatest.id}`)
+    if (!releaseJSON) {
+      logger.debug(`Handling release for ${releaseLatest.id}`)
+      const releaseServer = await handleAddingLegacyRepo(
+        releaseLatest.mainRelease.repository,
+        releaseLatest.id
+      )
+      return releaseServer as T
+    }
 
     // Handle migrating any old releases to the latest
     const migratedRelease = await handleReleaseJSONMigration(
@@ -400,6 +540,9 @@ export const updateLatestServer = async <T extends AppLatestServer | ClientLates
     const pastReleases = collectPastReleases(allReleases, releaseLatest.id)
 
     const totalDownloads = pastReleases.reduce((sum, release) => sum + release.downloads, 0)
+
+    // Update the download count
+    migratedRelease.downloads = firstReleaseAsset?.download_count || 0
 
     // return the updated server
 
@@ -446,9 +589,9 @@ const findZipAsset = (release: GithubRelease, appId: string): GithubAsset | unde
 }
 
 type ConversionReturnData =
-  | { repos: string[]; type: 'client'; releases: ClientLatestServer[] }
-  | { repos: string[]; type: 'app'; releases: AppLatestServer[] }
-  | { repos: string[]; type: 'none'; releases: [] }
+  | { repos: string[]; type: 'converted-clients'; releases: ClientLatestServer[] }
+  | { repos: string[]; type: 'converted-apps'; releases: AppLatestServer[] }
+  | { repos: string[]; type: 'converted-repos'; releases: [] }
 
 export const convertMultiToReleaseServer = async (
   releaseMulti: MultiReleaseJSONLatest
@@ -488,14 +631,14 @@ export const convertMultiToReleaseServer = async (
 
     return {
       repos: releaseMulti.repositories || [],
-      type: type,
+      type: `converted-${type}s`,
       releases: apps
     } as ConversionReturnData
   }
 
   return {
     repos: releaseMulti.repositories || [],
-    type: 'none',
+    type: 'converted-repos',
     releases: []
   }
 }

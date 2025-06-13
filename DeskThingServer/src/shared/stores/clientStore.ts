@@ -11,7 +11,7 @@ export interface ClientStoreClass
   extends CacheableStore,
     EventEmitter<ClientStoreEvents>,
     StoreInterface {
-  getClient(): ClientManifest | null
+  getClient(): Promise<ClientManifest | null>
 
   /**
    * @channel - {@link ProgressChannel.ST_CLIENT_INSTALL}

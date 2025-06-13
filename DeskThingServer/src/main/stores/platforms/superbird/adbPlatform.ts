@@ -313,10 +313,21 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
 
       // Mark clients not found in ADB as disconnected
       this.clients.forEach((client) => {
-        if (!adbDevices.find((adb) => adb === client.identifiers[this.id]?.id)) {
+        if (!adbDevices.includes(client.identifiers[this.id]?.id || '')) {
           this.emit(PlatformEvent.CLIENT_DISCONNECTED, client)
         }
       })
+
+      // Get the list of new ADB IDs
+      const newAdbIDs = adbDevices.filter((adb) => {
+        return !this.clients.find((client) => client.identifiers[this.id]?.id === adb)
+      })
+
+      // Open the ports one at a time
+      for (const adbId of newAdbIDs) {
+        logger.debug(`Opening port for ${adbId}`)
+        await this.adbService.openPort(adbId, this.adbPort)
+      }
 
       // ensure the local list of clients is up to date
       this.clients = this.clients.filter((client) => {

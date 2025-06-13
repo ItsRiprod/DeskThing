@@ -1,6 +1,6 @@
 import React from 'react'
 import Overlay from '../Overlay'
-import { IconGear, IconLogs, IconPlay } from '@renderer/assets/icons'
+import { IconArrowUp, IconGear, IconLogs, IconPlay } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
 import { useSearchParams } from 'react-router-dom'
 import AppActions from './AppActions'
@@ -9,6 +9,7 @@ import AppSettings from './AppSettings'
 import { App } from '@deskthing/types'
 import { useAppStore } from '@renderer/stores'
 import ErrorBoundary from '@renderer/components/ErrorBoundary'
+import AppUpdate from './AppUpdate'
 
 export interface AppSettingProps {
   app: App
@@ -17,7 +18,8 @@ export interface AppSettingProps {
 const settingsPages = [
   { key: 'actions', label: 'Actions', Icon: IconPlay },
   { key: 'details', label: 'Details', Icon: IconLogs },
-  { key: 'settings', label: 'Settings', Icon: IconGear }
+  { key: 'settings', label: 'Settings', Icon: IconGear },
+  { key: 'update', label: 'Update', Icon: IconArrowUp }
 ]
 
 /**
@@ -84,6 +86,11 @@ const AppsOverlay: React.FC = () => {
             {currentPage == 'settings' && (
               <ErrorBoundary>
                 <AppSettings app={app} />
+              </ErrorBoundary>
+            )}
+            {currentPage == 'update' && (
+              <ErrorBoundary>
+                <AppUpdate app={app} />
               </ErrorBoundary>
             )}
           </div>

@@ -52,7 +52,7 @@ const ADBControls: React.FC<ADBControlsProps> = ({ client, isLoading }) => {
 
   // Determine device state
   const needsConfiguration =
-    client.connectionState === ConnectionState.Established && !client.manifest?.context?.ip
+    client.connectionState === ConnectionState.Established && !client.identifiers.websocket?.active
 
   const isOffline = client.connectionState === ConnectionState.Failed
 

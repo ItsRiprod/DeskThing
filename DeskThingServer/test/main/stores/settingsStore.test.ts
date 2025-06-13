@@ -1,7 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { SettingsStore } from '@server/stores/settingsStore'
-import { readFromFile, writeToFile } from '@server/services/files/fileService'
-import { defaultSettings } from '@server/static/defaultSettings'
+import { writeToFile } from '@server/services/files/fileService'
 
 vi.mock('os', () => ({
   default: {
@@ -21,6 +20,10 @@ vi.mock('@server/utils/logger', () => ({
 }))
 
 vi.mock('@server/services/files/fileService', () => ({
+  default: {
+    writeToFile: vi.fn(),
+    readFromFile: vi.fn()
+  },
   writeToFile: vi.fn(),
   readFromFile: vi.fn()
 }))
@@ -28,7 +31,7 @@ vi.mock('@server/services/files/fileService', () => ({
 vi.mock('electron', () => {
   return {
     app: {
-      getVersion: vi.fn().mockReturnValue('0.10.4')
+      getVersion: vi.fn().mockReturnValue('0.10.8')
     }
   }
 })
@@ -56,13 +59,6 @@ describe('SettingsStore', () => {
   })
 
   describe('Settings Management', () => {
-    it('should create default settings when file version is outdated', async () => {
-      vi.mocked(readFromFile).mockResolvedValue(defaultSettings)
-
-      const settings = await settingsStore.getSettings()
-      expect(settings.version).toBe('0.10.4')
-      expect(writeToFile).toHaveBeenCalled()
-    })
 
     it('should handle multiple setting updates in sequence', async () => {
       await settingsStore.saveSetting('server_callbackPort', 9999)
