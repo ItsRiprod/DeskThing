@@ -30,7 +30,7 @@ export function buildMainWindow(): BrowserWindow {
   if (process.platform === 'darwin') {
     app.dock.show()
   }
-  
+
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.focus()
     return mainWindow
@@ -39,7 +39,6 @@ export function buildMainWindow(): BrowserWindow {
     uiEventBus.setMainWindow(mainWindow)
     return mainWindow
   }
-
 }
 
 /**
@@ -99,7 +98,19 @@ export function closeLoadingWindow(): void {
  * Clean up all windows
  */
 export function cleanupWindows(): void {
-  if (mainWindow) mainWindow = null
-  if (clientWindow) clientWindow = null
-  if (loadingWindow) loadingWindow = null
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.close()
+    mainWindow.destroy()
+    mainWindow = null
+  }
+  if (clientWindow && !clientWindow.isDestroyed()) {
+    clientWindow.close()
+    clientWindow.destroy()
+    clientWindow = null
+  }
+  if (loadingWindow && !loadingWindow.isDestroyed()) {
+    loadingWindow.close()
+    loadingWindow.destroy()
+    loadingWindow = null
+  }
 }

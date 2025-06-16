@@ -225,6 +225,14 @@ export class ReleaseStore
           force,
           updateStates: true
         })
+
+        if (this.appReleases.releases.length == 0) {
+          // This is a pretty worst-case scenario, but if the release file is empty, we should add the default repositories
+          const { appsRepo, clientRepo } = await import('../static/releaseMetadata')
+          await this.addRepositoryUrl(appsRepo)
+          await this.addRepositoryUrl(clientRepo)
+        }
+
         await this.saveAppReleaseFile(false)
         progressBus.complete(
           ProgressChannel.ST_RELEASE_APP_REFRESH,
@@ -280,6 +288,13 @@ export class ReleaseStore
           force,
           updateStates: true
         })
+
+        if (this.clientReleases.releases.length == 0) {
+          // This is a pretty worst-case scenario, but if the release file is empty, we should add the default repositories
+          const { appsRepo, clientRepo } = await import('../static/releaseMetadata')
+          await this.addRepositoryUrl(appsRepo)
+          await this.addRepositoryUrl(clientRepo)
+        }
         await this.saveClientReleaseFile(false)
         progressBus.complete(
           ProgressChannel.ST_RELEASE_CLIENT_REFRESH,

@@ -2,7 +2,7 @@
  * Single instance lock handler
  */
 import { app } from 'electron'
-import { getMainWindow } from '../windows/windowManager'
+import { getMainWindow, buildMainWindow } from '../windows/windowManager'
 import { handleUrl } from './protocol'
 
 /**
@@ -28,6 +28,8 @@ export function setupSingleInstance(): boolean {
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore()
       mainWindow.focus()
+    } else {
+      buildMainWindow()
     }
   })
 
