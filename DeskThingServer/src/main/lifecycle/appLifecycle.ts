@@ -43,14 +43,14 @@ export async function initializeAppLifecycle(): Promise<void> {
     await setupIpcHandlers()
     await loadModules()
     await updateLoadingStatus('Creating main window')
-
-    // Close loading window once main window is ready
-    mainWindow.once('ready-to-show', async () => {
-      await updateLoadingStatus('Finishing Up...')
-      closeLoadingWindow()
-      mainWindow.show()
-    })
   })
+
+  mainWindow.once('ready-to-show', async () => {
+    await updateLoadingStatus('Finishing Up...')
+    closeLoadingWindow()
+    mainWindow.show()
+  })
+
   app.on('before-quit', async () => {
     console.log('Quitting app')
     const { default: cacheManager } = await import('../services/cache/cacheManager')
