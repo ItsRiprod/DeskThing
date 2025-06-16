@@ -51,6 +51,11 @@ export async function initializeAppLifecycle(): Promise<void> {
       mainWindow.show()
     })
   })
+  app.on('before-quit', async () => {
+    console.log('Quitting app')
+    const { default: cacheManager } = await import('../services/cache/cacheManager')
+    await cacheManager.hibernateAll() // hibernate all before closing to ensure all cache is saved
+  })
 
   // Handle window recreation on macOS
   app.on('activate', function () {
