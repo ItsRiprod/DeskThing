@@ -446,6 +446,14 @@ export async function handleRefreshReleaseFile<T extends 'app' | 'client'>(
       )
     )
 
+    // This is a pretty worst-case scenario, but if the release file is empty, we should add the default repositories
+    if (releaseFile.releases.length == 0) {
+      // automatically add deskthing releases
+      const { appsRepo, clientRepo } = await import('../../static/releaseMetadata')
+      await addRepositoryUrl(appsRepo)
+      await addRepositoryUrl(clientRepo)
+    }
+
     if (type == 'app') {
       const finalReleaseFile: AppReleaseFile0118 = {
         version: '0.11.8',
