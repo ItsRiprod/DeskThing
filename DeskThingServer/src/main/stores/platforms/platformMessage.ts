@@ -6,7 +6,8 @@ import {
   DeviceToDeskthingData,
   DEVICE_DESKTHING,
   DESKTHING_EVENTS,
-  DeskThingToAppCore
+  DeskThingToAppCore,
+  LOGGING_LEVELS
 } from '@deskthing/types'
 import Logger from '@server/utils/logger'
 import { PlatformInterface } from '@shared/interfaces/platformInterface'
@@ -59,6 +60,11 @@ async function handleServerMessage(
   const appStore = await storeProvider.getStore('appStore')
   const mappingStore = await storeProvider.getStore('mappingStore')
 
+  const debug = Logger.createLogger(LOGGING_LEVELS.DEBUG, {
+    function: 'HandleServerMessage',
+    source: 'platformMessage'
+  })
+  
   switch (messageData.type) {
     case DEVICE_DESKTHING.PING:
       await platform.sendData(client.clientId, {
@@ -67,8 +73,9 @@ async function handleServerMessage(
         payload: client.clientId
       })
       break
-
+      
     case DEVICE_DESKTHING.SET:
+      debug(`Handling ${messageData.type} from ${client.clientId} request: ${messageData.request}`)
       if (messageData.request === 'update_pref_index' && messageData.payload) {
         const { app: appName, index: newIndex } = messageData.payload as {
           app: string
@@ -77,7 +84,15 @@ async function handleServerMessage(
         await appStore.setItemOrder(appName, newIndex)
       }
       break
+    case DEVICE_DESKTHING.GET:
+      debug(`Handling ${messageData.type} from ${client.clientId} request: ${messageData.request}`)
+      if (messageData.request === 'initialData') {
+        const platformStore = await storeProvider.getStore('platformStore')
+        await platformStore.sendInitialDataToClient(client.clientId)
+      }
+      break
     case DEVICE_DESKTHING.VIEW:
+      debug(`Handling ${messageData.type} from ${client.clientId} request: ${messageData.request}`)
       if (messageData.request == 'change') {
         const { currentApp, previousApp } = messageData.payload
         // Update the apps with what page is currently open
@@ -98,6 +113,7 @@ async function handleServerMessage(
       }
       break
     case DEVICE_DESKTHING.MANIFEST:
+      debug(`Handling MANIFEST request from ${client.clientId} to set the manifest`)
       if (messageData.payload) {
         const manifest = messageData.payload as ClientManifest
         const clientUpdates: Partial<Client> = {
@@ -120,6 +136,7 @@ async function handleServerMessage(
       break
 
     case DEVICE_DESKTHING.ACTION:
+      debug(`Handling ${messageData.type} from ${client.clientId} request: ${messageData.request}`)
       await mappingStore.runAction(messageData.payload)
       break
 

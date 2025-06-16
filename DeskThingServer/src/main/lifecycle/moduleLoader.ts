@@ -15,9 +15,9 @@ export async function loadModules(): Promise<void> {
     updateLoadingStatus('Initializing platforms...')
     const { initializePlatforms } = await import('../stores/platforms/platformInitializer')
     await initializePlatforms()
-    return Promise.resolve()
+    return
   } catch (error) {
     console.error('Error loading modules: ', error)
-    return Promise.reject(error)
+    return
   }
 }

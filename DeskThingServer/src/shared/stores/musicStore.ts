@@ -32,4 +32,10 @@ export interface MusicStoreClass extends StoreInterface {
    * @param request Socket data containing the client request
    */
   handleClientRequest(request: SocketData): Promise<void>
+
+  /**
+   * Sends music data to a specific client
+   * @param clientId ID of the client to send music to
+   */
+  sendMusicToClient(clientId: string): Promise<void>
 }

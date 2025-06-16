@@ -214,6 +214,7 @@ export class ProfileStore
     logger.debug(`Setting ${clientId}'s config to ${profile.id} because it was requested`)
 
     try {
+      // Send the configuration for the client
       if (profile.clientConfig) {
         await this.platformStore.sendDataToClient({
           app: 'client',

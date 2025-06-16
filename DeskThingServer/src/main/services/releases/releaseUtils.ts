@@ -536,6 +536,15 @@ export const updateLatestServer = async <T extends AppLatestServer | ClientLates
         `Type Mismatch! Incoming type '${migratedRelease.meta_type}' does not equal expected '${releaseLatest.type}' type`
       )
 
+    // Update the download URL to the latest
+    const latestRelease = findFirstZipAsset(allReleases, releaseLatest.id)
+    if (latestRelease) {
+      logger.debug(`Updating URL for ${releaseLatest.id} to ${latestRelease.browser_download_url}`)
+      migratedRelease.updateUrl = latestRelease.browser_download_url
+    } else {
+      logger.debug(`No release found for ${releaseLatest.id}`)
+    }
+
     // Get the past releases
     const pastReleases = collectPastReleases(allReleases, releaseLatest.id)
 
@@ -566,23 +575,33 @@ export const updateLatestServer = async <T extends AppLatestServer | ClientLates
   }
 }
 
-const findJsonAsset = (
+export const findJsonAsset = (
   release: GithubRelease,
   appId: string,
   strict = false
 ): GithubAsset | undefined => {
+  // This ensures the latest (if there are multiple similar ones) is always chosen first
+  const sortedAssets = release.assets.sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  )
+
   // Priority: appId.json > latest.json
-  const appIdJson = release.assets.find((asset) => asset.name === `${appId}.json`)
+  const appIdJson = sortedAssets.find((asset) => asset.name === `${appId}.json`)
   if (appIdJson) return appIdJson
 
   if (strict) return // return early if strict is enabled
 
-  const latestJson = release.assets.find((asset) => asset.name === 'latest.json')
+  const latestJson = sortedAssets.find((asset) => asset.name === 'latest.json')
   return latestJson
 }
 
-const findZipAsset = (release: GithubRelease, appId: string): GithubAsset | undefined => {
-  return release.assets.find(
+export const findZipAsset = (release: GithubRelease, appId: string): GithubAsset | undefined => {
+  // This ensures the latest (if there are multiple similar ones) is always chosen first
+  const sortedAssets = release.assets.sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  )
+
+  return sortedAssets.find(
     (asset) =>
       asset.name.includes(appId) && (asset.name.endsWith('.zip') || asset.name.endsWith('.tar.gz'))
   )
@@ -643,7 +662,7 @@ export const convertMultiToReleaseServer = async (
   }
 }
 
-const findFirstJsonAsset = (
+export const findFirstJsonAsset = (
   ghReleases: GithubRelease[],
   appId: string
 ): GithubAsset | undefined => {
@@ -651,6 +670,19 @@ const findFirstJsonAsset = (
     const jsonAsset = findJsonAsset(release, appId, true)
     if (jsonAsset) {
       return jsonAsset
+    }
+  }
+  return undefined
+}
+
+export const findFirstZipAsset = (
+  ghReleases: GithubRelease[],
+  appId: string
+): GithubAsset | undefined => {
+  for (const release of ghReleases) {
+    const zipAsset = findZipAsset(release, appId)
+    if (zipAsset) {
+      return zipAsset
     }
   }
   return undefined

@@ -49,6 +49,10 @@ export class MusicStore implements CacheableStore, MusicStoreClass {
   async handleClientRequest(request: MusicEventPayloads): Promise<void> {
     return this.musicService.handleClientRequest(request)
   }
+
+  async sendMusicToClient(clientId: string): Promise<void> {
+    return this.musicService.sendMusicToClient(clientId)
+  }
 }
 
 // /**

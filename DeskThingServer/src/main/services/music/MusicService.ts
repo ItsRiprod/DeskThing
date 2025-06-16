@@ -198,12 +198,7 @@ export class MusicService implements MusicStoreClass {
       await this.initialize()
       const cachedSong = this.songCache.getCurrentSong()
       if (cachedSong) {
-        await this.platformStore.sendDataToClient({
-          type: DESKTHING_DEVICE.MUSIC,
-          app: 'client',
-          payload: cachedSong,
-          clientId: client.clientId
-        })
+        await this.sendMusicToClient(client.clientId)
       }
     })
 
@@ -300,18 +295,25 @@ export class MusicService implements MusicStoreClass {
 
       const cachedSong = this.songCache.getCurrentSong()
       if (cachedSong) {
-        await this.platformStore.sendDataToClient({
-          type: DESKTHING_DEVICE.MUSIC,
-          app: 'client',
-          payload: cachedSong,
-          clientId: data.client.clientId
-        })
+        await this.sendMusicToClient(data.client.clientId)
       }
       return
     }
 
     if (data.data.type === SongEvent.SET) {
       await this.handleClientRequest(data.data)
+    }
+  }
+
+  public async sendMusicToClient(clientId: string): Promise<void> {
+    const currentSong = this.songCache.getCurrentSong()
+    if (currentSong) {
+      await this.platformStore.sendDataToClient({
+        type: DESKTHING_DEVICE.MUSIC,
+        app: 'client',
+        payload: currentSong,
+        clientId
+      })
     }
   }
 

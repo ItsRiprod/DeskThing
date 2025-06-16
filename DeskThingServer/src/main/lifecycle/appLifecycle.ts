@@ -35,20 +35,19 @@ export async function initializeAppLifecycle(): Promise<void> {
     optimizer.watchWindowShortcuts(window)
   })
 
+  // Create main window after loading is complete
+  const mainWindow = buildMainWindow()
+
   // Load modules and set up IPC handlers
   nextTick(async () => {
-    await loadModules()
     await setupIpcHandlers()
-
-    updateLoadingStatus('Creating main window')
-
-    // Create main window after loading is complete
-    const mainWindow = buildMainWindow()
+    await loadModules()
+    await updateLoadingStatus('Creating main window')
 
     // Close loading window once main window is ready
-    mainWindow.once('ready-to-show', () => {
+    mainWindow.once('ready-to-show', async () => {
+      await updateLoadingStatus('Finishing Up...')
       closeLoadingWindow()
-      updateLoadingStatus('Finishing Up...')
       mainWindow.show()
     })
   })

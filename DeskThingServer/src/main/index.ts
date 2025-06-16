@@ -35,6 +35,7 @@ if (!setupSingleInstance()) {
     const loadingWindow = await buildLoadingWindow()
 
     loadingWindow.once('ready-to-show', async () => {
+      loadingWindow.show()
       // Clears any old installs
       await initializationCheck()
 

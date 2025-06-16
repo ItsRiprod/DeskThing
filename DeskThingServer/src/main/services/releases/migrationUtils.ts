@@ -33,7 +33,7 @@ import {
 } from './releaseValidation'
 import { storeProvider } from '@server/stores/storeProvider'
 import { handleError } from '@server/utils/errorHandler'
-import { collectPastReleases, convertIdToReleaseServer } from './releaseUtils'
+import { collectPastReleases, convertIdToReleaseServer, findFirstZipAsset } from './releaseUtils'
 import path from 'node:path'
 import { app } from 'electron'
 import { unlink, writeFile } from 'node:fs/promises'
@@ -74,6 +74,15 @@ export const handleReleaseJSONFileMigration = async <T extends 'app' | 'client'>
         try {
           const githubReleases = await githubStore.getAllReleases(updatedRelease.repository)
 
+          // Update the URL
+          const latestRelease = findFirstZipAsset(githubReleases, updatedRelease.appManifest.id)
+          if (latestRelease) {
+            logger.debug(`Updating URL for ${updatedRelease.appManifest.id} to ${latestRelease.browser_download_url}`)
+            updatedRelease.updateUrl = latestRelease.browser_download_url
+          } else {
+            logger.debug(`No release found for ${updatedRelease.appManifest.id}`)
+          }
+
           pastReleases = collectPastReleases(githubReleases, updatedRelease.appManifest.id)
           totalDownloads = pastReleases.reduce((acc, release) => acc + release.downloads, 0)
         } catch (error) {
@@ -95,6 +104,12 @@ export const handleReleaseJSONFileMigration = async <T extends 'app' | 'client'>
         let totalDownloads = 0
         try {
           const githubReleases = await githubStore.getAllReleases(updatedRelease.repository)
+
+          // Update the URL
+          const latestRelease = findFirstZipAsset(githubReleases, updatedRelease.clientManifest.id)
+          if (latestRelease) {
+            updatedRelease.updateUrl = latestRelease.browser_download_url
+          }
 
           pastReleases = collectPastReleases(githubReleases, updatedRelease.clientManifest.id)
           totalDownloads = pastReleases.reduce((acc, release) => acc + release.downloads, 0)
@@ -147,14 +162,14 @@ export const handleReleaseJSONMigration = async <
   T extends ClientLatestJSONLatest | AppLatestJSONLatest | MultiReleaseJSONLatest
 >(
   newRelease: T | AppReleaseMeta | ClientReleaseMeta | AppReleaseSingleMeta,
-  pastReleases?: T,
+  pastRelease?: T,
   appId?: string
 ): Promise<T> => {
   // Handle when the version is up to date
 
   try {
     if ('meta_version' in newRelease) {
-      if (newRelease.meta_type != pastReleases?.meta_type)
+      if (pastRelease && newRelease.meta_type != pastRelease?.meta_type)
         throw new Error('meta_type does not match pastReleases')
 
       // the version is up to date
@@ -167,7 +182,7 @@ export const handleReleaseJSONMigration = async <
       }
 
       // automatically sanitizes the release and updates any urls as needed
-      const sanitizedRelease = await handleLatestValidation(newRelease, pastReleases)
+      const sanitizedRelease = await handleLatestValidation(newRelease, pastRelease)
 
       return sanitizedRelease
     }
@@ -186,34 +201,34 @@ export const handleReleaseJSONMigration = async <
         case 'external':
           return (await handleReleaseExternalToMultiJSONMigration(
             newRelease,
-            pastReleases?.meta_type == 'multi' ? pastReleases : undefined
+            pastRelease?.meta_type == 'multi' ? pastRelease : undefined
           )) as T
         case 'multi':
           if (appId) {
             return (await handleReleaseMultiToAppJSONMigration(
               newRelease,
-              pastReleases?.meta_type == 'multi' || pastReleases?.meta_type == 'app'
-                ? pastReleases
+              pastRelease?.meta_type == 'multi' || pastRelease?.meta_type == 'app'
+                ? pastRelease
                 : undefined,
               appId
             )) as T
           } else {
             return (await handleReleaseMultiToAppMultiMigration(
               newRelease,
-              pastReleases?.meta_type == 'multi' ? pastReleases : undefined
+              pastRelease?.meta_type == 'multi' ? pastRelease : undefined
             )) as T
           }
         case 'single':
           return (await handleReleaseMetaToAppJSONMigration(
             newRelease,
-            pastReleases?.meta_type == 'app' ? pastReleases : undefined
+            pastRelease?.meta_type == 'app' ? pastRelease : undefined
           )) as T
       }
     } else {
       // Client Release Meta
       return (await handleReleaseMetaClientToClientJSONMigration(
         newRelease,
-        pastReleases?.meta_type == 'client' ? pastReleases : undefined
+        pastRelease?.meta_type == 'client' ? pastRelease : undefined
       )) as T
     }
 
@@ -223,15 +238,15 @@ export const handleReleaseJSONMigration = async <
 
     // Handle when the version is from the future (try not to cry)
   } catch (error) {
-    if (pastReleases) {
+    if (pastRelease) {
       logger.error(
-        `Failed to migrate release ${pastReleases?.meta_type || 'unknown'} because ${handleError(error)}`,
+        `Failed to migrate release ${pastRelease?.meta_type || 'unknown'} because ${handleError(error)}`,
         {
           function: 'handleReleaseMetaToAppJSONMigration',
           source: 'migrationUtils'
         }
       )
-      return pastReleases
+      return pastRelease
     } else {
       try {
         logger.debug(

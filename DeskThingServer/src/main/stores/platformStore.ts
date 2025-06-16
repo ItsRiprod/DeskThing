@@ -624,7 +624,7 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
       function: 'handleSocketData'
     })
 
-    handlePlatformMessage(platform, client, data)
+    await handlePlatformMessage(platform, client, data)
     if (registeredClient && registeredClient.primaryProviderId) {
       this.emit(PlatformStoreEvent.DATA_RECEIVED, {
         client: registeredClient as Extract<Client, { connected: true }>,
@@ -952,7 +952,7 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
     try {
       const appData = await this.appStore.getAll()
       const filteredAppData = appData.filter(
-        (app) => !app.manifest?.tags.includes(TagTypes.UTILITY_ONLY)
+        (app) => !(app.manifest?.tags.includes(TagTypes.UTILITY_ONLY) ?? false)
       )
 
       if (clientId) {
@@ -1192,10 +1192,12 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
     await this.sendTimeToClient(clientId)
     await this.sendManifestRequest(clientId)
 
-    const apps = this.appStore.getAll()
-    await this.sendAppsToClient(apps, clientId)
     if (clientId) {
       await this.sendclientIdToClient(clientId)
+
+      // Also send the current song
+      const musicStore = await storeProvider.getStore('musicStore')
+      await musicStore.sendMusicToClient(clientId)
     }
   }
 }
