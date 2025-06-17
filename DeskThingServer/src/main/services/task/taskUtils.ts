@@ -303,7 +303,8 @@ export function isValidTaskSetting(
     'ranked',
     'select',
     'string',
-    'color'
+    'color',
+    'file'
   ] as const
 
   if (!('type' in s.setting)) {
