@@ -26,6 +26,7 @@ const useSettingsStore = create<SettingsStoreState>((set, get) => ({
     server_LogLevel: LOG_FILTER.INFO,
     server_autoStart: true,
     server_minimizeApp: true,
+    server_startMinimized: false,
     server_localIp: ['-.-.-.-'],
     server_callbackPort: -1,
     device_devicePort: -1,

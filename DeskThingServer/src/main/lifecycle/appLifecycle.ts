@@ -11,6 +11,7 @@ import { closeLoadingWindow, buildMainWindow } from '../windows/windowManager'
 import { nextTick } from 'node:process'
 import { updateLoadingStatus } from '@server/windows/loadingWindow'
 import { join } from 'node:path'
+import { checkFlag } from './lifecycleCheck'
 
 /**
  * Initialize the application lifecycle
@@ -35,20 +36,28 @@ export async function initializeAppLifecycle(): Promise<void> {
     optimizer.watchWindowShortcuts(window)
   })
 
+  const startMinimized = await checkFlag('server_startMinimized')
   // Create main window after loading is complete
-  const mainWindow = buildMainWindow()
+  if (!startMinimized) {
+    await updateLoadingStatus('Creating main window')
+    const mainWindow = buildMainWindow()
+    mainWindow.once('ready-to-show', async () => {
+      await updateLoadingStatus('Finishing Up...')
+      closeLoadingWindow()
+      mainWindow.show()
+    })
+  }
 
   // Load modules and set up IPC handlers
   nextTick(async () => {
     await setupIpcHandlers()
     await loadModules()
-    await updateLoadingStatus('Creating main window')
-  })
-
-  mainWindow.once('ready-to-show', async () => {
-    await updateLoadingStatus('Finishing Up...')
-    closeLoadingWindow()
-    mainWindow.show()
+    if (startMinimized) {
+      await updateLoadingStatus('Start Minimized: TRUE')
+      setTimeout(() => {
+        closeLoadingWindow() // ensure the loading window is closed
+      }, 3000)
+    }
   })
 
   app.on('before-quit', async () => {

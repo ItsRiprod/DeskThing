@@ -15,7 +15,9 @@ export type Settings = {
   // server
   server_LogLevel: LOG_FILTER
   server_autoStart: boolean
+  /** Whether it should minimize to taskbar OR close on window close */
   server_minimizeApp: boolean
+  server_startMinimized: boolean
   server_localIp: string[]
   server_callbackPort: number
   // device

@@ -111,7 +111,10 @@ const ServerSettings: React.FC = () => {
           className="w-full"
           onChange={(selected) => {
             const selectedValue = selected as SingleValue<SettingOption>
-            handleSettingChange('server_LogLevel', selectedValue?.value as LOG_FILTER || LOG_FILTER.INFO)
+            handleSettingChange(
+              'server_LogLevel',
+              (selectedValue?.value as LOG_FILTER) || LOG_FILTER.INFO
+            )
           }}
         />
       </div>
@@ -126,6 +129,22 @@ const ServerSettings: React.FC = () => {
             iconSize={48}
             checked={settings.server_minimizeApp}
             className={`transition-color ${settings.server_minimizeApp ? 'text-green-500' : 'text-gray-500'}`}
+          />
+        </Button>
+      </div>
+      <div className="w-full px-4 flex justify-between items-center">
+        <h2 className="text-xl">Start Minimized</h2>
+        <Button
+          title="Will start DeskThing minimized"
+          className="bg-transparent p-0"
+          onClick={() =>
+            handleSettingChange('server_startMinimized', !settings.server_startMinimized)
+          }
+        >
+          <IconToggle
+            iconSize={48}
+            checked={settings.server_startMinimized}
+            className={`transition-color ${settings.server_startMinimized ? 'text-green-500' : 'text-gray-500'}`}
           />
         </Button>
       </div>

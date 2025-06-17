@@ -7,6 +7,7 @@ export const defaultSettings: Settings = {
   // server
   server_LogLevel: LOG_FILTER.INFO,
   server_autoStart: false,
+  server_startMinimized: false,
   server_minimizeApp: true,
   server_localIp: getLocalIpAddresses(),
   server_callbackPort: 8888,
