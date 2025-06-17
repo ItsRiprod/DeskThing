@@ -126,7 +126,7 @@ export const AppReleaseHistoryModal: React.FC<ReleaseHistoryModalProps> = ({
             </div>
             <Button
               onClick={() => handleDownload(appReleaseServer.mainRelease)}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              className="bg-emerald-600 text-nowrap hover:bg-emerald-700"
             >
               <IconDownload />
               {appReleaseServer.mainRelease?.size && formatSize(appReleaseServer.mainRelease.size)}

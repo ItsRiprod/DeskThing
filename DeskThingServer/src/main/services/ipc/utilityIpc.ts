@@ -69,6 +69,12 @@ export const utilityHandler: {
         return await supporterStore.fetchSupporters(data.payload)
     }
   },
+  [IPC_UTILITY_TYPES.OPEN_DIALOG]: async (data) => {
+    switch (data.type) {
+      case IPC_UTILITY_TYPES.OPEN_DIALOG:
+        return await dialog.showOpenDialog(data.payload)
+    }
+  },
   // [IPC_UTILITY_TYPES.GITHUB]: async (data) => {
   //   const releaseStore = await storeProvider.getStore('releaseStore')
   //   switch (data.request) {

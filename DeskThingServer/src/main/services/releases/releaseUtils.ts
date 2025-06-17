@@ -316,9 +316,8 @@ export const addRepositoryUrl = async (
 
     const githubReleases = await githubStore.getAllReleases(validatedUrl)
 
-    const latestGithubRelease = githubReleases[0]
-
-    const latestJson = findJsonAsset(latestGithubRelease, appId || 'latest')
+    const latestJson = findFirstJsonAsset(githubReleases, appId || 'latest')
+    const firstZipAsset = findFirstZipAsset(githubReleases, appId || 'latest')
 
     // Handle the recovery with the file
     if (!latestJson) {
@@ -367,6 +366,10 @@ export const addRepositoryUrl = async (
       const pastReleases = collectPastReleases(githubReleases, migratedRelease.appManifest.id)
       const totalDownloads = pastReleases.reduce((sum, release) => sum + release.downloads, 0)
 
+      if (firstZipAsset) {
+        migratedRelease.downloads = firstZipAsset.download_count
+      }
+
       const appServer: AppLatestServer = {
         id: migratedRelease.appManifest.id,
         type: 'app',
@@ -389,6 +392,10 @@ export const addRepositoryUrl = async (
       // Collect past releases for statistics
       const pastReleases = collectPastReleases(githubReleases, migratedRelease.clientManifest.id)
       const totalDownloads = pastReleases.reduce((sum, release) => sum + release.downloads, 0)
+
+      if (firstZipAsset) {
+        migratedRelease.downloads = firstZipAsset.download_count
+      }
 
       const clientServer: ClientLatestServer = {
         id: migratedRelease.clientManifest.id,
@@ -607,6 +614,22 @@ export const findZipAsset = (release: GithubRelease, appId: string): GithubAsset
   )
 }
 
+export const findAllZipAssets = (
+  release: GithubRelease,
+  appId: string
+): GithubAsset[] | undefined => {
+  // This ensures the latest (if there are multiple similar ones) is always chosen first
+  const sortedAssets = release.assets.sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  )
+
+  // This may inflate apps that have multiple types (i.e. weather will have all weather assets AND all weatherwaves assets )
+  return sortedAssets.filter(
+    (asset) =>
+      asset.name.includes(appId) && (asset.name.endsWith('.zip') || asset.name.endsWith('.tar.gz'))
+  )
+}
+
 type ConversionReturnData =
   | { repos: string[]; type: 'converted-clients'; releases: ClientLatestServer[] }
   | { repos: string[]; type: 'converted-apps'; releases: AppLatestServer[] }
@@ -704,7 +727,7 @@ export const convertIdToReleaseServer = async (
   // Find first release containing the app ID
 
   const firstJsonAsset = findFirstJsonAsset(ghReleases, appId)
-
+  const firstZipAsset = findFirstZipAsset(ghReleases, appId)
   let mainRelease: AppLatestJSONLatest | ClientLatestJSONLatest | MultiReleaseJSONLatest
 
   // This will split the logic between migration logic and up-to-date logic
@@ -748,6 +771,8 @@ export const convertIdToReleaseServer = async (
   // Calculate total downloads
   const totalDownloads = pastReleases.reduce((sum, release) => sum + release.downloads, 0)
 
+  if (firstZipAsset) mainRelease.downloads = firstZipAsset.download_count
+
   // This is the way it must be done for type-safety despite the fact that it is the same as just a single return - oh well
   if (mainRelease.meta_type === 'app') {
     return {
@@ -772,14 +797,14 @@ export const convertIdToReleaseServer = async (
 
 export const collectPastReleases = (
   ghReleases: GithubRelease[],
-  appId: string
+  fileId: string
 ): PastReleaseInfo[] => {
   return ghReleases.flatMap((release) => {
-    const zipAsset = findZipAsset(release, appId)
-    if (!zipAsset) return []
+    const zipAssets = findAllZipAssets(release, fileId)
+    if (!zipAssets) return []
 
-    return [
-      {
+    return zipAssets.map((zipAsset) => {
+      return {
         tag: release.tag_name,
         downloads: zipAsset.download_count,
         size: zipAsset.size,
@@ -787,6 +812,6 @@ export const collectPastReleases = (
         download_url: zipAsset.browser_download_url,
         created_at: release.created_at
       }
-    ]
+    })
   })
 }

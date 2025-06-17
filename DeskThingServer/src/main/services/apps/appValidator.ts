@@ -18,7 +18,8 @@ import {
   AppDataInterface,
   PlatformTypes,
   TagTypes,
-  AppLatestJSONLatest
+  AppLatestJSONLatest,
+  SettingsFile
 } from '@deskthing/types'
 import { AppData, LegacyAppData } from '@shared/types'
 
@@ -96,6 +97,8 @@ export const isValidSettings: (setting: unknown) => asserts setting is SettingsT
     case SETTING_TYPES.COLOR:
       if (typeof typedSetting.value !== 'string')
         throw new Error('[isValidSetting] Color setting value must be a string')
+      break
+    case SETTING_TYPES.FILE:
       break
     default:
       throw new Error(`[isValidSetting] Invalid setting type: ${JSON.stringify(typedSetting)}`)
@@ -198,6 +201,15 @@ export const sanitizeSettings: (setting: Partial<SettingsType>) => SettingsType 
         label: setting.label,
         description: setting.description || ''
       } as SettingsColor
+      break
+    case SETTING_TYPES.FILE:
+      setting = {
+        type: SETTING_TYPES.FILE,
+        value: setting.value,
+        label: setting.label,
+        description: setting.description || '',
+        fileTypes: setting.fileTypes || []
+      } as SettingsFile
       break
     default:
       throw new Error(`[isValidSetting] Unknown setting type: ${setting}`)

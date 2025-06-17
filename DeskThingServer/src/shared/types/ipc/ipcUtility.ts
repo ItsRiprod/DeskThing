@@ -16,6 +16,7 @@ import {
 import { Log, Settings } from '../types'
 import { IPC_HANDLERS } from './ipcTypes'
 import { PaginatedResponse, SupporterData, SupporterFetchOptions } from '../supporter'
+import { OpenDialogOptions, OpenDialogReturnValue } from 'electron'
 // import { FullTaskList } from '../taskTypes'
 
 export enum IPC_UTILITY_TYPES {
@@ -38,7 +39,8 @@ export enum IPC_UTILITY_TYPES {
   PROFILES = 'profiles',
   RUN = 'run',
   MAP = 'map',
-  SUPPORTERS = 'supporters'
+  SUPPORTERS = 'supporters',
+  OPEN_DIALOG = 'dialog'
   // FEEDBACK = 'feedback',
   // TASK = 'task',
   // UPDATE = 'update',
@@ -147,6 +149,10 @@ export type UtilityIPCData = {
       type: IPC_UTILITY_TYPES.SUPPORTERS
       payload: SupporterFetchOptions
       request: 'get'
+    }
+  | {
+      type: IPC_UTILITY_TYPES.OPEN_DIALOG
+      payload: OpenDialogOptions
     }
 )
 // | {
@@ -271,6 +277,7 @@ export type UtilityHandlerReturnMap = {
   [IPC_UTILITY_TYPES.MAP]: { get: Profile | null; set: void; delete: void }
   [IPC_UTILITY_TYPES.RUN]: { set: void }
   [IPC_UTILITY_TYPES.SUPPORTERS]: { get: PaginatedResponse<SupporterData> }
+  [IPC_UTILITY_TYPES.OPEN_DIALOG]: { get: OpenDialogReturnValue }
   // [IPC_UTILITY_TYPES.FEEDBACK]: { set: void; get: SystemInfo }
   // [IPC_UTILITY_TYPES.TASK]: {
   //   get: FullTaskList

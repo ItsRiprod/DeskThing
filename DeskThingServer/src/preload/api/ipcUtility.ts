@@ -17,7 +17,7 @@ import {
   UtilityHandlerReturnMap
 } from '@shared/types'
 import { PaginatedResponse, SupporterData, SupporterFetchOptions } from '@shared/types/supporter'
-import { ipcRenderer } from 'electron'
+import { ipcRenderer, OpenDialogOptions, OpenDialogReturnValue } from 'electron'
 
 export const utility = {
   ping: async (): Promise<string> =>
@@ -79,6 +79,13 @@ export const utility = {
     await sendCommand({
       kind: IPC_HANDLERS.UTILITY,
       type: IPC_UTILITY_TYPES.ZIP
+    }),
+
+  showOpenDialog: async (options: OpenDialogOptions): Promise<OpenDialogReturnValue> =>
+    await sendCommand({
+      kind: IPC_HANDLERS.UTILITY,
+      type: IPC_UTILITY_TYPES.OPEN_DIALOG,
+      payload: options
     }),
 
   refreshFirewall: async (): Promise<void> =>

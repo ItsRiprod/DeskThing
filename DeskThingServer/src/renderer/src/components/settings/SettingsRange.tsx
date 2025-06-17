@@ -29,7 +29,7 @@ export const SettingsRangeComponent: React.FC<SettingsRangeProps> = ({
           min={setting.min}
           max={setting.max}
           step={setting.step || 1}
-          onChange={(e) => handleSettingChange(e.target.value)}
+          onChange={(e) => handleSettingChange(Number(e.target.value))}
           className="w-96 max-w-s"
         />
       )}
