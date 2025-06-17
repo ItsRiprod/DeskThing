@@ -192,9 +192,11 @@ export class ReleaseStore
     await this.refreshApps(force)
     await this.refreshClients(force)
 
+    const updateStore = await storeProvider.getStore('updateStore')
+    await updateStore.checkForUpdates()
     progressBus.complete(
       ProgressChannel.ST_RELEASE_REFRESH,
-      'Completed Refresh',
+      'Refresh Complete',
       'Refreshing Releases'
     )
   }
@@ -203,7 +205,7 @@ export class ReleaseStore
     progressBus.startOperation(
       ProgressChannel.ST_RELEASE_APP_REFRESH,
       'Refreshing App Releases',
-      'Initializing',
+      'Initializing App Release',
       [
         {
           channel: ProgressChannel.FN_RELEASE_APP_REFRESH,
@@ -228,9 +230,8 @@ export class ReleaseStore
 
         if (this.appReleases.releases.length == 0) {
           // This is a pretty worst-case scenario, but if the release file is empty, we should add the default repositories
-          const { appsRepo, clientRepo } = await import('../static/releaseMetadata')
+          const { appsRepo } = await import('../static/releaseMetadata')
           await this.addRepositoryUrl(appsRepo)
-          await this.addRepositoryUrl(clientRepo)
         }
 
         await this.saveAppReleaseFile(false)
@@ -252,6 +253,11 @@ export class ReleaseStore
         `Fetching initial app file because ${handleError(error)}`
       )
       this.appReleases = await createReleaseFile('app', force)
+      if (this.appReleases.releases.length == 0) {
+        // This is a pretty worst-case scenario, but if the release file is empty, we should add the default repositories
+        const { appsRepo } = await import('../static/releaseMetadata')
+        await this.addRepositoryUrl(appsRepo)
+      }
       await this.saveAppReleaseFile(false)
       progressBus.complete(
         ProgressChannel.ST_RELEASE_APP_REFRESH,
@@ -291,8 +297,7 @@ export class ReleaseStore
 
         if (this.clientReleases.releases.length == 0) {
           // This is a pretty worst-case scenario, but if the release file is empty, we should add the default repositories
-          const { appsRepo, clientRepo } = await import('../static/releaseMetadata')
-          await this.addRepositoryUrl(appsRepo)
+          const { clientRepo } = await import('../static/releaseMetadata')
           await this.addRepositoryUrl(clientRepo)
         }
         await this.saveClientReleaseFile(false)
@@ -314,6 +319,11 @@ export class ReleaseStore
         `Fetching initial client file because ${handleError(error)}`
       )
       this.clientReleases = await createReleaseFile('client', force)
+      if (this.clientReleases.releases.length == 0) {
+        // This is a pretty worst-case scenario, but if the release file is empty, we should add the default repositories
+        const { clientRepo } = await import('../static/releaseMetadata')
+        await this.addRepositoryUrl(clientRepo)
+      }
       await this.saveClientReleaseFile(false)
       progressBus.complete(
         ProgressChannel.ST_RELEASE_CLIENT_REFRESH,

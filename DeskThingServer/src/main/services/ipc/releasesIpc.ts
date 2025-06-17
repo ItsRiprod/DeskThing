@@ -23,13 +23,13 @@ export const releaseHandler = async (
           'initializing',
           [
             {
-              channel: ProgressChannel.REFRESH_RELEASES,
+              channel: ProgressChannel.ST_RELEASE_REFRESH,
               weight: 100
             }
           ]
         )
         await releaseStore.refreshData(data.options?.force)
-        progressBus.complete(ProgressChannel.IPC_RELEASES, 'Refreshing Releases', 'complete')
+        progressBus.complete(ProgressChannel.IPC_RELEASES, 'Refresh Complete', 'Complete')
         return
       } catch (error) {
         progressBus.error(

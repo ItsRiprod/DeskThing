@@ -54,18 +54,14 @@ const createClientReleaseFile = async (force = false): Promise<ClientReleaseFile
     '@server/static/releaseMetadata'
   )
   try {
-    progressBus.startOperation(
+    const update = progressBus.start(
       ProgressChannel.FN_RELEASE_CLIENT_REFRESH,
       'Creating Client Releases File',
       'Initializing Refresh'
     )
     const githubStore = await storeProvider.getStore('githubStore')
 
-    progressBus.update(
-      ProgressChannel.FN_RELEASE_CLIENT_REFRESH,
-      `Fetching latest release from ${clientRepo}`,
-      20
-    )
+    update(`Fetching latest release from ${clientRepo}`, 20)
     logger.debug(`Fetching latest release from ${clientRepo}`)
     const latestReleaseAssets = await githubStore.getLatestRelease(clientRepo, force)
 
@@ -73,11 +69,7 @@ const createClientReleaseFile = async (force = false): Promise<ClientReleaseFile
       throw new Error('Unable to find latest release assets')
     }
 
-    progressBus.update(
-      ProgressChannel.FN_RELEASE_CLIENT_REFRESH,
-      'Searching for latest.json asset',
-      30
-    )
+    update('Searching for latest.json asset', 30)
     const latestReleaseJsonAsset = latestReleaseAssets.assets.find(
       (asset) => asset.name == 'latest.json'
     )
@@ -86,11 +78,7 @@ const createClientReleaseFile = async (force = false): Promise<ClientReleaseFile
       throw new Error('Unable to find latest.json asset in releases')
     }
 
-    progressBus.update(
-      ProgressChannel.FN_RELEASE_CLIENT_REFRESH,
-      'Fetching latest.json content',
-      40
-    )
+    update('Fetching latest.json content', 40)
     const latestJSON = await githubStore.fetchJSONAssetContent<
       ClientLatestJSONLatest | MultiReleaseJSONLatest | AppLatestJSONLatest
     >(latestReleaseJsonAsset)
@@ -149,6 +137,10 @@ const createClientReleaseFile = async (force = false): Promise<ClientReleaseFile
       timestamp: Date.now()
     }
 
+    progressBus.complete(
+      ProgressChannel.FN_RELEASE_CLIENT_REFRESH,
+      'Finished creating client release file'
+    )
     return finalClientReleaseFile
   } catch (error) {
     progressBus.error(
@@ -163,18 +155,14 @@ const createClientReleaseFile = async (force = false): Promise<ClientReleaseFile
 const createAppReleaseFile = async (force = false): Promise<AppReleaseFile0118> => {
   const { appsRepo, defaultAppLatestJSONFallback } = await import('@server/static/releaseMetadata')
   try {
-    progressBus.startOperation(
+    const update = progressBus.start(
       ProgressChannel.FN_RELEASE_APP_REFRESH,
       'Creating App Releases File',
       'Initializing Refresh'
     )
     const githubStore = await storeProvider.getStore('githubStore')
 
-    progressBus.update(
-      ProgressChannel.FN_RELEASE_APP_REFRESH,
-      `Fetching latest release from ${appsRepo}`,
-      20
-    )
+    update(`Fetching latest release from ${appsRepo}`, 20)
     logger.debug(`Fetching latest release from ${appsRepo}`)
     const latestReleaseAssets = await githubStore.getLatestRelease(appsRepo, force)
 
@@ -182,11 +170,7 @@ const createAppReleaseFile = async (force = false): Promise<AppReleaseFile0118> 
       throw new Error('Unable to find latest release assets')
     }
 
-    progressBus.update(
-      ProgressChannel.FN_RELEASE_APP_REFRESH,
-      'Searching for latest.json asset',
-      30
-    )
+    update('Searching for latest.json asset', 30)
     const latestReleaseJsonAsset = latestReleaseAssets.assets.find(
       (asset) => asset.name == 'latest.json'
     )
@@ -195,7 +179,7 @@ const createAppReleaseFile = async (force = false): Promise<AppReleaseFile0118> 
       throw new Error('Unable to find latest.json asset in releases')
     }
 
-    progressBus.update(ProgressChannel.FN_RELEASE_APP_REFRESH, 'Fetching latest.json content', 40)
+    update('Fetching latest.json content', 40)
     const latestJSON = await githubStore.fetchJSONAssetContent<
       ClientLatestJSONLatest | MultiReleaseJSONLatest | AppLatestJSONLatest
     >(latestReleaseJsonAsset)
@@ -204,26 +188,19 @@ const createAppReleaseFile = async (force = false): Promise<AppReleaseFile0118> 
       throw new Error('Unable to fetch latest.json')
     }
 
-    progressBus.update(ProgressChannel.FN_RELEASE_APP_REFRESH, 'Validating latest.json content', 50)
+    update('Validating latest.json content', 50)
     const adaptedRelease = await handleReleaseJSONMigration(latestJSON)
 
     if (adaptedRelease.meta_type == 'client')
       throw new Error(`Received meta type 'app' when expecting Multi or Client`)
 
     if (adaptedRelease.meta_type == 'multi') {
-      progressBus.update(
-        ProgressChannel.FN_RELEASE_APP_REFRESH,
-        'Converting multi-release to release server format',
-        60
-      )
+      update('Converting multi-release to release server format', 60)
       const result = await convertMultiToReleaseServer(adaptedRelease)
 
       if (result.type == 'converted-repos') {
-        progressBus.update(
-          ProgressChannel.FN_RELEASE_APP_REFRESH,
-          'Creating empty release file',
-          80
-        )
+        update('Creating empty release file', 100)
+
         return {
           version: '0.11.8',
           type: 'app',
@@ -236,11 +213,7 @@ const createAppReleaseFile = async (force = false): Promise<AppReleaseFile0118> 
       if (result.type == 'converted-clients')
         throw new Error('Received "client" type when expecting multi or client')
 
-      progressBus.update(
-        ProgressChannel.FN_RELEASE_APP_REFRESH,
-        'Creating app release file from multi-release',
-        90
-      )
+      update('Creating app release file from multi-release', 90)
       const appReleaseFile: AppReleaseFile0118 = {
         version: '0.11.8',
         type: 'app',
@@ -249,14 +222,12 @@ const createAppReleaseFile = async (force = false): Promise<AppReleaseFile0118> 
         timestamp: Date.now()
       }
 
+      update('Finalizing app release file', 100)
+
       return appReleaseFile
     }
 
-    progressBus.update(
-      ProgressChannel.FN_RELEASE_APP_REFRESH,
-      'Creating app server configuration',
-      70
-    )
+    update('Creating app server configuration', 70)
     const latestServer: AppLatestServer = {
       id: adaptedRelease.appManifest.id,
       type: 'app',
@@ -266,7 +237,7 @@ const createAppReleaseFile = async (force = false): Promise<AppReleaseFile0118> 
       pastReleases: []
     }
 
-    progressBus.update(ProgressChannel.FN_RELEASE_APP_REFRESH, 'Finalizing app release file', 90)
+    update('Finalizing app release file', 90)
     const finalAppReleaseFile: AppReleaseFile0118 = {
       version: '0.11.8',
       type: 'app',
@@ -443,14 +414,26 @@ export async function handleRefreshReleaseFile<T extends 'app' | 'client'>(
   { force = false }: RefreshOptions
 ): Promise<AppReleaseFile0118 | ClientReleaseFile0118 | ClientReleaseFile | AppReleaseFile> {
   try {
+    const update = progressBus.start(
+      type == 'app'
+        ? ProgressChannel.FN_RELEASE_APP_REFRESH
+        : ProgressChannel.FN_RELEASE_CLIENT_REFRESH,
+      'Refreshing Release File',
+      'Starting...'
+    )
+
     // migrate to 0.11.8
     const releaseFile = await handleReleaseJSONFileMigration(type, prevReleaseFile)
 
+    update(`Updating ${releaseFile.releases.length} ${type} releases`, 50)
     // Handle migrating any old releases to the latest
     const migratedReleases = await Promise.all(
-      releaseFile.releases.map((release: ClientLatestServer | AppLatestServer) =>
-        updateLatestServer(release, force)
-      )
+      releaseFile.releases.map(async (release: ClientLatestServer | AppLatestServer) => {
+        update(`Updating ${release.id}`, 70)
+        const res = await updateLatestServer(release, force)
+        update(`Updated ${release.id}`, 80)
+        return res
+      })
     )
 
     if (type == 'app') {
@@ -461,7 +444,8 @@ export async function handleRefreshReleaseFile<T extends 'app' | 'client'>(
         releases: migratedReleases as AppLatestServer[],
         timestamp: Date.now()
       }
-
+      
+      update('Saving app release file', 100)
       return finalReleaseFile
     } else {
       const finalReleaseFile: ClientReleaseFile0118 = {
@@ -471,13 +455,22 @@ export async function handleRefreshReleaseFile<T extends 'app' | 'client'>(
         releases: migratedReleases as ClientLatestServer[],
         timestamp: Date.now()
       }
-
+      update('Saving client release file', 100)
       return finalReleaseFile
     }
   } catch (error) {
     logger.warn(`Unable to migrate ${type} release file because: ${handleError(error)}`, {
       function: 'handleRefreshReleaseFile'
     })
+
+    progressBus.error(
+      type == 'app'
+        ? ProgressChannel.FN_RELEASE_APP_REFRESH
+        : ProgressChannel.FN_RELEASE_CLIENT_REFRESH,
+      'Error refreshing release file',
+      handleError(error),
+      'Error Refreshing!'
+    )
 
     return prevReleaseFile
   }

@@ -77,7 +77,9 @@ export const handleReleaseJSONFileMigration = async <T extends 'app' | 'client'>
           // Update the URL
           const latestRelease = findFirstZipAsset(githubReleases, updatedRelease.appManifest.id)
           if (latestRelease) {
-            logger.debug(`Updating URL for ${updatedRelease.appManifest.id} to ${latestRelease.browser_download_url}`)
+            logger.debug(
+              `Updating URL for ${updatedRelease.appManifest.id} to ${latestRelease.browser_download_url}`
+            )
             updatedRelease.updateUrl = latestRelease.browser_download_url
           } else {
             logger.debug(`No release found for ${updatedRelease.appManifest.id}`)
@@ -389,7 +391,6 @@ export const handleReleaseMultiToAppJSONMigration = async (
     ])
     if (releaseMeta.fileIds) {
       const releases = await githubStore.getAllReleases(validatedRepoUrl)
-
       const serverReleases = await Promise.all(
         releaseMeta.fileIds.map(async (id) => {
           return convertIdToReleaseServer(id, validatedRepoUrl, releases).catch((error) => {
@@ -431,8 +432,16 @@ export const handleReleaseMultiToAppJSONMigration = async (
     )
   }
 
+  const validatedRepoUrl = await determineValidUrl([
+    releaseMeta.repository,
+    pastRelease?.repository || ''
+  ])
+
+  const releases = await githubStore.getAllReleases(validatedRepoUrl)
+
   const latestJson: AppLatestJSONLatest[] = await Promise.all(
     releaseMeta.releases.map(async (release) => {
+      const appRelease = findFirstZipAsset(releases, release.id)
       return {
         meta_version: '0.11.8',
         meta_type: 'app',
@@ -443,33 +452,52 @@ export const handleReleaseMultiToAppJSONMigration = async (
           requires: [],
           tags: release.tags || '',
           requiredVersions: release.requiredVersions || '',
-          author: release.author || '',
+          author: release.author || appRelease?.uploader.login || '',
           description: release.description || '',
-          homepage: release.homepage || '',
-          repository: release.repository || '',
-          updateUrl: release.updateUrl || ''
+          homepage: release.homepage || validatedRepoUrl || '',
+          repository: validatedRepoUrl || release.repository || '',
+          updateUrl:
+            appRelease?.browser_download_url ||
+            (await determineValidUpdateUrl(
+              [
+                validatedRepoUrl,
+                release.updateUrl,
+                release.repository,
+                releaseMeta.repository,
+                pastRelease?.repository || ''
+              ],
+              release.id
+            ))
         },
         icon: release.icon,
         hash: release.hash,
         hashAlgorithm: release.hashAlgorithm,
-        repository: await determineValidUrl([
-          release.repository,
-          releaseMeta.repository,
-          pastRelease?.repository || ''
-        ]),
-        updateUrl: await determineValidUpdateUrl(
-          [
-            release.updateUrl,
+        repository:
+          validatedRepoUrl ||
+          (await determineValidUrl([
             release.repository,
             releaseMeta.repository,
             pastRelease?.repository || ''
-          ],
-          release.id
-        ),
-        downloads: release.downloads || 0,
-        size: release.size || 0,
-        createdAt: release.createdAt || 0,
-        updatedAt: release.updatedAt || 0
+          ])),
+        updateUrl:
+          appRelease?.browser_download_url ||
+          (await determineValidUpdateUrl(
+            [
+              release.updateUrl,
+              release.repository,
+              releaseMeta.repository,
+              pastRelease?.repository || ''
+            ],
+            release.id
+          )),
+        downloads: appRelease?.download_count || release.downloads || 0,
+        size: release.size || appRelease?.size || 0,
+        createdAt: appRelease?.created_at
+          ? new Date(appRelease.created_at).getTime()
+          : release.createdAt || 0,
+        updatedAt: appRelease?.updated_at
+          ? new Date(appRelease.updated_at).getTime()
+          : release.updatedAt || 0
       }
     })
   )
