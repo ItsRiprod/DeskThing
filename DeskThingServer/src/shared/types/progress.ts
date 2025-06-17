@@ -1,4 +1,6 @@
 export enum ProgressChannel {
+  BLANK = 'blank',
+  
   FIREWALL = 'firewall',
   DOWNLOAD = 'download',
   SERVER = 'server',
@@ -48,6 +50,8 @@ export enum ProgressChannel {
   GET_CLIENT_RELEASES = 'get-client-releases',
   GET_APP_RELEASES = 'get-app-releases',
   PROCESS_APP_RELEASES = 'process-app-releases',
+  ST_ADB_SUPERVISOR = 'st-adb-supervisor',
+  ST_ADB_REFRESH = 'st-adb-refresh',
 
   // Release Functions
   ST_RELEASE_REFRESH = 'st-release-refresh',

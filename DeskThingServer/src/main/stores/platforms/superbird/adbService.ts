@@ -363,7 +363,29 @@ export class ADBService implements ADBServiceClass {
     key: string,
     value: boolean
   ): Promise<void> {
+    progressBus.startOperation(
+      ProgressChannel.ST_ADB_SUPERVISOR,
+      'Toggling Supervisor',
+      'Toggling Supervisor',
+      [
+        {
+          channel: ProgressChannel.ADB,
+          weight: 100
+        }
+      ]
+    )
+
     const action = value ? 'start' : 'stop'
-    await this.sendCommand(`shell supervisorctl ${action} ${key}`, deviceId)
+    try {
+      await this.sendCommand(`shell supervisorctl ${action} ${key}`, deviceId)
+      progressBus.complete(ProgressChannel.ST_ADB_SUPERVISOR, 'Completed Successfully')
+    } catch (error) {
+      progressBus.error(
+        ProgressChannel.ST_ADB_SUPERVISOR,
+        handleError(error),
+        handleError(error),
+        'Error toggling supervisor'
+      )
+    }
   }
 }

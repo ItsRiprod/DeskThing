@@ -40,10 +40,11 @@ const splitArgs = (str: string): string[] => {
  * @returns A Promise that resolves with the output of the ADB command.
  */
 export const handleAdbCommands = async (command: string): Promise<string> => {
-  progressBus.start(ProgressChannel.ADB, 'ADB - Runner', 'Executing ADB Command')
+  const update = progressBus.start(ProgressChannel.ADB, 'ADB - Runner', 'Executing ADB Command')
   const settingsStore = await storeProvider.getStore('settingsStore')
   const useGlobalADB = await settingsStore.getSetting('adb_useGlobal')
   Logger.info(useGlobalADB ? 'Using Global ADB' : 'Using Local ADB')
+  update(`Executing ${command} using ${useGlobalADB ? 'Global ADB' : 'Local ADB'}`, 10)
   return new Promise((resolve, reject) => {
     execFile(
       useGlobalADB ? 'adb' : adbPath,

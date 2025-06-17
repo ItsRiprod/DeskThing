@@ -339,21 +339,23 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
     progressBus.startOperation(
       ProgressChannel.PLATFORM_CHANNEL,
       'Refreshing Devices...',
-      'Sending updates'
+      'Sending updates',
+      [
+        {
+          channel: ProgressChannel.REFRESH_CLIENTS,
+          weight: 50
+        }
+      ]
     )
     const platforms = this.getAllPlatforms()
-    const incrementAmount = 100 / platforms.length
+    const incrementAmount = 1 / platforms.length
     let success: boolean = true
     for (const platform of platforms) {
-      const platformSuccess = await platform.refreshClients()
+      const platformSuccess = await platform.refreshClients(incrementAmount)
       if (!platformSuccess) {
         success = false
       }
-      progressBus.incrementProgress(
-        ProgressChannel.PLATFORM_CHANNEL,
-        `Refreshed ${platform.name}`,
-        incrementAmount
-      )
+      progressBus.update(ProgressChannel.PLATFORM_CHANNEL, `Refreshed ${platform.name}`)
     }
 
     progressBus.complete(

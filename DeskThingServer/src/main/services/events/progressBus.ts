@@ -97,35 +97,55 @@ class ProgressEventBus extends EventEmitter {
    * Provides cleanup operation logic for once it has been completed
    */
   private completeOperation(event: ProgressEvent | ProgressOperation): void {
+    const finalProgress = Math.min(100, this.channelProgressMap.get(event.channel) || 0)
     // mark it as complete
     this.channelStatusMap.set(event.channel, ProgressStatus.COMPLETE)
 
     // set the progress to 100
-    this.channelProgressMap.set(event.channel, 100)
+    this.channelProgressMap.set(event.channel, finalProgress)
 
     // remove it from the channelOperationMap
     this.channelOperationMap.delete(event.channel)
 
-    // If this is an operation - delete it from every channel's mapping that this is under
+    // If this is an operation - handle its sub operations
     if ('subOperations' in event) {
-      event.subOperations.keys().forEach((channel) => {
+      event.subOperations.forEach((_subOp, subChannel) => {
+        this.channelStatusMap.set(subChannel, ProgressStatus.COMPLETE)
+        this.channelProgressMap.set(
+          subChannel,
+          Math.min(100, this.channelProgressMap.get(subChannel) || 0)
+        )
+        this.channelOperationMap.delete(subChannel)
+
         // Remove it from the operation hierarchy
-        this.operationHierarchy.get(channel)?.delete(event)
+        this.operationHierarchy.get(subChannel)?.delete(event)
 
         // delete any channels that are empty as well
-        if (this.operationHierarchy.get(channel)?.size === 0) {
-          this.operationHierarchy.delete(channel)
+        if (this.operationHierarchy.get(subChannel)?.size === 0) {
+          this.operationHierarchy.delete(subChannel)
         }
-
-        // remove it from the channel operation map
-        this.channelOperationMap.delete(channel)
-
-        // remove it from the channel progress map
-        this.channelProgressMap.delete(channel)
-
-        // remove it from the channel status map
-        this.channelStatusMap.delete(channel)
       })
+
+      event.subOperations.clear()
+    }
+
+    // If this operation is a sub-operation of another operation - remove it from that one
+    const parentOperations = this.operationHierarchy.get(event.channel)
+    if (parentOperations) {
+      parentOperations.forEach((parentOp) => {
+        if ('subOperations' in parentOp) {
+          const subOp = parentOp.subOperations.get(event.channel)
+          if (subOp) {
+            parentOp.subOperations.set(event.channel, {
+              weight: subOp.weight,
+              progress: finalProgress // Ensure it has the final progress value
+            })
+          }
+        }
+      })
+
+      // Clear this channel's hierarchy
+      this.operationHierarchy.delete(event.channel)
     }
   }
 
@@ -144,7 +164,7 @@ class ProgressEventBus extends EventEmitter {
     parentOperations.forEach((parentOp) => {
       const operationalContext = parentOp.subOperations.get(event.channel)
 
-      if (operationalContext && event.progress) {
+      if (operationalContext && event.progress != undefined) {
         parentOp.subOperations.set(event.channel, {
           weight: operationalContext.weight,
           progress: event.progress
@@ -152,6 +172,20 @@ class ProgressEventBus extends EventEmitter {
       }
       parentOp.message = event.message
       parentOp.operation = event.operation
+
+      // Calculate weighted progress for the parent operation
+      let totalWeightedProgress = 0
+      const totalWeight = parentOp.totalWeight || 1 // Prevent division by zero
+
+      parentOp.subOperations.forEach((subOp) => {
+        // Calculate weighted contribution: (progress * weight) / totalWeight * 100
+        const weightedContribution = (subOp.progress * subOp.weight) / totalWeight
+        totalWeightedProgress += weightedContribution
+      })
+
+      // Ensure progress doesn't exceed 100%
+      parentOp.progress = Math.min(100, totalWeightedProgress)
+
       transformedOperations.add(parentOp)
     })
 
@@ -160,7 +194,7 @@ class ProgressEventBus extends EventEmitter {
   }
   private syncStatusMaps = (event: ProgressEvent): void => {
     if (event.progress) {
-      this.channelProgressMap.set(event.channel, event.progress)
+      this.channelProgressMap.set(event.channel, Math.min(100, event.progress))
     }
 
     if (event.status == ProgressStatus.COMPLETE || event.status == ProgressStatus.ERROR) {
@@ -199,9 +233,9 @@ class ProgressEventBus extends EventEmitter {
 
     // top level operation
     if (!operations) {
-      logger.info(`(${event.progress}%) ${event.message}`, {
-        function: event.operation,
-        source: channel
+      logger.info(`(${event.progress}%) ${event.operation} - ${event.message}`, {
+        function: event.channel,
+        source: 'Progress'
       })
       return true
     } else {
@@ -213,20 +247,11 @@ class ProgressEventBus extends EventEmitter {
 
     // sub-operation propagation
     operations.forEach((operation) => {
-      // Update the total progress based on the sub-operation progress
-      let totalProgress = 0
-
-      operation.subOperations.forEach((subOp) => {
-        totalProgress += subOp.progress
-      })
-
-      operation.progress = totalProgress
-
       // recursively emit this operation
       this.emit(operation.channel, operation)
 
       // Check if the operation is complete
-      if (operation.progress >= 100) {
+      if (operation.progress != undefined && operation.progress >= 100) {
         this.completeOperation(operation)
       }
     })
@@ -276,8 +301,12 @@ class ProgressEventBus extends EventEmitter {
       operation = this.channelOperationMap.get(channel) ?? ''
     }
 
-    if (!progress) {
-      progress = this.channelProgressMap.get(channel) || 0
+    if (progress !== undefined) {
+      // Enforce 100% limit
+      const limitedProgress = Math.min(100, Math.max(0, progress))
+      this.channelProgressMap.set(channel, limitedProgress)
+    } else {
+      progress = this.channelProgressMap.get(channel) ?? 0
     }
 
     const finalEvent: ProgressEvent = {

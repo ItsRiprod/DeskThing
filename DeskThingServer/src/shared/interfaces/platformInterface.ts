@@ -90,7 +90,7 @@ export interface PlatformInterface<E extends Record<string, unknown> = Record<st
   getClients(): Client[]
   fetchClients(): Promise<Client[]>
   getClientById(clientId: string): Client | undefined
-  refreshClients(): Promise<boolean>
+  refreshClients(progressMultiplier: number): Promise<boolean>
   refreshClient(clientId: string, forceRefresh?: boolean): Promise<Client | undefined>
 
   // Client management

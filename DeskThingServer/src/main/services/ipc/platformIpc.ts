@@ -11,7 +11,7 @@ export const platformHandler = async <T extends PlatformIPC>(data: T): Promise<T
   progressBus.startOperation(
     ProgressChannel.IPC_PLATFORM,
     `Running ${data.type}`,
-    'Initializing request',
+    `Initializing ${data.request || data.type}`,
     [
       {
         channel: ProgressChannel.PLATFORM_CHANNEL,

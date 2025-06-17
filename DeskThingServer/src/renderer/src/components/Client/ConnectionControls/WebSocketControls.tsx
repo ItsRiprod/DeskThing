@@ -9,14 +9,16 @@ interface WebSocketControlsProps {
   isLoading: boolean
 }
 
-const WebSocketControls: React.FC<WebSocketControlsProps> = ({ client, isLoading }) => {
-  const [_animatingIcons, setAnimatingIcons] = useState<Record<string, boolean>>({})
+const WebSocketControls: React.FC<WebSocketControlsProps> = ({ client }) => {
+  const [animatingIcons, setAnimatingIcons] = useState<Record<string, boolean>>({})
   const ping = usePlatformStore((state) => state.ping)
 
   const handlePing = async (): Promise<void> => {
     setAnimatingIcons((prev) => ({ ...prev, ping: true }))
     await ping(client.clientId)
+    setAnimatingIcons((prev) => ({ ...prev, ping: false }))
   }
+
 
   // Don't show ping for devices that need configuration
   const isAdbDeviceNeedingConfig =
@@ -30,7 +32,7 @@ const WebSocketControls: React.FC<WebSocketControlsProps> = ({ client, isLoading
 
   return (
     <Button title="Ping Client" className="group hover:bg-zinc-900 gap-2" onClick={handlePing}>
-      <IconPing className={isLoading ? 'animate-ping' : ''} />
+      <IconPing className={animatingIcons.ping ? 'animate-ping' : ''} />
     </Button>
   )
 }

@@ -316,37 +316,45 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
     ])
   }
 
-  async refreshClients(): Promise<boolean> {
-    progressBus.start(ProgressChannel.PING, `Refreshing clients`, `Refreshing clients`)
+  async refreshClients(progressMultiplier: number): Promise<boolean> {
+    progressBus.start(ProgressChannel.REFRESH_CLIENTS, `Refreshing clients`, `Refreshing clients`)
+
+    let totalProgress = 0
+    const update = (message: string, progress: number): void => {
+      const progressDelta = progress - totalProgress
+      totalProgress += progress
+      progressBus.update(
+        ProgressChannel.REFRESH_CLIENTS,
+        message,
+        progressDelta * progressMultiplier
+      )
+    }
+
     this.worker?.postMessage({ type: 'refreshClients' })
 
     const res = await new Promise<boolean>((resolve) => {
-      progressBus.update(ProgressChannel.PING, `Awaiting devices refresh`, 25)
+      update(`Awaiting devices refresh`, 25)
       const timeoutRef = setTimeout(() => {
         resolveTask(false)
         progressBus.warn(ProgressChannel.PING, `Timed out waiting for clients to refresh`)
       }, 15000)
 
       const resolveTask = (res: boolean): void => {
-        progressBus.update(ProgressChannel.PING, `Pinged`, 75)
+        update(`Pinged`, 75)
         resolve(res)
         this.removeListener(PlatformEvent.REFRESHED_CLIENTS, onceListener)
         clearTimeout(timeoutRef)
       }
 
       const onceListener = (data: { active: number; disconnected: number }): void => {
-        progressBus.update(
-          ProgressChannel.PING,
-          `Refreshed clients. ${data.active} active, ${data.disconnected} disconnected`,
-          50
-        )
+        update(`Refreshed clients. ${data.active} active, ${data.disconnected} disconnected`, 50)
         resolveTask(true)
       }
 
       this.once(PlatformEvent.REFRESHED_CLIENTS, onceListener)
     })
 
-    progressBus.complete(ProgressChannel.PING, `Clients refreshed`)
+    update(`Clients refreshed`, 100)
     return res
   }
 

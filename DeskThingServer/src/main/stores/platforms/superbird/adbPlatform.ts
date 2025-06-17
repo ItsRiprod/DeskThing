@@ -83,17 +83,56 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
       case 'set': {
         switch (data.request) {
           case 'manifest': {
+            const update = progressBus.start(
+              ProgressChannel.PLATFORM_CHANNEL,
+              `ADB: Starting ${data.type}:${data.request}`,
+              `Handling ${data.request}`
+            )
             await this.updateClientManifest(data.manifest)
+            update('Completed Successfully', 100)
             break
           }
           case 'supervisor': {
+            progressBus.startOperation(
+              ProgressChannel.PLATFORM_CHANNEL,
+              'Setting Supervisor',
+              'Initializing Supervisor Request',
+              [
+                {
+                  channel: ProgressChannel.ST_ADB_SUPERVISOR,
+                  weight: 75
+                },
+                {
+                  channel: ProgressChannel.REFRESH_DEVICES,
+                  weight: 25
+                }
+              ]
+            )
             await this.adbService.toggleSupervisorService(data.adbId, data.service, data.state)
+            progressBus.update(ProgressChannel.PLATFORM_CHANNEL, 'Refreshing Client')
             await this.refreshClient(data.adbId, true)
+            progressBus.complete(ProgressChannel.PLATFORM_CHANNEL, 'Completed Successfully')
             return true
           }
           case 'brightness': {
+            progressBus.startOperation(
+              ProgressChannel.PLATFORM_CHANNEL,
+              'Setting Brightness',
+              'Initializing Brightness Request',
+              [
+                {
+                  channel: ProgressChannel.ADB,
+                  weight: 50
+                },
+                {
+                  channel: ProgressChannel.REFRESH_DEVICES,
+                  weight: 50
+                }
+              ]
+            )
             await this.adbService.setBrightness(data.adbId, data.brightness)
             await this.refreshClient(data.adbId, true)
+            progressBus.complete(ProgressChannel.PLATFORM_CHANNEL, 'Completed Successfully')
             return true
           }
           default:
@@ -170,7 +209,7 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
           'Initializing refresh',
           [
             {
-              channel: ProgressChannel.REFRESH_DEVICES,
+              channel: ProgressChannel.ST_ADB_REFRESH,
               weight: 100
             }
           ]
@@ -296,20 +335,28 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
 
   private async refreshDevices(): Promise<void> {
     try {
-      progressBus.start(
-        ProgressChannel.REFRESH_DEVICES,
+      progressBus.startOperation(
+        ProgressChannel.ST_ADB_REFRESH,
         'Refreshing Devices',
-        'Initializing refresh'
+        'Initializing refresh',
+        [
+          {
+            channel: ProgressChannel.REFRESH_DEVICES,
+            weight: 75
+          }
+        ]
       )
-      progressBus.update(ProgressChannel.REFRESH_DEVICES, 'Getting Devices', 10)
+      progressBus.update(ProgressChannel.ST_ADB_REFRESH, 'Getting Devices', 10)
       const adbDevices = await this.adbService.getDevices()
-      progressBus.update(ProgressChannel.REFRESH_DEVICES, `Found ${adbDevices.length} devices`, 30)
+      progressBus.update(ProgressChannel.ST_ADB_REFRESH, `Found ${adbDevices.length} devices`, 30)
+
+      const progressMultiplier = 1 / adbDevices.length
 
       for (const adbDevice of adbDevices) {
-        await this.refreshClient(adbDevice, false, false)
+        await this.refreshClient(adbDevice, false, false, progressMultiplier)
       }
 
-      progressBus.update(ProgressChannel.REFRESH_DEVICES, 'Cleaning up old devices', 60)
+      progressBus.update(ProgressChannel.ST_ADB_REFRESH, 'Cleaning up old devices', 60)
 
       // Mark clients not found in ADB as disconnected
       this.clients.forEach((client) => {
@@ -335,9 +382,9 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
       })
 
       this.emit(PlatformEvent.CLIENT_LIST, this.clients)
-      progressBus.complete(ProgressChannel.REFRESH_DEVICES, 'Refresh complete')
+      progressBus.complete(ProgressChannel.ST_ADB_REFRESH, 'Refresh complete')
     } catch (error) {
-      progressBus.error(ProgressChannel.REFRESH_DEVICES, 'Refresh failed', 'Refresh failed')
+      progressBus.error(ProgressChannel.ST_ADB_REFRESH, 'Refresh failed', 'Refresh failed')
       logger.error(`Failed to refresh devices`, {
         error: error as Error,
         function: 'refreshDevices',
@@ -349,15 +396,31 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
   async refreshClient(
     adbId: string,
     forceRefresh = false,
-    notify = true
+    notify = true,
+    progressMultiplier = 1
   ): Promise<Client | undefined> {
     const existingClient = this.clients.find((client) => client.identifiers[this.id]?.id === adbId)
 
+    progressBus.start(ProgressChannel.REFRESH_DEVICES, `Refreshing ${adbId}`, `Refreshing ${adbId}`)
+
+    let totalProgress = 0
+    const update = (message: string, progress: number): void => {
+      const progressDelta = progress - totalProgress
+      const updatedProgress = progressDelta * progressMultiplier
+      totalProgress = progress
+      progressBus.incrementProgress(ProgressChannel.REFRESH_DEVICES, message, updatedProgress)
+    }
+
     try {
+      update('Getting device version', 25)
       const deviceVersion = await this.adbService.getDeviceVersion(adbId)
+      update('Getting device usid', 35)
       const usid = await this.adbService.getDeviceUSID(adbId)
+      update('Getting device macBt', 45)
       const macBt = await this.adbService.getDeviceMacBT(adbId)
+      update('Getting device brightness', 55)
       const brightness = await this.adbService.getDeviceBrightness(adbId)
+      update('Getting device services', 65)
       const services = await this.adbService.getSupervisorStatus(adbId)
 
       const transformedServices: Record<string, boolean> = Object.entries(services).reduce(
@@ -399,7 +462,7 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
 
         if (!existingClient.manifest) {
           try {
-            progressBus.update(ProgressChannel.REFRESH_DEVICES, `Getting manifest for ${adbId}`)
+            update(`Getting manifest for ${adbId}`, 70)
             const manifest = await this.adbService.getDeviceManifest(adbId)
 
             updates.manifest = manifest || undefined
@@ -417,6 +480,7 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
         if (notify) {
           this.emit(PlatformEvent.CLIENT_UPDATED, updates)
         }
+        update(`Finished updating ${adbId}`, 100)
         return updates
       } else {
         const newClient: Client = {
@@ -446,12 +510,14 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
         }
 
         try {
+          update(`Getting manifest for ${adbId}`, 70)
           const manifest = await this.adbService.getDeviceManifest(adbId)
 
           if (manifest) {
             newClient.manifest = manifest
           }
         } catch (error) {
+          update(`Failed to get manifest for device ${adbId}`, 70)
           logger.warn(`Failed to get manifest for device ${adbId}`, {
             error: error as Error,
             function: 'refreshDevices',
@@ -459,12 +525,11 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
           })
         }
 
-        progressBus.update(ProgressChannel.REFRESH_DEVICES, `Getting version for ${adbId}`)
-
         this.clients.push(newClient)
         if (notify) {
           this.emit(PlatformEvent.CLIENT_CONNECTED, newClient)
         }
+        update(`Finished updating ${adbId}`, 100)
         return newClient
       }
     } catch (error) {
@@ -472,6 +537,7 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
         function: 'refreshDevices',
         source: 'adbPlatform'
       })
+      update(`Error updating ${adbId}. ${handleError(error)}`, 100)
       return
     }
   }
@@ -534,8 +600,24 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
     return undefined
   }
 
-  async refreshClients(): Promise<boolean> {
+  async refreshClients(progressMultiplier: number = 1): Promise<boolean> {
+    progressBus.startOperation(
+      ProgressChannel.REFRESH_CLIENTS,
+      'Refreshing ADB',
+      'Refreshing ADB',
+      [
+        {
+          channel: ProgressChannel.ST_ADB_REFRESH,
+          weight: 100 * progressMultiplier
+        },
+        {
+          channel: ProgressChannel.BLANK, // this is to set the transform on the sub operations
+          weight: 100 * (1 - progressMultiplier)
+        }
+      ]
+    )
     await this.refreshDevices()
+    progressBus.update(ProgressChannel.REFRESH_CLIENTS, 'Refreshed Devices')
     return true
   }
 
