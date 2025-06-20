@@ -192,8 +192,6 @@ export class ReleaseStore
     await this.refreshApps(force)
     await this.refreshClients(force)
 
-    const updateStore = await storeProvider.getStore('updateStore')
-    await updateStore.checkForUpdates()
     progressBus.complete(
       ProgressChannel.ST_RELEASE_REFRESH,
       'Refresh Complete',
