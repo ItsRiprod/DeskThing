@@ -75,7 +75,7 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
 
   return (
     <div className="w-full h-full p-6 flex flex-col">
-      {settingsEntries.length > 0 ? (
+      {settingsEntries && settingsEntries.length > 0 ? (
         <div>
           {settingsEntries.map(([key, setting]) => (
             <Settings

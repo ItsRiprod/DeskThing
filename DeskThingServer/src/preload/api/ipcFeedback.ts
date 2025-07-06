@@ -4,12 +4,13 @@ import {
   SystemInfo,
   FeedbackIPCData,
   FeedbackHandlerReturnMap,
-  IPC_FEEDBACK_TYPES
+  IPC_FEEDBACK_TYPES,
+  FeedbackResult
 } from '@shared/types'
 import { ipcRenderer } from 'electron'
 
 export const feedback = {
-  submit: async (feedback: FeedbackReport): Promise<void> =>
+  submit: async (feedback: FeedbackReport): Promise<FeedbackResult> =>
     await sendCommand({
       kind: IPC_HANDLERS.FEEDBACK,
       type: IPC_FEEDBACK_TYPES.ADD_FEEDBACK,

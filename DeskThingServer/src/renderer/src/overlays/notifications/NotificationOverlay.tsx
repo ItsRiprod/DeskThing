@@ -63,33 +63,33 @@ const NotificationOverlay: React.FC = () => {
               setPage={setPage}
               page="Task"
               curPage={page}
-              value={activeTasks.length}
+              value={activeTasks?.length}
               Icon={<IconLayoutgrid />}
             />
             <NavComponent
               setPage={setPage}
               page="Event"
               curPage={page}
-              value={notificationState.logs.length}
+              value={notificationState?.logs?.length}
               Icon={<IconLogs />}
             />
             <NavComponent
               setPage={setPage}
               page="Issue"
               curPage={page}
-              value={notificationState.issues.length}
+              value={notificationState?.issues?.length}
               Icon={<IconWarning />}
-              className={notificationState.issues.length > 0 ? 'bg-red-600' : ''}
+              className={notificationState?.issues?.length > 0 ? 'bg-red-600' : ''}
             />
             <NavComponent
               setPage={setPage}
               page="Request"
               curPage={page}
-              value={notificationState.requestQueue.length}
+              value={notificationState?.requestQueue?.length}
               Icon={<IconBell />}
               className="relative"
             >
-              {notificationState.requestQueue.length > 0 && (
+              {notificationState?.requestQueue?.length > 0 && (
                 <div className="absolute inset-0 rounded w-full h-full animate-pulse border-2 border-blue-500"></div>
               )}
             </NavComponent>

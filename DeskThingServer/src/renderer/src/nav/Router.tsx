@@ -22,6 +22,7 @@ import ProfilesPage from '@renderer/pages/Clients/profiles'
 import ErrorBoundary from '@renderer/components/ErrorBoundary'
 
 const AppRouter = (): JSX.Element => {
+
   return (
     <Router>
       <OverlayWrapper>

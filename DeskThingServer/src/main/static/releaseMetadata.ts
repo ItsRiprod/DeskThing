@@ -1,21 +1,21 @@
-import { AppReleaseFile0118, ClientReleaseFile0118 } from '@shared/types'
+import { AppReleaseFile01111, ClientReleaseFile01111 } from '@shared/types'
 
-export const latestAppReleaseVersion = '0.11.8'
+export const latestAppReleaseVersion = '0.11.11'
 
 export const appsRepo = 'https://api.github.com/repos/itsriprod/deskthing-apps'
-export const defaultAppLatestJSONFallback: AppReleaseFile0118 = {
-  version: '0.11.8',
+export const defaultAppLatestJSONFallback: AppReleaseFile01111 = {
+  version: '0.11.11',
   type: 'app',
   repositories: [appsRepo],
   releases: [],
   timestamp: 0
 }
 
-export const latestClientReleaseVersion = '0.11.8'
+export const latestClientReleaseVersion = '0.11.11'
 
 export const clientRepo = 'https://api.github.com/repos/itsriprod/deskthing-client'
-export const defaultClientLatestJSONFallback: ClientReleaseFile0118 = {
-  version: '0.11.8',
+export const defaultClientLatestJSONFallback: ClientReleaseFile01111 = {
+  version: '0.11.11',
   type: 'client',
   repositories: [clientRepo],
   releases: [],

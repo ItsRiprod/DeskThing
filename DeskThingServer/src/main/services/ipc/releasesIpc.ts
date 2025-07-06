@@ -8,6 +8,7 @@ import Logger from '@server/utils/logger'
 import { storeProvider } from '@server/stores/storeProvider'
 import { progressBus } from '../events/progressBus'
 import { handleError } from '@server/utils/errorHandler'
+import logger from '@server/utils/logger'
 
 export const releaseHandler = async (
   data: ReleaseIPCData
@@ -61,6 +62,16 @@ export const releaseHandler = async (
         )
         return
       }
+    case IPC_RELEASE_TYPES.GET_REPOSITORIES:
+      try {
+        const result = await releaseStore.getAvailableRepositories()
+        logger.debug(`Got ${result.length} repositories!`)
+        return result
+      } catch (error) {
+        logger.error(`Unable to get repositories ${handleError(error)}`)
+        return []
+      }
+      break
     case IPC_RELEASE_TYPES.GET_APPS:
       try {
         return await releaseStore.getAppReleases()
@@ -152,30 +163,22 @@ export const releaseHandler = async (
       }
     case IPC_RELEASE_TYPES.GET_CLIENT_REPOSITORIES:
       try {
-        progressBus.startOperation(
-          ProgressChannel.ST_RELEASE_CLIENT_REFRESH,
-          'Getting Client Repositories',
-          'Initializing',
-          [
-            {
-              channel: ProgressChannel.ST_RELEASE_CLIENT_REFRESH,
-              weight: 100
-            }
-          ]
-        )
+        Logger.info('Getting Client Repositories', {
+          function: 'releases.getClientRepositories',
+          source: 'releaseHandler'
+        })
         const clients = await releaseStore.getCommunityClients()
-        progressBus.complete(
-          ProgressChannel.IPC_RELEASES,
-          `Successfully got ${clients && clients.length} clients`,
-          'Operation Success'
-        )
+        Logger.info(`Successfully got ${clients && clients.length} clients`, {
+          function: 'releases.getClientRepositories',
+          source: 'releaseHandler'
+        })
         return clients
       } catch (error) {
-        progressBus.error(
-          ProgressChannel.IPC_RELEASES,
-          `Unable to get client repositories! ${handleError(error)}`,
-          'Error Getting Clients'
-        )
+        Logger.error(`Unable to get client repositories! ${handleError(error)}`, {
+          error: error as Error,
+          function: 'releases.getClientRepositories',
+          source: 'releaseHandler'
+        })
         return
       }
     case IPC_RELEASE_TYPES.REMOVE_CLIENT_REPOSITORY:

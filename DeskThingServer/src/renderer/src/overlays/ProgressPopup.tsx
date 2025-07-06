@@ -48,7 +48,7 @@ const ProgressPopup: React.FC = () => {
     return () => {
       if (fadeTimeout) clearTimeout(fadeTimeout)
     }
-  }, [progress, fadeTimeout])
+  }, [progress])
 
   if (!progress || !progress.message || !showProgress) return null
 

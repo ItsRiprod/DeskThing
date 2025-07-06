@@ -1,17 +1,19 @@
 import React, { useMemo } from 'react'
 import Overlay from '../Overlay'
 import Button from '@renderer/components/Button'
-import { IconBluetooth, IconCarThingSmall, IconLink, IconMobile } from '@renderer/assets/icons'
+import { IconBluetooth, IconCarThingSmall, IconLink,IconLightning, IconMobile } from '@renderer/assets/icons'
 import { useSearchParams } from 'react-router-dom'
 import ErrorBoundary from '@renderer/components/ErrorBoundary'
 import BluetoothPage from './BluetoothPage'
 import WifiPage from './WifiPage'
 import AdbPage from './AdbPage'
+import SuperbirdPage from './SuperbirdPage'
 
 const PAGE_COMPONENTS = {
   bluetooth: BluetoothPage,
   wifi: WifiPage,
   task: AdbPage,
+  flash: SuperbirdPage,
   default: AdbPage
 }
 
@@ -61,6 +63,13 @@ const SetupOverlay: React.FC = () => {
             page="ADB"
             curPage={page}
             Icon={IconCarThingSmall}
+            className="relative"
+          />
+          <NavComponent
+            setPage={setPage}
+            page="Flash"
+            curPage={page}
+            Icon={IconLightning}
             className="relative"
           />
           <Button onClick={openClient} className={`relative gap-2 bg-zinc-900 hover:bg-zinc-800`}>

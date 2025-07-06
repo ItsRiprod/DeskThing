@@ -161,6 +161,7 @@ export const initializeIpcHandlers = async (ipcMain: Electron.IpcMain): Promise<
         function: 'FEEDBACK',
         error: error instanceof Error ? error : new Error(String(error))
       })
+      return undefined
     }
   })
 

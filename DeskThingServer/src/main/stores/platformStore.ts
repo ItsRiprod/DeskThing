@@ -358,6 +358,13 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
       progressBus.update(ProgressChannel.PLATFORM_CHANNEL, `Refreshed ${platform.name}`)
     }
 
+    // This ensures that refresh_clients is completed!
+    progressBus.complete(
+      ProgressChannel.REFRESH_CLIENTS,
+      'Refreshed All Devices',
+      'Finished refreshing all devices'
+    )
+
     progressBus.complete(
       ProgressChannel.PLATFORM_CHANNEL,
       'Refreshed Devices',

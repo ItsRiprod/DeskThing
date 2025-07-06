@@ -220,6 +220,11 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
         })
       }
     })
+
+    this.appStore.on('purging', async ({ appName }) => {
+      // handles app purging
+      this.purgeSource(appName)
+    })
   }
 
   /**
@@ -234,8 +239,26 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
   saveToFile = async (): Promise<void> => {}
 
   private initializeServerTasks = async (): Promise<void> => {
-    const defaultTasks = await import('../static/defaultTasks')
-    this.initTasks('server', defaultTasks.ServerTasks)
+    // Ensures that the tasks are saved from the server
+
+    const serverTasks = await this.appDataStore.getTasks('server')
+    if (serverTasks) {
+      Logger.debug(`Initializing ${Object.keys(serverTasks).length} server tasks from file`, {
+        function: 'initializeServerTasks',
+        source: 'TaskStore'
+      })
+      this.initTasks('server', serverTasks)
+    } else {
+      const defaultTasks = await import('../static/defaultTasks')
+      Logger.debug(
+        `Initializing ${Object.keys(defaultTasks.ServerTasks).length} default server tasks from consts`,
+        {
+          function: 'initializeServerTasks',
+          source: 'TaskStore'
+        }
+      )
+      this.initTasks('server', defaultTasks.ServerTasks)
+    }
   }
 
   /**
@@ -364,6 +387,10 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
     }
   }
 
+  async getTask(source: string, id: string): Promise<Task | undefined> {
+    return this.appDataStore.getTask(source, id)
+  }
+
   async deleteTask(sourceId: string, taskId: string[] | string): Promise<void> {
     if (!taskId || !sourceId) {
       Logger.warn('[deleteTask]: No task or source ID provided')
@@ -371,6 +398,21 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
     }
 
     const taskIds = Array.isArray(taskId) ? taskId : [taskId]
+
+    await this.appDataStore.delTasks(sourceId, taskIds)
+  }
+
+  async purgeSource(sourceId: string): Promise<void> {
+    const tasks = await this.appDataStore.getTasks(sourceId)
+
+    if (!tasks) {
+      Logger.debug(`No tasks found for ${sourceId} - not deleting any`)
+      return
+    }
+
+    const taskIds = Object.keys(tasks)
+
+    Logger.debug(`Found ${taskIds.length} tasks for ${sourceId} - deleting them`)
 
     await this.appDataStore.delTasks(sourceId, taskIds)
   }

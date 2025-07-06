@@ -4,10 +4,10 @@
 import {
   AppLatestServer,
   AppReleaseFile,
-  AppReleaseFile0118,
+  AppReleaseFile01111,
   ClientLatestServer,
   ClientReleaseFile,
-  ClientReleaseFile0118,
+  ClientReleaseFile01111,
   GithubAsset,
   GithubRelease,
   PastReleaseInfo,
@@ -33,15 +33,15 @@ import {
 import { determineValidUrl } from './releaseValidation'
 
 /** Handles the creation of the release file */
-export async function createReleaseFile(type: 'app', force?: boolean): Promise<AppReleaseFile0118>
+export async function createReleaseFile(type: 'app', force?: boolean): Promise<AppReleaseFile01111>
 export async function createReleaseFile(
   type: 'client',
   force?: boolean
-): Promise<ClientReleaseFile0118>
+): Promise<ClientReleaseFile01111>
 export async function createReleaseFile(
   type: 'client' | 'app',
   force = false
-): Promise<AppReleaseFile0118 | ClientReleaseFile0118> {
+): Promise<AppReleaseFile01111 | ClientReleaseFile01111> {
   if (type === 'app') {
     return createAppReleaseFile(force)
   } else {
@@ -49,7 +49,7 @@ export async function createReleaseFile(
   }
 }
 
-const createClientReleaseFile = async (force = false): Promise<ClientReleaseFile0118> => {
+export const createClientReleaseFile = async (force = false): Promise<ClientReleaseFile01111> => {
   const { clientRepo, defaultClientLatestJSONFallback } = await import(
     '@server/static/releaseMetadata'
   )
@@ -99,7 +99,7 @@ const createClientReleaseFile = async (force = false): Promise<ClientReleaseFile
 
       if (result.type == 'converted-repos')
         return {
-          version: '0.11.8',
+          version: '0.11.11',
           type: 'client',
           repositories: result.repos,
           releases: [],
@@ -109,8 +109,8 @@ const createClientReleaseFile = async (force = false): Promise<ClientReleaseFile
       if (result.type == 'converted-apps')
         throw new Error('Received "app" type when expecting multi or client')
 
-      const clientReleaseFile: ClientReleaseFile0118 = {
-        version: '0.11.8',
+      const clientReleaseFile: ClientReleaseFile01111 = {
+        version: '0.11.11',
         type: 'client',
         repositories: result.repos,
         releases: result.releases,
@@ -129,8 +129,8 @@ const createClientReleaseFile = async (force = false): Promise<ClientReleaseFile
       pastReleases: []
     }
 
-    const finalClientReleaseFile: ClientReleaseFile0118 = {
-      version: '0.11.8',
+    const finalClientReleaseFile: ClientReleaseFile01111 = {
+      version: '0.11.11',
       type: 'client',
       repositories: adaptedRelease.repository ? [latestJSON.repository] : [],
       releases: [latestServer],
@@ -152,7 +152,7 @@ const createClientReleaseFile = async (force = false): Promise<ClientReleaseFile
   }
 }
 
-const createAppReleaseFile = async (force = false): Promise<AppReleaseFile0118> => {
+export const createAppReleaseFile = async (force = false): Promise<AppReleaseFile01111> => {
   const { appsRepo, defaultAppLatestJSONFallback } = await import('@server/static/releaseMetadata')
   try {
     const update = progressBus.start(
@@ -202,7 +202,7 @@ const createAppReleaseFile = async (force = false): Promise<AppReleaseFile0118> 
         update('Creating empty release file', 100)
 
         return {
-          version: '0.11.8',
+          version: '0.11.11',
           type: 'app',
           repositories: result.repos,
           releases: [],
@@ -214,8 +214,8 @@ const createAppReleaseFile = async (force = false): Promise<AppReleaseFile0118> 
         throw new Error('Received "client" type when expecting multi or client')
 
       update('Creating app release file from multi-release', 90)
-      const appReleaseFile: AppReleaseFile0118 = {
-        version: '0.11.8',
+      const appReleaseFile: AppReleaseFile01111 = {
+        version: '0.11.11',
         type: 'app',
         repositories: result.repos,
         releases: result.releases,
@@ -238,8 +238,8 @@ const createAppReleaseFile = async (force = false): Promise<AppReleaseFile0118> 
     }
 
     update('Finalizing app release file', 90)
-    const finalAppReleaseFile: AppReleaseFile0118 = {
-      version: '0.11.8',
+    const finalAppReleaseFile: AppReleaseFile01111 = {
+      version: '0.11.11',
       type: 'app',
       repositories: adaptedRelease.repository ? [latestJSON.repository] : [],
       releases: [latestServer],
@@ -402,17 +402,17 @@ export async function handleRefreshReleaseFile(
   type: 'app',
   prevReleaseFile: AppReleaseFile,
   params: RefreshOptions
-): Promise<AppReleaseFile0118>
+): Promise<AppReleaseFile01111>
 export async function handleRefreshReleaseFile(
   type: 'client',
   prevReleaseFile: ClientReleaseFile,
   params: RefreshOptions
-): Promise<ClientReleaseFile0118>
+): Promise<ClientReleaseFile01111>
 export async function handleRefreshReleaseFile<T extends 'app' | 'client'>(
   type: T,
   prevReleaseFile: T extends 'app' ? AppReleaseFile : ClientReleaseFile,
   { force = false }: RefreshOptions
-): Promise<AppReleaseFile0118 | ClientReleaseFile0118 | ClientReleaseFile | AppReleaseFile> {
+): Promise<ClientReleaseFile | AppReleaseFile> {
   try {
     const update = progressBus.start(
       type == 'app'
@@ -422,34 +422,43 @@ export async function handleRefreshReleaseFile<T extends 'app' | 'client'>(
       'Starting...'
     )
 
-    // migrate to 0.11.8
-    const releaseFile = await handleReleaseJSONFileMigration(type, prevReleaseFile)
-
-    update(`Updating ${releaseFile.releases.length} ${type} releases`, 50)
-    // Handle migrating any old releases to the latest
-    const migratedReleases = await Promise.all(
-      releaseFile.releases.map(async (release: ClientLatestServer | AppLatestServer) => {
-        update(`Updating ${release.id}`, 70)
-        const res = await updateLatestServer(release, force)
-        update(`Updated ${release.id}`, 80)
-        return res
-      })
-    )
+    // migrate to 0.11.11
 
     if (type == 'app') {
-      const finalReleaseFile: AppReleaseFile0118 = {
-        version: '0.11.8',
+      const releaseFile = await handleReleaseJSONFileMigration(prevReleaseFile as AppReleaseFile)
+      update(`Updating ${releaseFile.releases.length} ${type} releases`, 50)
+      // Handle migrating any old releases to the latest
+      const migratedReleases = await Promise.all(
+        releaseFile.releases.map(async (release: ClientLatestServer | AppLatestServer) => {
+          update(`Updating ${release.id}`, 70)
+          const res = await updateLatestServer(release, force)
+          update(`Updated ${release.id}`, 80)
+          return res
+        })
+      )
+      const finalReleaseFile: AppReleaseFile01111 = {
+        version: '0.11.11',
         type: 'app',
         repositories: releaseFile.repositories,
         releases: migratedReleases as AppLatestServer[],
         timestamp: Date.now()
       }
-      
       update('Saving app release file', 100)
       return finalReleaseFile
     } else {
-      const finalReleaseFile: ClientReleaseFile0118 = {
-        version: '0.11.8',
+      const releaseFile = await handleReleaseJSONFileMigration(prevReleaseFile as ClientReleaseFile)
+      update(`Updating ${releaseFile.releases.length} ${type} releases`, 50)
+      // Handle migrating any old releases to the latest
+      const migratedReleases = await Promise.all(
+        releaseFile.releases.map(async (release: ClientLatestServer | AppLatestServer) => {
+          update(`Updating ${release.id}`, 70)
+          const res = await updateLatestServer(release, force)
+          update(`Updated ${release.id}`, 80)
+          return res
+        })
+      )
+      const finalReleaseFile: ClientReleaseFile01111 = {
+        version: '0.11.11',
         type: 'client',
         repositories: releaseFile.repositories,
         releases: migratedReleases as ClientLatestServer[],

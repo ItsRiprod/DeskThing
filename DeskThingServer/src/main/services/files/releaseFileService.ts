@@ -1,8 +1,8 @@
 import {
   AppReleaseFile,
-  AppReleaseFile0118,
+  AppReleaseFile01111,
   ClientReleaseFile,
-  ClientReleaseFile0118
+  ClientReleaseFile01111
 } from '@shared/types'
 import { readFromFile, writeToFile } from './fileService'
 import { join } from 'node:path'
@@ -39,7 +39,7 @@ export const saveClientReleaseData = async (
   }
 }
 
-export const readAppReleaseData = async (): Promise<AppReleaseFile0118 | undefined> => {
+export const readAppReleaseData = async (): Promise<AppReleaseFile01111 | undefined> => {
   try {
     const appReleasePath = join('system', 'appReleases.json')
 
@@ -47,7 +47,7 @@ export const readAppReleaseData = async (): Promise<AppReleaseFile0118 | undefin
 
     if (!appReleaseFile) throw new Error('Invalid app release file (does not exist)')
 
-    return handleReleaseJSONFileMigration('app', appReleaseFile)
+    return handleReleaseJSONFileMigration(appReleaseFile)
   } catch (error) {
     logger.error(`Failed to read app release files`, {
       error: error as Error,
@@ -58,7 +58,7 @@ export const readAppReleaseData = async (): Promise<AppReleaseFile0118 | undefin
   }
 }
 
-export const readClientReleaseData = async (): Promise<ClientReleaseFile0118 | undefined> => {
+export const readClientReleaseData = async (): Promise<ClientReleaseFile01111 | undefined> => {
   try {
     const clientReleasePath = join('system', 'clientReleases.json')
 
@@ -66,7 +66,7 @@ export const readClientReleaseData = async (): Promise<ClientReleaseFile0118 | u
 
     if (!clientReleaseFile) throw new Error('Invalid client release file (does not exist)')
 
-    return handleReleaseJSONFileMigration('client', clientReleaseFile)
+    return handleReleaseJSONFileMigration(clientReleaseFile)
   } catch (error) {
     logger.error(`Failed to read client release files`, {
       error: error as Error,

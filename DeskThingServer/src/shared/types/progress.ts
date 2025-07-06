@@ -16,6 +16,9 @@ export enum ProgressChannel {
   /** The Process of installing a client */
   FN_CLIENT_INSTALL = 'fn-client-install',
 
+  // Device-specific channels
+  ST_DEVICE_FLASH = 'st-device-flash',
+
   // App Channels
 
   /** The process of staging an app */

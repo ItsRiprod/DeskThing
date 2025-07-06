@@ -35,7 +35,7 @@ const ViewProgressLogs: React.FC = () => {
         <div className="overflow-y-auto p-4 space-y-4 h-[calc(100vh-4rem)]">
           {progressEntries.map((entry) => (
             <LogEntry
-              key={entry.id}
+              key={entry.channel}
               progressEvent={entry}
               allowClosing={true}
               showMetadata={true}

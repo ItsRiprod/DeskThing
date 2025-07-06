@@ -48,6 +48,12 @@ interface OtherFeedback extends DetailedFeedback, SystemInfo {}
 
 export type FeedbackType = 'bug' | 'feature' | 'question' | 'other'
 
+export type FeedbackResult = {
+  message: string
+  success: boolean
+  error?: string
+}
+
 type FeedbackMap = {
   bug: BugFeedback
   feature: FeatureFeedback

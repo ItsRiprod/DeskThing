@@ -3,7 +3,7 @@ import { Task, STEP_TYPES } from '@deskthing/types'
 export const ServerTasks: Record<string, Task> = {
   gettingstarted: {
     id: 'gettingstarted',
-    version: '0.10.5',
+    version: '0.11.0',
     started: false,
     available: true,
     source: 'server',
@@ -40,7 +40,7 @@ export const ServerTasks: Record<string, Task> = {
   },
   device: {
     id: 'device',
-    version: '0.10.7',
+    version: '0.11.0',
     started: false,
     available: true,
     source: 'server',
@@ -111,6 +111,12 @@ export const ServerTasks: Record<string, Task> = {
             id: 'biosport',
             label: 'AMD CPU - Try the BIOS port',
             instructions: 'Try using the BIOS port on your motherboard'
+          },
+          powered: {
+            id: 'powered',
+            label: 'Powered USB Hub',
+            instructions:
+              'Some success comes from using a Powered USB Hub instead of a direct motherboard connection'
           }
         }
       },
@@ -118,7 +124,8 @@ export const ServerTasks: Record<string, Task> = {
         id: 'configure',
         type: STEP_TYPES.STEP,
         label: 'Configure',
-        instructions: 'Click "configure" next to your device in the Connections tab',
+        instructions:
+          'Click "configure" next to your device in the Connections tab. You may have to go to Device Details to find it if it is not apparant',
         completed: false,
         strict: true,
         debugging: {
@@ -134,7 +141,7 @@ export const ServerTasks: Record<string, Task> = {
   },
   client: {
     id: 'client',
-    version: '0.10.5',
+    version: '0.11.0',
     started: false,
     available: true,
     source: 'server',
@@ -170,7 +177,7 @@ export const ServerTasks: Record<string, Task> = {
   },
   updateClient: {
     id: 'updateClient',
-    version: '0.10.5',
+    version: '0.11.0',
     started: false,
     source: 'server',
     label: 'Updating the Client',
@@ -196,7 +203,7 @@ export const ServerTasks: Record<string, Task> = {
         type: STEP_TYPES.SHORTCUT,
         label: 'Flash the new client',
         destination: 'clients/connections',
-        instructions: 'Click Details -> Push Staged to load the new client to your device!',
+        instructions: 'Click Push Staged to load the new client to your device!',
         completed: false
       }
     },

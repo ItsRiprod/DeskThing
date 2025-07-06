@@ -7,10 +7,10 @@
 // types
 import {
   AppLatestServer,
-  AppReleaseFile0118,
+  AppReleaseFile01111,
   CacheableStore,
   ClientLatestServer,
-  ClientReleaseFile0118,
+  ClientReleaseFile01111,
   ProgressChannel,
   StagedAppManifest
 } from '@shared/types'
@@ -38,7 +38,7 @@ import {
   handleRefreshReleaseFile
 } from '@server/services/releases/releaseUtils'
 import { storeProvider } from './storeProvider'
-import { ClientManifest, LOGGING_LEVELS } from '@deskthing/types'
+import { ClientManifest, GitRepoUrl, LOGGING_LEVELS } from '@deskthing/types'
 
 /**
  * Temporarily holds the entire repo response information in memory unless manually refreshed
@@ -48,8 +48,8 @@ export class ReleaseStore
   extends EventEmitter<GithubListenerEvents>
   implements CacheableStore, ReleaseStoreClass
 {
-  private appReleases: AppReleaseFile0118 | undefined
-  private clientReleases: ClientReleaseFile0118 | undefined
+  private appReleases: AppReleaseFile01111 | undefined
+  private clientReleases: ClientReleaseFile01111 | undefined
 
   private _initialized: boolean = false
   public get initialized(): boolean {
@@ -78,7 +78,7 @@ export class ReleaseStore
   /**
    * Returns the cached version or the version from file - whichever is more updated
    */
-  private getClientReleaseFile = async (): Promise<ClientReleaseFile0118 | undefined> => {
+  private getClientReleaseFile = async (): Promise<ClientReleaseFile01111 | undefined> => {
     if (this.clientReleases) return this.clientReleases
     try {
       this.clientReleases = await readClientReleaseData()
@@ -100,7 +100,7 @@ export class ReleaseStore
   /**
    * Returns the cached version or the version from file - whichever is more updated
    */
-  private getAppReleaseFile = async (): Promise<AppReleaseFile0118 | undefined> => {
+  private getAppReleaseFile = async (): Promise<AppReleaseFile01111 | undefined> => {
     if (this.appReleases) return this.appReleases
     try {
       this.appReleases = await readAppReleaseData()
@@ -367,6 +367,22 @@ export class ReleaseStore
     return clients.releases.find((client) => client.id === clientId)
   }
 
+  public getAvailableRepositories = async (): Promise<GitRepoUrl[]> => {
+    const repos = [
+      ...(this.clientReleases?.repositories || []),
+      ...(this.appReleases?.repositories || [])
+    ]
+    return repos.filter((repo, index, self) => {
+      const isValidGitUrl =
+        (repo.startsWith('https://github.com/') ||
+          repo.startsWith('https://api.github.com/repos/') ||
+          repo.startsWith('git@github.com:') ||
+          repo.startsWith('https://gitlab.com/')) &&
+        repo.split('/').length >= 3
+      return isValidGitUrl && self.indexOf(repo) === index
+    }) as GitRepoUrl[]
+  }
+
   public addRepositoryUrl = async (
     repoUrl: string
   ): Promise<AppLatestServer[] | ClientLatestServer[] | undefined> => {
@@ -382,8 +398,8 @@ export class ReleaseStore
           }
         ]
       )
-      logger.debug(`Adding client repository: ${repoUrl}`, {
-        function: 'addClientRepository',
+      logger.debug(`Adding repository: ${repoUrl}`, {
+        function: 'addRepositoryUrl',
         source: 'releaseStore'
       })
 
@@ -409,7 +425,7 @@ export class ReleaseStore
       } else if (result.type === 'app') {
         // This is an app repository, not a client repository
         await this.addAppToReleases(result, repoUrl)
-        return undefined
+        return [result]
       } else if (result.type === 'converted-apps') {
         // Multiple app releases - not what we want for client repository
         if (result.releases.length > 0) {
@@ -422,15 +438,15 @@ export class ReleaseStore
         }
       }
 
-      logger.warn(`No client releases found in repository: ${repoUrl}`, {
-        function: 'addClientRepository',
+      logger.warn(`No releases found in repository: ${repoUrl}`, {
+        function: 'addRepositoryUrl',
         source: 'releaseStore'
       })
       return undefined
     } catch (error) {
-      logger.error(`Failed to add client repository ${repoUrl}: ${handleError(error)}`, {
+      logger.error(`Failed to add repository ${repoUrl}: ${handleError(error)}`, {
         error: error as Error,
-        function: 'addClientRepository',
+        function: 'addRepositoryUrl',
         source: 'releaseStore'
       })
       return undefined

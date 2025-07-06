@@ -21,7 +21,7 @@ export type UpdateIPCData = {
 )
 
 export type UpdateHandlerReturnMap = {
-  [IPC_UPDATE_TYPES.CHECK]: void
+  [IPC_UPDATE_TYPES.CHECK]: string
   [IPC_UPDATE_TYPES.DOWNLOAD]: void
   [IPC_UPDATE_TYPES.RESTART]: void
 }

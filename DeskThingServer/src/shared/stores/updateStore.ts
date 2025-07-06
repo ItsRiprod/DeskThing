@@ -18,7 +18,7 @@ export interface UpdateStoreClass
   extends StoreInterface,
     CacheableStore,
     EventEmitter<UpdateStoreEvents> {
-  checkForUpdates(): Promise<void>
+  checkForUpdates(): Promise<string>
   startDownload(): Promise<void>
   quitAndInstall(): void
   getUpdateStatus(): UpdateInfoType | null

@@ -4,14 +4,14 @@
  * @author Riprod
  * @version 0.10.4
  */
-import { FeedbackReport, SystemInfo } from '@shared/types'
+import { FeedbackReport, FeedbackResult, SystemInfo } from '@shared/types'
 import { create } from 'zustand'
 
 interface FeedbackStoreState {
   systemData: SystemInfo
   feedback: Partial<FeedbackReport> | null
   addFeedbackData: (data: Partial<FeedbackReport>) => void
-  submitFeedback: (feedback: Partial<FeedbackReport>) => void
+  submitFeedback: (feedback: Partial<FeedbackReport>) => Promise<FeedbackResult>
   fetchSystemInfo: () => Promise<void>
   addSystemData: (data: Partial<SystemInfo>) => void
 }
@@ -39,9 +39,9 @@ const useFeedbackStore = create<FeedbackStoreState>()((set) => ({
     }))
   },
 
-  submitFeedback: (feedback): void => {
+  submitFeedback: async (feedback): Promise<FeedbackResult> => {
     set({ feedback: null, systemData: {} })
-    window.electron.feedback.submit(feedback as FeedbackReport)
+    return await window.electron.feedback.submit(feedback as FeedbackReport)
   }
 }))
 

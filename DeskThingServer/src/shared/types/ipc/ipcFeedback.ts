@@ -1,4 +1,4 @@
-import { FeedbackReport, SystemInfo } from '../feedback'
+import { FeedbackReport, FeedbackResult, SystemInfo } from '../feedback'
 import { IPC_HANDLERS } from './ipcTypes'
 
 export enum IPC_FEEDBACK_TYPES {
@@ -21,7 +21,7 @@ export type FeedbackIPCData = {
 )
 
 export type FeedbackHandlerReturnMap = {
-  [IPC_FEEDBACK_TYPES.ADD_FEEDBACK]: void
+  [IPC_FEEDBACK_TYPES.ADD_FEEDBACK]: FeedbackResult
   [IPC_FEEDBACK_TYPES.GET_SYSTEM_INFO]: SystemInfo
 }
 

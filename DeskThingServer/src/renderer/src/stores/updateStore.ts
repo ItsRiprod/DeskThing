@@ -6,7 +6,7 @@ interface UpdateStoreState {
   update: UpdateInfoType
   initialized: boolean
   initialize: () => Promise<void>
-  checkForUpdates: () => Promise<void>
+  checkForUpdates: () => Promise<string>
   quitAndInstall: () => Promise<void>
   downloadUpdate: () => Promise<void>
   updateStatus: (updateInfo: UpdateInfoType) => Promise<void>
@@ -35,8 +35,8 @@ const useUpdateStore = create<UpdateStoreState>((set, get) => ({
     set({ update: updateInfo })
   },
 
-  checkForUpdates: async (): Promise<void> => {
-    window.electron.update.check()
+  checkForUpdates: async (): Promise<string> => {
+    return await window.electron.update.check()
   },
 
   quitAndInstall: async (): Promise<void> => {

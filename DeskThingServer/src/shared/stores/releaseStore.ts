@@ -1,4 +1,9 @@
-import { AppLatestJSONLatest, ClientLatestJSONLatest, ClientManifest } from '@deskthing/types'
+import {
+  AppLatestJSONLatest,
+  ClientLatestJSONLatest,
+  ClientManifest,
+  GitRepoUrl
+} from '@deskthing/types'
 import { StoreInterface } from '@shared/interfaces/storeInterface'
 import { AppLatestServer, ClientLatestServer, StagedAppManifest } from '@shared/types'
 import EventEmitter from 'node:events'
@@ -78,6 +83,12 @@ export interface ReleaseStoreClass extends StoreInterface, EventEmitter<GithubLi
    * @returns Promise resolving to the client release or undefined
    */
   getClientRelease(clientId: string): Promise<ClientLatestServer | undefined>
+
+  /**
+   * Gets the list of available repositories
+   * @returns Promise resolving to array of repository URLs
+   */
+  getAvailableRepositories(): Promise<GitRepoUrl[]>
 
   /**
    * Adds a new app repository

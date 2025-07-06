@@ -19,7 +19,7 @@ const TaskComponent: FC<TaskComponentProps> = ({ task, onClose }) => {
   const restartTask = useTaskStore((state) => state.restartTask)
   const currentTask = useTaskStore((state) => state.currentTask)
 
-  const stepCount = useMemo(() => Object.values(task.steps).length, [task.steps])
+  const stepCount = useMemo(() => Object.values(task.steps)?.length, [task.steps])
   const currentStepNumber = useMemo(
     () => getCurrentStepNumber(task.steps, task.currentStep),
     [task.steps, task.currentStep]

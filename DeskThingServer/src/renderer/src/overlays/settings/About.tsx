@@ -67,7 +67,7 @@ const AboutSettings: React.FC = () => {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
                 <span className="ml-2 text-emerald-400">Loading supporters...</span>
               </div>
-            ) : supporters.monthly.length > 0 ? (
+            ) : supporters.monthly && supporters.monthly.length > 0 ? (
               supporters.monthly.map((supporter) => (
                 <User
                   key={supporter.supporterId}
@@ -86,7 +86,7 @@ const AboutSettings: React.FC = () => {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
                 <span className="ml-2 text-emerald-400">Loading supporters...</span>
               </div>
-            ) : supporters.onetime.length > 0 ? (
+            ) : supporters.onetime && supporters.onetime.length > 0 ? (
               supporters.onetime.map((supporter) => (
                 <User
                   key={supporter.supporterId}

@@ -86,7 +86,7 @@ const useAppStore = create<AppStoreState>((set, get) => ({
       // Update order if needed
       const { order } = get()
       const missingApps = filteredApps.filter((app) => !order.includes(app.name))
-      if (missingApps.length > 0) {
+      if (missingApps?.length > 0) {
         set({ order: [...order, ...missingApps.map((app) => app.name)] })
       }
     }

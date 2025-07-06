@@ -31,7 +31,7 @@ const RankableList: React.FC<RankableListProps> = ({ options, onChange, value })
   }
 
   const handleMoveDown = (index: number): void => {
-    if (index < orderedOptions.length - 1) {
+    if (index < orderedOptions?.length - 1) {
       const newOptions = [...orderedOptions]
       ;[newOptions[index], newOptions[index + 1]] = [newOptions[index + 1], newOptions[index]]
       setOrderedOptions(newOptions)
@@ -59,7 +59,7 @@ const RankableList: React.FC<RankableListProps> = ({ options, onChange, value })
             <button
               onClick={() => handleMoveDown(index)}
               className={`p-1 rounded-md hover:bg-zinc-800 ${
-                index === orderedOptions.length - 1 ? 'opacity-30 cursor-not-allowed' : ''
+                index === orderedOptions?.length - 1 ? 'opacity-30 cursor-not-allowed' : ''
               }`}
             >
               <IconArrowDown className="stroke-2 text-gray-400" />

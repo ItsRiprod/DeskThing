@@ -46,7 +46,7 @@ export const ClientReleaseHistoryModal: React.FC<ReleaseHistoryModalProps> = ({
   return (
     <Overlay
       onClose={onClose}
-      className="w-5/6 flex bg-neutral-900 flex-col max-h-[75vh] overflow-y-hidden max-w-[400px]"
+      className="w-5/6 min-w-fit flex bg-neutral-900 flex-col max-h-[75vh] overflow-y-hidden max-w-[400px]"
     >
       {confirmDownload && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -88,13 +88,13 @@ export const ClientReleaseHistoryModal: React.FC<ReleaseHistoryModalProps> = ({
             </div>
           )}
           <div>
-            <h2 className="text-3xl font-semibold">
+            <h2 className="text-3xl break-words font-semibold">
               {clientReleaseServer.mainRelease?.clientManifest?.name ||
                 clientReleaseServer.mainRelease?.clientManifest?.id ||
                 clientReleaseServer.id ||
                 'Unknown App'}
             </h2>
-            <p className="text-gray-400">
+            <p className="text-gray-400 break-words w-11/12 text-wrap">
               {clientReleaseServer?.mainRelease?.clientManifest?.description}
             </p>
             <p className="text-gray-400 text-sm">
@@ -117,7 +117,7 @@ export const ClientReleaseHistoryModal: React.FC<ReleaseHistoryModalProps> = ({
                 </span>
                 <span className="bg-emerald-500 text-xs px-2 py-1 rounded">LATEST</span>
               </div>
-              <p className="text-sm text-gray-400 mt-1">
+              <p className="text-sm text-gray-400 w-11/12 break-words text-wrap mt-1">
                 {clientReleaseServer.mainRelease?.clientManifest?.description}
               </p>
               <div className="flex-1">

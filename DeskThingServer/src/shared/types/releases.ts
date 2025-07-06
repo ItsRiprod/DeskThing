@@ -62,12 +62,43 @@ export interface GithubRelease {
 }
 
 // Extracted union of the versions
-export type AppReleaseFile = AppReleaseFile0118 | AppReleaseFile0108
+export type AppReleaseFile = AppReleaseFile01111 | AppReleaseFile0118 | AppReleaseFile0108
 
 // Extracted union of the versions
-export type ClientReleaseFile = ClientReleaseFile0118 | ClientReleaseFile0108
+export type ClientReleaseFile =
+  | ClientReleaseFile01111
+  | ClientReleaseFile0118
+  | ClientReleaseFile0108
 
+export type AppReleaseFile01111 = {
+  version: '0.11.11'
+  type: 'app'
+  repositories: string[]
+  releases: AppLatestServer[]
+  timestamp: number
+}
+
+export type ClientReleaseFile01111 = {
+  version: '0.11.11'
+  type: 'client'
+  /**
+   * The array of repositories that are available to be used
+   */
+  repositories: string[]
+  /**
+   * The array of releases to choose from
+   */
+  releases: ClientLatestServer[]
+  timestamp: number
+}
+
+/**
+ * @deprecated - use AppReleaseFile01111
+ */
 export type AppReleaseFile0118 = {
+  /**
+   * @deprecated - use 0.11.11 (latest)
+   */
   version: '0.11.8'
   type: 'app'
   repositories: string[]
@@ -75,7 +106,13 @@ export type AppReleaseFile0118 = {
   timestamp: number
 }
 
+/**
+ * @deprecated - use ClientReleaseFile01111
+ */
 export type ClientReleaseFile0118 = {
+  /**
+   * @deprecated - use 0.11.11 (latest)
+   */
   version: '0.11.8'
   type: 'client'
   /**
@@ -120,7 +157,7 @@ export type AppLatestServer = {
  */
 export type AppReleaseFile0108 = {
   /**
-   * @deprecated - use 0.11.8 (latest)
+   * @deprecated - use 0.11.11 (latest)
    */
   version: '0.10.0'
   repositories: string[]
@@ -155,7 +192,7 @@ export type GitDownloadUrl =
  */
 export type ClientReleaseFile0108 = {
   /**
-   * @deprecated - use 0.11.8 (latest)
+   * @deprecated - use 0.11.11 (latest)
    */
   version: '0.10.0'
   repositories: string[]

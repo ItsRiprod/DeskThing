@@ -329,8 +329,22 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
     }
 
     this.intervalId = setInterval(async () => {
-      await this.refreshDevices()
-    }, 5000)
+      const devices = await this.adbService.getDevices()
+      logger.debug(`Autodetected Devices: ${devices}`, {
+        domain: 'adbPlatform',
+        function: 'restartInterval'
+      })
+
+      // Checking if there are any new devices
+
+      if (devices.length > this.clients.length) {
+        logger.debug(`New devices detected: ${devices.length - this.clients.length}`, {
+          domain: 'adbPlatform',
+          function: 'restartInterval'
+        })
+        await this.refreshDevices()
+      }
+    }, 20000)
   }
 
   private async refreshDevices(): Promise<void> {
@@ -343,20 +357,19 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
           {
             channel: ProgressChannel.REFRESH_DEVICES,
             weight: 75
+          },
+          {
+            channel: ProgressChannel.BLANK,
+            weight: 25
           }
         ]
       )
-      progressBus.update(ProgressChannel.ST_ADB_REFRESH, 'Getting Devices', 10)
+      const update = progressBus.start(ProgressChannel.BLANK, 'Refresh Devices', 'getting devices')
+
       const adbDevices = await this.adbService.getDevices()
-      progressBus.update(ProgressChannel.ST_ADB_REFRESH, `Found ${adbDevices.length} devices`, 30)
+      update(`Found ${adbDevices.length} devices`, 30)
 
-      const progressMultiplier = 1 / adbDevices.length
-
-      for (const adbDevice of adbDevices) {
-        await this.refreshClient(adbDevice, false, false, progressMultiplier)
-      }
-
-      progressBus.update(ProgressChannel.ST_ADB_REFRESH, 'Cleaning up old devices', 60)
+      update('Cleaning up old devices', 60)
 
       // Mark clients not found in ADB as disconnected
       this.clients.forEach((client) => {
@@ -374,6 +387,12 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
       for (const adbId of newAdbIDs) {
         logger.debug(`Opening port for ${adbId}`)
         await this.adbService.openPort(adbId, this.adbPort)
+      }
+
+      const progressMultiplier = 1 / adbDevices.length
+
+      for (const adbDevice of adbDevices) {
+        await this.refreshClient(adbDevice, false, false, progressMultiplier)
       }
 
       // ensure the local list of clients is up to date
@@ -616,7 +635,9 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
         }
       ]
     )
+
     await this.refreshDevices()
+    progressBus.complete(ProgressChannel.ST_ADB_REFRESH, 'Refreshed ADB Devices')
     progressBus.update(ProgressChannel.REFRESH_CLIENTS, 'Refreshed Devices')
     return true
   }

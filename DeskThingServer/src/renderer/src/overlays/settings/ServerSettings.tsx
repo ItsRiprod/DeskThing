@@ -5,8 +5,10 @@ import { IconLoading, IconPlay, IconSave, IconToggle } from '@renderer/assets/ic
 import Select from '@renderer/components/Select'
 import { SingleValue } from 'react-select'
 import { SettingOption } from '@deskthing/types'
-import { LOG_FILTER, Settings } from '@shared/types'
+import { LOG_FILTER, ProgressChannel, Settings } from '@shared/types'
 import useUpdateStore from '@renderer/stores/updateStore'
+import { useChannelProgress } from '@renderer/hooks/useProgress'
+import { LogEntry } from '@renderer/components/LogEntry'
 
 const ServerSettings: React.FC = () => {
   const initialSettings = useSettingsStore((settings) => settings.settings)
@@ -14,12 +16,19 @@ const ServerSettings: React.FC = () => {
   const [settings, setSettings] = useState(initialSettings)
   const [loading, setLoading] = useState(false)
   const [downloadLoading, setDownloadLoading] = useState(false)
+  const [updateStatus, setUpdateStatus] = useState('')
   const checkForUpdateFn = useUpdateStore((state) => state.checkForUpdates)
+
+  const firewallProgress = useChannelProgress(ProgressChannel.FIREWALL)
+
+  const handleRefreshFirewall = (): void => {
+    window.electron.utility.refreshFirewall()
+    console.log('Refreshing firewall')
+  }
 
   const logLevelOptions = [
     { value: LOG_FILTER.DEBUG, label: 'Debug' },
     { value: LOG_FILTER.MESSAGE, label: 'Message' },
-    { value: LOG_FILTER.LOG, label: 'Log' },
     { value: LOG_FILTER.INFO, label: 'Info' },
     { value: LOG_FILTER.WARN, label: 'Warning' },
     { value: LOG_FILTER.ERROR, label: 'Error' },
@@ -40,26 +49,33 @@ const ServerSettings: React.FC = () => {
     }, 500)
   }
 
-  const checkForUpdate = (): void => {
+  const checkForUpdate = async (): Promise<void> => {
     setDownloadLoading(true)
-    checkForUpdateFn()
+    setUpdateStatus('')
+    const updateStatus = await checkForUpdateFn()
     setTimeout(() => {
       setDownloadLoading(false)
+      setUpdateStatus(updateStatus)
     }, 1000)
   }
 
   return (
-    <div className="w-full absolute inset h-full p-4 flex flex-col divide-y-2 divide-gray-500">
-      <div className="w-full px-4 p-3 flex justify-between items-center">
-        <h2 className="text-xl">Check for updates</h2>
-        <Button
-          title="Manually check for updates to the system"
-          className={`bg-zinc-900 ${!downloadLoading && 'hover:bg-green-500'}`}
-          onClick={checkForUpdate}
-          disabled={downloadLoading}
-        >
-          {downloadLoading ? <IconLoading /> : <IconPlay />}
-        </Button>
+    <div className="w-full text-neutral-200 absolute inset h-full p-4 flex flex-col divide-y divide-neutral-800">
+      <div className="w-full px-4 p-3 flex flex-col justify-between items-center">
+        <div className="w-full flex justify-between items-center">
+          <h2 className="text-xl">Check for updates</h2>
+          <Button
+            title="Manually check for updates to the system"
+            className={`bg-zinc-900 ${!downloadLoading && 'hover:bg-green-500'}`}
+            onClick={checkForUpdate}
+            disabled={downloadLoading}
+          >
+            {downloadLoading ? <IconLoading /> : <IconPlay />}
+          </Button>
+        </div>
+        {updateStatus && (
+          <div className="w-full pt-3 flex justify-between items-center">{updateStatus}</div>
+        )}
       </div>
       <div className="w-full p-4 flex justify-between items-center">
         <h2 className="text-xl">Callback Port</h2>
@@ -147,6 +163,68 @@ const ServerSettings: React.FC = () => {
             className={`transition-color ${settings.server_startMinimized ? 'text-green-500' : 'text-gray-500'}`}
           />
         </Button>
+      </div>
+      <div className="w-full px-4 flex justify-between items-center">
+        <h2 className="text-xl">Auto Detect ADB</h2>
+        <Button
+          className="bg-transparent p-0"
+          title="Automatically detects if devices are connected periodically"
+          onClick={() => handleSettingChange('adb_autoDetect', !settings.adb_autoDetect)}
+        >
+          <IconToggle
+            iconSize={48}
+            checked={settings.adb_autoDetect}
+            className={`transition-color ${settings.adb_autoDetect ? 'text-green-500' : 'text-gray-500'}`}
+          />
+        </Button>
+      </div>
+
+      <div className="w-full px-4 flex justify-between items-center">
+        <h2 className="text-xl">Use Global ADB</h2>
+        <Button
+          className="bg-transparent p-0"
+          title="Use the global ADB instance instead of the one in the app"
+          onClick={() => handleSettingChange('adb_useGlobal', !settings.adb_useGlobal)}
+        >
+          <IconToggle
+            iconSize={48}
+            checked={settings.adb_useGlobal}
+            className={`transition-color ${settings.adb_useGlobal ? 'text-green-500' : 'text-gray-500'}`}
+          />
+        </Button>
+      </div>
+
+      <div className="w-full px-4 flex justify-between items-center">
+        <h2 className="text-xl">Auto Config</h2>
+        <Button
+          title="Automatically configures the car thing when it is detected (may be broken)"
+          className="bg-transparent p-0"
+          onClick={() => handleSettingChange('adb_autoConfig', !settings.adb_autoConfig)}
+        >
+          <IconToggle
+            iconSize={48}
+            checked={settings.adb_autoConfig}
+            className={`transition-color ${settings.adb_autoConfig ? 'text-green-500' : 'text-gray-500'}`}
+          />
+        </Button>
+      </div>
+
+      <div className="flex flex-col">
+        <div className="w-full px-4 p-3 flex justify-between items-center">
+          <h2 className="text-xl">Run Firewall Configuration</h2>
+          <Button
+            className={`bg-zinc-900 ${!loading && 'hover:bg-zinc-800'}`}
+            onClick={handleRefreshFirewall}
+            disabled={firewallProgress.isLoading}
+          >
+            {firewallProgress.isLoading ? <IconLoading /> : <IconPlay />}
+          </Button>
+        </div>
+        {firewallProgress.isLoading && firewallProgress.progress && (
+          <div className="py-2">
+            <LogEntry progressEvent={firewallProgress.progress} />
+          </div>
+        )}
       </div>
       <div className="border-t py-5 border-gray-900 w-full flex justify-end">
         <Button

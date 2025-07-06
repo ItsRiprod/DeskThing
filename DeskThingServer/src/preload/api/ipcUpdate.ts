@@ -7,7 +7,7 @@ import {
 import { ipcRenderer } from 'electron'
 
 export const update = {
-  check: async (): Promise<void> =>
+  check: async (): Promise<string> =>
     await sendCommand({
       kind: IPC_HANDLERS.UPDATE,
       type: IPC_UPDATE_TYPES.CHECK

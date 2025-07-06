@@ -17,9 +17,13 @@ import logger from '@server/utils/logger'
 import {
   AppLatestServer,
   AppReleaseFile,
+  AppReleaseFile0108,
+  AppReleaseFile01111,
   AppReleaseFile0118,
   ClientLatestServer,
   ClientReleaseFile,
+  ClientReleaseFile0108,
+  ClientReleaseFile01111,
   ClientReleaseFile0118,
   GithubAsset,
   PastReleaseInfo
@@ -33,7 +37,13 @@ import {
 } from './releaseValidation'
 import { storeProvider } from '@server/stores/storeProvider'
 import { handleError } from '@server/utils/errorHandler'
-import { collectPastReleases, convertIdToReleaseServer, findFirstZipAsset } from './releaseUtils'
+import {
+  collectPastReleases,
+  convertIdToReleaseServer,
+  createAppReleaseFile,
+  createClientReleaseFile,
+  findFirstZipAsset
+} from './releaseUtils'
 import path from 'node:path'
 import { app } from 'electron'
 import { unlink, writeFile } from 'node:fs/promises'
@@ -41,14 +51,95 @@ import { unlink, writeFile } from 'node:fs/promises'
 /**
  * Handles the migration of any old file to the current file
  */
-export const handleReleaseJSONFileMigration = async <T extends 'app' | 'client'>(
-  type: T,
-  releaseFile: T extends 'app' ? AppReleaseFile : ClientReleaseFile
-): Promise<T extends 'app' ? AppReleaseFile0118 : ClientReleaseFile0118> => {
-  if (releaseFile.version == '0.11.8') {
+export async function handleReleaseJSONFileMigration(
+  releaseFile: AppReleaseFile
+): Promise<AppReleaseFile01111>
+export async function handleReleaseJSONFileMigration(
+  releaseFile: ClientReleaseFile
+): Promise<ClientReleaseFile01111>
+export async function handleReleaseJSONFileMigration(
+  releaseFile: AppReleaseFile | ClientReleaseFile
+): Promise<AppReleaseFile01111 | ClientReleaseFile01111> {
+  // Migrating from older release files is not supported.
+  if (releaseFile.version == '0.11.11') {
     // Type assertion because ts is a bit confused
-    return releaseFile as T extends 'app' ? AppReleaseFile0118 : ClientReleaseFile0118
+    return releaseFile
   }
+
+  if (releaseFile.version == '0.11.8') {
+    // Type narrowing based on the 'type' property
+    if (releaseFile.type === 'app') {
+      return handleReleaseJSONFileMigration0118(releaseFile)
+    } else {
+      return handleReleaseJSONFileMigration0118(releaseFile)
+    }
+  }
+
+  if (releaseFile.version == '0.10.0') {
+    // Type narrowing based on the 'references' existence
+    if ('references' in releaseFile) {
+      return handleReleaseJSONFileMigration0108(releaseFile)
+    } else {
+      return handleReleaseJSONFileMigration0108(releaseFile)
+    }
+  }
+
+  console.debug(releaseFile)
+  throw new Error('Unsupported release file version!')
+}
+
+/**
+ * Handles the migration of any old file to the current file
+ * @param releaseFile - The release file to migrate
+ * @returns The migrated release file
+ */
+export async function handleReleaseJSONFileMigration0118(
+  releaseFile: AppReleaseFile0118
+): Promise<AppReleaseFile01111>
+export async function handleReleaseJSONFileMigration0118(
+  releaseFile: ClientReleaseFile0118
+): Promise<ClientReleaseFile01111>
+export async function handleReleaseJSONFileMigration0118(
+  releaseFile: AppReleaseFile0118 | ClientReleaseFile0118
+): Promise<AppReleaseFile01111 | ClientReleaseFile01111> {
+  // version is outdated (oops)
+
+  const allRepositories = [
+    ...releaseFile.releases.map(
+      (release: AppLatestServer | ClientLatestServer) => release.mainRelease?.repository
+    ),
+    ...releaseFile.repositories
+  ]
+    .filter((repo): repo is string => Boolean(repo))
+    .map((repo) => repo.toLowerCase())
+
+  const uniqueRepositories = [...new Set(allRepositories)]
+
+  if (releaseFile.type == 'app') {
+    // This only works because the release file should ALAWYS be up to date
+    const newReleaseFile = await createAppReleaseFile(true)
+    newReleaseFile.repositories = uniqueRepositories
+    return newReleaseFile
+  } else {
+    // This only works because the release file should ALAWYS be up to date
+    const newReleaseFile = await createClientReleaseFile(true)
+    newReleaseFile.repositories = uniqueRepositories
+    return newReleaseFile
+  }
+}
+
+export async function handleReleaseJSONFileMigration0108(
+  releaseFile: ClientReleaseFile0108
+): Promise<ClientReleaseFile01111>
+export async function handleReleaseJSONFileMigration0108(
+  releaseFile: AppReleaseFile0108
+): Promise<AppReleaseFile01111>
+export async function handleReleaseJSONFileMigration0108(
+  releaseFile: AppReleaseFile0108 | ClientReleaseFile0108
+): Promise<AppReleaseFile01111 | ClientReleaseFile01111> {
+  // version is outdated (oops)
+
+  const type = 'references' in releaseFile ? 'app' : 'client'
 
   const validRepositories: string[] = []
 
@@ -146,12 +237,13 @@ export const handleReleaseJSONFileMigration = async <T extends 'app' | 'client'>
 
   return {
     type: type,
-    version: '0.11.8',
+    version: '0.11.11',
     repositories: validRepositories,
     releases: filteredReleases,
     timestamp: Date.now()
-  } as T extends 'app' ? AppReleaseFile0118 : ClientReleaseFile0118
+  } as AppReleaseFile01111 | ClientReleaseFile01111
 }
+
 /**
  * Handles the migration of any release type to the latest
  * Can optionally pass an "prevRelease" that needs to use information from this new, potentially outdated releaase to update it
@@ -640,10 +732,10 @@ export const handleAddingLegacyRepo = async (
 
   debug('Fetching all releases')
   const allReleases = await githubStore.getAllReleases(repoUrl)
-  debug(`Found ${allReleases.length} zip files`)
+  debug(`Found ${allReleases.length} releases`)
   const latestRelease = allReleases[0]
 
-  debug(`Found ${latestRelease.assets.length} assets in the latest release`)
+  debug(`Found ${latestRelease.assets.length} asset(s) in the latest release`)
   const zipFiles = latestRelease.assets.filter(
     (asset) =>
       asset.content_type.includes('zip') &&
@@ -658,8 +750,12 @@ export const handleAddingLegacyRepo = async (
     `Found ${appFiles.length} app assets and ${clientFiles.length} client assets in the latest release`
   )
 
+  // Splits off into recovery mode
   if (appFiles.length === 0 && clientFiles.length === 0) {
-    throw new Error('No app or client files found in the latest release')
+    // Full send - assuming that the zip file is one or the other - do this by downloading the zip and unzipping its file
+
+    // This will throw if it cannot accomplish this feat
+    return reconstructReleaseBasedOnZipAsset(zipFiles[0], repoUrl, appId)
   }
 
   // Try and find which one is "priority" in this case
@@ -786,6 +882,92 @@ export const handleAddingLegacyRepo = async (
     releaseServer.type = type
     releaseServer.mainRelease = clientRelease
     return releaseServer as ClientLatestServer
+  }
+}
+
+const reconstructReleaseBasedOnZipAsset = async (
+  releaseAsset: GithubAsset,
+  repoUrl: GitRepoUrl,
+  appId?: string
+): Promise<ClientLatestServer | AppLatestServer> => {
+  const debug = logger.createLogger(LOGGING_LEVELS.DEBUG, {
+    function: 'reconstructReleaseBasedOnZipAsset',
+    source: 'migrationUtils'
+  })
+
+  debug(
+    `No app or client files found in the latest release - attempting to download and unzip file ${releaseAsset.name} to try and determine type`
+  )
+
+  let manifest: AppManifest | ClientManifest
+
+  // Attempt to get the manifest first - fail early and save resources if possible
+  try {
+    manifest = await fetchAndUnzipFileToGetManifest(releaseAsset)
+  } catch (error) {
+    throw new Error(`Failed to unzip file ${releaseAsset.name}. ${handleError(error)}`)
+  }
+
+  let type: 'client' | 'app'
+
+  // I believe 'name' is a good indicator of what type of manifest it is? There really isn't a good way though
+  if ('name' in manifest) {
+    // client
+    type = 'client'
+  } else {
+    // app
+    type = 'app'
+  }
+
+  // This should still be cached - so this wont hurt the API limit
+  const githubStore = await storeProvider.getStore('githubStore')
+  const allReleases = await githubStore.getAllReleases(repoUrl)
+
+  const fileId = appId || (releaseAsset.name.split('-')[0] as string)
+
+  const pastReleases = collectPastReleases(allReleases, fileId)
+  const totalDownloads = pastReleases.reduce((acc, release) => acc + release.downloads, 0)
+
+  const latestJSON: ReleaseMETAJson = {
+    repository: repoUrl,
+    updateUrl: releaseAsset.browser_download_url,
+    downloads: releaseAsset.download_count,
+    size: releaseAsset.size,
+    updatedAt: new Date(releaseAsset.updated_at).getTime(),
+    createdAt: new Date(releaseAsset.created_at).getTime()
+  }
+
+  const releaseServer: Partial<AppLatestServer | ClientLatestServer> = {
+    id: fileId,
+    type: type,
+    lastUpdated: Date.now(),
+    totalDownloads: totalDownloads,
+    pastReleases: pastReleases
+  }
+
+  if (type == 'app' && 'label' in manifest) {
+    const latestAppJSON: AppLatestJSONLatest = {
+      ...latestJSON,
+      meta_type: 'app',
+      meta_version: '0.11.8',
+      appManifest: manifest
+    }
+    releaseServer.type = type
+    releaseServer.mainRelease = latestAppJSON
+    return releaseServer as AppLatestServer
+  } else if (type == 'client' && 'name' in manifest) {
+    const latestAppJSON: ClientLatestJSONLatest = {
+      ...latestJSON,
+      meta_type: 'client',
+      meta_version: '0.11.8',
+      clientManifest: manifest
+    }
+    // add the last two values
+    releaseServer.type = type
+    releaseServer.mainRelease = latestAppJSON
+    return releaseServer as ClientLatestServer
+  } else {
+    throw new Error(`Failed to find the correct manifest.json. found ${manifest.id}`)
   }
 }
 

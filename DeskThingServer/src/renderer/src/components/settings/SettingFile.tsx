@@ -36,7 +36,7 @@ export const SettingsFileComponent: React.FC<SettingsFileProps> = ({
             extensions: type.extensions
           })) || []
       })
-      if (!result.canceled && result.filePaths.length > 0) {
+      if (!result.canceled && result.filePaths?.length > 0) {
         handleSettingChange(result.filePaths[0])
       }
     } catch (error) {

@@ -1,7 +1,8 @@
 import { ClientConnectionMethod, LOGGING_LEVELS } from '@deskthing/types'
 import { storeProvider } from '@server/stores/storeProvider'
+import { handleError } from '@server/utils/errorHandler'
 import logger from '@server/utils/logger'
-import { DiscordWebhookData, FeedbackReport, FeedbackType, SystemInfo } from '@shared/types'
+import { DiscordWebhookData, FeedbackReport, FeedbackResult, FeedbackType, SystemInfo } from '@shared/types'
 import { readFileSync } from 'fs'
 import os from 'os'
 import { join } from 'path'
@@ -50,7 +51,7 @@ export class FeedbackService {
     }
   }
 
-  static async sendFeedback(report: FeedbackReport): Promise<void> {
+  static async sendFeedback(report: FeedbackReport): Promise<FeedbackResult> {
     const systemInfo = report.type === 'bug' || report.type === 'other' ? report.feedback : null
 
     const enrichedReport = await this.enrichFeedbackData(report)
@@ -85,9 +86,17 @@ export class FeedbackService {
       if (!response.ok) {
         throw new Error(`Failed to send feedback: ${response.statusText}`)
       }
+      return {
+        message: 'Feedback sent successfully',
+        success: true
+      }
     } catch (error) {
       logger.error('Error sending feedback:', { source: 'feedbackService', error: error as Error })
-      throw error
+      return {
+        message: 'Failed to send feedback',
+        success: false,
+        error: handleError(error)
+      }
     }
   }
 

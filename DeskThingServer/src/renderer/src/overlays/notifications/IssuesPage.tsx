@@ -7,7 +7,7 @@ const IssuesPage: React.FC = () => {
   return (
     <div className="w-full h-full p-4 flex flex-col">
       <h1 className="text-2xl font-bold mb-4">Issues</h1>
-      {issues.length > 0 ? (
+      {issues && issues.length > 0 ? (
         <div className="w-full h-full relative overflow-y-auto">
           <div className="absolute inset-0 w-full h-full">
             {issues.map((issue, index) => (

@@ -1,8 +1,8 @@
-import { IconArrowRight, IconRefresh } from '@renderer/assets/icons'
+import { IconArrowRight, IconLoading, IconRefresh } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
 import Overlay from '@renderer/overlays/Overlay'
 import useFeedbackStore from '@renderer/stores/feedbackStore'
-import { FeedbackReport, FeedbackType } from '@shared/types'
+import { FeedbackReport, FeedbackResult, FeedbackType } from '@shared/types'
 import { FC, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
@@ -14,6 +14,9 @@ const FeedbackOverlay: FC = () => {
   const rawFeedback = useFeedbackStore((state) => state.feedback)
   const systemInfo = useFeedbackStore((state) => state.systemData)
   const [isFetching, setIsFetching] = useState(false)
+
+  const [result, setResult] = useState<FeedbackResult | null>(null)
+  const [loading, setIsLoading] = useState(false)
 
   const [feedback, setFeedback] = useState<Partial<FeedbackReport>>(
     rawFeedback || {
@@ -48,16 +51,18 @@ const FeedbackOverlay: FC = () => {
     setSearchParams(searchParams)
   }
 
-  const handleSubmit = (): void => {
+  const handleSubmit = async (): Promise<void> => {
     if (feedback.feedback?.title && feedback.feedback?.feedback) {
-      submitFeedback({
+      setIsLoading(true)
+      const result = await submitFeedback({
         ...feedback,
         feedback: {
           ...feedback.feedback,
           ...systemInfo
         }
       })
-      onClose()
+      setIsLoading(false)
+      setResult(result)
     }
   }
 
@@ -347,12 +352,18 @@ const FeedbackOverlay: FC = () => {
             }
             onClick={handleSubmit}
             className="hover:bg-zinc-800 disabled:hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={!feedback.feedback?.title || !feedback.feedback?.feedback}
+            disabled={!feedback.feedback?.title || !feedback.feedback?.feedback || loading}
           >
             Submit Feedback
-            <IconArrowRight />
+            {loading ? <IconLoading /> : <IconArrowRight />}
           </Button>
         </div>
+        {result && (
+          <div className="mt-4">
+            <p className={result.success ? 'text-green-500' : 'text-red-500'}>{result.message}</p>
+            {result.error && <p className="text-red-500">Error: {result.error}</p>}
+          </div>
+        )}
       </div>
     </Overlay>
   )

@@ -21,6 +21,7 @@ import { GithubStoreClass } from '@shared/stores/githubStore'
 // import { ExpressServerStoreClass } from '@shared/stores/expressServerStore'
 // import { ExpressServerManager } from './_expressServerStore'
 import logger from '@server/utils/logger'
+import { ServerTaskStoreClass } from '@shared/stores/serverTaskStore'
 
 interface Stores {
   appDataStore: AppDataStoreClass
@@ -39,6 +40,7 @@ interface Stores {
   supporterStore: SupporterStoreClass
   autoLaunchStore: AutoLaunchStoreClass
   githubStore: GithubStoreClass
+  serverTaskStore: ServerTaskStoreClass
 }
 
 export class StoreProvider {
@@ -68,7 +70,8 @@ export class StoreProvider {
       updateStore: () => import('./updateStore').then((m) => m.UpdateStore),
       supporterStore: () => import('./supporterStore').then((m) => m.SupporterStore),
       autoLaunchStore: () => import('./autoLaunchStore').then((m) => m.AutoLaunchStore),
-      githubStore: () => import('./githubStore').then((m) => m.GithubStore)
+      githubStore: () => import('./githubStore').then((m) => m.GithubStore),
+      serverTaskStore: () => import('./serverTaskStore').then((m) => m.ServerTaskStore)
     }
 
     this.storeInitializers = {
@@ -112,7 +115,13 @@ export class StoreProvider {
       supporterStore: async () => new (await storeImports.supporterStore())(),
       autoLaunchStore: async () =>
         new (await storeImports.autoLaunchStore())(await this.getStore('settingsStore', false)),
-      githubStore: async () => new (await storeImports.githubStore())()
+      githubStore: async () => new (await storeImports.githubStore())(),
+      serverTaskStore: async () =>
+        new (await storeImports.serverTaskStore())(
+          await this.getStore('taskStore', false),
+          await this.getStore('clientStore', false),
+          await this.getStore('platformStore', false)
+        )
     }
 
     this.initialize()

@@ -1,10 +1,9 @@
 import React, { useState } from 'react'
 import Sidebar from '@renderer/nav/Sidebar'
 import Button from '@renderer/components/Button'
-import { IconGear, IconLink, IconRefresh, IconPlus } from '@renderer/assets/icons'
+import { IconLink, IconRefresh, IconPlus } from '@renderer/assets/icons'
 import { useClientStore, useReleaseStore, usePageStore } from '@renderer/stores'
 import MainElement from '@renderer/nav/MainElement'
-import { useSearchParams } from 'react-router-dom'
 import { ProgressChannel } from '@shared/types'
 import { ClientDownloadCard } from './ClientDownloadCard'
 import { useChannelProgress } from '@renderer/hooks/useProgress'
@@ -21,10 +20,10 @@ const ClientDownloads: React.FC = () => {
   const refreshClient = useClientStore((clientStore) => clientStore.requestClientManifest)
   const loadClientZip = useClientStore((clientStore) => clientStore.loadClientZip)
   useChannelProgress(ProgressChannel.IPC_CLIENT)
+  useChannelProgress(ProgressChannel.IPC_RELEASES)
 
   const [addClientOverlay, setAddClientOverlay] = useState(false)
 
-  const [searchParams, setSearchParams] = useSearchParams()
   const [loading, setLoading] = useState(false)
   const [uiState, setUiState] = useState({
     refreshingClients: false
@@ -47,7 +46,7 @@ const ClientDownloads: React.FC = () => {
         ...prev,
         refreshingClients: true
       }))
-      await refresh(false)
+      await refresh(true)
       await refreshClient()
       setTimeout(
         () => {
@@ -59,12 +58,6 @@ const ClientDownloads: React.FC = () => {
         Math.random() * 2000 + 1500
       )
     }
-  }
-
-  const openClientSettings = (): void => {
-    searchParams.set('settings', 'true')
-    searchParams.set('page', 'client')
-    setSearchParams(searchParams)
   }
 
   const handleToggleAddRepo = (): void => {
@@ -93,25 +86,21 @@ const ClientDownloads: React.FC = () => {
           ) : (
             <p>Client Not Found!</p>
           )}
-          <Button
-            onClick={handleRefreshData}
-            className="hover:bg-zinc-900"
-            disabled={uiState.refreshingClients}
-          >
-            <IconRefresh
-              className={`${uiState.refreshingClients ? 'animate-spin-smooth' : ''}`}
-              strokeWidth={1.5}
-            />
-            <p className="md:block xs:hidden flex-grow xs:text-center">
-              Refresh<span className="hidden group-disabled:inline">ing</span>
-            </p>
-          </Button>
         </div>
         <div>
           <div className="flex flex-col md:items-stretch xs:items-center gap-2">
-            <Button className="hover:bg-zinc-900" onClick={openClientSettings}>
-              <IconGear strokeWidth={1.5} />
-              <p className="md:block xs:hidden text-center flex-grow">Client Settings</p>
+            <Button
+              onClick={handleRefreshData}
+              className="hover:bg-zinc-900 w-full"
+              disabled={uiState.refreshingClients}
+            >
+              <IconRefresh
+                className={`${uiState.refreshingClients ? 'animate-spin-smooth' : ''}`}
+                strokeWidth={1.5}
+              />
+              <p className="md:block xs:hidden flex-grow xs:text-center">
+                Refresh<span className="hidden group-disabled:inline">ing</span>
+              </p>
             </Button>
             <Button onClick={handleToggleAddRepo} className="hover:bg-zinc-900">
               <IconPlus />
@@ -127,7 +116,7 @@ const ClientDownloads: React.FC = () => {
       <MainElement className="p-4">
         <div className="w-full h-full relative overflow-y-auto flex flex-col">
           <div className="absolute inset w-full h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 p-4">
-            {clientReleases.length > 0 ? (
+            {clientReleases && clientReleases.length > 0 ? (
               clientReleases.map((release) => (
                 <ClientDownloadCard
                   key={release.id}

@@ -110,13 +110,6 @@ class ProgressEventBus extends EventEmitter {
     // If this is an operation - handle its sub operations
     if ('subOperations' in event) {
       event.subOperations.forEach((_subOp, subChannel) => {
-        this.channelStatusMap.set(subChannel, ProgressStatus.COMPLETE)
-        this.channelProgressMap.set(
-          subChannel,
-          Math.min(100, this.channelProgressMap.get(subChannel) || 0)
-        )
-        this.channelOperationMap.delete(subChannel)
-
         // Remove it from the operation hierarchy
         this.operationHierarchy.get(subChannel)?.delete(event)
 
@@ -124,6 +117,7 @@ class ProgressEventBus extends EventEmitter {
         if (this.operationHierarchy.get(subChannel)?.size === 0) {
           this.operationHierarchy.delete(subChannel)
         }
+        this.complete(subChannel)
       })
 
       event.subOperations.clear()
@@ -223,6 +217,8 @@ class ProgressEventBus extends EventEmitter {
     // first sync the constants
     this.syncStatusMaps(event)
 
+    event.timestamp = event.timestamp || Date.now()
+
     // Emit the event
     super.emit('progress', event)
 
@@ -233,10 +229,36 @@ class ProgressEventBus extends EventEmitter {
 
     // top level operation
     if (!operations) {
-      logger.info(`(${event.progress}%) ${event.operation} - ${event.message}`, {
-        function: event.channel,
-        source: 'Progress'
-      })
+      const logString = `(${event.progress}%) ${event.operation} - ${event.message}`
+      switch (event.status) {
+        case ProgressStatus.ERROR:
+          logger.error(logString, {
+            function: event.channel,
+            source: 'Progress'
+          })
+          break
+        case ProgressStatus.WARN:
+          logger.warn(logString, {
+            function: event.channel,
+            source: 'Progress'
+          })
+          break
+        case ProgressStatus.COMPLETE:
+        case ProgressStatus.INFO:
+        case ProgressStatus.RUNNING:
+        case ProgressStatus.SUCCESS:
+          logger.info(logString, {
+            function: event.channel,
+            source: 'Progress'
+          })
+          break
+        default:
+          logger.warn(`Unknown Status: ${event.status}!!\n` + logString, {
+            function: event.channel,
+            source: 'Progress'
+          })
+          break
+      }
       return true
     } else {
       logger.debug(`(${event.progress}%) ${event.operation} - ${event.message}`, {
@@ -313,6 +335,7 @@ class ProgressEventBus extends EventEmitter {
       operation,
       status: ProgressStatus.INFO,
       message,
+      isLoading: true,
       progress,
       channel
     }
@@ -350,12 +373,18 @@ class ProgressEventBus extends EventEmitter {
       })
     }
 
-    const finalEvent: ProgressEvent = { operation, status: ProgressStatus.WARN, message, channel }
+    const finalEvent: ProgressEvent = {
+      operation,
+      status: ProgressStatus.WARN,
+      isLoading: true,
+      message,
+      channel
+    }
 
     this.emit(channel, finalEvent)
   }
 
-  complete(channel: ProgressChannel, message: string, operation?: string): void {
+  complete(channel: ProgressChannel, message?: string, operation?: string): void {
     if (!operation) {
       operation = this.channelOperationMap.get(channel) ?? ''
     } else {
@@ -365,7 +394,7 @@ class ProgressEventBus extends EventEmitter {
     const finalEvent: ProgressEvent = {
       operation,
       status: ProgressStatus.COMPLETE,
-      message,
+      message: message ?? operation,
       isLoading: false,
       progress: 100,
       channel

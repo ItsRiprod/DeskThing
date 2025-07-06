@@ -96,7 +96,7 @@ export const TaskBase: FC<TaskProps> = memo(
         )
       },
       (prev, next) => {
-        return Object.keys(prev.debugging).length === Object.keys(next.debugging).length
+        return Object.keys(prev.debugging)?.length === Object.keys(next.debugging)?.length
       }
     )
     DebugSection.displayName = 'DebugSection'

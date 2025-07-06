@@ -7,13 +7,14 @@ import MainElement from '@renderer/nav/MainElement'
 import { deviceMessages } from '@renderer/assets/refreshMessages'
 import ConnectionComponent from '@renderer/components/Client/Connection'
 import { useSearchParams } from 'react-router-dom'
-import ProgressOverlay from '@renderer/overlays/ProgressOverlay'
 import { ProgressChannel } from '@shared/types'
+import { useChannelProgress } from '@renderer/hooks/useProgress'
 
 const ClientConnections: React.FC = () => {
   const settings = useSettingsStore((settings) => settings.settings)
   const { clients, clientManifest, refreshConnections } = useClientStore((state) => state)
   const setPage = usePageStore((pageStore) => pageStore.setPage)
+  useChannelProgress(ProgressChannel.IPC_PLATFORM)
 
   // Visibility States
   const [searchParams, setSearchParams] = useSearchParams()
@@ -87,8 +88,6 @@ const ClientConnections: React.FC = () => {
 
   return (
     <div className="flex h-full w-full">
-      <ProgressOverlay channel={ProgressChannel.IPC_PLATFORM} />
-      <ProgressOverlay channel={ProgressChannel.PLATFORM_CHANNEL} />
       <Sidebar className="flex justify-between flex-col h-full md:items-stretch xs:items-center">
         <div>
           <div className="md:block xs:hidden block">

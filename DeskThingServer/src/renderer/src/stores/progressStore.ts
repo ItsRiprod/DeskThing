@@ -7,7 +7,7 @@ interface ProgressStore {
   initialized: boolean
   subscribed_channels: ProgressChannel[]
   currentProgressEvent: ProgressEvent | undefined
-  pastEvents: Map<ProgressChannel, string[]>
+  pastEvents: Map<ProgressChannel, ProgressEvent[]>
 
   // Actions
   initialize: () => Promise<void>
@@ -40,6 +40,7 @@ export const useProgressStore = create<ProgressStore>()((set, get) => ({
         // ignore any channels not subscribed to
         return
       }
+      console.debug(`Ran channel ${event.channel}`)
       get().updateProgress(event)
     })
 
@@ -67,30 +68,52 @@ export const useProgressStore = create<ProgressStore>()((set, get) => ({
     set((state) => {
       console.debug(`[${event.operation}] [${event.channel}]: ${event.message}`, event)
 
-      event.id = crypto.randomUUID()
+      const eventWithId = { ...event, id: crypto.randomUUID() }
+      const newPastEvents = new Map(state.pastEvents)
+      const newProgressMap = new Map(state.progressMap)
 
-      if (state.pastEvents.has(event.channel)) {
-        if (state.currentProgressEvent?.channel != event.channel) {
-          // state.pastEvents.delete(event.channel)
+      // Check if the event has already been logged before
+      if (newPastEvents.has(eventWithId.channel)) {
+        // Check if the event is in the progress map
+        if (newProgressMap.has(eventWithId.channel)) {
+          const oldProgress = newProgressMap.get(eventWithId.channel)?.progress
+          const newProgress = eventWithId?.progress
+
+          // If the new progress is less than the old progress - this is a new event
+          const isRestart =
+            oldProgress !== undefined && newProgress !== undefined && newProgress < oldProgress
+
+          if (isRestart) {
+            newPastEvents.delete(eventWithId.channel)
+          }
         }
-        state.pastEvents.get(event.channel)?.push(`(${event.progress || 0}) ${event.message}`)
+
+        // Add this channel to that event
+        newPastEvents.get(eventWithId.channel)?.push(eventWithId)
       } else {
-        state.pastEvents.set(event.channel, [`(${event.progress || 0}) ${event.message}`])
+        newPastEvents.set(eventWithId.channel, [eventWithId])
       }
 
-      state.progressMap.set(event.channel, event)
-      return { progressMap: state.progressMap, currentProgressEvent: event }
+      newProgressMap.set(event.channel, event)
+      return { progressMap: newProgressMap, pastEvents: newPastEvents, currentProgressEvent: event }
     }),
 
   clearProgress: (channel: ProgressChannel) =>
     set((state) => {
       console.debug(`Clearing progress for channel: ${channel}`)
-      const newMap = new Map(state.progressMap)
-      newMap.delete(channel)
-      return { progressMap: newMap }
+      const newProgressMap = new Map(state.progressMap)
+      const newPastEvents = new Map(state.pastEvents)
+
+      newProgressMap.delete(channel)
+      newPastEvents.delete(channel)
+
+      return {
+        progressMap: newProgressMap,
+        pastEvents: newPastEvents
+      }
     }),
 
-  clearAllProgress: () => set({ progressMap: new Map() }),
+  clearAllProgress: () => set({ progressMap: new Map(), pastEvents: new Map() }),
 
   getChannelProgress: (channel: ProgressChannel) => {
     return get().progressMap.get(channel)

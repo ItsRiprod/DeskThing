@@ -99,12 +99,15 @@ export class UpdateStore
     this._initialized = true
   }
 
-  checkForUpdates = async (): Promise<void> => {
-    if (!this._autoUpdater) return
+  checkForUpdates = async (): Promise<string> => {
+    if (!this._autoUpdater) return 'AutoUpdater not initialized'
 
     try {
       const downloadNotification = await this._autoUpdater.checkForUpdatesAndNotify()
-      if (downloadNotification) {
+      if (
+        downloadNotification &&
+        process.env.PACKAGE_VERSION != downloadNotification.updateInfo.version
+      ) {
         const updateInfo: UpdateInfoType = {
           updateAvailable: true,
           updateDownloaded: false,
@@ -114,12 +117,14 @@ export class UpdateStore
           releaseDate: downloadNotification.updateInfo.releaseDate
         }
         this.setUpdateStatus(updateInfo)
+        return 'Update available'
       } else {
         const updateInfo: UpdateInfoType = {
           updateAvailable: false,
           updateDownloaded: false
         }
         this.setUpdateStatus(updateInfo)
+        return 'No update available'
       }
     } catch (error) {
       const errorMessage = handleError(error)
@@ -131,6 +136,7 @@ export class UpdateStore
       }
       this.setUpdateStatus(errorStatus)
       this.emit('update-error', errorMessage)
+      return errorMessage
     }
   }
 

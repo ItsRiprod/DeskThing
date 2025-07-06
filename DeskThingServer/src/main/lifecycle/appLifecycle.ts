@@ -60,6 +60,16 @@ export async function initializeAppLifecycle(): Promise<void> {
     }
   })
 
+  setTimeout(async () => {
+    try {
+      const { afterStartTasks } = await import('@server/services/initialization/AfterStartupTasks')
+
+      afterStartTasks()
+    } catch (error) {
+      console.error('Failed to run startup tasks', error)
+    }
+  }, 10000)
+
   app.on('before-quit', async () => {
     console.log('Quitting app')
     const { default: cacheManager } = await import('../services/cache/cacheManager')

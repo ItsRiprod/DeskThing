@@ -38,6 +38,7 @@
     "electron-log": "^5.2.4",
     "electron-updater": "^6.1.7",
     "express": "^4.21.0",
+    "flashthing": "^0.1.5",
     "lottie-react": "^2.4.0",
     "react-qr-code": "^2.0.15",
     "react-rewards": "^2.0.4",

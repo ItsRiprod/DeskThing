@@ -83,9 +83,7 @@ const AppDownloads: React.FC = () => {
 
   return (
     <div className="flex h-full w-full">
-      {addAppRepoOverlay && (
-        <AddRepoOverlay onClose={handleToggleAddRepo} onZipUpload={onZipAdd} />
-      )}
+      {addAppRepoOverlay && <AddRepoOverlay onClose={handleToggleAddRepo} onZipUpload={onZipAdd} />}
       {stagedAppManifest && <SuccessNotification />}
       <Sidebar className="flex justify-end flex-col h-full max-h-full md:items-stretch xs:items-center">
         <div>

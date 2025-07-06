@@ -55,6 +55,14 @@ export interface TaskStoreClass extends StoreInterface {
   getTaskList(): Promise<FullTaskList>
 
   /**
+   * Gets a task
+   * @param source Source identifier
+   * @param id Task ID
+   * @returns Promise resolving to the task or undefined
+   */
+  getTask(source: string, id: string): Promise<Task | undefined>
+
+  /**
    * Gets the current task
    * @returns Promise resolving to the current Task or undefined
    */
@@ -74,10 +82,10 @@ export interface TaskStoreClass extends StoreInterface {
 
   /**
    * Adds multiple tasks
-   * @param appId Source app ID
+   * @param source Source of the task
    * @param tasks Record of tasks to add
    */
-  addTasks(appId: string, tasks: Record<string, Task>): Promise<void>
+  addTasks(source: string, tasks: Record<string, Task>): Promise<void>
 
   /**
    * Updates a task

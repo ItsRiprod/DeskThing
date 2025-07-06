@@ -27,12 +27,14 @@ export async function initializeStores(): Promise<void> {
     updateStore: await storeProvider.getStore('updateStore', false),
     clientStore: await storeProvider.getStore('clientStore', false),
     profileStore: await storeProvider.getStore('profileStore', true),
-    autoLaunchStore: await storeProvider.getStore('autoLaunchStore', true)
+    autoLaunchStore: await storeProvider.getStore('autoLaunchStore', true),
+    serverTaskStore: await storeProvider.getStore('serverTaskStore', true)
   }
 
   const platformStore = await storeProvider.getStore('platformStore', false)
 
   Object.values(storeList).forEach((store) => cacheManager.registerStore(store))
+
 
   // Set up store listeners
   storeList.mappingStore.addListener('action', (action) => {

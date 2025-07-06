@@ -48,7 +48,7 @@ const OverlayWrapper: React.FC<React.PropsWithChildren> = ({
 
   return (
     <>
-      {activeRequests.length > 0 && <LinkRequestOverlay />}
+      {activeRequests && activeRequests.length > 0 && <LinkRequestOverlay />}
       {(update.updateAvailable || update.updateDownloaded) && <UpdateOverlay />}
       {activeOverlays.map((key) => {
         const OverlayComponent = overlays[key]
