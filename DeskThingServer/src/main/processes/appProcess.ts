@@ -62,6 +62,8 @@ process.on('SIGTERM', () => {
 const setupServer = async (): Promise<void> => {
   const serverPath = process.env.DESKTHING_URL
   const appName = process.env.DESKTHING_APP_NAME || 'unknown'
+
+  process.title = appName
   if (!serverPath) {
     throw new Error('SERVER_INDEX_PATH is not defined!')
   }

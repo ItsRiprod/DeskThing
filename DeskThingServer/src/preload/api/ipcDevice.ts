@@ -1,8 +1,10 @@
 import {
+  AutoConfigResult,
   DeviceHandlerReturnMap,
   DeviceHandlerReturnType,
   DeviceIPCData,
   FLASH_REQUEST,
+  FlashingState,
   IPC_DEVICE_TYPES,
   IPC_HANDLERS,
   ThingifyApiFirmware,
@@ -10,16 +12,16 @@ import {
   ThingifyArchiveDownloadResult
 } from '@shared/types'
 import { ipcRenderer } from 'electron'
-import type { FlashEvent } from 'flashthing'
 
 export const device = {
+  // flash
   getSteps: async (): Promise<number | null> =>
     await sendCommand({
       kind: IPC_HANDLERS.DEVICE,
       type: IPC_DEVICE_TYPES.FLASH_GET,
       request: FLASH_REQUEST.STEPS
     }),
-  getCurrentState: async (): Promise<FlashEvent | null> =>
+  getCurrentState: async (): Promise<FlashingState | null> =>
     await sendCommand({
       kind: IPC_HANDLERS.DEVICE,
       type: IPC_DEVICE_TYPES.FLASH_GET,
@@ -44,6 +46,12 @@ export const device = {
       type: IPC_DEVICE_TYPES.FLASH_OPERATION,
       request: 'start'
     }),
+  startUSBMode: async (): Promise<void> =>
+    await sendCommand({
+      kind: IPC_HANDLERS.DEVICE,
+      type: IPC_DEVICE_TYPES.FLASH_OPERATION,
+      request: 'usbmode'
+    }),
   cancelFlash: async (): Promise<void> =>
     await sendCommand({
       kind: IPC_HANDLERS.DEVICE,
@@ -62,7 +70,24 @@ export const device = {
       type: IPC_DEVICE_TYPES.FLASH_OPERATION,
       request: 'unbrick'
     }),
-  getFirmwareOptions: async (): Promise<ThingifyApiFirmware[] | null> =>
+  runAutoConfig: async (step: number): Promise<AutoConfigResult> =>
+    await sendCommand({
+      kind: IPC_HANDLERS.DEVICE,
+      type: IPC_DEVICE_TYPES.FLASH_OPERATION,
+      request: 'autoconfig',
+      payload: step
+    }),
+
+  // driver
+  runDriver: async (): Promise<void> =>
+    await sendCommand({
+      kind: IPC_HANDLERS.DEVICE,
+      type: IPC_DEVICE_TYPES.FLASH_OPERATION,
+      request: 'driver'
+    }),
+
+  // thingify
+  getFirmwareOptions: async (): Promise<ThingifyApiFirmware | null> =>
     await sendCommand({
       kind: IPC_HANDLERS.DEVICE,
       type: IPC_DEVICE_TYPES.THINGIFY_GET,
@@ -75,12 +100,21 @@ export const device = {
       request: 'versions',
       payload: firmwareId
     }),
-  downloadFile: async (fileId: string): Promise<ThingifyArchiveDownloadResult> =>
+  getStagedFile: async (): Promise<string | undefined> =>
+    await sendCommand({
+      kind: IPC_HANDLERS.DEVICE,
+      type: IPC_DEVICE_TYPES.THINGIFY_GET,
+      request: 'file'
+    }),
+  downloadFile: async (
+    versionId: string,
+    fileId: string
+  ): Promise<ThingifyArchiveDownloadResult | null> =>
     await sendCommand({
       kind: IPC_HANDLERS.DEVICE,
       type: IPC_DEVICE_TYPES.THINGIFY_SET,
       request: 'download',
-      payload: fileId
+      payload: { version: versionId, file: fileId }
     }),
   uploadFile: async (filePath: string): Promise<ThingifyArchiveDownloadResult> =>
     await sendCommand({
@@ -88,8 +122,20 @@ export const device = {
       type: IPC_DEVICE_TYPES.THINGIFY_SET,
       request: 'upload',
       payload: filePath
+    }),
+  getAvailableStagedFiles: async (): Promise<string[]> =>
+    await sendCommand({
+      kind: IPC_HANDLERS.DEVICE,
+      type: IPC_DEVICE_TYPES.THINGIFY_GET,
+      request: 'files'
+    }),
+  selectStagedFile: async (fileName: string): Promise<string> =>
+    await sendCommand({
+      kind: IPC_HANDLERS.DEVICE,
+      type: IPC_DEVICE_TYPES.THINGIFY_SET,
+      request: 'file',
+      payload: fileName
     })
-
 }
 
 const sendCommand = <T extends IPC_DEVICE_TYPES, R extends keyof DeviceHandlerReturnMap[T]>(

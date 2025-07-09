@@ -41,8 +41,10 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
 
   readonly identifier: Omit<ClientIdentifier, 'id' | 'active'> = {
     providerId: PlatformIDs.ADB,
-    capabilities: [ProviderCapabilities.CONFIGURE, ProviderCapabilities.PING]
+    capabilities: [ProviderCapabilities.CONFIGURE, ProviderCapabilities.PING],
+    connectionState: ConnectionState.Established
   }
+
 
   constructor() {
     super()
@@ -75,6 +77,9 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
           case 'manifest': {
             const manifest = await this.adbService.getDeviceManifest(data.adbId)
             return manifest
+          }
+          case 'devices': {
+            return this.clients
           }
           default:
             break
@@ -259,12 +264,14 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
           await this.adbService.configureDevice(data.adbId, this.adbPort)
 
           progressBus.complete(ProgressChannel.PLATFORM_CHANNEL, 'Completed Operation')
+          return true
         } catch (error) {
           progressBus.error(
             ProgressChannel.PLATFORM_CHANNEL,
             'Error configuring device',
             handleError(error)
           )
+          return false
         }
       }
     }
@@ -457,6 +464,7 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
         const updates: Client = {
           ...existingClient,
           connected: false,
+          connectionState: ConnectionState.Established,
           timestamp: Date.now(),
           meta: {
             [this.id]: {
@@ -474,7 +482,8 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
               id: adbId,
               active: true,
               providerId: this.id,
-              capabilities: this.identifier.capabilities
+              capabilities: this.identifier.capabilities,
+              connectionState: ConnectionState.Established
             }
           }
         }
@@ -502,6 +511,8 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
         update(`Finished updating ${adbId}`, 100)
         return updates
       } else {
+        // first remove the client if it exists (i.e. if it is a forced refresh)
+        this.clients = this.clients.filter((client) => client.identifiers[this.id]?.id === adbId)
         const newClient: Client = {
           clientId: adbId,
           connectionState: ConnectionState.Established, // not actually connected
@@ -510,7 +521,8 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
               id: adbId,
               active: true,
               providerId: this.id,
-              capabilities: this.identifier.capabilities
+              capabilities: this.identifier.capabilities,
+              connectionState: ConnectionState.Established
             }
           },
           meta: {

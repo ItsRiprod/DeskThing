@@ -22,6 +22,8 @@ import { GithubStoreClass } from '@shared/stores/githubStore'
 // import { ExpressServerManager } from './_expressServerStore'
 import logger from '@server/utils/logger'
 import { ServerTaskStoreClass } from '@shared/stores/serverTaskStore'
+import { FlashStoreClass } from '@shared/stores/flashStore'
+import { ThingifyStoreClass } from '@shared/stores/thingifyStore'
 
 interface Stores {
   appDataStore: AppDataStoreClass
@@ -41,6 +43,8 @@ interface Stores {
   autoLaunchStore: AutoLaunchStoreClass
   githubStore: GithubStoreClass
   serverTaskStore: ServerTaskStoreClass
+  flashStore: FlashStoreClass
+  thingifyStore: ThingifyStoreClass
 }
 
 export class StoreProvider {
@@ -71,7 +75,9 @@ export class StoreProvider {
       supporterStore: () => import('./supporterStore').then((m) => m.SupporterStore),
       autoLaunchStore: () => import('./autoLaunchStore').then((m) => m.AutoLaunchStore),
       githubStore: () => import('./githubStore').then((m) => m.GithubStore),
-      serverTaskStore: () => import('./serverTaskStore').then((m) => m.ServerTaskStore)
+      serverTaskStore: () => import('./serverTaskStore').then((m) => m.ServerTaskStore),
+      flashStore: () => import('./flashStore').then((m) => m.FlashStore),
+      thingifyStore: () => import('./thingifyStore').then((m) => m.ThingifyStore)
     }
 
     this.storeInitializers = {
@@ -121,7 +127,9 @@ export class StoreProvider {
           await this.getStore('taskStore', false),
           await this.getStore('clientStore', false),
           await this.getStore('platformStore', false)
-        )
+        ),
+      flashStore: async () => new (await storeImports.flashStore())(),
+      thingifyStore: async () => new (await storeImports.thingifyStore())()
     }
 
     this.initialize()

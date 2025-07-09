@@ -33,7 +33,8 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
 
   readonly identifier: Omit<ClientIdentifier, 'id' | 'active'> = {
     providerId: PlatformIDs.WEBSOCKET,
-    capabilities: [ProviderCapabilities.COMMUNICATE, ProviderCapabilities.PING]
+    capabilities: [ProviderCapabilities.COMMUNICATE, ProviderCapabilities.PING],
+    connectionState: ConnectionState.Established
   }
 
   constructor() {
@@ -235,11 +236,13 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
       client.identifiers[this.id] = {
         ...this.identifier,
         id: client.clientId,
-        active: true
+        active: true,
+        connectionState: ConnectionState.Connected
       }
     } else if (client.identifiers[this.id]) {
       client.identifiers[this.id]!.id = client.clientId
       client.identifiers[this.id]!.active = true
+      client.identifiers[this.id]!.connectionState = ConnectionState.Connected
     }
 
     // Set primary provider if not set

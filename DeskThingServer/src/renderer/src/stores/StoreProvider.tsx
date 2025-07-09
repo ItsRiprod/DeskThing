@@ -9,6 +9,7 @@ import { useProgressStore } from './progressStore'
 import useMappingStore from './mappingStore'
 import useUpdateStore from './updateStore'
 import useNotificationStore from './notificationStore'
+import useFlashStore from './flashStore'
 
 export const StoreProvider: React.FC = () => {
   const [initialized, setIsInitialized] = useState(false)
@@ -32,7 +33,8 @@ export const StoreProvider: React.FC = () => {
           useProgressStore.getState().initialize(),
           useMappingStore.getState().initialize(),
           useUpdateStore.getState().initialize(),
-          useNotificationStore.getState().initialize()
+          useNotificationStore.getState().initialize(),
+          useFlashStore.getState().initialize()
         ])
 
         setIsInitialized(true)

@@ -12,7 +12,15 @@ import {
   Key
 } from '@deskthing/types'
 import { BrowserWindow, IpcRendererEvent } from 'electron'
-import { ProgressEvent, Log, Settings, AppLatestServer, ClientLatestServer } from '..'
+import {
+  ProgressEvent,
+  Log,
+  Settings,
+  AppLatestServer,
+  ClientLatestServer,
+  ThingifyArchiveDownloadEvent,
+  FlashingState
+} from '..'
 
 export type IpcRendererCallback<T extends ServerIPCData['type']> = (
   event: IpcRendererEvent,
@@ -158,6 +166,18 @@ export type ServerIPCData = {
   | {
       type: 'progress:event'
       payload: ProgressEvent
+    }
+  | {
+      type: 'flash:download'
+      payload: ThingifyArchiveDownloadEvent
+    }
+  | {
+      type: 'flash:stagedFile'
+      payload: string
+    }
+  | {
+      type: 'flash:state'
+      payload: FlashingState
     }
 )
 

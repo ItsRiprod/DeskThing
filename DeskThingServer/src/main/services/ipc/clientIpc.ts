@@ -191,12 +191,12 @@ export const clientHandler: {
   'push-staged': async (data) => {
     try {
       progressBus.startOperation(
-        ProgressChannel.PUSH_SCRIPT,
+        ProgressChannel.IPC_CLIENT,
         'push-staged',
         'Pushing staged app...',
         [
           {
-            channel: ProgressChannel.IPC_CLIENT,
+            channel: ProgressChannel.PLATFORM_CHANNEL,
             weight: 5
           }
         ]
@@ -209,7 +209,7 @@ export const clientHandler: {
         adbId: data.payload.adbId
       })
       // HandlePushWebApp(data.payload)
-      progressBus.complete(ProgressChannel.PUSH_SCRIPT, 'push-staged', 'Staged app pushed!')
+      progressBus.complete(ProgressChannel.IPC_CLIENT, 'push-staged', 'Staged app pushed!')
     } catch (error) {
       progressBus.error(
         ProgressChannel.IPC_CLIENT,
@@ -312,5 +312,38 @@ export const clientHandler: {
       getClientWindow(devicePort)
     }
     return true
+  },
+
+  [IPC_CLIENT_TYPES.DOWNLOAD_LATEST]: async () => {
+    const { storeProvider } = await import('@server/stores/storeProvider')
+    try {
+      progressBus.startOperation(
+        ProgressChannel.IPC_CLIENT,
+        'Downloading Latest Client',
+        'Staging Download...',
+        [
+          {
+            channel: ProgressChannel.ST_RELEASE_CLIENT_DOWNLOAD,
+            weight: 5
+          }
+        ]
+      )
+      const clientStore = await storeProvider.getStore('clientStore')
+      const clientManifest = await clientStore.downloadLatestClient()
+      progressBus.complete(
+        ProgressChannel.IPC_CLIENT,
+        `Client downloaded ${clientManifest ? 'successfully' : 'unsuccessfully'}!`,
+        `Downloaded Latest Client`
+      )
+      return clientManifest
+    } catch (error) {
+      progressBus.error(
+        ProgressChannel.IPC_CLIENT,
+        'Download Latest Client',
+        'Failed to download latest client',
+        handleError(error)
+      )
+      return
+    }
   }
 }

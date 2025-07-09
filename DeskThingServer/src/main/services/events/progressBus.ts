@@ -244,9 +244,9 @@ class ProgressEventBus extends EventEmitter {
           })
           break
         case ProgressStatus.COMPLETE:
-        case ProgressStatus.INFO:
         case ProgressStatus.RUNNING:
         case ProgressStatus.SUCCESS:
+        case ProgressStatus.INFO:
           logger.info(logString, {
             function: event.channel,
             source: 'Progress'
@@ -267,9 +267,15 @@ class ProgressEventBus extends EventEmitter {
       })
     }
 
-    // sub-operation propagation
+    // parent-operation propagation
     operations.forEach((operation) => {
       // recursively emit this operation
+
+      // ensure that errors are bubbled as warnings
+      if (operation.status == ProgressStatus.ERROR) {
+        operation.status = ProgressStatus.WARN
+      }
+
       this.emit(operation.channel, operation)
 
       // Check if the operation is complete

@@ -1,21 +1,21 @@
 import { StoreInterface } from '@shared/interfaces/storeInterface'
-import { CacheableStore } from '@shared/types'
+import { CacheableStore, FlashingState } from '@shared/types'
 import EventEmitter from 'node:events'
-import type { FlashEvent } from 'flashthing'
 
 export type FlashStoreEvents = {
-  'flash-started': [string]
-  'flash-completed': [string]
-  'flash-event': [FlashEvent]
-  'flash-failed': [string, Error]
+  'flash-state': [FlashingState]
+  'total-steps': [number]
+  'flash-stopped': [boolean]
 }
 
 export interface FlashStoreClass
   extends CacheableStore,
     EventEmitter<FlashStoreEvents>,
     StoreInterface {
-  startFlash(devicePath: string): Promise<void>
+  startFlash(imagePath: string): Promise<void>
+  configureUSBMode(imagePath: string): Promise<void>
   cancelFlash(): Promise<void>
-  getFlashStatus(): Promise<FlashEvent | null>
+  getFlashStatus(): Promise<FlashingState | null>
   getFlashSteps(): Promise<number | null>
+  configureDriverForDevice(): Promise<void>
 }

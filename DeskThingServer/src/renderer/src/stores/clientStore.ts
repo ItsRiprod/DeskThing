@@ -12,10 +12,11 @@ interface ClientStoreState {
 
   // Actions
   initialize: () => Promise<void>
-  requestClientManifest: () => Promise<Partial<Client>>
+  requestClientManifest: () => Promise<ClientManifest | undefined>
   requestADBDevices: () => Promise<Client[] | undefined>
   requestConnections: () => Promise<void>
   refreshConnections: () => Promise<boolean>
+  downloadLatestClient: () => Promise<void>
   /**
    * @deprecated - use release store instead for URLs
    */
@@ -111,7 +112,16 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
     set({ initialized: true, clientManifest: clientManifest })
   },
 
-  requestClientManifest: async (): Promise<Partial<ClientManifest>> => {
+  downloadLatestClient: async (): Promise<void> => {
+    const clientManifest = await window.electron.client.downloadLatestClient()
+    if (!clientManifest) {
+      return undefined
+    } else {
+      set({ clientManifest })
+    }
+  },
+
+  requestClientManifest: async (): Promise<ClientManifest | undefined> => {
     const clientManifest = await window.electron.client.getClientManifest()
 
     if (!clientManifest) {
@@ -131,7 +141,7 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
           }
         ]
       })
-      return {}
+      return undefined
     } else {
       const removeIssue = useNotificationStore.getState().removeIssue
       removeIssue('client-manifest-missing')

@@ -31,6 +31,8 @@ type AdditionalOptions = {
   address?: string
 }
 
+process.title = 'Websocket'
+
 export class WSPlatform {
   private server: WebSocketServer | null = null
   private httpServer: HttpServer | null = null

@@ -13,7 +13,8 @@ import {
   FeedbackIPCData,
   ReleaseIPCData,
   TaskIPCData,
-  UpdateIPCData
+  UpdateIPCData,
+  IPC_DEVICE_TYPES
 } from '@shared/types'
 
 export const initializeIpcHandlers = async (ipcMain: Electron.IpcMain): Promise<void> => {
@@ -133,20 +134,28 @@ export const initializeIpcHandlers = async (ipcMain: Electron.IpcMain): Promise<
   })
 
   // Handle device-related IPC messages
-  ipcMain.handle(IPC_HANDLERS.DEVICE, async (_event, data: DeviceIPCData) => {
-    const { deviceHandler } = await import('./deviceIpc')
+  ipcMain.handle(
+    IPC_HANDLERS.DEVICE,
+    async <T extends IPC_DEVICE_TYPES>(
+      _event: unknown,
+      data: Extract<DeviceIPCData, { type: T }>
+    ) => {
+      const { deviceHandler } = await import('./deviceIpc')
 
-    try {
-      return await deviceHandler(data)
-    } catch (error) {
-      logger.error(`Error in IPC handler with event ${data.type}: ${error}`, {
-        domain: 'server',
-        source: 'ipcHandlers',
-        function: 'DEVICE',
-        error: error instanceof Error ? error : new Error(String(error))
-      })
+      try {
+        const handler = deviceHandler[data.type]
+        return await handler(data)
+      } catch (error) {
+        logger.error(`Error in IPC handler with event ${data.type}: ${error}`, {
+          domain: 'server',
+          source: 'ipcHandlers',
+          function: 'DEVICE',
+          error: error instanceof Error ? error : new Error(String(error))
+        })
+        return
+      }
     }
-  })
+  )
 
   // Handle feedback-related IPC messages
   ipcMain.handle(IPC_HANDLERS.FEEDBACK, async (_event, data: FeedbackIPCData) => {

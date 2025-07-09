@@ -9,6 +9,7 @@ declare global {
     electron: ElectronAPI & {
       app: typeof import('./api/ipcApps').app
       client: typeof import('./api/ipcClient').client
+      device: typeof import('./api/ipcDevice').device
       feedback: typeof import('./api/ipcFeedback').feedback
       releases: typeof import('./api/ipcReleases').releases
       task: typeof import('./api/ipcTask').task

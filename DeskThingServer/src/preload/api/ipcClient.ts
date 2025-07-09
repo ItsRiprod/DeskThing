@@ -44,6 +44,12 @@ export const client = {
       request: 'get'
     }),
 
+  downloadLatestClient: async (): Promise<ClientManifest | undefined> =>
+    await sendCommand({
+      kind: IPC_HANDLERS.CLIENT,
+      type: IPC_CLIENT_TYPES.DOWNLOAD_LATEST
+    }),
+
   getDeviceManifest: async (adbId: string): Promise<ClientManifest | undefined> =>
     await sendCommand({
       kind: IPC_HANDLERS.CLIENT,

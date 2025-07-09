@@ -1,5 +1,4 @@
-import type { FlashEvent } from 'flashthing'
-import { FLASH_REQUEST } from '../flash'
+import { AutoConfigResult, FLASH_REQUEST, FlashingState } from '../flash'
 import { IPC_HANDLERS } from './ipcTypes'
 import { ThingifyApiFirmware, ThingifyApiVersion, ThingifyArchiveDownloadResult } from '../thingify'
 
@@ -42,6 +41,10 @@ export type DeviceIPCData = {
     }
   | {
       type: IPC_DEVICE_TYPES.FLASH_OPERATION
+      request: 'usbmode'
+    }
+  | {
+      type: IPC_DEVICE_TYPES.FLASH_OPERATION
       request: 'cancel'
     }
   | {
@@ -53,6 +56,15 @@ export type DeviceIPCData = {
       request: 'unbrick'
     }
   | {
+      type: IPC_DEVICE_TYPES.FLASH_OPERATION
+      request: 'driver'
+    }
+  | {
+      type: IPC_DEVICE_TYPES.FLASH_OPERATION
+      request: 'autoconfig'
+      payload: number
+    }
+  | {
       type: IPC_DEVICE_TYPES.THINGIFY_GET
       request: 'firmware'
     }
@@ -62,37 +74,60 @@ export type DeviceIPCData = {
       payload: string
     }
   | {
+      type: IPC_DEVICE_TYPES.THINGIFY_GET
+      request: 'file'
+    }
+  | {
+      type: IPC_DEVICE_TYPES.THINGIFY_GET
+      request: 'files'
+    }
+  | {
       type: IPC_DEVICE_TYPES.THINGIFY_SET
       request: 'download'
-      payload: string
+      payload: { version: string; file: string }
     }
   | {
       type: IPC_DEVICE_TYPES.THINGIFY_SET
       request: 'upload'
       payload: string
     }
+  | {
+      type: IPC_DEVICE_TYPES.THINGIFY_SET
+      request: 'file'
+      payload: string
+    }
 )
 
 export type DeviceHandlerReturnMap = {
   [IPC_DEVICE_TYPES.FLASH_GET]: {
-    [FLASH_REQUEST.STEPS]: number
-    [FLASH_REQUEST.STATE]: FlashEvent
+    [FLASH_REQUEST.STEPS]: number | null
+    [FLASH_REQUEST.STATE]: FlashingState | null
     [FLASH_REQUEST.DEVICE_SELECTION]: string[]
   }
   [IPC_DEVICE_TYPES.FLASH_SET]: {
     [FLASH_REQUEST.FILE_PATH]: string
     [FLASH_REQUEST.DEVICE_SELECTION]: string
   }
-  [IPC_DEVICE_TYPES.FLASH_SET]: {
-    [FLASH_REQUEST.FILE_PATH]: string
-    [FLASH_REQUEST.DEVICE_SELECTION]: string
+  [IPC_DEVICE_TYPES.FLASH_OPERATION]: {
+    start: void
+    usbmode: void
+    cancel: void
+    restart: void
+    unbrick: void
+    driver: void
+    autoconfig: AutoConfigResult
   }
-  [IPC_DEVICE_TYPES.FLASH_OPERATION]: { start: void; cancel: void; restart: void; unbrick: void }
   [IPC_DEVICE_TYPES.THINGIFY_GET]: {
-    firmware: ThingifyApiFirmware[] | null
+    firmware: ThingifyApiFirmware | null
     versions: ThingifyApiVersion | null
+    file: string | undefined
+    files: string[]
   }
-  [IPC_DEVICE_TYPES.THINGIFY_SET]: { download: ThingifyArchiveDownloadResult; upload: ThingifyArchiveDownloadResult }
+  [IPC_DEVICE_TYPES.THINGIFY_SET]: {
+    download: ThingifyArchiveDownloadResult
+    upload: ThingifyArchiveDownloadResult
+    file: string
+  }
 }
 
 export type DeviceHandlerReturnType<

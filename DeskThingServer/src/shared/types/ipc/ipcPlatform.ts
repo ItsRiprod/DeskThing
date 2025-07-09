@@ -39,6 +39,11 @@ export type ADBPlatformIPC = {
       data?: ClientManifest | null
     }
   | {
+      type: 'get'
+      request: 'devices'
+      data?: Client[]
+    }
+  | {
       type: 'set'
       request: 'manifest'
       manifest: Partial<ClientManifest>

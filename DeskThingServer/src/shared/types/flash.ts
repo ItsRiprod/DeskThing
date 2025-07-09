@@ -1,5 +1,37 @@
 import { type FlashEvent } from 'flashthing'
 
+export type FlashingState = {
+  step?: number
+  stepTotal?: number
+  stepTitle?: string
+  pastTitles?: string[]
+  progress: {
+    percent?: number
+    elapsedS?: number
+    etaS?: number
+    rate?: number
+  }
+  state?: 'progress' | 'completed' | 'error' | 'cancelled'
+  errorText?: string
+  suggestion?: string
+}
+
+export type AutoConfigResult =
+  | {
+      state: 'input'
+      inputText: string
+      nextStep: number
+    }
+  | {
+      state: 'completed'
+      successMessage: string
+    }
+  | {
+      state: 'error'
+      errorText: string
+      resolutionSteps: string[]
+    }
+
 export enum FLASH_REQUEST {
   FILE_PATH = 'file_path',
   DEVICE_SELECTION = 'device_selection',
@@ -16,20 +48,8 @@ export type FlashServer =
       request: FLASH_REQUEST.STEPS
     }
   | {
-      type: 'request'
-      request: FLASH_REQUEST.STATE
-    }
-  | {
       type: 'operation'
       request: 'start'
-    }
-  | {
-      type: 'operation'
-      request: 'cancel'
-    }
-  | {
-      type: 'operation'
-      request: 'restart'
     }
   | {
       type: 'operation'
@@ -60,6 +80,14 @@ export type FlashProcess =
       payload: string
     }
   | {
+      type: 'operation'
+      request: 'complete'
+    }
+  | {
+      type: 'operation'
+      request: 'killed'
+    }
+  | {
       type: 'request'
       request: FLASH_REQUEST.DEVICE_SELECTION
       payload: string
@@ -68,9 +96,4 @@ export type FlashProcess =
       type: 'response'
       request: FLASH_REQUEST.STEPS
       payload: number
-    }
-  | {
-      type: 'response'
-      request: FLASH_REQUEST.STATE
-      payload: string
     }

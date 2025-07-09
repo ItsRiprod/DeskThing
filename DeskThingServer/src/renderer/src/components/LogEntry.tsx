@@ -8,6 +8,7 @@ interface LogEntryProps {
   progressEvent: ProgressEvent
   allowClosing?: boolean
   showMetadata?: boolean
+  allowExpanding?: boolean
   className?: string
 }
 
@@ -15,6 +16,7 @@ export const LogEntry: React.FC<LogEntryProps> = ({
   progressEvent,
   showMetadata = false,
   allowClosing = false,
+  allowExpanding = false,
   className
 }) => {
   const clearProgress = useProgressStore((state) => state.clearProgress)
@@ -30,15 +32,31 @@ export const LogEntry: React.FC<LogEntryProps> = ({
     <div
       className={`bg-zinc-800/50 transition-[height] flex flex-col rounded-lg p-4 border border-zinc-700 group relative ${className}`}
     >
-      <button key={progressEvent.id} onClick={handleExpand} disabled={!allowClosing}>
+      <button
+        key={progressEvent.id}
+        onClick={handleExpand}
+        disabled={!allowClosing && !allowExpanding}
+      >
         <div className="flex items-center gap-3 mb-2">
           <div className="h-5 w-5 flex-shrink-0">
             {progressEvent.isLoading ? (
-              <IconLoading className="w-full h-full text-blue-500 animate-spin" />
+              <IconLoading
+                className={`w-full h-full ${
+                  progressEvent.status === ProgressStatus.ERROR
+                    ? 'text-red-500'
+                    : progressEvent.status === ProgressStatus.WARN
+                      ? 'text-orange-500'
+                      : 'text-blue-500'
+                } animate-spin`}
+              />
             ) : (
               <IconCheckCircle
                 className={`stroke-[3] w-full h-full ${
-                  progressEvent.status === ProgressStatus.ERROR ? 'text-red-500' : 'text-green-500'
+                  progressEvent.status === ProgressStatus.ERROR
+                    ? 'text-red-500'
+                    : progressEvent.status === ProgressStatus.WARN
+                      ? 'text-orange-500'
+                      : 'text-green-500'
                 }`}
               />
             )}
@@ -61,10 +79,12 @@ export const LogEntry: React.FC<LogEntryProps> = ({
             className={`h-full rounded-full transition-all duration-300 ${
               progressEvent.status === ProgressStatus.ERROR
                 ? 'bg-red-500'
-                : progressEvent.status === ProgressStatus.COMPLETE ||
-                    progressEvent.status === ProgressStatus.SUCCESS
-                  ? 'bg-green-500'
-                  : 'bg-blue-500'
+                : progressEvent.status === ProgressStatus.WARN
+                  ? 'bg-orange-500'
+                  : progressEvent.status === ProgressStatus.COMPLETE ||
+                      progressEvent.status === ProgressStatus.SUCCESS
+                    ? 'bg-green-500'
+                    : 'bg-blue-500'
             }`}
             style={{
               width: `${progressEvent.progress ?? 0}%`
@@ -88,14 +108,12 @@ export const LogEntry: React.FC<LogEntryProps> = ({
                       : event.status === ProgressStatus.SUCCESS ||
                           event.status === ProgressStatus.COMPLETE
                         ? 'text-green-400'
-                        : event.status === ProgressStatus.INFO
-                          ? 'text-blue-400'
-                          : 'text-zinc-500'
+                        : 'text-zinc-500'
                 }`}
                 key={index}
               >
                 {`[${new Date(event.timestamp || 0).toLocaleTimeString()}] `}
-                {`(${event.progress || 0}%) `}
+                {`(${event.progress?.toFixed(2) || 0}%) `}
                 {`${event.operation}: `}
                 {event.message}
                 {event.error && ` - Error: ${event.error}`}

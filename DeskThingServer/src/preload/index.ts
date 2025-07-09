@@ -10,11 +10,13 @@ import { releases } from './api/ipcReleases'
 import { update } from './api/ipcUpdate'
 import { feedback } from './api/ipcFeedback'
 import { platform } from './api/ipcPlatform'
+import { device } from './api/ipcDevice'
 
 // Custom APIs for renderer
 const api = {
   app,
   client,
+  device,
   feedback,
   releases,
   task,

@@ -1,15 +1,9 @@
+import { ProgressEvent } from './progress'
+
 /**
  * What is emitted during the download from thingify.tools
  */
-export type ThingifyArchiveDownloadEvent = {
-  progress: number
-  /**
-   * Success or failure
-   */
-  status: boolean
-  statusText: string
-  operationText: string
-}
+export type ThingifyArchiveDownloadEvent = ProgressEvent
 
 /**
  */

@@ -2,7 +2,7 @@
  * Handles loading and initialization of application modules
  */
 import { updateLoadingStatus } from '../windows/loadingWindow'
-
+import '@server/system/process' // handles process errors 
 /**
  * Loads and initializes all required modules
  */

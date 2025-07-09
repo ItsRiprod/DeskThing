@@ -16,6 +16,7 @@ import { ADBServiceClass } from '@shared/stores/adbServiceClass'
 import { restartScript } from '@server/services/adb/restartScript'
 import { handleError } from '@server/utils/errorHandler'
 import { proxyScript } from '@server/services/adb/proxyScript'
+import { storeProvider } from '@server/stores/storeProvider'
 
 export class ADBService implements ADBServiceClass {
   private commandQueues: {
@@ -187,7 +188,8 @@ export class ADBService implements ADBServiceClass {
   public async configureDevice(
     deviceId: string,
     port: number,
-    forcePush: boolean = false
+    forcePush: boolean = false,
+    attempts: number = 0
   ): Promise<void> {
     progressBus.start(ProgressChannel.CONFIGURE_DEVICE, 'Configure Device', 'Opening port')
 
@@ -197,8 +199,30 @@ export class ADBService implements ADBServiceClass {
 
     const clientExists = await this.checkForClient()
     if (!clientExists) {
-      progressBus.error(ProgressChannel.CONFIGURE_DEVICE, 'Client not found', 'Client not found')
-      throw new Error('Client not found')
+      if (attempts > 2) {
+        progressBus.error(
+          ProgressChannel.CONFIGURE_DEVICE,
+          'Reached max attempts',
+          'Client not found'
+        )
+        throw new Error('Client not found and was not able to be downloaded automatically')
+      }
+
+      progressBus.warn(
+        ProgressChannel.CONFIGURE_DEVICE,
+        'Attempting to download latest',
+        'Client not found'
+      )
+
+      const clientStore = await storeProvider.getStore('clientStore')
+
+      const clientManifest = await clientStore.downloadLatestClient()
+
+      if (!clientManifest) {
+        throw new Error('Client not found and was not able to be downloaded automatically')
+      }
+
+      this.configureDevice(deviceId, port, forcePush, attempts + 1)
     }
 
     progressBus.update(ProgressChannel.CONFIGURE_DEVICE, 'Getting device version', 20)

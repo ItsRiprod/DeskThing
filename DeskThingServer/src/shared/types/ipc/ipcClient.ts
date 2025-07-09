@@ -11,7 +11,8 @@ export enum IPC_CLIENT_TYPES {
   ADB = 'adb',
   OPEN_CLIENT = 'open-client',
   RUN_DEVICE_COMMAND = 'run-device-command',
-  ICON = 'icon'
+  ICON = 'icon',
+  DOWNLOAD_LATEST = 'download-latest'
 }
 
 export type ClientIPCData = {
@@ -37,6 +38,9 @@ export type ClientIPCData = {
       type: IPC_CLIENT_TYPES.CLIENT_MANIFEST
       request: 'get-device'
       payload: string // adb id
+    }
+  | {
+      type: IPC_CLIENT_TYPES.DOWNLOAD_LATEST
     }
   | {
       type: IPC_CLIENT_TYPES.CLIENT_MANIFEST
@@ -94,6 +98,7 @@ export type ClientHandlerReturnMap = {
   [IPC_CLIENT_TYPES.RUN_DEVICE_COMMAND]: { set: string | undefined }
   [IPC_CLIENT_TYPES.ICON]: { set: void; get: string | null }
   [IPC_CLIENT_TYPES.OPEN_CLIENT]: { set: boolean }
+  [IPC_CLIENT_TYPES.DOWNLOAD_LATEST]: { set: ClientManifest | undefined }
 }
 
 export type ClientHandlerReturnType<

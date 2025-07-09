@@ -361,10 +361,14 @@ export class ReleaseStore
     return appReleases.releases.find((app) => app.id === appId)
   }
 
-  public getClientRelease = async (clientId: string): Promise<ClientLatestServer | undefined> => {
+  public getClientRelease = async (clientId?: string): Promise<ClientLatestServer | undefined> => {
     const clients = await this.getClientReleaseFile()
     if (!clients) return undefined
-    return clients.releases.find((client) => client.id === clientId)
+    if (clientId) {
+      return clients.releases.find((client) => client.id === clientId)
+    } else {
+      return clients.releases[0]
+    }
   }
 
   public getAvailableRepositories = async (): Promise<GitRepoUrl[]> => {
@@ -681,7 +685,7 @@ export class ReleaseStore
     }
   }
 
-  public downloadLatestClient = async (clientId: string): Promise<ClientManifest | undefined> => {
+  public downloadLatestClient = async (clientId?: string): Promise<ClientManifest | undefined> => {
     try {
       progressBus.startOperation(
         ProgressChannel.ST_RELEASE_CLIENT_DOWNLOAD,
@@ -696,10 +700,11 @@ export class ReleaseStore
       )
 
       logger.debug('Downloading client')
+
       const clientRelease = await this.getClientRelease(clientId)
 
       if (!clientRelease) {
-        logger.debug('Client Release not found for ' + clientId)
+        logger.debug('Client Release not found for ' + clientId || 'Latest Client')
         return
       }
 
@@ -712,7 +717,7 @@ export class ReleaseStore
     } catch (error) {
       progressBus.error(
         ProgressChannel.ST_RELEASE_CLIENT_DOWNLOAD,
-        `There was an error trying to download the client ${clientId}. ${handleError(error)}`,
+        `There was an error trying to download the client ${clientId || 'Latest Client'}. ${handleError(error)}`,
         'Error Downloading Client'
       )
       return

@@ -31,6 +31,11 @@ export interface ClientStoreClass
   refreshClient(): Promise<ClientManifest | null>
 
   /**
+   * @channel - {@link ProgressChannel.ST_CLIENT_DOWNLOAD}
+   */
+  downloadLatestClient(): Promise<ClientManifest | undefined>
+
+  /**
    * Sets the client manifest.
    * @param client The client manifest to set.
    */

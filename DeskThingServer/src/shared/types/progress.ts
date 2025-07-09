@@ -1,6 +1,6 @@
 export enum ProgressChannel {
   BLANK = 'blank',
-  
+
   FIREWALL = 'firewall',
   DOWNLOAD = 'download',
   SERVER = 'server',
@@ -13,11 +13,21 @@ export enum ProgressChannel {
   ST_CLIENT_INSTALL = 'store-client-install',
   ST_CLIENT_DOWNLOAD = 'store-client-download',
   ST_CLIENT_REFRESH = 'store-client-refresh',
+  ST_CLIENT_DOWNLOAD_LATEST = 'store-client-download-latest',
   /** The Process of installing a client */
   FN_CLIENT_INSTALL = 'fn-client-install',
 
   // Device-specific channels
-  ST_DEVICE_FLASH = 'st-device-flash',
+  ST_DEVICE_FIRMWARE_DOWNLOAD = 'st-device-firmware-download',
+  ST_THINGIFY_RECOMMENDED_DOWNLOAD = 'st-thingify-recommended-download',
+
+  // Flash Specific Protocols
+  ST_FLASH_RUNNER = 'st-flash-runner',
+  FN_FLASH_RUNNER = 'fn-flash-runner',
+
+  ST_FLASH_DRIVER = 'st-flash-driver',
+
+  ST_FLASH_AUTO = 'st-flash-auto',
 
   // App Channels
 

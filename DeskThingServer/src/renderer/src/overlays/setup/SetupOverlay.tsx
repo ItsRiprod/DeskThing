@@ -1,13 +1,19 @@
 import React, { useMemo } from 'react'
 import Overlay from '../Overlay'
 import Button from '@renderer/components/Button'
-import { IconBluetooth, IconCarThingSmall, IconLink,IconLightning, IconMobile } from '@renderer/assets/icons'
+import {
+  IconBluetooth,
+  IconCarThingSmall,
+  IconLink,
+  IconLightning,
+  IconMobile
+} from '@renderer/assets/icons'
 import { useSearchParams } from 'react-router-dom'
 import ErrorBoundary from '@renderer/components/ErrorBoundary'
 import BluetoothPage from './BluetoothPage'
 import WifiPage from './WifiPage'
 import AdbPage from './AdbPage'
-import SuperbirdPage from './SuperbirdPage'
+import SuperbirdPage from './Flash/SuperbirdPage'
 
 const PAGE_COMPONENTS = {
   bluetooth: BluetoothPage,
@@ -72,7 +78,10 @@ const SetupOverlay: React.FC = () => {
             Icon={IconLightning}
             className="relative"
           />
-          <Button onClick={openClient} className={`relative gap-2 bg-zinc-900 hover:bg-zinc-800`}>
+          <Button
+            onClick={openClient}
+            className={`relative items-center gap-2 bg-zinc-900 hover:bg-zinc-800`}
+          >
             <IconLink iconSize="28" strokeWidth={2} />
             <p className="hidden md:block">Client</p>
           </Button>
@@ -109,10 +118,10 @@ const NavComponent = ({
 }: NavComponentProps): React.ReactElement => (
   <Button
     onClick={() => setPage(page.toLowerCase())}
-    className={`relative gap-2 ${curPage == page.toLowerCase() ? 'bg-zinc-800 hover:bg-zinc-700' : 'bg-zinc-900 hover:bg-zinc-800'} ${className}`}
+    className={`items-center gap-2 ${curPage == page.toLowerCase() ? 'bg-zinc-800 hover:bg-zinc-700' : 'bg-zinc-900 hover:bg-zinc-800'} ${className}`}
   >
     <Icon iconSize="28" strokeWidth={2} />
-    <p className="hidden md:block">
+    <p className="hidden  md:block">
       {page}
       {children}
     </p>

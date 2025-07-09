@@ -159,6 +159,40 @@ export class ClientStore
   }
 
   /**
+   * @channel - {@link ProgressChannel.ST_CLIENT_DOWNLOAD_LATEST}
+   */
+  async downloadLatestClient(): Promise<ClientManifest | undefined> {
+    progressBus.startOperation(
+      ProgressChannel.ST_CLIENT_DOWNLOAD_LATEST,
+      'Download-Client',
+      'Initializing download...',
+      [
+        {
+          channel: ProgressChannel.ST_RELEASE_CLIENT_DOWNLOAD,
+          weight: 100
+        }
+      ]
+    )
+    try {
+      const client = await this.releaseStore.downloadLatestClient()
+      progressBus.complete(
+        ProgressChannel.ST_CLIENT_DOWNLOAD_LATEST,
+        'Download-Client',
+        'Client downloaded successfully!'
+      )
+      return client
+    } catch (error) {
+      progressBus.error(
+        ProgressChannel.ST_CLIENT_DOWNLOAD_LATEST,
+        'Download-Client',
+        'Error downloading client',
+        handleError(error)
+      )
+      return undefined
+    }
+  }
+
+  /**
    * Sets the client manifest.
    * @param _client The client manifest to set.
    */

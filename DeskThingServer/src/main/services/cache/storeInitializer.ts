@@ -28,7 +28,9 @@ export async function initializeStores(): Promise<void> {
     clientStore: await storeProvider.getStore('clientStore', false),
     profileStore: await storeProvider.getStore('profileStore', true),
     autoLaunchStore: await storeProvider.getStore('autoLaunchStore', true),
-    serverTaskStore: await storeProvider.getStore('serverTaskStore', true)
+    serverTaskStore: await storeProvider.getStore('serverTaskStore', true),
+    thingifyStore: await storeProvider.getStore('thingifyStore', false),
+    flashStore: await storeProvider.getStore('flashStore', false),
   }
 
   const platformStore = await storeProvider.getStore('platformStore', false)
@@ -209,6 +211,27 @@ export async function initializeStores(): Promise<void> {
   storeList.updateStore.on('update-progress', (progress) => {
     uiEventBus.sendIpcData({
       type: 'update-progress',
+      payload: progress
+    })
+  })
+
+  storeList.thingifyStore.on('downloadProgress', (progress) => {
+    uiEventBus.sendIpcData({
+      type: 'flash:download',
+      payload: progress
+    })
+  })
+
+  storeList.thingifyStore.on('stagedFileChange', (fileName) => {
+    uiEventBus.sendIpcData({
+      type: 'flash:stagedFile',
+      payload: fileName
+    })
+  })
+
+  storeList.flashStore.on('flash-state', (progress) => {
+    uiEventBus.sendIpcData({
+      type: 'flash:state',
       payload: progress
     })
   })

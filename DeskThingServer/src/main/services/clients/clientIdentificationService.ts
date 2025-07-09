@@ -92,13 +92,17 @@ export class ClientIdentificationService {
           this.calculateCapabilityScore(a.capabilities)
       )[0]
 
+      // Roughly prefer the most connected of the two clients - this will be established based on the primary provider later
       mergedClient.connectionState = Math.min(
         primary.connectionState ?? ConnectionState.Established,
         secondary.connectionState ?? ConnectionState.Established
       )
 
-      if (primaryProvider) {
-        mergedClient.connected = true
+      if (primaryProvider.active) {
+        mergedClient.connected = primaryProvider.connectionState == ConnectionState.Connected
+        // Update the connection state to the provider's connection state
+        // This may be upgraded/downgraded if a provider drops out
+        mergedClient.connectionState = primaryProvider.connectionState
         mergedClient.primaryProviderId = primaryProvider.providerId
       } else {
         mergedClient.connected = false

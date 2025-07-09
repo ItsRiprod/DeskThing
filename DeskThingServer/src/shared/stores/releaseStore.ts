@@ -117,5 +117,5 @@ export interface ReleaseStoreClass extends StoreInterface, EventEmitter<GithubLi
   /**
    * Downloads the latest of a specific client from the release files
    */
-  downloadLatestClient(clientId: string): Promise<ClientManifest | undefined>
+  downloadLatestClient(clientId?: string): Promise<ClientManifest | undefined>
 }
