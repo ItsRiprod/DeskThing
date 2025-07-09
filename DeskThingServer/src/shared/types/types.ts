@@ -27,6 +27,7 @@ export type Settings = {
   adb_useGlobal: boolean
   adb_autoConfig: boolean
   adb_autoDetect: boolean
+  adb_blacklist: string[]
   // flags
   flag_firstClose: boolean
   flag_hasOpened: boolean

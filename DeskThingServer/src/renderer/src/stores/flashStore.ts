@@ -37,6 +37,7 @@ interface FlashStoreState {
   downloadFirmware: (version: string, file: string) => Promise<ThingifyArchiveDownloadResult | null>
   uploadFirmware: (filePath: string) => Promise<ThingifyArchiveDownloadResult>
   clearDownload: () => void
+  downloadLatestFirmware: () => Promise<ThingifyArchiveDownloadResult>
 
   getAvailableStagedFiles(): Promise<string[]>
 
@@ -132,6 +133,10 @@ const useFlashStore = create<FlashStoreState>((set, get) => ({
 
   selectStagedFile: async (fileName: string) => {
     return window.electron.device.selectStagedFile(fileName)
+  },
+
+  downloadLatestFirmware: async () => {
+    return window.electron.device.downloadLatestFirmware()
   },
 
   // Initialize

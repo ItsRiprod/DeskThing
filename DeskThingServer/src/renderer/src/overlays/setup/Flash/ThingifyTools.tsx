@@ -6,7 +6,7 @@ import {
   ThingifyArchiveDownloadResult
 } from '@shared/types'
 import Button from '@renderer/components/Button'
-import { IconLoading, IconTrash } from '@renderer/assets/icons'
+import { IconDownload, IconLoading, IconTrash, IconX } from '@renderer/assets/icons'
 import { LogEntry } from '@renderer/components/LogEntry'
 
 export const ThingifyTools = (): JSX.Element => {
@@ -22,6 +22,7 @@ export const ThingifyTools = (): JSX.Element => {
   const getFirmware = useFlashStore((state) => state.getFirmware)
   const getVersions = useFlashStore((state) => state.getVersions)
   const downloadFirmware = useFlashStore((state) => state.downloadFirmware)
+  const downloadRecommendedFirmware = useFlashStore((state) => state.downloadLatestFirmware)
   const downloadProgress = useFlashStore((state) => state.downloadProgress)
   const clearDownload = useFlashStore((state) => state.clearDownload)
 
@@ -67,6 +68,18 @@ export const ThingifyTools = (): JSX.Element => {
     console.log(downloadResults)
     setIsLoading(false)
   }
+  const downloadRecommended = async (): Promise<void> => {
+    setIsLoading(true)
+    setDownloadResults(null)
+    const downloadResult = await downloadRecommendedFirmware()
+    setDownloadResults(downloadResult)
+    console.log(downloadResult)
+    setIsLoading(false)
+  }
+
+  const close = (): void => {
+    setDownloadResults(null)
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -83,10 +96,88 @@ export const ThingifyTools = (): JSX.Element => {
             </Button>
           )}
         </div>
+      ) : downloadResults ? (
+        downloadResults.status ? (
+          <div className="flex mt-4 p-3 bg-emerald-500/20 border border-emerald-500/30 rounded-lg">
+            <div>
+              <p className="text-emerald-400 text-sm font-medium">{downloadResults.statusText}</p>
+              <p className="text-emerald-300/80 text-xs mt-1">{downloadResults.operationText}</p>
+            </div>
+            <Button
+              onClick={close}
+              className="ml-4 text-zinc-200 hover:text-red-500 transition-all duration-200 flex items-center gap-2"
+              aria-label="Close"
+              title="Close"
+            >
+              <IconX className="w-5 h-5" />
+              <span className="sr-only">Close</span>
+            </Button>
+          </div>
+        ) : (
+          <div className="mt-4 p-4 flex bg-zinc-900/70 border border-red-500/30 rounded-lg shadow-lg">
+            <div className="w-full">
+              <p className="text-red-400 text-sm font-semibold mb-2">
+                {downloadResults.statusText}
+              </p>
+              <p className="text-red-300/90 text-xs leading-relaxed">
+                {downloadResults.operationText}
+              </p>
+              <p className="text-zinc-300 text-xs mt-3">
+                Having trouble? Join the{' '}
+                <a
+                  href="https://deskthing.app/discord"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-blue-400 hover:text-blue-300 underline transition-colors duration-200"
+                >
+                  DeskThing Discord Server
+                </a>{' '}
+                and check the{' '}
+                <a
+                  href="https://canary.discord.com/channels/1267348109067817051/1292217043881299999"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-blue-400 hover:text-blue-300 underline transition-colors duration-200"
+                >
+                  #resources
+                </a>{' '}
+                channel!
+              </p>
+              <div className="mt-3">
+                <Button
+                  className="bg-green-600 gap-2 hover:bg-green-500 text-white px-4 py-2 rounded-md hover:shadow-lg hover:shadow-green-500/30 transition-all duration-200"
+                  onClick={downloadRecommended}
+                  disabled={isLoading}
+                >
+                  {isLoading ? <IconLoading /> : <IconDownload />}
+                  {isLoading ? <p>Downloading...</p> : <p>Download Recommended</p>}
+                </Button>
+              </div>
+            </div>
+            <Button
+              onClick={close}
+              className="ml-4 text-zinc-200 hover:text-red-500 transition-all duration-200 flex items-center gap-2"
+              aria-label="Close"
+              title="Close"
+            >
+              <IconX className="w-5 h-5" />
+              <span className="sr-only">Close</span>
+            </Button>
+          </div>
+        )
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="rounded-lg p-4 border border-zinc-700">
-            <h3 className="text-base font-semibold text-white mb-3">Available Versions</h3>
+            <h1 className="text-base font-semibold text-white mb-3">Fetch recommended version</h1>
+            <Button
+              className="bg-green-600 gap-2 mb-2 hover:bg-green-500 text-white px-4 py-2 rounded-md hover:shadow-lg hover:shadow-green-500/30 transition-all duration-200"
+              onClick={downloadRecommended}
+              disabled={isLoading}
+            >
+              {isLoading ? <IconLoading /> : <IconDownload />}
+              {isLoading ? <p>Downloading...</p> : <p>Download Recommended</p>}
+            </Button>
+            <h3 className="text-base font-semibold text-white mb-3">Or download manually</h3>
             <div className="space-y-2 flex flex-col-reverse">
               {firmware?.versions?.map((fw) => (
                 <Button
@@ -164,49 +255,6 @@ export const ThingifyTools = (): JSX.Element => {
                     </div>
                   </div>
                 ))}
-                {downloadResults &&
-                  (downloadResults.status ? (
-                    <div className="mt-4 p-3 bg-emerald-500/20 border border-emerald-500/30 rounded-lg">
-                      <p className="text-emerald-400 text-sm font-medium">
-                        {downloadResults.statusText}
-                      </p>
-                      <p className="text-emerald-300/80 text-xs mt-1">
-                        {downloadResults.operationText}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg shadow-lg">
-                      <p className="text-red-400 text-sm font-semibold mb-2">
-                        {downloadResults.statusText}
-                      </p>
-                      <p className="text-red-300/90 text-xs leading-relaxed">
-                        {downloadResults.operationText}
-                      </p>
-                      <p className="text-red-300/90 text-xs mt-3">
-                        Having trouble? Join the{' '}
-                        <a
-                          href={'https://deskthing.app/discord'}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-red-400 hover:text-red-300 underline transition-colors duration-200"
-                        >
-                          DeskThing Discord Server
-                        </a>{' '}
-                        and check the{' '}
-                        <a
-                          href={
-                            'https://canary.discord.com/channels/1267348109067817051/1292217043881299999'
-                          }
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-blue-400 hover:text-blue-300 transition-colors duration-200"
-                        >
-                          #resources
-                        </a>{' '}
-                        channel!
-                      </p>
-                    </div>
-                  ))}
               </div>
             </div>
           )}

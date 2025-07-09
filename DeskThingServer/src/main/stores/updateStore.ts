@@ -5,6 +5,8 @@ import electronUpdater, { type AppUpdater } from 'electron-updater'
 import Logger from '@server/utils/logger'
 import { LOGGING_LEVELS } from '@deskthing/types'
 import { handleError } from '@server/utils/errorHandler'
+import { app } from 'electron'
+import { satisfies } from 'semver'
 
 export class UpdateStore
   extends EventEmitter<UpdateStoreEvents>
@@ -102,11 +104,13 @@ export class UpdateStore
   checkForUpdates = async (): Promise<string> => {
     if (!this._autoUpdater) return 'AutoUpdater not initialized'
 
+    const appVersion = app.getVersion()
+
     try {
       const downloadNotification = await this._autoUpdater.checkForUpdatesAndNotify()
       if (
         downloadNotification &&
-        process.env.PACKAGE_VERSION != downloadNotification.updateInfo.version
+        satisfies(appVersion, `<${downloadNotification.updateInfo.version}`)
       ) {
         const updateInfo: UpdateInfoType = {
           updateAvailable: true,

@@ -96,6 +96,10 @@ export type DeviceIPCData = {
       request: 'file'
       payload: string
     }
+  | {
+      type: IPC_DEVICE_TYPES.THINGIFY_SET
+      request: 'latest'
+    }
 )
 
 export type DeviceHandlerReturnMap = {
@@ -127,6 +131,7 @@ export type DeviceHandlerReturnMap = {
     download: ThingifyArchiveDownloadResult
     upload: ThingifyArchiveDownloadResult
     file: string
+    latest: ThingifyArchiveDownloadResult
   }
 }
 

@@ -26,9 +26,33 @@ export class ADBService implements ADBServiceClass {
       reject: (error: unknown) => void
     }[]
   } = {}
+  private blacklist: string[] = []
+
+  constructor() {
+    this.initialize()
+  }
+
+  private initialize = async (): Promise<void> => {
+    const settingStore = await storeProvider.getStore('settingsStore')
+    const blacklist = await settingStore.getSetting('adb_blacklist')
+
+    this.blacklist = blacklist || []
+
+    settingStore.on('adb_blacklist', (blacklist) => {
+      this.blacklist = blacklist || []
+    })
+  }
 
   public async sendCommand(command: string, deviceId?: string): Promise<string> {
     const queueKey = deviceId || 'default'
+
+    if (deviceId && this.blacklist.includes(deviceId)) {
+      logger.warn(`Blocked ADB command for blacklisted device: ${deviceId}`, {
+        function: 'sendCommand',
+        source: 'ADBService'
+      })
+      return Promise.reject(new Error(`Device ${deviceId} is blacklisted`))
+    }
 
     return new Promise((resolve, reject) => {
       const queueItem = { command, resolve, reject }
@@ -126,7 +150,9 @@ export class ADBService implements ADBServiceClass {
         }
       }, [] as string[])
 
-      return adbDevices
+      const filteredDevices = adbDevices.filter((deviceId) => !this.blacklist.includes(deviceId))
+
+      return filteredDevices
     } catch (error) {
       logger.error('Failed to get ADB devices', {
         error: error as Error,

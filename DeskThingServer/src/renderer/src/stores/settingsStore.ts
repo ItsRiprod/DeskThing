@@ -36,6 +36,7 @@ const useSettingsStore = create<SettingsStoreState>((set, get) => ({
     adb_useGlobal: false,
     adb_autoConfig: false,
     adb_autoDetect: false,
+    adb_blacklist: [],
     flag_firstClose: false,
     flag_hasOpened: false,
     flag_collectStats: false

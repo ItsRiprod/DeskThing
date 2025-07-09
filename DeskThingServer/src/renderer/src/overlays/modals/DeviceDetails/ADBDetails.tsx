@@ -6,8 +6,10 @@ import {
   IconPower,
   IconRefresh,
   IconReload,
+  IconStop,
   IconUpload,
-  IconWrench
+  IconWrench,
+  IconX
 } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
 import React, { useState, useRef, useMemo } from 'react'
@@ -30,6 +32,8 @@ const ADBDeviceDetails: React.FC<ClientDetailsOverlayProps> = ({ client }) => {
   const pushStaged = usePlatformStore((state) => state.pushStaged)
   const pushScript = usePlatformStore((state) => state.pushScript)
   const progress = useChannelProgress(ProgressChannel.IPC_PLATFORM)
+  const initialSettings = useSettingsStore((settings) => settings.settings)
+  const saveSettings = useSettingsStore((settings) => settings.saveSettings)
 
   // ADB commands
   const [command, setCommand] = useState('')
@@ -151,6 +155,23 @@ const ADBDeviceDetails: React.FC<ClientDetailsOverlayProps> = ({ client }) => {
     await sendCommand(adbId, 'shell poweroff')
   }
 
+  const handleAddToSettings = async (): Promise<void> => {
+    if (!adbId) return
+
+    setLoading(true)
+    const currentBlacklist = initialSettings.adb_blacklist || []
+    if (!currentBlacklist.includes(adbId)) {
+      const updatedBlacklist = [...currentBlacklist, adbId]
+      await saveSettings({ ...initialSettings, adb_blacklist: updatedBlacklist })
+      console.log('ADB ID added to blacklist:', adbId)
+    } else {
+      const updatedBlacklist = currentBlacklist.filter((id) => id !== adbId)
+      await saveSettings({ ...initialSettings, adb_blacklist: updatedBlacklist })
+      console.warn('ADB ID removed from blacklist:', adbId)
+    }
+    setLoading(false)
+  }
+
   return (
     <div className="h-full p-4 overflow-y-auto bg-zinc-950">
       {client.identifiers.adb && (
@@ -229,6 +250,32 @@ const ADBDeviceDetails: React.FC<ClientDetailsOverlayProps> = ({ client }) => {
                 <IconWrench className="flex-shrink-0" />
               )}
               <p className="sm:block text-ellipsis hidden text-nowrap">Setup Restart Script</p>
+            </Button>
+            <Button
+              title="Add this device to the blacklist"
+              className="bg-zinc-900 hover:bg-zinc-800 transition-colors duration-200 gap-2 rounded-lg p-3"
+              onClick={handleAddToSettings}
+              disabled={loading}
+            >
+              {initialSettings.adb_blacklist?.includes(adbId!) ? (
+                <>
+                  {loading ? (
+                    <IconLoading className="animate-spin-smooth flex-shrink-0" />
+                  ) : (
+                    <IconX className="flex-shrink-0" />
+                  )}
+                  <p className="sm:block text-ellipsis hidden text-nowrap">Remove From BlackList</p>
+                </>
+              ) : (
+                <>
+                  {loading ? (
+                    <IconLoading className="animate-spin-smooth flex-shrink-0" />
+                  ) : (
+                    <IconStop className="flex-shrink-0" />
+                  )}
+                  <p className="sm:block text-ellipsis hidden text-nowrap">Add to BlackList</p>
+                </>
+              )}
             </Button>
           </div>
 

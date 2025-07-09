@@ -194,6 +194,21 @@ const ServerSettings: React.FC = () => {
         </Button>
       </div>
 
+      <div className="w-full p-4 flex justify-between items-center">
+        <h2 className="text-xl">ADB Blacklist</h2>
+        <input
+          type="text"
+          value={settings.adb_blacklist?.join(', ')}
+          onChange={(e) =>
+            handleSettingChange(
+              'adb_blacklist',
+              e.target.value.split(',').map((s) => s.trim())
+            )
+          }
+          className="border border-gray-300 focus:text-black text-gray-500 rounded px-2 py-1 w-1/2"
+        />
+      </div>
+
       <div className="w-full px-4 flex justify-between items-center">
         <h2 className="text-xl">Auto Config</h2>
         <Button

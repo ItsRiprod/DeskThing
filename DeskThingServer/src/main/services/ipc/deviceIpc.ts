@@ -137,6 +137,38 @@ export const deviceHandler: ClientHandlerMap = {
         return await thingifyStore.upload(data.payload)
       case 'file':
         return await thingifyStore.selectStagedFile(data.payload)
+      case 'latest':
+        progressBus.startOperation(
+          ProgressChannel.IPC_DEVICES,
+          'Downloading Recommneded Firmware',
+          'Initializing download...',
+          [
+            {
+              channel: ProgressChannel.ST_THINGIFY_RECOMMENDED_DOWNLOAD,
+              weight: 100
+            }
+          ]
+        )
+        try {
+          const file = await thingifyStore.downloadRecommendedFirmware()
+
+          return {
+            status: true,
+            statusText: `Successfully downloaded ${file}`,
+            operationText: 'Download Success'
+          }
+        } catch (error) {
+          progressBus.error(
+            ProgressChannel.IPC_DEVICES,
+            'Error downloading recommended firmware',
+            handleError(error)
+          )
+          return {
+            status: false,
+            statusText: `Failed to download the recommended version`,
+            operationText: handleError(error)
+          }
+        }
     }
   }
 }

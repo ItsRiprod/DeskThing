@@ -135,6 +135,12 @@ export const device = {
       type: IPC_DEVICE_TYPES.THINGIFY_SET,
       request: 'file',
       payload: fileName
+    }),
+  downloadLatestFirmware: async (): Promise<ThingifyArchiveDownloadResult> =>
+    await sendCommand({
+      kind: IPC_HANDLERS.DEVICE,
+      type: IPC_DEVICE_TYPES.THINGIFY_SET,
+      request: 'latest'
     })
 }
 

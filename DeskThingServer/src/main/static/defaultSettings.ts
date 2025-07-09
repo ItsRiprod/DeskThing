@@ -24,6 +24,7 @@ export const defaultSettings: Settings = {
   adb_useGlobal: false,
   adb_autoConfig: false,
   adb_autoDetect: false,
+  adb_blacklist: [],
 
   // flags
   flag_firstClose: true,
