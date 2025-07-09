@@ -5,6 +5,7 @@ import { getMachineId } from '@server/utils/machineId'
 import os from 'os'
 import { StatsStoreClass } from '@shared/stores/statsStore'
 import { handleError } from '@server/utils/errorHandler'
+import { SettingsStoreClass } from '@shared/stores/settingsStore'
 
 export class StatsStore implements StatsStoreClass {
   private stats: DeskThingStats | null = null
@@ -12,12 +13,15 @@ export class StatsStore implements StatsStoreClass {
   private _initialized = false
   private _registered = false
   private _flushing = false
+  private collectStats = false
   private flushInterval: NodeJS.Timeout | null = null
   private readonly FLUSH_INTERVAL = 30 * 60 * 1000 // 30 minutes
 
   public get initialized(): boolean {
     return this._initialized
   }
+
+  constructor(private settingStore: SettingsStoreClass) {}
 
   async initialize(): Promise<void> {
     if (this._initialized) return
@@ -57,6 +61,24 @@ export class StatsStore implements StatsStoreClass {
         source: 'statsStore'
       })
     }
+
+    this.collectStats = (await this.settingStore.getSetting('flag_collectStats')) || false
+
+    this.settingStore.on('flag_collectStats', async (collectStats) => {
+      if (collectStats) {
+        this.collectStats = collectStats
+        logger.info('User opted in to stats collection', {
+          function: 'settings-updated',
+          source: 'statsStore'
+        })
+      } else {
+        this.collectStats = false
+        logger.info('User opted out of stats collection', {
+          function: 'settings-updated',
+          source: 'statsStore'
+        })
+      }
+    })
   }
 
   private async ensureRegistration(): Promise<void> {
@@ -254,13 +276,25 @@ export class StatsStore implements StatsStoreClass {
     const statsToSend = this.getSortedStats()
 
     try {
+      if (!this.collectStats) {
+        logger.debug('Skipping stats flush due to user settings', {
+          function: 'flush',
+          source: 'statsStore'
+        })
+        this.statsQueue.clear()
+        this._flushing = false
+        return
+      }
+
       if (process.env.NODE_ENV == 'development') {
         logger.debug('Skipping stats flush in development mode', {
           function: 'flush',
           source: 'statsStore'
         })
+        this._flushing = false
         return
       }
+
       const result = await this.stats.send(statsToSend)
       if (result.success) {
         this.statsQueue.clear()
