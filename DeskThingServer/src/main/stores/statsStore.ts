@@ -15,7 +15,7 @@ export class StatsStore implements StatsStoreClass {
   private _flushing = false
   private collectStats = false
   private flushInterval: NodeJS.Timeout | null = null
-  private readonly FLUSH_INTERVAL = 30 * 60 * 1000 // 30 minutes
+  private readonly FLUSH_INTERVAL = 60 * 60 * 1000 * 12 // 12 hours
 
   public get initialized(): boolean {
     return this._initialized
