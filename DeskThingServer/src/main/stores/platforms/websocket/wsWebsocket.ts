@@ -48,7 +48,8 @@ export class WSPlatform {
 
   private readonly identifier: Omit<ClientIdentifier, 'id' | 'method' | 'active'> = {
     providerId: PlatformIDs.WEBSOCKET,
-    capabilities: [ProviderCapabilities.COMMUNICATE, ProviderCapabilities.PING]
+    capabilities: [ProviderCapabilities.COMMUNICATE, ProviderCapabilities.PING],
+    connectionState: ConnectionState.Connected
   }
 
   public readonly id = PlatformIDs.WEBSOCKET

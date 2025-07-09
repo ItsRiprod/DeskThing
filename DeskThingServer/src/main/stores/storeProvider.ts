@@ -136,7 +136,8 @@ export class StoreProvider {
         ),
       flashStore: async () => new (await storeImports.flashStore())(),
       thingifyStore: async () => new (await storeImports.thingifyStore())(),
-      statsStore: async () => new (await storeImports.statsStore())(),
+      statsStore: async () =>
+        new (await storeImports.statsStore())(await this.getStore('settingsStore', false)),
       statsCollector: async () =>
         new (await storeImports.statsCollector())(await this.getStore('statsStore', false))
     }

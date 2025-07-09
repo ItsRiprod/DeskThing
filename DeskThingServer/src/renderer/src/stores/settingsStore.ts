@@ -37,7 +37,8 @@ const useSettingsStore = create<SettingsStoreState>((set, get) => ({
     adb_autoConfig: false,
     adb_autoDetect: false,
     flag_firstClose: false,
-    flag_hasOpened: false
+    flag_hasOpened: false,
+    flag_collectStats: false
   },
   initialize: async () => {
     if (get().initialized) return
