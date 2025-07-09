@@ -3,6 +3,9 @@ import Button from '@renderer/components/Button'
 import { Member, Supporter } from '@shared/types/supporter'
 import User from '@renderer/components/supporter/User'
 
+import riprodAvatar from '@renderer/assets/images/authors/riprod.gif'
+import thebigloudAvatar from '@renderer/assets/images/authors/thebigloud.webp'
+
 const AboutSettings: React.FC = () => {
   const [supporters, setSupporters] = useState<{ monthly: Member[]; onetime: Supporter[] }>({
     monthly: [],
@@ -48,15 +51,11 @@ const AboutSettings: React.FC = () => {
         <div>
           <h1 className="text-lg">Development Team</h1>
           <User
-            avatar="/images/authors/riprod.gif"
+            avatar={riprodAvatar}
             name="Riprod"
             contribution="Lead Developer & Project Maintainer"
           />
-          <User
-            avatar="/images/authors/thebigloud.webp"
-            name="TheBigLoud"
-            contribution="UI Designer"
-          />
+          <User avatar={thebigloudAvatar} name="TheBigLoud" contribution="UI Designer" />
         </div>
 
         <div className="flex md:flex-row flex-col gap-4">

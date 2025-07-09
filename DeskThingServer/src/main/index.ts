@@ -24,6 +24,7 @@ import { initializationCheck } from './services/initialize'
 
 // Initialize environment variables
 import './utils/environment'
+import { loadConfig } from './utils/envBuilder'
 
 // Ensure single instance
 if (!setupSingleInstance()) {
@@ -38,6 +39,9 @@ if (!setupSingleInstance()) {
       loadingWindow.show()
       // Clears any old installs
       await initializationCheck()
+
+      // build the environment variables
+      loadConfig()
 
       // Initialize app lifecycle (which will handle the rest of the startup)
       await initializeAppLifecycle()

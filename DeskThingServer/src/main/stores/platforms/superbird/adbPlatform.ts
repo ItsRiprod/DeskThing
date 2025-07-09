@@ -45,7 +45,6 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
     connectionState: ConnectionState.Established
   }
 
-
   constructor() {
     super()
     this.adbService = new ADBService()

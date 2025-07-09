@@ -1,7 +1,5 @@
 import { CacheableStore } from '@shared/types'
 import logger from '@server/utils/logger'
-import { readFileSync } from 'fs'
-import { join } from 'path'
 import {
   Supporter,
   SupporterAPIResponse,
@@ -19,26 +17,12 @@ type SupporterCachePage = {
 
 type SupporterCache = Record<number, SupporterCachePage>
 
-let appConfig: { buyMeACoffeeToken: string }
-
-try {
-  if (process.env.NODE_ENV === 'development') {
-    appConfig = { buyMeACoffeeToken: process.env.BUYMEACOFFE_TOKEN || '' }
-  } else {
-    const configPath = join(process.resourcesPath, 'config.json')
-    appConfig = JSON.parse(readFileSync(configPath, 'utf8'))
-  }
-} catch (error) {
-  logger.error('Failed to load config:', { source: 'supporterStore', error: error as Error })
-  appConfig = { buyMeACoffeeToken: '' }
-}
-
 export class SupporterStore implements SupporterStoreClass, CacheableStore {
   private cache: SupporterCache | null = null
-  private readonly CACHE_DURATION = 2 * 60 * 60 * 1000 // 2 hours
+  private readonly CACHE_DURATION = 1 * 60 * 60 * 1000 // 1 hour
   private readonly API_URL = 'https://developers.buymeacoffee.com/api/v1/supporters'
   private readonly MEMBERS_API_URL = 'https://developers.buymeacoffee.com/api/v1/subscriptions'
-  private readonly TOKEN = appConfig.buyMeACoffeeToken
+  private readonly TOKEN = process.env.BUYMEACOFFEE_TOKEN
 
   private _initialized: boolean = false
   public get initialized(): boolean {
@@ -68,7 +52,7 @@ export class SupporterStore implements SupporterStoreClass, CacheableStore {
       })
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch supporters: ${response.statusText}`)
+        throw new Error(`Failed to fetch supporters: ${response.status} - ${response.statusText}`)
       }
 
       const data = (await response.json()) as SupporterAPIResponse
@@ -97,7 +81,10 @@ export class SupporterStore implements SupporterStoreClass, CacheableStore {
       })
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch members: ${response.statusText}`)
+        logger.debug(
+          `Failed to fetch members. Token Exists: ${!!this.TOKEN}. Api Url Exists: ${this.MEMBERS_API_URL}`
+        )
+        throw new Error(`Failed to fetch members: ${response.statusText} (${response.status})`)
       }
 
       const data = (await response.json()) as MemberAPIResponse
