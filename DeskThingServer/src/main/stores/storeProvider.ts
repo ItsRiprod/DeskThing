@@ -15,6 +15,7 @@ import { ProfileStoreClass } from '@shared/stores/profileStore'
 import { SupporterStoreClass } from '@shared/stores/supporterStore'
 import { AutoLaunchStoreClass } from '@shared/stores/autoLaunchStore'
 import { GithubStoreClass } from '@shared/stores/githubStore'
+import { StatsStoreClass } from '@shared/stores/statsStore'
 
 // Stores
 
@@ -24,6 +25,7 @@ import logger from '@server/utils/logger'
 import { ServerTaskStoreClass } from '@shared/stores/serverTaskStore'
 import { FlashStoreClass } from '@shared/stores/flashStore'
 import { ThingifyStoreClass } from '@shared/stores/thingifyStore'
+import { StatsCollector } from './statsCollectionStore'
 
 interface Stores {
   appDataStore: AppDataStoreClass
@@ -45,6 +47,8 @@ interface Stores {
   serverTaskStore: ServerTaskStoreClass
   flashStore: FlashStoreClass
   thingifyStore: ThingifyStoreClass
+  statsStore: StatsStoreClass
+  statsCollector: StatsCollector
 }
 
 export class StoreProvider {
@@ -77,7 +81,9 @@ export class StoreProvider {
       githubStore: () => import('./githubStore').then((m) => m.GithubStore),
       serverTaskStore: () => import('./serverTaskStore').then((m) => m.ServerTaskStore),
       flashStore: () => import('./flashStore').then((m) => m.FlashStore),
-      thingifyStore: () => import('./thingifyStore').then((m) => m.ThingifyStore)
+      thingifyStore: () => import('./thingifyStore').then((m) => m.ThingifyStore),
+      statsStore: () => import('./statsStore').then((m) => m.StatsStore),
+      statsCollector: () => StatsCollector
     }
 
     this.storeInitializers = {
@@ -129,7 +135,10 @@ export class StoreProvider {
           await this.getStore('platformStore', false)
         ),
       flashStore: async () => new (await storeImports.flashStore())(),
-      thingifyStore: async () => new (await storeImports.thingifyStore())()
+      thingifyStore: async () => new (await storeImports.thingifyStore())(),
+      statsStore: async () => new (await storeImports.statsStore())(),
+      statsCollector: async () =>
+        new (await storeImports.statsCollector())(await this.getStore('statsStore', false))
     }
 
     this.initialize()

@@ -1,3 +1,4 @@
+import logger from '@server/utils/logger'
 import type { Stats, Registration } from '@shared/types'
 
 type StatsResult =
@@ -64,12 +65,20 @@ export class DeskThingStats {
       })
 
       if (response.ok) return { success: true, status: response.status }
-      else
+      else {
+        logger.error(
+          `Failed to register client: ${response.status} - ${response.statusText}. Registering with headers ${JSON.stringify(headers)} and registration data: ${stringifiedData}`,
+          {
+            function: 'register',
+            source: 'statsFetchWrapper'
+          }
+        )
         return {
           success: false,
           status: response.status,
           error: new Error(`Failed to register client: ${response.statusText}`)
         }
+      }
     } catch (error) {
       console.error('registration error:', error)
       return {
@@ -92,12 +101,17 @@ export class DeskThingStats {
       })
 
       if (response.ok) return { success: true, status: response.status }
-      else
+      else {
+        logger.error(`Failed to send stats: ${response.status} - ${response.statusText}`, {
+          function: 'send',
+          source: 'statsFetchWrapper'
+        })
         return {
           success: false,
           status: response.status,
           error: new Error(`Failed to send stats: ${response.statusText}`)
         }
+      }
     } catch (error) {
       console.error('stats error:', error)
       return {

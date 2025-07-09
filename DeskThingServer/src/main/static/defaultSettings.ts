@@ -27,5 +27,6 @@ export const defaultSettings: Settings = {
 
   // flags
   flag_firstClose: true,
-  flag_hasOpened: false
+  flag_hasOpened: false,
+  flag_collectStats: true
 }

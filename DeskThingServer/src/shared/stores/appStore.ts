@@ -1,4 +1,10 @@
-import { App, AppManifest, APP_REQUESTS, DeskThingToAppData, AppLatestJSONLatest } from '@deskthing/types'
+import {
+  App,
+  AppManifest,
+  APP_REQUESTS,
+  DeskThingToAppData,
+  AppLatestJSONLatest
+} from '@deskthing/types'
 import { ReplyFn, StagedAppManifest } from '../types'
 import { AppDataFilters, AppProcessListener } from './appProcessStore'
 import { StoreInterface } from '@shared/interfaces/storeInterface'
@@ -16,6 +22,9 @@ export type addSettingsOptions = {
 export type AppStoreListenerEvents = {
   apps: { data: App[] }
   purging: { appName: string }
+  appUpdate: { appId: string; currentVersion: string; newVersion: string }
+  appUninstall: { appId: string }
+  appInstall: { appId: string }
 }
 
 // Create listener types automatically from event map

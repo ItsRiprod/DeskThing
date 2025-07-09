@@ -9,7 +9,7 @@ import '@server/system/process' // handles process errors
 export async function loadModules(): Promise<void> {
   try {
     updateLoadingStatus('Initializing stores...')
-    const { initializeStores } = await import('../services/cache/storeInitializer')
+    const { initializeStores } = await import('../services/utility/storeInitializer')
     await initializeStores()
 
     updateLoadingStatus('Initializing platforms...')

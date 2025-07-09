@@ -226,6 +226,44 @@ const ServerSettings: React.FC = () => {
           </div>
         )}
       </div>
+
+      <div className="flex flex-col">
+        <div className="w-full px-4 flex justify-between items-center">
+          <h2 className="text-xl">Collect Anonymous Statistics</h2>
+          <Button
+            title="Help us improve DeskThing by sending anonymous usage statistics"
+            className="bg-transparent p-0"
+            onClick={() => handleSettingChange('flag_collectStats', !settings.flag_collectStats)}
+          >
+            <IconToggle
+              iconSize={48}
+              checked={settings.flag_collectStats}
+              className={`transition-color ${settings.flag_collectStats ? 'text-green-500' : 'text-gray-500'}`}
+            />
+          </Button>
+        </div>
+        {!settings.flag_collectStats && (
+          <div className="animate-fade-in-down px-4 py-2">
+            <p className="text-gray-400">
+              Hey there! Riprod here. As of v0.11.11, I&apos;ve added anonymous statistics
+              collection to help me understand how many people are using DeskThing.
+            </p>
+            <p className="text-gray-400">
+              My goal is to keep DeskThing completely free forever. These stats really help when
+              talking to potential investors, which could help secure funding to keep the project
+              going strong. It also helps keep me motivated knowing people are still using it!
+            </p>
+            <p className="text-gray-400">
+              Of course, it&apos;s totally up to you whether to enable this or not - but it would
+              mean a lot if you did!
+            </p>
+            <p className="text-gray-400">
+              Thanks for being awesome! Hope you&apos;re enjoying DeskThing as much as I love
+              working on it 🍞
+            </p>
+          </div>
+        )}
+      </div>
       <div className="border-t py-5 border-gray-900 w-full flex justify-end">
         <Button
           className={`border-green-500 border group gap-2 ${loading ? 'text-gray-100 bg-green-600' : 'hover:bg-green-500'}`}

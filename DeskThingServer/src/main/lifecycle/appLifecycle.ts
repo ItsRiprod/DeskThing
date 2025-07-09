@@ -72,7 +72,11 @@ export async function initializeAppLifecycle(): Promise<void> {
 
   app.on('before-quit', async () => {
     console.log('Quitting app')
-    const { default: cacheManager } = await import('../services/cache/cacheManager')
+    const { storeProvider } = await import('../stores/storeProvider')
+    const statsCollector = await storeProvider.getStore('statsCollector')
+    await statsCollector.collectSessionCloseStats()
+
+    const { default: cacheManager } = await import('../services/utility/cacheManager')
     await cacheManager.hibernateAll() // hibernate all before closing to ensure all cache is saved
   })
 
@@ -114,7 +118,7 @@ export async function initializeAppLifecycle(): Promise<void> {
 
     if (settings?.server_minimizeApp) {
       // Clear cache from everywhere
-      const { default: cacheManager } = await import('../services/cache/cacheManager')
+      const { default: cacheManager } = await import('../services/utility/cacheManager')
       await cacheManager.hibernateAll()
     } else {
       app.quit()

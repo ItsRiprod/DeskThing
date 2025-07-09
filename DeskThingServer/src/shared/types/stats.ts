@@ -1,11 +1,8 @@
-/** Operating system types */
-type HostOs = 'linux' | 'windows' | 'macos'
-
 /** uniquely identifies the machine on which deskthing was installed. this object should only ever be sent once. */
 export interface Registration {
   id: string
   publicKey: string
-  os: HostOs
+  os: NodeJS.Platform
   cpus?: number
   memory?: number
 }
@@ -15,6 +12,10 @@ export interface Registration {
  * server version, such as directly post-installation or when the server is updated. */
 interface Server {
   version: string
+  os: NodeJS.Platform
+  arch: string
+  nodeVersion: string
+  uptime: number
 }
 
 /** the most recent of this object identifies the current client version for `clientId`. this can be sent multiple times.

@@ -48,7 +48,10 @@ export class AppStore implements CacheableStore, AppStoreClass {
   // Utils
   private listeners: AppStoreListeners = {
     apps: [],
-    purging: []
+    purging: [],
+    appUpdate: [],
+    appUninstall: [],
+    appInstall: []
   }
   private functionTimeouts: Record<string, NodeJS.Timeout> = {}
 
@@ -198,6 +201,12 @@ export class AppStore implements CacheableStore, AppStoreClass {
                 domain: appRelease.id
               }
             )
+
+            this.notifyListeners('appUpdate', {
+              appId: appRelease.id,
+              currentVersion: existingVersion || 'unknown',
+              newVersion: incomingVersion
+            })
 
             sanitizeAppMeta(app)
 
@@ -500,6 +509,8 @@ export class AppStore implements CacheableStore, AppStoreClass {
     } catch {
       Logger.info(`It doesn't appear that ${name} was running`)
     }
+
+    await this.notifyListeners('appUninstall', { appId: name })
 
     await this.notifyListeners('purging', { appName: name })
     // Wait for the app to fully purge
@@ -825,6 +836,9 @@ export class AppStore implements CacheableStore, AppStoreClass {
       // TODO: Update to use the process
       await executeStagedFile({ overwrite, appId, run })
       progressBus.complete(ProgressChannel.ST_APP_INITIALIZE, 'Run App', 'App run successfully')
+      this.notifyListeners('appInstall', {
+        appId: appId || 'unknown'
+      })
     } catch (error) {
       progressBus.error(
         ProgressChannel.ST_APP_INITIALIZE,

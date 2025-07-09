@@ -1,6 +1,3 @@
-// Ik this is bad practice but I don't have time to fix it right now
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { LOGGING_LEVELS } from '@deskthing/types'
 
 export interface CacheableStore {
@@ -33,6 +30,7 @@ export type Settings = {
   // flags
   flag_firstClose: boolean
   flag_hasOpened: boolean
+  flag_collectStats: boolean
 }
 
 // Used in the Refresh ADB screen to display little messages for the user
