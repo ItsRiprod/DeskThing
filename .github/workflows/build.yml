@@ -142,6 +142,7 @@ jobs:
         uses: paneron/action-electron-builder@v1.8.1
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          BUYMEACOFFEE_TOKEN: ${{ secrets.BUYMEACOFFEE_TOKEN }}
         with:
           github_token: ${{ secrets.github_token }}
           package_manager: npm
