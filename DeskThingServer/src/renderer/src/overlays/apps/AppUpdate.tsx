@@ -14,6 +14,7 @@ import { useChannelProgress } from '@renderer/hooks/useProgress'
 import { useAppStore, useClientStore, useReleaseStore } from '@renderer/stores'
 import { App, PlatformTypes } from '@deskthing/types'
 import semverSatisfies from 'semver/functions/satisfies'
+import { DownloadErrorOverlay } from '../DownloadErrorOverlay'
 
 type Issues =
   | 'checksum'
@@ -158,6 +159,7 @@ const AppUpdate: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
     pending: 0,
     issues: []
   })
+  const [stagedAppError, setStagedAppError] = useState<string | null>(null)
 
   const appRelease = useMemo(
     () => appReleases.find((r) => r.id === app.name),
@@ -177,10 +179,10 @@ const AppUpdate: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
 
   const handleDownload = async (): Promise<void> => {
     const stagedApp = await downloadLatest(app.name)
-    if (stagedApp) {
-      setStagedManifest(stagedApp)
+    if (stagedApp.success) {
+      setStagedManifest(stagedApp.appManifest)
     } else {
-      // provide feedback
+      setStagedAppError(stagedApp.message || 'Unknown error')
     }
   }
 
@@ -353,6 +355,13 @@ const AppUpdate: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
       )}
       {downloadChannel.isLoading && downloadChannel.progress && (
         <LogEntry progressEvent={downloadChannel.progress} />
+      )}
+      {stagedAppError && (
+        <DownloadErrorOverlay
+          error={stagedAppError}
+          onAcknowledge={() => setStagedAppError(null)}
+          title="Failed to stage App"
+        />
       )}
     </div>
   )
