@@ -109,11 +109,15 @@ export const createClientReleaseFile = async (force = false): Promise<ClientRele
       if (result.type == 'converted-apps')
         throw new Error('Received "app" type when expecting multi or client')
 
+      const updatedReleases = await Promise.all(
+        result.releases.map((release) => updateLatestServer(release, force))
+      )
+
       const clientReleaseFile: ClientReleaseFile01111 = {
         version: '0.11.11',
         type: 'client',
         repositories: result.repos,
-        releases: result.releases,
+        releases: updatedReleases,
         timestamp: Date.now()
       }
 
@@ -214,11 +218,16 @@ export const createAppReleaseFile = async (force = false): Promise<AppReleaseFil
         throw new Error('Received "client" type when expecting multi or client')
 
       update('Creating app release file from multi-release', 90)
+
+      const updatedReleases = await Promise.all(
+        result.releases.map((release) => updateLatestServer(release, force))
+      )
+
       const appReleaseFile: AppReleaseFile01111 = {
         version: '0.11.11',
         type: 'app',
         repositories: result.repos,
-        releases: result.releases,
+        releases: updatedReleases,
         timestamp: Date.now()
       }
 

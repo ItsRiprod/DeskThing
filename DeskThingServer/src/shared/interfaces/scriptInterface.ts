@@ -3,9 +3,6 @@
  */
 
 import { ADBServiceClass } from '@shared/stores/adbServiceClass'
+import { ScriptConfig } from '@shared/types'
 
-export type ScriptInterface = (
-  adbService: ADBServiceClass,
-  deviceId: string,
-  force?: boolean
-) => Promise<string>
+export type ScriptInterface = (adbService: ADBServiceClass, config: ScriptConfig) => Promise<string>

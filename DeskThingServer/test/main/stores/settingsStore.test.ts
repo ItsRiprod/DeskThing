@@ -28,6 +28,14 @@ vi.mock('@server/services/files/fileService', () => ({
   readFromFile: vi.fn()
 }))
 
+vi.mock('electron/main', () => {
+  return {
+    app: {
+      getVersion: vi.fn().mockReturnValue('0.10.8')
+    }
+  }
+})
+
 vi.mock('electron', () => {
   return {
     app: {

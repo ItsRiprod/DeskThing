@@ -36,7 +36,7 @@ const EvensPage: React.FC = () => {
       </div>
 
       <div className="w-full h-full relative overflow-y-auto">
-        {logs.length > 0 ? (
+        {logs?.length > 0 ? (
           <ul className="absolute inset-0 w-full h-full flex flex-col gap-3">
             {logs.map((log, index) => (
               <li
@@ -59,7 +59,7 @@ const EvensPage: React.FC = () => {
           <p className="text-gray-500">No events found.</p>
         )}
       </div>
-      {logs.length > 0 && (
+      {logs?.length > 0 && (
         <Button className="hover:bg-zinc-900 w-fit" onClick={handleReadLogs}>
           <p>Clear All</p>
         </Button>

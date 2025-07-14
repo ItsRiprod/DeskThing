@@ -3,7 +3,7 @@ import { progressBus } from '@server/services/events/progressBus'
 import { ProgressChannel } from '@shared/types'
 import { getResourcesPath } from '@server/utils/resourcePath'
 
-export const proxyScript: ScriptInterface = async (adbService, deviceId) => {
+export const proxyScript: ScriptInterface = async (adbService, { deviceId }) => {
   try {
     progressBus.start(ProgressChannel.PUSH_SCRIPT, 'Proxy Script', 'Setting up proxy configuration')
 

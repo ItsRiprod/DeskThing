@@ -40,6 +40,13 @@ vi.mock('electron', () => ({
   }
 }))
 
+vi.mock('electron/main', () => ({
+  app: {
+    getPath: vi.fn(() => '/'),
+    getVersion: vi.fn(() => '0.11.0')
+  }
+}))
+
 describe('PlatformStore', () => {
   let platformStore: PlatformStore
   let mockAppStore: AppStoreClass
@@ -65,7 +72,7 @@ describe('PlatformStore', () => {
 
     testClient = {
       clientId: 'test-connection',
-      connected: true,
+      connected: false,
       timestamp: Date.now(),
       connectionState: ConnectionState.Connected,
       meta: {},
@@ -152,7 +159,16 @@ describe('PlatformStore', () => {
       const clientUpdate: Partial<Client> = {
         clientId: testClient.clientId,
         connected: true,
-        connectionState: ConnectionState.Connected
+        connectionState: ConnectionState.Connected,
+        identifiers: {
+          [PlatformIDs.ADB]: {
+            id: 'test-connection',
+            providerId: PlatformIDs.ADB,
+            active: true,
+            capabilities: [ProviderCapabilities.COMMUNICATE],
+            connectionState: ConnectionState.Connected
+          }
+        }
       }
 
       const updatedClient = { ...testClient, ...clientUpdate }

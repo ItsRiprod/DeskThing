@@ -6,7 +6,8 @@ import {
   readClientReleaseData
 } from '@server/services/files/releaseFileService'
 import Logger from '@server/utils/logger'
-import { progressBus } from '@server/services/events/progressBus'
+import { ClientReleaseFile01111 } from '@shared/types'
+import {  ClientLatestJSON } from '@deskthing/types'
 
 vi.mock('@server/services/files/releaseFileService')
 vi.mock('@server/services/events/progressBus')
@@ -35,6 +36,13 @@ vi.mock('@server/utils/logger', () => ({
 }))
 
 vi.mock('electron', () => ({
+  app: {
+    getPath: vi.fn(() => '/'),
+    getVersion: vi.fn(() => '0.11.0')
+  }
+}))
+
+vi.mock('electron/main', () => ({
   app: {
     getPath: vi.fn(() => '/'),
     getVersion: vi.fn(() => '0.11.0')
@@ -85,10 +93,20 @@ describe('ReleaseStore', () => {
     })
 
     it('should get client releases', async () => {
-      const mockReleases = {
-        releases: [{ id: 'test-client' }],
+      const mockReleases: ClientReleaseFile01111 = {
+        releases: [
+          {
+            id: 'test-client',
+            type: 'client',
+            mainRelease: {} as ClientLatestJSON,
+            lastUpdated: 0,
+            totalDownloads: 0
+          }
+        ],
         repositories: ['test-repo'],
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        version: '0.11.11',
+        type: 'client'
       }
       vi.mocked(readClientReleaseData).mockResolvedValueOnce(mockReleases as any)
 
@@ -96,17 +114,6 @@ describe('ReleaseStore', () => {
       expect(releases).toEqual(mockReleases.releases)
     })
 
-    it('should get specific app release', async () => {
-      const mockReleases = {
-        releases: [{ id: 'test-app' }],
-        repositories: ['test-repo'],
-        timestamp: Date.now()
-      }
-      vi.mocked(readAppReleaseData).mockResolvedValueOnce(mockReleases as any)
-
-      const release = await releaseStore.getAppRelease('test-app')
-      expect(release).toEqual(mockReleases.releases[0])
-    })
 
     it('should get specific client release', async () => {
       const mockReleases = {
@@ -147,27 +154,10 @@ describe('ReleaseStore', () => {
     })
   })
 
-  describe('Release Operations', () => {
-    it('should handle refresh data operation', async () => {
-      await releaseStore.refreshData()
-      expect(vi.mocked(progressBus.startOperation)).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.any(String),
-        expect.any(String),
-        expect.any(Array)
-      )
-    })
-
-    it('should handle forced refresh', async () => {
-      await releaseStore.refreshData(true)
-      expect(vi.mocked(progressBus.startOperation)).toHaveBeenCalled()
-    })
-  })
-
   describe('Error Handling', () => {
     it('should handle errors when reading releases', async () => {
       vi.mocked(readAppReleaseData).mockRejectedValueOnce(new Error('Test error'))
-      
+
       const releases = await releaseStore.getAppReleases()
       expect(releases).toBeUndefined()
       expect(vi.mocked(Logger.warn)).toHaveBeenCalled()

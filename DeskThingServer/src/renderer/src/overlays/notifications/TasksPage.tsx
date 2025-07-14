@@ -28,7 +28,7 @@ const sortTasks = (tasks: FullTaskList): Record<string, Task[]> => {
         // Alphabetical by label as final tiebreaker
         return (a.label || '').localeCompare(b.label || '')
       })
-      if (sortedTasks.length == 0) {
+      if (!sortedTasks || sortedTasks.length == 0) {
         return ['', []]
       }
       return [appId, sortedTasks]
@@ -84,7 +84,7 @@ const TasksPage: React.FC = () => {
         <div className="absolute inset-0 w-full h-full">
           {Object.entries(sortedTasks).map(
             ([appId, tasks]) =>
-              tasks.length > 0 && (
+              tasks?.length > 0 && (
                 <div key={appId}>
                   <div className="flex gap-3 w-full py-4 border-t border-zinc-800">
                     <AppIcon appId={appId} className="!w-6 !h-6" />

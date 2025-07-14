@@ -6,6 +6,7 @@ export type FlashStoreEvents = {
   'flash-state': [FlashingState]
   'total-steps': [number]
   'flash-stopped': [boolean]
+  'flash-completed': [boolean]
 }
 
 export interface FlashStoreClass

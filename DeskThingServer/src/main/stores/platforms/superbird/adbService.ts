@@ -11,7 +11,7 @@ import {
   updateManifest
 } from '@server/services/client/clientService'
 import { progressBus } from '@server/services/events/progressBus'
-import { ProgressChannel, SCRIPT_IDs } from '@shared/types'
+import { ProgressChannel, SCRIPT_IDs, ScriptConfig } from '@shared/types'
 import { ADBServiceClass } from '@shared/stores/adbServiceClass'
 import { restartScript } from '@server/services/adb/restartScript'
 import { handleError } from '@server/utils/errorHandler'
@@ -91,36 +91,42 @@ export class ADBService implements ADBServiceClass {
     }
   }
 
-  public async runScript(deviceId: string, scriptId: SCRIPT_IDs, force = false): Promise<string> {
+  public async runScript(scriptId: SCRIPT_IDs, scriptConfig: ScriptConfig): Promise<string> {
     try {
       switch (scriptId) {
         case SCRIPT_IDs.RESTART: {
-          logger.info(`Running Restart Script on device ${deviceId}`, {
+          logger.info(`Running Restart Script on device ${scriptConfig.deviceId}`, {
             function: 'runScript',
             source: 'ADBService'
           })
-          const result = await restartScript(this, deviceId, force)
-          logger.info(`Completed Restart Script for ${deviceId} with result: ${result}`, {
-            function: 'runScript',
-            source: 'ADBService'
-          })
+          const result = await restartScript(this, scriptConfig)
+          logger.info(
+            `Completed Restart Script for ${scriptConfig.deviceId} with result: ${result}`,
+            {
+              function: 'runScript',
+              source: 'ADBService'
+            }
+          )
           return result
         }
         case SCRIPT_IDs.PROXY: {
-          logger.info(`Running Restart Script on device ${deviceId}`, {
+          logger.info(`Running Proxy Script on device ${scriptConfig.deviceId}`, {
             function: 'runScript',
             source: 'ADBService'
           })
-          const result = await proxyScript(this, deviceId, force)
-          logger.info(`Completed Restart Script for ${deviceId} with result: ${result}`, {
-            function: 'runScript',
-            source: 'ADBService'
-          })
+          const result = await proxyScript(this, scriptConfig)
+          logger.info(
+            `Completed Proxy Script for ${scriptConfig.deviceId} with result: ${result}`,
+            {
+              function: 'runScript',
+              source: 'ADBService'
+            }
+          )
           return result
         }
       }
     } catch (error) {
-      logger.error(`Error running script ${scriptId} on device ${deviceId}`, {
+      logger.error(`Error running script ${scriptId} on device ${scriptConfig.deviceId}`, {
         error: error as Error,
         function: 'runScript',
         source: 'ADBService'

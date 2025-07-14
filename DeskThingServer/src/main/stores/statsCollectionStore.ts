@@ -146,6 +146,17 @@ export class StatsCollector implements StoreInterface, CacheableStore {
         })
       })
 
+      const flashStore = await storeProvider.getStore('flashStore', false)
+
+      flashStore.on('flash-completed', (status) => {
+        this.collectStat({
+          stat: 'kv',
+          type: 'boolean',
+          key: 'flash_completed',
+          value: status
+        })
+      })
+
       // // Mapping Store listeners
       // const mappingStore = await storeProvider.getStore('mappingStore', false)
 

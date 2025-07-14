@@ -20,7 +20,7 @@ const RequestsPage: React.FC = () => {
         </p>
       </div>
       <div className="w-full h-full relative overflow-y-auto">
-        {requests && requests.length > 0 ? (
+        {requests && requests?.length > 0 ? (
           <div className="w-full h-full overflow-y-auto relative">
             <div className="w-full h-full gap-2 flex flex-col absolute inset-0">
               {requests.map((request, index) => (

@@ -16,7 +16,7 @@ import {
   updateManifest
 } from '@server/services/client/clientService'
 
-export const pushClientScript: ScriptInterface = async (adbService, deviceId) => {
+export const pushClientScript: ScriptInterface = async (adbService, { deviceId }) => {
   progressBus.start(ProgressChannel.PUSH_SCRIPT, 'Configure Device', 'Opening port')
 
   await adbService.openPort(deviceId, 8891)

@@ -9,7 +9,7 @@
  * device information.
  */
 import { ClientManifest } from '@deskthing/types'
-import { SCRIPT_IDs } from '@shared/types'
+import { SCRIPT_IDs, ScriptConfig } from '@shared/types'
 
 export interface ADBServiceClass {
   /**
@@ -26,7 +26,7 @@ export interface ADBServiceClass {
    * @param scriptId The ID of the script to execute
    * @returns A promise that resolves when the script completes
    */
-  runScript(deviceId: string, scriptId: SCRIPT_IDs, force?: boolean): Promise<string>
+  runScript(scriptId: SCRIPT_IDs, config: ScriptConfig): Promise<string>
 
   /**
    * Retrieves a list of connected ADB devices via the ADB devices command

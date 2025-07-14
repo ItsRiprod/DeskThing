@@ -1,7 +1,7 @@
 import { ScriptInterface } from '@shared/interfaces/scriptInterface'
 import { join } from 'path'
 import { progressBus } from '@server/services/events/progressBus'
-import { ProgressChannel } from '@shared/types'
+import { ProgressChannel, ScriptConfig } from '@shared/types'
 import logger from '@server/utils/logger'
 import { handleError } from '@server/utils/errorHandler'
 import { getResourcesPath } from '@server/utils/resourcePath'
@@ -12,7 +12,10 @@ import { getResourcesPath } from '@server/utils/resourcePath'
  * @param deviceId - The ID of the device.
  * @returns A string indicating the status of the script.
  */
-export const restartScript: ScriptInterface = async (adbService, deviceId, force = false) => {
+export const restartScript: ScriptInterface = async (
+  adbService,
+  { force = false, deviceId, reboot = true }: ScriptConfig
+) => {
   try {
     progressBus.start(
       ProgressChannel.PUSH_SCRIPT,
@@ -98,9 +101,12 @@ export const restartScript: ScriptInterface = async (adbService, deviceId, force
     await new Promise((resolve) => setTimeout(resolve, 5000))
 
     // Remount as read-only and reboot
-    progressBus.update(ProgressChannel.PUSH_SCRIPT, 'Finalizing and rebooting', 90)
+    progressBus.update(ProgressChannel.PUSH_SCRIPT, 'Remounting...', 90)
     await adbService.sendCommand('shell mount -o remount,ro /', deviceId)
-    await adbService.sendCommand('shell reboot', deviceId)
+    if (reboot) {
+      progressBus.update(ProgressChannel.PUSH_SCRIPT, 'Rebooting...', 95)
+      await adbService.sendCommand('shell reboot', deviceId)
+    }
 
     progressBus.complete(ProgressChannel.PUSH_SCRIPT, 'Device configured and rebooting')
     return 'Restart script completed successfully'

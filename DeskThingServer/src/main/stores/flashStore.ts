@@ -328,6 +328,8 @@ export class FlashStore
         'Device flashed successfully!'
       )
 
+      this.emit('flash-completed', true)
+
       this._flashState.state = 'completed'
 
       this.emit('flash-state', this._flashState)
@@ -341,6 +343,7 @@ export class FlashStore
       this._flashState.state = 'error'
       this._flashState.errorText = error instanceof Error ? error.message : 'Unknown error'
       this._flashState.suggestion = undefined
+      this.emit('flash-completed', false)
       throw error
     }
   }

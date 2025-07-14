@@ -23,7 +23,7 @@ import { app } from 'electron'
 import { join } from 'node:path'
 import { readFile, writeFile } from 'node:fs/promises'
 import { progressBus } from '@server/services/events/progressBus'
-import { ProgressChannel } from '@shared/types'
+import { ProgressChannel, SCRIPT_IDs } from '@shared/types'
 import { handleError } from '@server/utils/errorHandler'
 import { ClientIdentificationService } from '@server/services/clients/clientIdentificationService'
 
@@ -184,11 +184,10 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
                 ]
               )
               try {
-                const result = await this.adbService.runScript(
-                  data.adbId,
-                  data.scriptId,
-                  data.force
-                )
+                const result = await this.adbService.runScript(data.scriptId, {
+                  deviceId: data.adbId,
+                  force: data.force
+                })
                 progressBus.complete(
                   ProgressChannel.PLATFORM_CHANNEL,
                   `Script complete. Result: ${result}`
@@ -254,12 +253,20 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
           [
             {
               channel: ProgressChannel.CONFIGURE_DEVICE,
-              weight: 100
+              weight: 75
+            },
+            {
+              channel: ProgressChannel.PUSH_SCRIPT,
+              weight: 25
             }
           ]
         )
 
         try {
+          await this.adbService.runScript(SCRIPT_IDs.RESTART, {
+            deviceId: data.adbId,
+            reboot: false
+          })
           await this.adbService.configureDevice(data.adbId, this.adbPort)
 
           progressBus.complete(ProgressChannel.PLATFORM_CHANNEL, 'Completed Operation')
