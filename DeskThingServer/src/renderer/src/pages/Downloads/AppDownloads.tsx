@@ -9,6 +9,7 @@ import AddRepoOverlay from '@renderer/overlays/releases/AddRepoOverlay'
 import { ProgressChannel } from '@shared/types'
 import { AppReleaseCard } from './AppDownloadCard'
 import { useChannelProgress } from '@renderer/hooks/useProgress'
+import { DownloadErrorOverlay } from '@renderer/overlays/DownloadErrorOverlay'
 
 // Defined outside scope so it persists between being unmounted and not
 let initialRender = true
@@ -31,6 +32,8 @@ const AppDownloads: React.FC = () => {
   const refreshReleases = useReleaseStore((releaseStore) => releaseStore.refreshReleases)
   const stagedAppManifest = useAppStore((appStore) => appStore.stagedManifest)
   const addApp = useAppStore((appStore) => appStore.addApp)
+
+  const [addAppError, setAddAppError] = useState<string | null>(null)
 
   useChannelProgress(ProgressChannel.IPC_APPS)
   useChannelProgress(ProgressChannel.IPC_RELEASES)
@@ -74,7 +77,10 @@ const AppDownloads: React.FC = () => {
   }
 
   const onZipAdd = async (fileUrl: string): Promise<void> => {
-    await addApp({ appPath: fileUrl })
+    const downloadResult = await addApp({ appPath: fileUrl })
+    if (!downloadResult.success) {
+      setAddAppError(downloadResult.message || 'Failed to add app from ZIP file.')
+    }
   }
 
   const handleToggleAddRepo = (): void => {
@@ -84,7 +90,7 @@ const AppDownloads: React.FC = () => {
   return (
     <div className="flex h-full w-full">
       {addAppRepoOverlay && <AddRepoOverlay onClose={handleToggleAddRepo} onZipUpload={onZipAdd} />}
-      {stagedAppManifest && <SuccessNotification />}
+      {stagedAppManifest && <SuccessNotification stagedManifest={stagedAppManifest} />}
       <Sidebar className="flex justify-end flex-col h-full max-h-full md:items-stretch xs:items-center">
         <div>
           <div className="flex flex-col gap-2">
@@ -130,7 +136,14 @@ const AppDownloads: React.FC = () => {
               </div>
             )}
           </div>
-        </div>{' '}
+        </div>
+        {addAppError && (
+          <DownloadErrorOverlay
+            error={addAppError}
+            onAcknowledge={() => setAddAppError(null)}
+            title="There was an error loading the zip file"
+          />
+        )}
       </MainElement>
     </div>
   )

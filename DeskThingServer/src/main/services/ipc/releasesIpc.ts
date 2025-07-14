@@ -136,19 +136,31 @@ export const releaseHandler = async (
           ]
         )
         const stagedApp = await releaseStore.downloadLatestApp(data.payload)
+
+        if (!stagedApp) {
+          throw new Error('App manifest was not found after install!')
+        }
+
         progressBus.complete(
           ProgressChannel.IPC_RELEASES,
           `Successfully downloaded app`,
           'Operation Success'
         )
-        return stagedApp
+        return {
+          success: true,
+          appManifest: stagedApp,
+          message: 'App downloaded successfully'
+        }
       } catch (error) {
         progressBus.error(
           ProgressChannel.IPC_RELEASES,
           `Unable to download app! ${handleError(error)}`,
           'Error Downloading App'
         )
-        return
+        return {
+          success: false,
+          message: `Unable to download! ${error instanceof Error ? error.message : 'Unknown error'}`
+        }
       }
     case IPC_RELEASE_TYPES.GET_CLIENTS:
       try {
@@ -223,19 +235,31 @@ export const releaseHandler = async (
           ]
         )
         const client = await releaseStore.downloadLatestClient(data.payload)
+
+        if (!client) {
+          throw new Error('Client manifest was not found after install!')
+        }
+
         progressBus.complete(
           ProgressChannel.IPC_RELEASES,
           `Successfully downloaded client`,
           'Operation Success'
         )
-        return client
+        return {
+          success: true,
+          clientManifest: client,
+          message: 'Successfully downloaded the client'
+        }
       } catch (error) {
         progressBus.error(
           ProgressChannel.IPC_RELEASES,
           `Unable to download client! ${handleError(error)}`,
           'Error Downloading Client'
         )
-        return
+        return {
+          success: false,
+          message: `Unable to download client! ${error instanceof Error ? error.message : 'Unknown error'}`
+        }
       }
   }
 }

@@ -126,7 +126,7 @@ export interface AppStoreClass extends StoreInterface {
    * @param filePath The app path (url or local path) to add
    * @returns The app manifest that was added
    */
-  addApp(options: stageAppFileType): Promise<StagedAppManifest | undefined>
+  addApp(options: stageAppFileType): Promise<StagedAppManifest>
 
   /**
    * Appends a manifest to the app

@@ -5,10 +5,9 @@ import {
   AppHandlerReturnType,
   AppIPCData,
   IPC_HANDLERS,
-  StagedAppManifest
+  AppDownloadReturnData
 } from '@shared/types'
 import {
-  AppManifest,
   AppSettings,
   DeskThingToAppData,
   App,
@@ -99,7 +98,7 @@ export const app = {
     }),
 
   /** @deprecated */
-  handleZip: async (path: string): Promise<AppManifest | null> =>
+  handleZip: async (path: string): Promise<AppDownloadReturnData> =>
     await sendCommand({
       kind: IPC_HANDLERS.APPS,
       type: IPC_APP_TYPES.ZIP,
@@ -107,7 +106,7 @@ export const app = {
     }),
 
   /** @deprecated */
-  handleUrl: async (url: string): Promise<AppManifest | null> =>
+  handleUrl: async (url: string): Promise<AppDownloadReturnData> =>
     await sendCommand({
       kind: IPC_HANDLERS.APPS,
       type: IPC_APP_TYPES.URL,
@@ -120,7 +119,7 @@ export const app = {
   }: {
     appPath?: string
     releaseMeta?: AppLatestJSONLatest
-  }): Promise<StagedAppManifest | null> =>
+  }): Promise<AppDownloadReturnData> =>
     await sendCommand({
       kind: IPC_HANDLERS.APPS,
       type: IPC_APP_TYPES.ADD,

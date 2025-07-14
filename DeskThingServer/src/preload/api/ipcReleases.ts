@@ -1,12 +1,15 @@
-import { ClientManifest } from '@deskthing/types'
 import {
+  AppDownloadReturnData,
   IPC_HANDLERS,
   IPC_RELEASE_TYPES,
   ReleaseHandlerReturnMap,
-  ReleaseIPCData,
-  StagedAppManifest
+  ReleaseIPCData
 } from '@shared/types'
-import { AppLatestServer, ClientLatestServer } from '@shared/types/releases'
+import {
+  AppLatestServer,
+  ClientDownloadReturnData,
+  ClientLatestServer
+} from '@shared/types/releases'
 import { ipcRenderer } from 'electron'
 
 export const releases = {
@@ -40,7 +43,7 @@ export const releases = {
       type: IPC_RELEASE_TYPES.REMOVE_APP_REPOSITORY,
       payload: repoUrl
     }),
-  downloadApp: async (appId: string): Promise<StagedAppManifest | undefined> =>
+  downloadApp: async (appId: string): Promise<AppDownloadReturnData> =>
     await sendCommand({
       kind: IPC_HANDLERS.RELEASE,
       type: IPC_RELEASE_TYPES.DOWNLOAD_APP,
@@ -62,7 +65,7 @@ export const releases = {
       type: IPC_RELEASE_TYPES.REMOVE_CLIENT_REPOSITORY,
       payload: repoUrl
     }),
-  downloadClient: async (clientId: string): Promise<ClientManifest | undefined> =>
+  downloadClient: async (clientId: string): Promise<ClientDownloadReturnData> =>
     await sendCommand({
       kind: IPC_HANDLERS.RELEASE,
       type: IPC_RELEASE_TYPES.DOWNLOAD_CLIENT,

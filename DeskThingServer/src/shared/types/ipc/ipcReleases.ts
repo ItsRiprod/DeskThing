@@ -1,7 +1,12 @@
 import { IPC_HANDLERS } from './ipcTypes'
-import { AppLatestServer, ClientLatestServer, RefreshOptions } from '../releases'
-import { ClientManifest, GitRepoUrl } from '@deskthing/types'
-import { StagedAppManifest } from '../app'
+import {
+  AppLatestServer,
+  ClientDownloadReturnData,
+  ClientLatestServer,
+  RefreshOptions
+} from '../releases'
+import { GitRepoUrl } from '@deskthing/types'
+import { AppDownloadReturnData } from '../app'
 
 export enum IPC_RELEASE_TYPES {
   REFRESH_RELEASES = 'github:refresh',
@@ -71,10 +76,10 @@ export type ReleaseHandlerReturnMap = {
   [IPC_RELEASE_TYPES.GET_APPS]: AppLatestServer[]
   [IPC_RELEASE_TYPES.GET_APP_REPOSITORIES]: string[]
   [IPC_RELEASE_TYPES.REMOVE_APP_REPOSITORY]: void
-  [IPC_RELEASE_TYPES.DOWNLOAD_APP]: StagedAppManifest | undefined
+  [IPC_RELEASE_TYPES.DOWNLOAD_APP]: AppDownloadReturnData
 
   [IPC_RELEASE_TYPES.GET_CLIENTS]: ClientLatestServer[]
   [IPC_RELEASE_TYPES.GET_CLIENT_REPOSITORIES]: string[]
   [IPC_RELEASE_TYPES.REMOVE_CLIENT_REPOSITORY]: void
-  [IPC_RELEASE_TYPES.DOWNLOAD_CLIENT]: ClientManifest | undefined
+  [IPC_RELEASE_TYPES.DOWNLOAD_CLIENT]: ClientDownloadReturnData
 }

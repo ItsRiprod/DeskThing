@@ -8,6 +8,7 @@ import { ProgressChannel } from '@shared/types'
 import { ClientDownloadCard } from './ClientDownloadCard'
 import { useChannelProgress } from '@renderer/hooks/useProgress'
 import AddRepoOverlay from '@renderer/overlays/releases/AddRepoOverlay'
+import { DownloadErrorOverlay } from '@renderer/overlays/DownloadErrorOverlay'
 
 let initialRender = true
 
@@ -18,11 +19,12 @@ const ClientDownloads: React.FC = () => {
 
   const installedClient = useClientStore((clientStore) => clientStore.clientManifest)
   const refreshClient = useClientStore((clientStore) => clientStore.requestClientManifest)
-  const loadClientZip = useClientStore((clientStore) => clientStore.loadClientZip)
+  const clientZip = useClientStore((clientStore) => clientStore.loadClientZip)
   useChannelProgress(ProgressChannel.IPC_CLIENT)
   useChannelProgress(ProgressChannel.IPC_RELEASES)
 
   const [addClientOverlay, setAddClientOverlay] = useState(false)
+  const [clientLoadError, setClientLoadError] = useState<string | null>(null)
 
   const [loading, setLoading] = useState(false)
   const [uiState, setUiState] = useState({
@@ -32,6 +34,26 @@ const ClientDownloads: React.FC = () => {
   if (initialRender) {
     getClients()
     initialRender = false
+  }
+
+  const loadClientZip = async (zip: string): Promise<void> => {
+    setLoading(true)
+    setClientLoadError(null)
+    try {
+      const result = await clientZip(zip)
+      if (result.success) {
+        // Handle successful client zip loading
+      } else {
+        setClientLoadError(result.message || 'Unknown error during client zip loading')
+      }
+    } catch (error) {
+      console.error('Failed to load client zip:', error)
+      setClientLoadError(
+        error instanceof Error ? error.message : `Failed to load client: ${String(error)}`
+      )
+    } finally {
+      setLoading(false)
+    }
   }
 
   const setPage = usePageStore((pageStore) => pageStore.setPage)
@@ -144,6 +166,13 @@ const ClientDownloads: React.FC = () => {
             )}
           </div>
         </div>
+        {clientLoadError && (
+          <DownloadErrorOverlay
+            error={clientLoadError}
+            onAcknowledge={() => setClientLoadError(null)}
+            title="Failed to load Client ZIP file: "
+          />
+        )}
       </MainElement>
     </div>
   )

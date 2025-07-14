@@ -1,5 +1,10 @@
 import { App, AppLatestJSONLatest, AppSettings, SavedData } from '@deskthing/types'
-import { IpcRendererCallback, LoggingData, StagedAppManifest } from '@shared/types'
+import {
+  AppDownloadReturnData,
+  IpcRendererCallback,
+  LoggingData,
+  StagedAppManifest
+} from '@shared/types'
 import { create } from 'zustand'
 import useSettingsStore from './settingsStore'
 
@@ -24,7 +29,7 @@ interface AppStoreState {
   addApp: (data: {
     appPath?: string
     releaseMeta?: AppLatestJSONLatest
-  }) => Promise<StagedAppManifest | void>
+  }) => Promise<AppDownloadReturnData>
   runStagedApp: (overwrite?: boolean) => Promise<void>
   setOrder: (order: string[]) => void
   addAppToList: (appName: string) => void
@@ -208,20 +213,14 @@ const useAppStore = create<AppStoreState>((set, get) => ({
   }: {
     appPath?: string
     releaseMeta?: AppLatestJSONLatest
-  }): Promise<StagedAppManifest | void> => {
-    const loggingListener = async (_event: Electron.Event, reply: LoggingData): Promise<void> => {
-      set({ logging: reply })
-      if (reply.final === true || reply.status === false) {
-        removeListener()
-      }
+  }): Promise<AppDownloadReturnData> => {
+    const appDownloadReturnData = await window.electron.app.add({ appPath, releaseMeta })
+    if (appDownloadReturnData.success) {
+      set({ stagedManifest: appDownloadReturnData.appManifest })
+    } else {
+      set({ stagedManifest: null })
     }
-    const removeListener = window.electron.ipcRenderer.on('logging', loggingListener)
-
-    window.electron.app.add({ appPath, releaseMeta }).then(async (manifest) => {
-      if (manifest) {
-        set({ stagedManifest: manifest })
-      }
-    })
+    return appDownloadReturnData
   },
 
   runStagedApp: async (overwrite: boolean = false): Promise<void> => {

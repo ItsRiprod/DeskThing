@@ -3,6 +3,7 @@ import {
   AppReleaseCommunity,
   AppReleaseMeta,
   ClientLatestJSONLatest,
+  ClientManifest,
   ClientReleaseMeta
 } from '@deskthing/types'
 
@@ -20,6 +21,19 @@ export type RefreshOptions = {
   /** Whether to update the stats */
   updateStates?: boolean
 }
+
+export type ClientDownloadReturnData = {
+  message: string
+} & (
+  | {
+      success: true
+      clientManifest: ClientManifest
+    }
+  | {
+      success: false
+      clientManifest?: ClientManifest
+    }
+)
 
 export interface GithubRelease {
   url: string

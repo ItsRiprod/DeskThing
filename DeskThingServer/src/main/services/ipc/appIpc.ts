@@ -14,6 +14,7 @@ import { storeProvider } from '@server/stores/storeProvider'
 import Logger from '@server/utils/logger'
 import { dialog, BrowserWindow } from 'electron'
 import { progressBus } from '@server/services/events/progressBus'
+import { handleError } from '@server/utils/errorHandler'
 
 /**
  * The `appHandler` object contains functions for handling different types of app-related IPC (Inter-Process Communication) data.
@@ -170,7 +171,10 @@ export const appHandler: {
    */
   zip: async (_data) => {
     Logger.fatal('appHandler.zip() is deprecated, use add() instead')
-    return null
+    return {
+      success: false,
+      message: 'appHandler.url() is deprecated, use add() instead'
+    }
   },
   /**
    * Handles the processing of an app from a URL.
@@ -188,7 +192,10 @@ export const appHandler: {
    */
   url: async (_data) => {
     Logger.fatal('appHandler.zip() is deprecated, use add() instead')
-    return null
+    return {
+      success: false,
+      message: 'appHandler.url() is deprecated, use add() instead'
+    }
   },
 
   postinstall: async (data) => {
@@ -230,26 +237,37 @@ export const appHandler: {
         weight: 100
       }
     ])
-    const appStore = await storeProvider.getStore('appStore')
 
-    const stagedAppManifest = await appStore.addApp({
-      filePath: data.payload.filePath,
-      releaseMeta: data.payload.meta
-    })
+    try {
+      const appStore = await storeProvider.getStore('appStore')
 
-    if (!stagedAppManifest) {
+      const stagedAppManifest = await appStore.addApp({
+        filePath: data.payload.filePath,
+        releaseMeta: data.payload.meta
+      })
+
+      if (!stagedAppManifest) {
+        throw new Error('Something went wrong during the download process!')
+      }
+
+      progressBus.complete(ProgressChannel.IPC_APPS, 'App Installed', 'App Installed')
+
+      return {
+        success: true,
+        message: 'App Installed Successfully',
+        appManifest: stagedAppManifest
+      }
+    } catch (error) {
       progressBus.error(
         ProgressChannel.IPC_APPS,
-        'Check logs for details',
-        'Something went wrong during the download process',
-        'Error Installing App'
+        'Error Installing App',
+        error instanceof Error ? error.message : handleError(error)
       )
-      return null
+      return {
+        success: false,
+        message: 'Error Installing App'
+      }
     }
-
-    progressBus.complete(ProgressChannel.IPC_APPS, 'App Installed', 'App Installed')
-
-    return stagedAppManifest
   },
 
   staged: async (data) => {

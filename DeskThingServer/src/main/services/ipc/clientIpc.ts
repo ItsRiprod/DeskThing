@@ -57,21 +57,37 @@ export const clientHandler: {
     const clientStore = await storeProvider.getStore('clientStore')
 
     try {
-      await clientStore.loadClientFromZip(data.payload)
+      const clientManifest = await clientStore.loadClientFromZip(data.payload)
+      
+      if (!clientManifest) {
+        throw new Error('Client Manifest was not found after install!')
+      }
+
+      progressBus.complete(
+        ProgressChannel.IPC_CLIENT,
+        'Upload ZIP',
+        'Zip File uploaded successfully!'
+      )
+
+      return {
+        success: true,
+        clientManifest: clientManifest,
+        message: 'Successfully loaded client manifest'
+      }
+
     } catch (error) {
-      progressBus.warn(
+      progressBus.error(
         ProgressChannel.IPC_CLIENT,
         'zip',
         'Error loading zip file',
         handleError(error)
       )
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : handleError(error)
+      }
     }
 
-    progressBus.complete(
-      ProgressChannel.IPC_CLIENT,
-      'Upload ZIP',
-      'Zip File uploaded successfully!'
-    )
   },
 
   url: async (data) => {
@@ -90,14 +106,25 @@ export const clientHandler: {
     )
 
     try {
-      await clientStore.loadClientFromURL(data.payload)
+      const clientManifest = await clientStore.loadClientFromURL(data.payload)
+
+      if (!clientManifest) {
+        throw new Error('Client Manifest was not found after install!')
+      }
+
+      progressBus.complete(ProgressChannel.IPC_CLIENT, 'Download Client', 'Web app loaded from URL')
+      return {
+        success: true,
+        clientManifest: clientManifest,
+        message: 'Successfully loaded client manifest'
+      }
     } catch (error) {
-      progressBus.warn(ProgressChannel.IPC_CLIENT, 'url', 'Error loading URL', handleError(error))
+      progressBus.error(ProgressChannel.IPC_CLIENT, 'url', 'Error loading URL', handleError(error))
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : handleError(error)
+      }
     }
-
-    progressBus.complete(ProgressChannel.IPC_CLIENT, 'Download Client', 'Web app loaded from URL')
-
-    return
   },
 
   adb: async (data) => {

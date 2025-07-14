@@ -4,7 +4,8 @@ import {
   ClientHandlerReturnMap,
   ClientIPCData,
   ClientHandlerReturnType,
-  IPC_HANDLERS
+  IPC_HANDLERS,
+  ClientDownloadReturnData
 } from '@shared/types'
 import { ipcRenderer } from 'electron'
 
@@ -16,14 +17,14 @@ export const client = {
       payload: clientId
     }),
 
-  handleClientZip: async (path: string): Promise<void> =>
+  handleClientZip: async (path: string): Promise<ClientDownloadReturnData> =>
     await sendCommand({
       kind: IPC_HANDLERS.CLIENT,
       type: IPC_CLIENT_TYPES.ZIP,
       payload: path
     }),
 
-  handleClientURL: async (url: string): Promise<void> =>
+  handleClientURL: async (url: string): Promise<ClientDownloadReturnData> =>
     await sendCommand({
       kind: IPC_HANDLERS.CLIENT,
       type: IPC_CLIENT_TYPES.URL,

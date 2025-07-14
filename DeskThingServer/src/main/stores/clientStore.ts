@@ -138,7 +138,7 @@ export class ClientStore
    * @channel - {@link ProgressChannel.ST_CLIENT_INSTALL}
    * @param zipPath
    */
-  async loadClientFromZip(zipPath: string): Promise<void> {
+  async loadClientFromZip(zipPath: string): Promise<ClientManifest | undefined> {
     progressBus.startOperation(
       ProgressChannel.ST_CLIENT_INSTALL,
       'Load-Client',
@@ -150,12 +150,13 @@ export class ClientStore
         }
       ]
     )
-    await loadClientFromZip(zipPath)
+    const clientManifest = await loadClientFromZip(zipPath)
     progressBus.complete(
       ProgressChannel.ST_CLIENT_INSTALL,
       'Load-Client',
       'Client loaded successfully!'
     )
+    return clientManifest
   }
 
   /**

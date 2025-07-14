@@ -43,6 +43,22 @@ export interface ReleaseDetails {
   version: string
 }
 
+/**
+ * The data being returned while downloading an app
+ */
+export type AppDownloadReturnData = {
+  message: string
+} & (
+  | {
+      success: false
+      appManifest?: StagedAppManifest
+    }
+  | {
+      success: true
+      appManifest: StagedAppManifest
+    }
+)
+
 export type StagedAppManifest = AppManifest & {
   checksumValidated: boolean
 }

@@ -1,6 +1,7 @@
 import { AppLatestJSONLatest } from '@deskthing/types'
 import { IconDownload, IconExpand, IconLogoGear } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
+import { DownloadErrorOverlay } from '@renderer/overlays/DownloadErrorOverlay'
 import { AppReleaseHistoryModal } from '@renderer/overlays/releases/AppReleaseOverlay'
 import { useAppStore, useReleaseStore } from '@renderer/stores'
 import { AppLatestServer, PastReleaseInfo } from '@shared/types'
@@ -17,6 +18,7 @@ export const AppReleaseCard: FC<AppReleaseCardProps> = ({ appReleaseServer }) =>
   const addStagedManifest = useAppStore((appStore) => appStore.setStagedManifest)
   const addApp = useAppStore((appStore) => appStore.addApp)
   const removeAppRelease = useReleaseStore((releaseStore) => releaseStore.removeAppRelease)
+  const [downloadError, setDownloadError] = useState<string | null>(null)
 
   const handleRemove = (): Promise<void> => {
     return removeAppRelease(appReleaseServer.id)
@@ -34,15 +36,20 @@ export const AppReleaseCard: FC<AppReleaseCardProps> = ({ appReleaseServer }) =>
 
   const handleDownload = async (asset: AppLatestJSONLatest | PastReleaseInfo): Promise<void> => {
     console.log('Handling download of ', asset)
+    setDownloadError(null)
     if ('meta_type' in asset) {
-      const manifest = await downloadApp(asset.appManifest.id)
-      if (manifest) {
-        addStagedManifest(manifest)
+      const appReturnData = await downloadApp(asset.appManifest.id)
+      if (appReturnData.success) {
+        addStagedManifest(appReturnData.appManifest)
+      } else {
+        setDownloadError(appReturnData.message || 'Unknown error during download')
       }
     } else {
       const manifest = await addApp({ appPath: asset.download_url })
-      if (manifest) {
-        addStagedManifest(manifest)
+      if (manifest.success) {
+        addStagedManifest(manifest.appManifest)
+      } else {
+        setDownloadError(manifest.message || 'Unknown error during download')
       }
     }
   }
@@ -117,6 +124,13 @@ export const AppReleaseCard: FC<AppReleaseCardProps> = ({ appReleaseServer }) =>
           onDownload={handleDownload}
           onRemove={handleRemove}
           appReleaseServer={appReleaseServer}
+        />
+      )}
+      {downloadError && (
+        <DownloadErrorOverlay
+          error={downloadError}
+          onAcknowledge={() => setDownloadError(null)}
+          title={`Failed to load App: ${latestRelease?.appManifest?.label || 'Unknown App'}`}
         />
       )}
     </div>

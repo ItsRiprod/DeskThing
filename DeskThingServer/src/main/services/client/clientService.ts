@@ -6,6 +6,7 @@ import { progressBus } from '../events/progressBus'
 import { ProgressChannel } from '@shared/types'
 import { ClientManifest } from '@deskthing/types'
 import { readFile, writeFile } from 'fs/promises'
+import { handleError } from '@server/utils/errorHandler'
 
 /**
  * Downloads and installs a client from a given URL.
@@ -158,7 +159,7 @@ document.dispatchEvent(new Event('manifestLoaded'))`
  * @channel - {@link ProgressChannel.FN_CLIENT_INSTALL}
  * @param zipPath - The path to the zip file.
  */
-export async function loadClientFromZip(zipPath: string): Promise<void> {
+export async function loadClientFromZip(zipPath: string): Promise<ClientManifest> {
   progressBus.start(ProgressChannel.FN_CLIENT_INSTALL, 'Load-Client', 'Loading client from zip...')
   const userDataPath = app.getPath('userData')
   const extractDir = join(userDataPath, 'webapp')
@@ -178,15 +179,20 @@ export async function loadClientFromZip(zipPath: string): Promise<void> {
       'Load-Client',
       'Client loaded successfully!'
     )
+
+    const manifest = await getClientManifest()
+
+    if (!manifest) {
+      throw new Error('Client manifest not found after extraction')
+    }
+
+    return manifest
   } catch (error) {
-    logger.error('Error loading client from zip:', {
-      error: error as Error
-    })
     progressBus.error(
       ProgressChannel.FN_CLIENT_INSTALL,
       'Load-Client',
       'Loading failed',
-      (error as Error).message
+      error instanceof Error ? error.message : handleError(error)
     )
     throw error
   }

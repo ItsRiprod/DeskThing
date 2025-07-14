@@ -1,5 +1,6 @@
 import { Action, ActionReference, ClientManifest } from '@deskthing/types'
 import { IPC_HANDLERS } from './ipcTypes'
+import { ClientDownloadReturnData } from '../releases'
 
 export enum IPC_CLIENT_TYPES {
   ZIP = 'zip',
@@ -83,8 +84,8 @@ export type ClientIPCData = {
     }
 )
 export type ClientHandlerReturnMap = {
-  [IPC_CLIENT_TYPES.ZIP]: { set: void }
-  [IPC_CLIENT_TYPES.URL]: { set: void }
+  [IPC_CLIENT_TYPES.ZIP]: { set: ClientDownloadReturnData }
+  [IPC_CLIENT_TYPES.URL]: { set: ClientDownloadReturnData }
   [IPC_CLIENT_TYPES.PING_CLIENT]: { set: string }
   [IPC_CLIENT_TYPES.CLIENT_MANIFEST]: {
     get: ClientManifest | undefined | null

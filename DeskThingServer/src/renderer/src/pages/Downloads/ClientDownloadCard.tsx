@@ -1,6 +1,7 @@
 import { ClientLatestJSONLatest } from '@deskthing/types'
 import { IconDownload, IconExpand, IconLogoGear } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
+import { DownloadErrorOverlay } from '@renderer/overlays/DownloadErrorOverlay'
 import { ClientReleaseHistoryModal } from '@renderer/overlays/releases/ClientReleaseOverlay'
 import { useClientStore, useReleaseStore } from '@renderer/stores'
 import { ClientLatestServer, PastReleaseInfo } from '@shared/types'
@@ -18,10 +19,10 @@ export const ClientDownloadCard: FC<ClientDownloadCardProps> = ({
   setLoading
 }) => {
   const [showPastReleases, setShowPastReleases] = useState<boolean>(false)
+  const [downloadError, setDownloadError] = useState<string | null>(null)
 
   const downloadClient = useReleaseStore((releaseStore) => releaseStore.downloadClient)
   const loadClientUrl = useClientStore((clientStore) => clientStore.loadClientUrl)
-  const requestClientManifest = useClientStore((clientStore) => clientStore.requestClientManifest)
   const removeClientRelease = useReleaseStore((releaseStore) => releaseStore.removeClientRelease)
 
   const handleRemove = (): Promise<void> => {
@@ -44,11 +45,17 @@ export const ClientDownloadCard: FC<ClientDownloadCardProps> = ({
     setLoading(true)
     try {
       if ('meta_type' in release) {
-        await downloadClient(release.clientManifest.id)
-        await requestClientManifest()
+        const result = await downloadClient(release.clientManifest.id)
+
+        if (!result.success) {
+          setDownloadError(result.message || 'Unknown error during download')
+        }
       } else {
-        await loadClientUrl(release.download_url)
-        await requestClientManifest()
+        const downloadResult = await loadClientUrl(release.download_url)
+
+        if (!downloadResult.success) {
+          setDownloadError(downloadResult.message || 'Unknown error during download')
+        }
       }
     } catch (error) {
       console.error('Failed to download client:', error)
@@ -121,6 +128,13 @@ export const ClientDownloadCard: FC<ClientDownloadCardProps> = ({
           onDownload={handleDownload}
           onRemove={handleRemove}
           clientReleaseServer={clientRelease}
+        />
+      )}
+      {downloadError && (
+        <DownloadErrorOverlay
+          error={downloadError}
+          onAcknowledge={() => setDownloadError(null)}
+          title={`Failed to load Client: ${latestRelease?.clientManifest?.name || 'Unknown Client'}`}
         />
       )}
     </div>

@@ -2,16 +2,16 @@
  * @file releaseStore.ts
  * @description This file contains the releaseStore class, which is responsible for managing the github requests of the application.
  * @author Riprod
- * @version 0.10.4
+ * @version 0.11.12
  */
 import { create } from 'zustand'
 import {
+  AppDownloadReturnData,
   AppLatestServer,
+  ClientDownloadReturnData,
   ClientLatestServer,
-  IpcRendererCallback,
-  StagedAppManifest
+  IpcRendererCallback
 } from '@shared/types'
-import { ClientManifest } from '@deskthing/types'
 
 interface releaseStoreState {
   appReleases: AppLatestServer[]
@@ -27,12 +27,12 @@ interface releaseStoreState {
   getApps: () => Promise<AppLatestServer[]>
   getAppReferences: () => Promise<string[]>
   removeAppRelease: (appID: string) => Promise<void>
-  downloadApp: (appId: string) => Promise<StagedAppManifest | undefined>
+  downloadApp: (appId: string) => Promise<AppDownloadReturnData>
 
   getClients: () => Promise<ClientLatestServer[]>
   getClientRepos: () => Promise<string[]>
   removeClientRelease: (clientId: string) => Promise<void>
-  downloadClient: (clientId: string) => Promise<ClientManifest | undefined>
+  downloadClient: (clientId: string) => Promise<ClientDownloadReturnData>
 }
 
 const useReleaseStore = create<releaseStoreState>((set, get) => ({
@@ -87,7 +87,7 @@ const useReleaseStore = create<releaseStoreState>((set, get) => ({
     await window.electron.releases.removeAppRepo(repoUrl)
   },
 
-  downloadApp: async (appId: string): Promise<StagedAppManifest | undefined> => {
+  downloadApp: async (appId: string): Promise<AppDownloadReturnData> => {
     const app = await window.electron.releases.downloadApp(appId)
     return app
   },
@@ -107,7 +107,7 @@ const useReleaseStore = create<releaseStoreState>((set, get) => ({
     await window.electron.releases.removeClientRepo(repoUrl)
   },
 
-  downloadClient: async (clientId: string): Promise<ClientManifest | undefined> => {
+  downloadClient: async (clientId: string): Promise<ClientDownloadReturnData> => {
     const client = await window.electron.releases.downloadClient(clientId)
     return client
   }

@@ -28,6 +28,10 @@ interface CompatibilityResult {
   issues: Issue[]
 }
 
+interface SuccessNotificationProps {
+  stagedManifest: StagedAppManifest
+}
+
 const checkCompatibility = (
   manifest: StagedAppManifest,
   existingApps: App[]
@@ -136,9 +140,8 @@ const checkCompatibility = (
   return compResult
 }
 
-export function SuccessNotification(): JSX.Element {
+export const SuccessNotification = ({ stagedManifest }: SuccessNotificationProps): JSX.Element => {
   const [loading, setLoading] = useState(false)
-  const stagedManifest = useAppStore((appStore) => appStore.stagedManifest)
   const apps = useAppStore((appStore) => appStore.appsList)
   const runStagedApp = useAppStore((appStore) => appStore.runStagedApp)
   const setStagedApp = useAppStore((appStore) => appStore.setStagedManifest)

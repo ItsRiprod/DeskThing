@@ -17,7 +17,7 @@ export interface ClientStoreClass
    * @channel - {@link ProgressChannel.ST_CLIENT_INSTALL}
    * @param zipPath
    */
-  loadClientFromZip(zipPath: string): Promise<void>
+  loadClientFromZip(zipPath: string): Promise<ClientManifest | undefined>
 
   /**
    * @channel - {@link ProgressChannel.ST_CLIENT_DOWNLOAD}

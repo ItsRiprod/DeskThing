@@ -856,12 +856,10 @@ export class AppStore implements CacheableStore, AppStoreClass {
   /**
    * Adds an app to the app store
    * @param filePath The app path (url or local path) to add
+   * @throws Will throw an error if the app manifest cannot be found
    * @returns The app manifest that was added
    */
-  async addApp({
-    filePath,
-    releaseMeta
-  }: stageAppFileType): Promise<StagedAppManifest | undefined> {
+  async addApp({ filePath, releaseMeta }: stageAppFileType): Promise<StagedAppManifest> {
     Logger.log(LOGGING_LEVELS.LOG, `[store.addApp]: Running addApp for ${filePath}`)
 
     try {
@@ -884,7 +882,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
           'Error staging app',
           'Unable to find the new app manifest'
         )
-        return
+        throw new Error('Unable to find the new app manifest')
       }
 
       progressBus.complete(ProgressChannel.ST_APP_INSTALL, 'Add App', 'App added successfully')
@@ -898,7 +896,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
         progressBus.error(ProgressChannel.ST_APP_INSTALL, 'Error staging app', handleError(e))
       }
 
-      return
+      throw new Error('Unable to find the new app manifest')
     }
   }
 

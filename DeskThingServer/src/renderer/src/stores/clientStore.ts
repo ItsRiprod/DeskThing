@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { IpcRendererCallback, LoggingData } from '@shared/types'
+import { ClientDownloadReturnData, IpcRendererCallback, LoggingData } from '@shared/types'
 import { ClientManifest, Client, PlatformIDs } from '@deskthing/types'
 import useNotificationStore from './notificationStore'
 
@@ -20,8 +20,8 @@ interface ClientStoreState {
   /**
    * @deprecated - use release store instead for URLs
    */
-  loadClientUrl: (url: string) => Promise<void>
-  loadClientZip: (zip: string) => Promise<void>
+  loadClientUrl: (url: string) => Promise<ClientDownloadReturnData>
+  loadClientZip: (zip: string) => Promise<ClientDownloadReturnData>
   updateClientManifest: (client: Partial<ClientManifest>) => void
 }
 
@@ -205,34 +205,24 @@ const useClientStore = create<ClientStoreState>((set, get) => ({
     }
   },
 
-  loadClientUrl: async (url: string): Promise<void> => {
-    const promise = window.electron.client.handleClientURL(url)
+  loadClientUrl: async (url: string): Promise<ClientDownloadReturnData> => {
+    const result = await window.electron.client.handleClientURL(url)
 
-    const loggingListener = (_event: Electron.Event, reply: LoggingData): void => {
-      set({ logging: reply })
-      if (reply.final === true || reply.status === false) {
-        removeListener()
-        get().requestClientManifest()
-      }
+    if (result.success) {
+      set({ clientManifest: result.clientManifest })
     }
-    const removeListener = window.electron.ipcRenderer.on('logging', loggingListener)
 
-    return promise
+    return result
   },
 
-  loadClientZip: async (zip: string): Promise<void> => {
-    const promise = window.electron.client.handleClientZip(zip)
+  loadClientZip: async (zip: string): Promise<ClientDownloadReturnData> => {
+    const result = await window.electron.client.handleClientZip(zip)
 
-    const loggingListener = (_event: Electron.Event, reply: LoggingData): void => {
-      set({ logging: reply })
-      if (reply.final === true || reply.status === false) {
-        removeListener()
-        get().requestClientManifest()
-      }
+    if (result.success) {
+      set({ clientManifest: result.clientManifest })
     }
-    const removeListener = window.electron.ipcRenderer.on('logging', loggingListener)
 
-    return promise
+    return result
   }
 }))
 export default useClientStore

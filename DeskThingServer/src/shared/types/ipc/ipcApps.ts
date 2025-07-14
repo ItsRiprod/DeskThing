@@ -1,12 +1,11 @@
 import {
   App,
   AppLatestJSONLatest,
-  AppManifest,
   AppSettings,
   DeskThingToAppData,
   SavedData
 } from '@deskthing/types'
-import { StagedAppManifest } from '../app'
+import { AppDownloadReturnData } from '../app'
 import { IPC_HANDLERS } from './ipcTypes'
 
 export enum IPC_APP_TYPES {
@@ -132,9 +131,9 @@ export type AppHandlerReturnMap = {
   [IPC_APP_TYPES.ENABLE]: { set: boolean }
   [IPC_APP_TYPES.RUN]: { set: boolean }
   [IPC_APP_TYPES.PURGE]: { set: boolean }
-  [IPC_APP_TYPES.ZIP]: { set: AppManifest | null }
-  [IPC_APP_TYPES.URL]: { set: AppManifest | null }
-  [IPC_APP_TYPES.ADD]: { set: StagedAppManifest | null }
+  [IPC_APP_TYPES.ZIP]: { set: AppDownloadReturnData }
+  [IPC_APP_TYPES.URL]: { set: AppDownloadReturnData }
+  [IPC_APP_TYPES.ADD]: { set: AppDownloadReturnData }
   [IPC_APP_TYPES.POSTINSTALL]: { set: boolean }
   [IPC_APP_TYPES.STAGED]: { set: void }
   [IPC_APP_TYPES.USER_DATA_RESPONSE]: { set: void }
