@@ -1,4 +1,5 @@
 import { SettingsType } from '@deskthing/types'
+import { InfoComponent } from '../InfoComponent'
 
 interface SettingComponentProps {
   setting: SettingsType
@@ -21,7 +22,7 @@ interface SettingComponentProps {
 const SettingComponent = ({ setting, children, className }: SettingComponentProps): JSX.Element => {
   return (
     <div
-      className={`py-3 shrink-0 flex items-center hover:bg-zinc-950/30 justify-between w-full relative ${className}`}
+      className={`py-3 shrink-0 flex items-center hover:bg-zinc-950/30 justify-between w-full relative ${className} ${setting.disabled ? 'opacity-50 pointer-events-none' : ''}`}
     >
       <div className="w-full flex-1">
         <div className="text-gray-500 font-geistMono absolute -top-2 inset flex justify-between w-full">
@@ -33,11 +34,7 @@ const SettingComponent = ({ setting, children, className }: SettingComponentProp
         </div>
         <div className="group relative flex flex-wrap w-full">
           <p className="py-5 cursor-help text-lg break-words max-w-xs">{setting.label}</p>
-          {setting.description && (
-            <div className="absolute left-0 -bottom-1 translate-y-full invisible group-hover:visible bg-zinc-800 text-sm text-gray-300 px-2 py-1 rounded-md whitespace-normal max-w-xs z-10">
-              {setting.description}
-            </div>
-          )}
+          {setting.description && <InfoComponent description={setting.description} side="right" />}
         </div>
       </div>
       <div className="flex flex-col items-center">

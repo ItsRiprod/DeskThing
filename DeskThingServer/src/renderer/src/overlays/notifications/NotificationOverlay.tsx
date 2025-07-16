@@ -29,7 +29,7 @@ const NotificationOverlay: React.FC = () => {
       case 'issue':
         return <IssuesPage />
       default:
-        return <EvensPage />
+        return <TasksPage />
     }
   }, [page])
 

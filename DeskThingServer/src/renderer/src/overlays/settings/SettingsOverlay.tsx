@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import Overlay from '../Overlay'
 import {
   IconComputer,
@@ -15,6 +15,8 @@ import MusicSettings from './MusicSettings'
 import AppsSettings from './AppSettings'
 import AboutSettings from './About'
 import ErrorBoundary from '@renderer/components/ErrorBoundary'
+
+const validPages = ['server', 'client', 'music', 'apps', 'about']
 
 const settingsPages = [
   { key: 'server', label: 'Server', Icon: IconServer },
@@ -44,6 +46,14 @@ const SettingsOverlay: React.FC = () => {
     searchParams.set('page', page)
     setSearchParams(searchParams)
   }
+
+  useEffect(() => {
+    // Set the initial page if not set
+    if (!currentPage || !validPages.includes(currentPage)) {
+      setCurrentPage('server')
+    }
+  }, [currentPage, setCurrentPage])
+
 
   return (
     <Overlay

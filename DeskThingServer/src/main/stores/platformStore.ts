@@ -140,6 +140,19 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
       }
     })
 
+    this.mappingStore.addListener('profile', (buttonMapping) => {
+      if (buttonMapping) {
+        this.sendMappingsToClient()
+      }
+    })
+
+    // export type MappingProfile = {
+    //     mapping: ButtonMappingStructure;
+    //     actions: Action[] | null;
+    //     keys: Key[] | null;
+    //     profileId: string;
+    // }
+
     this.on(PlatformStoreEvent.CLIENT_CONNECTED, (client) => {
       this.appStore.broadcastToApps({
         type: DESKTHING_EVENTS.CLIENT_STATUS,

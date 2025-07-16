@@ -287,9 +287,9 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
     const newTasks = Object.entries(tasks as Record<string, Task>).reduce<Record<string, Task>>(
       (acc, [id, task]) => {
         try {
-          isValidTask(task)
+          const sanitizedTask = sanitizeTask(task, app)
+          isValidTask(sanitizedTask)
           if (!existingTasks[id] || task.version !== existingTasks[id].version) {
-            const sanitizedTask = sanitizeTask(task, app)
             acc[id] = sanitizedTask
           }
           return acc
@@ -415,6 +415,8 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
     Logger.debug(`Found ${taskIds.length} tasks for ${sourceId} - deleting them`)
 
     await this.appDataStore.delTasks(sourceId, taskIds)
+
+    this.notify('taskList', { source: sourceId, taskList: {} })
   }
 
   async completeTask(sourceId: string, taskId: string): Promise<void> {
@@ -545,10 +547,12 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
 
     const step = await this.appDataStore.getStep(source, id, newStep.id)
 
+    const sanitizedStep = { ...newStep, id: newStep.id || id, source: newStep.source || source }
+
     if (!step) {
       try {
-        isValidStep(newStep)
-        this.addStep(source, id, newStep)
+        isValidStep(sanitizedStep)
+        this.addStep(source, id, sanitizedStep)
       } catch (error) {
         Logger.warn(`[updateStep]: Invalid step ${newStep.id}`, {
           error: error as Error,

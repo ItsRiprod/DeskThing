@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react'
+import React, { useMemo } from 'react'
 import { SettingsType } from '@deskthing/types'
 import { SettingsBooleanComponent } from './SettingsBoolean'
 import { SettingsListComponent } from './SettingsList'
@@ -46,10 +46,6 @@ export const Settings: React.FC<SettingsProps> = ({ setting, className, handleSe
     () => SETTINGS_COMPONENTS[setting.type] as React.ComponentType<SettingsProps>,
     [setting.type]
   )
-
-  useEffect(() => {
-    console.log('Settings', setting)
-  }, [setting])
 
   return SettingComponent ? (
     <SettingComponent

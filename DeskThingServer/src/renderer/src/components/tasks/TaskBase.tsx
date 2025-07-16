@@ -19,6 +19,7 @@ import TaskExternalComponent from './TaskExternal'
 import TaskSettingComponent from './TaskSetting'
 import TaskShortcutComponent from './TaskShortcut'
 import TaskTaskComponent from './TaskTask'
+import { StepImage } from './StepImage'
 
 function renderStepWithCorrectType(step: Step, source: string): JSX.Element | undefined {
   switch (step.type) {
@@ -52,7 +53,8 @@ export const TaskBase: FC<TaskProps> = memo(
     }, [currentStep?.id, task?.steps])
 
     const [uiState, setUiState] = useState({
-      showDebug: false
+      showDebug: false,
+      showImage: true
     })
 
     const nextStep = useTaskStore((state) => state.nextStep)
@@ -127,6 +129,32 @@ export const TaskBase: FC<TaskProps> = memo(
               </div>
             ) : (
               <div className="flex gap-4 flex-col">
+                {currentStep?.imageId && (
+                  <Button
+                    className="relative w-full flex items-center justify-center group bg-zinc-700 hover:bg-zinc-600 px-2 py-1 self-end"
+                    onClick={() =>
+                      setUiState((prev) => ({
+                        ...prev,
+                        showImage: !prev.showImage
+                      }))
+                    }
+                  >
+                    {uiState.showImage ? (
+                      <p className="group-hover:opacity-100 opacity-0 w-full h-full">Hide Image</p>
+                    ) : (
+                      'Show Image'
+                    )}
+                    {uiState.showImage && (
+                      <div className="relative w-full flex items-center justify-center h-64 bg-zinc-900 rounded-lg overflow-hidden border border-zinc-700">
+                        <StepImage
+                          imageId={currentStep.imageId}
+                          source={source}
+                          className="absolute rounded overflow-hidden inset-0 w-full h-full object-contain"
+                        />
+                      </div>
+                    )}
+                  </Button>
+                )}
                 <Suspense key={currentStepIndex} fallback={<IconLoading />}>
                   {currentStep && task ? (
                     StepComponentSection

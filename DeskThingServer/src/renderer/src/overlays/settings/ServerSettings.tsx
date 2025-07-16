@@ -9,6 +9,7 @@ import { LOG_FILTER, ProgressChannel, Settings } from '@shared/types'
 import useUpdateStore from '@renderer/stores/updateStore'
 import { useChannelProgress } from '@renderer/hooks/useProgress'
 import { LogEntry } from '@renderer/components/LogEntry'
+import { InfoComponent } from '@renderer/components/InfoComponent'
 
 const ServerSettings: React.FC = () => {
   const initialSettings = useSettingsStore((settings) => settings.settings)
@@ -63,7 +64,10 @@ const ServerSettings: React.FC = () => {
     <div className="w-full text-neutral-200 absolute inset h-full p-4 flex flex-col divide-y divide-neutral-800">
       <div className="w-full px-4 p-3 flex flex-col justify-between items-center">
         <div className="w-full flex justify-between items-center">
-          <h2 className="text-xl">Check for updates</h2>
+          <div className="flex gap-1">
+            <h2 className="text-xl">Check for updates</h2>
+            <InfoComponent description="Checks for server updates" side="bottom" />
+          </div>
           <Button
             title="Manually check for updates to the system"
             className={`bg-zinc-900 ${!downloadLoading && 'hover:bg-green-500'}`}
@@ -78,7 +82,12 @@ const ServerSettings: React.FC = () => {
         )}
       </div>
       <div className="w-full p-4 flex justify-between items-center">
-        <h2 className="text-xl">Callback Port</h2>
+        <div className="flex gap-1 items-center">
+          <h2 className="text-xl">Callback Port</h2>
+          <InfoComponent
+            description={`The port used for callbacks. Changing this also requires changing all of the app settings that use this port as well as their respective portals.`}
+          />
+        </div>
         <input
           type="number"
           value={settings.server_callbackPort}
@@ -87,7 +96,10 @@ const ServerSettings: React.FC = () => {
         />
       </div>
       <div className="w-full p-4 flex justify-between items-center">
-        <h2 className="text-xl">Device Port</h2>
+        <div className="flex gap-1 items-center">
+          <h2 className="text-xl">Device Port</h2>
+          <InfoComponent description="The port used to communicate with the device." />
+        </div>
         <input
           type="number"
           value={settings.device_devicePort}
@@ -96,7 +108,10 @@ const ServerSettings: React.FC = () => {
         />
       </div>
       <div className="w-full p-4 flex justify-between items-center">
-        <h2 className="text-xl">Server Address</h2>
+        <div className="flex gap-1 items-center">
+          <h2 className="text-xl">Server Address</h2>
+          <InfoComponent description="The address of the server to connect to." />
+        </div>
         <input
           type="text"
           value={settings.device_address}
@@ -105,7 +120,10 @@ const ServerSettings: React.FC = () => {
         />
       </div>
       <div className="w-full px-4 flex justify-between items-center">
-        <h2 className="text-xl">Auto Start</h2>
+        <div className="flex gap-1 items-center">
+          <h2 className="text-xl">Auto Start</h2>
+          <InfoComponent description="Automatically start DeskThing when the computer boots." />
+        </div>
         <Button
           className="bg-transparent p-0"
           title="Automatically start deskthing when the computer boots"
@@ -119,7 +137,10 @@ const ServerSettings: React.FC = () => {
         </Button>
       </div>
       <div className="w-full p-4 flex justify-between items-center">
-        <h2 className="text-xl w-full">Logging Level</h2>
+        <div className="flex gap-1 items-center w-full">
+          <h2 className="text-xl">Logging Level</h2>
+          <InfoComponent description="Controls the verbosity of logs shown in the application." />
+        </div>
         <Select
           options={logLevelOptions}
           value={settings.server_LogLevel}
@@ -135,7 +156,10 @@ const ServerSettings: React.FC = () => {
         />
       </div>
       <div className="w-full px-4 flex justify-between items-center">
-        <h2 className="text-xl">Run In Background</h2>
+        <div className="flex gap-1 items-center">
+          <h2 className="text-xl">Run In Background</h2>
+          <InfoComponent description="Will let DeskThing run even while the GUI is not open." />
+        </div>
         <Button
           title="Will let DeskThing run even while the GUI is not open"
           className="bg-transparent p-0"
@@ -149,7 +173,10 @@ const ServerSettings: React.FC = () => {
         </Button>
       </div>
       <div className="w-full px-4 flex justify-between items-center">
-        <h2 className="text-xl">Start Minimized</h2>
+        <div className="flex gap-1 items-center">
+          <h2 className="text-xl">Start Minimized</h2>
+          <InfoComponent description="Will start DeskThing minimized." />
+        </div>
         <Button
           title="Will start DeskThing minimized"
           className="bg-transparent p-0"
@@ -165,7 +192,10 @@ const ServerSettings: React.FC = () => {
         </Button>
       </div>
       <div className="w-full px-4 flex justify-between items-center">
-        <h2 className="text-xl">Auto Detect ADB</h2>
+        <div className="flex gap-1 items-center">
+          <h2 className="text-xl">Auto Detect ADB</h2>
+          <InfoComponent description="Automatically detects if devices are connected periodically." />
+        </div>
         <Button
           className="bg-transparent p-0"
           title="Automatically detects if devices are connected periodically"
@@ -180,7 +210,10 @@ const ServerSettings: React.FC = () => {
       </div>
 
       <div className="w-full px-4 flex justify-between items-center">
-        <h2 className="text-xl">Use Global ADB</h2>
+        <div className="flex gap-1 items-center">
+          <h2 className="text-xl">Use Global ADB</h2>
+          <InfoComponent description="Use the global ADB instance instead of the one in the app." />
+        </div>
         <Button
           className="bg-transparent p-0"
           title="Use the global ADB instance instead of the one in the app"
@@ -195,7 +228,10 @@ const ServerSettings: React.FC = () => {
       </div>
 
       <div className="w-full p-4 flex justify-between items-center">
-        <h2 className="text-xl">ADB Blacklist</h2>
+        <div className="flex gap-1 items-center">
+          <h2 className="text-xl">ADB Blacklist</h2>
+          <InfoComponent description="Comma-separated list of devices to ignore for ADB operations." />
+        </div>
         <input
           type="text"
           value={settings.adb_blacklist?.join(', ')}
@@ -210,7 +246,10 @@ const ServerSettings: React.FC = () => {
       </div>
 
       <div className="w-full px-4 flex justify-between items-center">
-        <h2 className="text-xl">Auto Config</h2>
+        <div className="flex gap-1 items-center">
+          <h2 className="text-xl">Auto Config</h2>
+          <InfoComponent description="Automatically configures the car thing when it is detected (may be broken)." />
+        </div>
         <Button
           title="Automatically configures the car thing when it is detected (may be broken)"
           className="bg-transparent p-0"
@@ -226,7 +265,10 @@ const ServerSettings: React.FC = () => {
 
       <div className="flex flex-col">
         <div className="w-full px-4 p-3 flex justify-between items-center">
-          <h2 className="text-xl">Run Firewall Configuration</h2>
+          <div className="flex gap-1 items-center">
+            <h2 className="text-xl">Run Firewall Configuration</h2>
+            <InfoComponent description="Runs the firewall configuration for DeskThing." />
+          </div>
           <Button
             className={`bg-zinc-900 ${!loading && 'hover:bg-zinc-800'}`}
             onClick={handleRefreshFirewall}
@@ -244,7 +286,10 @@ const ServerSettings: React.FC = () => {
 
       <div className="flex flex-col">
         <div className="w-full px-4 flex justify-between items-center">
-          <h2 className="text-xl">Collect Anonymous Statistics</h2>
+          <div className="flex gap-1 items-center">
+            <h2 className="text-xl">Collect Anonymous Statistics</h2>
+            <InfoComponent description="Help us improve DeskThing by sending anonymous usage statistics." />
+          </div>
           <Button
             title="Help us improve DeskThing by sending anonymous usage statistics"
             className="bg-transparent p-0"

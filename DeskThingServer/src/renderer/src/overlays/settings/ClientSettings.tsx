@@ -3,21 +3,13 @@ import { useClientStore } from '@renderer/stores'
 import { ClientDeviceType, ClientManifest } from '@deskthing/types'
 import Button from '@renderer/components/Button'
 import { IconToggle, IconSave, IconLoading } from '@renderer/assets/icons'
+import { InfoComponent } from '@renderer/components/InfoComponent'
 
 const ClientSettings: React.FC = () => {
   const clientSettings = useClientStore((state) => state.clientManifest)
   const updateClientSettings = useClientStore((state) => state.updateClientManifest)
   const [localSettings, setLocalSettings] = useState<ClientManifest | null>(clientSettings)
   const [loading, setLoading] = useState(false)
-
-  // const handleSettingChange = (
-  //   key: keyof ClientManifest,
-  //   value: string | boolean | number
-  // ): void => {
-  //   if (localSettings) {
-  //     setLocalSettings({ ...localSettings, [key]: value })
-  //   }
-  // }
 
   const handleContextChange = <T extends keyof ClientDeviceType>(
     context: T,
@@ -48,7 +40,10 @@ const ClientSettings: React.FC = () => {
   return (
     <div className="absolute inset w-full h-full p-4 flex flex-col divide-y-2 divide-gray-500">
       <div className="w-full p-4 flex justify-between items-center">
-        <h2 className="text-xl">IP Address</h2>
+        <div className="flex gap-1 items-center">
+          <h2 className="text-xl">IP Address</h2>
+          <InfoComponent description="The IP address of the server or device to connect to." />
+        </div>
         <div className="flex items-center gap-2">
           <input
             type="text"
@@ -59,7 +54,10 @@ const ClientSettings: React.FC = () => {
         </div>
       </div>
       <div className="w-full p-4 flex justify-between items-center">
-        <h2 className="text-xl">Port</h2>
+        <div className="flex gap-1 items-center">
+          <h2 className="text-xl">Port</h2>
+          <InfoComponent description="The port number used to connect to the server or device." />
+        </div>
         <input
           type="number"
           value={localSettings.context?.port || ''}
@@ -68,7 +66,12 @@ const ClientSettings: React.FC = () => {
         />
       </div>
       <div className="w-full px-4 flex justify-between items-center">
-        <h2 className="text-xl">Use RNDIS</h2>
+        <div className="flex gap-1 items-center">
+          <h2 className="text-xl">Use RNDIS</h2>
+          <InfoComponent
+            description={`Toggle to use RNDIS (USB network) mode for device connection.\nThis will not work by default on devices with NDIS disabled (i.e. the NoRNDIS images). This is generally unstable`}
+          />
+        </div>
         <Button
           className="bg-transparent p-0"
           onClick={() =>

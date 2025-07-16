@@ -1,5 +1,5 @@
 import { isValidAction } from '../mappings/mapsValidation'
-import { Step, STEP_TYPES, Task } from '@deskthing/types'
+import { SETTING_TYPES, Step, STEP_TYPES, Task } from '@deskthing/types'
 import { TaskReference, FullTaskList } from '@shared/types'
 
 export function isValidTaskList(taskList: unknown): asserts taskList is FullTaskList {
@@ -126,30 +126,9 @@ export const sanitizeTaskList = (taskList: Partial<FullTaskList>): FullTaskList 
   return updatedTaskList as FullTaskList
 }
 
-/**
- * Do not use this - its deprecated and should never be implemented
- * @param taskList
- * @returns
- * @deprecated - The task list is never saved as a global file
- */
-export const sanitizeTaskListFile = (taskList: Partial<FullTaskList>): FullTaskList => {
-  const updatedTaskList = {
-    version: taskList.version || '1.0.0',
-    tasks: taskList.tasks
-      ? Object.fromEntries(
-          Object.values(taskList.tasks).map((task) => [
-            `${task.source}.${task.id}`,
-            task.source === 'server' ? sanitizeTask(task) : sanitizeTaskReference(task)
-          ])
-        )
-      : {},
-    currentTaskId: ''
-  }
-  return updatedTaskList as unknown as FullTaskList
-}
-
 export const sanitizeTaskReference = (task: Partial<TaskReference | Task>): TaskReference => {
   const updatedTask = {
+    ...task,
     id: task.id || '',
     source: task.source || '',
     version: task.version || '1.0.0',
@@ -164,6 +143,7 @@ export const sanitizeTaskReference = (task: Partial<TaskReference | Task>): Task
 
 export const sanitizeTask = (task: Partial<Task>, source?: string): Task => {
   const updatedTask = {
+    ...task,
     id: task.id || '',
     source: task.source || source || '',
     version: task.version || '1.0.0',
@@ -177,7 +157,11 @@ export const sanitizeTask = (task: Partial<Task>, source?: string): Task => {
       ? Object.fromEntries(
           Object.entries(task.steps).map(([key, step]) => [
             step.id || key,
-            sanitizeStep(step, task.source || source || '', task.id || step.id || key)
+            sanitizeStep(
+              { ...step, id: step.id || key },
+              task.source || source || '',
+              task.id || step.id || key
+            )
           ])
         )
       : {}
@@ -189,6 +173,7 @@ export const sanitizeStep = (step: Partial<Step>, source?: string, parentId?: st
     throw new Error('Step must have a type')
   }
   const newStep: Omit<Step, 'type'> = {
+    ...step,
     id: step.id || '',
     parentId: step.parentId || parentId,
     completed: step.completed ?? false,
@@ -224,7 +209,11 @@ export const sanitizeStep = (step: Partial<Step>, source?: string, parentId?: st
       return {
         ...newStep,
         type: STEP_TYPES.TASK,
-        taskReference: step.taskReference
+        taskReference: {
+          ...step.taskReference,
+          id: step.taskReference?.id || '',
+          source: step.taskReference?.source || source || ''
+        }
       }
     case STEP_TYPES.EXTERNAL:
       return {
@@ -294,18 +283,7 @@ export function isValidTaskSetting(
   if (!s.setting) {
     throw new Error(`[ValidateTaskSetting] Step ${s.id} does not have a setting`)
   }
-  const validTypes = [
-    'boolean',
-    'list',
-    'multiselect',
-    'number',
-    'range',
-    'ranked',
-    'select',
-    'string',
-    'color',
-    'file'
-  ] as const
+  const validTypes = Object.values(SETTING_TYPES)
 
   if (!('type' in s.setting)) {
     if (!s.setting.id) throw new Error(`[ValidateTaskSetting] Step ${s.id} does not have an id`)
@@ -327,7 +305,9 @@ export function isValidTaskTask(
   const s = step as Partial<Extract<Step, { type: STEP_TYPES.TASK }>>
 
   if (!s.taskReference || !s.taskReference.source || !s.taskReference.id) {
-    throw new Error(`[ValidateTaskTask] Step ${s.id} does not have a taskId`)
+    throw new Error(
+      `[ValidateTaskTask] Step ${s.id} does not have a source or id for task reference`
+    )
   }
 }
 

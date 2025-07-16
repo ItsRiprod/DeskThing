@@ -19,7 +19,8 @@ import {
   PlatformTypes,
   TagTypes,
   AppLatestJSONLatest,
-  SettingsFile
+  SettingsFile,
+  CommonSetting 
 } from '@deskthing/types'
 import { AppData, LegacyAppData } from '@shared/types'
 
@@ -54,12 +55,14 @@ export const isValidSettings: (setting: unknown) => asserts setting is SettingsT
 
   switch (typedSetting.type) {
     case SETTING_TYPES.NUMBER:
-      if (typeof typedSetting.value !== 'number')
+      if (typedSetting.value && typeof typedSetting.value !== 'number')
         throw new Error('[isValidSetting] Number setting value must be a number')
-      if (typeof typedSetting.min !== 'number')
+      if (typedSetting.min && typeof typedSetting.min !== 'number')
         throw new Error('[isValidSetting] Number setting min must be a number')
-      if (typeof typedSetting.max !== 'number')
+      if (typedSetting.max && typeof typedSetting.max !== 'number')
         throw new Error('[isValidSetting] Number setting max must be a number')
+      if (typedSetting.step && typeof typedSetting.step !== 'number')
+        throw new Error('[isValidSetting] Number setting step must be a number')
       break
     case SETTING_TYPES.BOOLEAN:
       if (typeof typedSetting.value !== 'boolean')
@@ -87,9 +90,9 @@ export const isValidSettings: (setting: unknown) => asserts setting is SettingsT
     case SETTING_TYPES.RANGE:
       if (typeof typedSetting.value !== 'number')
         throw new Error('[isValidSetting] Range setting value must be a number')
-      if (typeof typedSetting.min !== 'number')
+      if (typedSetting.min && typeof typedSetting.min !== 'number')
         throw new Error('[isValidSetting] Range setting min must be a number')
-      if (typeof typedSetting.max !== 'number')
+      if (typedSetting.max && typeof typedSetting.max !== 'number')
         throw new Error('[isValidSetting] Range setting max must be a number')
       if (typedSetting.step && typeof typedSetting.step !== 'number')
         throw new Error('[isValidSetting] Range setting step must be a number')
@@ -114,100 +117,101 @@ export const isValidSettings: (setting: unknown) => asserts setting is SettingsT
 export const sanitizeSettings: (setting: Partial<SettingsType>) => SettingsType = (setting) => {
   isValidSettings(setting)
 
+  const commonSettings: CommonSetting = {
+    ...setting, // spreading the settings ensures that this is somewhat compatible with future versions
+    disabled: setting.disabled || false,
+    id: setting.id,
+    label: setting.label || setting.id || '',
+    value: setting.value,
+    source: setting.source,
+    description: setting.description || 'No Description',
+    dependsOn: setting.dependsOn || []
+  }
+
   switch (setting.type) {
     case SETTING_TYPES.SELECT:
       setting = {
+        ...commonSettings,
         type: SETTING_TYPES.SELECT,
         value: setting.value,
-        label: setting.label,
-        description: setting.description || '',
         placeholder: setting.placeholder,
         options: setting.options
       } as SettingsSelect
       break
     case SETTING_TYPES.MULTISELECT:
       setting = {
+        ...commonSettings,
         type: SETTING_TYPES.MULTISELECT,
         value: setting.value,
-        label: setting.label,
-        description: setting.description || '',
         placeholder: setting.placeholder,
         options: setting.options
       } as SettingsMultiSelect
       break
     case SETTING_TYPES.NUMBER:
       setting = {
+        ...commonSettings,
         type: SETTING_TYPES.NUMBER,
         value: setting.value,
-        label: setting.label,
         min: setting.min,
-        max: setting.max,
-        description: setting.description || ''
+        max: setting.max
       } as SettingsNumber
       break
     case SETTING_TYPES.BOOLEAN:
       setting = {
+        ...commonSettings,
         type: SETTING_TYPES.BOOLEAN,
         value: setting.value,
-        description: setting.description || '',
-        label: setting.label
       } as SettingsBoolean
       break
     case SETTING_TYPES.STRING:
       setting = {
+        ...commonSettings,
         type: SETTING_TYPES.STRING,
-        description: setting.description || '',
-        value: setting.value,
-        label: setting.label
+        value: setting.value
       } as SettingsString
       break
     case SETTING_TYPES.RANGE:
       setting = {
+        ...commonSettings,
         type: SETTING_TYPES.RANGE,
         value: setting.value,
-        label: setting.label,
         min: setting.min,
         max: setting.max,
-        step: setting.step || 1,
-        description: setting.description || ''
+        step: setting.step || 1
       } as SettingsRange
       break
     case SETTING_TYPES.RANKED:
       setting = {
+        ...commonSettings,
         type: SETTING_TYPES.RANKED,
         value: setting.value,
-        label: setting.label,
-        description: setting.description || '',
         options: setting.options
       } as SettingsRanked
       break
     case SETTING_TYPES.LIST:
       setting = {
+        ...commonSettings,
         type: SETTING_TYPES.LIST,
         value: setting.value,
-        label: setting.label,
         unique: setting.unique,
         orderable: setting.orderable,
         placeholder: setting.placeholder,
         maxValues: setting.maxValues,
-        description: setting.description || '',
         options: setting.options || []
       } as SettingsList
       break
     case SETTING_TYPES.COLOR:
       setting = {
+        ...commonSettings,
         type: SETTING_TYPES.COLOR,
-        value: setting.value,
-        label: setting.label,
-        description: setting.description || ''
+        value: setting.value
       } as SettingsColor
       break
     case SETTING_TYPES.FILE:
       setting = {
+        ...commonSettings,
         type: SETTING_TYPES.FILE,
         value: setting.value,
-        label: setting.label,
-        description: setting.description || '',
         fileTypes: setting.fileTypes || []
       } as SettingsFile
       break
@@ -410,6 +414,7 @@ export const constructManifest = (manifestData?: Partial<AppManifest>): AppManif
   }
 
   const returnData: AppManifest = {
+    ...manifestData, // ensures that any additional fields are preserved
     id: manifestData?.id || 'unknown',
     requires: manifestData?.requires || [],
     label: manifestData?.label || 'Unknown App',

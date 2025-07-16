@@ -236,6 +236,30 @@ export class ExpressServer extends EventEmitter<ExpressServerEvents> {
       }
     })
 
+    this.app.get('/resource/task/:appName/:id', (req: Request, res: Response) => {
+      const stepId = req.params.id
+      const appName = req.params.appName
+      const baseAppPath = join(this.userDataPath, 'apps', appName)
+      const tasksDir = join(baseAppPath, 'images', 'tasks')
+      const stepImgPath = join(tasksDir, stepId)
+
+      // Add .jpg extension if not present
+      const fullPath = stepImgPath.endsWith('.jpg') ? stepImgPath : `${stepImgPath}.jpg`
+
+      if (fs.existsSync(fullPath)) {
+        console.log('Returning step image:', fullPath)
+        res.sendFile(fullPath, {
+          maxAge: '1d',
+          immutable: true,
+          etag: true,
+          lastModified: true
+        })
+      } else {
+        console.error('Step image not found:', fullPath)
+        res.status(404).send('Step image not found')
+      }
+    })
+
     this.app.get('/gen/:appName/*', (req, res) => {
       const appName = req.params.appName
       const filePath = req.params[0]

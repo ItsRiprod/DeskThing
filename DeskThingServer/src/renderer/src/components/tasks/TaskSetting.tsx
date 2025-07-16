@@ -20,6 +20,7 @@ export const TaskSettingComponent: FC<StepPropsMap[STEP_TYPES.SETTING]> = ({ ste
 
   useEffect(() => {
     if (!('type' in step.setting)) {
+      // There is no type. This is a setting reference to an app setting.
       const fetchSetting = async (): Promise<void> => {
         const settings = await getSetting(step.setting.source || source)
         if (step.setting.id && settings?.[step.setting.id]) {
@@ -30,6 +31,13 @@ export const TaskSettingComponent: FC<StepPropsMap[STEP_TYPES.SETTING]> = ({ ste
     }
   }, [source, step.setting, getSetting])
 
+  useEffect(() => {
+    if (setting && setting.value) {
+      // if the value has any value
+      setIsComplete(true)
+    }
+  }, [setting])
+
   const handleComplete = async (): Promise<void> => {
     if (!step.parentId) {
       console.error('Step does not have a parent task id! It cannot resolve')
@@ -37,17 +45,17 @@ export const TaskSettingComponent: FC<StepPropsMap[STEP_TYPES.SETTING]> = ({ ste
     }
 
     // Task is modifying one of the app's settings
-    if (setting && typeof step.setting === 'string') {
+    if (!('type' in step.setting) && setting) {
       const settings = await getSetting(source)
       if (settings) {
-        if (settings[step.setting].type == setting.type) {
-          const updatedSetting: SettingsType = settings[step.setting]
+        if (settings[step.setting.id].type == setting.type) {
+          const updatedSetting: SettingsType = settings[step.setting.id]
           updatedSetting.value = setting.value
-          updatedSetting.id = step.setting
+          updatedSetting.id = step.setting.id
 
           setAppSettings(source, {
             ...settings,
-            [updatedSetting.id]: { ...updatedSetting, id: step.setting }
+            [updatedSetting.id]: { ...updatedSetting, id: step.setting.id }
           })
         }
       }
@@ -59,10 +67,6 @@ export const TaskSettingComponent: FC<StepPropsMap[STEP_TYPES.SETTING]> = ({ ste
     }
     await completeStep(step.parentId, step.id, source)
   }
-
-  useEffect(() => {
-    console.log('Setting changed', setting)
-  }, [setting])
 
   const handleSettingChange = (value: SettingsType['value']): void => {
     setIsComplete(true)

@@ -7,6 +7,7 @@ import Select from '@renderer/components/Select'
 import { SingleValue } from 'react-select'
 import { Settings } from '@shared/types'
 import { SettingOption, TagTypes } from '@deskthing/types'
+import { InfoComponent } from '@renderer/components/InfoComponent'
 
 const MusicSettings: React.FC = () => {
   const saveSettings = useSettingsStore((settings) => settings.saveSettings)
@@ -55,12 +56,21 @@ const MusicSettings: React.FC = () => {
   return (
     <div className="w-full absolute inset h-full p-4 flex flex-col">
       <div className="w-full p-0 px-4 flex justify-between items-center">
-        <h2 className="text-xl">Enable Refresh Interval</h2>
+        <div className="flex gap-1">
+          <h2 className="text-xl">Enable Refresh Interval</h2>
+          <InfoComponent
+            description="Enable or disable the music refresh interval. Periodically re-syncs music data"
+            side="bottom"
+          />
+        </div>
         <div className="flex items-center gap-4">
           <Button
             className="bg-transparent p-0"
             onClick={() =>
-              handleSettingChange('music_refreshInterval', settings?.music_refreshInterval === -1 ? 15000 : -1)
+              handleSettingChange(
+                'music_refreshInterval',
+                settings?.music_refreshInterval === -1 ? 15000 : -1
+              )
             }
           >
             <IconToggle
@@ -76,7 +86,13 @@ const MusicSettings: React.FC = () => {
         className={`transition-[height,opacity,border] border-t overflow-hidden ${!settings || settings?.music_refreshInterval === -1 ? 'h-0 opacity-50 border-black' : 'h-20 opacity-100 border-gray-500'}`}
       >
         <div className={`w-full p-4 flex justify-between items-center`}>
-          <h2 className="text-xl">Refresh Interval (seconds)</h2>
+          <div className="flex gap-1">
+            <h2 className="text-xl">Refresh Interval (seconds)</h2>
+            <InfoComponent
+              description="Set the interval for refreshing music data in seconds. Set to 0 to disable. Usually 10-15 seconds is a good value."
+              side="right"
+            />
+          </div>
           <div className="flex items-center gap-4">
             <input
               type="number"
@@ -98,7 +114,13 @@ const MusicSettings: React.FC = () => {
         </div>
       </div>
       <div className="border-t border-gray-500 w-full p-4 flex justify-between items-center">
-        <h2 className="text-xl w-full">Playback Sources</h2>
+        <div className="flex gap-1 w-full">
+          <h2 className="text-xl">Playback Sources</h2>
+          <InfoComponent
+            description="Where DeskThing should 'source' music from. This is mostly for controls"
+            side="right"
+          />
+        </div>
         <Select
           placeholder={settings ? settings.music_playbackLocation || '' : 'Loading...'}
           onChange={(e) => {

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { Step, Task } from '@deskthing/types'
 import { FullTaskList, IpcRendererCallback } from '@shared/types'
+import useSettingsStore from './settingsStore'
 
 interface NotificationStoreState {
   // Nested tasks first by appId then by taskId
@@ -25,6 +26,8 @@ interface NotificationStoreState {
   nextStep: (taskId: string, source?: string) => Promise<void>
   prevStep: (taskId: string, source?: string) => Promise<void>
   updateStep: (taskId: string, step: Partial<Step>) => Promise<void>
+
+  getStepUrl: (imageId: string, source: string) => string | undefined
 }
 
 // Create Zustand store
@@ -159,6 +162,12 @@ const useTaskStore = create<NotificationStoreState>((set, get) => ({
     if (step.id) {
       return window.electron.task.updateStep(taskId, step, source)
     }
+  },
+
+  getStepUrl: (imageId: string, source: string): string | undefined => {
+    const settings = useSettingsStore.getState().settings
+    const url = `http://localhost:${settings.device_devicePort}/resource/task/${source}/${imageId}.jpg`
+    return url
   }
 }))
 

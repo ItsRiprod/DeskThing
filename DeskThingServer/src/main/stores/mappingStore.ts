@@ -126,15 +126,16 @@ export class MappingStore implements CacheableStore, MappingStoreClass {
           case 'add':
             {
               try {
-                isValidKey(data.payload)
                 const Key: Key = {
-                  id: data.payload.id || 'unsetid',
-                  description: data.payload.description || 'Default Description',
-                  source: data.source,
-                  version: data.payload.version || '0.0.0',
+                  ...data.payload,
+                  id: data.payload?.id || 'unsetid',
+                  description: data.payload?.description || 'Default Description',
+                  source: data.payload?.source || data.source,
+                  version: data.payload?.version || '0.0.0',
                   enabled: true,
-                  modes: data.payload.modes || []
+                  modes: data.payload?.modes || []
                 }
+                isValidKey(Key)
                 this.addKey(Key)
               } catch (error) {
                 Logger.error(`Unable to add key to app ${data.source}`, {

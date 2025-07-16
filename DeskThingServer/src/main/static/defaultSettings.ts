@@ -18,7 +18,7 @@ export const defaultSettings: Settings = {
 
   // music
   music_playbackLocation: 'none',
-  music_refreshInterval: 15,
+  music_refreshInterval: 15000,
 
   // adb
   adb_useGlobal: false,

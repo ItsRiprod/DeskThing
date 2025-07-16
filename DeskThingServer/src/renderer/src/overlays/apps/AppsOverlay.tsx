@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import Overlay from '../Overlay'
 import { IconArrowUp, IconGear, IconLogs, IconPlay } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
@@ -14,6 +14,8 @@ import AppUpdate from './AppUpdate'
 export interface AppSettingProps {
   app: App
 }
+
+const validPages = ['actions', 'details', 'settings', 'update']
 
 const settingsPages = [
   { key: 'actions', label: 'Actions', Icon: IconPlay },
@@ -37,8 +39,6 @@ const AppsOverlay: React.FC = () => {
 
   const app = useAppStore((state) => state.appsList.find((app) => app.name === appId))
 
-  if (!app) return null
-
   const onClose = (): void => {
     searchParams.delete('app')
     searchParams.delete('appId')
@@ -49,6 +49,15 @@ const AppsOverlay: React.FC = () => {
     searchParams.set('page', page)
     setSearchParams(searchParams)
   }
+
+  useEffect(() => {
+    // Set the initial page if not set
+    if (!currentPage || !validPages.includes(currentPage)) {
+      setCurrentPage('details')
+    }
+  }, [currentPage, setCurrentPage])
+
+  if (!app) return null
 
   return (
     <Overlay

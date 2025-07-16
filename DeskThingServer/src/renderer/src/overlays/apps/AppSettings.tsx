@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react'
-import { AppSettings as AppSettingsType } from '@deskthing/types'
+import { AppSettings as AppSettingsType, SettingsType } from '@deskthing/types'
 import { AppSettingProps } from './AppsOverlay'
 import Button from '@renderer/components/Button'
 import { IconLoading, IconRefresh, IconSave } from '@renderer/assets/icons'
@@ -10,14 +10,121 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
   const { getAppSettings, setAppSettings } = useAppStore((state) => state)
   const [appSettings, setAppData] = useState<AppSettingsType | null>(null)
   const [loading, setLoading] = useState(false)
+  // List of all settings that depend on another setting
+  const [disabledSettingsMap, setDisabledSettingsMap] = useState<Record<string, SettingsType[]>>({})
 
   useEffect(() => {
     const fetchAppData = async (): Promise<void> => {
       const data = await getAppSettings(app.name)
       data && setAppData(data)
+      updateDisabledSettingsMap(data)
     }
     fetchAppData()
   }, [app.name, getAppSettings])
+
+  const updateDependantSettings = (
+    key: string,
+    value: string | number | boolean | string[] | boolean[],
+    dependentSetting: SettingsType
+  ): void => {
+    const condition = dependentSetting.dependsOn?.find((dep) => dep.settingId === key)
+
+    if (!dependentSetting.id || !condition) {
+      console.warn(`No valid id or condition found for dependent setting: ${dependentSetting}`)
+      return
+    }
+
+    let isEnabled = false
+
+    // If isValue is present, setting is enabled only if value matches/is included
+    if (condition.isValue !== undefined) {
+      if (Array.isArray(value)) {
+        isEnabled = value.map(String).includes(String(condition.isValue))
+      } else {
+        isEnabled = String(value) === String(condition.isValue)
+      }
+    }
+
+    // If isNot is present, setting is disabled if value matches/is included only if isValue is not true
+    if (condition.isNot !== undefined && isEnabled == false) {
+      if (Array.isArray(value)) {
+        if (value.map(String).includes(String(condition.isNot))) {
+          isEnabled = false
+        } else {
+          isEnabled = true
+        }
+      } else {
+        if (String(value) === String(condition.isNot)) {
+          isEnabled = false
+        } else {
+          isEnabled = true
+        }
+      }
+    }
+
+    // If neither isValue nor isNot is present, apply default logic
+    if (condition.isValue === undefined && condition.isNot === undefined) {
+      if (typeof value === 'boolean') {
+        isEnabled = value
+      } else if (typeof value === 'string') {
+        isEnabled = value.trim().length > 0
+      } else if (Array.isArray(value)) {
+        isEnabled = value.length > 0
+      } else if (typeof value === 'number') {
+        isEnabled = value !== 0
+      }
+    }
+
+    console.log(
+      `Setting ${dependentSetting.id} is now ${isEnabled ? 'enabled' : 'disabled'} based on ${key} change`
+    )
+
+    setAppData((prev) =>
+      prev
+        ? {
+            ...prev,
+            [dependentSetting.id || 'string']: {
+              ...dependentSetting,
+              id: dependentSetting.id || 'string',
+              disabled: !isEnabled
+            }
+          }
+        : prev
+    )
+  }
+
+  const updateDisabledSettingsMap = useCallback(
+    (settings: AppSettingsType | null = appSettings): void => {
+      if (!settings) {
+        console.log('No app settings available to update disabled settings map.')
+        return
+      }
+
+      const newDisabledSettingsMap: Record<string, SettingsType[]> = {}
+
+      // Iterate through appSettings and find settings that depend on others
+      Object.entries(settings).forEach(([_key, setting]) => {
+        if (setting.dependsOn && setting.dependsOn.length > 0) {
+          setting.dependsOn.forEach((dependency) => {
+            if (!newDisabledSettingsMap[dependency.settingId]) {
+              newDisabledSettingsMap[dependency.settingId] = []
+            }
+
+            newDisabledSettingsMap[dependency.settingId].push(setting)
+
+            const otherSetting = settings[dependency.settingId]
+
+            updateDependantSettings(dependency.settingId, otherSetting.value, setting)
+          })
+        }
+      })
+
+      console.log(`Found ${Object.keys(newDisabledSettingsMap).length} settings with dependencies`)
+
+      setDisabledSettingsMap(newDisabledSettingsMap)
+    },
+    [appSettings, updateDependantSettings]
+  )
 
   const handleSettingChange = useCallback(
     (key: string, value: string | number | boolean | string[] | boolean[]) => {
@@ -34,8 +141,17 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
             }
           : prev
       )
+
+      if (disabledSettingsMap && disabledSettingsMap[key]) {
+        // If this setting is a dependency for others, update their values
+        disabledSettingsMap[key].forEach((dependentSetting) => {
+          updateDependantSettings(key, value, dependentSetting)
+        })
+      } else {
+        console.debug(`No dependent settings found for ${key}, skipping update`)
+      }
     },
-    []
+    [disabledSettingsMap, updateDependantSettings]
   )
 
   const refreshAppSettings = (): void => {
@@ -44,6 +160,7 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
       try {
         const data = await getAppSettings(app.name)
         data && setAppData(data)
+        updateDisabledSettingsMap(data)
       } catch {
         //
       } finally {
