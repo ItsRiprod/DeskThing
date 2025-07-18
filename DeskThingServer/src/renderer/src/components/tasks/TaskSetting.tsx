@@ -89,8 +89,8 @@ export const TaskSettingComponent: FC<StepPropsMap[STEP_TYPES.SETTING]> = ({ ste
 
   return (
     <div>
-      {step?.label}
-      {step?.instructions}
+      <p className="font-semibold">{step?.label}</p>
+      <p>{step?.instructions}</p>
       {setting ? (
         <Settings handleSettingChange={handleSettingChange} setting={setting} />
       ) : (

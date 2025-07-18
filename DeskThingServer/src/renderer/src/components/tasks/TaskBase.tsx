@@ -12,6 +12,7 @@ import {
 import useTaskStore from '@renderer/stores/taskStore'
 import { useSearchParams } from 'react-router-dom'
 import { TaskProps } from '@shared/types'
+import { useReward } from 'react-rewards' // <-- Add this import
 
 import TaskStepComponent from './TaskStep'
 import TaskActionComponent from './TaskAction'
@@ -40,8 +41,29 @@ function renderStepWithCorrectType(step: Step, source: string): JSX.Element | un
   }
 }
 
+type ConfettiConfig = {
+  lifetime?: number
+  angle?: number
+  decay?: number
+  spread?: number
+  startVelocity?: number
+  elementCount?: number
+  elementSize?: number
+  zIndex?: number
+  position?: string
+  colors?: string[]
+  onAnimationComplete?: () => void
+}
+
 export const TaskBase: FC<TaskProps> = memo(
   ({ task, source }: TaskProps) => {
+    const confettiConfig: ConfettiConfig = {
+      startVelocity: 6,
+      elementCount: 20,
+      decay: 0.99
+    }
+    const { reward } = useReward('taskCompleteConfetti', 'confetti', confettiConfig)
+
     const currentStep: Extract<Step, { type: STEP_TYPES }> | undefined = useMemo(() => {
       return task?.currentStep ? { ...task.steps[task.currentStep], parentId: task.id } : undefined
     }, [task?.currentStep, task?.id])
@@ -54,7 +76,8 @@ export const TaskBase: FC<TaskProps> = memo(
 
     const [uiState, setUiState] = useState({
       showDebug: false,
-      showImage: true
+      showImage: true,
+      confettiFired: false
     })
 
     const nextStep = useTaskStore((state) => state.nextStep)
@@ -103,14 +126,24 @@ export const TaskBase: FC<TaskProps> = memo(
     )
     DebugSection.displayName = 'DebugSection'
 
+    // Confetti trigger on task completion
+    // Only trigger once per completion
+    if (task?.completed && task.currentStep === undefined && !uiState.confettiFired) {
+      setUiState((state) => ({ ...state, confettiFired: true }))
+      setTimeout(() => reward(), 100) // slight delay for DOM
+    }
+    if (!task?.completed || task.currentStep !== undefined) {
+      if (uiState.confettiFired) setUiState((state) => ({ ...state, confettiFired: false }))
+    }
+
     return (
-      <div className={`w-full bg-zinc-800 rounded-lg shadow-lg flex flex-col`}>
+      <div className={`w-full bg-zinc-900/75 rounded-lg shadow-lg flex flex-col`}>
         <div className="flex items-center">
           {currentStepIndex > 0 && (
             <Button
               title="Go to previous step"
               onClick={handlers.handlePreviousStep}
-              className="group"
+              className="group hover:bg-zinc-900/50 transition-colors"
             >
               <IconArrowLeft className="stroke-1 group-hover:stroke-2" />
             </Button>
@@ -121,7 +154,8 @@ export const TaskBase: FC<TaskProps> = memo(
                 <p className="text-xl">Task Completed</p>
                 <Button
                   onClick={handlers.openTasks}
-                  className="bg-zinc-950 hover:bg-zinc-900 gap-2 items-center"
+                  className="bg-zinc-950 justify-center hover:bg-zinc-900 gap-2 items-center"
+                  id="taskCompleteConfetti"
                 >
                   <p>Go back to all tasks</p>
                   <IconLink iconSize={18} />
@@ -131,7 +165,7 @@ export const TaskBase: FC<TaskProps> = memo(
               <div className="flex gap-4 flex-col">
                 {currentStep?.imageId && (
                   <Button
-                    className="relative w-full flex items-center justify-center group bg-zinc-700 hover:bg-zinc-600 px-2 py-1 self-end"
+                    className={`relative overflow-hidden w-full flex items-center justify-center group border-neutral-500 border hover:bg-zinc-800/75 transition-all !p-0 self-end ${uiState.showImage ? 'h-64' : 'h-8'}`}
                     onClick={() =>
                       setUiState((prev) => ({
                         ...prev,
@@ -140,16 +174,18 @@ export const TaskBase: FC<TaskProps> = memo(
                     }
                   >
                     {uiState.showImage ? (
-                      <p className="group-hover:opacity-100 opacity-0 w-full h-full">Hide Image</p>
+                      <div className="group-hover:opacity-100  transition-opacity bg-zinc-900/75 opacity-0 w-full h-full flex items-center justify-center absolute z-10">
+                        <p>Hide Image</p>
+                      </div>
                     ) : (
                       'Show Image'
                     )}
                     {uiState.showImage && (
-                      <div className="relative w-full flex items-center justify-center h-64 bg-zinc-900 rounded-lg overflow-hidden border border-zinc-700">
+                      <div className="relative w-full h-64 flex items-center justify-center">
                         <StepImage
                           imageId={currentStep.imageId}
                           source={source}
-                          className="absolute rounded overflow-hidden inset-0 w-full h-full object-contain"
+                          className="absolute object-contain"
                         />
                       </div>
                     )}
@@ -179,7 +215,7 @@ export const TaskBase: FC<TaskProps> = memo(
               disabled={!currentStep?.completed}
               title={currentStep?.completed ? 'Go to next step' : 'Disabled - Step Not Completed'}
               onClick={handlers.handleNextStep}
-              className="group"
+              className="group hover:bg-zinc-900/50 transition-colors"
             >
               <IconArrowRight
                 className={`stroke-1 ${currentStep?.completed ? 'group-hover:stroke-2' : 'text-gray-500'}`}

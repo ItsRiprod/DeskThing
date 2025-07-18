@@ -58,11 +58,21 @@ export const getStandardizedFilename = (appId: string, version: string): string 
 export const getIcon = async (appName: string, icon?: string): Promise<string | null> => {
   const iconPath = join(getAppFilePath(appName), 'icons', icon || `${appName}.svg`)
   try {
-    await access(iconPath)
+    const exists = await access(iconPath)
+      .catch(() => false)
+      .then(() => true)
 
-    const svgContent = await readFile(iconPath, 'utf-8')
-    // Return file protocol URL that Electron can load directly
-    return svgContent
+    if (exists) {
+      const svgContent = await readFile(iconPath, 'utf-8')
+      // Return file protocol URL that Electron can load directly
+      return svgContent
+    } else {
+      Logger.debug(`Attempted to access icon for ${appName} but it does not exist`, {
+        source: 'appUtils',
+        function: 'getIcon'
+      })
+      return null
+    }
   } catch (error) {
     Logger.warn(`Error accessing icon for ${appName}:`, {
       source: 'getIcon',

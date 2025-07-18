@@ -11,9 +11,9 @@
  * @param disabled - An optional boolean to disable the button.
  * @param onMouseEnter - An optional mouse enter event handler for the button or link.
  */
-import React, { Ref } from 'react'
+import React, { ButtonHTMLAttributes, Ref } from 'react'
 
-interface ButtonProps {
+type ButtonProps = ButtonHTMLAttributes<Element> & {
   children: React.ReactNode
   onClick?: (e) => void
   className?: string
@@ -33,15 +33,9 @@ const Button: React.FC<ButtonProps> = ({
   onClick,
   className = '',
   href,
-  title,
-  target,
-  rel,
-  ref,
-  type,
-  style,
-  disabled,
   onMouseEnter,
-  onMouseDown
+  onMouseDown,
+  ...props
 }) => {
   const baseClasses = 'relative group flex-row flex p-3 hover:font-semibold rounded-md'
   const combinedClasses = `${baseClasses} ${className}`
@@ -50,12 +44,12 @@ const Button: React.FC<ButtonProps> = ({
     return (
       <a
         href={href}
-        style={style}
-        target={target}
-        title={title}
-        aria-label={title}
-        rel={rel}
-        type={type}
+        style={props.style}
+        target={props.target}
+        title={props.title}
+        aria-label={props.title}
+        rel={props.rel}
+        type={props.type}
         className={combinedClasses}
         onClick={onClick}
         onMouseEnter={onMouseEnter}
@@ -67,17 +61,7 @@ const Button: React.FC<ButtonProps> = ({
   }
 
   return (
-    <button
-      style={style}
-      className={combinedClasses}
-      onClick={onClick}
-      ref={ref}
-      type={type}
-      title={title}
-      aria-label={title}
-      onMouseEnter={onMouseEnter}
-      disabled={disabled}
-    >
+    <button {...props} className={combinedClasses} onClick={onClick} onMouseEnter={onMouseEnter}>
       {children}
     </button>
   )

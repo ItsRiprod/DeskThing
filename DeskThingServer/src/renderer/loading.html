@@ -23,15 +23,22 @@
       padding: 20px;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
       width: 300px;
+      /* Make the whole container draggable */
+      -webkit-app-region: drag;
+      user-select: none;
     }
     .logo {
       width: 120px;
       height: 120px;
       margin-bottom: 20px;
+      pointer-events: none;
     }
     .status {
       margin-top: 15px;
       font-size: 14px;
+      /* Allow text selection and interaction */
+      -webkit-app-region: no-drag;
+      user-select: text;
     }
     .spinner {
       border: 4px solid rgba(255, 255, 255, 0.3);
@@ -41,6 +48,8 @@
       height: 30px;
       margin: 15px auto;
       animation: spin 1s linear infinite;
+      /* Prevent spinner from interfering with drag */
+      -webkit-app-region: no-drag;
     }
     @keyframes spin {
       0% { transform: rotate(0deg); }
@@ -50,7 +59,7 @@
 </head>
 <body>
   <div class="container">
-    <h2>DeskThing</h2>
+    <h2 style="-webkit-app-region: no-drag;">DeskThing</h2>
     <div class="spinner"></div>
     <div id="status" class="status">Initializing...</div>
   </div>

@@ -177,9 +177,9 @@ const TaskOverlay: React.FC = () => {
               transform: `translate(${position.x}px, ${position.y}px)`
             }
       }
-      className={`fixed top-0 left-0 select-none flex ${isFullscreen ? 'min-w-full min-h-full transition-[min-height,min-width,transform]' : ''} min-w-0 min-h-0 items-center flex-col justify-center bg-black bg-opacity-90 z-50`}
+      className={`fixed rounded-lg overflow-hidden bg-zinc-950/70 border-neutral-800 backdrop-blur-md border top-0 left-0 select-none flex ${isFullscreen ? 'min-w-full min-h-full transition-[min-height,min-width,transform,backdrop]' : ''} min-w-0 min-h-0 items-center flex-col justify-center z-50 shadow-2xl`}
     >
-      <div className={`flex flex-col justify-center rounded-lg w-full bg-zinc-900`}>
+      <div className={`flex flex-col justify-center w-full`}>
         <div className="flex justify-between">
           <div className="flex">
             {!isFullscreen && (
@@ -195,7 +195,7 @@ const TaskOverlay: React.FC = () => {
             )}
             <Button
               title={isFullscreen ? 'Minimize' : 'Expand'}
-              className="text-white items-center hover:text-gray-300"
+              className="text-white items-center transition-colors hover:text-gray-300"
               onClick={toggleFullscreen}
             >
               {isFullscreen ? <IconMinimize /> : <IconExpand />}
@@ -234,7 +234,7 @@ const TaskOverlay: React.FC = () => {
             <Button
               title="View All Tasks"
               onClick={openTasks}
-              className="gap-1 text-gray-400 hover:text-white items-center bg-zinc-700 hover:bg-zinc-600"
+              className="gap-1 text-gray-400 hover:text-white items-center transition-colors hover:bg-zinc-900"
             >
               <p>All Tasks</p>
               <IconLink iconSize={12} />
@@ -242,19 +242,21 @@ const TaskOverlay: React.FC = () => {
             <Button
               title="Restart Current Task"
               onClick={handleRestart}
-              className="gap-1 text-gray-400 hover:text-white items-center bg-zinc-700 hover:bg-zinc-600"
+              className="gap-1 text-gray-400 hover:text-white items-center transition-colors hover:bg-zinc-900"
             >
               <p>Restart Task</p>
               <IconReload iconSize={12} />
             </Button>
-            <Button
-              title="Cancel the current task"
-              onClick={handleReject}
-              className="gap-1 text-gray-400 hover:text-white items-center bg-zinc-700 hover:bg-red-600"
-            >
-              <p>Cancel Task</p>
-              <IconStop iconSize={12} />
-            </Button>
+            {!currentTask?.completed && (
+              <Button
+                title="Cancel the current task"
+                onClick={handleReject}
+                className="gap-1 text-gray-400 hover:text-white items-center transition-colors hover:bg-red-600"
+              >
+                <p>Cancel Task</p>
+                <IconStop iconSize={12} />
+              </Button>
+            )}
           </div>
         </div>
       </div>

@@ -3,6 +3,7 @@ import useTaskStore from '@renderer/stores/taskStore'
 import { Step, Task } from '@deskthing/types'
 import { FC, useMemo } from 'react'
 import Button from '../Button'
+
 interface TaskComponentProps {
   task: Task
   onClose: () => void
@@ -40,88 +41,95 @@ const TaskComponent: FC<TaskComponentProps> = ({ task, onClose }) => {
 
   return (
     <div
-      className={`w-full ${task.id == currentTask?.id ? 'border border-cyan-500' : ''} ${task.available ? (task.completed ? 'bg-zinc-950 p-4 hover:bg-zinc-900' : 'bg-zinc-900 p-4 hover:bg-zinc-800') : 'text-gray-500 hover:text-gray-300 bg-zinc-950 p-4 hover:bg-zinc-900 '} transition-colors rounded-lg mb-4 flex flex-col`}
+      className={`
+        w-full
+        rounded-lg
+        border
+        ${task.id == currentTask?.id ? 'border-cyan-500' : 'border-neutral-800'}
+        ${
+          task.available
+            ? task.completed
+              ? 'bg-zinc-950 hover:bg-zinc-900'
+              : 'bg-zinc-900 hover:bg-zinc-800'
+            : 'bg-zinc-950 text-gray-500 hover:text-gray-300 hover:bg-zinc-900'
+        }
+        transition-colors
+        mb-2
+        px-4 py-3
+        flex flex-col
+        gap-2
+      `}
     >
-      <div className="flex justify-between items-center">
-        <div className="items-start flex flex-col">
-          <div className="flex gap-2 items-center">
+      <div className="flex justify-between items-center gap-4">
+        <div className="flex flex-col gap-1 min-w-0">
+          <div className="flex items-center gap-2">
             <h2
-              className={`${task.completed && 'line-through text-gray-500'} text-lg font-bold mb-2`}
+              className={`
+                text-base font-semibold truncate
+                ${task.completed ? 'line-through text-gray-500' : 'text-white'}
+              `}
+              title={task.label || task.id}
             >
               {task.label || task.id}
             </h2>
             {task.started && (
-              <div>
-                <p className="text-gray-400 text-sm">
-                  {currentStepNumber}
-                  {' / '}
-                  {stepCount}
-                </p>
-              </div>
+              <span className="text-xs text-gray-400">
+                {currentStepNumber} / {stepCount}
+              </span>
             )}
           </div>
-          <p className={`${task.completed ? 'text-gray-500' : 'text-gray-300'}`}>
+          <p className={`text-xs truncate ${task.completed ? 'text-gray-500' : 'text-gray-300'}`}>
             {task.description}
           </p>
-          <div className="text-gray-500 italic gap-2 flex items-center">
-            <p>{task.source}</p>
-            <p>{task.version}</p>
-            {'-'}
-            <p>
-              {task.started
-                ? 'Task has been started'
-                : task.available
-                  ? 'Task has not been started'
-                  : 'Task is not available'}
-            </p>
+          <div className="text-xs text-gray-500 flex items-center gap-2">
+            <span>{task.source}</span>
+            <span>{task.version}</span>
+            <span>-</span>
+            <span>{task.started ? 'Started' : task.available ? 'Not started' : 'Unavailable'}</span>
           </div>
         </div>
-        <div className="flex-shrink-0 flex">
+        <div className="flex gap-2 items-center">
           {task.completed ? (
             <Button
-              className="bg-amber-950 hover:bg-amber-900 group gap-2 flex italic text-gray-200 hover:text-white transition-colors mx-2 my-5"
+              className="bg-transparent border border-amber-900 hover:bg-amber-950 text-amber-300 px-2 py-1 rounded transition-colors text-xs"
               onClick={handleRestart}
+              title="Restart Task"
             >
-              <p>Restart Task</p>
-              <IconReload className="group-hover:stroke-2 stroke-1" />
+              <IconReload className="w-4 h-4" />
             </Button>
           ) : !task.started ? (
             !task.available ? (
               <Button
-                className="bg-gray-700 group gap-2 flex italic text-gray-400 hover:text-white transition-colors mx-2 my-5"
+                className="bg-transparent border border-gray-700 text-gray-400 hover:bg-gray-800 px-2 py-1 rounded transition-colors text-xs"
                 onClick={handleAccept}
+                title="Force Start Task"
               >
-                <p>Force Start Task</p>
-                <IconReload className="group-hover:stroke-2 stroke-1" />
+                <IconReload className="w-4 h-4" />
               </Button>
             ) : (
               <Button
-                className="bg-green-500 group gap-2 flex italic text-gray-200 hover:text-white transition-colors mx-2 my-5"
+                className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded transition-colors text-xs"
                 onClick={handleAccept}
+                title="Start Task"
               >
-                <p>Start Task</p>
-                <IconPlay className="group-hover:stroke-2 stroke-1" />
+                <IconPlay className="w-4 h-4" />
               </Button>
             )
           ) : (
             <>
               <Button
-                className="bg-green-500 group gap-2 flex italic text-gray-200 hover:text-white transition-colors mx-2 my-5"
+                className="bg-cyan-700 hover:bg-cyan-800 text-white px-2 py-1 rounded transition-colors text-xs"
                 onClick={handleAccept}
+                title="Continue Task"
               >
-                {task.currentStep ? (
-                  <p>Continue From Step {task.currentStep}</p>
-                ) : (
-                  <p>Continue Task</p>
-                )}
-                <IconLink className="group-hover:stroke-2 stroke-1" />
+                <IconLink className="w-4 h-4" />
               </Button>
               <Button
-                className="bg-red-500 group gap-2 flex italic text-gray-200 hover:text-white transition-colors mx-2 my-5"
+                className="bg-transparent border border-red-900 text-red-400 hover:bg-red-950 px-2 py-1 rounded transition-colors text-xs"
                 onClick={handleReject}
+                title="Stop Task"
               >
-                <p>Stop Task</p>
-                <IconStop className="group-hover:stroke-2 stroke-1" />
+                <IconStop className="w-4 h-4" />
               </Button>
             </>
           )}

@@ -1,7 +1,11 @@
 import useTaskStore from '@renderer/stores/taskStore'
 import { FC } from 'react'
 
-export const StepImage: FC<{ imageId: string; source: string; className?: string }> = ({ imageId, source, className }) => {
+export const StepImage: FC<{ imageId: string; source: string; className?: string }> = ({
+  imageId,
+  source,
+  className
+}) => {
   const url = useTaskStore.getState().getStepUrl(imageId, source)
 
   if (!url) return null
