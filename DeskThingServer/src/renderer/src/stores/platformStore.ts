@@ -17,7 +17,7 @@ interface PlatformStoreState {
   setServiceStatus: (adbId: string, service: string, status: boolean) => Promise<boolean>
 
   // WebSocket
-  ping: (clientId: string) => Promise<void>
+  ping: (clientId: string) => Promise<{ server?: number; socket?: number } | undefined>
   pong: (clientId: string) => Promise<string | undefined>
   disconnect: (clientId: string) => Promise<boolean>
   restart: (request?: string) => Promise<void>

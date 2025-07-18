@@ -23,7 +23,7 @@ export const FetchIcon = async (action: Action): Promise<string | null> => {
 
     return await readFile(iconPath, 'utf8')
   } catch (error) {
-    logger.error('Error reading icon file', { error: error as Error })
+    logger.info('Error reading icon file', { error: error as Error })
     return null
   }
 }

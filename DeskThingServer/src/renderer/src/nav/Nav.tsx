@@ -7,16 +7,18 @@ import {
   IconLayoutgrid,
   IconWrench
 } from '@renderer/assets/icons'
+import { useSettingsStore } from '@renderer/stores'
 
 const Nav: React.FC = () => {
   const currentPage = usePageStore((pageStore) => pageStore.currentPage)
+  const is_nerd = useSettingsStore((state) => state.settings?.flag_nerd || false)
   const setPage = usePageStore((pageStore) => pageStore.setPage)
   const handleNavigation = (path: string): void => {
     setPage(path)
   }
 
   return (
-    <nav className=" text-white w-full">
+    <nav className=" text-neutral-200 hover:text-white w-full">
       <ul className="flex justify-around">
         <li className="w-full h-full group">
           <NavButton
@@ -60,17 +62,19 @@ const Nav: React.FC = () => {
             <span className="hidden lg:inline group-hover:inline">Downloads</span>
           </NavButton>
         </li>
-        <li className="w-full h-full group">
-          <NavButton
-            location="Developer"
-            currentPage={currentPage}
-            handleNavigation={handleNavigation}
-            subDirectories={['Logs', 'App', 'ADB']}
-          >
-            <IconWrench iconSize={30} />
-            <span className="hidden lg:inline group-hover:inline">Dev</span>
-          </NavButton>
-        </li>
+        {is_nerd && (
+          <li className="w-full h-full group">
+            <NavButton
+              location="Developer"
+              currentPage={currentPage}
+              handleNavigation={handleNavigation}
+              subDirectories={['Logs', 'App', 'ADB']}
+            >
+              <IconWrench iconSize={30} />
+              <span className="hidden lg:inline group-hover:inline">Dev</span>
+            </NavButton>
+          </li>
+        )}
       </ul>
     </nav>
   )
@@ -132,7 +136,7 @@ const NavButton = ({
         onClick={handleClick}
         className={`p-4 h-full w-full text-lg font-medium flex items-center justify-center gap-2 ${
           currentPage.includes(location)
-            ? ' text-white border-b border-green-500'
+            ? ' border-b border-green-500'
             : 'text-gray-400 hover:bg-zinc-950 hover:text-white'
         }`}
       >

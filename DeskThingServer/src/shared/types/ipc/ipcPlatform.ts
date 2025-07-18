@@ -8,7 +8,7 @@ export type WebsocketPlatformIPC = {
       type: 'ping'
       request?: string
       clientId: string
-      data?: undefined
+      data?: { server?: number; socket?: number }
     }
   | {
       type: 'pong'

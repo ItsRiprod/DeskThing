@@ -17,7 +17,7 @@ const Sidebar: React.FC<SidebarProps> = ({ children, className }) => {
 
   return (
     <div
-      className={`${sidebarVisible ? 'w-40 max-w-40' : 'max-w-0 w-0'} text-neutral-300 inset-0 xs:max-w-48 transition-[color,width,max-width,min-width] z-10 min-w-0 md:min-w-48 md:max-w-48 xs:w-24 flex-shrink-0 xs:relative h-full border-r absolute border-zinc-800 bg-zinc-950 ${className}`}
+      className={`${sidebarVisible ? 'w-40 max-w-40' : 'max-w-0 w-0'} text-neutral-300 inset-0 xs:max-w-48 transition-[color,width,max-width,min-width] z-10 min-w-0 md:min-w-48 md:max-w-48 xs:w-24 flex-shrink-0 xs:relative h-full border-r absolute border-neutral-900 bg-neutral-950 ${className}`}
     >
       <nav
         className={`${sidebarVisible ? 'w-48 p-4 space-y-2' : 'w-0'} max-h-full overflow-y-auto xs:w-full overflow-hidden inset w-full xs:space-y-2 flex flex-col h-full justify-between xs:p-4`}

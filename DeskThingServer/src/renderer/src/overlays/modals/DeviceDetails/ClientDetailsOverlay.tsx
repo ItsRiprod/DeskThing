@@ -40,7 +40,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
   return (
     <Overlay
       onClose={onClose}
-      className="border border-gray-500 bg-zinc-900 xs:w-11/12 xs:h-5/6 w-full h-full sm:w-5/6 sm:max-h-5/6 sm:h-5/6"
+      className="border border-zinc-800 bg-zinc-900 xs:w-11/12 xs:h-5/6 w-full h-full sm:w-5/6 sm:max-h-5/6 sm:h-5/6"
     >
       <div className="flex h-full flex-col max-h-full">
         <div className="w-full py-4 px-5 flex items-center gap-2">
@@ -56,7 +56,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
           <h1 className="font-semibold text-2xl">Device {client.clientId}</h1>
         </div>{' '}
         <div className="flex flex-grow max-h-full overflow-hidden">
-          <div className="border-r border-gray-500 p-2 flex flex-col gap-2">
+          <div className="border-r border-zinc-800 p-2 flex flex-col gap-2">
             <ErrorBoundary>
               <NavComponent
                 setIdentifier={setSelectedIdentifier}

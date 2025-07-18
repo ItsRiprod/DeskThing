@@ -61,7 +61,10 @@ export type PlatformPayloads =
   | { event: PlatformEvent.CLIENT_UPDATED; data: Client }
   | { event: PlatformEvent.REFRESHED_CLIENTS; data: { active: number; disconnected: number } }
   | { event: PlatformEvent.CLIENT_LIST; data: Client[] }
-  | { event: PlatformEvent.CLIENT_PONG; data: { clientId: string; result: boolean } }
+  | {
+      event: PlatformEvent.CLIENT_PONG
+      data: { clientId: string; result: { server?: number; socket?: number } }
+    }
   | {
       event: PlatformEvent.DATA_RECEIVED
       data: { client: ConnectedClient; data: DeviceToDeskthingData & { clientId: string } }

@@ -32,6 +32,7 @@ export type Settings = {
   flag_firstClose: boolean
   flag_hasOpened: boolean
   flag_collectStats: boolean
+  flag_nerd?: boolean
 }
 
 // Used in the Refresh ADB screen to display little messages for the user

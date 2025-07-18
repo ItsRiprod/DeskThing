@@ -279,10 +279,19 @@ export const sanitizeAction = (action: unknown): Action => {
   const sanitized = action as Action
   if (!action || typeof action !== 'object') throw new Error('Action must be an object')
 
-  sanitized.id = String(sanitized.id || '')
-  sanitized.source = String(sanitized.source || '')
-  sanitized.version = String(sanitized.version || '0.0.0')
-  sanitized.enabled = Boolean(sanitized.enabled ?? true)
+
+  sanitized.name = sanitized.name || 'Default Name'
+  sanitized.description = sanitized.description || 'No description provided'
+  sanitized.id = sanitized.id || 'unsetid'
+  sanitized.value = sanitized.value || undefined
+  sanitized.value_options = sanitized.value_options || []
+  sanitized.value_instructions = sanitized.value_instructions || ''
+  sanitized.icon = sanitized.icon || undefined
+  sanitized.source = sanitized.source || 'server'
+  sanitized.version = sanitized.version || '0.0.0'
+  sanitized.version_code = sanitized.version_code || 0
+  sanitized.tag = sanitized.tag || 'basic'
+  sanitized.enabled = sanitized.enabled ?? true
 
   return sanitized
 }

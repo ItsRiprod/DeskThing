@@ -1,7 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { AppSettingProps } from './AppsOverlay'
 import Button from '@renderer/components/Button'
-import { IconDownload, IconLoading, IconPlay, IconStop, IconTrash, IconX } from '@renderer/assets/icons'
+import {
+  IconDownload,
+  IconLoading,
+  IconPlay,
+  IconStop,
+  IconTrash,
+  IconX
+} from '@renderer/assets/icons'
 import useMappingStore from '@renderer/stores/mappingStore'
 import { Action } from '@deskthing/types'
 import ActionElement from '@renderer/components/ActionElement'
@@ -10,7 +17,7 @@ import { useChannelProgress } from '@renderer/hooks/useProgress'
 import { ProgressChannel } from '@shared/types'
 import { LogEntry } from '@renderer/components/LogEntry'
 
-const AppActions: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
+const AppActions: React.FC<AppSettingProps> = ({ app, onClose }: AppSettingProps) => {
   const actions = useMappingStore((state) => state.actions)
   const fetchActions = useMappingStore((state) => state.getActions)
   const { purgeApp, enableApp, disableApp, runApp, stopApp, runPostinstall } = useAppStore(
@@ -30,6 +37,11 @@ const AppActions: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
     fetchActions()
   }, [])
 
+  const purge = async (appName: string): Promise<boolean> => {
+    onClose()
+    return await purgeApp(appName)
+  }
+
   const withLoading = useCallback((fn: (appName: string) => Promise<boolean>) => {
     return async () => {
       setIsLoading(true)
@@ -41,7 +53,7 @@ const AppActions: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
     }
   }, [])
 
-  const handlePurge = withLoading(purgeApp)
+  const handlePurge = withLoading(purge)
   const handlePostinstall = withLoading(runPostinstall)
   const handleEnable = withLoading(enableApp)
   const handleDisable = withLoading(disableApp)
@@ -112,8 +124,6 @@ const AppActions: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
       </div>
       <div className="flex flex-wrap gap-2 p-4 justify-start">
         {app.manifest?.postinstall && (
-
-
           <div className="flex gap-2 border-cyan-500 border rounded-md">
             <Button
               disabled={loading}
@@ -125,8 +135,7 @@ const AppActions: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
               <p>Run Postinstall Script</p>
             </Button>
           </div>
-        )
-        }
+        )}
         {availableActions.map((action) => (
           <ActionElement key={action.id} action={action} />
         ))}
@@ -136,7 +145,6 @@ const AppActions: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
           <LogEntry progressEvent={downloadChannel.progress} />
         )}
       </div>
-
     </div>
   )
 }

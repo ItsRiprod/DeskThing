@@ -23,11 +23,12 @@ export const defaultSettings: Settings = {
   // adb
   adb_useGlobal: false,
   adb_autoConfig: false,
-  adb_autoDetect: false,
+  adb_autoDetect: true,
   adb_blacklist: [],
 
   // flags
   flag_firstClose: true,
   flag_hasOpened: false,
-  flag_collectStats: true
+  flag_collectStats: true,
+  flag_nerd: false
 }

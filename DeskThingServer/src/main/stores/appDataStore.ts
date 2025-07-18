@@ -153,7 +153,12 @@ export class AppDataStore
           break
         }
         case 'settings': {
-          await this.addSettings(data.source, data.payload, { notifyApp: false })
+          await this.addSettings(data.source, data.payload, { notifyApp: true }) // new apps require this bounceback to update themselves
+          break
+        }
+        case 'settings-init': {
+          // TODO: Review this logic and ensure that it is okay to handle settings and initsettings the same
+          await this.initSettings(data.source, data.payload, { notifyApp: true })
           break
         }
       }
@@ -355,6 +360,9 @@ export class AppDataStore
         function: 'purgeAppData'
       })
       await purgeAppData(name)
+      if (this.appDataCache[name]) {
+        delete this.appDataCache[name]
+      }
       Logger.debug(`Successfully purged ${name}`, {
         source: 'AppDataStore',
         domain: name,
@@ -731,6 +739,71 @@ export class AppDataStore
     this.appDataCache[app].settings = newSettings
 
     this.saveData(app, notifyApp)
+  }
+  /**
+   * Merges app settings with the existing settings. If the existing setting is the same version as the new one, it will be skipped
+   */
+  initSettings = async (
+    app: string,
+    settings: AppSettings,
+    { notifyApp = true }: addSettingsOptions = {
+      notifyApp: true,
+      notifyServer: true
+    }
+  ): Promise<void> => {
+    Logger.debug(`Initializing settings to app ${app}`, {
+      source: 'AppDataStore',
+      domain: app,
+      function: 'initSettings'
+    })
+    this.initCacheVersion(app)
+
+    try {
+      isValidAppSettings(settings)
+    } catch (error) {
+      Logger.error('Invalid settings', {
+        source: 'AppDataStore',
+        domain: 'SERVER.' + app.toUpperCase(),
+        function: 'initSettings',
+        error: error as Error
+      })
+      return
+    }
+
+    const prevSettings = this.appDataCache[app].settings || (await this.getSettings(app)) || {}
+
+    // Only update settings if version is different or doesn't exist
+    const newSettings: AppSettings = { ...prevSettings }
+    let changed = false
+
+    for (const id of Object.keys(settings)) {
+      const newSetting = settings[id]
+      const oldSetting = prevSettings[id]
+      if (!oldSetting) {
+        newSettings[id] = newSetting
+        changed = true
+      } else if (newSetting.version !== oldSetting.version) {
+        newSettings[id] = newSetting
+        changed = true
+      }
+      // If versions are the same, do nothing
+    }
+
+    if (changed) {
+      Logger.debug('Initializing settings because there were changes detected', {
+        source: 'AppDataStore',
+        domain: 'SERVER.' + app.toUpperCase(),
+        function: 'initSettings'
+      })
+      this.appDataCache[app].settings = newSettings
+      await this.saveData(app, notifyApp)
+    } else {
+      Logger.debug('No changes detected in settings', {
+        source: 'AppDataStore',
+        domain: 'SERVER.' + app.toUpperCase(),
+        function: 'initSettings'
+      })
+    }
   }
 
   /**

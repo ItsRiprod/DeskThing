@@ -259,15 +259,15 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
     this.startTime = Date.now()
   }
 
-  async ping(clientId: string): Promise<boolean> {
+  async ping(clientId: string): Promise<{ server?: number; socket?: number }> {
     progressBus.start(ProgressChannel.PLATFORM_CHANNEL, `Handling Ping`, `Pinging ${clientId}`)
-    return new Promise<boolean>((resolve) => {
+    return new Promise<{ server?: number; socket?: number }>((resolve) => {
       progressBus.update(ProgressChannel.PLATFORM_CHANNEL, `Awaiting response from ${clientId}`, 50)
       const timeoutRef = setTimeout(() => {
-        resolveTask(false)
+        resolveTask({ server: 0, socket: 0 })
       }, 5000)
 
-      const resolveTask = (res: boolean): void => {
+      const resolveTask = (res: { server?: number; socket?: number }): void => {
         progressBus.complete(
           ProgressChannel.PLATFORM_CHANNEL,
           `Pinged ${clientId} ${res ? 'successfully' : 'unsuccessfully'}`
@@ -277,7 +277,10 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
         clearTimeout(timeoutRef)
       }
 
-      const onceListener = (data: { clientId: string; result: boolean }): void => {
+      const onceListener = (data: {
+        clientId: string
+        result: { server?: number; socket?: number }
+      }): void => {
         if (data.clientId === clientId) {
           resolveTask(data.result)
         }

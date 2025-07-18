@@ -95,7 +95,7 @@ export const platform = {
       })) || false
   },
   websocket: {
-    ping: async (clientId: string): Promise<void> => {
+    ping: async (clientId: string): Promise<{ server?: number; socket?: number } | undefined> => {
       return sendPlatformData({
         platform: PlatformIDs.WEBSOCKET,
         type: 'ping',

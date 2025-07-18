@@ -44,7 +44,7 @@ export const DeviceDetails: FC<DeviceDetailsProps> = ({ client }) => {
   }, [client.timestamp])
 
   return (
-    <div className="h-full overflow-y-auto bg-zinc-900 p-6">
+    <div className="h-full overflow-y-auto bg-zinc-950 p-6">
       <div className="flex h-full flex-col gap-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <section className="bg-zinc-800 rounded-lg p-6 shadow-lg">

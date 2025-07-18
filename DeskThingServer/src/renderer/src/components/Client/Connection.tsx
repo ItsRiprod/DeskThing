@@ -14,6 +14,7 @@ import { Client, ClientPlatformIDs, PlatformIDs, ConnectionState } from '@deskth
 import usePlatformStore from '@renderer/stores/platformStore'
 import { useChannelProgress } from '@renderer/hooks/useProgress'
 import { WebSocketControls, ADBControls } from './ConnectionControls/'
+import { useSettingsStore } from '@renderer/stores'
 
 interface ConnectionComponentProps {
   client: Client
@@ -26,6 +27,7 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
   const disconnect = usePlatformStore((state) => state.disconnect)
   const resendData = usePlatformStore((state) => state.resendInitialData)
   const [isSendingData, setIsSendingData] = useState(false)
+  const is_nerd = useSettingsStore((state) => state.settings?.flag_nerd || false)
 
   useEffect(() => {
     const updateTime = (): number | undefined => {
@@ -129,13 +131,12 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
               {ConnectionState[client.connectionState]}
             </span>
           </div>
-          {client.manifest?.context.ip && (
+          {is_nerd && client.manifest?.context.ip && (
             <p className="text-gray-400">
               {client.manifest?.context.ip}:{client.manifest?.context.port}
             </p>
           )}
-          <p className="text-sm text-gray-500 font-geistMono">ClientID: {client.clientId}</p>
-          {hasAdbProvider && (
+          {is_nerd && hasAdbProvider && (
             <p className="text-xs flex items-center gap-1">
               <span
                 className={`${client.primaryProviderId === PlatformIDs.ADB ? 'text-green-800' : 'text-gray-400'}`}
@@ -145,7 +146,14 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
               <span className="text-gray-500">ADB: {client.identifiers[PlatformIDs.ADB]?.id}</span>
             </p>
           )}
-          {hasWebSocketProvider && (
+          {is_nerd && client.meta[PlatformIDs.ADB] && (
+            <div className="text-xs text-zinc-500 font-geistMono">
+              <p>- brightness: {client.meta[PlatformIDs.ADB].brightness}</p>
+              <p>- mac_bt: {client.meta[PlatformIDs.ADB].mac_bt}</p>
+              <p>- offline: {client.meta[PlatformIDs.ADB].offline ? 'true' : 'false'}</p>
+            </div>
+          )}
+          {is_nerd && hasWebSocketProvider && (
             <p className="text-xs flex items-center gap-1">
               <span
                 className={`${client.primaryProviderId === PlatformIDs.WEBSOCKET ? 'text-green-800' : 'text-gray-400'}`}
@@ -157,7 +165,13 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
               </span>
             </p>
           )}{' '}
-          <p className="text-sm text-gray-400">Connected for: {connectedTimeText}</p>
+          {is_nerd && client.meta[PlatformIDs.WEBSOCKET]?.ping && (
+            <div className="text-xs text-zinc-500 font-geistMono">
+              <p>- websocket: {client.meta[PlatformIDs.WEBSOCKET]?.ping.socket}ms</p>
+              <p>- deskthing: {client.meta[PlatformIDs.WEBSOCKET]?.ping.server}ms</p>
+            </div>
+          )}
+          {is_nerd && <p className="text-sm text-gray-400">Connected for: {connectedTimeText}</p>}
         </div>
       </div>
       <div className="flex gap-2 items-center">

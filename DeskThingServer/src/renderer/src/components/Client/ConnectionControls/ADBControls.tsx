@@ -14,6 +14,7 @@ const ADBControls: React.FC<ADBControlsProps> = ({ client, isLoading }) => {
   const [animatingIcons, setAnimatingIcons] = useState<Record<string, boolean>>({})
   const refreshADbClients = useClientStore((store) => store.requestADBDevices)
   const devicePort = useSettingsStore((store) => store.settings.device_devicePort)
+  const is_nerd = useSettingsStore((state) => state.settings?.flag_nerd || false)
 
   const sendCommand = usePlatformStore((state) => state.runCommand)
   const configure = usePlatformStore((state) => state.configure)
@@ -87,18 +88,20 @@ const ADBControls: React.FC<ADBControlsProps> = ({ client, isLoading }) => {
 
   return (
     <>
-      <Button
-        title="Push staged client"
-        className="group hover:bg-zinc-900 gap-2"
-        onClick={handlePushStaged}
-        disabled={isLoading}
-      >
-        <IconUpload
-          className={
-            animatingIcons.chromium ? 'rotate-[360deg] transition-transform duration-1000' : ''
-          }
-        />
-      </Button>
+      {is_nerd && (
+        <Button
+          title="Push staged client"
+          className="group hover:bg-zinc-900 gap-2"
+          onClick={handlePushStaged}
+          disabled={isLoading}
+        >
+          <IconUpload
+            className={
+              animatingIcons.chromium ? 'rotate-[360deg] transition-transform duration-1000' : ''
+            }
+          />
+        </Button>
+      )}
       <Button
         title="Restart Chromium on the Device"
         className="group hover:bg-zinc-900 gap-2"

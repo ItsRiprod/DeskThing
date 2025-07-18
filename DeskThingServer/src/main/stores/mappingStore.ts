@@ -68,23 +68,13 @@ export class MappingStore implements CacheableStore, MappingStoreClass {
         switch (data.request) {
           case 'add':
             {
-              const Action: Action = {
-                name: data.payload.name || 'Default Name',
-                description: data.payload.description || 'No description provided',
-                id: data.payload.id || 'unsetid',
-                value: data.payload.value || undefined,
-                value_options: data.payload.value_options || [],
-                value_instructions: data.payload.value_instructions || '',
-                icon: data.payload.icon || undefined,
-                source: data.source,
-                version: data.payload.version || '0.0.0',
-                version_code: data.payload.version_code || 0,
-                tag: data.payload.tag || 'basic',
-                enabled: true
+              const Action: Partial<Action> = {
+                ...data.payload,
+                source: data.source
               }
               try {
-                sanitizeAction(Action)
-                this.addAction(Action)
+                const sanitizedAction = sanitizeAction(Action)
+                this.addAction(sanitizedAction)
               } catch (error) {
                 Logger.error(`Unable to add action to app ${data.source}`, {
                   function: 'handleRequestActionAdd',
@@ -99,6 +89,9 @@ export class MappingStore implements CacheableStore, MappingStoreClass {
             break
           case 'update':
             this.updateIcon(data.payload.id, data.payload.icon)
+            break
+          case 'init':
+            this.initActions(data.payload, data.source)
             break
           case 'run':
             console.log('Running action ', data)
@@ -162,6 +155,14 @@ export class MappingStore implements CacheableStore, MappingStoreClass {
           source: 'mappingStore'
         })
       }
+    })
+
+    this.appStore.on('purging', async (appData) => {
+      Logger.debug(`Purging app data for app ${appData.appName}`, {
+        function: 'handleRequestKey',
+        source: 'mappingStore'
+      })
+      this.removeSource(appData.appName)
     })
   }
 
@@ -514,6 +515,70 @@ export class MappingStore implements CacheableStore, MappingStoreClass {
   actionExists = async (actionId: string): Promise<boolean> => {
     const mapping = await this.getMappings()
     return mapping?.actions.some((action) => action.id === actionId) || false
+  }
+
+  initActions = async (actions: Action[], appId: string): Promise<void> => {
+    const mapping = await this.getMappings()
+
+    const updates = await Promise.all(
+      actions.map(async (action) => {
+        try {
+          const updatedAction = sanitizeAction({ ...action, source: appId })
+          isValidAction(updatedAction)
+          const existingActionIndex = mapping.actions.findIndex((a) => a.id === updatedAction.id)
+          if (existingActionIndex !== -1) {
+            const existingAction = mapping.actions.find((a) => a.id === updatedAction.id)
+            // Replace the existing action
+
+            if (existingAction && existingAction.version === updatedAction.version) {
+              // skip
+              return false
+            }
+            mapping.actions[existingActionIndex] = updatedAction
+            Logger.debug(`Action ${updatedAction.id} updated because it is newer`, {
+              function: 'initActions',
+              source: 'mappingStore'
+            })
+            return true
+          } else {
+            // Add the new action
+            mapping.actions.push(updatedAction)
+            Logger.debug(`Action ${updatedAction.id} added`, {
+              function: 'initActions',
+              source: 'mappingStore'
+            })
+            return true
+          }
+        } catch (error) {
+          Logger.warn(
+            `Encountered an error adding action ${action.id || 'unknown'} for app ${appId}`,
+            {
+              function: 'initActions',
+              source: 'mappingStore',
+              error: error as Error
+            }
+          )
+          return false
+        }
+      })
+    )
+
+    const hasUpdates = updates.some((update) => update === true)
+
+    if (!hasUpdates) {
+      Logger.debug(`No updates found during action initialization`, {
+        function: 'initActions',
+        source: 'mappingStore'
+      })
+      return
+    }
+
+    Logger.debug(`Initializing actions and adding some because there are updates`, {
+      function: 'initActions',
+      source: 'mappingStore'
+    })
+
+    await this.saveMapping(mapping)
   }
 
   /**

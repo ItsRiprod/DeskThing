@@ -3,6 +3,7 @@ import { Client, ConnectionState } from '@deskthing/types'
 import { IconPing } from '@renderer/assets/icons'
 import Button from '../../Button'
 import usePlatformStore from '@renderer/stores/platformStore'
+import { useSettingsStore } from '@renderer/stores'
 
 interface WebSocketControlsProps {
   client: Client
@@ -12,13 +13,14 @@ interface WebSocketControlsProps {
 const WebSocketControls: React.FC<WebSocketControlsProps> = ({ client }) => {
   const [animatingIcons, setAnimatingIcons] = useState<Record<string, boolean>>({})
   const ping = usePlatformStore((state) => state.ping)
+  const is_nerd = useSettingsStore((state) => state.settings?.flag_nerd || false)
 
+  
   const handlePing = async (): Promise<void> => {
     setAnimatingIcons((prev) => ({ ...prev, ping: true }))
     await ping(client.clientId)
     setAnimatingIcons((prev) => ({ ...prev, ping: false }))
   }
-
 
   // Don't show ping for devices that need configuration
   const isAdbDeviceNeedingConfig =
@@ -29,6 +31,8 @@ const WebSocketControls: React.FC<WebSocketControlsProps> = ({ client }) => {
   if (isAdbDeviceNeedingConfig) {
     return null
   }
+
+  if (!is_nerd) return null
 
   return (
     <Button title="Ping Client" className="group hover:bg-zinc-900 gap-2" onClick={handlePing}>

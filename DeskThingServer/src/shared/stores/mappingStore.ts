@@ -88,6 +88,15 @@ export interface MappingStoreClass extends StoreInterface {
   actionExists(actionId: string): Promise<boolean>
 
   /**
+   * Initializes actions for a specific app
+   * @param actions Array of actions to initialize
+   * @param appId ID of the app these actions belong to
+   * @return Promise resolving when initialization is complete
+   * @throws Error if actions cannot be initialized
+   */
+  initActions(actions: Action[], appId: string): Promise<void>
+
+  /**
    * Adds or updates an action
    * @param action Action to add or update
    */

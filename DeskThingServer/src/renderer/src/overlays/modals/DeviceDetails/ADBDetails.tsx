@@ -34,6 +34,7 @@ const ADBDeviceDetails: React.FC<ClientDetailsOverlayProps> = ({ client }) => {
   const progress = useChannelProgress(ProgressChannel.IPC_PLATFORM)
   const initialSettings = useSettingsStore((settings) => settings.settings)
   const saveSettings = useSettingsStore((settings) => settings.saveSettings)
+  const is_nerd = useSettingsStore((state) => state.settings?.flag_nerd || false)
 
   // ADB commands
   const [command, setCommand] = useState('')
@@ -251,32 +252,36 @@ const ADBDeviceDetails: React.FC<ClientDetailsOverlayProps> = ({ client }) => {
               )}
               <p className="sm:block text-ellipsis hidden text-nowrap">Setup Restart Script</p>
             </Button>
-            <Button
-              title="Add this device to the blacklist"
-              className="bg-zinc-900 hover:bg-zinc-800 transition-colors duration-200 gap-2 rounded-lg p-3"
-              onClick={handleAddToSettings}
-              disabled={loading}
-            >
-              {initialSettings.adb_blacklist?.includes(adbId!) ? (
-                <>
-                  {loading ? (
-                    <IconLoading className="animate-spin-smooth flex-shrink-0" />
-                  ) : (
-                    <IconX className="flex-shrink-0" />
-                  )}
-                  <p className="sm:block text-ellipsis hidden text-nowrap">Remove From BlackList</p>
-                </>
-              ) : (
-                <>
-                  {loading ? (
-                    <IconLoading className="animate-spin-smooth flex-shrink-0" />
-                  ) : (
-                    <IconStop className="flex-shrink-0" />
-                  )}
-                  <p className="sm:block text-ellipsis hidden text-nowrap">Add to BlackList</p>
-                </>
-              )}
-            </Button>
+            {is_nerd && (
+              <Button
+                title="Add this device to the blacklist"
+                className="bg-zinc-900 hover:bg-zinc-800 transition-colors duration-200 gap-2 rounded-lg p-3"
+                onClick={handleAddToSettings}
+                disabled={loading}
+              >
+                {initialSettings.adb_blacklist?.includes(adbId!) ? (
+                  <>
+                    {loading ? (
+                      <IconLoading className="animate-spin-smooth flex-shrink-0" />
+                    ) : (
+                      <IconX className="flex-shrink-0" />
+                    )}
+                    <p className="sm:block text-ellipsis hidden text-nowrap">
+                      Remove From BlackList
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    {loading ? (
+                      <IconLoading className="animate-spin-smooth flex-shrink-0" />
+                    ) : (
+                      <IconStop className="flex-shrink-0" />
+                    )}
+                    <p className="sm:block text-ellipsis hidden text-nowrap">Add to BlackList</p>
+                  </>
+                )}
+              </Button>
+            )}
           </div>
 
           {progress.progress && (
@@ -314,80 +319,84 @@ const ADBDeviceDetails: React.FC<ClientDetailsOverlayProps> = ({ client }) => {
             </div>
           </div>
 
-          <div className="bg-zinc-900 p-4 rounded-lg">
-            <p className="text-sm font-geistMono text-zinc-400 mb-4">Supervisor Status</p>
-            <div className="space-y-3">
-              {client.meta.adb?.services &&
-                Object.entries(client.meta.adb?.services).map(([key, value]) => (
-                  <div
-                    key={key}
-                    className="flex items-center justify-between bg-zinc-800 p-3 rounded-lg"
-                  >
-                    <h3 className="text-lg">
-                      {key}:{' '}
-                      <span className={value ? 'text-green-500' : 'text-red-500'}>
-                        {String(value)}
-                      </span>
-                    </h3>
-                    <Button
-                      title="Toggle Supervisor"
-                      className="bg-zinc-900 hover:bg-zinc-800 min-w-fit transition-colors duration-200 gap-2 px-4"
-                      onClick={() => handleToggleSupervisor(key, !value)}
-                      disabled={animatingIcons[key]}
+          {is_nerd && (
+            <div className="bg-zinc-900 p-4 rounded-lg">
+              <p className="text-sm font-geistMono text-zinc-400 mb-4">Supervisor Status</p>
+              <div className="space-y-3">
+                {client.meta.adb?.services &&
+                  Object.entries(client.meta.adb?.services).map(([key, value]) => (
+                    <div
+                      key={key}
+                      className="flex items-center justify-between bg-zinc-800 p-3 rounded-lg"
                     >
-                      <p className="sm:block text-ellipsis hidden text-nowrap">
-                        {animatingIcons[key] ? 'Loading' : value ? 'Disable' : 'Enable'}
-                      </p>
-                      {animatingIcons[key] ? (
-                        <IconLoading className="animate-spin" />
-                      ) : value ? (
-                        <IconPause className="text-red-500" />
-                      ) : (
-                        <IconPlay className="text-green-500" />
-                      )}
-                    </Button>
-                  </div>
-                ))}
-            </div>
-          </div>
-
-          <div className="bg-zinc-900 p-4 rounded-lg">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault()
-                handleExecuteCommand()
-              }}
-              className="flex gap-3 items-center w-full"
-            >
-              <input
-                onChange={(e) => setCommand(e.target.value)}
-                value={command}
-                type="text"
-                placeholder="Enter ADB command..."
-                className="flex-1 px-4 py-2 bg-zinc-800 rounded-lg text-white border border-zinc-700 focus:outline-none focus:border-zinc-500 transition-colors duration-200"
-              />
-              <Button
-                title="Execute Command"
-                className="bg-zinc-800 hover:bg-zinc-700 transition-colors duration-200 p-2 rounded-lg"
-                type="submit"
-              >
-                {animatingIcons.command ? (
-                  <IconLoading className="animate-spin" />
-                ) : (
-                  <IconPlay className="text-green-500" />
-                )}
-              </Button>
-            </form>
-            {response && (
-              <div className="bg-zinc-800 p-4 rounded-lg mt-4">
-                {response.split('\n').map((line, index) => (
-                  <p key={index} className="text-sm font-geistMono text-zinc-300">
-                    {line}
-                  </p>
-                ))}
+                      <h3 className="text-lg">
+                        {key}:{' '}
+                        <span className={value ? 'text-green-500' : 'text-red-500'}>
+                          {String(value)}
+                        </span>
+                      </h3>
+                      <Button
+                        title="Toggle Supervisor"
+                        className="bg-zinc-900 hover:bg-zinc-800 min-w-fit transition-colors duration-200 gap-2 px-4"
+                        onClick={() => handleToggleSupervisor(key, !value)}
+                        disabled={animatingIcons[key]}
+                      >
+                        <p className="sm:block text-ellipsis hidden text-nowrap">
+                          {animatingIcons[key] ? 'Loading' : value ? 'Disable' : 'Enable'}
+                        </p>
+                        {animatingIcons[key] ? (
+                          <IconLoading className="animate-spin" />
+                        ) : value ? (
+                          <IconPause className="text-red-500" />
+                        ) : (
+                          <IconPlay className="text-green-500" />
+                        )}
+                      </Button>
+                    </div>
+                  ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
+
+          {is_nerd && (
+            <div className="bg-zinc-900 p-4 rounded-lg">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  handleExecuteCommand()
+                }}
+                className="flex gap-3 items-center w-full"
+              >
+                <input
+                  onChange={(e) => setCommand(e.target.value)}
+                  value={command}
+                  type="text"
+                  placeholder="Enter ADB command..."
+                  className="flex-1 px-4 py-2 bg-zinc-800 rounded-lg text-white border border-zinc-700 focus:outline-none focus:border-zinc-500 transition-colors duration-200"
+                />
+                <Button
+                  title="Execute Command"
+                  className="bg-zinc-800 hover:bg-zinc-700 transition-colors duration-200 p-2 rounded-lg"
+                  type="submit"
+                >
+                  {animatingIcons.command ? (
+                    <IconLoading className="animate-spin" />
+                  ) : (
+                    <IconPlay className="text-green-500" />
+                  )}
+                </Button>
+              </form>
+              {response && (
+                <div className="bg-zinc-800 p-4 rounded-lg mt-4">
+                  {response.split('\n').map((line, index) => (
+                    <p key={index} className="text-sm font-geistMono text-zinc-300">
+                      {line}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

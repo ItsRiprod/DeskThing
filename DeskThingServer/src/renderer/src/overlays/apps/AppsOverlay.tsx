@@ -13,6 +13,7 @@ import AppUpdate from './AppUpdate'
 
 export interface AppSettingProps {
   app: App
+  onClose: () => void
 }
 
 const validPages = ['actions', 'details', 'settings', 'update']
@@ -84,22 +85,22 @@ const AppsOverlay: React.FC = () => {
           <div className="absolute inset w-full h-full">
             {currentPage == 'actions' && (
               <ErrorBoundary>
-                <AppActions app={app} />
+                <AppActions app={app} onClose={onClose} />
               </ErrorBoundary>
             )}
             {currentPage == 'details' && (
               <ErrorBoundary>
-                <AppDetails app={app} />
+                <AppDetails app={app} onClose={onClose} />
               </ErrorBoundary>
             )}
             {currentPage == 'settings' && (
               <ErrorBoundary>
-                <AppSettings app={app} />
+                <AppSettings app={app} onClose={onClose} />
               </ErrorBoundary>
             )}
             {currentPage == 'update' && (
               <ErrorBoundary>
-                <AppUpdate app={app} />
+                <AppUpdate app={app} onClose={onClose} />
               </ErrorBoundary>
             )}
           </div>

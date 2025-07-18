@@ -1,8 +1,9 @@
 import { IconConfig, IconHome, IconPing, IconX } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
 import React from 'react'
-import { Client } from '@deskthing/types'
+import { Client, PlatformIDs } from '@deskthing/types'
 import usePlatformStore from '@renderer/stores/platformStore'
+import { InfoComponent } from '@renderer/components/InfoComponent'
 
 interface WebsocketDetailsProps {
   client: Client
@@ -90,7 +91,7 @@ const WebsocketDetails: React.FC<WebsocketDetailsProps> = ({ client }) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-zinc-900 p-4 rounded-lg">
             <p className="text-sm font-geistMono text-zinc-400">Platform</p>
             <h3 className="text-xl mt-2">{client.manifest?.context.name || 'Unknown'}</h3>
@@ -99,6 +100,18 @@ const WebsocketDetails: React.FC<WebsocketDetailsProps> = ({ client }) => {
             <p className="text-sm font-geistMono text-zinc-400">Connection IP</p>
             <h3 className="text-xl mt-2">
               {client.manifest?.context.ip}:{client.manifest?.context.port}
+            </h3>
+          </div>
+          <div className="bg-zinc-900 p-4 rounded-lg">
+            <div className="flex">
+              <p className="text-sm font-geistMono text-zinc-400">Ping (ms)</p>
+              <InfoComponent description="The ping for DeskThing (the high level javascript) and the Connection (the websocket itself - usually faster)" />
+            </div>
+            <h3 className="text-md mt-2">
+              DeskThing: {client.meta[PlatformIDs.WEBSOCKET]?.ping?.server}ms
+            </h3>
+            <h3 className="text-md mt-2">
+              Connection: {client.meta[PlatformIDs.WEBSOCKET]?.ping?.socket}ms
             </h3>
           </div>
         </div>

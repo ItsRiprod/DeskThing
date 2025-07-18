@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import Sidebar from '@renderer/nav/Sidebar'
 import Button from '@renderer/components/Button'
 import { IconDownload, IconLink } from '@renderer/assets/icons'
@@ -23,6 +23,7 @@ const AppsList: React.FC = () => {
   const setPage = usePageStore((pageStore) => pageStore.setPage)
   const requests = useNotificationStore((notificationStore) => notificationStore.requestQueue)
   const [activeRequests, setActiveRequests] = useState<string[]>([])
+  const [draggedAppHeight, setDraggedAppHeight] = useState<number>(0)
 
   const [draggedApp, setDraggedApp] = useState<string | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
@@ -31,13 +32,17 @@ const AppsList: React.FC = () => {
     setPage('Downloads/App')
   }
 
+  const apps = useMemo(() => {
+    return order.map((appName) => appsList.find((app) => app.name === appName)).filter(Boolean)
+  }, [order, appsList])
+
   useEffect(() => {
     setActiveRequests(requests.map((request) => request.appName))
   }, [requests])
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, appName: string): void => {
     setDraggedApp(appName)
-
+    setDraggedAppHeight(e.currentTarget.clientHeight)
     // Create a custom drag image
     const dragImage = e.currentTarget.cloneNode(true) as HTMLElement
     dragImage.style.opacity = '1'
@@ -87,30 +92,38 @@ const AppsList: React.FC = () => {
       </Sidebar>
       <MainElement className="relative">
         <div className="absolute inset-0 top-0 p-5 pb-10 left-0 w-full h-full">
-          {appsList ? (
-            appsList.length > 0 ? (
-              <div className="flex flex-col">
-                {order.map((appName, index) => {
-                  const app = appsList.find((a) => a.name === appName)
-                  if (!app) return null
-                  return (
-                    <div
-                      key={app.name}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, app.name)}
-                      onDragOver={(e) => handleDragOver(e, index)}
-                      onDragLeave={handleDragLeave}
-                      onDrop={() => handleDrop(app.name)}
-                      className={`relative transition-all duration-75 border-t-8 border-transparent
-                        ${draggedApp === app.name ? 'opacity-50' : dragOverIndex === index ? 'border-zinc-800 border-t-[100px]' : ''}`}
-                    >
-                      <App app={app} activeRequest={activeRequests.includes(app.name)} />
-                      {index === order.length - 1 && dragOverIndex === index && (
-                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-zinc-500"></div>
-                      )}
-                    </div>
-                  )
-                })}
+          {apps ? (
+            apps.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {apps.map(
+                  (app, index) =>
+                    app && (
+                      <div
+                        key={app.name}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, app.name)}
+                        onDragOver={(e) => handleDragOver(e, index)}
+                        onDragLeave={handleDragLeave}
+                        onDrop={() => handleDrop(app.name)}
+                        className={`relative transition-all duration-75
+                        ${draggedApp === app.name ? 'opacity-50' : ''}`}
+                      >
+                        <div
+                          style={{
+                            height:
+                              index !== order.length - 1 && dragOverIndex === index
+                                ? draggedAppHeight + 'px'
+                                : '0px'
+                          }}
+                          className={`rounded-lg bg-zinc-950 transition-all ${dragOverIndex === index ? 'mb-2' : ''}`}
+                        />
+                        <App app={app} activeRequest={activeRequests.includes(app.name)} />
+                        {index === order.length - 1 && dragOverIndex === index && (
+                          <div className="h-[100px]"></div>
+                        )}
+                      </div>
+                    )
+                )}
               </div>
             ) : (
               // Shows when the AppsList is initialized but empty

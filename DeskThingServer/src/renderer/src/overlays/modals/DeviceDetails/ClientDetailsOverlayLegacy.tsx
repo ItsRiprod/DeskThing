@@ -92,6 +92,7 @@ const ClientDetailsOverlay: React.FC<ClientDetailsOverlayProps> = ({ onClose, cl
   const handlePing = async (): Promise<void> => {
     setAnimatingIcons((prev) => ({ ...prev, ping: true }))
     await ping(client.clientId)
+    setAnimatingIcons((prev) => ({ ...prev, ping: false }))
   }
 
   const handleDisconnect = (): void => {

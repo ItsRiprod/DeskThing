@@ -124,12 +124,14 @@ const ClientConnections: React.FC = () => {
       <Sidebar className="flex justify-between flex-col h-full md:items-stretch xs:items-center">
         <div>
           <div className="md:block xs:hidden block">
-            {settings.server_localIp &&
+            {settings.flag_nerd &&
+              settings.server_localIp &&
               settings.server_localIp.map((ip, index) => (
                 <div key={index} className="text-gray-500">
                   {ip + ':' + settings.device_devicePort}
                 </div>
               ))}
+
             <div className="border-t border-gray-500 mt-4 pt-4">
               {clientManifest ? (
                 <>
@@ -178,17 +180,21 @@ const ClientConnections: React.FC = () => {
             <IconLink strokeWidth={1.5} />
             <p className="md:block xs:hidden text-center flex-grow">Downloads</p>
           </Button>
-          <Button
-            className={`hover:bg-zinc-900 ${isRestarting ? 'cursor-not-allowed opacity-50' : ''}`}
-            onClick={handleRestartServerClick}
-            title="Restart the server"
-          >
-            <IconReload
-              strokeWidth={1.5}
-              className={isRestarting ? '-rotate-[360deg] transition-transform duration-1000' : ''}
-            />
-            <p className="md:block xs:hidden text-center flex-grow">Restart Server</p>
-          </Button>
+          {settings.flag_nerd && (
+            <Button
+              className={`hover:bg-zinc-900 ${isRestarting ? 'cursor-not-allowed opacity-50' : ''}`}
+              onClick={handleRestartServerClick}
+              title="Restart the server"
+            >
+              <IconReload
+                strokeWidth={1.5}
+                className={
+                  isRestarting ? '-rotate-[360deg] transition-transform duration-1000' : ''
+                }
+              />
+              <p className="md:block xs:hidden text-center flex-grow">Restart Server</p>
+            </Button>
+          )}
         </div>
       </Sidebar>
       <MainElement>

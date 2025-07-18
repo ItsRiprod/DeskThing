@@ -81,43 +81,23 @@ const ServerSettings: React.FC = () => {
           <div className="w-full pt-3 flex justify-between items-center">{updateStatus}</div>
         )}
       </div>
-      <div className="w-full p-4 flex justify-between items-center">
+
+      <div className="w-full px-4 flex justify-between items-center">
         <div className="flex gap-1 items-center">
-          <h2 className="text-xl">Callback Port</h2>
-          <InfoComponent
-            description={`The port used for callbacks. Changing this also requires changing all of the app settings that use this port as well as their respective portals.`}
+          <h2 className="text-xl">Advanced Mode</h2>
+          <InfoComponent description="Automatically start DeskThing when the computer boots." />
+        </div>
+        <Button
+          className="bg-transparent p-0"
+          title="Automatically start deskthing when the computer boots"
+          onClick={() => handleSettingChange('flag_nerd', !settings.flag_nerd)}
+        >
+          <IconToggle
+            iconSize={48}
+            checked={settings.flag_nerd || false}
+            className={`transition-color ${settings.flag_nerd ? 'text-green-500' : 'text-gray-500'}`}
           />
-        </div>
-        <input
-          type="number"
-          value={settings.server_callbackPort}
-          onChange={(e) => handleSettingChange('server_callbackPort', Number(e.target.value))}
-          className="border border-gray-300 focus:text-black text-gray-500 rounded px-2 py-1"
-        />
-      </div>
-      <div className="w-full p-4 flex justify-between items-center">
-        <div className="flex gap-1 items-center">
-          <h2 className="text-xl">Device Port</h2>
-          <InfoComponent description="The port used to communicate with the device." />
-        </div>
-        <input
-          type="number"
-          value={settings.device_devicePort}
-          onChange={(e) => handleSettingChange('device_devicePort', Number(e.target.value))}
-          className="border border-gray-300 rounded focus:text-black text-gray-500 px-2 py-1"
-        />
-      </div>
-      <div className="w-full p-4 flex justify-between items-center">
-        <div className="flex gap-1 items-center">
-          <h2 className="text-xl">Server Address</h2>
-          <InfoComponent description="The address of the server to connect to." />
-        </div>
-        <input
-          type="text"
-          value={settings.device_address}
-          onChange={(e) => handleSettingChange('device_address', e.target.value)}
-          className="border border-gray-300 focus:text-black text-gray-500 rounded px-2 py-1"
-        />
+        </Button>
       </div>
       <div className="w-full px-4 flex justify-between items-center">
         <div className="flex gap-1 items-center">
@@ -261,6 +241,45 @@ const ServerSettings: React.FC = () => {
             className={`transition-color ${settings.adb_autoConfig ? 'text-green-500' : 'text-gray-500'}`}
           />
         </Button>
+      </div>
+
+      <div className="w-full p-4 flex justify-between items-center">
+        <div className="flex gap-1 items-center">
+          <h2 className="text-xl">Callback Port</h2>
+          <InfoComponent
+            description={`The port used for callbacks. Changing this also requires changing all of the app settings that use this port as well as their respective portals.`}
+          />
+        </div>
+        <input
+          type="number"
+          value={settings.server_callbackPort}
+          onChange={(e) => handleSettingChange('server_callbackPort', Number(e.target.value))}
+          className="border border-gray-300 focus:text-black text-gray-500 rounded px-2 py-1"
+        />
+      </div>
+      <div className="w-full p-4 flex justify-between items-center">
+        <div className="flex gap-1 items-center">
+          <h2 className="text-xl">Device Port</h2>
+          <InfoComponent description="The port used to communicate with the device." />
+        </div>
+        <input
+          type="number"
+          value={settings.device_devicePort}
+          onChange={(e) => handleSettingChange('device_devicePort', Number(e.target.value))}
+          className="border border-gray-300 rounded focus:text-black text-gray-500 px-2 py-1"
+        />
+      </div>
+      <div className="w-full p-4 flex justify-between items-center">
+        <div className="flex gap-1 items-center">
+          <h2 className="text-xl">Server Address</h2>
+          <InfoComponent description="The address of the server to connect to." />
+        </div>
+        <input
+          type="text"
+          value={settings.device_address}
+          onChange={(e) => handleSettingChange('device_address', e.target.value)}
+          className="border border-gray-300 focus:text-black text-gray-500 rounded px-2 py-1"
+        />
       </div>
 
       <div className="flex flex-col">

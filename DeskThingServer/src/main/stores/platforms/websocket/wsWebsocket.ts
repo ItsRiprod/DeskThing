@@ -641,10 +641,13 @@ export class WSPlatform {
     return manifest
   }
 
-  async pingClient(clientId: string, socket?: WebSocket): Promise<boolean> {
+  async pingClient(
+    clientId: string,
+    socket?: WebSocket
+  ): Promise<{ server?: number; socket?: number }> {
     // Get the client's socket
     const platformConnectionId = this.getInternalId(clientId)
-    if (!platformConnectionId) return false
+    if (!platformConnectionId) return { server: 0, socket: 0 }
 
     console.debug(`Pinging client ${clientId}`)
 
@@ -652,7 +655,7 @@ export class WSPlatform {
     if (!clientObj) {
       console.error(`[pingClient] Unable to find the client for id ${clientId}`)
       this.handleClientDisconnected(clientId)
-      return false
+      return { server: 0, socket: 0 }
     }
 
     // Use provided socket or get from client object
@@ -661,8 +664,12 @@ export class WSPlatform {
     // Check if socket is open before attempting ping
     if (socket.readyState !== WebSocket.OPEN) {
       console.debug(`Socket is not open for client ${clientId}. The state is ${socket.readyState}`)
-      return false
+      return { server: 0, socket: 0 }
     }
+
+    // start ping timers
+    let socketPingTime = Date.now()
+    let serverPingTime = Date.now()
 
     // Perform ping with timeout
     try {
@@ -690,6 +697,7 @@ export class WSPlatform {
 
           const pongHandler = (): void => {
             wsResolved = true
+            socketPingTime = Date.now() - socketPingTime
             cleanup()
           }
 
@@ -698,6 +706,7 @@ export class WSPlatform {
               const message = JSON.parse(data.toString())
               if (message.type === 'pong') {
                 appResolved = true
+                serverPingTime = Date.now() - serverPingTime
                 cleanup()
               }
             } catch {
@@ -716,10 +725,24 @@ export class WSPlatform {
         }),
         new Promise((_, reject) => setTimeout(() => reject(new Error('Ping timeout')), 5000))
       ])
-      return true
+
+      const pingResult = { server: serverPingTime, socket: socketPingTime }
+
+      if (clientObj.client.meta?.[PlatformIDs.WEBSOCKET]) {
+        clientObj.client.meta[PlatformIDs.WEBSOCKET].ping = pingResult
+        this.updateClient(clientId, clientObj.client, true)
+      } else {
+        clientObj.client.meta = {
+          ...clientObj.client.meta,
+          [PlatformIDs.WEBSOCKET]: { wsId: clientId, ping: pingResult }
+        }
+        this.updateClient(clientId, clientObj.client, true)
+      }
+
+      return pingResult
     } catch (error) {
       console.error(`Ping failed for client ${clientId}`, error)
-      return false
+      return { server: 0, socket: 0 }
     }
   }
 
