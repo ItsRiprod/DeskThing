@@ -1,9 +1,7 @@
 ![Youtube Banner](https://github.com/user-attachments/assets/78aa432b-e86e-4945-9b57-931a7ae5c5cb)
-
-
 ![image](https://github.com/user-attachments/assets/4f4ee062-14df-49df-968a-d196746ef80f)
-![image](https://github.com/user-attachments/assets/5fbf8e30-e468-424e-bad4-b6a4b656feb4)
 
+*Quick Links*
  > ❔[Reddit Link](https://reddit.com/r/DeskThing)
 
  > 📃[Trello Board](https://trello.com/b/6v0paxqV/deskthing)
@@ -16,6 +14,11 @@
  
  > 💬 [Car Thing Hax Community Discord](https://discord.carth.ing/)
 
+---
+# ‼️DeskThing is completely free to use but [donations](https://deskthing.app/support) are greatly appreciated ☕
+
+---
+
 # The DeskThing ✔️
 
 *Let's begin, shall we?*
@@ -26,10 +29,11 @@ Cheers!
 
 *Dammit Jeff posted a video covering the DeskThing! Check it out [here](https://youtu.be/vQVuGeoqyUc?si=80bZQEFqH__qxppf&t=416)*
 
-**⚠️DO NOT PULL MAIN BRANCH ⚠️**
+**⚠️DO NOT PULL MAIN BRANCH TO INSTALL ⚠️**
 
 Instead, go to [The Official Website](https://deskthing.app/) and download the installer for your OS
-For a video walkthrough of v0.6.0, go to [this video](https://youtu.be/nC65O1nP-pk?si=dxUEF6wyzLI2Z72U)
+For a video walkthrough of v0.6.0, go to [this video]([https://youtu.be/nC65O1nP-pk?si=dxUEF6wyzLI2Z72U](https://www.youtube.com/watch?v=iW2biAnq0n8))
+
 
 ---
 > All instructions are up-to-date as late of v0.9.0-beta. Later versions may differ in functionality and setup
@@ -42,80 +46,41 @@ The DeskThing is a simple CarThing Chromium-based website that can communicate w
 
 Note: Not all of these are updated and are pending a revision. This is new as of v0.7.0
 
+## Features
 - ### All In One Package 📦
-   - [X] Download apps directly from the Desktop App GUI
+   - [X] Download apps directly from the Desktop App
    - [X] Manage and update the Car Thing's display
    - [X] Probably more - just check it out already
+
 - ### Configurable Controls ⚙️
    - [X] Make any button do any function!
    - [X] Control audio with the top buttons, front buttons, back buttons, really whatever you want!
    - [X] Modify them from the Desktop UI
    - [X] Add more directly from apps! (Basically, you can do anything)
+<img width="1369" height="874" alt="image" src="https://github.com/user-attachments/assets/5afb8396-d536-43ed-9a58-2bf9ae4ddc37" />
+*The deskthing mappings page - will be updated in v0.12*
+
+## App Highlights (View the rest on the [deskthing website](https://deskthing.app/apps) or in the app store in deskthing)
+<img width="1108" height="687" alt="image" src="https://github.com/user-attachments/assets/66e7e296-e2fe-4306-af1a-7cf59c88f9f3" />
+
+
 - ### Spotify Integration 🎧
    - [X] Show currently listening (Album, Artist, Song name, album art)
    - [X] Control Spotify (Skip, pause, play, rewind, shuffle, repeat)
    - [X] Supports Podcasts too!
    - [X] Set Audio Output Source
-   - Spotify app [installation instructions here](/DeskThing/server/apps/spotify#spotify-app-install)
-- ### Desktop Now Playing (Only Windows) 🎧
+<img width="4032" height="3024" alt="image" src="https://github.com/user-attachments/assets/26126fda-3b18-48c2-b223-bfbb80a655bb" />
+*[LyrThing](https://github.com/espeon/LyrThing/) community app showing spotify lyrics by Espeon*
+
+- ### Local Audio Control 🎧
    - [X] Show currently listening (Album, Artist, Song name, album art)
-   - [X] Control the current media (Skip, pause, play, rewind, shuffle, repeat)
-   - *no setup instructions yet. Drag-n-drop the .zip from /releases/apps/ into the GUI*
-- ### Discord Integration 💬
-   - [X] Show current call status (Participants, who's talking, their mute status)
-   - [X] Control Discord (Mute/Unmute  Deafen/Undeafen Disconnect)
-   - [ ] ~~Control Individual User Volume~~
-   - [ ] ~~See message preview~~
-   - Discord app [installation instructions here](/DeskThing/server/apps/discord#discord-app-install)
-- ### Weather Integration 🌧️
-   - [X] Show local weather
-   - [X] Temperature
-   - [X] AQI, UV Index, Wind Speed + Direction, Visibility
-   - [X] 12 Hour forecast
-   - Weather app [installation instructions here](/DeskThing/server/apps/weather#weather-app-install)
-- ### ~~Audible Integration📗~~ *to be migrated*
-   - [ ] ~~Currently Listening To~~ 
-   - [ ] ~~Audio Controls (Skip, Rewind, Fast Forward)~~ 
-   - [ ] ~~Audio Status (%through)~~
-   - [X] Audiobook Library
-   - [X] Audiobook stats (Progress, Length of book, time left, ASIN)
-   - Audible app [installation instructions here](/DeskThing/server/apps/audible#audible-app-install)
-- ### ~~Launchpad Integration 🎵~~ *to be migrated*
-   - [X] Control different views on your launchpad!
-   - [X] Show your system resource usage on your novation launchpad
-   - [X] Add timers from your launchpad
-   - [ ] ~~Show weather from launchpad~~
-   - [ ] ~~Show time on launchpad~~
-   - [ ] ~~Trigger macros from launchpad~~
-   - [ ] Launchpad app [installation instructions here](/DeskThing/server/apps/launchpad#launchpad-app-install)
-- ### ~~Trello Integration 📃~~ *to be migrated*
-   - [X] See all organizations 
-   - [X] See all boards 
-   - [X] See all lists 
-   - [X] See all cards 
-   - [X] See all tags 
-   - [X] Set different lists as your favorites 
-   - Trello app [installation instructions here](/DeskThing/server/apps/trello#trello-app-install)
-<details>
-   <summary>
-      <h3>Planned Apps</h3>
-   </summary>
+   - [X] Control Any Playing Media (Skip, pause, play, rewind, shuffle, repeat)
 
-<img src="readme_images/bar.svg" style="width: 100%;" alt="Click to see the source">
+- ### Custom Apps
+<img width="615" height="478" alt="image" src="https://github.com/user-attachments/assets/20d32ba4-6c10-472c-ae2f-7365e10735c1" />
 
-- Macropad / Streamdeck
-- GUI Companion
-- Dashboard/Settings for config changes
-- General audio control
-- Advanced Spotify Stats
-- Home Assistant
-- Pomodoro Timer
-- Google Calendar
-- More details in the [Trello Board](https://trello.com/b/6v0paxqV/deskthing)
+*Gif uploaded via the Image Viewer app* 
 </details>
-
-> *This is under constant development, so features will come as soon as I can make them. Suggestions welcome!*
-</details> 
 
 ---
 
@@ -128,96 +93,16 @@ Note: Not all of these are updated and are pending a revision. This is new as of
 
 ### Detailed Setup Instructions
 
-‼️ There is now a youtube tutorial walking through this process ‼️
+Updating this ReadMe with the updated flashing / installation instructions was tedious and led to confusion
 
-[Setting up to v0.6.0 that shows how to flash](https://youtu.be/nC65O1nP-pk?si=umjOsybdfmQud6I0)
+So now, it is contained inside an easy youtube video
 
-[Upgrading to v0.8.0 from 0.6.0](https://www.youtube.com/watch?v=Exu7KMcbN4k)
-
-[Alternative flashing tutorial](https://youtu.be/Y0paq_qhG5M?si=YcpNOJzzQu8MJJTb)
-
-*Step-by-step instructions*
-
-1. **Flash Your CarThing:**
-   - Follow the instructions in the [superbird-tool repository](https://github.com/Car-Thing-Hax-Community/superbird-tool) to flash your CarThing device with the necessary image.
-> If you need help, refer to the [detailed instructions](#flashing) at the end of this page
-
-2. **Get the installer**
-*should be under [releases](https://github.com/ItsRiprod/DeskThing/releases)*
-
-   - Run the 'deskthing-0.*.*-*-setup.*' installer on your computer
-
-3. **Check for your device:**
-   - Under the 'Devices' tab, ensure your device shows up. If it does not, join the Discord server and report the issue, this can be buggy on some machines.
-> A few things to try if it isn't working is to 1: Use task manager to kill all instances of ADB 2: Run DeskThing as administrator 3: Unplug and plug in your Car thing 4: Install ADB and manually check with `adb devices`
-   - If the device shows up, go to the 'Client Downloads' tab and click the latest version. It should show up at the top (Staged: Deskthing CLient)
-   - Go back to the 'Devices' tab and click 'Push Staged Webapp' It should take a second, and then your Car Thing should restart.
-4. **Load Apps**
-   - Congrats! You're basically done. Now go to 'Apps' and then 'Webapps' and download any apps you want. Ensure you check dependencies before doing so as this could cause errors. 
-
-> Any Issues? Contact me [through the Deskthing discord server](https://deskthing.app/discord) or via DMs to @riprod
-
-⚠️Note for MacOS⚠️
-
-First, when you install the DeskThing installer, you'll need to run
-```
-sudo xattr -r -d com.apple.quarantine DeskThing.app
-```
-to fix the app. Otherwise it'll say it's corrupted or something
-
-Because ADB on the car thing and MacOS is funky, you need to run this on the DeskThing's ADB
-```
-chmod +x /Applications/DeskThing.app/Contents/Resources/mac/adb
-```
-
-Finally, the image linked above won't always work for MacOS. So instead, use the following image (it is a discord download for now) as it fixes ADB for MacOS
-
-**Go to Releases -> MACOS LISTEN UP to find the updated link**
-*Discord will cycle the url for the link so this one will expire after a given amount of time*
-[The new location is on thingify.tools. Use v8.9.2](thingify.tools)
-
-Thanks! Have a good day
+https://www.youtube.com/watch?v=iW2biAnq0n8
 
 </details>
 
 ---
 
-<details>
-   <summary>
-      <h2>📸Flashing</h2>
-   </summary>
-
-<img src="readme_images/bar.svg" style="width: 100%;" alt="Click to see the source">
-
-[Alternative flashing tutorial for Windows](https://youtu.be/Y0paq_qhG5M?si=YcpNOJzzQu8MJJTb)
-
-**_It is HIGHLY recommended to use the new ifixit tutorial_**
-https://www.ifixit.com/Guide/How+to+Install+Custom+Firmware+onto+Car+Thing/178814
-
-Links:
-- ~~[image dumps](https://mega.nz/folder/NxNXQCaT#-n1zkoXsJuw-5rQ-ZYzRJw/folder/Ak9FVKxJ)~~
-- [New Image Dumps](https://thingify.tools/firmware/P3QZbZIDWnp5m_azQFQqP)
-- [superbird-tool](https://github.com/Car-Thing-Hax-Community/superbird-tool)
-
-Process:
-- Go to superbird-tool and install it based off your operating system. Come back once you can run `python superbird_tool.py --find_device` and see your Car Thing
-- Unplug the Car Thing
-- Hold buttons 1 and 4 (the four large top buttons are mapped from left to right) and plug it in.
-- Wait a few seconds. If the screen does not turn on, that means you are in boot mode. You can release the buttons
-- Run `python superbird_tool.py --burn_mode` to enter burn mode
-> Note: This step may say it fails to enter burn mode. This is okay, continue on as if it worked. There is information in the discord as to why this is.
-- Download 8.9.2-thinglabs.zip files from Thingify Tools (linked above) and in that same folder (unzip them)
-- (Windows only) Download [zadig](https://zadig.akeo.ie/) and install the WinUSB driver for **GX-CHIP** (select it and click "Install Driver")
-> Alternatively use **libusbK** if it does not work
-> you may have to click "Show All devices" to see it
-- Run `python superbird_tool.py --restore_device /path/to/extracted/firmware/folder` (This may take a while)
-- After the firmware is flashed, the Car Thing should be ready with ADB enabled. To check, run `adb shell ls -l /usr/share/qt-superbird-app/` and you should see webapp as one of the folders.
-- Ensure that `adb devices` works and registers `whateveryouridis device` as one of the options
-- Continue setup from [here](#detailed-setup-instructions)
-
-</details>
-
----
 
 ## 📗 Additional Resources
 
@@ -230,31 +115,6 @@ Process:
 
 
 > Questions? DM me on discord @riprod
-
-⚠️ *While bricking the Car Thing is extremely difficult - I don't think anyone has done it yet - the possibility is still there. I do not take any responsibility for damages done to the device. Try to use common sense* ⚠️
-
-
-# Developing Apps
-Interested in developing an app? Well here's a great place to start! Make sure you join the DeskThing discord server so I, or anyone else, can help you out!
-
-Start with
-```sh
-npm create deskthing@latest
-```
-And follow the prompts to set up the app environment. From there, you can reference:
-
-### [App References](https://github.com/ItsRiprod/deskthing-apps)
-These are apps that make the deskthing "firmware" functional! When you use spotify on your deskthing, it's using the spotify app (linked here). What you interact with is driven by the "src/App.tsx"
-
-### [The app-side connector](https://github.com/ItsRiprod/deskthing-app-client)
-This is what allows deskthing apps to "function". When you hit the pause button on the spotify app, it makes a request to the deskthing-client which routes your request (through the  deskthing-app-client package, source code linked here). This deskthing-app-client request doesn't return a response, instead it listens for events through the deskthing-app-client using the "on" method. 
-
-### [The server-side connector](https://github.com/ItsRiprod/deskthing-app-server)
-This is what allows the  deskthing-server to make custom requests. When the  deskthing-server  gets a request to pause the current spotify song, it forwards that action through the deskthing-app-server back to the spotify apps "server/index.ts" which can  be handled in your app using the deskthing-app-server "on" method to respond to custom requests from the deskthing-client.
-
-### [The client that goes on the Car Thing](https://github.com/ItsRiprod/deskthing-client) 
-
-Good luck!
 
 <details>
 <summary>
