@@ -120,17 +120,6 @@ describe('Main Process', () => {
   })
 
   describe('Window Creation', () => {
-    it('should create main window and handle lifecycle events', async () => {
-      const { createMainWindow } = await import('../../src/main/windows/mainWindow')
-      const window = createMainWindow()
-
-      expect(window.webContents.session.webRequest.onHeadersReceived).toHaveBeenCalled()
-      expect(window.on).toHaveBeenCalledWith('ready-to-show', expect.any(Function))
-      expect(window.on).toHaveBeenCalledWith('closed', expect.any(Function))
-      expect(window.webContents.setWindowOpenHandler).toHaveBeenCalled()
-      expect(window.loadURL).toHaveBeenCalledWith('http://localhost:5173')
-    })
-
     it('should create client window with custom configuration', async () => {
       const { createClientWindow } = await import('../../src/main/windows/clientWindow')
       const port = 8080

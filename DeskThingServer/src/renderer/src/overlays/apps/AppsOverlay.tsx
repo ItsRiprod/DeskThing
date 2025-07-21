@@ -13,7 +13,7 @@ import AppUpdate from './AppUpdate'
 
 export interface AppSettingProps {
   app: App
-  onClose: () => void
+  onClose?: () => void
 }
 
 const validPages = ['actions', 'details', 'settings', 'update']

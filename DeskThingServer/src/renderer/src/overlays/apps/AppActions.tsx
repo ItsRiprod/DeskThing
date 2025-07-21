@@ -38,7 +38,7 @@ const AppActions: React.FC<AppSettingProps> = ({ app, onClose }: AppSettingProps
   }, [])
 
   const purge = async (appName: string): Promise<boolean> => {
-    onClose()
+    onClose && onClose()
     return await purgeApp(appName)
   }
 
