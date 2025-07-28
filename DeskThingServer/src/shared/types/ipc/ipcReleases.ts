@@ -3,6 +3,7 @@ import {
   AppLatestServer,
   ClientDownloadReturnData,
   ClientLatestServer,
+  GithubRepository,
   RefreshOptions
 } from '../releases'
 import { GitRepoUrl } from '@deskthing/types'
@@ -12,6 +13,7 @@ export enum IPC_RELEASE_TYPES {
   REFRESH_RELEASES = 'github:refresh',
   ADD_REPOSITORY = 'github:addRepo',
   GET_REPOSITORIES = 'github:getRepositories',
+  GET_REPO_ASSETS = 'github:getRepoAssets',
 
   GET_APPS = 'github:getApps',
   GET_APP_REPOSITORIES = 'github:getAppRepositories',
@@ -37,6 +39,9 @@ export type ReleaseIPCData = {
     }
   | {
       type: IPC_RELEASE_TYPES.GET_REPOSITORIES
+    }
+  | {
+      type: IPC_RELEASE_TYPES.GET_REPO_ASSETS
     }
   | {
       type: IPC_RELEASE_TYPES.GET_APPS
@@ -72,6 +77,7 @@ export type ReleaseHandlerReturnMap = {
   [IPC_RELEASE_TYPES.REFRESH_RELEASES]: void
   [IPC_RELEASE_TYPES.ADD_REPOSITORY]: AppLatestServer[] | ClientLatestServer[] | undefined
   [IPC_RELEASE_TYPES.GET_REPOSITORIES]: GitRepoUrl[]
+  [IPC_RELEASE_TYPES.GET_REPO_ASSETS]: GithubRepository[]
 
   [IPC_RELEASE_TYPES.GET_APPS]: AppLatestServer[]
   [IPC_RELEASE_TYPES.GET_APP_REPOSITORIES]: string[]

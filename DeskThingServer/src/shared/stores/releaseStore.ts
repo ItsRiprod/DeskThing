@@ -5,7 +5,7 @@ import {
   GitRepoUrl
 } from '@deskthing/types'
 import { StoreInterface } from '@shared/interfaces/storeInterface'
-import { AppLatestServer, ClientLatestServer, StagedAppManifest } from '@shared/types'
+import { AppLatestServer, ClientLatestServer, GithubRepository, StagedAppManifest } from '@shared/types'
 import EventEmitter from 'node:events'
 
 export type AssetAppCacheEntry = {
@@ -76,6 +76,12 @@ export interface ReleaseStoreClass extends StoreInterface, EventEmitter<GithubLi
    * @returns Promise resolving to the app release or undefined
    */
   getAppRelease(appId: string): Promise<AppLatestServer | undefined>
+
+  /**
+   * Gets the list of available repositories
+   * @returns Promise resolving to array of repositories
+   */
+  getAllRepositories(): Promise<GithubRepository[]>
 
   /**
    * Gets a specific client release by ID

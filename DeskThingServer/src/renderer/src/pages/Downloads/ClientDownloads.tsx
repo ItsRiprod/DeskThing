@@ -9,6 +9,7 @@ import { ClientDownloadCard } from './ClientDownloadCard'
 import { useChannelProgress } from '@renderer/hooks/useProgress'
 import AddRepoOverlay from '@renderer/overlays/releases/AddRepoOverlay'
 import { DownloadErrorOverlay } from '@renderer/overlays/DownloadErrorOverlay'
+import { AddCard } from './AddCard'
 
 let initialRender = true
 
@@ -137,16 +138,19 @@ const ClientDownloads: React.FC = () => {
       </Sidebar>
       <MainElement className="p-4">
         <div className="w-full h-full relative overflow-y-auto flex flex-col">
-          <div className="absolute inset w-full h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 p-4">
+          <div className="absolute inset w-full h-fit grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 grid-flow-dense p-4">
             {clientReleases && clientReleases.length > 0 ? (
-              clientReleases.map((release) => (
-                <ClientDownloadCard
-                  key={release.id}
-                  clientRelease={release}
-                  loading={loading}
-                  setLoading={setLoading}
-                />
-              ))
+              <>
+                {clientReleases.map((release) => (
+                  <ClientDownloadCard
+                    key={release.id}
+                    clientRelease={release}
+                    loading={loading}
+                    setLoading={setLoading}
+                  />
+                ))}
+                <AddCard />
+              </>
             ) : (
               <div className="w-full h-full flex flex-col justify-center items-center col-span-full">
                 <h1 className="text-2xl font-semibold">Uh oh-</h1>

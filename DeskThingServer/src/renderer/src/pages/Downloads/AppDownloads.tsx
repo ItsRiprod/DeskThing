@@ -10,6 +10,7 @@ import { ProgressChannel } from '@shared/types'
 import { AppReleaseCard } from './AppDownloadCard'
 import { useChannelProgress } from '@renderer/hooks/useProgress'
 import { DownloadErrorOverlay } from '@renderer/overlays/DownloadErrorOverlay'
+import { AddCard } from './AddCard'
 
 // Defined outside scope so it persists between being unmounted and not
 let initialRender = true
@@ -120,11 +121,14 @@ const AppDownloads: React.FC = () => {
       </Sidebar>
       <MainElement className="p-4">
         <div className="w-full h-full relative overflow-y-auto flex flex-col">
-          <div className="absolute inset w-full h-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 p-4">
+          <div className="absolute inset w-full h-fit grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 p-4">
             {appReleases?.length > 0 ? (
-              appReleases.map((appRelease, index) => (
-                <AppReleaseCard appReleaseServer={appRelease} key={appRelease.id || index} />
-              ))
+              <>
+                {appReleases.map((appRelease, index) => (
+                  <AppReleaseCard appReleaseServer={appRelease} key={appRelease.id || index} />
+                ))}
+                <AddCard />
+              </>
             ) : (
               <div className="w-full h-full flex flex-col justify-center items-center col-span-full">
                 <h1 className="text-2xl font-semibold">Uh oh-</h1>

@@ -11,6 +11,7 @@ import {
   CacheableStore,
   ClientLatestServer,
   ClientReleaseFile01111,
+  GithubRepository,
   ProgressChannel,
   StagedAppManifest
 } from '@shared/types'
@@ -39,6 +40,7 @@ import {
 } from '@server/services/releases/releaseUtils'
 import { storeProvider } from './storeProvider'
 import { ClientManifest, GitRepoUrl, LOGGING_LEVELS } from '@deskthing/types'
+import { fetchRepoSummary } from '@server/services/releases/repoSummary'
 
 /**
  * Temporarily holds the entire repo response information in memory unless manually refreshed
@@ -341,6 +343,31 @@ export class ReleaseStore
     const clients = await this.getClientReleaseFile()
     if (!clients) return undefined
     return clients.repositories
+  }
+
+  public getAllRepositories = async (): Promise<GithubRepository[]> => {
+    const totalRepos = await this.getAvailableRepositories()
+    const githubRepos: GithubRepository[] = []
+
+    for (const repo of totalRepos) {
+      try {
+        const summary = await fetchRepoSummary(repo)
+        githubRepos.push(summary)
+      } catch (err) {
+        logger.warn(`Failed to fetch summary for repo ${repo}: ${handleError(err)}`, {
+          error: err as Error,
+          function: 'getAllRepositories',
+          source: 'releaseStore'
+        })
+      }
+    }
+
+    logger.info(`Fetched ${githubRepos.length} out of ${totalRepos.length} repositories`, {
+      function: 'getAllRepositories',
+      source: 'releaseStore'
+    })
+
+    return githubRepos
   }
 
   public getAppReleases = async (): Promise<AppLatestServer[] | undefined> => {

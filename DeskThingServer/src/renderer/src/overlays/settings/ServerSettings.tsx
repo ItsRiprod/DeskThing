@@ -85,7 +85,9 @@ const ServerSettings: React.FC = () => {
       <div className="w-full px-4 flex justify-between items-center">
         <div className="flex gap-1 items-center">
           <h2 className="text-xl">Advanced Mode</h2>
-          <InfoComponent description="Automatically start DeskThing when the computer boots." />
+          <InfoComponent
+            description={`Shows more information about certain parts of the server\nAlso adds the DEBUG tab for logs, adb config, etc.`}
+          />
         </div>
         <Button
           className="bg-transparent p-0"

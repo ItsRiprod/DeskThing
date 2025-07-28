@@ -196,7 +196,7 @@ export const createAppReleaseFile = async (force = false): Promise<AppReleaseFil
     const adaptedRelease = await handleReleaseJSONMigration(latestJSON)
 
     if (adaptedRelease.meta_type == 'client')
-      throw new Error(`Received meta type 'app' when expecting Multi or Client`)
+      throw new Error(`Received meta type 'client' when expecting Multi or App`)
 
     if (adaptedRelease.meta_type == 'multi') {
       update('Converting multi-release to release server format', 60)

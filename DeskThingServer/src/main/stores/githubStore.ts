@@ -1,5 +1,11 @@
 import logger from '@server/utils/logger'
-import { CacheableStore, GithubAsset, CacheEntry, GithubRelease } from '@shared/types'
+import {
+  CacheableStore,
+  GithubAsset,
+  CacheEntry,
+  GithubRelease,
+  GithubRepository
+} from '@shared/types'
 import { isCacheValid } from '@server/services/releases/releaseValidation'
 import { GithubStoreClass } from '@shared/stores/githubStore'
 import { handleError } from '@server/utils/errorHandler'
@@ -211,7 +217,7 @@ export class GithubStore implements CacheableStore, GithubStoreClass {
         ;[, owner, repo] = match
       }
 
-      return `https://api.github.com/repos/${owner}/${repo}/releases`
+      return `https://api.github.com/repos/${owner}/${repo}`
     } catch (error) {
       logger.error(`Failed to convert repository URL to API endpoint: ${repoUrl}`, {
         function: 'convertToApiUrl',
@@ -229,7 +235,7 @@ export class GithubStore implements CacheableStore, GithubStoreClass {
    */
   public getAllReleases = async (repoUrl: string, force?: boolean): Promise<GithubRelease[]> => {
     try {
-      const apiUrl = this.convertToApiUrl(repoUrl)
+      const apiUrl = this.convertToApiUrl(repoUrl) + '/releases'
       logger.debug(`Converted url ${repoUrl} to ${apiUrl}`)
 
       // Checking the cache first
@@ -288,6 +294,31 @@ export class GithubStore implements CacheableStore, GithubStoreClass {
     } catch (error) {
       logger.error(`Error fetching releases ${repoUrl}. ${handleError(error)}!`, {
         function: 'getAllReleases',
+        source: 'githubStore'
+      })
+      throw error
+    }
+  }
+
+  public getRepository = async (repoUrl: string): Promise<GithubRepository | undefined> => {
+    try {
+      const apiUrl = this.convertToApiUrl(repoUrl)
+
+      const response = await this.queueRequest(apiUrl)
+
+      if (!response.ok) {
+        logger.error(`Failed to fetch repository ${repoUrl}: ${response.statusText}`, {
+          function: 'getRepository',
+          source: 'githubStore'
+        })
+        return undefined
+      }
+
+      const data = (await response.json()) as GithubRepository
+      return data
+    } catch (error) {
+      logger.error(`Error fetching repository ${repoUrl}. ${handleError(error)}!`, {
+        function: 'getRepository',
         source: 'githubStore'
       })
       throw error

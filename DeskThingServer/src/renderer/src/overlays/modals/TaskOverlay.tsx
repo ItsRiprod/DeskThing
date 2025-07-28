@@ -225,9 +225,7 @@ const TaskOverlay: React.FC = () => {
         <div
           className={`${expanded ? 'max-h-screen' : 'max-h-0'} transition-[max-height] overflow-hidden`}
         >
-          <ErrorBoundary
-            fallback={<div onClick={() => window.location.reload()}>Error - Click to refresh</div>}
-          >
+          <ErrorBoundary fallback={(reset) => <div onClick={reset}>Error - Click to refresh</div>}>
             <div>{memoizedTaskBase}</div>
           </ErrorBoundary>
           <div className="flex p-2 gap-3 text-sm justify-between w-full">

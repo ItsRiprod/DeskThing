@@ -72,6 +72,16 @@ export const releaseHandler = async (
         return []
       }
       break
+    case IPC_RELEASE_TYPES.GET_REPO_ASSETS:
+      try {
+        const result = await releaseStore.getAllRepositories()
+        logger.debug(`Got ${result.length} repositories!`)
+        return result
+      } catch (error) {
+        logger.error(`Unable to get repositories ${handleError(error)}`)
+        return []
+      }
+      break
     case IPC_RELEASE_TYPES.GET_APPS:
       try {
         return await releaseStore.getAppReleases()

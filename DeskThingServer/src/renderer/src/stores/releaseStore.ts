@@ -10,6 +10,7 @@ import {
   AppLatestServer,
   ClientDownloadReturnData,
   ClientLatestServer,
+  GithubRepository,
   IpcRendererCallback
 } from '@shared/types'
 
@@ -17,12 +18,14 @@ interface releaseStoreState {
   appReleases: AppLatestServer[]
   clientReleases: ClientLatestServer[]
   initialized: boolean
+  extraRepositories: GithubRepository[] | null
 
   initialize: () => Promise<void>
   refreshReleases: (force?: boolean) => Promise<void>
   addRepositoryUrl: (
     repoUrl: string
   ) => Promise<AppLatestServer[] | ClientLatestServer[] | undefined>
+  fetchExtraRepositories: () => Promise<GithubRepository[]>
 
   getApps: () => Promise<AppLatestServer[]>
   getAppReferences: () => Promise<string[]>
@@ -39,6 +42,7 @@ const useReleaseStore = create<releaseStoreState>((set, get) => ({
   appReleases: [],
   clientReleases: [],
   initialized: false,
+  extraRepositories: null,
 
   initialize: async () => {
     if (get().initialized) return
@@ -69,6 +73,12 @@ const useReleaseStore = create<releaseStoreState>((set, get) => ({
     repoUrl: string
   ): Promise<AppLatestServer[] | ClientLatestServer[] | undefined> => {
     const latestServer = await window.electron.releases.addRepositoryUrl(repoUrl)
+    return latestServer
+  },
+
+  fetchExtraRepositories: async (): Promise<GithubRepository[]> => {
+    const latestServer = await window.electron.releases.getAllRepositories()
+    set({ extraRepositories: latestServer })
     return latestServer
   },
 

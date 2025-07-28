@@ -250,7 +250,6 @@ export async function handleReleaseJSONFileMigration0108(
  * @param newRelease - the new release to be migrated
  * @param pastRelease - the past release to use to fill in missing information
  * @param appId - the ID of the app to use to fill in missing information
- *
  */
 export const handleReleaseJSONMigration = async <
   T extends ClientLatestJSONLatest | AppLatestJSONLatest | MultiReleaseJSONLatest

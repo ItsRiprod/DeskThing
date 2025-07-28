@@ -1,5 +1,5 @@
 import { ClientLatestJSONLatest } from '@deskthing/types'
-import { IconDownload, IconExpand, IconLogoGear } from '@renderer/assets/icons'
+import { IconDownload, IconExpand, IconLoading, IconLogoGear } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
 import { DownloadErrorOverlay } from '@renderer/overlays/DownloadErrorOverlay'
 import { ClientReleaseHistoryModal } from '@renderer/overlays/releases/ClientReleaseOverlay'
@@ -46,13 +46,11 @@ export const ClientDownloadCard: FC<ClientDownloadCardProps> = ({
     try {
       if ('meta_type' in release) {
         const result = await downloadClient(release.clientManifest.id)
-
         if (!result.success) {
           setDownloadError(result.message || 'Unknown error during download')
         }
       } else {
         const downloadResult = await loadClientUrl(release.download_url)
-
         if (!downloadResult.success) {
           setDownloadError(downloadResult.message || 'Unknown error during download')
         }
@@ -72,55 +70,62 @@ export const ClientDownloadCard: FC<ClientDownloadCardProps> = ({
 
   return (
     <div>
-      <div className="w-full h-fit relative p-4 border rounded-xl border-zinc-900 bg-zinc-950 transition hover:scale-[1.01]">
-        <div className="flex flex-col items-center">
-          <div className="absolute top-2 right-2">
-            <Button
-              title="View history"
-              onClick={handleShowPastReleases}
-              className="w-full flex items-center justify-center gap-2 hover:bg-zinc-900"
-            >
-              <IconExpand />
-            </Button>
+      <div className="w-full flex-grow relative p-4 border rounded-xl border-zinc-900 bg-zinc-950 transition-all duration-300 group hover:shadow-emerald-500/40 hover:border-emerald-400 hover:bg-gradient-to-br hover:from-zinc-950 hover:to-emerald-950 hover:scale-[1.01] hover:-translate-y-0.5">
+        {loading ? (
+          <div className="w-full h-full flex items-center justify-center">
+            <IconLoading className="w-16 h-16 text-emerald-300 animate-spin-smooth" />
           </div>
-          <button onClick={handleShowPastReleases} className="w-full h-full">
-            <div className="flex justify-center mb-6">
-              <div className="w-24 h-24 rounded-xl bg-zinc-900 flex items-center justify-center">
-                <IconLogoGear className="w-16 h-16 text-zinc-300" />
-              </div>
+        ) : (
+          <div className="flex flex-col items-center">
+            <div className="absolute top-2 right-2">
+              <Button
+                title="View history"
+                onClick={handleShowPastReleases}
+                className="w-full flex items-center justify-center gap-2 hover:bg-zinc-900"
+              >
+                <IconExpand />
+              </Button>
             </div>
-
-            <div className="text-center mb-6">
-              <h3 className="text-2xl mb-2">
-                {latestRelease?.clientManifest?.name ||
-                  latestRelease?.clientManifest?.id ||
-                  'Unknown Client'}
-              </h3>
-              <div className="text-gray-400">
-                <div>Version {latestRelease?.clientManifest?.version || 'N/A'}</div>
-                <div>{clientRelease?.totalDownloads?.toLocaleString() || 0} downloads</div>
-                <div>
-                  Written By {clientRelease?.mainRelease.clientManifest.author || 'Unknown'}
+            <button onClick={handleShowPastReleases} className="w-full h-full">
+              <div className="flex justify-center mb-6">
+                <div className="w-24 h-24 rounded-xl bg-zinc-900 flex items-center justify-center">
+                  <IconLogoGear className="w-16 h-16 text-zinc-300" />
                 </div>
               </div>
+              <div className="text-center mb-6">
+                <h3 className="text-2xl mb-2">
+                  {latestRelease?.clientManifest?.name ||
+                    latestRelease?.clientManifest?.id ||
+                    'Unknown Client'}
+                </h3>
+                <div className="text-gray-400">
+                  <div>Version {latestRelease?.clientManifest?.version || 'N/A'}</div>
+                  <div>{clientRelease?.totalDownloads?.toLocaleString() || 0} downloads</div>
+                  {latestRelease?.clientManifest?.author && (
+                    <div>Written By {latestRelease.clientManifest.author}</div>
+                  )}
+                </div>
+              </div>
+            </button>
+            <div className="w-full space-y-4">
+              <Button
+                title="Download Latest"
+                onClick={() => handleDownload(latestRelease)}
+                className="w-full gap-2 group justify-center hover:bg-zinc-900 transition-all duration-300 group-hover:scale-105 group-hover:shadow-emerald-400 group-hover:bg-gradient-to-br group-hover:from-zinc-950/50 group-hover:to-emerald-950/50"
+                style={{ borderRadius: '0.75rem', borderWidth: 1, borderColor: 'transparent' }}
+                disabled={loading}
+              >
+                <p className="group-hover:text-emerald-400 transition-all duration-300">
+                  Download Latest
+                </p>
+                <IconDownload className="transition-all duration-300 group-hover:text-emerald-400 group-hover:scale-110 group-hover:rotate-12" />
+              </Button>
+              <div className="text-xs text-zinc-400 text-center">
+                {latestRelease?.size ? formatSize(latestRelease.size) : 'N/A'}
+              </div>
             </div>
-          </button>
-
-          <div className="w-full space-y-4">
-            <Button
-              title="Download Latest"
-              onClick={() => handleDownload(latestRelease)}
-              className="w-full gap-2 group justify-center hover:bg-zinc-900"
-              disabled={loading}
-            >
-              <p className="group-hover:hidden">Download Latest</p>
-              <p className="group-hover:block hidden">
-                {latestRelease?.size ? formatSize(latestRelease.size) : 'N/A'}{' '}
-              </p>
-              <IconDownload />
-            </Button>
           </div>
-        </div>
+        )}
       </div>
       {showPastReleases && (
         <ClientReleaseHistoryModal

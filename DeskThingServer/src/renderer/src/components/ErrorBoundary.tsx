@@ -6,7 +6,7 @@ import { IconRefresh } from '@renderer/assets/icons'
 
 interface ErrorBoundaryProps {
   children: ReactNode
-  fallback?: ReactNode
+  fallback?: (reset: () => void) => ReactNode
   className?: string
 }
 
@@ -54,7 +54,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     if (this.state.hasError) {
 
       if (this.props.fallback) {
-        return this.props.fallback
+        return this.props.fallback(this.resetError)
       }
 
       return (
