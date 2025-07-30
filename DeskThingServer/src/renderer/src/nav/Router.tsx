@@ -15,11 +15,11 @@ import ClientConnections from '@renderer/pages/Clients/Connections'
 import OverlayWrapper from '@renderer/overlays/modals/OverlaysWrapper'
 import ServerRoutingListener from '@renderer/listeners/ServerRouteListener'
 import WelcomeWidget from '@renderer/pages/Dashboard/WelcomeWidget'
-import DevApp from '@renderer/pages/Dev/DevApp'
 import ADBSettings from '@renderer/pages/Dev/ADBSettings'
 import ClientTheming from '@renderer/pages/Clients/Theming'
 import ProfilesPage from '@renderer/pages/Clients/profiles'
 import ErrorBoundary from '@renderer/components/ErrorBoundary'
+import DevAppPage from '@renderer/pages/Dev/DevApp/DevAppPage'
 
 const AppRouter = (): JSX.Element => {
 
@@ -55,7 +55,7 @@ const AppRouter = (): JSX.Element => {
               </Route>
               <Route path="/developer" element={<Dev />}>
                 <Route path="logs" element={<Logs />} />
-                <Route path="app" element={<DevApp />} />
+                <Route path="app" element={<DevAppPage />} />
                 <Route path="adb" element={<ADBSettings />} />
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />
