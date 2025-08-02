@@ -24,7 +24,7 @@ const AppsSettings: React.FC = () => {
         ))}
       </div>
       <div className="flex-1 overflow-y-auto">
-        {selectedApp && <AppSettings key={selectedApp.name} app={selectedApp} />}
+        {selectedApp && <AppSettings key={selectedApp.name} app={selectedApp} onClose={() => {}} />}
       </div>
     </div>
   )
