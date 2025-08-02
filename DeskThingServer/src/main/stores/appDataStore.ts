@@ -313,7 +313,7 @@ export class AppDataStore
       })
       delete this.appDataCache[name]
       delete this.functionTimeouts[name]
-    }, 5000)
+    }, 700)
   }
 
   /**
