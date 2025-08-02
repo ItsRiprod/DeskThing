@@ -11,10 +11,12 @@ import useTaskStore from '@renderer/stores/taskStore'
 import TaskOverlay from './TaskOverlay'
 import FeedbackOverlay from './FeedbackOverlay'
 import SetupOverlay from '../setup/SetupOverlay'
-import { useSettingsStore } from '@renderer/stores'
+import { useNotificationStore, useSettingsStore } from '@renderer/stores'
 import LinkRequestOverlay from './LinkRequestOverlay'
 import ProgressPopup from '../ProgressPopup'
 import ViewProgressLogs from './ViewProgressLogs'
+import AddReleaseModal from '../releases/AddReleaseOverlay'
+import AvailableNotificationOverlay from '../AvailableNotificationOverlay'
 
 const overlays = {
   qr: QROverlay,
@@ -24,7 +26,8 @@ const overlays = {
   addProfile: AddProfileOverlay,
   feedback: FeedbackOverlay,
   setup: SetupOverlay,
-  progress: ViewProgressLogs
+  progress: ViewProgressLogs,
+  addrepo: AddReleaseModal
 }
 
 const OverlayWrapper: React.FC<React.PropsWithChildren> = ({
@@ -35,6 +38,7 @@ const OverlayWrapper: React.FC<React.PropsWithChildren> = ({
   const update = useUpdateStore((state) => state.update)
   const currentTask = useTaskStore((state) => state.currentTask)
   const activeRequests = useSettingsStore((state) => state.activeRequests)
+  const notifications = useNotificationStore((state) => state.messages)
 
   useEffect(() => {
     console.log('Current search params:', Object.fromEntries(searchParams))
@@ -50,6 +54,7 @@ const OverlayWrapper: React.FC<React.PropsWithChildren> = ({
     <>
       {activeRequests && activeRequests.length > 0 && <LinkRequestOverlay />}
       {(update.updateAvailable || update.updateDownloaded) && <UpdateOverlay />}
+      {Object.keys(notifications).length > 0 && <AvailableNotificationOverlay />}
       {activeOverlays.map((key) => {
         const OverlayComponent = overlays[key]
         return <OverlayComponent key={key} />

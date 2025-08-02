@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import Sidebar from '@renderer/nav/Sidebar'
 import { useClientStore, usePageStore, useSettingsStore } from '@renderer/stores'
 import Button from '@renderer/components/Button'
@@ -27,6 +27,8 @@ const ClientConnections: React.FC = () => {
   const downloadLatestClient = useClientStore((state) => state.downloadLatestClient)
   useChannelProgress(ProgressChannel.IPC_PLATFORM)
   useChannelProgress(ProgressChannel.IPC_CLIENT)
+
+  const refreshRef = useRef<HTMLButtonElement>(null)
 
   // Visibility States
   const [searchParams, setSearchParams] = useSearchParams()
@@ -208,6 +210,7 @@ const ClientConnections: React.FC = () => {
               className={`border-gray-500 w-full hover:bg-zinc-900 gap-2 ${isRefreshing ? 'cursor-not-allowed opacity-50' : ''}`}
               onClick={handleRefresh}
               disabled={isRefreshing}
+              ref={refreshRef}
             >
               <IconRefresh strokeWidth={1.5} className={isRefreshing ? 'animate-spin' : ''} />
               <p className="md:block hidden text-center flex-grow">

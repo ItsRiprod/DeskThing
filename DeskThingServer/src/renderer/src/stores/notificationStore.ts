@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { LOGGING_LEVELS } from '@deskthing/types'
+import { LOGGING_LEVELS, NotificationMessage } from '@deskthing/types'
 import { IpcRendererCallback, Log } from '@shared/types'
 
 export interface AuthScopes {
@@ -36,12 +36,12 @@ interface NotificationStoreState {
   logs: Log[]
   issues: Task[]
   initialized: boolean
+  messages: Record<string, NotificationMessage>
 
   // Initialization
   initialize: () => Promise<void>
 
   // Logs
-
   readLog: (index?: number) => void
   addLog: (log: Log) => void
 
@@ -55,6 +55,10 @@ interface NotificationStoreState {
   resolveRequest: (requestId: string, formData: Record<string, string>) => Promise<void>
   addRequest: (appName: string, scopes: AuthScopes) => void
   triggerRequestDisplay: (appName: string) => void
+
+  getNotifications: () => Promise<Record<string, NotificationMessage>>
+  addNotification: (notificationMessage: NotificationMessage) => void
+  acknowledgeNotification: (notification: NotificationMessage) => void
 }
 
 // Create Zustand store
@@ -63,16 +67,16 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
   logs: [],
   issues: [],
   initialized: false,
+  messages: {},
 
   // Initialization
   initialize: async (): Promise<void> => {
     if (get().initialized) return
+    set({ initialized: true })
 
     const handleLog: IpcRendererCallback<'log'> = (_event, log) => {
       get().addLog(log)
     }
-
-    window.electron.ipcRenderer.on('log', handleLog)
 
     const handleDisplayUserForm: IpcRendererCallback<'display-user-form'> = async (
       _event,
@@ -80,9 +84,28 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
     ): Promise<void> => {
       get().addRequest(requestId, scope)
     }
+    const handleNotification: IpcRendererCallback<'notification:add'> = async (
+      _event,
+      notificationMessage
+    ): Promise<void> => {
+      set((state) => ({
+        messages: { ...state.messages, [notificationMessage.id]: notificationMessage }
+      }))
+    }
+    const handleNotificationList: IpcRendererCallback<'notification:list'> = async (
+      _event,
+      notifications
+    ): Promise<void> => {
+      set({ messages: notifications })
+    }
+
+    window.electron.ipcRenderer.on('notification:add', handleNotification)
+    window.electron.ipcRenderer.on('notification:list', handleNotificationList)
+    window.electron.ipcRenderer.on('log', handleLog)
     window.electron.ipcRenderer.on('display-user-form', handleDisplayUserForm)
 
-    set({ initialized: true })
+    console.log('Getting notifications')
+    get().getNotifications()
   },
   // Logs
 
@@ -105,7 +128,6 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
       set((state) => ({
         logs: [log, ...state.logs].slice(0, 99)
       }))
-
     }
   },
 
@@ -113,7 +135,6 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
     set((state) => ({
       issues: state.issues.some((t) => t.id === task.id) ? state.issues : [task, ...state.issues]
     }))
-
   },
 
   updateIssue: async (task: Task): Promise<void> => {
@@ -176,6 +197,26 @@ const useNotificationStore = create<NotificationStoreState>((set, get) => ({
     } else {
       console.warn('No request found for app:', appName)
     }
+  },
+
+  // notifications
+
+  getNotifications: async (): Promise<Record<string, NotificationMessage>> => {
+    const notifications = await window.electron.utility.getNotifications()
+    set({ messages: notifications })
+    return notifications
+  },
+  addNotification: (notificationMessage: NotificationMessage): void => {
+    set((state) => ({
+      messages: { ...state.messages, [notificationMessage.id]: notificationMessage }
+    }))
+  },
+  acknowledgeNotification: (notification: NotificationMessage): void => {
+    set((state) => {
+      const { [notification.id]: _, ...remainingMessages } = state.messages
+      return { messages: remainingMessages }
+    })
+    window.electron.utility.acknowledgeNotification(notification)
   }
 }))
 

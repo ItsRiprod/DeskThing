@@ -30,6 +30,7 @@ import { isValidAppDataInterface, isValidAppSettings } from '@server/services/ap
 // Validation
 import { isValidStep, isValidTask } from '@server/services/task'
 import EventEmitter from 'node:events'
+import { storeProvider } from './storeProvider'
 
 export class AppDataStore
   extends EventEmitter<AppStoreEvents>
@@ -178,6 +179,16 @@ export class AppDataStore
       }
     })
 
+    this.appStore.onAppMessage(APP_REQUESTS.MESSAGE, async (data) => {
+      await this.initialize()
+      // assert that the source is correct
+      const notification = { ...data.payload, source: data.source }
+
+      const notificationStore = await storeProvider.getStore('notificationStore')
+
+      notificationStore.addNotification(notification)
+    })
+
     this.appStore.on('purging', async ({ appName }) => {
       await this.initialize()
       await this.purgeAppData(appName)
@@ -287,11 +298,6 @@ export class AppDataStore
 
     // Clear any existing timeout for this app
     if (this.functionTimeouts[name]) {
-      Logger.debug(`Cancelling previous ${name} request and starting a new one`, {
-        source: 'AppDataStore',
-        domain: name,
-        function: 'saveAppToFile'
-      })
       clearTimeout(this.functionTimeouts[name])
     }
 
@@ -307,7 +313,7 @@ export class AppDataStore
       })
       delete this.appDataCache[name]
       delete this.functionTimeouts[name]
-    }, 500)
+    }, 5000)
   }
 
   /**
@@ -462,7 +468,7 @@ export class AppDataStore
     }
 
     const data = await getData(name)
-    if (!data) {
+    if (!data || !data.settings || Object.keys(data.settings).length === 0) {
       Logger.debug(`No settings found for ${name}`, {
         source: 'AppDataStore',
         domain: 'SERVER.' + name.toUpperCase(),
@@ -470,8 +476,13 @@ export class AppDataStore
       })
       return
     }
-    this.appDataCache[name].settings = data?.settings
-    return data?.settings
+
+    // appDataCache might've changed or updated while waiting on getData - assume that settings now has a value
+    this.appDataCache[name].settings = {
+      ...data?.settings,
+      ...(this.appDataCache[name].settings || {})
+    }
+    return this.appDataCache[name].settings
   }
 
   async getTasks(name: string): Promise<Record<string, Task> | undefined> {
@@ -622,7 +633,7 @@ export class AppDataStore
     const updatedTasks = {
       ...taskData,
       ...tasks
-    }
+    } // shallow merge - overwriting any tasks that may be there
 
     this.appDataCache[app].tasks = updatedTasks
 

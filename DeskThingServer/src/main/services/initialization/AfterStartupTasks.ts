@@ -27,5 +27,10 @@ export const afterStartTasks = async (): Promise<void> => {
   const updateStore = await storeProvider.getStore('updateStore')
   await updateStore.checkForUpdates()
 
+  // check for server-notifications
+  debug('Checking for server notifications...')
+  const notificationStore = await storeProvider.getStore('notificationStore')
+  await notificationStore.checkForNotifications()
+
   log('Finished running post-run tasks')
 }

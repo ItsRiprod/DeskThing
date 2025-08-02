@@ -51,13 +51,13 @@ import { unlink, writeFile } from 'node:fs/promises'
 /**
  * Handles the migration of any old file to the current file
  */
-export async function handleReleaseJSONFileMigration(
+export async function assertReleaseFileMigration(
   releaseFile: AppReleaseFile
 ): Promise<AppReleaseFile01111>
-export async function handleReleaseJSONFileMigration(
+export async function assertReleaseFileMigration(
   releaseFile: ClientReleaseFile
 ): Promise<ClientReleaseFile01111>
-export async function handleReleaseJSONFileMigration(
+export async function assertReleaseFileMigration(
   releaseFile: AppReleaseFile | ClientReleaseFile
 ): Promise<AppReleaseFile01111 | ClientReleaseFile01111> {
   // Migrating from older release files is not supported.
@@ -69,18 +69,18 @@ export async function handleReleaseJSONFileMigration(
   if (releaseFile.version == '0.11.8') {
     // Type narrowing based on the 'type' property
     if (releaseFile.type === 'app') {
-      return handleReleaseJSONFileMigration0118(releaseFile)
+      return assertReleaseFileMigration0118(releaseFile)
     } else {
-      return handleReleaseJSONFileMigration0118(releaseFile)
+      return assertReleaseFileMigration0118(releaseFile)
     }
   }
 
   if (releaseFile.version == '0.10.0') {
     // Type narrowing based on the 'references' existence
     if ('references' in releaseFile) {
-      return handleReleaseJSONFileMigration0108(releaseFile)
+      return assertReleaseFileMigration0108(releaseFile)
     } else {
-      return handleReleaseJSONFileMigration0108(releaseFile)
+      return assertReleaseFileMigration0108(releaseFile)
     }
   }
 
@@ -89,17 +89,17 @@ export async function handleReleaseJSONFileMigration(
 }
 
 /**
- * Handles the migration of any old file to the current file
+ * Handles the migration of old v0.11.8 release file versions to the 0.11.11 format
  * @param releaseFile - The release file to migrate
  * @returns The migrated release file
  */
-export async function handleReleaseJSONFileMigration0118(
+export async function assertReleaseFileMigration0118(
   releaseFile: AppReleaseFile0118
 ): Promise<AppReleaseFile01111>
-export async function handleReleaseJSONFileMigration0118(
+export async function assertReleaseFileMigration0118(
   releaseFile: ClientReleaseFile0118
 ): Promise<ClientReleaseFile01111>
-export async function handleReleaseJSONFileMigration0118(
+export async function assertReleaseFileMigration0118(
   releaseFile: AppReleaseFile0118 | ClientReleaseFile0118
 ): Promise<AppReleaseFile01111 | ClientReleaseFile01111> {
   // version is outdated (oops)
@@ -128,13 +128,17 @@ export async function handleReleaseJSONFileMigration0118(
   }
 }
 
-export async function handleReleaseJSONFileMigration0108(
+/**
+ * Handles the migration of any old release file to the 01111 file format
+ * @param releaseFile 
+ */
+export async function assertReleaseFileMigration0108(
   releaseFile: ClientReleaseFile0108
 ): Promise<ClientReleaseFile01111>
-export async function handleReleaseJSONFileMigration0108(
+export async function assertReleaseFileMigration0108(
   releaseFile: AppReleaseFile0108
 ): Promise<AppReleaseFile01111>
-export async function handleReleaseJSONFileMigration0108(
+export async function assertReleaseFileMigration0108(
   releaseFile: AppReleaseFile0108 | ClientReleaseFile0108
 ): Promise<AppReleaseFile01111 | ClientReleaseFile01111> {
   // version is outdated (oops)

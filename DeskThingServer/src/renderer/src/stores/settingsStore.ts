@@ -16,6 +16,10 @@ interface SettingsStoreState {
   addRequest: (request: LinkRequest) => void
   resolveRequest: (request: LinkRequest, ignore?: boolean) => void
   clearRequests: () => void
+
+  getFlag: (flagId: string) => Promise<boolean | undefined>
+  setFlag: (flagId: string, flagState: boolean) => Promise<void>
+  toggleFlag: (flagId: string) => Promise<boolean>
 }
 
 const useSettingsStore = create<SettingsStoreState>((set, get) => ({
@@ -39,7 +43,8 @@ const useSettingsStore = create<SettingsStoreState>((set, get) => ({
     adb_blacklist: [],
     flag_firstClose: false,
     flag_hasOpened: false,
-    flag_collectStats: false
+    flag_collectStats: false,
+    flag_misc: {}
   },
   initialize: async () => {
     if (get().initialized) return
@@ -121,6 +126,46 @@ const useSettingsStore = create<SettingsStoreState>((set, get) => ({
 
   setSettings: async (settings: Settings): Promise<void> => {
     set({ settings })
+  },
+
+  getFlag: async (flagId: string): Promise<boolean | undefined> => {
+    // Optimistically get from local state first, fallback to server
+    const localFlag = get().settings.flag_misc?.[flagId]
+    if (typeof localFlag === 'boolean') return localFlag
+    return window.electron.utility.flags.getFlag(flagId)
+  },
+
+  setFlag: async (flagId: string, flagState: boolean): Promise<void> => {
+    // Optimistically update local state
+    set((state) => ({
+      settings: {
+        ...state.settings,
+        flag_misc: {
+          ...state.settings.flag_misc,
+          [flagId]: flagState
+        }
+      }
+    }))
+    // Send to server
+    await window.electron.utility.flags.setFlag(flagId, flagState)
+  },
+
+  toggleFlag: async (flagId: string): Promise<boolean> => {
+    const currentFlag = get().settings.flag_misc?.[flagId] ?? false
+    const newFlag = !currentFlag
+    // Optimistically update local state
+    set((state) => ({
+      settings: {
+        ...state.settings,
+        flag_misc: {
+          ...state.settings.flag_misc,
+          [flagId]: newFlag
+        }
+      }
+    }))
+    // Send to server
+    await window.electron.utility.flags.setFlag(flagId, newFlag)
+    return newFlag
   }
 }))
 

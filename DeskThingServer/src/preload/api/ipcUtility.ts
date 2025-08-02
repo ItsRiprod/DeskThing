@@ -5,6 +5,7 @@ import {
   ButtonMapping,
   Client,
   Key,
+  NotificationMessage,
   Profile
 } from '@deskthing/types'
 import {
@@ -229,6 +230,44 @@ export const utility = {
       type: IPC_UTILITY_TYPES.SUPPORTERS,
       payload: opts,
       request: 'get'
+    }),
+
+  flags: {
+    setFlag: async (flagId: string, flagState: boolean): Promise<void> =>
+      await sendCommand({
+        kind: IPC_HANDLERS.UTILITY,
+        type: IPC_UTILITY_TYPES.FLAG,
+        request: 'set',
+        payload: { flagId, flagState }
+      }),
+    toggleFlag: async (flagId: string): Promise<boolean> =>
+      await sendCommand({
+        kind: IPC_HANDLERS.UTILITY,
+        type: IPC_UTILITY_TYPES.FLAG,
+        request: 'toggle',
+        payload: flagId
+      }),
+    getFlag: async (flagId: string): Promise<boolean | undefined> =>
+      await sendCommand({
+        kind: IPC_HANDLERS.UTILITY,
+        type: IPC_UTILITY_TYPES.FLAG,
+        request: 'get',
+        payload: flagId
+      })
+  },
+
+  getNotifications: async (): Promise<Record<string, NotificationMessage>> =>
+    await sendCommand({
+      kind: IPC_HANDLERS.UTILITY,
+      type: IPC_UTILITY_TYPES.NOTIFICATION,
+      request: 'get'
+    }),
+  acknowledgeNotification: async (notification: NotificationMessage): Promise<void> =>
+    await sendCommand({
+      kind: IPC_HANDLERS.UTILITY,
+      type: IPC_UTILITY_TYPES.NOTIFICATION,
+      request: 'acknowledge',
+      payload: notification
     })
 }
 

@@ -40,6 +40,7 @@ import { runPostInstall } from '@server/services/apps/appPostinstall'
 import { handleError } from '@server/utils/errorHandler'
 import { ReleaseStoreClass } from '@shared/stores/releaseStore'
 import { satisfies } from 'semver'
+import { NotificationStoreClass } from '@shared/stores/notificationStore'
 
 export class AppStore implements CacheableStore, AppStoreClass {
   // State
@@ -55,11 +56,6 @@ export class AppStore implements CacheableStore, AppStoreClass {
   }
   private functionTimeouts: Record<string, NodeJS.Timeout> = {}
 
-  // Stores
-  private appProcessStore: AppProcessStoreClass
-  private authStore: AuthStoreClass
-  private releaseStore: ReleaseStoreClass
-
   // Initialization
   private _initialized: boolean = false
   public get initialized(): boolean {
@@ -67,14 +63,11 @@ export class AppStore implements CacheableStore, AppStoreClass {
   }
 
   constructor(
-    appProcessStore: AppProcessStoreClass,
-    authStore: AuthStoreClass,
-    releaseStore: ReleaseStoreClass
-  ) {
-    this.appProcessStore = appProcessStore
-    this.authStore = authStore
-    this.releaseStore = releaseStore
-  }
+    private appProcessStore: AppProcessStoreClass,
+    private authStore: AuthStoreClass,
+    private releaseStore: ReleaseStoreClass,
+    private notificationStore: NotificationStoreClass
+  ) {}
 
   async initialize(): Promise<void> {
     if (this._initialized) return
@@ -107,6 +100,16 @@ export class AppStore implements CacheableStore, AppStoreClass {
         this.sendDataToApp(data.app, {
           type: DESKTHING_EVENTS.CALLBACK_DATA,
           payload: data.callbackData
+        })
+      }
+    })
+
+    this.notificationStore.on('acknowledged', async (data) => {
+      if (this.apps[data.notification.source]) { // sends the notification back to the app
+        this.sendDataToApp(data.notification.source, {
+          type: DESKTHING_EVENTS.MESSAGE,
+          request: '',
+          payload: data.notification
         })
       }
     })

@@ -26,6 +26,7 @@ import { ServerTaskStoreClass } from '@shared/stores/serverTaskStore'
 import { FlashStoreClass } from '@shared/stores/flashStore'
 import { ThingifyStoreClass } from '@shared/stores/thingifyStore'
 import { StatsCollector } from './statsCollectionStore'
+import { NotificationStoreClass } from '@shared/stores/notificationStore'
 
 interface Stores {
   appDataStore: AppDataStoreClass
@@ -49,6 +50,7 @@ interface Stores {
   thingifyStore: ThingifyStoreClass
   statsStore: StatsStoreClass
   statsCollector: StatsCollector
+  notificationStore: NotificationStoreClass
 }
 
 export class StoreProvider {
@@ -64,6 +66,7 @@ export class StoreProvider {
   private constructor() {
     const storeImports = {
       appDataStore: () => import('./appDataStore').then((m) => m.AppDataStore),
+      notificationStore: () => import('./notificationStore').then((m) => m.NotificationStore),
       appStore: () => import('./appStore').then((m) => m.AppStore),
       authStore: () => import('./authStore').then((m) => m.AuthStore),
       releaseStore: () => import('./releaseStore').then((m) => m.ReleaseStore),
@@ -83,7 +86,7 @@ export class StoreProvider {
       flashStore: () => import('./flashStore').then((m) => m.FlashStore),
       thingifyStore: () => import('./thingifyStore').then((m) => m.ThingifyStore),
       statsStore: () => import('./statsStore').then((m) => m.StatsStore),
-      statsCollector: () => StatsCollector
+      statsCollector: () => StatsCollector,
     }
 
     this.storeInitializers = {
@@ -92,11 +95,13 @@ export class StoreProvider {
       authStore: async () =>
         new (await storeImports.authStore())(await this.getStore('settingsStore', false)),
       releaseStore: async () => new (await storeImports.releaseStore())(),
+      notificationStore: async () => new (await storeImports.notificationStore())(),
       appStore: async () =>
         new (await storeImports.appStore())(
           await this.getStore('appProcessStore', false),
           await this.getStore('authStore', false),
-          await this.getStore('releaseStore', false)
+          await this.getStore('releaseStore', false),
+          await this.getStore('notificationStore', false),
         ),
       appDataStore: async () =>
         new (await storeImports.appDataStore())(await this.getStore('appStore', false)),

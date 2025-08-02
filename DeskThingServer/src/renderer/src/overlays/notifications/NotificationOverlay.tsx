@@ -10,6 +10,7 @@ import IssuesPage from './IssuesPage'
 import { useSearchParams } from 'react-router-dom'
 import useTaskStore from '@renderer/stores/taskStore'
 import ErrorBoundary from '@renderer/components/ErrorBoundary'
+import NotificationsPage from './NotificationsPage'
 
 const NotificationOverlay: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -28,6 +29,8 @@ const NotificationOverlay: React.FC = () => {
         return <TasksPage />
       case 'issue':
         return <IssuesPage />
+      case 'notification':
+        return <NotificationsPage />
       default:
         return <TasksPage />
     }
@@ -58,13 +61,20 @@ const NotificationOverlay: React.FC = () => {
       <div className="flex h-full">
         <div className="border-r border-gray-500 p-2 bg-zinc-900 flex flex-col gap-2">
           <ErrorBoundary>
-
             <NavComponent
               setPage={setPage}
               page="Task"
               curPage={page}
               value={activeTasks?.length}
               Icon={<IconLayoutgrid />}
+            />
+            <NavComponent
+              setPage={setPage}
+              page="Notification"
+              curPage={page}
+              value={Object.keys(notificationState?.messages).length || 0}
+              Icon={<IconBell />}
+              className={Object.keys(notificationState?.messages).length > 0 ? 'bg-red-600' : ''}
             />
             <NavComponent
               setPage={setPage}

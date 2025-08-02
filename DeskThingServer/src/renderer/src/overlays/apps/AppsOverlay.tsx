@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import Overlay from '../Overlay'
-import { IconArrowUp, IconGear, IconLogs, IconPlay } from '@renderer/assets/icons'
+import { IconArrowUp, IconDetails, IconGear, IconLogs, IconPlay } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
 import { useSearchParams } from 'react-router-dom'
 import AppActions from './AppActions'
@@ -10,21 +10,22 @@ import { App } from '@deskthing/types'
 import { useAppStore } from '@renderer/stores'
 import ErrorBoundary from '@renderer/components/ErrorBoundary'
 import AppUpdate from './AppUpdate'
+import AppTasks from './AppTasks'
 
 export interface AppSettingProps {
   app: App
-  onClose?: () => void
+  onClose: () => void
 }
-
-const validPages = ['actions', 'details', 'settings', 'update']
 
 const settingsPages = [
   { key: 'actions', label: 'Actions', Icon: IconPlay },
   { key: 'details', label: 'Details', Icon: IconLogs },
   { key: 'settings', label: 'Settings', Icon: IconGear },
+  { key: 'tasks', label: 'Tasks', Icon: IconDetails },
   { key: 'update', label: 'Update', Icon: IconArrowUp }
 ]
 
+const validPages = settingsPages.map((page) => page.key)
 /**
  * ClientSettingsOverlay component
  *
@@ -101,6 +102,11 @@ const AppsOverlay: React.FC = () => {
             {currentPage == 'update' && (
               <ErrorBoundary>
                 <AppUpdate app={app} onClose={onClose} />
+              </ErrorBoundary>
+            )}
+            {currentPage == 'tasks' && (
+              <ErrorBoundary>
+                <AppTasks app={app} onClose={onClose} />
               </ErrorBoundary>
             )}
           </div>

@@ -1,6 +1,5 @@
 import { TaskStoreClass } from '@shared/stores/taskStore'
 import { ClientStoreClass } from '@shared/stores/clientStore'
-import { ServerTasks } from '../static/defaultTasks'
 import { PlatformStoreClass, PlatformStoreEvent } from '@shared/stores/platformStore'
 import { ServerTaskStoreClass } from '@shared/stores/serverTaskStore'
 
@@ -37,7 +36,7 @@ export class ServerTaskStore implements ServerTaskStoreClass {
   }
 
   private async initializeServerTasks(): Promise<void> {
-    await this.taskStore.addTasks('server', ServerTasks)
+    // await this.taskStore.addTasks('server', ServerTasks) // this is handled by the task store automatically
   }
 
   private async initializeListeners(): Promise<void> {

@@ -46,4 +46,8 @@ export interface SettingsStoreClass extends StoreInterface, CacheableStore {
   saveSettings(settings: Settings): Promise<void>
 
   getSettings(): Promise<Settings | undefined>
+
+  setFlag(flagId: string, flagState: boolean): Promise<void>
+  toggleFlag(flagId: string): Promise<boolean> // new state of flag
+  getFlag(flagId: string): Promise<boolean | undefined>
 }

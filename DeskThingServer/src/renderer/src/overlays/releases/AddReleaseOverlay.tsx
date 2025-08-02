@@ -1,98 +1,116 @@
-import { IconArrowRight, IconLink, IconLoading } from '@renderer/assets/icons'
+import { IconLoading } from '@renderer/assets/icons'
 import Button from '@renderer/components/Button'
 import Overlay from '@renderer/overlays/Overlay'
 import { useReleaseStore } from '@renderer/stores'
-import { GithubRepository } from '@shared/types'
-import { FC, useEffect, useState } from 'react'
+import { FC, useEffect, useMemo, useState } from 'react'
+import { RepoCard } from './RepoCard'
+import { useSearchParams } from 'react-router-dom'
 
-// RepoCard: displays a single repo, styled and clickable
-interface RepoCardProps {
-  repo: GithubRepository
-  onAdd: (repoUrl: string) => Promise<void>
-  isLoading?: boolean
-  isAdded?: boolean
+/**
+ * Normalizes GitHub repository URLs to a consistent format for comparison
+ * Handles various GitHub URL formats and extracts owner/repo
+ */
+const normalizeGitHubUrl = (url: string): string => {
+  if (!url) return ''
+
+  try {
+    // Remove trailing slashes and convert to lowercase
+    const cleanUrl = url.trim().toLowerCase().replace(/\/+$/, '')
+
+    // Match different GitHub URL patterns
+    const patterns = [
+      // API URLs: https://api.github.com/repos/owner/repo
+      /^https?:\/\/api\.github\.com\/repos\/([^/]+)\/([^/]+)/,
+      // Regular GitHub URLs: https://github.com/owner/repo
+      /^https?:\/\/github\.com\/([^/]+)\/([^/]+)/,
+      // SSH URLs: git@github.com:owner/repo.git
+      /^git@github\.com:([^/]+)\/([^/]+)(?:\.git)?/,
+      // Git protocol: git://github.com/owner/repo.git
+      /^git:\/\/github\.com\/([^/]+)\/([^/]+)(?:\.git)?/
+    ]
+
+    for (const pattern of patterns) {
+      const match = cleanUrl.match(pattern)
+      if (match) {
+        const [, owner, repo] = match
+        // Return normalized format: owner/repo
+        return `${owner}/${repo}`.toLowerCase()
+      }
+    }
+
+    // If no pattern matches, return the original URL for fallback comparison
+    return cleanUrl
+  } catch (error) {
+    console.warn('Failed to normalize GitHub URL:', url, error)
+    return url.toLowerCase()
+  }
 }
 
-export const RepoCard: FC<RepoCardProps> = ({ repo, onAdd, isLoading, isAdded }) => {
-  const handleClick = async (): Promise<void> => {
-    if (!isLoading && !isAdded) {
-      await onAdd(repo.url)
+/**
+ * Creates a map of normalized repository identifiers to app/client IDs
+ */
+const createRepoMap = (
+  releases: Array<{
+    mainRelease: {
+      repository: string
+      appManifest?: { id: string }
+      clientManifest?: { id: string }
+    }
+  }>
+): Map<string, string> => {
+  const repoMap = new Map<string, string>()
+
+  for (const release of releases) {
+    const normalizedRepo = normalizeGitHubUrl(release.mainRelease.repository)
+    const id = release.mainRelease.appManifest?.id || release.mainRelease.clientManifest?.id
+
+    if (normalizedRepo && id) {
+      repoMap.set(normalizedRepo, id)
     }
   }
 
-  const handleOpenRepoClick = async (e: React.MouseEvent): Promise<void> => {
-    e.stopPropagation()
-    window.open(repo.html_url, '_blank', 'noopener,noreferrer')
+  return repoMap
+}
+
+/**
+ * Checks if a repository is already installed by comparing normalized URLs
+ */
+const isRepoInstalled = (
+  repoUrl: string,
+  installedRepos: Map<string, string>
+): { isInstalled: boolean; installedId?: string } => {
+  const normalizedUrl = normalizeGitHubUrl(repoUrl)
+
+  if (installedRepos.has(normalizedUrl)) {
+    return {
+      isInstalled: true,
+      installedId: installedRepos.get(normalizedUrl)
+    }
   }
 
-  return (
-    <div
-      className={`flex flex-row items-center gap-4 p-4 border rounded-lg transition-all duration-300 bg-zinc-950
-        ${isAdded ? 'border-emerald-500 shadow-emerald-500/40' : 'cursor-pointer border-zinc-900 hover:border-emerald-400 hover:shadow-emerald-500/20'}
-        ${isLoading ? 'opacity-60 pointer-events-none' : ''}
-      `}
-      onClick={handleClick}
-      title={isAdded ? 'Already Added' : 'Add Repository'}
-      style={{ minWidth: 0 }}
-    >
-      <button
-        title="Open Repository"
-        className="flex-shrink-0 relative w-14 h-14 rounded-lg bg-zinc-900 flex items-center justify-center"
-        onClick={handleOpenRepoClick}
-      >
-        <img
-          src={repo.owner.avatar_url}
-          alt={repo.full_name}
-          className="w-10 h-10 rounded-full object-cover"
-          onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')}
-        />
-        <div className="flex items-center justify-center transition-opacity rounded-full opacity-0 hover:opacity-100 absolute bg-gray-900/75 w-full h-full">
-          <IconLink />
-        </div>
-      </button>
-
-      <div className="flex flex-col flex-1 min-w-0">
-        <div className="font-semibold text-base text-white truncate">{repo.full_name}</div>
-        <div className="text-xs text-zinc-400 truncate">{repo.description || 'No description'}</div>
-        <div className="flex gap-2 mt-1 text-xs text-zinc-500">
-          <span>⭐ {repo.stargazers_count}</span>
-        </div>
-      </div>
-      <Button
-        title={isAdded ? 'Added' : 'Add'}
-        className={`ml-4 px-3 py-1 flex items-center gap-2 transition-all duration-300
-          ${isAdded ? 'bg-emerald-900 text-emerald-300' : 'hover:bg-zinc-800'}
-          rounded font-semibold`}
-        disabled={isAdded || isLoading}
-      >
-        {isLoading ? <IconLoading className="w-5 h-5 animate-spin-smooth" /> : <IconArrowRight />}
-        {isAdded ? 'Added' : 'Add'}
-      </Button>
-    </div>
-  )
+  return { isInstalled: false }
 }
 
-// AddReleaseModal: lists repos, allows selection
-interface AddReleaseProps {
-  onClose: () => void
-}
-
-const AddReleaseModal: FC<AddReleaseProps> = ({ onClose }) => {
+const AddReleaseModal: FC = () => {
   const [loading, setLoading] = useState(false)
   const [feedback, setFeedback] = useState<{ message: string; success: boolean } | undefined>()
-  const [localAddedRepos, setAddedRepoUrls] = useState<string[]>([])
+  const [localAddedRepos, setAddedRepoUrls] = useState<Set<string>>(new Set())
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const extraRepositories = useReleaseStore((state) => state.extraRepositories)
   const fetchExtraRepositories = useReleaseStore((state) => state.fetchExtraRepositories)
   const addRepo = useReleaseStore((state) => state.addRepositoryUrl)
+  const appReleases = useReleaseStore((state) => state.appReleases)
+  const clientReleases = useReleaseStore((state) => state.clientReleases)
 
-  const appIds = useReleaseStore((state) => state.appReleases).map(
-    (app) => app.mainRelease.repository
-  )
-  const clientIds = useReleaseStore((state) => state.clientReleases).map(
-    (client) => client.mainRelease.repository
-  )
-  const addedRepoUrls: string[] = [...appIds, ...clientIds, ...localAddedRepos]
+  // Create normalized repository maps
+  const installedRepos = useMemo(() => {
+    const appRepoMap = createRepoMap(appReleases)
+    const clientRepoMap = createRepoMap(clientReleases)
+
+    // Combine both maps
+    return new Map([...appRepoMap, ...clientRepoMap])
+  }, [appReleases, clientReleases])
 
   // Fetch repos on mount
   useEffect(() => {
@@ -109,7 +127,7 @@ const AddReleaseModal: FC<AddReleaseProps> = ({ onClose }) => {
     try {
       const release = await addRepo(repoUrl)
       if (release) {
-        setAddedRepoUrls((prev) => [...prev, repoUrl])
+        setAddedRepoUrls((prev) => new Set(prev).add(normalizeGitHubUrl(repoUrl)))
         setFeedback({ message: `Added ${repoUrl} successfully`, success: true })
       } else {
         setFeedback({
@@ -124,6 +142,12 @@ const AddReleaseModal: FC<AddReleaseProps> = ({ onClose }) => {
       })
     }
     setLoading(false)
+  }
+
+  const onClose = (): void => {
+    console.log('Closing')
+    searchParams.delete('addrepo')
+    setSearchParams(searchParams)
   }
 
   return (
@@ -145,15 +169,21 @@ const AddReleaseModal: FC<AddReleaseProps> = ({ onClose }) => {
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-            {extraRepositories.map((repo) => (
-              <RepoCard
-                key={repo.id}
-                repo={repo}
-                onAdd={handleAddRepo}
-                isLoading={loading}
-                isAdded={addedRepoUrls.includes(repo.url)}
-              />
-            ))}
+            {extraRepositories.map((repo) => {
+              const { isInstalled, installedId } = isRepoInstalled(repo.url, installedRepos)
+              const isLocallyAdded = localAddedRepos.has(normalizeGitHubUrl(repo.url))
+
+              return (
+                <RepoCard
+                  key={repo.id}
+                  repo={repo}
+                  onAdd={handleAddRepo}
+                  isLoading={loading}
+                  isAdded={isInstalled || isLocallyAdded}
+                  id={installedId}
+                />
+              )
+            })}
           </div>
         )}
       </div>

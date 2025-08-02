@@ -3,7 +3,7 @@ import { IconDownload, IconExpand, IconLoading, IconLogoGear } from '@renderer/a
 import Button from '@renderer/components/Button'
 import { DownloadErrorOverlay } from '@renderer/overlays/DownloadErrorOverlay'
 import { ClientReleaseHistoryModal } from '@renderer/overlays/releases/ClientReleaseOverlay'
-import { useClientStore, useReleaseStore } from '@renderer/stores'
+import { useClientStore, useReleaseStore, useSettingsStore } from '@renderer/stores'
 import { ClientLatestServer, PastReleaseInfo } from '@shared/types'
 import { FC, useState } from 'react'
 
@@ -20,6 +20,7 @@ export const ClientDownloadCard: FC<ClientDownloadCardProps> = ({
 }) => {
   const [showPastReleases, setShowPastReleases] = useState<boolean>(false)
   const [downloadError, setDownloadError] = useState<string | null>(null)
+  const isNerd = useSettingsStore((state) => state.settings.flag_nerd)
 
   const downloadClient = useReleaseStore((releaseStore) => releaseStore.downloadClient)
   const loadClientUrl = useClientStore((clientStore) => clientStore.loadClientUrl)
@@ -120,9 +121,11 @@ export const ClientDownloadCard: FC<ClientDownloadCardProps> = ({
                 </p>
                 <IconDownload className="transition-all duration-300 group-hover:text-emerald-400 group-hover:scale-110 group-hover:rotate-12" />
               </Button>
-              <div className="text-xs text-zinc-400 text-center">
-                {latestRelease?.size ? formatSize(latestRelease.size) : 'N/A'}
-              </div>
+              {isNerd && (
+                <div className="text-xs text-zinc-400 text-center">
+                  {latestRelease?.size ? formatSize(latestRelease.size) : 'N/A'}
+                </div>
+              )}
             </div>
           </div>
         )}

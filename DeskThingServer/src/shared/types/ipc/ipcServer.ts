@@ -9,7 +9,8 @@ import {
   Client,
   ClientManifest,
   Task,
-  Key
+  Key,
+  NotificationMessage
 } from '@deskthing/types'
 import { BrowserWindow, IpcRendererEvent } from 'electron'
 import {
@@ -162,6 +163,14 @@ export type ServerIPCData = {
         requestId: string
         scope: AuthScopes
       }
+    }
+  | {
+      type: 'notification:add'
+      payload: NotificationMessage
+    }
+  | {
+      type: 'notification:list'
+      payload: Record<string, NotificationMessage>
     }
   | {
       type: 'progress:event'

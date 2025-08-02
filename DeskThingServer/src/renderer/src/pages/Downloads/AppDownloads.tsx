@@ -58,6 +58,18 @@ const AppDownloads: React.FC = () => {
     setPage('Downloads/Client')
   }
 
+  const fetchApps = async (): Promise<void> => {
+    setUiState((prev) => ({
+      ...prev,
+      refreshingApps: true
+    }))
+    await getApps()
+    setUiState((prev) => ({
+      ...prev,
+      refreshingApps: false
+    }))
+  }
+
   const handleRefreshData = async (): Promise<void> => {
     if (!uiState.refreshingApps) {
       setUiState((prev) => ({
@@ -137,6 +149,16 @@ const AppDownloads: React.FC = () => {
                   Check the logs for a potential reason. You might have hit the Github API limit.
                   Try again later or add a repo in settings!
                 </p>
+                <Button
+                  onClick={fetchApps}
+                  className="mt-4 px-4 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-emerald-400 text-white font-semibold flex items-center gap-2 shadow transition-all duration-200"
+                >
+                  <IconRefresh
+                    strokeWidth={1.5}
+                    className={`${uiState.refreshingApps ? 'animate-spin-smooth' : ''}`}
+                  />
+                  <span className="md:block xs:hidden xs:text-center flex-grow">Retry</span>
+                </Button>
               </div>
             )}
           </div>

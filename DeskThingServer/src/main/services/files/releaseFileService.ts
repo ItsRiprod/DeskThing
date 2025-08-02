@@ -7,7 +7,7 @@ import {
 import { readFromFile, writeToFile } from './fileService'
 import { join } from 'node:path'
 import logger from '@server/utils/logger'
-import { handleReleaseJSONFileMigration } from '../releases/migrationUtils'
+import { assertReleaseFileMigration } from '../releases/migrationUtils'
 
 export const saveAppReleaseData = async (appReleaseFile: AppReleaseFile): Promise<void> => {
   try {
@@ -47,7 +47,7 @@ export const readAppReleaseData = async (): Promise<AppReleaseFile01111 | undefi
 
     if (!appReleaseFile) throw new Error('Invalid app release file (does not exist)')
 
-    return handleReleaseJSONFileMigration(appReleaseFile)
+    return assertReleaseFileMigration(appReleaseFile)
   } catch (error) {
     logger.error(`Failed to read app release files`, {
       error: error as Error,
@@ -66,7 +66,7 @@ export const readClientReleaseData = async (): Promise<ClientReleaseFile01111 | 
 
     if (!clientReleaseFile) throw new Error('Invalid client release file (does not exist)')
 
-    return handleReleaseJSONFileMigration(clientReleaseFile)
+    return assertReleaseFileMigration(clientReleaseFile)
   } catch (error) {
     logger.error(`Failed to read client release files`, {
       error: error as Error,

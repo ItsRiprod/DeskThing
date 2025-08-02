@@ -6,13 +6,14 @@ import { AppReleaseHistoryModal } from '@renderer/overlays/releases/AppReleaseOv
 import { useAppStore, useReleaseStore } from '@renderer/stores'
 import { AppLatestServer, PastReleaseInfo } from '@shared/types'
 import { FC, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 
 type AppReleaseCardProps = {
   appReleaseServer: AppLatestServer
 }
 
 export const AppReleaseCard: FC<AppReleaseCardProps> = ({ appReleaseServer }) => {
-  const [showPastReleases, setShowPastReleases] = useState<boolean>(false)
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const downloadApp = useReleaseStore((releaseStore) => releaseStore.downloadApp)
   const addStagedManifest = useAppStore((appStore) => appStore.setStagedManifest)
@@ -48,7 +49,13 @@ export const AppReleaseCard: FC<AppReleaseCardProps> = ({ appReleaseServer }) =>
   }
 
   const handleShowPastReleases = (): void => {
-    setShowPastReleases(!showPastReleases)
+    const currentId = searchParams.get('download_page')
+    if (currentId === latestRelease.appManifest.id) {
+      searchParams.delete('download_page')
+    } else {
+      searchParams.set('download_page', latestRelease.appManifest.id)
+    }
+    setSearchParams(searchParams)
   }
 
   const latestRelease = appReleaseServer.mainRelease
@@ -117,9 +124,8 @@ export const AppReleaseCard: FC<AppReleaseCardProps> = ({ appReleaseServer }) =>
           </div>
         )}
       </div>
-      {showPastReleases && (
+      {searchParams.get('download_page') === latestRelease.appManifest.id && (
         <AppReleaseHistoryModal
-          onClose={handleShowPastReleases}
           onDownload={handleDownload}
           onRemove={handleRemove}
           appReleaseServer={appReleaseServer}

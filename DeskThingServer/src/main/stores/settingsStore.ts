@@ -184,4 +184,23 @@ export class SettingsStore implements CacheableStore, SettingsStoreClass {
     settings[key] = value
     await this.saveSettings(settings)
   }
+
+  public async setFlag(flag: string, value: boolean): Promise<void> {
+    const settings = await this.getSettings()
+    settings.flag_misc = settings.flag_misc || {}
+    settings.flag_misc[flag] = value
+    await this.saveSettings(settings)
+  }
+  public async toggleFlag(flagId: string): Promise<boolean> {
+    const settings = await this.getSettings()
+    settings.flag_misc = settings.flag_misc || {}
+    const currentValue = settings.flag_misc[flagId] || false
+    settings.flag_misc[flagId] = !currentValue
+    await this.saveSettings(settings)
+    return !currentValue
+  }
+  public async getFlag(flagId: string): Promise<boolean> {
+    const settings = await this.getSettings()
+    return settings.flag_misc?.[flagId] || false
+  }
 }

@@ -4,28 +4,33 @@ import Button from '@renderer/components/Button'
 import { IconDownload, IconLogoGear, IconTrash } from '@renderer/assets/icons'
 import { AppLatestJSONLatest } from '@deskthing/types'
 import Overlay from '../Overlay'
+import { useSearchParams } from 'react-router-dom'
 
 interface ReleaseHistoryModalProps {
   appReleaseServer: AppLatestServer
-  onClose: () => void
   onRemove: () => Promise<void>
   onDownload: (release: AppLatestJSONLatest | PastReleaseInfo) => Promise<void>
 }
 
 export const AppReleaseHistoryModal: React.FC<ReleaseHistoryModalProps> = ({
   appReleaseServer,
-  onClose,
   onRemove,
   onDownload
 }) => {
   const [confirmDownload, setConfirmDownload] = useState<
     AppLatestJSONLatest | PastReleaseInfo | null
   >(null)
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const formatSize = (size: number): string => {
     if (size < 1024) return `${size} B`
     if (size < 1024 * 1024) return `${(size / 1024).toFixed(2)} KB`
     return `${(size / (1024 * 1024)).toFixed(2)} MB`
+  }
+
+  const onClose = (): void => {
+    searchParams.delete('download_page')
+    setSearchParams(searchParams)
   }
 
   const handleDownload = async (release: AppLatestJSONLatest | PastReleaseInfo): Promise<void> => {

@@ -62,6 +62,27 @@ export const utilityHandler: {
         return
     }
   },
+  [IPC_UTILITY_TYPES.FLAG]: async (data) => {
+    const settingsStore = await storeProvider.getStore('settingsStore')
+    switch (data.request) {
+      case 'get':
+        return await settingsStore.getFlag(data.payload)
+      case 'set':
+        return await settingsStore.setFlag(data.payload.flagId, data.payload.flagState)
+      case 'toggle':
+        return await settingsStore.toggleFlag(data.payload)
+    }
+  },
+  [IPC_UTILITY_TYPES.NOTIFICATION]: async (data) => {
+    const notificationStore = await storeProvider.getStore('notificationStore')
+
+    switch (data.request) {
+      case 'get':
+        return await notificationStore.getNotificationList()
+      case 'acknowledge':
+        return await notificationStore.acknowledgeNotification(data.payload)
+    }
+  },
   [IPC_UTILITY_TYPES.SUPPORTERS]: async (data) => {
     const supporterStore = await storeProvider.getStore('supporterStore')
     switch (data.request) {

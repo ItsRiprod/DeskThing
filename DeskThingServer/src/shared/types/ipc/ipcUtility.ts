@@ -10,7 +10,8 @@ import {
   // Step,
   // Task,
   Key,
-  ButtonMapping
+  ButtonMapping,
+  NotificationMessage
 } from '@deskthing/types'
 // import { FeedbackReport, SystemInfo } from '../feedback'
 import { Log, Settings } from '../types'
@@ -40,7 +41,9 @@ export enum IPC_UTILITY_TYPES {
   RUN = 'run',
   MAP = 'map',
   SUPPORTERS = 'supporters',
-  OPEN_DIALOG = 'dialog'
+  OPEN_DIALOG = 'dialog',
+  FLAG = 'flag',
+  NOTIFICATION = 'notification'
   // FEEDBACK = 'feedback',
   // TASK = 'task',
   // UPDATE = 'update',
@@ -148,6 +151,30 @@ export type UtilityIPCData = {
   | {
       type: IPC_UTILITY_TYPES.SUPPORTERS
       payload: SupporterFetchOptions
+      request: 'get'
+    }
+  | {
+      type: IPC_UTILITY_TYPES.FLAG
+      request: 'get'
+      payload: string // flagId
+    }
+  | {
+      type: IPC_UTILITY_TYPES.FLAG
+      request: 'toggle'
+      payload: string // flagId
+    }
+  | {
+      type: IPC_UTILITY_TYPES.FLAG
+      request: 'set'
+      payload: { flagId: string; flagState: boolean } // flagId
+    }
+  | {
+      type: IPC_UTILITY_TYPES.NOTIFICATION
+      request: 'acknowledge'
+      payload: NotificationMessage
+    }
+  | {
+      type: IPC_UTILITY_TYPES.NOTIFICATION
       request: 'get'
     }
   | {
@@ -267,6 +294,8 @@ export type UtilityHandlerReturnMap = {
   [IPC_UTILITY_TYPES.RESTART_SERVER]: { set: void }
   [IPC_UTILITY_TYPES.ACTIONS]: { get: Action[] | null; set: void; delete: void }
   [IPC_UTILITY_TYPES.BUTTONS]: { set: void; delete: void }
+  [IPC_UTILITY_TYPES.FLAG]: { set: void; toggle: boolean; get: boolean }
+  [IPC_UTILITY_TYPES.NOTIFICATION]: { acknowledge: void; get: Record<string, NotificationMessage> }
   [IPC_UTILITY_TYPES.KEYS]: { get: Key[] | null; set: void; delete: void }
   [IPC_UTILITY_TYPES.PROFILES]: {
     get: ButtonMapping | null

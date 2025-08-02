@@ -37,6 +37,20 @@ const ClientDownloads: React.FC = () => {
     initialRender = false
   }
 
+  const retrieveClients = async (): Promise<void> => {
+    setUiState((prev) => ({
+      ...prev,
+      refreshingClients: true
+    }))
+    await getClients()
+    await refreshClient()
+    await refresh(false) // dont force
+    setUiState((prev) => ({
+      ...prev,
+      refreshingClients: false
+    }))
+  }
+
   const loadClientZip = async (zip: string): Promise<void> => {
     setLoading(true)
     setClientLoadError(null)
@@ -99,10 +113,23 @@ const ClientDownloads: React.FC = () => {
               <h1 className="font-semibold">Loaded Client:</h1>
               <div className="md:block xs:hidden border p-2 rounded-lg bg-zinc-900 border-zinc-800">
                 <p>{installedClient.name}</p>
-                <p>{installedClient.version}</p>
+                <div className="flex w-full justify-between items-center">
+                  <p>{installedClient.version}</p>
+                  <Button
+                    onClick={retrieveClients}
+                    className="hover:font-semibold hover:bg-zinc-800 !p-0 !m-0 rounded-3xl group"
+                    title="Refresh Client"
+                    disabled={uiState.refreshingClients}
+                  >
+                    <IconRefresh
+                      className={`group-disabled:opacity-50 w-5 h-5 group-hover:stroke-2 ${uiState.refreshingClients ? 'animate-spin-smooth' : ''}`}
+                      strokeWidth={1.5}
+                    />
+                  </Button>
+                </div>
               </div>
               <div className="md:hidden xs:flex hidden flex-col items-center">
-                <p>{installedClient.short_name}</p>
+                <p className="break-words">{installedClient.short_name}</p>
                 <p>{installedClient.version}</p>
               </div>
             </div>
@@ -156,11 +183,14 @@ const ClientDownloads: React.FC = () => {
                 <h1 className="text-2xl font-semibold">Uh oh-</h1>
                 <p>Unable to find or fetch releases</p>
                 <Button
-                  onClick={() => refresh(false)}
-                  className="p-2 bg-zinc-800 hover:bg-zinc-900 gap-2"
+                  onClick={retrieveClients}
+                  className="mt-4 px-4 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-emerald-400 text-white font-semibold flex items-center gap-2 shadow transition-all duration-200"
                 >
-                  <IconRefresh className="stroke-2" />
-                  <p>Attempt to retrieve clients again</p>
+                  <IconRefresh
+                    strokeWidth={1.5}
+                    className={`${uiState.refreshingClients ? 'animate-spin-smooth' : ''}`}
+                  />
+                  <span className="md:block xs:hidden xs:text-center flex-grow">Retry</span>
                 </Button>
                 <p className="text-sm text-gray-500 italic text-center">
                   Check the logs for a potential reason. You might have hit the Github API limit.

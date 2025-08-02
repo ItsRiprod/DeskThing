@@ -31,6 +31,7 @@ export async function initializeStores(): Promise<void> {
     serverTaskStore: await storeProvider.getStore('serverTaskStore', true),
     thingifyStore: await storeProvider.getStore('thingifyStore', false),
     flashStore: await storeProvider.getStore('flashStore', false),
+    notificationStore: await storeProvider.getStore('notificationStore', false),
     statsCollector: await storeProvider.getStore('statsCollector', true)
   }
 
@@ -270,6 +271,19 @@ export async function initializeStores(): Promise<void> {
         request: 'list',
         clients: data
       }
+    })
+  })
+
+  storeList.notificationStore.on('notification', (data) => {
+    uiEventBus.sendIpcData({
+      type: 'notification:add',
+      payload: data
+    })
+  })
+  storeList.notificationStore.on('notificationList', (data) => {
+    uiEventBus.sendIpcData({
+      type: 'notification:list',
+      payload: data
     })
   })
 }

@@ -1,11 +1,87 @@
 /**
  * Main application window implementation
  */
-import { BrowserWindow, shell } from 'electron'
+import { BrowserWindow, shell, Menu, MenuItem } from 'electron'
 import { join } from 'node:path'
 import icon from '../../../resources/icon.png?asset'
 import { handleUrl } from '../system/protocol'
 import { getMainWindow } from './windowManager'
+
+// Add context menu support
+const setupContextMenu = (window: BrowserWindow): void => {
+  window.webContents.on('context-menu', (_event, params) => {
+    const menu = new Menu()
+
+    // Add each spelling suggestion
+    for (const suggestion of params.dictionarySuggestions) {
+      menu.append(
+        new MenuItem({
+          label: suggestion,
+          click: () => window.webContents.replaceMisspelling(suggestion)
+        })
+      )
+    }
+
+    // Allow users to add the misspelled word to the dictionary
+    if (params.misspelledWord) {
+      menu.append(
+        new MenuItem({
+          label: 'Add to dictionary',
+          click: () =>
+            window.webContents.session.addWordToSpellCheckerDictionary(params.misspelledWord)
+        })
+      )
+    }
+
+    // Standard editing commands
+    if (params.isEditable) {
+      if (menu.items.length > 0) {
+        menu.append(new MenuItem({ type: 'separator' }))
+      }
+
+      menu.append(
+        new MenuItem({
+          label: 'Cut',
+          accelerator: 'CmdOrCtrl+X',
+          enabled: params.editFlags.canCut,
+          click: () => window.webContents.cut()
+        })
+      )
+
+      menu.append(
+        new MenuItem({
+          label: 'Copy',
+          accelerator: 'CmdOrCtrl+C',
+          enabled: params.editFlags.canCopy,
+          click: () => window.webContents.copy()
+        })
+      )
+
+      menu.append(
+        new MenuItem({
+          label: 'Paste',
+          accelerator: 'CmdOrCtrl+V',
+          enabled: params.editFlags.canPaste,
+          click: () => window.webContents.paste()
+        })
+      )
+
+      menu.append(
+        new MenuItem({
+          label: 'Select All',
+          accelerator: 'CmdOrCtrl+A',
+          enabled: params.editFlags.canSelectAll,
+          click: () => window.webContents.selectAll()
+        })
+      )
+    }
+
+    // Show the menu
+    if (menu.items.length > 0) {
+      menu.popup({ window })
+    }
+  })
+}
 
 /**
  * Creates and configures the main application window
@@ -73,6 +149,8 @@ export function createMainWindow(): BrowserWindow {
   } else {
     window.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  setupContextMenu(window)
 
   return window
 }

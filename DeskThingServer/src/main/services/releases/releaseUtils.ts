@@ -27,7 +27,7 @@ import {
 import { handleError } from '@server/utils/errorHandler'
 import {
   handleAddingLegacyRepo,
-  handleReleaseJSONFileMigration,
+  assertReleaseFileMigration,
   handleReleaseJSONMigration
 } from './migrationUtils'
 import { determineValidUrl } from './releaseValidation'
@@ -136,7 +136,7 @@ export const createClientReleaseFile = async (force = false): Promise<ClientRele
     const finalClientReleaseFile: ClientReleaseFile01111 = {
       version: '0.11.11',
       type: 'client',
-      repositories: adaptedRelease.repository ? [latestJSON.repository] : [],
+      repositories: adaptedRelease.repository ? [latestJSON.repository] : [clientRepo],
       releases: [latestServer],
       timestamp: Date.now()
     }
@@ -434,17 +434,64 @@ export async function handleRefreshReleaseFile<T extends 'app' | 'client'>(
     // migrate to 0.11.11
 
     if (type == 'app') {
-      const releaseFile = await handleReleaseJSONFileMigration(prevReleaseFile as AppReleaseFile)
+      // Updating the AppReleaseFile
+
+      const releaseFile = await assertReleaseFileMigration(prevReleaseFile as AppReleaseFile)
       update(`Updating ${releaseFile.releases.length} ${type} releases`, 50)
+
+      const incAmnt = 50 / releaseFile.releases.length // this will bring the concluded total to 75 (25 existing + 50 new)
+      let currentProgress = 25
+
       // Handle migrating any old releases to the latest
       const migratedReleases = await Promise.all(
         releaseFile.releases.map(async (release: ClientLatestServer | AppLatestServer) => {
-          update(`Updating ${release.id}`, 70)
+          update(`Updating ${release.id}`) // Dont update progress for the pre-log as all of these will fire at once, regardless of duration of each call due to the async nature of Promise.all
           const res = await updateLatestServer(release, force)
-          update(`Updated ${release.id}`, 80)
+
+          currentProgress += incAmnt // update the progress
+          update(`Updated ${release.id}`, currentProgress) // then send that progress
           return res
         })
       )
+
+      // Now check the DeskThing github for any additional repositories that may have been added
+      const { appsRepo } = await import('@server/static/releaseMetadata')
+
+      const repositories = releaseFile.repositories || []
+
+      try {
+        update(`Fetching the new list of available apps`, 80)
+        const githubStore = await storeProvider.getStore('githubStore')
+        const allReleases = await githubStore.getAllReleases(appsRepo, force)
+
+        const latestJSONAsset = findFirstJsonAsset(allReleases, 'latest') // specifically latest.json in this case
+
+        const latestJSON = await githubStore.fetchJSONAssetContent<
+          AppLatestJSONLatest | ClientLatestJSONLatest | MultiReleaseJSONLatest
+        >(latestJSONAsset)
+
+        update(`Found valid release json`, 80)
+        if (
+          !latestJSON ||
+          !('repositories' in latestJSON) ||
+          !Array.isArray(latestJSON.repositories)
+        ) {
+          throw new Error('Latest.JSON doesnt have any repositories or was not found')
+        }
+
+        // Filter out any repositories that are already in the list
+        const newRepos = latestJSON.repositories.filter((repo) => !repositories.includes(repo))
+
+        if (newRepos.length > 0) {
+          repositories.push(...newRepos)
+        }
+
+        update(`Found ${repositories.length} apps with ${newRepos.length} new repositories`, 95)
+      } catch (error) {
+        logger.warn(`Error fetching releases for ${appsRepo}: ${handleError(error)}`)
+        update(`Failed to find new repos, reverting and continuing anyways`, 95)
+      }
+
       const finalReleaseFile: AppReleaseFile01111 = {
         version: '0.11.11',
         type: 'app',
@@ -455,21 +502,78 @@ export async function handleRefreshReleaseFile<T extends 'app' | 'client'>(
       update('Saving app release file', 100)
       return finalReleaseFile
     } else {
-      const releaseFile = await handleReleaseJSONFileMigration(prevReleaseFile as ClientReleaseFile)
-      update(`Updating ${releaseFile.releases.length} ${type} releases`, 50)
+      // Updating the ClientReleaseFile - this does zero network calls, only asserts that the releaseFile is the latest via potential migration
+      const releaseFile = await assertReleaseFileMigration(prevReleaseFile as ClientReleaseFile)
+      update(`Updating ${releaseFile.releases.length} ${type} releases`, 25)
       // Handle migrating any old releases to the latest
+
+      // calculate the progression over these files
+      const incAmnt = 50 / releaseFile.releases.length // this will bring the concluded total to 75 (25 existing + 50 new)
+      let currentProgress = 25
+
       const migratedReleases = await Promise.all(
         releaseFile.releases.map(async (release: ClientLatestServer | AppLatestServer) => {
-          update(`Updating ${release.id}`, 70)
-          const res = await updateLatestServer(release, force)
-          update(`Updated ${release.id}`, 80)
-          return res
+          try {
+            // Dont update progress for the pre-log as all of these will fire at once, regardless of duration of each call due to the async nature of Promise.all
+            update(`Updating ${release.id}`)
+            // This does an actual network call to update the release from github
+            const res = await updateLatestServer(release, force)
+            currentProgress += incAmnt // update the progress
+            update(`Updated ${release.id}`, currentProgress) // then send that progress
+            return res
+          } catch (error) {
+            logger.warn(
+              `Failed to update ${release.id} because ${handleError(error)}. Reverting back to old version.`,
+              { function: 'handleRefreshReleaseFile' }
+            )
+            update(`Failed to update ${release.id}. Reverting...`, currentProgress) // Still update the progress as a non-critical error
+            return release // fallback by reverting to the previous version
+          }
         })
       )
+
+      // Now check the DeskThing github for any additional repositories that may have been added
+      const { clientRepo } = await import('@server/static/releaseMetadata')
+
+      const repositories = releaseFile.repositories || []
+
+      try {
+        update(`Fetching the new list of available apps`, 80)
+        const githubStore = await storeProvider.getStore('githubStore')
+        const allReleases = await githubStore.getAllReleases(clientRepo, force)
+
+        const latestJSONAsset = findFirstJsonAsset(allReleases, 'latest') // specifically latest.json in this case
+
+        const latestJSON = await githubStore.fetchJSONAssetContent<
+          AppLatestJSONLatest | ClientLatestJSONLatest | MultiReleaseJSONLatest
+        >(latestJSONAsset)
+
+        update(`Found valid release json`, 80)
+        if (
+          !latestJSON ||
+          !('repositories' in latestJSON) ||
+          !Array.isArray(latestJSON.repositories)
+        ) {
+          throw new Error('Latest.JSON doesnt have any repositories or was not found')
+        }
+
+        // Filter out any repositories that are already in the list
+        const newRepos = latestJSON.repositories.filter((repo) => !repositories.includes(repo))
+
+        if (newRepos.length > 0) {
+          repositories.push(...newRepos)
+        }
+
+        update(`Found ${repositories.length} apps with ${newRepos.length} new repositories`, 95)
+      } catch (error) {
+        logger.warn(`Error fetching releases for ${clientRepo}: ${handleError(error)}`)
+        update(`Failed to find new repos, reverting and continuing anyways`, 95)
+      }
+
       const finalReleaseFile: ClientReleaseFile01111 = {
         version: '0.11.11',
         type: 'client',
-        repositories: releaseFile.repositories,
+        repositories: repositories,
         releases: migratedReleases as ClientLatestServer[],
         timestamp: Date.now()
       }
@@ -495,7 +599,7 @@ export async function handleRefreshReleaseFile<T extends 'app' | 'client'>(
 }
 
 /**
- * Updates the release file to the latest version
+ * Updates the release file to the latest version via github api endpoints
  * @param releaseLatest - the release file to update
  * @returns the updated release file
  */
