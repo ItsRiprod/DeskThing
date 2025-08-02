@@ -5,6 +5,7 @@ import { App, APP_REQUESTS } from '@deskthing/types'
 import Logger from '@server/utils/logger'
 import { AuthStoreClass } from '@shared/stores/authStore'
 import { ReleaseStoreClass } from '@shared/stores/releaseStore'
+import { NotificationStoreClass } from '@shared/stores/notificationStore'
 
 vi.mock('electron', () => ({
   app: {
@@ -59,6 +60,7 @@ describe('AppStore', () => {
   let mockAppProcessStore: AppProcessStoreClass
   let mockAuthStore: AuthStoreClass
   let mockReleaseStore: ReleaseStoreClass
+  let mockNotificationStore: NotificationStoreClass
 
   beforeEach(() => {
     mockAppProcessStore = {
@@ -77,7 +79,11 @@ describe('AppStore', () => {
       on: vi.fn()
     } as unknown as ReleaseStoreClass
 
-    appStore = new AppStore(mockAppProcessStore, mockAuthStore, mockReleaseStore)
+    mockNotificationStore = {
+      on: vi.fn()
+    } as unknown as NotificationStoreClass
+
+    appStore = new AppStore(mockAppProcessStore, mockAuthStore, mockReleaseStore, mockNotificationStore)
   })
 
   afterEach(() => {
