@@ -59,7 +59,6 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
 
     if (!data.type) {
       logger.error('Received platform event with undefined type', {
-        domain: 'WebSocket',
         source: 'wsPlatform',
         function: 'handlePlatformEvent'
       })
@@ -134,7 +133,6 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
             }
 
             logger.info(`Client ${data.clientId} connected via WebSocket`, {
-              domain: 'WebSocket',
               source: 'wsPlatform',
               function: 'clientConnected'
             })
@@ -153,7 +151,6 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
               this.emit(event, data)
             } else {
               logger.warn(`Received data for unknown client ${data.client.clientId}`, {
-                domain: 'WebSocket',
                 source: 'wsPlatform',
                 function: 'dataReceived'
               })
@@ -183,7 +180,6 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
           logger.info(
             `Client refresh completed: ${data.active} active, ${data.disconnected} disconnected`,
             {
-              domain: 'WebSocket',
               source: 'wsPlatform',
               function: 'refreshClients'
             }
@@ -211,14 +207,12 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
 
     this.worker?.stdout?.on('data', (data) => {
       logger.debug(`${data.toString().trim()}`, {
-        domain: 'WebSocket',
         source: 'wsPlatform',
         function: 'stdout'
       })
     })
     this.worker?.stderr?.on('data', (data) => {
       logger.error(`${data.toString().trim()}`, {
-        domain: 'WebSocket',
         source: 'wsPlatform',
         function: 'stderr'
       })
@@ -371,7 +365,6 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
 
   getClients(): Client[] {
     logger.debug(`Getting clients. Returning ${this.clients.length} clients`, {
-      domain: 'wsPlatform',
       function: 'getClients'
     })
     return this.clients

@@ -268,6 +268,13 @@ export const utility = {
       type: IPC_UTILITY_TYPES.NOTIFICATION,
       request: 'acknowledge',
       payload: notification
+    }),
+
+  restartWithTerminal: async (): Promise<boolean> =>
+    await sendCommand({
+      kind: IPC_HANDLERS.UTILITY,
+      type: IPC_UTILITY_TYPES.DEVMODE,
+      request: 'open_terminal'
     })
 }
 

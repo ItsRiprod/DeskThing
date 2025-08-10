@@ -9,7 +9,6 @@ import {
   ClientPlatformIDs,
   ClientReleaseMeta,
   GitRepoUrl,
-  LOGGING_LEVELS,
   MultiReleaseJSONLatest,
   ReleaseMETAJson
 } from '@deskthing/types'
@@ -130,7 +129,7 @@ export async function assertReleaseFileMigration0118(
 
 /**
  * Handles the migration of any old release file to the 01111 file format
- * @param releaseFile 
+ * @param releaseFile
  */
 export async function assertReleaseFileMigration0108(
   releaseFile: ClientReleaseFile0108
@@ -728,9 +727,9 @@ export const handleAddingLegacyRepo = async (
 ): Promise<AppLatestServer | ClientLatestServer> => {
   const githubStore = await storeProvider.getStore('githubStore')
 
-  const debug = logger.createLogger(LOGGING_LEVELS.DEBUG, {
-    function: 'handleAddingLegacyRepo',
-    source: 'migrationUtils'
+  const { debug } = logger.createLogger({
+    method: 'handleAddingLegacyRepo',
+    store: 'migrationUtils'
   })
 
   debug('Fetching all releases')
@@ -893,9 +892,9 @@ const reconstructReleaseBasedOnZipAsset = async (
   repoUrl: GitRepoUrl,
   appId?: string
 ): Promise<ClientLatestServer | AppLatestServer> => {
-  const debug = logger.createLogger(LOGGING_LEVELS.DEBUG, {
-    function: 'reconstructReleaseBasedOnZipAsset',
-    source: 'migrationUtils'
+  const { debug } = logger.createLogger({
+    method: 'reconstructReleaseBasedOnZipAsset',
+    store: 'migrationUtils'
   })
 
   debug(
@@ -981,14 +980,15 @@ const reconstructReleaseBasedOnZipAsset = async (
 const fetchAndUnzipFileToGetManifest = async (
   releaseFile: GithubAsset
 ): Promise<AppManifest | ClientManifest> => {
-  const debug = logger.createLogger(LOGGING_LEVELS.DEBUG, {
-    function: 'handleAddingLegacyRepo',
-    source: 'migrationUtils'
+  const { debug, log } = logger.createLogger({
+    method: 'fetchAndUnzipFileToGetManifest',
+    store: 'migrationUtils'
   })
+
   const tempPath = path.join(app.getPath('temp'), `release-${Date.now()}.zip`)
 
   debug(`Downloading file: ${releaseFile.browser_download_url}`)
-  debug(`Saving to: ${tempPath}`)
+  log(`Saving to: ${tempPath}`)
 
   // Download the file
   const response = await fetch(releaseFile.browser_download_url)

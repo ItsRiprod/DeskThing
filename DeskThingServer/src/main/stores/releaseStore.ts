@@ -39,7 +39,7 @@ import {
   handleRefreshReleaseFile
 } from '@server/services/releases/releaseUtils'
 import { storeProvider } from './storeProvider'
-import { ClientManifest, GitRepoUrl, LOGGING_LEVELS } from '@deskthing/types'
+import { ClientManifest, GitRepoUrl } from '@deskthing/types'
 import { fetchRepoSummary } from '@server/services/releases/repoSummary'
 
 /**
@@ -82,19 +82,18 @@ export class ReleaseStore
    */
   private getClientReleaseFile = async (): Promise<ClientReleaseFile01111 | undefined> => {
     if (this.clientReleases) return this.clientReleases
+
+    const { debug, warn } = logger.createLogger({
+      method: 'getClientReleaseFile',
+      store: 'releaseStore'
+    })
+
     try {
       this.clientReleases = await readClientReleaseData()
-      logger.debug(`Received ${this.clientReleases?.releases?.length} client releases from file`, {
-        function: 'getClientReleaseFile',
-        source: 'releaseStore'
-      })
+      debug(`Received ${this.clientReleases?.releases?.length} client releases from file`)
       return this.clientReleases
     } catch (error) {
-      logger.warn(`There was an error reading appReleaseFile ${handleError(error)}`, {
-        error: error as Error,
-        function: 'getAppReleaseFile',
-        source: 'releaseStore'
-      })
+      warn(`There was an error reading appReleaseFile ${handleError(error)}`)
       return
     }
   }
@@ -492,7 +491,7 @@ export class ReleaseStore
 
     const clientReleases = await this.getClientReleaseFile()
 
-    const debug = logger.createLogger(LOGGING_LEVELS.DEBUG, {
+    const { debug } = logger.createLogger({
       function: 'addClientToReleases',
       source: 'releaseStore'
     })
@@ -545,19 +544,15 @@ export class ReleaseStore
   ): Promise<void> => {
     // Ensure we have a client releases structure
     const appReleases = await this.getAppReleaseFile()
+    const { debug, error } = logger.createLogger({
+      method: 'addAppToReleases',
+      store: 'releaseStore'
+    })
 
     if (!appReleases) {
-      logger.error('Unable to find app release file!', {
-        function: 'addAppToReleases',
-        source: 'releaseStore'
-      })
+      error('Unable to find app release file!')
       return
     }
-
-    const debug = logger.createLogger(LOGGING_LEVELS.DEBUG, {
-      function: 'addAppToReleases',
-      source: 'releaseStore'
-    })
 
     // Check if this client already exists (avoid duplicates)
     const existingIndex = appReleases.releases.findIndex(

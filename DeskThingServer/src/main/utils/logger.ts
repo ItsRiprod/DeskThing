@@ -7,7 +7,7 @@ import fs, { existsSync } from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
 import { LOGGING_LEVELS } from '@deskthing/types'
-import { Log, LOG_FILTER, ReplyData, ReplyFn, LoggingOptions } from '@shared/types'
+import { Log, LOG_FILTER, ReplyData, ReplyFn, LoggingOptions, LOG_CONTEXTS } from '@shared/types'
 import { access, mkdir, readFile, rename, writeFile } from 'fs/promises'
 import { SettingsStoreClass } from '@shared/stores/settingsStore'
 
@@ -22,6 +22,7 @@ class Logger {
   private listeners: ((data: Log) => void)[] = []
   private logs: Log[] = []
   private logLevel: LOG_FILTER = LOG_FILTER.INFO
+  private logContext: LOG_CONTEXTS[] = [LOG_CONTEXTS.APP, LOG_CONTEXTS.SERVER, LOG_CONTEXTS.CLIENT]
   private filesSetup = false
   private saveTimeout: NodeJS.Timeout | null = null
 
@@ -39,8 +40,21 @@ class Logger {
       this.logLevel = logLevel || LOG_FILTER.INFO
     }
 
+    const logContext = await settingsStore.getSetting('server_LogContext')
+    if (logContext) {
+      this.logContext = logContext || [LOG_CONTEXTS.APP, LOG_CONTEXTS.SERVER, LOG_CONTEXTS.CLIENT]
+    }
+
     settingsStore.on('server_LogLevel', (loggingLevel) => {
       this.logLevel = loggingLevel || LOG_FILTER.INFO
+    })
+
+    settingsStore.on('server_LogContext', (loggingContext) => {
+      this.logContext = loggingContext || [
+        LOG_CONTEXTS.APP,
+        LOG_CONTEXTS.SERVER,
+        LOG_CONTEXTS.CLIENT
+      ]
     })
   }
 
@@ -152,17 +166,47 @@ class Logger {
    * @returns The debug function
    */
   public createLogger = (
-    level: LOGGING_LEVELS,
     options: LoggingOptions
-  ): ((message: string) => void) => {
-    return (message: string) => this.log(level, message, options)
+  ): {
+    log: (...args: unknown[]) => void
+    debug: (...args: unknown[]) => void
+    warn: (...args: unknown[]) => void
+    error: (...args: unknown[]) => void
+    fatal: (...args: unknown[]) => void
+  } => {
+    const makeLogger =
+      (level: LOGGING_LEVELS) =>
+      (...args: unknown[]) => {
+        const message = args
+          .map((arg) => {
+            if (typeof arg === 'function' || typeof arg === 'symbol') {
+              return '[Unloggable]'
+            }
+            if (typeof arg === 'string') return arg
+            try {
+              return JSON.stringify(arg)
+            } catch {
+              return String(arg)
+            }
+          })
+          .join(' ')
+        this.log(level, message, options)
+      }
+
+    return {
+      log: makeLogger(LOGGING_LEVELS.LOG),
+      debug: makeLogger(LOGGING_LEVELS.DEBUG),
+      warn: makeLogger(LOGGING_LEVELS.WARN),
+      error: makeLogger(LOGGING_LEVELS.ERROR),
+      fatal: makeLogger(LOGGING_LEVELS.FATAL)
+    }
   }
 
   public fatal = async (message: string, options?: LoggingOptions): Promise<void> => {
     this.log(LOGGING_LEVELS.FATAL, message, options)
   }
 
-  private shouldLog(source: string, level: LOG_FILTER | LOGGING_LEVELS): boolean {
+  private shouldLog(context: LOG_CONTEXTS, level: LOG_FILTER | LOGGING_LEVELS): boolean {
     const levels = [
       LOGGING_LEVELS.DEBUG,
       LOG_FILTER.DEBUG,
@@ -176,16 +220,15 @@ class Logger {
       LOG_FILTER.ERROR,
       LOGGING_LEVELS.FATAL,
       LOG_FILTER.FATAL,
-      LOG_FILTER.SILENT,
-      LOG_FILTER.APPSONLY
+      LOG_FILTER.SILENT
     ]
 
-    if (this.logLevel === LOG_FILTER.APPSONLY) {
-      return source != 'server'
+    if (!this.logContext.includes(context)) {
+      return false // if a context is specified that this log is not included in
     }
 
     if (this.logLevel === LOG_FILTER.SILENT) {
-      return false
+      return false // generalized if it is silent
     }
 
     if (levels.indexOf(level) >= levels.indexOf(this.logLevel)) {
@@ -195,12 +238,15 @@ class Logger {
     return false
   }
 
-  private reconstructOptions = (options: LoggingOptions): LoggingOptions => {
+  private reconstructOptions = (
+    options?: LoggingOptions
+  ): LoggingOptions & { context: LOG_CONTEXTS; date: string } => {
     return {
-      ...options,
-      date: options.date || new Date().toISOString(),
-      function: options.function,
-      source: options.source || 'unknown'
+      context: LOG_CONTEXTS.SERVER,
+      date: new Date().toISOString(),
+      store: options?.store || options?.source,
+      method: options?.method || options?.function,
+      ...options
     }
   }
   /**
@@ -210,17 +256,10 @@ class Logger {
    * @param source - The source of the message (default is 'server').
    * @returns A Promise that resolves when the message has been logged.
    */
-  async log(level: LOGGING_LEVELS, message: string, options?: LoggingOptions): Promise<void> {
-    if (!options || !options.domain) {
-      options = {
-        ...options,
-        domain: 'server'
-      }
-    }
-
+  async log(level: LOGGING_LEVELS, message: string, prevOptions?: LoggingOptions): Promise<void> {
     try {
-      options = this.reconstructOptions(options)
-      if (!this.shouldLog(options.domain || 'server', level)) {
+      const options = this.reconstructOptions(prevOptions)
+      if (!this.shouldLog(options.context, level)) {
         return
       }
 
@@ -235,7 +274,6 @@ class Logger {
           options.error = new Error('Abnormal error detected: ', { cause: options.error })
         }
       }
-      options.date = options.date || new Date().toISOString()
 
       const logData: Log = {
         options: options,
@@ -243,15 +281,22 @@ class Logger {
         log: message
       }
 
-      this.logs.push(logData)
       try {
-        await this.notifyListeners(logData)
+        // dont log anything below warn
+        if (
+          ![LOGGING_LEVELS.DEBUG, LOGGING_LEVELS.LOG, LOGGING_LEVELS.MESSAGE].includes(
+            logData.type
+          ) ||
+          logData.options.context != LOG_CONTEXTS.SERVER
+        ) {
+          await this.notifyListeners(logData)
+        }
       } catch (error) {
         console.warn('Failed to notify listeners', error)
       }
 
-      const readableTimestamp = new Date(options.date).toLocaleString()
-      const readableMessage = `${options.domain || 'Unknown:'} ${readableTimestamp} ${level.toUpperCase()} [${options.source || 'server'}${options.function ? '.' + options.function : ''}]: ${message}\n${options.error ? options.error.message + '\n' : ''}`
+      const readableTimestamp = new Date(options.date).toLocaleTimeString()
+      const readableMessage = `${options.context} ${readableTimestamp} ${options.store}${options.method ? `(${options.method})` : ''}: ${message}\n${options.error ? options.error.message + '\n' : ''}`
 
       switch (level) {
         case LOGGING_LEVELS.ERROR:
@@ -296,6 +341,7 @@ class Logger {
    */
   async notifyListeners(data: Log): Promise<void> {
     try {
+      this.logs.push(data)
       await Promise.all(this.listeners.map((listener) => listener(data)))
     } catch (error) {
       console.error('[Logger]: Failed to notify some listeners', error)

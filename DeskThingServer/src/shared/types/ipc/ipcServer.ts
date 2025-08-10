@@ -78,10 +78,6 @@ export type ServerIPCData = {
       payload: Log
     }
   | {
-      type: 'app-types'
-      payload: App[]
-    }
-  | {
       type: 'connections'
       payload: ReplyData
     }

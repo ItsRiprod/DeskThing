@@ -487,6 +487,12 @@ export async function handleRefreshReleaseFile<T extends 'app' | 'client'>(
         }
 
         update(`Found ${repositories.length} apps with ${newRepos.length} new repositories`, 95)
+
+        // Now just as a bonus, see if there are any new app IDs included in the multi release
+        // TODO: Actually do that for the love of *** I'll never be done with having to update my stupid release logic
+        // I'm debating if I should re-couple the multi release wit the individual releases cuz release discovery is *stupid* and I think I would rather *die*
+        // send help
+
       } catch (error) {
         logger.warn(`Error fetching releases for ${appsRepo}: ${handleError(error)}`)
         update(`Failed to find new repos, reverting and continuing anyways`, 95)

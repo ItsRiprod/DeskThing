@@ -6,8 +6,7 @@ import {
   DeviceToDeskthingData,
   DEVICE_DESKTHING,
   DESKTHING_EVENTS,
-  DeskThingToAppCore,
-  LOGGING_LEVELS
+  DeskThingToAppCore
 } from '@deskthing/types'
 import Logger from '@server/utils/logger'
 import { PlatformInterface } from '@shared/interfaces/platformInterface'
@@ -60,11 +59,11 @@ async function handleServerMessage(
   const appStore = await storeProvider.getStore('appStore')
   const mappingStore = await storeProvider.getStore('mappingStore')
 
-  const debug = Logger.createLogger(LOGGING_LEVELS.DEBUG, {
-    function: 'HandleServerMessage',
-    source: 'platformMessage'
+  const { debug } = Logger.createLogger({
+    method: 'HandleServerMessage',
+    store: 'platformMessage'
   })
-  
+
   switch (messageData.type) {
     case DEVICE_DESKTHING.PING:
       await platform.sendData(client.clientId, {
@@ -73,7 +72,7 @@ async function handleServerMessage(
         payload: client.clientId
       })
       break
-      
+
     case DEVICE_DESKTHING.SET:
       debug(`Handling ${messageData.type} from ${client.clientId} request: ${messageData.request}`)
       if (messageData.request === 'update_pref_index' && messageData.payload) {

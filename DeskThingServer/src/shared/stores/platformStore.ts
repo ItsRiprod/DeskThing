@@ -84,5 +84,7 @@ export interface PlatformStoreClass extends StoreInterface, EventEmitter<Platfor
 
   sendPlatformData<T extends PlatformIPC>(data: T): Promise<ExtractPayloadFromIPC<T>>
 
+  sendTimeToClient(clientId?: string): Promise<void>
+
   sendInitialDataToClient(clientId?: string): Promise<void>
 }

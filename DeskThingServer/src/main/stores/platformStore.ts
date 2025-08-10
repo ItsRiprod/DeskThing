@@ -1130,7 +1130,7 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
     }
   }
 
-  private async sendTimeToClient(clientId?: string): Promise<void> {
+  public async sendTimeToClient(clientId?: string): Promise<void> {
     try {
       const now = new Date()
       if (!clientId) {

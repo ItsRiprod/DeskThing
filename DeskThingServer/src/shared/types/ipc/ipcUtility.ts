@@ -43,7 +43,8 @@ export enum IPC_UTILITY_TYPES {
   SUPPORTERS = 'supporters',
   OPEN_DIALOG = 'dialog',
   FLAG = 'flag',
-  NOTIFICATION = 'notification'
+  NOTIFICATION = 'notification',
+  DEVMODE = 'devmode'
   // FEEDBACK = 'feedback',
   // TASK = 'task',
   // UPDATE = 'update',
@@ -181,6 +182,10 @@ export type UtilityIPCData = {
       type: IPC_UTILITY_TYPES.OPEN_DIALOG
       payload: OpenDialogOptions
     }
+  | {
+      type: IPC_UTILITY_TYPES.DEVMODE
+      request: 'open_terminal'
+    }
 )
 // | {
 //     type: IPC_UTILITY_TYPES.FEEDBACK
@@ -307,6 +312,7 @@ export type UtilityHandlerReturnMap = {
   [IPC_UTILITY_TYPES.RUN]: { set: void }
   [IPC_UTILITY_TYPES.SUPPORTERS]: { get: PaginatedResponse<SupporterData> }
   [IPC_UTILITY_TYPES.OPEN_DIALOG]: { get: OpenDialogReturnValue }
+  [IPC_UTILITY_TYPES.DEVMODE]: { open_terminal: boolean }
   // [IPC_UTILITY_TYPES.FEEDBACK]: { set: void; get: SystemInfo }
   // [IPC_UTILITY_TYPES.TASK]: {
   //   get: FullTaskList

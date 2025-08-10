@@ -1,11 +1,12 @@
 import { getLocalIpAddresses } from '@server/utils/address'
-import { Settings, LOG_FILTER } from '@shared/types'
+import { Settings, LOG_FILTER, LOG_CONTEXTS } from '@shared/types'
 import { app } from 'electron'
 
 export const defaultSettings: Settings = {
   version: app.getVersion(),
   // server
   server_LogLevel: LOG_FILTER.INFO,
+  server_LogContext: [LOG_CONTEXTS.APP, LOG_CONTEXTS.CLIENT, LOG_CONTEXTS.SERVER],
   server_autoStart: false,
   server_startMinimized: false,
   server_minimizeApp: true,

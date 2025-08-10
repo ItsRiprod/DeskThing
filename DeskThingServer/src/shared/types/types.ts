@@ -11,6 +11,7 @@ export type Settings = {
 
   // server
   server_LogLevel: LOG_FILTER
+  server_LogContext: LOG_CONTEXTS[]
   server_autoStart: boolean
   /** Whether it should minimize to taskbar OR close on window close */
   server_minimizeApp: boolean
@@ -43,9 +44,24 @@ export interface StatusMessage {
   minimum: number
 }
 
+export enum LOG_CONTEXTS {
+  SERVER = 'server',
+  APP = 'app',
+  CLIENT = 'client'
+}
+
 export type LoggingOptions = {
+
+  context?: LOG_CONTEXTS // require the context now - assumed server unless otherwise specified
+
+  store?: string // optional store
+  method?: string // optional method inside the store
+
+  /** @deprecated */
   domain?: string // server or the name of the app/client
+  /** @deprecated */
   source?: string // the function or class name
+  /** @deprecated */
   function?: string // the method of the class or null if not in class
   error?: Error // the new Error for errors (cast unknowns as Error)
   date?: string // the current date (filled in my logger - not needed)
@@ -65,8 +81,7 @@ export enum LOG_FILTER {
   WARN = LOGGING_LEVELS.WARN,
   ERROR = LOGGING_LEVELS.ERROR,
   FATAL = LOGGING_LEVELS.FATAL,
-  SILENT = 'silent',
-  APPSONLY = 'appsOnly'
+  SILENT = 'silent'
 }
 
 export interface Log {

@@ -11,6 +11,7 @@ interface LogStoreState {
   initialize: () => Promise<void>
   addLog: (log: Log) => void
   addLogsFromFile: (logs: Log[]) => void
+  relaunchWithTerminal: () => Promise<boolean>
 }
 
 const useLogStore = create<LogStoreState>((set, get) => ({
@@ -66,7 +67,13 @@ const useLogStore = create<LogStoreState>((set, get) => ({
     set((state) => ({
       logList: [...state.logList, ...logs].slice(-maxNumLogs)
     }))
+  },
+
+  relaunchWithTerminal: () => {
+    return window.electron.utility.restartWithTerminal()
   }
+
+
 }))
 
 export default useLogStore

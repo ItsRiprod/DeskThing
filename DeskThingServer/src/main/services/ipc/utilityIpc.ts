@@ -96,6 +96,18 @@ export const utilityHandler: {
         return await dialog.showOpenDialog(data.payload)
     }
   },
+  [IPC_UTILITY_TYPES.DEVMODE]: async (data) => {
+    switch (data.request) {
+      case 'open_terminal':
+        try {
+          const { relaunchWithTerminal } = await import('@server/system/terminal')
+          await relaunchWithTerminal()
+          return true
+        } catch {
+          return false
+        }
+    }
+  },
   // [IPC_UTILITY_TYPES.GITHUB]: async (data) => {
   //   const releaseStore = await storeProvider.getStore('releaseStore')
   //   switch (data.request) {

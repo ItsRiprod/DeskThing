@@ -27,6 +27,7 @@ import { FlashStoreClass } from '@shared/stores/flashStore'
 import { ThingifyStoreClass } from '@shared/stores/thingifyStore'
 import { StatsCollector } from './statsCollectionStore'
 import { NotificationStoreClass } from '@shared/stores/notificationStore'
+import { TimeStoreClass } from '@shared/stores/timeStoreClass'
 
 interface Stores {
   appDataStore: AppDataStoreClass
@@ -50,6 +51,7 @@ interface Stores {
   thingifyStore: ThingifyStoreClass
   statsStore: StatsStoreClass
   statsCollector: StatsCollector
+  timeStore: TimeStoreClass
   notificationStore: NotificationStoreClass
 }
 
@@ -86,7 +88,8 @@ export class StoreProvider {
       flashStore: () => import('./flashStore').then((m) => m.FlashStore),
       thingifyStore: () => import('./thingifyStore').then((m) => m.ThingifyStore),
       statsStore: () => import('./statsStore').then((m) => m.StatsStore),
-      statsCollector: () => StatsCollector,
+      timeStore: () => import('./timeStore').then((m) => m.TimeStore),
+      statsCollector: () => StatsCollector
     }
 
     this.storeInitializers = {
@@ -101,7 +104,7 @@ export class StoreProvider {
           await this.getStore('appProcessStore', false),
           await this.getStore('authStore', false),
           await this.getStore('releaseStore', false),
-          await this.getStore('notificationStore', false),
+          await this.getStore('notificationStore', false)
         ),
       appDataStore: async () =>
         new (await storeImports.appDataStore())(await this.getStore('appStore', false)),
@@ -143,6 +146,8 @@ export class StoreProvider {
       thingifyStore: async () => new (await storeImports.thingifyStore())(),
       statsStore: async () =>
         new (await storeImports.statsStore())(await this.getStore('settingsStore', false)),
+      timeStore: async () =>
+        new (await storeImports.timeStore())(await this.getStore('platformStore', false)),
       statsCollector: async () =>
         new (await storeImports.statsCollector())(await this.getStore('statsStore', false))
     }

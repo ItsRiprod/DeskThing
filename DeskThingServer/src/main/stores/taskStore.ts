@@ -207,8 +207,7 @@ export class TaskStore implements CacheableStore, TaskStoreClass {
           default:
             Logger.warn(`Unknown step request from ${source}: ${String(data)}`, {
               source: 'TaskStore',
-              function: 'initializeListeners',
-              domain: 'SERVER.' + source.toUpperCase()
+              function: 'initializeListeners'
             })
             break
         }

@@ -7,20 +7,14 @@ import Settings from '@renderer/components/settings'
 import { useAppStore } from '@renderer/stores'
 
 const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
-  const { getAppSettings, setAppSettings } = useAppStore((state) => state)
+  const existingSettings = useAppStore((state) => state.appSettings[app.name])
+  const getAppSettings = useAppStore((state) => state.getAppSettings)
+  const setAppSettings = useAppStore((state) => state.setAppSettings)
   const [appSettings, setAppData] = useState<AppSettingsType | null>(null)
+  const [changed, setChanges] = useState(false)
   const [loading, setLoading] = useState(false)
   // List of all settings that depend on another setting
   const [disabledSettingsMap, setDisabledSettingsMap] = useState<Record<string, SettingsType[]>>({})
-
-  useEffect(() => {
-    const fetchAppData = async (): Promise<void> => {
-      const data = await getAppSettings(app.name)
-      data && setAppData(data)
-      updateDisabledSettingsMap(data)
-    }
-    fetchAppData()
-  }, [app.name, getAppSettings])
 
   const updateDependantSettings = (
     key: string,
@@ -128,6 +122,7 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
 
   const handleSettingChange = useCallback(
     (key: string, value: string | number | boolean | string[] | boolean[]) => {
+      setChanges(true)
       console.log('Setting changed:', key, value)
       setAppData((prev) =>
         prev
@@ -160,6 +155,7 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
       try {
         const data = await getAppSettings(app.name)
         data && setAppData(data)
+        setChanges(false)
         updateDisabledSettingsMap(data)
       } catch {
         //
@@ -180,7 +176,8 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
     if (!appSettings) return
     setLoading(true)
     try {
-      setAppSettings(app.name, appSettings)
+      await setAppSettings(app.name, appSettings)
+      setChanges(false)
     } catch (error) {
       console.error('Error saving app data:', error)
     }
@@ -189,6 +186,18 @@ const AppSettings: React.FC<AppSettingProps> = ({ app }) => {
       setLoading(false)
     }, 500)
   }
+
+  // will ensure that when there are no active changes, the settings will be up-to-date
+  useEffect(() => {
+    if (changed) return
+
+    if (!existingSettings) {
+      getAppSettings(app.name)
+    }
+
+    setAppData(existingSettings)
+    updateDisabledSettingsMap(existingSettings)
+  }, [existingSettings, changed])
 
   return (
     <div className="w-full h-full p-6 flex flex-col">

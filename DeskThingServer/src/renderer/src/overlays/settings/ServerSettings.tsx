@@ -34,8 +34,7 @@ const ServerSettings: React.FC = () => {
     { value: LOG_FILTER.WARN, label: 'Warning' },
     { value: LOG_FILTER.ERROR, label: 'Error' },
     { value: LOG_FILTER.FATAL, label: 'Fatal' },
-    { value: LOG_FILTER.SILENT, label: 'Silent' },
-    { value: LOG_FILTER.APPSONLY, label: 'Apps Only' }
+    { value: LOG_FILTER.SILENT, label: 'Silent' }
   ]
 
   const handleSettingChange = <K extends keyof Settings>(key: K, value: Settings[K]): void => {

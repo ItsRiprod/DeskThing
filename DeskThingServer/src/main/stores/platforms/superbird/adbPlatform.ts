@@ -357,7 +357,7 @@ export class ADBPlatform extends EventEmitter<PlatformEvents> implements Platfor
         })
         await this.refreshDevices()
       }
-    }, 20000)
+    }, 30000)
   }
 
   private async refreshDevices(): Promise<void> {

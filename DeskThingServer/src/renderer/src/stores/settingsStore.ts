@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { LinkRequest, LOG_FILTER, Settings } from '@shared/types'
+import { LinkRequest, LOG_CONTEXTS, LOG_FILTER, Settings } from '@shared/types'
 import { IpcRendererCallback } from '@shared/types'
 
 interface SettingsStoreState {
@@ -28,6 +28,7 @@ const useSettingsStore = create<SettingsStoreState>((set, get) => ({
   settings: {
     version: '0.0.0',
     server_LogLevel: LOG_FILTER.INFO,
+    server_LogContext: [LOG_CONTEXTS.APP, LOG_CONTEXTS.CLIENT, LOG_CONTEXTS.SERVER],
     server_autoStart: true,
     server_minimizeApp: true,
     server_startMinimized: false,

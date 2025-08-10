@@ -20,6 +20,7 @@ import { translateLegacyTypeRequest } from '@server/services/apps/legacyAppComs'
 import { coerce, lt } from 'semver'
 import { EventEmitter } from 'node:events'
 import { handleError } from '@server/utils/errorHandler'
+import { LOG_CONTEXTS } from '@shared/types'
 
 export class AppProcessStore
   extends EventEmitter<AppProcessEvents>
@@ -218,18 +219,20 @@ export class AppProcessStore
 
     // Handle process exit
     process.on('exit', (code) => {
-      Logger.warn(`Process ${appName} exited with code: ${code}`, {
-        source: 'AppProcessStore',
-        function: 'spawnProcess'
-      })
-
       if (code !== 0) {
         Logger.error(`Process ${appName} exited with non-zero code: ${code}`, {
-          source: 'AppProcessStore',
-          function: 'spawnProcess'
+          store: 'AppProcessStore',
+          method: 'spawnProcess',
+          context: LOG_CONTEXTS.APP
         })
 
         this.emit(AppProcessTypes.ERROR, appName)
+      } else {
+        Logger.warn(`Process ${appName} exited with code: ${code}`, {
+          store: 'AppProcessStore',
+          method: 'spawnProcess',
+          context: LOG_CONTEXTS.APP
+        })
       }
 
       this.emit(AppProcessTypes.STOPPED, appName)
@@ -252,7 +255,8 @@ export class AppProcessStore
     process.stdout?.on('data', (data) => {
       try {
         Logger.info(`${data.toString().trim()}`, {
-          domain: appName.toUpperCase()
+          context: LOG_CONTEXTS.APP,
+          store: appName
         })
       } catch (error) {
         // Ensure logging errors don't propagate
@@ -267,7 +271,8 @@ export class AppProcessStore
     process.stderr?.on('data', (data) => {
       try {
         Logger.error(`${data.toString().trim()}`, {
-          domain: appName.toUpperCase()
+          context: LOG_CONTEXTS.APP,
+          store: appName
         })
       } catch (error) {
         // Ensure logging errors don't propagate
@@ -393,7 +398,10 @@ export class AppProcessStore
           this.emit(AppProcessTypes.ERROR, appName)
           break
         case 'server:log':
-          Logger.log(data.payload.level, data.payload.message, data.payload)
+          Logger.log(data.payload.level, data.payload.message, {
+            context: LOG_CONTEXTS.APP,
+            ...data.payload
+          })
           break
         default:
           Logger.warn(`Received unknown message type '${String(data)}' from ${appName}`, {
@@ -427,7 +435,7 @@ export class AppProcessStore
             data.payload.type,
             data.payload.request
           )
-          Logger.debug(
+          Logger.info(
             `Translated legacy ${data.payload.type}:${data.payload.request} to ${type}:${request}`,
             {
               source: 'AppProcessStore',
@@ -466,7 +474,10 @@ export class AppProcessStore
         this.emit(AppProcessTypes.ERROR, appName)
         break
       case 'server:log':
-        Logger.log(data.payload.level, data.payload.message, data.payload)
+        Logger.log(data.payload.level, data.payload.message, {
+          context: LOG_CONTEXTS.APP,
+          ...data.payload
+        })
         break
       default:
         Logger.warn(`Received unknown message type '${String(data)}' from ${appName}`, {

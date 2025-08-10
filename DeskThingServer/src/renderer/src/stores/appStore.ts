@@ -10,6 +10,7 @@ import useSettingsStore from './settingsStore'
 
 interface AppStoreState {
   appsList: App[]
+  appSettings: Record<string, AppSettings>
   order: string[]
   logging: LoggingData | null
   stagedManifest: StagedAppManifest | null
@@ -42,7 +43,7 @@ interface AppStoreState {
   getAppData: (appName: string) => Promise<SavedData | null>
   setAppData: (appName: string, data: SavedData) => void
   getAppSettings: (appName: string) => Promise<AppSettings | null>
-  setAppSettings: (appName: string, settings: AppSettings) => void
+  setAppSettings: (appName: string, settings: AppSettings) => Promise<void>
   setStagedManifest: (manifest: StagedAppManifest | null) => void
   setAppList: (apps: App[]) => void
   getIcon: (appName: string, icon?: string) => Promise<string | null>
@@ -76,6 +77,7 @@ const useAppStore = create<AppStoreState>((set, get) => ({
   stagedManifest: null,
   iconCache: {},
   initialized: false,
+  appSettings: {},
 
   // Initialize the store and set up listeners
   initialize: async () => {
@@ -83,8 +85,8 @@ const useAppStore = create<AppStoreState>((set, get) => ({
     if (get().initialized) return
 
     // Set up the event listener for app-data updates
-    const handleAppData: IpcRendererCallback<'app-data'> = (_event, response) => {
-      const filteredApps = response.filter((app) => app != undefined)
+    const handleAppData: IpcRendererCallback<'app-data'> = (_event, data) => {
+      const filteredApps = data.filter((app) => app != undefined)
 
       set({ appsList: filteredApps })
 
@@ -96,8 +98,19 @@ const useAppStore = create<AppStoreState>((set, get) => ({
       }
     }
 
+    // Set up the event listener for app-data updates
+    const handleAppSettings: IpcRendererCallback<'app-settings'> = (_event, data) => {
+      set((state) => ({
+        appSettings: {
+          ...state.appSettings,
+          [data.appId]: data.data
+        }
+      }))
+    }
+
     // Register the listener
     window.electron.ipcRenderer.on('app-data', handleAppData)
+    window.electron.ipcRenderer.on('app-settings', handleAppSettings)
 
     // Fetch initial data
     const apps = await window.electron.app.get()
@@ -196,11 +209,30 @@ const useAppStore = create<AppStoreState>((set, get) => ({
   },
 
   getAppSettings: async (appName: string): Promise<AppSettings | null> => {
-    return await window.electron.app.getSettings(appName)
+    const settings = await window.electron.app.getSettings(appName)
+
+    // side effect of updating the settings state
+    if (settings) {
+      set((state) => ({
+        appSettings: {
+          ...state.appSettings,
+          [appName]: settings
+        }
+      }))
+    }
+    return settings
   },
 
-  setAppSettings: (appName: string, settings: AppSettings): void => {
-    window.electron.app.setSettings(appName, settings)
+  setAppSettings: async (appName: string, settings: AppSettings): Promise<void> => {
+    const result = await window.electron.app.setSettings(appName, settings)
+    if (result) {
+      set((state) => ({
+        appSettings: {
+          ...state.appSettings,
+          [appName]: settings
+        }
+      }))
+    }
   },
 
   setStagedManifest: (manifest: StagedAppManifest | null): void => {
