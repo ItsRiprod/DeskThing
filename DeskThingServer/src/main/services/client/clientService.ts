@@ -115,8 +115,10 @@ export const getClientManifest = async (): Promise<ClientManifest | null> => {
     // TODO: Client validation
     return JSON.parse(data) as ClientManifest
   } catch (error) {
-    logger.error('Error getting client manifest:', {
-      error: error as Error
+    logger.error('(nonfatal) Error getting client manifest:', {
+      error: error as Error,
+      store: 'releaseUtils',
+      method: 'getClientManifest'
     })
     return null
   }

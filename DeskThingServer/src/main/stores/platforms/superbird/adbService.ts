@@ -26,6 +26,7 @@ export class ADBService implements ADBServiceClass {
       reject: (error: unknown) => void
     }[]
   } = {}
+  private connectionPort: number = 8891 // Default port for ADB connections
   private blacklist: string[] = []
 
   constructor() {
@@ -40,6 +41,12 @@ export class ADBService implements ADBServiceClass {
 
     settingStore.on('adb_blacklist', (blacklist) => {
       this.blacklist = blacklist || []
+    })
+
+    settingStore.on('device_devicePort', (port) => {
+      if (port && typeof port === 'number') {
+        this.connectionPort = port
+      }
     })
   }
 
@@ -204,8 +211,10 @@ export class ADBService implements ADBServiceClass {
       const manifestData = await this.getDeviceManifest(deviceId)
       return manifestData?.version || '0.0.0'
     } catch (error) {
-      logger.error('Error getting device manifest version:', {
-        error: error as Error
+      logger.error('(nonfatal) Error getting device manifest version!', {
+        error: error as Error,
+        store: 'adbService',
+        method: 'getDeviceManifestVersion'
       })
       return '0.0.0'
     }
@@ -225,7 +234,16 @@ export class ADBService implements ADBServiceClass {
   ): Promise<void> {
     progressBus.start(ProgressChannel.CONFIGURE_DEVICE, 'Configure Device', 'Opening port')
 
-    await this.openPort(deviceId, port)
+    const result = await new Promise((resolve) => {
+      this.openPort(deviceId, port)
+        .then(() => resolve(true))
+        .catch(() => resolve(false))
+    })
+    progressBus.update(
+      ProgressChannel.CONFIGURE_DEVICE,
+      `Port opened ${result ? 'successfully' : 'unsuccessfully'}`,
+      5
+    )
 
     progressBus.update(ProgressChannel.CONFIGURE_DEVICE, 'Finding Client', 10)
 
@@ -257,10 +275,14 @@ export class ADBService implements ADBServiceClass {
       this.configureDevice(deviceId, port, forcePush, attempts + 1)
     }
 
+    // Successfully downloaded the latest client, can move on
+
     progressBus.update(ProgressChannel.CONFIGURE_DEVICE, 'Getting device version', 20)
 
     const deviceVersion = await this.getDeviceManifestVersion(deviceId)
+
     progressBus.update(ProgressChannel.CONFIGURE_DEVICE, 'Getting device manifest', 30)
+
     const clientManifest = await getClientManifest()
 
     progressBus.update(ProgressChannel.CONFIGURE_DEVICE, 'Checking for updates', 40)
@@ -278,7 +300,7 @@ export class ADBService implements ADBServiceClass {
           name: 'Car Thing',
           id: 4,
           ip: 'localhost',
-          port: 8891
+          port: this.connectionPort
         }
       })
 
@@ -289,7 +311,7 @@ export class ADBService implements ADBServiceClass {
           name: 'Car Thing',
           id: 4,
           ip: 'localhost',
-          port: 8891
+          port: this.connectionPort
         }
       })
 

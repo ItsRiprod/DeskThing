@@ -1,9 +1,9 @@
 import {
   IconCarThingSmall,
   IconComputer,
-  IconLogs,
   IconMobile,
   IconRefresh,
+  IconWrench,
   IconX
 } from '@renderer/assets/icons'
 import { ProgressChannel } from '@shared/types'
@@ -186,7 +186,7 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
           className="group hover:bg-zinc-900 gap-2"
           onClick={() => setEnabled(true)}
         >
-          <IconLogs />
+          <IconWrench />
         </Button>
 
         <Button

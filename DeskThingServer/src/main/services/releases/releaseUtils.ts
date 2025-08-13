@@ -459,6 +459,8 @@ export async function handleRefreshReleaseFile<T extends 'app' | 'client'>(
 
       const repositories = releaseFile.repositories || []
 
+      const updatedAppReleases: AppLatestServer[] = []
+
       try {
         update(`Fetching the new list of available apps`, 80)
         const githubStore = await storeProvider.getStore('githubStore')
@@ -486,13 +488,62 @@ export async function handleRefreshReleaseFile<T extends 'app' | 'client'>(
           repositories.push(...newRepos)
         }
 
-        update(`Found ${repositories.length} apps with ${newRepos.length} new repositories`, 95)
+        update(`Found ${repositories.length} apps with ${newRepos.length} new repositories`, 90)
 
         // Now just as a bonus, see if there are any new app IDs included in the multi release
         // TODO: Actually do that for the love of *** I'll never be done with having to update my stupid release logic
         // I'm debating if I should re-couple the multi release wit the individual releases cuz release discovery is *stupid* and I think I would rather *die*
         // send help
 
+        // Now just quickly go over the available apps and see if there are any new ones
+
+        // First get an easily mappable list of existing app IDs
+        const existingAppIds = migratedReleases.map((release) => release.id)
+
+        // Then iterate over the server's app IDs and find any new ones
+
+        if (
+          'fileIds' in latestJSON &&
+          Array.isArray(latestJSON.fileIds) &&
+          latestJSON.fileIds.length > 0
+        ) {
+          const newAppIds = latestJSON.fileIds.filter((id) => !existingAppIds.includes(id))
+
+          if (newAppIds.length > 0) {
+            // If there are new ones, then add those just like the addMultiReleaseServer does
+            update(`Found ${newAppIds.length} new app IDs`, 93)
+
+            const results = await Promise.allSettled(
+              newAppIds.map(async (fileId) =>
+                convertIdToReleaseServer(fileId, appsRepo, allReleases)
+              ) ?? []
+            )
+
+            // Get the successful results
+            const apps = results
+              .filter((result) => result.status === 'fulfilled')
+              .map((result) => result.value) as AppLatestServer[]
+
+            // Handle logging the errors
+            results
+              .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
+              .forEach((result, index) => {
+                const fileId = newAppIds[index]
+                logger.warn(
+                  `Unable to convert ${fileId} to a full release using ${appsRepo} because ${handleError(result.reason)}`,
+                  { function: 'refreshReleaseFile', source: 'handleRefreshReleaseFile' }
+                )
+              })
+
+            updatedAppReleases.push(...apps)
+          }
+        }
+
+        // If there are new ones, then add those just like the addMultiReleaseServer does
+
+        // Add those to the current working structure
+
+        // Stonks?
       } catch (error) {
         logger.warn(`Error fetching releases for ${appsRepo}: ${handleError(error)}`)
         update(`Failed to find new repos, reverting and continuing anyways`, 95)
@@ -502,7 +553,7 @@ export async function handleRefreshReleaseFile<T extends 'app' | 'client'>(
         version: '0.11.11',
         type: 'app',
         repositories: releaseFile.repositories,
-        releases: migratedReleases as AppLatestServer[],
+        releases: [...updatedAppReleases, ...(migratedReleases as AppLatestServer[])],
         timestamp: Date.now()
       }
       update('Saving app release file', 100)
@@ -543,8 +594,10 @@ export async function handleRefreshReleaseFile<T extends 'app' | 'client'>(
 
       const repositories = releaseFile.repositories || []
 
+      const updatedClientReleases: ClientLatestServer[] = []
+
       try {
-        update(`Fetching the new list of available apps`, 80)
+        update(`Fetching the new list of available clients`, 80)
         const githubStore = await storeProvider.getStore('githubStore')
         const allReleases = await githubStore.getAllReleases(clientRepo, force)
 
@@ -570,7 +623,58 @@ export async function handleRefreshReleaseFile<T extends 'app' | 'client'>(
           repositories.push(...newRepos)
         }
 
-        update(`Found ${repositories.length} apps with ${newRepos.length} new repositories`, 95)
+        update(`Found ${repositories.length} apps with ${newRepos.length} new repositories`, 90)
+
+        // Now just as a bonus, see if there are any new app IDs included in the multi release
+        // TODO: Actually do that for the love of *** I'll never be done with having to update my stupid release logic
+        // I'm debating if I should re-couple the multi release wit the individual releases cuz release discovery is *stupid* and I think I would rather *die*
+        // send help
+
+        // Now just quickly go over the available apps and see if there are any new ones
+
+        // First get an easily mappable list of existing app IDs
+        const existingAppIds = migratedReleases.map((release) => release.id)
+
+        // Then iterate over the server's app IDs and find any new ones
+
+        if (
+          'fileIds' in latestJSON &&
+          Array.isArray(latestJSON.fileIds) &&
+          latestJSON.fileIds.length > 0
+        ) {
+          const newAppIds = latestJSON.fileIds.filter((id) => !existingAppIds.includes(id))
+
+          if (newAppIds.length > 0) {
+            // If there are new ones, then add those just like the addMultiReleaseServer does
+            update(`Found ${newAppIds.length} new app IDs`, 93)
+
+            const results = await Promise.allSettled(
+              newAppIds.map(async (fileId) =>
+                convertIdToReleaseServer(fileId, clientRepo, allReleases)
+              ) ?? []
+            )
+
+            // Get the successful results
+            const apps = results
+              .filter((result) => result.status === 'fulfilled')
+              .map((result) => result.value) as ClientLatestServer[]
+
+            // Handle logging the errors
+            results
+              .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
+              .forEach((result, index) => {
+                const fileId = newAppIds[index]
+                logger.warn(
+                  `Unable to convert ${fileId} to a full release using ${clientRepo} because ${handleError(result.reason)}`,
+                  { function: 'refreshReleaseFile', source: 'handleRefreshReleaseFile' }
+                )
+              })
+
+            update(`Found ${apps.length} new apps`, 95)
+
+            updatedClientReleases.push(...apps)
+          }
+        }
       } catch (error) {
         logger.warn(`Error fetching releases for ${clientRepo}: ${handleError(error)}`)
         update(`Failed to find new repos, reverting and continuing anyways`, 95)
@@ -580,7 +684,7 @@ export async function handleRefreshReleaseFile<T extends 'app' | 'client'>(
         version: '0.11.11',
         type: 'client',
         repositories: repositories,
-        releases: migratedReleases as ClientLatestServer[],
+        releases: [...updatedClientReleases, ...(migratedReleases as ClientLatestServer[])],
         timestamp: Date.now()
       }
       update('Saving client release file', 100)
