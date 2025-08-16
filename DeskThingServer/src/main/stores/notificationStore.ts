@@ -45,9 +45,12 @@ export class NotificationStore
     notification: T,
     callback?: (notification: T) => void | Promise<void>
   ): Promise<void> {
-    this.notifications[notification.id] = notification
-    this.emit('notification', notification)
-    this.emit('notificationList', { ...this.notifications })
+    // if the notification already exists, dont add it - skip over these and group the callback in with everything else
+    if (!this.notifications[notification.id]) {
+      this.notifications[notification.id] = notification
+      this.emit('notification', notification)
+      this.emit('notificationList', { ...this.notifications })
+    }
 
     if (!callback) return // ignore messages that dont have a callback
 
