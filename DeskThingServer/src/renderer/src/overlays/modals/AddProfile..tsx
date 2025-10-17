@@ -1,5 +1,5 @@
 import { IconArrowRight } from '@renderer/assets/icons'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import Overlay from '@renderer/overlays/Overlay'
 import useMappingStore from '@renderer/stores/mappingStore'
 import { Profile } from '@deskthing/types'

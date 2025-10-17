@@ -32,10 +32,13 @@ export async function initializeStores(): Promise<void> {
     thingifyStore: await storeProvider.getStore('thingifyStore', false),
     flashStore: await storeProvider.getStore('flashStore', false),
     notificationStore: await storeProvider.getStore('notificationStore', false),
-    statsCollector: await storeProvider.getStore('statsCollector', true)
+    statsCollector: await storeProvider.getStore('statsCollector', true),
+    agentStore: await storeProvider.getStore('agentStore', true),
   }
 
   const platformStore = await storeProvider.getStore('platformStore', false)
+
+
 
   Object.values(storeList).forEach((store) => cacheManager.registerStore(store))
 

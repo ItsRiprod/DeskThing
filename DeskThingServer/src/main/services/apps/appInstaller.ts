@@ -31,13 +31,12 @@ interface ExecuteStagedFileType {
  * @param appId - The id of the app to execute
  * @param run - Whether to run the app after executing it
  * @channel - {@link FN_APP_INITIALIZE}
- * @returns
+ * @returns app id
  */
 export const executeStagedFile = async ({
   overwrite,
-  appId,
-  run = false
-}: ExecuteStagedFileType): Promise<void> => {
+  appId
+}: ExecuteStagedFileType): Promise<string> => {
   progressBus.start(
     ProgressChannel.FN_APP_INITIALIZE,
     'Executing App',
@@ -45,23 +44,24 @@ export const executeStagedFile = async ({
   )
   const appStore = await storeProvider.getStore('appStore')
   try {
+    const { debug, error } = Logger.createLogger({
+      method: 'executeStagedFile',
+      store: 'appInstaller'
+    })
+
     const tempZipPath = getAppFilePath('staged', 'temp.zip')
     const extractedPath = getAppFilePath('staged', 'extracted')
     const appManifestData = await getManifest(extractedPath)
     // get the app id
     if (!appManifestData) {
-      Logger.error(`SERVER: Error getting manifest from ${extractedPath}`, {
-        function: 'executeStagedFile',
-        source: 'executeStagedFile',
-        error: new Error('Error getting manifest from tempPath')
-      })
+      error(`SERVER: Error getting manifest from ${extractedPath}`)
       progressBus.error(
         ProgressChannel.FN_APP_INITIALIZE,
         'Error Staging',
         'Error getting manifest',
         'Unable to get manifest from staged file'
       )
-      return
+      throw new Error('Error getting manifest from staged file')
     }
 
     if (!appId) {
@@ -69,7 +69,7 @@ export const executeStagedFile = async ({
     }
     if (overwrite) {
       progressBus.update(ProgressChannel.FN_APP_INITIALIZE, 'Overwriting existing app...', 10)
-      Logger.debug(`[executeStagedFile] Overwriting existing app (overwrite is enabled)...`)
+      debug(`Overwriting existing app (overwrite is enabled)...`)
       await appStore.purge(appId)
       await new Promise((resolve) => setTimeout(resolve, 1000))
       await overwriteData(appId, { version: appManifestData.version })
@@ -77,19 +77,40 @@ export const executeStagedFile = async ({
 
     const appPath = getAppFilePath(appId)
 
+    // move the lib folder into the extracted dir to keep its contents
+    const libDir = path.join(appPath, 'lib')
+    const extractedLibDir = path.join(extractedPath, 'lib')
+
+    try {
+      if (existsSync(extractedLibDir)) {
+        await promises.rm(extractedLibDir, { recursive: true, force: true })
+      }
+
+      if (existsSync(libDir)) {
+        await promises.rename(libDir, extractedLibDir)
+      }
+    } catch (err) {
+      error(
+        `Error moving lib directory from ${libDir} to ${extractedLibDir}: ${err instanceof Error ? err.message : err}`
+      )
+    }
+
     // Delete the app directory if it exists
     if (existsSync(appPath)) {
       progressBus.update(
         ProgressChannel.FN_APP_INITIALIZE,
-        'Deleting existing app directory...',
+        'Deleting existing app directory except lib...',
         20
       )
+
       await promises.rm(appPath, { recursive: true })
-      progressBus.update(ProgressChannel.FN_APP_INITIALIZE, 'Deleted existing app directory...', 25)
-      Logger.debug(`[executeStagedFile] Deleting existing app directory... ${appPath}`, {
-        function: 'executeStagedFile',
-        source: 'executeStagedFile'
-      })
+
+      progressBus.update(
+        ProgressChannel.FN_APP_INITIALIZE,
+        'Deleted existing app files except lib...',
+        20
+      )
+      debug(`Deleted existing app files in ${appPath}`)
     }
 
     // Get the app store
@@ -100,20 +121,20 @@ export const executeStagedFile = async ({
 
     if (app && !overwrite) {
       // If the app already exists in the app store
-      Logger.debug(`[executeStagedFile] Disabling existing app (Overwrite is disabled)...`)
+      debug(`Disabling existing app (Overwrite is disabled)...`)
       // Check if the app exists and disable it if it does
       if (app?.enabled || app?.running) {
         await appStore.disable(appId)
       }
     }
-    progressBus.update(ProgressChannel.FN_APP_INITIALIZE, 'Getting manifest...', 35, 'Running App')
+    progressBus.update(ProgressChannel.FN_APP_INITIALIZE, 'Getting manifest...', 50, 'Running App')
     const manifest = await getManifest(extractedPath)
     // If the app is new
-    Logger.debug(`[executeStagedFile] Adding app to store...`)
+    debug(`Adding app to store...`)
     const newApp: App = {
       name: appId,
       enabled: true,
-      running: run,
+      running: false,
       timeStarted: 0,
       prefIndex: 10,
       meta: {
@@ -127,7 +148,7 @@ export const executeStagedFile = async ({
     }
     appStore.add(newApp)
 
-    progressBus.update(ProgressChannel.FN_APP_INITIALIZE, 'Clearing temp files...', 38)
+    progressBus.update(ProgressChannel.FN_APP_INITIALIZE, 'Clearing temp files...', 70)
     // Delete temp.zip if it exists
     try {
       await promises.stat(tempZipPath)
@@ -137,7 +158,7 @@ export const executeStagedFile = async ({
       Logger.warn(`[executeStagedFile] No temp zip file to delete`)
     }
 
-    progressBus.update(ProgressChannel.FN_APP_INITIALIZE, 'Renaming extracted directory...', 40)
+    progressBus.update(ProgressChannel.FN_APP_INITIALIZE, 'Renaming extracted directory...', 90)
     // Rename staged directory to appId
     try {
       await promises.rename(extractedPath, appPath)
@@ -153,11 +174,8 @@ export const executeStagedFile = async ({
       throw error
     }
 
-    if (run) {
-      progressBus.update(ProgressChannel.FN_APP_INITIALIZE, 'Running app...', 60)
-      await appStore.run(appId)
-      progressBus.complete(ProgressChannel.FN_APP_INITIALIZE, 'App started successfully')
-    }
+    progressBus.complete(ProgressChannel.FN_APP_INITIALIZE, 'App initialized successfully')
+    return appId
   } catch (error) {
     Logger.error(`Error executing staged file: ${error}`, {
       function: 'executeStagedFile',

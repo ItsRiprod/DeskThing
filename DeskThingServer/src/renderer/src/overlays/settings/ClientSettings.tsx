@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useClientStore } from '@renderer/stores'
 import { ClientDeviceType, ClientManifest } from '@deskthing/types'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import { IconToggle, IconSave, IconLoading } from '@renderer/assets/icons'
 import { InfoComponent } from '@renderer/components/InfoComponent'
 
@@ -38,7 +38,7 @@ const ClientSettings: React.FC = () => {
   if (!localSettings) return null
 
   return (
-    <div className="absolute inset w-full h-full p-4 flex flex-col divide-y-2 divide-gray-500">
+    <div className="w-full h-full flex flex-col divide-y-2 divide-gray-500">
       <div className="w-full p-4 flex justify-between items-center">
         <div className="flex gap-1 items-center">
           <h2 className="text-xl">IP Address</h2>

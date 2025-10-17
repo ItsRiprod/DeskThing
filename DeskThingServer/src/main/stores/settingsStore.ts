@@ -150,7 +150,15 @@ export class SettingsStore implements CacheableStore, SettingsStoreClass {
     key: K
   ): Promise<Settings[K] | undefined> => {
     const settings = await this.getSettings()
-    return settings[key]
+
+    if (settings[key]) {
+      return settings[key]
+    } else {
+      Logger.warn(
+        `Attempted to find setting ${key} but it did not exist. This may be due to migrating outdated settings. Generally, you can ignore this.`
+      )
+      return undefined
+    }
   }
 
   public addSettingsListener(listener: SettingsListener): () => void {

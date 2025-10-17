@@ -1,6 +1,6 @@
 import { AppLatestJSONLatest } from '@deskthing/types'
 import { IconDownload, IconExpand, IconLoading, IconLogoGear } from '@renderer/assets/icons'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import { DownloadErrorOverlay } from '@renderer/overlays/DownloadErrorOverlay'
 import { AppReleaseHistoryModal } from '@renderer/overlays/releases/AppReleaseOverlay'
 import { useAppStore, useReleaseStore } from '@renderer/stores'

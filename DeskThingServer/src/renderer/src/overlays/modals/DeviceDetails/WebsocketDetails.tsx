@@ -1,5 +1,5 @@
 import { IconConfig, IconHome, IconPing, IconX } from '@renderer/assets/icons'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import React from 'react'
 import { Client, PlatformIDs } from '@deskthing/types'
 import usePlatformStore from '@renderer/stores/platformStore'

@@ -1,4 +1,10 @@
-import { App, APP_REQUESTS, AppToDeskThingData, DeskThingProcessData } from '@deskthing/types'
+import {
+  App,
+  APP_REQUESTS,
+  AppToDeskThingData,
+  DeskThingProcessData,
+  DeskThingToAppData
+} from '@deskthing/types'
 import { StoreInterface } from '@shared/interfaces/storeInterface'
 import EventEmitter from 'node:events'
 
@@ -7,7 +13,8 @@ export enum AppProcessTypes {
   STOPPED = 'stopped',
   EXITED = 'exit',
   RUNNING = 'running',
-  ERROR = 'error'
+  ERROR = 'error',
+  BINARY = 'binary'
 }
 
 type AppProcessEvent = {
@@ -16,6 +23,7 @@ type AppProcessEvent = {
   [AppProcessTypes.EXITED]: [string]
   [AppProcessTypes.RUNNING]: [string]
   [AppProcessTypes.ERROR]: [string]
+  [AppProcessTypes.BINARY]: [{ appName: string; data: Buffer; clientId?: string }]
 }
 
 export type AppProcessEvents = AppProcessEvent & {
@@ -46,6 +54,8 @@ export interface AppProcessStoreClass extends StoreInterface, EventEmitter<AppPr
    * Post a message to a specific app process
    */
   postMessage(appName: string, data: DeskThingProcessData): Promise<void>
+
+  postBinary(appName: string, data: DeskThingToAppData, transferList?: ArrayBuffer[]): Promise<void>
 
   /**
    * Get list of process IDs that are currently running

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import Sidebar from '@renderer/nav/Sidebar'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import { IconLink, IconRefresh, IconPlus } from '@renderer/assets/icons'
 import { useClientStore, useReleaseStore, usePageStore } from '@renderer/stores'
 import MainElement from '@renderer/nav/MainElement'

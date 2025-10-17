@@ -5,7 +5,7 @@ import {
   ThingifyApiVersion,
   ThingifyArchiveDownloadResult
 } from '@shared/types'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import { IconDownload, IconLoading, IconTrash, IconX } from '@renderer/assets/icons'
 import { LogEntry } from '@renderer/components/LogEntry'
 

@@ -2,7 +2,7 @@ import { IconCheckCircle, IconLoading, IconTrash } from '@renderer/assets/icons'
 import { useProgressStore } from '@renderer/stores/progressStore'
 import { ProgressEvent, ProgressStatus } from '@shared/types'
 import React, { useState } from 'react'
-import Button from './Button'
+import Button from './buttons/Button'
 
 interface LogEntryProps {
   progressEvent: ProgressEvent

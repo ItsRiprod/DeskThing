@@ -1,4 +1,4 @@
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import { ButtonMapping, Action, EventMode, Key } from '@deskthing/types'
 import { FC, memo } from 'react'
 import { ActionIcon } from './ActionIcon'

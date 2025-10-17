@@ -1,5 +1,5 @@
 import { IconArrowRight, IconLoading, IconRefresh } from '@renderer/assets/icons'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import Overlay from '@renderer/overlays/Overlay'
 import useFeedbackStore from '@renderer/stores/feedbackStore'
 import { FeedbackReport, FeedbackResult, FeedbackType } from '@shared/types'

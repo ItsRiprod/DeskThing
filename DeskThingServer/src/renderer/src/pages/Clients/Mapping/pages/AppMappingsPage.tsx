@@ -3,7 +3,7 @@ import { PageProps } from '..'
 import useMappingStore from '@renderer/stores/mappingStore'
 import { App, Key } from '@deskthing/types'
 import { ActionIcon } from '../components/ActionIcon'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import { useAppStore } from '@renderer/stores'
 
 const AppMappingsPage: React.FC<PageProps> = ({

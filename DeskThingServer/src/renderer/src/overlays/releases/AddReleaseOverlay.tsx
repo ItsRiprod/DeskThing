@@ -1,5 +1,5 @@
 import { IconLoading } from '@renderer/assets/icons'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import Overlay from '@renderer/overlays/Overlay'
 import { useReleaseStore } from '@renderer/stores'
 import { FC, useEffect, useMemo, useState } from 'react'

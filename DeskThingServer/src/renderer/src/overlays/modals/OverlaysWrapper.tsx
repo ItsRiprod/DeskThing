@@ -17,6 +17,7 @@ import ProgressPopup from '../ProgressPopup'
 import ViewProgressLogs from './ViewProgressLogs'
 import AddReleaseModal from '../releases/AddReleaseOverlay'
 import AvailableNotificationOverlay from '../AvailableNotificationOverlay'
+import ViewNotifications from './ViewNotifications'
 
 const overlays = {
   qr: QROverlay,
@@ -27,6 +28,7 @@ const overlays = {
   feedback: FeedbackOverlay,
   setup: SetupOverlay,
   progress: ViewProgressLogs,
+  notificationmodal: ViewNotifications,
   addrepo: AddReleaseModal
 }
 

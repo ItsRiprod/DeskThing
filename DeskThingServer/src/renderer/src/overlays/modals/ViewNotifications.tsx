@@ -1,5 +1,7 @@
-import { useNotificationStore } from '@renderer/stores'
 import React, { useState } from 'react'
+import { useNotificationStore } from '@renderer/stores'
+import { useSearchParams } from 'react-router-dom'
+import { IconArrowRight } from '@renderer/assets/icons'
 import { NotificationMessage } from '@deskthing/types'
 import Button from '@renderer/components/buttons/Button'
 import { IconX } from '@renderer/assets/icons'
@@ -25,7 +27,6 @@ const NotificationItem: React.FC<NotificationProps> = ({ notification, onAcknowl
     onAcknowledge(notification)
   }
 
-  // Show X button for passive, error, warning, info, acknowledge, confirm
   const showClose = !notification.acknowledged && !['yesno', 'text'].includes(notification.type)
 
   return (
@@ -148,34 +149,81 @@ const NotificationItem: React.FC<NotificationProps> = ({ notification, onAcknowl
     </div>
   )
 }
-
-const NotificationsPage: React.FC = () => {
+const ViewNotifications: React.FC = () => {
   const notificationsObj = useNotificationStore((state) => state.messages)
   const acknowledge = useNotificationStore((state) => state.acknowledgeNotification)
-  const notifications = Object.values(notificationsObj ?? {})
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [isOpen, setIsOpen] = useState(true)
+  const appFilter = searchParams.get('appFilter') || ''
+  let notifications = Object.values(notificationsObj ?? {})
+
+  if (appFilter) {
+    notifications = notifications.filter((notification) => notification.source === appFilter)
+  }
+
+  const onClose = (): void => {
+    setIsOpen(false)
+    setTimeout(() => {
+      searchParams.delete('notificationmodal')
+      setSearchParams(searchParams)
+    }, 180)
+  }
+
+  // Close modal when clicking outside
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>): void => {
+    if (e.target === e.currentTarget) {
+      onClose()
+    }
+  }
+
+  const ClearFilters = (): void => {
+    searchParams.delete('appFilter')
+    setSearchParams(searchParams)
+  }
 
   return (
-    <div className="w-full h-full p-4 flex flex-col">
-      <h1 className="text-2xl font-bold mb-4">Notifications</h1>
-      {notifications.length > 0 ? (
-        <div className="w-full h-full relative overflow-y-auto">
-          <div className="absolute inset-0 w-full h-full">
-            {notifications.map((notification) => (
+    <div
+      className={`fixed inset-0 z-50 flex items-center justify-end ${isOpen ? 'bg-black/90' : 'bg-black/0'} transition-all duration-200`}
+      onClick={handleBackdropClick}
+    >
+      <div
+        className={`bg-zinc-900 border border-zinc-800 h-full w-full max-w-2xl overflow-hidden transform transition-transform duration-100 translate-x-0 ${
+          isOpen ? 'animate-slide-in' : 'animate-slide-out'
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-4 border-b border-zinc-800 flex justify-between items-center">
+          <div className="flex flex-col">
+            <h2 className="text-zinc-100 font-semibold">Notifications</h2>
+            {appFilter && (
+              <div className="text-sm text-zinc-400 italic">
+                <p>
+                  Filtering by app: <span className="text-zinc-200 font-medium">{appFilter}</span>
+                </p>
+                <button onClick={ClearFilters}>Clear Filters</button>
+              </div>
+            )}
+          </div>
+          <button onClick={onClose} className="text-zinc-400 hover:text-zinc-200 transition-colors">
+            <IconArrowRight />
+          </button>
+        </div>
+        <div className="overflow-y-auto p-4 space-y-4 h-[calc(100vh-4rem)]">
+          {notifications.length > 0 ? (
+            notifications.map((notification) => (
               <NotificationItem
                 key={notification.id}
                 notification={notification}
                 onAcknowledge={acknowledge}
               />
-            ))}
-          </div>
+            ))
+          ) : (
+            <div className="text-center text-zinc-500 py-8">No notifications found.</div>
+          )}
         </div>
-      ) : (
-        <div>
-          <p className="text-gray-500">No notifications found.</p>
-        </div>
-      )}
+      </div>
     </div>
   )
 }
 
-export default NotificationsPage
+export default ViewNotifications

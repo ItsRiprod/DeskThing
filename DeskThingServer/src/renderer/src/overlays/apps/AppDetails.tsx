@@ -1,6 +1,6 @@
 import React from 'react'
 import { AppSettingProps } from './AppsOverlay'
-import { AppIcon } from '@renderer/components/AppIcon'
+import { AppIcon } from '@renderer/components/apps/AppIcon'
 
 const AppDetails: React.FC<AppSettingProps> = ({ app }: AppSettingProps) => {
   if (!app.manifest) return null

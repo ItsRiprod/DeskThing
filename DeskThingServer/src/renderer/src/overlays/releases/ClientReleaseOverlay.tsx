@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { ClientLatestServer, PastReleaseInfo } from '@shared/types'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import { IconDownload, IconLogoGear, IconTrash } from '@renderer/assets/icons'
 import { ClientLatestJSONLatest } from '@deskthing/types'
 import Overlay from '../Overlay'

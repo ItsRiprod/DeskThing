@@ -1,6 +1,6 @@
 import { PageProps } from '..'
 import { IconCarThing } from '@renderer/assets/icons'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import useMappingStore from '@renderer/stores/mappingStore'
 import { useState, useEffect } from 'react'
 import { ActionIcon } from '../components/ActionIcon'

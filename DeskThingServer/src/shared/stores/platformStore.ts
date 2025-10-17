@@ -17,7 +17,8 @@ export enum PlatformStoreEvent {
   CLIENT_DISCONNECTED = 'client_disconnected',
   CLIENT_UPDATED = 'client_updated',
   CLIENT_LIST = 'client_list',
-  DATA_RECEIVED = 'data_received'
+  DATA_RECEIVED = 'data_received',
+  BINARY_RECEIVED = 'binary_received'
 }
 
 export type PlatformStoreEvents = {
@@ -31,6 +32,9 @@ export type PlatformStoreEvents = {
   [PlatformStoreEvent.CLIENT_UPDATED]: [Client]
   [PlatformStoreEvent.DATA_RECEIVED]: [
     { client: Extract<Client, { connected: true }>; data: DeviceToDeskthingData }
+  ]
+  [PlatformStoreEvent.BINARY_RECEIVED]: [
+    { client: Extract<Client, { connected: true }>; data: Buffer; appId: string }
   ]
 }
 

@@ -1,6 +1,6 @@
 import Overlay from './Overlay'
 import semverSatisfies from 'semver/functions/satisfies'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import { IconPlay, IconToggle } from '@renderer/assets/icons'
 import { useEffect, useState } from 'react'
 import { useAppStore, useClientStore } from '@renderer/stores'

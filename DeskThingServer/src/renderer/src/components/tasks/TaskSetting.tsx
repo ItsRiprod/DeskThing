@@ -4,7 +4,7 @@ import { STEP_TYPES } from '@deskthing/types'
 import { useAppStore } from '@renderer/stores'
 import { SettingsType } from '@deskthing/types'
 import { IconCheck, IconX } from '@renderer/assets/icons'
-import Button from '../Button'
+import Button from '../buttons/Button'
 import useTaskStore from '@renderer/stores/taskStore'
 import Settings from '../settings'
 

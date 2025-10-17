@@ -3,7 +3,7 @@ import useMappingStore from '@renderer/stores/mappingStore'
 import { Action, ActionReference, SettingOption } from '@deskthing/types'
 import { useState } from 'react'
 import { SingleValue } from 'react-select'
-import Button from './Button'
+import Button from './buttons/Button'
 import Select from './Select'
 
 const ActionElement = ({

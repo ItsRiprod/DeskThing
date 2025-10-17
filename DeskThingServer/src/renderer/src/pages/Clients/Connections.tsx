@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import Sidebar from '@renderer/nav/Sidebar'
 import { useClientStore, usePageStore, useSettingsStore } from '@renderer/stores'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import {
   IconDownload,
   IconLink,

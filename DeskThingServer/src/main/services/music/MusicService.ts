@@ -17,6 +17,7 @@ import { getAppByName } from '../files/appFileService'
 import { MusicStoreClass } from '@shared/stores/musicStore'
 import { SongCache, SongCacheEvents } from './songCache'
 import { ColorExtractor } from './ColorExtractor'
+import { storeProvider } from '@server/stores/storeProvider'
 
 /**
  * Core service that manages music playback functionality
@@ -70,11 +71,24 @@ export class MusicService implements MusicStoreClass {
     }
 
     if (refreshRate < 5000) {
-      Logger.log(LOGGING_LEVELS.WARN, `Refresh interval of ${refreshRate}s may impact performance`)
       if (refreshRate < 1000) {
         Logger.log(
           LOGGING_LEVELS.WARN,
-          `Extremely low refresh interval (${refreshRate}s) could cause system issues`
+          `Extremely low refresh interval (${refreshRate}ms) will cause issues. Reverting to 1s`
+        )
+        const notificationStore = await storeProvider.getStore('notificationStore')
+        notificationStore.addNotification({
+          id: 'server:lowRefreshRate',
+          type: 'warning',
+          title: 'Very low refresh interval detected',
+          description: `Your refresh interval is set to ${refreshRate / 1000}s and will cause issue. It has been automatically reverted to 1 second`,
+          source: 'server'
+        })
+        refreshRate = 1000
+      } else {
+        Logger.log(
+          LOGGING_LEVELS.WARN,
+          `Refresh interval of ${refreshRate}s may impact performance`
         )
       }
     }

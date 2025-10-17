@@ -1,7 +1,7 @@
 import { FC, useEffect, useState } from 'react'
 import ActionElement from '../ActionElement'
 import useMappingStore from '@renderer/stores/mappingStore'
-import Button from '../Button'
+import Button from '../buttons/Button'
 import { IconCheck, IconX } from '@renderer/assets/icons'
 import useTaskStore from '@renderer/stores/taskStore'
 import { STEP_TYPES } from '@deskthing/types'

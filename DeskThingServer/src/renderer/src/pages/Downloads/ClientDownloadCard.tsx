@@ -1,6 +1,6 @@
 import { ClientLatestJSONLatest } from '@deskthing/types'
 import { IconDownload, IconExpand, IconLoading, IconLogoGear } from '@renderer/assets/icons'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import { DownloadErrorOverlay } from '@renderer/overlays/DownloadErrorOverlay'
 import { ClientReleaseHistoryModal } from '@renderer/overlays/releases/ClientReleaseOverlay'
 import { useClientStore, useReleaseStore, useSettingsStore } from '@renderer/stores'

@@ -1,5 +1,5 @@
 import { IconLink, IconLoading, IconArrowRight } from '@renderer/assets/icons'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import { GithubRepository } from '@shared/types'
 import { FC } from 'react'
 import { useSearchParams } from 'react-router-dom'

@@ -1,7 +1,7 @@
 import { IconX } from '@renderer/assets/icons'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import ErrorBoundary from '@renderer/components/ErrorBoundary'
-import FeedbackButton from '@renderer/components/FeedbackButton'
+import FeedbackButton from '@renderer/components/buttons/FeedbackButton'
 import React, { useRef, useEffect, useState, useMemo } from 'react'
 
 interface DownloadConfirmationProps {

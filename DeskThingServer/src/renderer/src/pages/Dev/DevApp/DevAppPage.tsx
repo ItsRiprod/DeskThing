@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import Sidebar from '@renderer/nav/Sidebar'
 import MainElement from '@renderer/nav/MainElement'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import { IconRefresh, IconPlay } from '@renderer/assets/icons'
 import { useClientStore } from '@renderer/stores'
 import { Client, ClientConnectionMethod } from '@deskthing/types'

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import { AppSettings as AppSettingsType, SettingsType } from '@deskthing/types'
 import { AppSettingProps } from './AppsOverlay'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import { IconLoading, IconRefresh, IconSave } from '@renderer/assets/icons'
 import Settings from '@renderer/components/settings'
 import { useAppStore } from '@renderer/stores'

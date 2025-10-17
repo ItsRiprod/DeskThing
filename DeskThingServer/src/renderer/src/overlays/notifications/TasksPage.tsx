@@ -4,10 +4,10 @@ import { Task } from '@deskthing/types'
 import { FullTaskList } from '@shared/types'
 import { useSearchParams } from 'react-router-dom'
 import TaskComponent from '@renderer/components/tasks/TaskComponent'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import { IconRefresh } from '@renderer/assets/icons'
 import { useAppStore } from '@renderer/stores'
-import { AppIcon } from '@renderer/components/AppIcon'
+import { AppIcon } from '@renderer/components/apps/AppIcon'
 
 const sortTasks = (tasks: FullTaskList): Record<string, Task[]> => {
   // Sort apps by number of incomplete tasks (descending)

@@ -1,5 +1,5 @@
 import { IconArrowDown, IconCheck, IconX } from '@renderer/assets/icons'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import { useNotificationStore } from '@renderer/stores'
 import { Request } from '@renderer/stores/notificationStore'
 import React, { useState, useEffect } from 'react'

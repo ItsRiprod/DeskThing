@@ -1,7 +1,7 @@
 import { FC, useMemo } from 'react'
 import { SuperbirdPageProps } from './SuperbirdPage'
 import useFlashStore from '@renderer/stores/flashStore'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import { IconLink, IconReload, IconStop } from '@renderer/assets/icons'
 import usePlatformStore from '@renderer/stores/platformStore'
 import { useSearchParams } from 'react-router-dom'

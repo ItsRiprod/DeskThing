@@ -1,7 +1,7 @@
 // src/components/ErrorBoundary.tsx
 
 import { Component, ReactNode, ErrorInfo } from 'react'
-import Button from './Button'
+import Button from './buttons/Button'
 import { IconRefresh } from '@renderer/assets/icons'
 
 interface ErrorBoundaryProps {

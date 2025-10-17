@@ -7,7 +7,8 @@ import {
   Step,
   Task,
   APP_REQUESTS,
-  SavedData
+  SavedData,
+  SettingOption
 } from '@deskthing/types'
 import { TaskReference, CacheableStore, FullTaskList } from '@shared/types'
 import { TaskStoreClass } from '@shared/stores/taskStore'
@@ -118,6 +119,46 @@ export class AppDataStore
           )
           break
         }
+      }
+    })
+
+    this.appStore.onAppMessage(APP_REQUESTS.SETTINGS, async (data) => {
+      await this.initialize()
+
+      switch (data.request) {
+        case 'set':
+          await this.addSettings(data.source, data.payload, { notifyApp: false })
+          break
+        case 'get':
+          {
+            Logger.debug(`Received settings request from ${data.source}`, {
+              source: 'AppDataStore',
+              function: 'onAppMessage'
+            })
+            const settings = await this.getSettings(data.source)
+            if (!settings) {
+              Logger.warn(`Attempted to retrieve settings for ${data.source} but it does not exist`)
+              return
+            }
+            this.appStore.sendDataToApp(data.source, {
+              type: DESKTHING_EVENTS.SETTINGS,
+              request: 'data',
+              payload: settings
+            })
+          }
+          break
+        case 'init':
+          await this.initSettings(data.source, data.payload, { notifyApp: true }) // dont notify apps
+          break
+        case 'set-value':
+          this.setSettingValue(data.source, data.payload.key, data.payload.value)
+          break
+        case 'set-options':
+          this.setSettingOptions(data.source, data.payload.key, data.payload.value)
+          break
+        case 'delete':
+          this.delSettings(data.source, data.payload)
+          break
       }
     })
 
@@ -815,6 +856,38 @@ export class AppDataStore
         function: 'initSettings'
       })
     }
+  }
+
+  private async setSettingValue(
+    app: string,
+    key: string,
+    value: boolean | string | number | string[]
+  ): Promise<void> {
+    this.initCacheVersion(app)
+    const settings = await this.getSettings(app)
+    if (!settings || !settings[key]) return
+
+    if (settings[key].value === value) return // dont do anything if the setting is already the same
+
+    settings[key].value = value
+    this.appDataCache[app].settings = settings
+    this.saveData(app)
+  }
+
+  private async setSettingOptions(
+    app: string,
+    key: string,
+    options: SettingOption[]
+  ): Promise<void> {
+    this.initCacheVersion(app)
+    const settings = await this.getSettings(app)
+    if (!settings || !settings[key]) return
+
+    if (!('options' in settings[key])) return // options not supported by that setting id
+
+    settings[key].options = options
+    this.appDataCache[app].settings = settings
+    this.saveData(app)
   }
 
   /**

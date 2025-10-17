@@ -22,13 +22,19 @@ export type Settings = {
   device_devicePort: number
   device_address: string
   // music
+  /** @deprecated use music_sources or music_controls */
   music_playbackLocation?: string
+  music_control_id: string
+  music_sources_ids: string[]
   music_refreshInterval: number
   // adb
   adb_useGlobal: boolean
   adb_autoConfig: boolean
   adb_autoDetect: boolean
   adb_blacklist: string[]
+
+  voice_agent_app_ids: string[]
+
   // flags
   flag_firstClose: boolean
   flag_hasOpened: boolean

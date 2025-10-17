@@ -3,7 +3,7 @@ import useLogStore from '../../stores/logStore'
 import useSettingsStore from '../../stores/settingsStore'
 import Sidebar from '@renderer/nav/Sidebar'
 import MainElement from '@renderer/nav/MainElement'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import Select from '@renderer/components/Select'
 import { SingleValue } from 'react-select'
 import {

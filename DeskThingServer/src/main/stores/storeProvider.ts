@@ -28,6 +28,7 @@ import { ThingifyStoreClass } from '@shared/stores/thingifyStore'
 import { StatsCollector } from './statsCollectionStore'
 import { NotificationStoreClass } from '@shared/stores/notificationStore'
 import { TimeStoreClass } from '@shared/stores/timeStoreClass'
+import { AgentStoreClass } from '@shared/stores/agentStore'
 
 interface Stores {
   appDataStore: AppDataStoreClass
@@ -53,6 +54,7 @@ interface Stores {
   statsCollector: StatsCollector
   timeStore: TimeStoreClass
   notificationStore: NotificationStoreClass
+  agentStore: AgentStoreClass
 }
 
 export class StoreProvider {
@@ -89,7 +91,8 @@ export class StoreProvider {
       thingifyStore: () => import('./thingifyStore').then((m) => m.ThingifyStore),
       statsStore: () => import('./statsStore').then((m) => m.StatsStore),
       timeStore: () => import('./timeStore').then((m) => m.TimeStore),
-      statsCollector: () => StatsCollector
+      statsCollector: () => StatsCollector,
+      agentStore: () => import('./agentStore').then((m) => m.AgentStore)
     }
 
     this.storeInitializers = {
@@ -149,7 +152,13 @@ export class StoreProvider {
       timeStore: async () =>
         new (await storeImports.timeStore())(await this.getStore('platformStore', false)),
       statsCollector: async () =>
-        new (await storeImports.statsCollector())(await this.getStore('statsStore', false))
+        new (await storeImports.statsCollector())(await this.getStore('statsStore', false)),
+      agentStore: async () =>
+        new (await storeImports.agentStore())(
+          await this.getStore('appStore', false),
+          await this.getStore('platformStore', false),
+          await this.getStore('settingsStore', false)
+        )
     }
 
     this.initialize()

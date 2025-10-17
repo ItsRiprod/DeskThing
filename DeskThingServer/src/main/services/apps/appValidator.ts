@@ -20,7 +20,7 @@ import {
   TagTypes,
   AppLatestJSONLatest,
   SettingsFile,
-  CommonSetting 
+  CommonSetting
 } from '@deskthing/types'
 import { AppData, LegacyAppData } from '@shared/types'
 
@@ -160,7 +160,7 @@ export const sanitizeSettings: (setting: Partial<SettingsType>) => SettingsType 
       setting = {
         ...commonSettings,
         type: SETTING_TYPES.BOOLEAN,
-        value: setting.value,
+        value: setting.value
       } as SettingsBoolean
       break
     case SETTING_TYPES.STRING:
@@ -366,14 +366,16 @@ export const sanitizeAppStructure: (app: Partial<App>) => asserts app is App = (
  * verify app meta information and return the properly constructed one
  * Modifies the app directly
  * Also verifies the manifest data if it needs to be verified
+ * 
+ * ... After a review, I don't think this is actually necessary? It seems redundant now  
  * @asserts app is Required<Pick<App, 'meta'>>
  */
 export const sanitizeAppMeta: (
   app: Partial<App>
 ) => asserts app is Required<Pick<App, 'meta' | 'manifest'>> = (app) => {
-  const currentMetaVersion = '0.11.0' // find a better way to do this
+  const currentMetaVersion = '0.11.17' // find a better way to do this
 
-  if (!app.meta) {
+  if (!app.meta || app.meta.version != currentMetaVersion) { // if the meta is missing entirely
     app.manifest = constructManifest(app.manifest)
     app.meta = {
       version: currentMetaVersion,
@@ -382,19 +384,16 @@ export const sanitizeAppMeta: (
       updateAvailable: false,
       updateChecked: false
     }
+    return // early break
   }
 
-  if (!app.meta.verifiedManifest) {
+  if (!app.meta.verifiedManifest) { // if the manifest wasn't
     app.manifest = constructManifest(app.manifest)
     app.meta.verifiedManifest = true
   }
 
-  if (app.meta.version != currentMetaVersion) {
+  if (app.meta.version != currentMetaVersion) { // if the version is not current
     app.meta.version = currentMetaVersion
-    app.meta.verified = true
-  }
-
-  if (!app.meta.verified) {
     app.meta.verified = true
   }
 }
@@ -403,15 +402,19 @@ export const sanitizeAppMeta: (
  * Constructs the app's manifest and fills in any information that may be missing
  */
 export const constructManifest = (manifestData?: Partial<AppManifest>): AppManifest => {
-  const getTags = (): TagTypes[] => {
-    return [
-      ...(manifestData?.tags || []),
-      ...(manifestData?.isAudioSource ? [TagTypes.AUDIO_SOURCE] : []),
-      ...(manifestData?.isScreenSaver ? [TagTypes.SCREEN_SAVER] : []),
-      ...(manifestData?.isWebApp ? [TagTypes.WEB_APP_ONLY] : []),
-      ...(manifestData?.isLocalApp ? [TagTypes.UTILITY_ONLY] : [])
-    ]
-  }
+  // Convert to set to ensure that there is only one of each item then remove any non-string tags - then convert back to array for use
+  const tags =
+    Array.from(
+      new Set(
+        [
+          ...(manifestData?.tags || []),
+          ...(manifestData?.isAudioSource ? [TagTypes.AUDIO_SOURCE] : []),
+          ...(manifestData?.isScreenSaver ? [TagTypes.SCREEN_SAVER] : []),
+          ...(manifestData?.isWebApp ? [TagTypes.WEB_APP_ONLY] : []),
+          ...(manifestData?.isLocalApp ? [TagTypes.UTILITY_ONLY] : [])
+        ].filter((tag) => typeof tag === 'string') // ensures stuff like 'false' doesn't find its way into here
+      )
+    ) || []
 
   const returnData: AppManifest = {
     ...manifestData, // ensures that any additional fields are preserved
@@ -425,7 +428,7 @@ export const constructManifest = (manifestData?: Partial<AppManifest>): AppManif
     homepage: manifestData?.homepage || '',
     repository: manifestData?.repository || '',
     updateUrl: manifestData?.updateUrl || manifestData?.repository || '',
-    tags: getTags(),
+    tags: tags,
     requiredVersions: {
       client: manifestData?.requiredVersions?.client || '>=0.0.0',
       server: manifestData?.requiredVersions?.server || '>=0.0.0'
@@ -434,6 +437,8 @@ export const constructManifest = (manifestData?: Partial<AppManifest>): AppManif
     postinstall_message: manifestData?.postinstall_message || '',
     postinstall_script: manifestData?.postinstall_script || 'postinstall.js',
     template: manifestData?.template || 'default',
+
+    // the following are all technically deped but still here for compatibility
     version_code: manifestData?.version_code || 0,
     compatible_server: manifestData?.compatible_server || [0],
     compatible_client: manifestData?.compatible_client || [0],

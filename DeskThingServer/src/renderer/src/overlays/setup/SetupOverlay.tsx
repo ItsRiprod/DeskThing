@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import Overlay from '../Overlay'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import {
   IconBluetooth,
   IconCarThingSmall,

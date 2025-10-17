@@ -1,6 +1,6 @@
 import { FC } from 'react'
 import { FlashPages, PageOutline } from './SuperbirdPage'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import { IconLightning } from '@renderer/assets/icons'
 
 interface Dashboard {

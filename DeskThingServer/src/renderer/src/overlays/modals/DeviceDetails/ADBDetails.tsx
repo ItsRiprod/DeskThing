@@ -11,7 +11,7 @@ import {
   IconWrench,
   IconX
 } from '@renderer/assets/icons'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import React, { useState, useRef, useMemo } from 'react'
 import { Client } from '@deskthing/types'
 import usePlatformStore from '@renderer/stores/platformStore'

@@ -8,7 +8,7 @@ import {
   IconStop,
   IconX
 } from '@renderer/assets/icons'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import ErrorBoundary from '@renderer/components/ErrorBoundary'
 import TaskBase from '@renderer/components/tasks/TaskBase'
 import useTaskStore from '@renderer/stores/taskStore'

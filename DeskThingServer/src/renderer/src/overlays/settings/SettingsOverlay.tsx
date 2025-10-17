@@ -1,31 +1,25 @@
 import React, { useEffect } from 'react'
 import Overlay from '../Overlay'
-import {
-  IconComputer,
-  IconInfo,
-  IconLayoutgrid,
-  IconMusic,
-  IconServer
-} from '@renderer/assets/icons'
-import Button from '@renderer/components/Button'
-import ClientSettings from './ClientSettings'
+import { IconGlobe, IconInfo, IconLayoutgrid, IconMusic, IconServer } from '@renderer/assets/icons'
+import Button from '@renderer/components/buttons/Button'
 import ServerSettings from './ServerSettings'
 import { useSearchParams } from 'react-router-dom'
 import MusicSettings from './MusicSettings'
 import AppsSettings from './AppSettings'
 import AboutSettings from './About'
 import ErrorBoundary from '@renderer/components/ErrorBoundary'
-
-const validPages = ['server', 'client', 'music', 'apps', 'about']
+import ExtrasSettings from './ExtraSettings'
 
 const settingsPages = [
   { key: 'server', label: 'Server', Icon: IconServer },
-  { key: 'client', label: 'Client', Icon: IconComputer },
+  // { key: 'client', label: 'Client', Icon: IconComputer },
+  { key: 'extras', label: 'Extras', Icon: IconGlobe },
   { key: 'music', label: 'Music', Icon: IconMusic },
   { key: 'apps', label: 'Apps', Icon: IconLayoutgrid },
   { key: 'about', label: 'About', Icon: IconInfo }
 ]
 
+const validPages = settingsPages.map((page) => page.key)
 /**
  * ClientSettingsOverlay component
  *
@@ -54,7 +48,6 @@ const SettingsOverlay: React.FC = () => {
     }
   }, [currentPage, setCurrentPage])
 
-
   return (
     <Overlay
       onClose={onClose}
@@ -78,7 +71,7 @@ const SettingsOverlay: React.FC = () => {
         </div>
         <div className="w-full relative overflow-y-auto">
           <ErrorBoundary>
-            {currentPage == 'client' && <ClientSettings />}
+            {currentPage == 'extras' && <ExtrasSettings />}
             {currentPage == 'server' && <ServerSettings />}
             {currentPage == 'music' && <MusicSettings />}
             {currentPage == 'apps' && <AppsSettings />}

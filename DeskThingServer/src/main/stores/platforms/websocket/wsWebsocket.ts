@@ -25,6 +25,7 @@ import {
 import { ExpressServer } from './expressWorker'
 import { WebsocketPlatformIPC } from '@shared/types'
 import { handleError } from '@server/utils/errorHandler'
+import { decodeAppId, encodeAppId } from '@server/utils/bufferUtils'
 
 type AdditionalOptions = {
   port?: number
@@ -277,7 +278,60 @@ export class WSPlatform {
   }
 
   private setupMessageHandling(clientId: string, socket: WebSocket): void {
-    socket.on('message', (message: WebSocket.Data) => {
+    const platformInternalId = this.getInternalId(clientId)
+    if (!platformInternalId) {
+      console.error(`Unable to find record of ${clientId}. Cancelling message`)
+      console.log('Available clientIds:', Array.from(this.clients.keys()))
+      return
+    }
+
+    const clientObj = this.clients.get(platformInternalId)
+
+    const client = clientObj?.client
+
+    socket.on('message', (message, isBinary: boolean) => {      
+      if (isBinary) {
+
+        if (!parentPort) {
+          console.error('Failed to bind parent port for binary message handling')
+          return
+        }
+
+        try {
+          if (!client) {
+            console.error(`Unable to find client object for ${clientId}. Cancelling message`)
+            return
+          }
+
+          // Normalize incoming chunks to a single Buffer
+          let buf: Buffer
+          if (Buffer.isBuffer(message)) {
+            buf = message
+          } else if (message instanceof ArrayBuffer) {
+            buf = Buffer.from(message)
+          } else if (Array.isArray(message) && message.every(Buffer.isBuffer)) {
+            buf = Buffer.concat(message)
+          } else {
+            console.error(`Received non-binary message:`, message)
+            return
+          }
+
+          const { appId, data: payloadArrayBuffer } = decodeAppId(buf)
+
+          parentPort.postMessage(
+            {
+              event: PlatformEvent.BINARY_RECEIVED,
+              data: { client, data: payloadArrayBuffer, appId }
+            },
+            [payloadArrayBuffer]
+          )
+          return
+        } catch (error) {
+          console.error(`Error handling binary message from ${clientId}:`, error)
+          return
+        }
+      }
+
       try {
         let messageStr: string
         if (typeof message === 'string') {
@@ -292,7 +346,7 @@ export class WSPlatform {
         }
 
         const data = JSON.parse(messageStr) as DeviceToDeskthingData & { clientId: string }
-        const platformInternalId = this.getInternalId(clientId || data.clientId)
+        const platformInternalId = this.getInternalId(clientId || data.clientId) // re-check in case clientId is not set
 
         if (!platformInternalId) {
           console.error(`Unable to find record of ${clientId}. Cancelling message`)
@@ -398,6 +452,36 @@ export class WSPlatform {
         `Sending data type ${data.type} with request ${data.request} to client ${clientId}`
       )
       clientConnection.socket.send(JSON.stringify(data))
+      return true
+    } catch (error) {
+      this.sendToParent({
+        event: PlatformEvent.ERROR,
+        data:
+          error instanceof Error
+            ? error
+            : new Error('Unknown error occurred sending data to websocket', { cause: error })
+      })
+      return false
+    }
+  }
+
+  async sendBinary(clientId: string, data: Buffer, appId: string): Promise<boolean> {
+    const platformConnectionId = this.getInternalId(clientId)
+    if (!platformConnectionId) {
+      console.warn(`Client ${clientId} does not have an internal id`)
+      return false
+    }
+
+    const clientConnection = this.clients.get(platformConnectionId)
+    if (!clientConnection) {
+      console.warn('(wsWebsocket) Connection does not exist!')
+      return false
+    }
+
+    try {
+      console.log(`Sending binary data to client ${clientId} for app ${appId}`)
+      const withAppId = encodeAppId(appId, data)
+      clientConnection.socket.send(withAppId)
       return true
     } catch (error) {
       this.sendToParent({
@@ -784,6 +868,9 @@ if (parentPort) {
         break
       case 'sendData':
         await platform.sendData(message.clientId, message.data)
+        break
+      case 'sendBinary':
+        await platform.sendBinary(message.clientId, message.data, message.appId)
         break
       case 'broadcast':
         await platform.broadcastData(message.data)

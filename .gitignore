@@ -40,3 +40,5 @@ CommunityApps
 DeskThingServer/.env.production
 DeskThingServer/src/main/config.json
 /DeskThingServer/scripts
+/DeskThingServer/recordings
+/DeskThingServer/temp

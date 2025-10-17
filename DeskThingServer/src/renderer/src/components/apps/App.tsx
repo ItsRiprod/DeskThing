@@ -6,12 +6,14 @@
  * @returns A React component that renders the App UI.
  */
 import React from 'react'
-import { App as AppType, TagTypes } from '@deskthing/types'
+import { App as AppType } from '@deskthing/types'
 import { IconGrip, IconPause, IconPlay, IconPulsing, IconWrench } from '@renderer/assets/icons'
-import Button from './Button'
-import { useAppStore, useSettingsStore } from '@renderer/stores'
+import Button from '../buttons/Button'
+import { useAppStore } from '@renderer/stores'
 import { useSearchParams } from 'react-router-dom'
 import { AppIcon } from './AppIcon'
+import { AppRoleTags } from './AppRoleTags'
+import AppActionTags from './AppActionTags'
 
 interface AppProps {
   app: AppType
@@ -22,7 +24,6 @@ const App: React.FC<AppProps> = ({ app, activeRequest }) => {
   const stopApp = useAppStore((appStore) => appStore.stopApp)
   const runApp = useAppStore((appStore) => appStore.runApp)
   const [searchParams, setSearchParams] = useSearchParams()
-  const is_nerd = useSettingsStore((state) => state.settings?.flag_nerd || false)
 
   const showAppDetails = (): void => {
     searchParams.set('app', 'true')
@@ -51,30 +52,12 @@ const App: React.FC<AppProps> = ({ app, activeRequest }) => {
               <p className="text-xs text-gray-500 font-geistMono italic">{app.manifest.version}</p>
             )}
           </div>
-          {is_nerd && (
-            <div className="font-geistMono text-xs flex gap-2 text-gray-300">
-              {app.manifest?.tags?.includes(TagTypes.AUDIO_SOURCE) && (
-                <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors bg-blue-500/10 text-blue-500 hover:bg-blue-500/15 border-none">
-                  Audio Source
-                </span>
-              )}
-              {app.manifest?.tags?.includes(TagTypes.SCREEN_SAVER) && (
-                <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors bg-violet-500/10 text-violet-500 hover:bg-violet-500/15 border-none">
-                  Screensaver
-                </span>
-              )}
-              {app.manifest?.tags?.includes(TagTypes.UTILITY_ONLY) && (
-                <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/15 border-none">
-                  Local App
-                </span>
-              )}
-              {app.manifest?.tags?.includes(TagTypes.WEB_APP_ONLY) && (
-                <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors bg-amber-500/10 text-amber-500 hover:bg-amber-500/15 border-none">
-                  Web App
-                </span>
-              )}
-            </div>
-          )}
+
+          <div className="font-geistMono text-xs flex gap-2 text-gray-300">
+            <AppRoleTags appId={app.name} />
+            <AppActionTags appId={app.name} />
+          </div>
+
           <div className="flex flex-col gap-1 mt-1">
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <p className="font-geistMono italic">By {app.manifest?.author || 'Unknown'}</p>

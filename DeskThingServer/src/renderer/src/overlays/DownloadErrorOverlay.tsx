@@ -1,4 +1,4 @@
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 
 interface DownloadErrorOverlayProps {
   error: string

@@ -8,19 +8,21 @@ import {
   AppProcessData,
   APP_REQUESTS,
   DeskThingProcessData,
-  AppToDeskThingData
+  AppToDeskThingData,
+  DeskThingToAppData
 } from '@deskthing/types'
 import appProcessPath from '@processes/appProcess?modulePath'
-import { app /*, utilityProcess */ } from 'electron'
+import { app as ElectronApp /*, utilityProcess */ } from 'electron'
 import { Worker } from 'node:worker_threads'
 import Logger from '@server/utils/logger'
 import { dirname, join } from 'node:path'
-import { readFile, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, stat, writeFile } from 'node:fs/promises'
 import { translateLegacyTypeRequest } from '@server/services/apps/legacyAppComs'
 import { coerce, lt } from 'semver'
 import { EventEmitter } from 'node:events'
 import { handleError } from '@server/utils/errorHandler'
 import { LOG_CONTEXTS } from '@shared/types'
+import { arrayBufferToBuffer } from '@server/utils/bufferUtils'
 
 export class AppProcessStore
   extends EventEmitter<AppProcessEvents>
@@ -60,10 +62,35 @@ export class AppProcessStore
     this.processes[appName].process.postMessage(data)
   }
 
+  async postBinary(
+    appName: string,
+    data: DeskThingToAppData,
+    transferList: ArrayBuffer[] = []
+  ): Promise<void> {
+    if (!this.processes[appName]) {
+      Logger.warn(
+        `Tried to send binary message to app ${appName} but it wasn't found or is not running`,
+        {
+          source: 'AppProcessStore',
+          function: 'postBinary'
+        }
+      )
+      return
+    }
+
+    const messageData: DeskThingProcessData = {
+      type: 'data',
+      payload: data
+    }
+
+    this.processes[appName].process.postMessage(messageData, transferList)
+  }
+
   getActiveProcessIds(): string[] {
     return Object.keys(this.processes)
   }
 
+  /** Gets the path to the app index file - not directory */
   private async getAppPath(appName: string): Promise<string> {
     const possiblePaths = [
       'index.js',
@@ -74,7 +101,7 @@ export class AppProcessStore
       'server/index.cjs'
     ]
 
-    const appPath = join(app.getPath('userData'), 'apps', appName)
+    const appPath = join(ElectronApp.getPath('userData'), 'apps', appName)
 
     for (const path of possiblePaths) {
       const fullPath = join(appPath, path)
@@ -89,6 +116,22 @@ export class AppProcessStore
     throw new Error(
       `Entry point for app ${appName} not found. (Does it have an index file in root or server directory?)`
     )
+  }
+
+  private async getAppDir(appName: string): Promise<string> {
+    const appPath = join(ElectronApp.getPath('userData'), 'apps', appName)
+    return appPath
+  }
+
+  private async getLibDir(appName: string): Promise<string> {
+    const libPath = join(ElectronApp.getPath('userData'), 'apps', appName, 'lib')
+    // make the folder if it doesn't exist
+    try {
+      await stat(libPath)
+    } catch {
+      await mkdir(libPath, { recursive: true })
+    }
+    return libPath
   }
 
   /**
@@ -127,12 +170,18 @@ export class AppProcessStore
           // Assert the type to module
           await this.assertModuleType(deskthingUrl)
 
+          const libDir = await this.getLibDir(app.name)
+          const serverDir = await this.getAppDir(app.name)
+
           process = new Worker(deskthingUrl, {
             stdout: true,
             stderr: true,
             env: {
               DESKTHING_URL: deskthingUrl,
-              DESKTHING_APP_NAME: app.name
+              DESKTHING_APP_NAME: app.name,
+              DESKTHING_LIB_DIR: libDir,
+              DESKTHING_ROOT_DIR: serverDir,
+              DESKTHING_VERSION: ElectronApp.getVersion()
             },
             name: `DeskThing ${app.name} App`
           })
@@ -383,6 +432,15 @@ export class AppProcessStore
             source: appName
           } as Extract<AppToDeskThingData, { type: typeof data.payload.type; source: string }>)
           break
+        case 'binary': {
+          const buffer = arrayBufferToBuffer(data.payload.payload)
+          this.emit(AppProcessTypes.BINARY, {
+            data: buffer,
+            appName,
+            clientId: data.payload.clientId
+          })
+          break
+        }
         case 'started':
           this.emit(AppProcessTypes.RUNNING, appName)
           break

@@ -13,13 +13,19 @@ export const defaultSettings: Settings = {
   server_localIp: getLocalIpAddresses(),
   server_callbackPort: 8888,
 
+  // audio agent info
+  voice_agent_app_ids: [],
+
   // device
   device_devicePort: 8891,
   device_address: '0.0.0.0',
 
   // music
-  music_playbackLocation: 'none',
   music_refreshInterval: 15000,
+  music_control_id: '', // not implemented
+  music_sources_ids: [], // not implemented
+  // depreciated once source and control are implemented
+  music_playbackLocation: 'none',
 
   // adb
   adb_useGlobal: false,
@@ -31,5 +37,5 @@ export const defaultSettings: Settings = {
   flag_firstClose: true,
   flag_hasOpened: false,
   flag_collectStats: true,
-  flag_nerd: false
+  flag_nerd: false,
 }

@@ -5,7 +5,7 @@ import { FlashPage } from './FlashPage'
 import { IconProps } from '@renderer/assets/icons/icon'
 import { IconLightning, IconArrowLeft, IconDownload, IconGear } from '@renderer/assets/icons'
 import { DashboardPage } from './Dashboard'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import { AutoConfig } from './AutoConfig'
 import useFlashStore from '@renderer/stores/flashStore'
 

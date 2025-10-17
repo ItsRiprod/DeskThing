@@ -9,7 +9,7 @@ import {
   IconUpload,
   IconX
 } from '@renderer/assets/icons'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import { useSettingsStore } from '@renderer/stores'
 import React, { useState, useMemo } from 'react'
 import Overlay from '../../Overlay'

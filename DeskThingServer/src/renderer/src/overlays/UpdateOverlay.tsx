@@ -1,5 +1,5 @@
 import { IconArrowRight, IconLink, IconLoading, IconX } from '@renderer/assets/icons'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import useUpdateStore from '@renderer/stores/updateStore'
 import { UpdateProgressType } from '@shared/types'
 import DOMPurify from 'dompurify'

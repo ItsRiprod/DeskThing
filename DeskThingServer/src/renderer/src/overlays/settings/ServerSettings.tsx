@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import useSettingsStore from '../../stores/settingsStore'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import { IconLoading, IconPlay, IconSave, IconToggle } from '@renderer/assets/icons'
 import Select from '@renderer/components/Select'
 import { SingleValue } from 'react-select'

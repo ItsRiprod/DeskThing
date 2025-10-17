@@ -159,7 +159,16 @@ export class SongCache extends EventEmitter<SongCacheEventMap> {
         device_id: song.device_id,
         id: song.id,
         liked: song.liked,
-        color: song.color,
+        color: song.color || {
+          value: [],
+          rgb: '',
+          rgba: '',
+          hex: '',
+          hexa: '',
+          isDark: false,
+          isLight: false,
+          error: undefined
+        },
 
         // deprecated version info
         can_fast_forward: song.can_fast_forward,

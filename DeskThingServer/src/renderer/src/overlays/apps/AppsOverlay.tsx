@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import Overlay from '../Overlay'
 import { IconArrowUp, IconDetails, IconGear, IconLogs, IconPlay } from '@renderer/assets/icons'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import { useSearchParams } from 'react-router-dom'
 import AppActions from './AppActions'
 import AppDetails from './AppDetails'

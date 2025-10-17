@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import { Member, Supporter } from '@shared/types/supporter'
 import User from '@renderer/components/supporter/User'
 

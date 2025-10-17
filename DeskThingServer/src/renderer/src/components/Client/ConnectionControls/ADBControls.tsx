@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Client, ConnectionState, PlatformIDs } from '@deskthing/types'
 import { IconConfig, IconRefresh, IconUpload } from '@renderer/assets/icons'
-import Button from '../../Button'
+import Button from '../../buttons/Button'
 import usePlatformStore from '@renderer/stores/platformStore'
 import { useClientStore, useSettingsStore } from '@renderer/stores'
 

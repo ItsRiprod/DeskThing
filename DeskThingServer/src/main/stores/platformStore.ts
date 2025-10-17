@@ -37,6 +37,7 @@ import { ExtractPayloadFromIPC, PlatformIPC } from '@shared/types/ipc/ipcPlatfor
 import { progressBus } from '@server/services/events/progressBus'
 import { ProgressChannel } from '@shared/types'
 import { ClientIdentificationService } from '@server/services/clients/clientIdentificationService'
+import { bufferToTransferable } from '@server/utils/bufferUtils'
 
 export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements PlatformStoreClass {
   private platforms: Map<PlatformIDs, PlatformInterface> = new Map()
@@ -76,17 +77,28 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
 
   private setupListeners(): void {
     this.appStore.onAppMessage(APP_REQUESTS.SEND, (appData) => {
-      if (appData.payload.clientId) {
-        this.sendDataToClient({
-          ...appData.payload,
-          clientId: appData.payload.clientId
-        } as DeskThingToDeviceCore & { clientId: string })
+      if (appData.request == 'json') {
+        if (appData.payload.clientId) {
+          this.sendDataToClient({
+            ...appData.payload,
+            clientId: appData.payload.clientId
+          } as DeskThingToDeviceCore & { clientId: string })
+        } else {
+          this.broadcastToClients({
+            app: appData.source,
+            ...appData.payload
+          } as DeskThingToDeviceCore)
+        }
       } else {
-        this.broadcastToClients({
-          app: appData.source,
-          appId: appData.source,
-          ...appData.payload
-        } as DeskThingToDeviceCore)
+        // handle binary data
+      }
+    })
+
+    this.appStore.on('binary', (binData) => {
+      if (binData.clientId) {
+        // send exact copy
+        // Only supported by the wsPlatform
+        this.getPlatformForClient(binData.clientId, ProviderCapabilities.BINARY)
       }
     })
 
@@ -200,7 +212,7 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
     }
 
     this.platforms.set(platform.id, platform)
-    this.setupPlatformListeners(platform)
+    await this.setupPlatformListeners(platform)
     this.emit(PlatformStoreEvent.PLATFORM_ADDED, platform)
 
     Logger.debug(`Platform ${platform.name} (${platform.id}) added`, {
@@ -749,7 +761,7 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
     }
   }
 
-  private setupPlatformListeners(platform: PlatformInterface): void {
+  private async setupPlatformListeners(platform: PlatformInterface): Promise<void> {
     // Connection
     platform.on(PlatformEvent.CLIENT_CONNECTED, (client: Client) => {
       this.handleClientUpdate(platform, client)
@@ -781,6 +793,32 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
     // Data received
     platform.on(PlatformEvent.DATA_RECEIVED, ({ client, data }) => {
       this.handleSocketData(client, data)
+    })
+
+    // Binary data received
+    platform.on(PlatformEvent.BINARY_RECEIVED, async ({ client, data, appId }) => {
+      // Go ahead and re-emit the data for any listeners to consume and use
+
+      if (appId == 'server') {
+        this.emit(PlatformStoreEvent.BINARY_RECEIVED, {
+          client: client as Extract<Client, { connected: true }>,
+          data,
+          appId
+        })
+      } else {
+        // Don't copy the buffer, instead just transfer it as there is only one recipient
+        const transferBuf = bufferToTransferable(data)
+        this.appStore.sendBinaryToApp(
+          appId,
+          {
+            type: DESKTHING_EVENTS.BINARY,
+            request: 'binary',
+            payload: transferBuf,
+            clientId: client.clientId
+          },
+          [transferBuf as ArrayBuffer]
+        )
+      }
     })
 
     // Error

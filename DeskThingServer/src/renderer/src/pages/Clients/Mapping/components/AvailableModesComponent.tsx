@@ -1,4 +1,4 @@
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import { useClientStore } from '@renderer/stores'
 import { EventMode } from '@deskthing/types'
 

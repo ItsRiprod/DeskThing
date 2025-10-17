@@ -8,7 +8,7 @@ import {
 } from '@renderer/assets/icons'
 import { ProgressChannel } from '@shared/types'
 import React, { useEffect, useState } from 'react'
-import Button from '../Button'
+import Button from '../buttons/Button'
 import ClientDetailsOverlay from '@renderer/overlays/modals/DeviceDetails/ClientDetailsOverlay'
 import { Client, ClientPlatformIDs, PlatformIDs, ConnectionState } from '@deskthing/types'
 import usePlatformStore from '@renderer/stores/platformStore'
@@ -27,7 +27,7 @@ const ConnectionComponent: React.FC<ConnectionComponentProps> = ({ client }) => 
   const disconnect = usePlatformStore((state) => state.disconnect)
   const resendData = usePlatformStore((state) => state.resendInitialData)
   const [isSendingData, setIsSendingData] = useState(false)
-  const is_nerd = useSettingsStore((state) => state.settings?.flag_nerd || false)
+  const is_nerd = useSettingsStore((state) => state.settings?.flag_nerd) || false
 
   useEffect(() => {
     const updateTime = (): number | undefined => {

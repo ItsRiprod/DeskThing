@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import { useAppStore } from '@renderer/stores'
 import AppSettings from '@renderer/overlays/apps/AppSettings'
-import Button from '@renderer/components/Button'
-import { AppIcon } from '@renderer/components/AppIcon'
+import Button from '@renderer/components/buttons/Button'
+import { AppIcon } from '@renderer/components/apps/AppIcon'
 
 const AppsSettings: React.FC = () => {
   const apps = useAppStore((state) => state.appsList)

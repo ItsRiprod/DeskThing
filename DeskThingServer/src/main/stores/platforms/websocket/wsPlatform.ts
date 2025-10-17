@@ -23,6 +23,7 @@ import EventEmitter from 'node:events'
 import { PlatformIPC } from '@shared/types/ipc/ipcPlatform'
 import { progressBus } from '@server/services/events/progressBus'
 import { ProgressChannel } from '@shared/types'
+import { bufferToTransferable } from '@server/utils/bufferUtils'
 
 export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements PlatformInterface {
   private worker: Worker | null = null
@@ -33,7 +34,11 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
 
   readonly identifier: Omit<ClientIdentifier, 'id' | 'active'> = {
     providerId: PlatformIDs.WEBSOCKET,
-    capabilities: [ProviderCapabilities.COMMUNICATE, ProviderCapabilities.PING],
+    capabilities: [
+      ProviderCapabilities.COMMUNICATE,
+      ProviderCapabilities.PING,
+      ProviderCapabilities.BINARY
+    ],
     connectionState: ConnectionState.Established
   }
 
@@ -163,6 +168,9 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
               })
             }
           }
+          break
+        case PlatformEvent.BINARY_RECEIVED:
+          this.emit(event, data)
           break
         case PlatformEvent.ERROR:
           this.emit(event, data)
@@ -303,6 +311,21 @@ export class WebSocketPlatform extends EventEmitter<PlatformEvents> implements P
       return false
     }
     this.worker?.postMessage({ type: 'sendData', clientId, data })
+    return true
+  }
+
+  async sendBinary(clientId: string, data: Buffer, appId: string): Promise<boolean> {
+    if (!this.isActive) {
+      logger.warn('Socket is not active! Failed to send binary data')
+      return false
+    }
+
+    // convert buffer to ArrayBuffer for transfer
+    const arrayBuffer = bufferToTransferable(data) as ArrayBuffer
+
+    this.worker?.postMessage({ type: 'sendBinary', clientId, data: arrayBuffer, appId }, [
+      arrayBuffer
+    ])
     return true
   }
 

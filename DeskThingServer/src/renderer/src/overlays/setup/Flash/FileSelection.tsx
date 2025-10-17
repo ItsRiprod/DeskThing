@@ -1,7 +1,7 @@
 import { FC, useState } from 'react'
 import { IconUpload, IconLoading, IconConfig } from '@renderer/assets/icons'
 import useFlashStore from '@renderer/stores/flashStore'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 
 export const FileSelection: FC = () => {
   const [selectingFile, setSelectingFile] = useState(false)

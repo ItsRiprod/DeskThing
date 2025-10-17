@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import Overlay from '../Overlay'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import { IconBell, IconLayoutgrid, IconLogs, IconWarning } from '@renderer/assets/icons'
 import EvensPage from './EventsPage'
 import { useNotificationStore } from '@renderer/stores/'

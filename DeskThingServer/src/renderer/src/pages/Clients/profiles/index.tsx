@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react'
 import Sidebar from '@renderer/nav/Sidebar'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import { IconCheckCircle, IconDownload, IconPlus, IconUpload } from '@renderer/assets/icons'
 import MainElement from '@renderer/nav/MainElement'
-import SponsorButton from '@renderer/components/SponsorButton'
+import SponsorButton from '@renderer/components/buttons/SponsorButton'
 import useMappingStore from '@renderer/stores/mappingStore'
 
 const ProfilesPage: React.FC = () => {

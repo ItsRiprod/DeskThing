@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import useSettingsStore from '../../stores/settingsStore'
 import useAppStore from '../../stores/appStore'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import { IconLoading, IconSave, IconToggle } from '@renderer/assets/icons'
 import Select from '@renderer/components/Select'
 import { SingleValue } from 'react-select'
@@ -89,7 +89,7 @@ const MusicSettings: React.FC = () => {
           <div className="flex gap-1">
             <h2 className="text-xl">Refresh Interval (seconds)</h2>
             <InfoComponent
-              description="Set the interval for refreshing music data in seconds. Set to 0 to disable. Usually 10-15 seconds is a good value."
+              description="Set the interval for refreshing music data in seconds. Usually 10-15 seconds is a good value. This is only needed for while you are changing music on devices other than DeskThing. Otherwise, DeskThing will stay in sync without this."
               side="right"
             />
           </div>

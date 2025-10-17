@@ -1,7 +1,7 @@
 import React from 'react'
 import SettingComponent from './SettingComponent'
 import { SettingsBoolean } from '@deskthing/types'
-import Button from '../Button'
+import Button from '../buttons/Button'
 import { IconToggle } from '@renderer/assets/icons'
 
 interface SettingsBooleanProps {

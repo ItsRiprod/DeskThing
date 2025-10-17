@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import Sidebar from '@renderer/nav/Sidebar'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import {
   IconAlbum,
   IconCarThingSmall,

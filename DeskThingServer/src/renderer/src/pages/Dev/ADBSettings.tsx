@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import Sidebar from '@renderer/nav/Sidebar'
 import MainElement from '@renderer/nav/MainElement'
 import { IconPlay, IconRefresh, IconReload, IconToggle } from '@renderer/assets/icons'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import { useClientStore, useSettingsStore } from '@renderer/stores'
 import { ClientConnectionMethod } from '@deskthing/types'
 

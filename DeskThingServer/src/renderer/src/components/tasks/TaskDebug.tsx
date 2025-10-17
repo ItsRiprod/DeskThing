@@ -1,6 +1,6 @@
 import { Action, DebugStep } from '@deskthing/types'
 import { FC, useEffect, useState } from 'react'
-import Button from '../Button'
+import Button from '../buttons/Button'
 import { IconLink } from '@renderer/assets/icons'
 import { usePageStore } from '@renderer/stores'
 import { useSearchParams } from 'react-router-dom'

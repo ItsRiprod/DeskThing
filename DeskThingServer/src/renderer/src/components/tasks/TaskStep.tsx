@@ -1,6 +1,6 @@
 import { FC, useState } from 'react'
 import useTaskStore from '@renderer/stores/taskStore'
-import Button from '../Button'
+import Button from '../buttons/Button'
 import { IconCheck, IconLoading } from '@renderer/assets/icons'
 import { STEP_TYPES } from '@deskthing/types'
 import { StepPropsMap } from '@shared/types'

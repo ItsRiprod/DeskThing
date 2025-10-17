@@ -27,6 +27,7 @@ const useSettingsStore = create<SettingsStoreState>((set, get) => ({
   initialized: false,
   settings: {
     version: '0.0.0',
+
     server_LogLevel: LOG_FILTER.INFO,
     server_LogContext: [LOG_CONTEXTS.APP, LOG_CONTEXTS.CLIENT, LOG_CONTEXTS.SERVER],
     server_autoStart: true,
@@ -34,18 +35,26 @@ const useSettingsStore = create<SettingsStoreState>((set, get) => ({
     server_startMinimized: false,
     server_localIp: ['-.-.-.-'],
     server_callbackPort: -1,
+
     device_devicePort: -1,
     device_address: '-.-.-.-',
+
     music_playbackLocation: undefined,
     music_refreshInterval: -1,
+    music_control_id: '',
+    music_sources_ids: [],
+
     adb_useGlobal: false,
     adb_autoConfig: false,
     adb_autoDetect: false,
     adb_blacklist: [],
+
+    voice_agent_app_ids: [],
+
     flag_firstClose: false,
     flag_hasOpened: false,
     flag_collectStats: false,
-    flag_misc: {}
+    flag_misc: {},
   },
   initialize: async () => {
     if (get().initialized) return

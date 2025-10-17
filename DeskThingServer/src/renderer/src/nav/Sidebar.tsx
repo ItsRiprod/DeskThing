@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
-import SponsorButton from '../components/SponsorButton'
-import NotificationButton from '../components/NotificationButton'
-import SettingsButton from '../components/SettingsButton'
-import Button from '@renderer/components/Button'
+import SponsorButton from '../components/buttons/SponsorButton'
+import NotificationButton from '../components/buttons/NotificationButton'
+import SettingsButton from '../components/buttons/SettingsButton'
+import Button from '@renderer/components/buttons/Button'
 import { IconArrowLeft } from '@renderer/assets/icons'
-import FeedbackButton from '@renderer/components/FeedbackButton'
+import FeedbackButton from '@renderer/components/buttons/FeedbackButton'
 import ErrorBoundary from '@renderer/components/ErrorBoundary'
 
 interface SidebarProps {

@@ -1,4 +1,4 @@
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import { Action, EventMode, Key, SettingOption } from '@deskthing/types'
 import { useEffect, useState } from 'react'
 import { ActionIcon } from './ActionIcon'

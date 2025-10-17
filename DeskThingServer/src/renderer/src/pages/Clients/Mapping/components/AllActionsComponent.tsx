@@ -1,5 +1,5 @@
 import { FC, useState } from 'react'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import useMappingStore from '@renderer/stores/mappingStore'
 import { Action, EventMode, Key, ButtonMapping } from '@deskthing/types'
 import ActionButton from './ActionButton'

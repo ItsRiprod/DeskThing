@@ -3,7 +3,7 @@ import { PageProps } from '..'
 import useMappingStore from '@renderer/stores/mappingStore'
 import { Key } from '@deskthing/types'
 import { ActionIcon } from '../components/ActionIcon'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 
 const keyList: string[] = ['Tray1', 'Tray2', 'Tray3', 'Tray4', 'Tray5', 'Tray6']
 

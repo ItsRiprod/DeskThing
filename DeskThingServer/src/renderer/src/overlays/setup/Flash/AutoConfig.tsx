@@ -7,7 +7,7 @@ import {
   IconGear,
   IconLoading
 } from '@renderer/assets/icons'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import { LogEntry } from '@renderer/components/LogEntry'
 import { ProgressChannel } from '@shared/types'
 import useFlashStore from '@renderer/stores/flashStore'

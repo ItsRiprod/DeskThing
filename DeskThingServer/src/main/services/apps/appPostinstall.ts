@@ -7,8 +7,9 @@ import { mkdir, rename, stat } from 'fs/promises'
 import { existsSync } from 'fs'
 import logger from '@server/utils/logger'
 import { handleError } from '@server/utils/errorHandler'
+import { app as ElectronApp } from 'electron'
 
-export const runPostInstall = async (appId?: string): Promise<void> => {
+export const runPostInstall = async (appId: string): Promise<void> => {
   progressBus.start(
     ProgressChannel.FN_APP_POSTINSTALL,
     'Running Postinstall',
@@ -17,8 +18,8 @@ export const runPostInstall = async (appId?: string): Promise<void> => {
 
   const errors: string[] = []
 
-  const extractedPath = appId ? getAppFilePath(appId) : getAppFilePath('staged', 'extracted')
-  const appManifestData = await getManifest(extractedPath)
+  const appPath = getAppFilePath(appId)
+  const appManifestData = await getManifest(appPath)
 
   if (!appManifestData?.postinstall) {
     console.log(appManifestData)
@@ -35,7 +36,7 @@ export const runPostInstall = async (appId?: string): Promise<void> => {
     'postinstall.cjs'
   ]
 
-  const scriptPath = await findScriptName(extractedPath, possibleLocations)
+  const scriptPath = await findScriptName(appPath, possibleLocations)
 
   if (!scriptPath) {
     progressBus.complete(ProgressChannel.FN_APP_POSTINSTALL, 'Postinstall skipped (no file found)')
@@ -47,7 +48,7 @@ export const runPostInstall = async (appId?: string): Promise<void> => {
     await stat(scriptPath) // will throw if the path doesn't exist
 
     // Creates the server path if it has not been made yet
-    const serverDir = join(extractedPath, 'server')
+    const serverDir = join(appPath, 'server')
     if (!existsSync(serverDir)) {
       progressBus.update(
         ProgressChannel.FN_APP_POSTINSTALL,
@@ -65,6 +66,25 @@ export const runPostInstall = async (appId?: string): Promise<void> => {
       }
     }
 
+    const libDir = join(appPath, 'lib')
+
+    if (!existsSync(libDir)) {
+      progressBus.update(
+        ProgressChannel.FN_APP_POSTINSTALL,
+        `Creating lib directory: ${libDir}`,
+        10
+      )
+      try {
+        await mkdir(libDir, { recursive: true })
+      } catch (err) {
+        progressBus.warn(
+          ProgressChannel.FN_APP_POSTINSTALL,
+          `Error creating lib directory: ${err instanceof Error ? err.message : err}`
+        )
+        errors.push('Unable to make lib dir')
+      }
+    }
+
     const mjsScriptPath = scriptPath.replace(/\.js$/, '.mjs')
 
     // Only rename if it's not already an .mjs file
@@ -76,9 +96,14 @@ export const runPostInstall = async (appId?: string): Promise<void> => {
     }
 
     const child = fork(mjsScriptPath, {
-      cwd: extractedPath,
+      cwd: appPath,
       silent: true,
       env: {
+        DESKTHING_APP_NAME: appId,
+        DESKTHING_LIB_DIR: libDir,
+        DESKTHING_ROOT_DIR: appPath,
+        DESKTHING_SERVER_PATH: serverDir,
+        DESKTHING_VERSION: ElectronApp.getVersion(),
         ...process.env
       }
     })

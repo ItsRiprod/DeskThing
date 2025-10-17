@@ -1,6 +1,6 @@
 import { FC, useMemo } from 'react'
 import { IconCheck, IconLink } from '@renderer/assets/icons'
-import Button from '../Button'
+import Button from '../buttons/Button'
 import { usePageStore } from '@renderer/stores'
 import { useSearchParams } from 'react-router-dom'
 import useTaskStore from '@renderer/stores/taskStore'

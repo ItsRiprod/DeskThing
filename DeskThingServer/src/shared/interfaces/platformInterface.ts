@@ -25,6 +25,7 @@ export enum PlatformEvent {
   CLIENT_DISCONNECTED = 'client_disconnected',
   CLIENT_UPDATED = 'client_updated',
   DATA_RECEIVED = 'data_received',
+  BINARY_RECEIVED = 'binary_received',
   ERROR = 'error',
   STATUS_CHANGED = 'status_changed',
   SERVER_STARTED = 'server_started',
@@ -69,6 +70,10 @@ export type PlatformPayloads =
       event: PlatformEvent.DATA_RECEIVED
       data: { client: ConnectedClient; data: DeviceToDeskthingData & { clientId: string } }
     }
+  | {
+      event: PlatformEvent.BINARY_RECEIVED
+      data: { client: ConnectedClient; data: Buffer; appId: string }
+    }
   | { event: PlatformEvent.ERROR; data: Error }
   | { event: PlatformEvent.STATUS_CHANGED; data: PlatformStatus }
   | { event: PlatformEvent.SERVER_STARTED; data: { port?: number; address?: string } }
@@ -105,6 +110,9 @@ export interface PlatformInterface<E extends Record<string, unknown> = Record<st
 
   // Data transfer
   sendData(clientId: string, data: DeskThingToDeviceCore & { app?: string }): Promise<boolean>
+
+  sendBinary?(clientId: string, data: Buffer, appId: string): Promise<boolean>
+
   broadcastData(data: DeskThingToDeviceCore & { app?: string }): Promise<void>
 
   // Handling custom events

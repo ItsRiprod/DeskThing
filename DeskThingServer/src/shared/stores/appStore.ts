@@ -25,6 +25,7 @@ export type AppStoreListenerEvents = {
   appUpdate: { appId: string; currentVersion: string; newVersion: string }
   appUninstall: { appId: string }
   appInstall: { appId: string }
+  binary: { appId: string; data: Buffer; clientId?: string }
 }
 
 // Create listener types automatically from event map
@@ -75,6 +76,13 @@ export interface AppStoreClass extends StoreInterface {
 
   // App communication / management
   sendDataToApp(name: string, data: DeskThingToAppData): Promise<void>
+
+  sendBinaryToApp(
+    name: string,
+    data: DeskThingToAppData,
+    transferList?: ArrayBuffer[] | SharedArrayBuffer[]
+  ): Promise<void>
+
   broadcastToApps(data: DeskThingToAppData): Promise<void>
   purge(name: string): Promise<boolean>
 
@@ -108,7 +116,7 @@ export interface AppStoreClass extends StoreInterface {
   run(name: string): Promise<boolean>
   start(name: string): Promise<boolean>
 
-  runPostinstallScript(appId?: string): Promise<boolean>
+  runPostinstallScript(appId: string): Promise<boolean>
 
   /**
    * Runs the currently staged app

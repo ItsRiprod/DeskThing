@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Client, ConnectionState } from '@deskthing/types'
 import { IconPing } from '@renderer/assets/icons'
-import Button from '../../Button'
+import Button from '../../buttons/Button'
 import usePlatformStore from '@renderer/stores/platformStore'
 import { useSettingsStore } from '@renderer/stores'
 

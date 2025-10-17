@@ -1,4 +1,4 @@
-import SponsorButton from '@renderer/components/SponsorButton'
+import SponsorButton from '@renderer/components/buttons/SponsorButton'
 import React from 'react'
 
 const BluetoothPage: React.FC = () => {

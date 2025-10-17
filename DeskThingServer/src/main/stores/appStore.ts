@@ -52,7 +52,8 @@ export class AppStore implements CacheableStore, AppStoreClass {
     purging: [],
     appUpdate: [],
     appUninstall: [],
-    appInstall: []
+    appInstall: [],
+    binary: []
   }
   private functionTimeouts: Record<string, NodeJS.Timeout> = {}
 
@@ -84,6 +85,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
     this.appProcessStore.on(AppProcessTypes.STOPPED, this.handleProcessStopped.bind(this))
     this.appProcessStore.on(AppProcessTypes.ERROR, this.handleProcessError.bind(this))
     this.appProcessStore.on(AppProcessTypes.EXITED, this.handleProcessExit.bind(this))
+    this.appProcessStore.on(AppProcessTypes.BINARY, this.handleBinaryData.bind(this))
 
     this.releaseStore.on('app', async (appReleases) => {
       /** Check for updates */
@@ -105,7 +107,8 @@ export class AppStore implements CacheableStore, AppStoreClass {
     })
 
     this.notificationStore.on('acknowledged', async (data) => {
-      if (this.apps[data.notification.source]) { // sends the notification back to the app
+      if (this.apps[data.notification.source]) {
+        // sends the notification back to the app
         this.sendDataToApp(data.notification.source, {
           type: DESKTHING_EVENTS.MESSAGE,
           request: '',
@@ -113,6 +116,10 @@ export class AppStore implements CacheableStore, AppStoreClass {
         })
       }
     })
+  }
+
+  private handleBinaryData = ({ appName, data, clientId }: { appName: string, data: Buffer, clientId?: string }): void => {
+    this.notifyListeners('binary', { appId: appName, data, clientId })
   }
 
   private handleProcessStarted(appName: string): void {
@@ -616,6 +623,27 @@ export class AppStore implements CacheableStore, AppStoreClass {
     }
   }
 
+  async sendBinaryToApp(
+    name: string,
+    data: DeskThingToAppData,
+    transferList: ArrayBuffer[] = []
+  ): Promise<void> {
+    try {
+      Logger.debug(`Sending binary data to ${name}`, {
+        source: 'AppStore',
+        function: 'sendBinaryToApp',
+        domain: name
+      })
+      await this.appProcessStore.postBinary(name, data, transferList)
+    } catch (error) {
+      Logger.error(`Error sending binary data to app ${name}: ${error}`, {
+        source: 'AppStore',
+        function: 'sendBinaryToApp',
+        domain: name
+      })
+    }
+  }
+
   /**
    * Enables the app so that it will be run on startup
    * @param name The ID of the app
@@ -776,7 +804,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
     return true
   }
 
-  public runPostinstallScript = async (appId?: string): Promise<boolean> => {
+  public runPostinstallScript = async (appId: string): Promise<boolean> => {
     try {
       await runPostInstall(appId)
       return true
@@ -793,6 +821,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
   /**
    * Runs the currently staged app
    * @returns Promise<void>
+   * @throws if there is an error during the process
    */
   async runStagedApp({
     overwrite,
@@ -803,6 +832,11 @@ export class AppStore implements CacheableStore, AppStoreClass {
     appId?: string
     run?: boolean
   }): Promise<void> {
+    const { error } = Logger.createLogger({
+      store: 'appStore',
+      method: 'runStagedApp'
+    })
+
     progressBus.startOperation(
       ProgressChannel.ST_APP_INITIALIZE,
       'Running App',
@@ -820,40 +854,56 @@ export class AppStore implements CacheableStore, AppStoreClass {
     )
 
     try {
-      // Runs the postinstall script
-      await this.runPostinstallScript()
-    } catch (error) {
+      // setups of files and copies from Staged to the final path
+      appId = await executeStagedFile({ overwrite, appId })
+    } catch (err) {
       progressBus.warn(
         ProgressChannel.ST_APP_INITIALIZE,
         'Error running app',
         'Error while trying to run staged app'
       )
-      Logger.error('Error while trying to run staged app', {
+      error('Error while trying to run staged app', {
         function: 'runStagedApp',
         source: 'AppStore',
-        error: error as Error
+        error: err as Error
       })
+      throw new Error('Unable to setup staged files!')
     }
 
     try {
-      // TODO: Update to use the process
-      await executeStagedFile({ overwrite, appId, run })
-      progressBus.complete(ProgressChannel.ST_APP_INITIALIZE, 'Run App', 'App run successfully')
-      this.notifyListeners('appInstall', {
-        appId: appId || 'unknown'
-      })
-    } catch (error) {
-      progressBus.error(
+      // Runs the postinstall script
+      await this.runPostinstallScript(appId) // runs postinstall for this app specifically
+    } catch (err) {
+      progressBus.warn(
         ProgressChannel.ST_APP_INITIALIZE,
         'Error running app',
         'Error while trying to run staged app'
       )
-      Logger.error('Error while trying to run staged app', {
+      error('Error while trying to run staged app', {
         function: 'runStagedApp',
         source: 'AppStore',
-        error: error as Error
+        error: err as Error
       })
     }
+
+    if (run && appId) {
+      try {
+        progressBus.update(ProgressChannel.ST_APP_INITIALIZE, 'Running app...')
+        await this.run(appId)
+      } catch (error) {
+        progressBus.error(
+          ProgressChannel.ST_APP_INITIALIZE,
+          'Error running app',
+          'Error while trying to run staged app'
+        )
+        throw new Error(`Unable to run ${appId} after initializing! ${handleError(error)}`)
+      }
+    }
+
+    progressBus.complete(ProgressChannel.ST_APP_INITIALIZE, 'Run App', 'App run successfully')
+    this.notifyListeners('appInstall', {
+      appId: appId || 'unknown'
+    })
   }
 
   /**

@@ -2,7 +2,7 @@ import { IconReload, IconPlay, IconLink, IconStop } from '@renderer/assets/icons
 import useTaskStore from '@renderer/stores/taskStore'
 import { Step, Task } from '@deskthing/types'
 import { FC, useMemo } from 'react'
-import Button from '../Button'
+import Button from '../buttons/Button'
 
 interface TaskComponentProps {
   task: Task

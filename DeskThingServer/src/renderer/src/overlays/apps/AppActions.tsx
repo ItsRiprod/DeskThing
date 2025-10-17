@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { AppSettingProps } from './AppsOverlay'
-import Button from '@renderer/components/Button'
+import Button from '@renderer/components/buttons/Button'
 import {
   IconDownload,
   IconLoading,
