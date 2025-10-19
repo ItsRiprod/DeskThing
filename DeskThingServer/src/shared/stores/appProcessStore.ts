@@ -23,7 +23,7 @@ type AppProcessEvent = {
   [AppProcessTypes.EXITED]: [string]
   [AppProcessTypes.RUNNING]: [string]
   [AppProcessTypes.ERROR]: [string]
-  [AppProcessTypes.BINARY]: [{ appName: string; data: Buffer; clientId?: string }]
+  [AppProcessTypes.BINARY]: [{ appName: string; data: ArrayBuffer; clientId?: string }]
 }
 
 export type AppProcessEvents = AppProcessEvent & {

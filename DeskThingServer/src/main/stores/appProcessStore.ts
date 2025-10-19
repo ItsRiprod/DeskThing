@@ -22,7 +22,6 @@ import { coerce, lt } from 'semver'
 import { EventEmitter } from 'node:events'
 import { handleError } from '@server/utils/errorHandler'
 import { LOG_CONTEXTS } from '@shared/types'
-import { arrayBufferToBuffer } from '@server/utils/bufferUtils'
 
 export class AppProcessStore
   extends EventEmitter<AppProcessEvents>
@@ -433,9 +432,8 @@ export class AppProcessStore
           } as Extract<AppToDeskThingData, { type: typeof data.payload.type; source: string }>)
           break
         case 'binary': {
-          const buffer = arrayBufferToBuffer(data.payload.payload)
           this.emit(AppProcessTypes.BINARY, {
-            data: buffer,
+            data: data.payload.payload,
             appName,
             clientId: data.payload.clientId
           })

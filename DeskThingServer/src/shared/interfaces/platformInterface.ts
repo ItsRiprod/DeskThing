@@ -72,7 +72,7 @@ export type PlatformPayloads =
     }
   | {
       event: PlatformEvent.BINARY_RECEIVED
-      data: { client: ConnectedClient; data: Buffer; appId: string }
+      data: { client: ConnectedClient; data: ArrayBuffer; appId: string }
     }
   | { event: PlatformEvent.ERROR; data: Error }
   | { event: PlatformEvent.STATUS_CHANGED; data: PlatformStatus }
@@ -111,7 +111,7 @@ export interface PlatformInterface<E extends Record<string, unknown> = Record<st
   // Data transfer
   sendData(clientId: string, data: DeskThingToDeviceCore & { app?: string }): Promise<boolean>
 
-  sendBinary?(clientId: string, data: Buffer, appId: string): Promise<boolean>
+  sendBinary?(clientId: string, data: ArrayBuffer, appId: string): Promise<boolean>
 
   broadcastData(data: DeskThingToDeviceCore & { app?: string }): Promise<void>
 

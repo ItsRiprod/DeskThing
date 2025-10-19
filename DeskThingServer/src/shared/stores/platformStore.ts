@@ -34,7 +34,7 @@ export type PlatformStoreEvents = {
     { client: Extract<Client, { connected: true }>; data: DeviceToDeskthingData }
   ]
   [PlatformStoreEvent.BINARY_RECEIVED]: [
-    { client: Extract<Client, { connected: true }>; data: Buffer; appId: string }
+    { client: Extract<Client, { connected: true }>; data: ArrayBuffer; appId: string }
   ]
 }
 

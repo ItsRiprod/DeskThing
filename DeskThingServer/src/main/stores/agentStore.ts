@@ -13,7 +13,7 @@ import { PlatformStoreClass, PlatformStoreEvent } from '@shared/stores/platformS
 import { SettingsStoreClass } from '@shared/stores/settingsStore'
 import { AppProcessListener } from '@shared/stores/appProcessStore'
 import { AgentStoreClass } from '@shared/stores/agentStore'
-import { bufferToTransferable, copyBuffer } from '@server/utils/bufferUtils'
+import { copyArrayBuffer } from '@server/utils/bufferUtils'
 
 /** AgentStore implementation */
 export class AgentStore implements AgentStoreClass {
@@ -157,7 +157,7 @@ export class AgentStore implements AgentStoreClass {
     data
   }: {
     client: Client
-    data: Buffer
+    data: ArrayBuffer
   }): Promise<void> => {
     const { warn } = logger.createLogger({
       method: 'binaryReceived',
@@ -175,7 +175,7 @@ export class AgentStore implements AgentStoreClass {
     if (agentAppsInSystem.length === 1) {
       const appId = agentAppsInSystem[0]
       // transfer the buffer - it is only needed once
-      const transferBuffer = bufferToTransferable(data)
+      const transferBuffer = data
 
       this.appStore.sendBinaryToApp(
         appId,
@@ -185,26 +185,24 @@ export class AgentStore implements AgentStoreClass {
           payload: transferBuffer,
           clientId: client.clientId
         },
-        [transferBuffer as ArrayBuffer]
+        [transferBuffer]
       )
     } else {
       for (const appId of agentAppsInSystem) {
         // forward it to the app
 
         // copy the buffer per-app so each gets something they can use
-        const buffCopy = copyBuffer(data)
-
-        const transferBuffer = bufferToTransferable(buffCopy)
+        const buffCopy = copyArrayBuffer(data)
 
         this.appStore.sendBinaryToApp(
           appId,
           {
             type: DESKTHING_EVENTS.AGENT,
             request: 'binary',
-            payload: transferBuffer,
+            payload: buffCopy,
             clientId: client.clientId
           },
-          [transferBuffer as ArrayBuffer]
+          [buffCopy]
         )
       }
     }

@@ -37,7 +37,6 @@ import { ExtractPayloadFromIPC, PlatformIPC } from '@shared/types/ipc/ipcPlatfor
 import { progressBus } from '@server/services/events/progressBus'
 import { ProgressChannel } from '@shared/types'
 import { ClientIdentificationService } from '@server/services/clients/clientIdentificationService'
-import { bufferToTransferable } from '@server/utils/bufferUtils'
 
 export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements PlatformStoreClass {
   private platforms: Map<PlatformIDs, PlatformInterface> = new Map()
@@ -807,16 +806,15 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
         })
       } else {
         // Don't copy the buffer, instead just transfer it as there is only one recipient
-        const transferBuf = bufferToTransferable(data)
         this.appStore.sendBinaryToApp(
           appId,
           {
             type: DESKTHING_EVENTS.BINARY,
             request: 'binary',
-            payload: transferBuf,
+            payload: data,
             clientId: client.clientId
           },
-          [transferBuf as ArrayBuffer]
+          [data]
         )
       }
     })

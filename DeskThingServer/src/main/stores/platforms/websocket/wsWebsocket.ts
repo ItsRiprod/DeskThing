@@ -289,9 +289,8 @@ export class WSPlatform {
 
     const client = clientObj?.client
 
-    socket.on('message', (message, isBinary: boolean) => {      
+    socket.on('message', (message, isBinary: boolean) => {
       if (isBinary) {
-
         if (!parentPort) {
           console.error('Failed to bind parent port for binary message handling')
           return
@@ -303,14 +302,29 @@ export class WSPlatform {
             return
           }
 
-          // Normalize incoming chunks to a single Buffer
-          let buf: Buffer
+          // Normalize incoming chunks to a single ArrayBuffer
+          let buf: ArrayBuffer
           if (Buffer.isBuffer(message)) {
-            buf = message
+            // Use the underlying ArrayBuffer slice that corresponds to the Buffer region
+            buf = message.buffer.slice(
+              message.byteOffset,
+              message.byteOffset + message.byteLength
+            ) as ArrayBuffer
           } else if (message instanceof ArrayBuffer) {
-            buf = Buffer.from(message)
+            buf = message
           } else if (Array.isArray(message) && message.every(Buffer.isBuffer)) {
-            buf = Buffer.concat(message)
+            const concatenated = Buffer.concat(message)
+            buf = concatenated.buffer.slice(
+              concatenated.byteOffset,
+              concatenated.byteOffset + concatenated.byteLength
+            )
+          } else if (ArrayBuffer.isView(message)) {
+            // TypedArray or DataView
+            const view = message as ArrayBufferView
+            buf = view.buffer.slice(
+              view.byteOffset,
+              view.byteOffset + view.byteLength
+            ) as ArrayBuffer
           } else {
             console.error(`Received non-binary message:`, message)
             return
@@ -465,7 +479,7 @@ export class WSPlatform {
     }
   }
 
-  async sendBinary(clientId: string, data: Buffer, appId: string): Promise<boolean> {
+  async sendBinary(clientId: string, data: ArrayBuffer, appId: string): Promise<boolean> {
     const platformConnectionId = this.getInternalId(clientId)
     if (!platformConnectionId) {
       console.warn(`Client ${clientId} does not have an internal id`)
