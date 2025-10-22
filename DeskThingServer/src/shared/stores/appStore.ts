@@ -25,7 +25,7 @@ export type AppStoreListenerEvents = {
   appUpdate: { appId: string; currentVersion: string; newVersion: string }
   appUninstall: { appId: string }
   appInstall: { appId: string }
-  binary: { appId: string; data: Buffer; clientId?: string }
+  binary: { appId: string; data: ArrayBuffer; clientId?: string }
 }
 
 // Create listener types automatically from event map

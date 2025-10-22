@@ -12,7 +12,6 @@
 
 # data files
 data.json
-DeskThing/server/auth_data.json
 
 # testing
 /coverage
@@ -20,8 +19,8 @@ DeskThing/server/auth_data.json
 # production
 builds
 /releases
-releases/Linux/deskthing-0.3.0.AppImage
 node_modules
+
 # misc
 .DS_Store
 /.vscode

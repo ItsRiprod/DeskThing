@@ -118,7 +118,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
     })
   }
 
-  private handleBinaryData = ({ appName, data, clientId }: { appName: string, data: Buffer, clientId?: string }): void => {
+  private handleBinaryData = ({ appName, data, clientId }: { appName: string, data: ArrayBuffer, clientId?: string }): void => {
     this.notifyListeners('binary', { appId: appName, data, clientId })
   }
 

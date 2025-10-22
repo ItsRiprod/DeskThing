@@ -93,12 +93,31 @@ export class PlatformStore extends EventEmitter<PlatformStoreEvents> implements 
       }
     })
 
-    this.appStore.on('binary', (binData) => {
-      if (binData.clientId) {
-        // send exact copy
-        // Only supported by the wsPlatform
-        this.getPlatformForClient(binData.clientId, ProviderCapabilities.BINARY)
+    this.appStore.on('binary', async (binData) => {
+      if (!binData.clientId) {
+        Logger.warn(`Cannot send data: No clientId found for binary data`, {
+          domain: 'platform',
+          source: 'platformStore',
+          function: 'sendDataToClient'
+        })
+        return false
       }
+      // send exact copy
+      // Only supported by the wsPlatform
+      const platform = this.getPlatformForClient(binData.clientId, ProviderCapabilities.BINARY)
+
+      if (!platform || !platform.sendBinary) {
+        Logger.warn(`Cannot send data: No platform found for client ${binData.clientId}`, {
+          domain: 'platform',
+          source: 'platformStore',
+          function: 'sendDataToClient'
+        })
+        return false
+      }
+
+      // send the binary data to the app
+      await platform.sendBinary(binData.clientId, binData.data, binData.appId)
+      return null
     })
 
     this.appStore.on('apps', (apps) => {
