@@ -26,7 +26,7 @@ export function translateLegacyTypeRequest(
     set: { type: APP_REQUESTS.SET, request: 'appData' },
     add: { type: APP_REQUESTS.SET, request: 'appData' },
     open: { type: APP_REQUESTS.OPEN, request: undefined },
-    data: { type: APP_REQUESTS.SEND, request: undefined },
+    data: { type: APP_REQUESTS.SEND, request: 'json' },
     toApp: { type: APP_REQUESTS.TOAPP, request: (request as string | undefined) || '' },
     error: { type: APP_REQUESTS.LOG, request: LOGGING_LEVELS.ERROR },
     log: { type: APP_REQUESTS.LOG, request: LOGGING_LEVELS.LOG },
