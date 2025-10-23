@@ -41,6 +41,7 @@ import { handleError } from '@server/utils/errorHandler'
 import { ReleaseStoreClass } from '@shared/stores/releaseStore'
 import { satisfies } from 'semver'
 import { NotificationStoreClass } from '@shared/stores/notificationStore'
+import { storeProvider } from './storeProvider'
 
 export class AppStore implements CacheableStore, AppStoreClass {
   // State
@@ -118,7 +119,15 @@ export class AppStore implements CacheableStore, AppStoreClass {
     })
   }
 
-  private handleBinaryData = ({ appName, data, clientId }: { appName: string, data: ArrayBuffer, clientId?: string }): void => {
+  private handleBinaryData = ({
+    appName,
+    data,
+    clientId
+  }: {
+    appName: string
+    data: ArrayBuffer
+    clientId?: string
+  }): void => {
     this.notifyListeners('binary', { appId: appName, data, clientId })
   }
 
@@ -832,7 +841,7 @@ export class AppStore implements CacheableStore, AppStoreClass {
     appId?: string
     run?: boolean
   }): Promise<void> {
-    const { error } = Logger.createLogger({
+    const { error, debug } = Logger.createLogger({
       store: 'appStore',
       method: 'runStagedApp'
     })
@@ -880,6 +889,29 @@ export class AppStore implements CacheableStore, AppStoreClass {
         'Error while trying to run staged app'
       )
       error('Error while trying to run staged app', {
+        function: 'runStagedApp',
+        source: 'AppStore',
+        error: err as Error
+      })
+    }
+
+    try {
+      // check if there are any plugins for the app
+      if (!appId) throw new Error('App ID is undefined when checking for plugins')
+      progressBus.update(ProgressChannel.ST_APP_INITIALIZE, 'Checking for app plugins...')
+      storeProvider.getStore('pluginStore').then(async (store) => {
+        // wait 5 seconds for initialization
+        await new Promise((resolve) => setTimeout(resolve, 5000))
+        await store.findAppPlugins(appId)
+        debug(`Checked for plugins for app ${appId}`)
+      })
+    } catch (err) {
+      progressBus.warn(
+        ProgressChannel.ST_APP_INITIALIZE,
+        'Error checking app plugins',
+        'Error while trying to check for app plugins'
+      )
+      error('Error while trying to check for app plugins', {
         function: 'runStagedApp',
         source: 'AppStore',
         error: err as Error

@@ -13,12 +13,13 @@ import {
 } from '@renderer/assets/icons'
 import Button from '@renderer/components/buttons/Button'
 import React, { useState, useRef, useMemo } from 'react'
-import { Client } from '@deskthing/types'
+import { Client, PluginApplications } from '@deskthing/types'
 import usePlatformStore from '@renderer/stores/platformStore'
 import { useSettingsStore } from '@renderer/stores'
-import { ProgressChannel, SCRIPT_IDs } from '@shared/types'
+import { PluginPayload, ProgressChannel, SCRIPT_IDs } from '@shared/types'
 import { LogEntry } from '@renderer/components/LogEntry'
 import { useChannelProgress } from '@renderer/hooks/useProgress'
+import { PluginsComponent } from '@renderer/components/PluginsComponent'
 
 interface ClientDetailsOverlayProps {
   client: Client
@@ -173,6 +174,11 @@ const ADBDeviceDetails: React.FC<ClientDetailsOverlayProps> = ({ client }) => {
     setLoading(false)
   }
 
+  const metadata: PluginPayload<PluginApplications.ADB> = {
+    adbId: adbId!,
+    clientId: client.clientId
+  }
+
   return (
     <div className="h-full p-4 overflow-y-auto bg-zinc-950">
       {client.identifiers.adb && (
@@ -283,6 +289,8 @@ const ADBDeviceDetails: React.FC<ClientDetailsOverlayProps> = ({ client }) => {
               </Button>
             )}
           </div>
+
+          <PluginsComponent application={PluginApplications.ADB} metadata={metadata} />
 
           {progress.progress && (
             <div className="w-full">

@@ -16,6 +16,7 @@ declare global {
       update: typeof import('./api/ipcUpdate').update
       utility: typeof import('./api/ipcUtility').utility
       platform: typeof import('./api/ipcPlatform').platform
+      plugins: typeof import('./api/ipcPlugin').plugins
       onProgress: (callback: (event: ProgressEvent) => void) => () => void
     }
   }

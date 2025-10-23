@@ -14,7 +14,8 @@ import {
   ReleaseIPCData,
   TaskIPCData,
   UpdateIPCData,
-  IPC_DEVICE_TYPES
+  IPC_DEVICE_TYPES,
+  PluginIPCData
 } from '@shared/types'
 
 export const initializeIpcHandlers = async (ipcMain: Electron.IpcMain): Promise<void> => {
@@ -127,6 +128,22 @@ export const initializeIpcHandlers = async (ipcMain: Electron.IpcMain): Promise<
         domain: 'server',
         source: 'ipcHandlers',
         function: 'PLATFORM',
+        error: error instanceof Error ? error : new Error(String(error))
+      })
+      return
+    }
+  })
+
+  ipcMain.handle(IPC_HANDLERS.PLUGIN, async (_event, data: PluginIPCData) => {
+    const { pluginHandler } = await import('./pluginIpc')
+
+    try {
+      return await pluginHandler(data)
+    } catch (error) {
+      logger.error(`Error in IPC handler with event ${data.payload}: ${error}`, {
+        domain: 'server',
+        source: 'ipcHandlers',
+        function: 'PLUGIN',
         error: error instanceof Error ? error : new Error(String(error))
       })
       return

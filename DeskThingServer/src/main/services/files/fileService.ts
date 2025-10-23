@@ -138,7 +138,7 @@ export const writeToFile = async <T>(data: T, filepath: string): Promise<void> =
 
       if (!fileExists) {
         // If file doesn't exist, write directly
-        await fs.promises.writeFile(finalPath, JSON.stringify(data, null, 2))
+        await fs.promises.writeFile(finalPath, JSON.stringify(data, null, 2), { flag: 'wx' })
         return
       }
 

@@ -11,7 +11,8 @@ export enum IPC_HANDLERS {
   RELEASE = 'releases',
   TASK = 'tasks',
   UPDATE = 'update',
-  UTILITY = 'utility'
+  UTILITY = 'utility',
+  PLUGIN = 'plugin'
 }
 
 export type IPCData = AppIPCData | ClientIPCData | UtilityIPCData

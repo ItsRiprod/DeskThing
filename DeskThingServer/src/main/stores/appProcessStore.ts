@@ -12,8 +12,8 @@ import {
   DeskThingToAppData
 } from '@deskthing/types'
 import appProcessPath from '@processes/appProcess?modulePath'
-import { app as ElectronApp /*, utilityProcess */ } from 'electron'
 import { Worker } from 'node:worker_threads'
+import { app as ElectronApp /*, utilityProcess */ } from 'electron'
 import Logger from '@server/utils/logger'
 import { dirname, join } from 'node:path'
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises'

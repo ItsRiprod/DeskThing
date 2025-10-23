@@ -29,6 +29,7 @@ import { StatsCollector } from './statsCollectionStore'
 import { NotificationStoreClass } from '@shared/stores/notificationStore'
 import { TimeStoreClass } from '@shared/stores/timeStoreClass'
 import { AgentStoreClass } from '@shared/stores/agentStore'
+import { PluginStoreClass } from '@shared/stores/pluginStore'
 
 interface Stores {
   appDataStore: AppDataStoreClass
@@ -55,6 +56,7 @@ interface Stores {
   timeStore: TimeStoreClass
   notificationStore: NotificationStoreClass
   agentStore: AgentStoreClass
+  pluginStore: PluginStoreClass
 }
 
 export class StoreProvider {
@@ -92,7 +94,8 @@ export class StoreProvider {
       statsStore: () => import('./statsStore').then((m) => m.StatsStore),
       timeStore: () => import('./timeStore').then((m) => m.TimeStore),
       statsCollector: () => StatsCollector,
-      agentStore: () => import('./agentStore').then((m) => m.AgentStore)
+      agentStore: () => import('./agentStore').then((m) => m.AgentStore),
+      pluginStore: () => import('./pluginStore').then((m) => m.PluginStore)
     }
 
     this.storeInitializers = {
@@ -158,7 +161,8 @@ export class StoreProvider {
           await this.getStore('appStore', false),
           await this.getStore('platformStore', false),
           await this.getStore('settingsStore', false)
-        )
+        ),
+      pluginStore: async () => new (await storeImports.pluginStore())()
     }
 
     this.initialize()

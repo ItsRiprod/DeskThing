@@ -11,6 +11,7 @@ import { update } from './api/ipcUpdate'
 import { feedback } from './api/ipcFeedback'
 import { platform } from './api/ipcPlatform'
 import { device } from './api/ipcDevice'
+import { plugins } from './api/ipcPlugin'
 
 // Custom APIs for renderer
 const api = {
@@ -23,6 +24,7 @@ const api = {
   update,
   utility,
   platform,
+  plugins,
   onProgress: (callback: (event: ProgressEvent) => void): (() => void) => {
     const listener = (_event: unknown, data: ProgressEvent): void => callback(data)
     ipcRenderer.on('progress:event', listener)

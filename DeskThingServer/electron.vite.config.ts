@@ -19,7 +19,8 @@ export default defineConfig({
         input: {
           index: resolve(__dirname, 'src/main/index.ts'),
           expressProcess: resolve(__dirname, 'src/main/processes/expressProcess.ts'),
-          appProcess: resolve(__dirname, 'src/main/processes/appProcess.ts')
+          appProcess: resolve(__dirname, 'src/main/processes/appProcess.ts'),
+          pluginProcess: resolve(__dirname, 'src/main/processes/pluginProcess.ts')
         }
       }
     },
