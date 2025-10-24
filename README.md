@@ -23,7 +23,7 @@
 
 *Let's begin, shall we?*
 
-This is the DeskThing project. Using Spotify's existing Car Thing, the DeskThing makes the perfect desk assistant. In short, the DeskThing serves as an alternative OS for the Spotify Car Thing. It allows you to load up community-made apps to it to do anything from control your local audio to seeing who is in your discord call! This is an open source project made by me, Riprod, an independent developer who's not even out of college! If you want to help contribute to this endeavor and attempt to revive the car thing, you can do so through my buymeacoffee link or through Github Sponsors.
+This is the DeskThing project. Using Spotify's existing Car Thing, the DeskThing makes the perfect desk assistant. In short, the DeskThing serves as an alternative OS for the Spotify Car Thing. It allows you to load up community-made apps to it to do anything from control your local audio to seeing who is in your discord call! If you want to help contribute to this endeavor and attempt to revive the car thing, you can do so through my buymeacoffee link or through Github Sponsors.
 
 Cheers!
 
@@ -32,7 +32,7 @@ Cheers!
 **⚠️DO NOT PULL MAIN BRANCH TO INSTALL ⚠️**
 
 Instead, go to [The Official Website](https://deskthing.app/) and download the installer for your OS
-For a video walkthrough of v0.6.0, go to [this video]([https://youtu.be/nC65O1nP-pk?si=dxUEF6wyzLI2Z72U](https://www.youtube.com/watch?v=iW2biAnq0n8))
+For a video walkthrough of v0.6.0, go to [this video](https://www.youtube.com/watch?v=iW2biAnq0n8)
 
 
 ---
@@ -97,7 +97,96 @@ Updating this ReadMe with the updated flashing / installation instructions was t
 
 So now, it is contained inside an easy youtube video
 
+You can also check out the Additional Resources for further tutorials if you'd rather look there.
+
 https://www.youtube.com/watch?v=iW2biAnq0n8
+
+While older versions may work, this is recommended.
+
+</details>
+
+---
+
+<details>
+   <summary>
+      <h2>🔨 Local Development</h2>
+   </summary>
+
+<img src="readme_images/bar.svg" style="width: 100%;" alt="Click to see the source">
+
+### Local Development / Contribution
+Node Version: >=v25.0.0
+NPM Version: >=11.6.2
+
+**Note:** These steps are for developers contributing to the project. For end-users installing DeskThing, do not pull the main branch—use the installer from [The Official Website](https://deskthing.app/) instead.
+
+
+1. Clone the repo
+```sh
+git clone https://github.com/itsriprod/deskthing
+```
+
+2. cd into the directory
+```sh
+cd ./deskthing/DeskThingServer
+```
+
+3. Install packages
+```sh
+npm install
+```
+
+4. Run the development build
+```sh
+npm run dev
+```
+
+That's it, you should be off to the races! A few aspects of the app are different while in development, but nothing monumental. 
+
+The architecture is
+```
+src/
+   main/ // all of the server-end code
+   preload/ // types and definitions for the IPC communication layer
+   renderer/ // the GUI of the application
+   shared/ // shared types between the frontend and backend that are local to the server (global types are in @deskthing/types)
+```
+
+If you notice a lot of types issues, this may be due to the @deskthing/types being unpublished. To solve, you'll need to clone the Types package and link it locally 
+
+*in a new, unrelated directory:*
+```sh
+git clone https://github.com/itsriprod/deskthing-types
+cd deskthing-types
+npm install
+# On linux you may have to run this as sudo due to symlinks
+npm link
+```
+
+*in the deskthingserver directory*
+```sh
+npm link @deskthing/types
+```
+
+There, now you'll be using the development form of the types package!
+
+</details>
+
+---
+
+<details>
+   <summary>
+      <h2>🤝 Contributing</h2>
+   </summary>
+
+<img src="readme_images/bar.svg" style="width: 100%;" alt="Click to see the source">
+
+Welcome contributions! Here's how to get started:
+
+- **Reporting Issues:** Use GitHub Issues to report bugs or suggest features. Include details like OS, DeskThing version, and steps to reproduce.
+- **Submitting Pull Requests:** Fork the repo, make changes on a feature branch, and submit a PR. Ensure code follows the project's style (e.g., TypeScript types from @deskthing/types or shared/ directory). For new features, include screenshots or demos if applicable.
+- **Coding Standards:** Use ESLint/Prettier if configured. Test your changes locally before submitting.
+- **Questions:** Join the [DeskThing Discord](https://discord.gg/uNS3dhj46D) for discussions.
 
 </details>
 
