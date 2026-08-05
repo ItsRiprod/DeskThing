@@ -3,6 +3,7 @@ import { electronAPI } from '@electron-toolkit/preload'
 import { platform as currentPlatform } from 'os'
 import { ProgressEvent } from '@shared/types'
 import { app } from './api/ipcApps'
+import { bluetooth } from './api/ipcBluetooth'
 import { client } from './api/ipcClient'
 import { utility } from './api/ipcUtility'
 import { task } from './api/ipcTask'
@@ -15,6 +16,7 @@ import { device } from './api/ipcDevice'
 // Custom APIs for renderer
 const api = {
   app,
+  bluetooth,
   client,
   device,
   feedback,

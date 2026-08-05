@@ -2,6 +2,7 @@ import React from 'react'
 import Nav from './Nav'
 import { IconLogo, IconWifi } from '@renderer/assets/icons'
 import { useClientStore } from '@renderer/stores'
+import BluetoothStatusChip from '@renderer/components/BluetoothStatusChip'
 
 const TopBar: React.FC = () => {
   const connections = useClientStore((state) => state.connections)
@@ -9,6 +10,7 @@ const TopBar: React.FC = () => {
   return (
     <div className="bg-neutral-950 border-neutral-900 border-b text-neutral-300 flex items-center justify-between">
       <div className="flex items-center p-4 min-w-24 md:min-w-48">
+        <BluetoothStatusChip />
         {connections == 0 ? (
           <IconWifi className="text-neutral-300" iconSize={24} />
         ) : (

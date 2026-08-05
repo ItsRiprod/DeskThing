@@ -16,10 +16,12 @@
     "start": "electron-vite preview",
     "dev": "electron-vite dev",
     "debug": "electron-vite dev --inspect=8893",
-    "build": "node electron-builder.env.js && npm run typecheck && electron-vite build && electron-builder",
+    "build": "node electron-builder.env.js && npm run typecheck && npm run build:btbridge && electron-vite build && electron-builder",
+    "build:btbridge": "node bt_source/build-btbridge.js",
     "postinstall": "electron-builder install-app-deps && electron-rebuild && npm rebuild sharp",
     "build:unpack": "npm run build && electron-builder --dir",
-    "test": "vitest"
+    "test": "vitest",
+    "test:bt": "vitest run test/main/services/bluetooth && python3 -m unittest discover -s bt_source/test -v"
   },
   "repository": {
     "type": "git",
@@ -132,6 +134,17 @@
         {
           "from": "adb_source/win",
           "to": "resources/win"
+        },
+        {
+          "from": "bt_source/win",
+          "to": "resources/win",
+          "filter": [
+            "btbridge.exe"
+          ]
+        },
+        {
+          "from": "bt_source/superbird",
+          "to": "resources/superbird"
         }
       ]
     },
@@ -152,7 +165,8 @@
       "entitlementsInherit": "build/entitlements.mac.plist",
       "extendInfo": {
         "NSAppleEventsUsageDescription": "This app requires access to send Apple Events to communicate with other applications.",
-        "NSMicrophoneUsageDescription": "This app requires microphone access to record audio."
+        "NSMicrophoneUsageDescription": "This app requires microphone access to record audio.",
+        "NSBluetoothAlwaysUsageDescription": "DeskThing connects to your Car Thing over Bluetooth so it can run without a data cable."
       },
       "notarize": false,
       "category": "public.app-category.developer-tools",
@@ -160,6 +174,14 @@
         {
           "from": "adb_source/mac",
           "to": "resources/mac"
+        },
+        {
+          "from": "bt_source/mac",
+          "to": "resources/mac"
+        },
+        {
+          "from": "bt_source/superbird",
+          "to": "resources/superbird"
         }
       ]
     },
@@ -178,6 +200,14 @@
         {
           "from": "adb_source/linux",
           "to": "resources/linux"
+        },
+        {
+          "from": "bt_source/linux",
+          "to": "resources/linux"
+        },
+        {
+          "from": "bt_source/superbird",
+          "to": "resources/superbird"
         }
       ]
     },

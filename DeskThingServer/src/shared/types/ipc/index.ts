@@ -1,4 +1,5 @@
 export * from './ipcApps'
+export * from './ipcBluetooth'
 export * from './ipcClient'
 export * from './ipcDevice'
 export * from './ipcFeedback'

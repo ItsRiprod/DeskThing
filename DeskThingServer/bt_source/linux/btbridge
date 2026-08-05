@@ -1,0 +1,544 @@
+#!/usr/bin/env python3
+"""DeskThing Bluetooth bridge (Linux side).
+
+Connects to the Car Thing's RFCOMM channel 3 and demuxes tunneled TCP
+streams onto localhost:8891 (the DeskThing server), mirroring the macOS
+helper's control API on 127.0.0.1:8899 so the rest of the app cannot tell
+which platform it is on:
+
+  GET  /status                     transport + pairing snapshot
+  POST /preference {"preference"}  pin traffic to bluetooth|usb
+  POST /discover                   scan for nearby devices
+  POST /pair {"address"}           pair (numeric comparison via bluetoothctl)
+  POST /pair/reply {"accept"}      answer the numeric-comparison prompt
+  POST /unpair {"address"}         remove a bond
+  POST /device {"address"}         set the device this bridge connects to
+
+Uses only the standard library plus the bluetoothctl binary from BlueZ,
+which every desktop distribution ships.
+"""
+import json
+import os
+import re
+import socket
+import struct
+import subprocess
+import sys
+import threading
+import time
+
+RFCOMM_CHANNEL = 3
+SERVER_ADDR = ('127.0.0.1', 8891)
+CONTROL_ADDR = ('127.0.0.1', 8899)
+CHUNK = 660  # frame + 7-byte header stays near the typical RFCOMM MTU
+
+# Heartbeat timing. Must stay compatible with the device mux, which pings on
+# the same interval and drops the link after the same deadline; the deadline
+# spans several intervals so one dropped frame doesn't tear down a good link.
+PING_INTERVAL_S = 5
+PONG_DEADLINE_S = 15
+
+STATE_DIR = os.path.join(
+    os.environ.get('XDG_CONFIG_HOME', os.path.expanduser('~/.config')), 'deskthing')
+STATE_PATH = os.path.join(STATE_DIR, 'bt-transport.json')
+
+
+def log(msg):
+    print('[%s] %s' % (time.strftime('%H:%M:%S'), msg), flush=True)
+
+
+def find_adb():
+    here = os.path.dirname(os.path.abspath(__file__))
+    bundled = os.path.join(here, 'adb')
+    if os.access(bundled, os.X_OK):
+        return bundled
+    return 'adb'
+
+
+ADB = find_adb()
+
+
+def adb(*args):
+    try:
+        return subprocess.call([ADB] + list(args),
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                               timeout=15)
+    except Exception:
+        return -1
+
+
+class State:
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.preference = 'bluetooth'
+        self.link_up = False
+        self.device_address = None
+        self.pairing_stage = 'idle'
+        self.pairing_code = None
+        self.pairing_error = None
+        self.found = []
+        self.load()
+
+    def load(self):
+        try:
+            with open(STATE_PATH) as f:
+                obj = json.load(f)
+            if obj.get('preference') in ('bluetooth', 'usb'):
+                self.preference = obj['preference']
+            addr = obj.get('deviceAddress')
+            if isinstance(addr, str):
+                self.device_address = addr.replace('-', ':').upper()
+        except Exception:
+            pass
+
+    def save(self):
+        try:
+            os.makedirs(STATE_DIR, exist_ok=True)
+            obj = {'preference': self.preference}
+            if self.device_address:
+                obj['deviceAddress'] = self.device_address
+            with open(STATE_PATH, 'w') as f:
+                json.dump(obj, f, indent=1)
+        except OSError:
+            pass
+
+    def active_transport(self):
+        if self.link_up:
+            return 'bluetooth'
+        return 'usb' if adb('get-state') == 0 else 'none'
+
+    def paired(self):
+        if not self.device_address:
+            return False
+        try:
+            out = subprocess.check_output(
+                ['bluetoothctl', 'info', self.device_address],
+                stderr=subprocess.DEVNULL, timeout=10).decode('utf-8', 'replace')
+            return 'Paired: yes' in out
+        except Exception:
+            return False
+
+    def snapshot(self):
+        with self.lock:
+            return {
+                'preference': self.preference,
+                'transport': self.active_transport(),
+                'linkUp': self.link_up,
+                'deviceAddress': self.device_address,
+                'paired': self.paired(),
+                'pairing': {
+                    'stage': self.pairing_stage,
+                    'code': self.pairing_code,
+                    'error': self.pairing_error,
+                },
+                'found': list(self.found),
+            }
+
+
+STATE = State()
+
+
+def prefer_bluetooth():
+    rc = adb('reverse', '--remove', 'tcp:8891')
+    log('transport: bluetooth active (USB reverse removed, rc=%d)' % rc)
+
+
+def fall_back_to_usb():
+    rc = adb('reverse', 'tcp:8891', 'tcp:8891')
+    log('transport: USB active (adb reverse restored)' if rc == 0
+        else 'transport: USB unavailable (rc=%d) — device likely unplugged' % rc)
+
+
+# ---------------------------------------------------------------- pairing
+
+RE_CONFIRM = re.compile(r'Confirm passkey (\d{6})')
+RE_OK = re.compile(r'Pairing successful')
+RE_FAIL = re.compile(r'Failed to pair|AuthenticationFailed|AuthenticationCanceled|AuthenticationRejected|not available')
+
+
+class Pairer:
+    """Computer-initiated pairing driven through bluetoothctl. The device's
+    screen shows the code (its agent handles that side); we surface the same
+    code over /status and forward the person's confirm from /pair/reply."""
+
+    def __init__(self):
+        self.proc = None
+        self.lock = threading.Lock()
+
+    def begin(self, address):
+        address = address.replace('-', ':').upper()
+        with self.lock:
+            if self.proc is not None:
+                log('pairing: already in progress')
+                return
+            STATE.pairing_stage = 'connecting'
+            STATE.pairing_code = None
+            STATE.pairing_error = None
+            threading.Thread(target=self._run, args=(address,), daemon=True).start()
+
+    def _run(self, address):
+        # A stale half-bond makes hosts abort right after encryption; clear it.
+        subprocess.call(['bluetoothctl', 'remove', address],
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10)
+        proc = subprocess.Popen(['bluetoothctl'],
+                                stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT, bufsize=0)
+        with self.lock:
+            self.proc = proc
+
+        def send(cmd):
+            try:
+                proc.stdin.write((cmd + '\n').encode())
+                proc.stdin.flush()
+            except OSError:
+                pass
+
+        send('agent DisplayYesNo')
+        send('default-agent')
+        # The device may not be in the controller's cache; a short scan
+        # populates it so `pair` can resolve the address.
+        send('scan on')
+        time.sleep(6)
+        send('scan off')
+        send('pair ' + address)
+
+        deadline = time.time() + 60
+        # bluetoothctl's agent prompts do not end with a newline (they wait
+        # for input), so read raw chunks and scan an accumulating tail.
+        buf = ''
+        try:
+            while time.time() < deadline:
+                chunk = os.read(proc.stdout.fileno(), 4096)
+                if not chunk:
+                    break
+                buf += chunk.decode('utf-8', 'replace')
+                m = RE_CONFIRM.search(buf)
+                if m:
+                    STATE.pairing_code = m.group(1)
+                    STATE.pairing_stage = 'confirm'
+                    buf = ''
+                    continue
+                if RE_OK.search(buf):
+                    send('trust ' + address)
+                    time.sleep(1)
+                    STATE.pairing_stage = 'done'
+                    STATE.pairing_code = None
+                    with STATE.lock:
+                        STATE.device_address = address
+                    STATE.save()
+                    return
+                if RE_FAIL.search(buf):
+                    STATE.pairing_stage = 'failed'
+                    STATE.pairing_error = buf.strip()[-120:]
+                    return
+                if len(buf) > 8192:
+                    buf = buf[-1024:]
+            if STATE.pairing_stage not in ('done', 'failed'):
+                STATE.pairing_stage = 'failed'
+                STATE.pairing_error = 'timed out'
+        finally:
+            try:
+                proc.kill()
+            except Exception:
+                pass
+            with self.lock:
+                self.proc = None
+
+    def reply(self, accept):
+        with self.lock:
+            proc = self.proc
+        if proc is None:
+            return
+        STATE.pairing_stage = 'finishing' if accept else 'failed'
+        if not accept:
+            STATE.pairing_error = 'rejected'
+        try:
+            proc.stdin.write((b'yes\n' if accept else b'no\n'))
+            proc.stdin.flush()
+        except OSError:
+            pass
+
+
+PAIRER = Pairer()
+
+
+def discover():
+    def run():
+        STATE.pairing_stage = 'discovering'
+        with STATE.lock:
+            STATE.found = []
+        try:
+            out = subprocess.run(
+                ['bluetoothctl', '--timeout', '8', 'scan', 'on'],
+                capture_output=True, timeout=20).stdout.decode('utf-8', 'replace')
+            devs = subprocess.check_output(
+                ['bluetoothctl', 'devices'], timeout=10).decode('utf-8', 'replace')
+            found = []
+            for line in (out + devs).splitlines():
+                m = re.search(r'Device ((?:[0-9A-F]{2}:){5}[0-9A-F]{2})\s+(.+)', line, re.I)
+                if m and not any(d['address'] == m.group(1) for d in found):
+                    found.append({'address': m.group(1), 'name': m.group(2).strip()})
+            with STATE.lock:
+                STATE.found = found
+            log('discovery: %d devices' % len(found))
+        except Exception as e:
+            log('discovery failed: %r' % e)
+        finally:
+            if STATE.pairing_stage == 'discovering':
+                STATE.pairing_stage = 'idle'
+
+    threading.Thread(target=run, daemon=True).start()
+
+
+def unpair(address):
+    address = address.replace('-', ':').upper()
+    subprocess.call(['bluetoothctl', 'remove', address],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10)
+    log('unpair: removed bond for %s' % address)
+    with STATE.lock:
+        if STATE.device_address == address:
+            STATE.device_address = None
+    STATE.save()
+
+
+# ------------------------------------------------------------ control API
+
+def control_server():
+    srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    srv.bind(CONTROL_ADDR)
+    srv.listen(8)
+    log('control: listening on %s:%d' % CONTROL_ADDR)
+    while True:
+        try:
+            conn, _ = srv.accept()
+            threading.Thread(target=handle_control, args=(conn,), daemon=True).start()
+        except Exception:
+            time.sleep(0.1)
+
+
+def handle_control(conn):
+    try:
+        conn.settimeout(5)
+        req = conn.recv(16384).decode('utf-8', 'replace')
+        body = {}
+        if '\r\n\r\n' in req:
+            try:
+                body = json.loads(req.split('\r\n\r\n', 1)[1] or '{}')
+            except ValueError:
+                body = {}
+
+        if req.startswith('POST /preference'):
+            pref = body.get('preference')
+            if pref in ('bluetooth', 'usb'):
+                with STATE.lock:
+                    STATE.preference = pref
+                STATE.save()
+                log('preference set to %s by UI' % pref)
+                if pref == 'usb':
+                    fall_back_to_usb()
+                elif STATE.link_up:
+                    prefer_bluetooth()
+        elif req.startswith('POST /discover'):
+            discover()
+        elif req.startswith('POST /pair/reply'):
+            if isinstance(body.get('accept'), bool):
+                PAIRER.reply(body['accept'])
+        elif req.startswith('POST /pair'):
+            if isinstance(body.get('address'), str):
+                PAIRER.begin(body['address'])
+        elif req.startswith('POST /unpair'):
+            if isinstance(body.get('address'), str):
+                unpair(body['address'])
+        elif req.startswith('POST /device'):
+            if isinstance(body.get('address'), str):
+                with STATE.lock:
+                    STATE.device_address = body['address'].replace('-', ':').upper()
+                STATE.save()
+                log('device address set to %s by UI' % STATE.device_address)
+
+        payload = json.dumps(STATE.snapshot()).encode()
+        conn.sendall(b'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n'
+                     b'Access-Control-Allow-Origin: *\r\n'
+                     b'Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n'
+                     b'Access-Control-Allow-Headers: Content-Type\r\n'
+                     b'Cache-Control: no-store\r\n'
+                     b'Content-Length: ' + str(len(payload)).encode() +
+                     b'\r\nConnection: close\r\n\r\n' + payload)
+    except Exception:
+        pass
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
+# ------------------------------------------------------------ RFCOMM tunnel
+
+class Tunnel:
+    def __init__(self, sock):
+        self.sock = sock
+        self.conns = {}
+        self.wlock = threading.Lock()
+        self.dead = threading.Event()
+        self.last_pong = time.time()
+
+    def send_frame(self, t, sid, payload=b''):
+        with self.wlock:
+            try:
+                self.sock.sendall(struct.pack('>BIH', t, sid, len(payload)) + payload)
+            except OSError:
+                self.dead.set()
+
+    def pump_rfcomm(self):
+        """Read frames off the radio; open/feed/close local server streams."""
+        buf = b''
+        try:
+            while not self.dead.is_set():
+                data = self.sock.recv(4096)
+                if not data:
+                    break
+                buf += data
+                while len(buf) >= 7:
+                    t, sid, ln = struct.unpack('>BIH', buf[:7])
+                    if len(buf) < 7 + ln:
+                        break
+                    payload = buf[7:7 + ln]
+                    buf = buf[7 + ln:]
+                    if t == 1:
+                        self.open_stream(sid)
+                    elif t == 2:
+                        c = self.conns.get(sid)
+                        if c:
+                            try:
+                                c.sendall(payload)
+                            except OSError:
+                                self.close_stream(sid, notify=True)
+                    elif t == 3:
+                        self.close_stream(sid, notify=False)
+                    elif t == 4:  # PING -> answer so the peer knows we live
+                        self.send_frame(5, 0)
+                    elif t == 5:  # PONG
+                        self.last_pong = time.time()
+        except OSError:
+            pass
+        finally:
+            self.dead.set()
+
+    def heartbeat(self):
+        """Mirror of the device mux's heartbeat. The device pings every 5s and
+        drops the link after 15s of silence, so answering PING is mandatory —
+        without it the link cannot survive 15 seconds. We also ping outward so
+        a half-open link (reports connected, passes no data) gets torn down
+        here rather than lingering."""
+        self.last_pong = time.time()
+        while not self.dead.wait(PING_INTERVAL_S):
+            self.send_frame(4, 0)
+            if time.time() - self.last_pong > PONG_DEADLINE_S:
+                log('heartbeat: no pong in %ss — link dead, closing' % PONG_DEADLINE_S)
+                self.dead.set()
+                try:
+                    self.sock.shutdown(socket.SHUT_RDWR)
+                except OSError:
+                    pass
+                return
+
+    def open_stream(self, sid):
+        try:
+            c = socket.create_connection(SERVER_ADDR, timeout=5)
+        except OSError:
+            self.send_frame(3, sid)
+            return
+        self.conns[sid] = c
+        threading.Thread(target=self.pump_stream, args=(sid, c), daemon=True).start()
+
+    def pump_stream(self, sid, c):
+        try:
+            while not self.dead.is_set():
+                data = c.recv(CHUNK)
+                if not data:
+                    break
+                self.send_frame(2, sid, data)
+        except OSError:
+            pass
+        finally:
+            if sid in self.conns:
+                self.close_stream(sid, notify=True)
+
+    def close_stream(self, sid, notify):
+        c = self.conns.pop(sid, None)
+        if c:
+            try:
+                c.close()
+            except OSError:
+                pass
+            if notify:
+                self.send_frame(3, sid)
+
+    def close(self):
+        self.dead.set()
+        for sid in list(self.conns):
+            self.close_stream(sid, notify=False)
+        try:
+            self.sock.close()
+        except OSError:
+            pass
+
+
+def bridge_loop():
+    log('bluetooth bridge loop up')
+    while True:
+        if STATE.preference == 'usb':
+            if STATE.link_up:
+                STATE.link_up = False
+            fall_back_to_usb()
+            time.sleep(5)
+            continue
+
+        if STATE.pairing_stage in ('discovering', 'connecting', 'confirm', 'finishing'):
+            time.sleep(1)
+            continue
+
+        addr = STATE.device_address
+        if not addr:
+            time.sleep(3)
+            continue
+
+        try:
+            sock = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM,
+                                 socket.BTPROTO_RFCOMM)
+            sock.settimeout(15)
+            log('connecting to %s rfcomm ch%d...' % (addr, RFCOMM_CHANNEL))
+            sock.connect((addr, RFCOMM_CHANNEL))
+            sock.settimeout(None)
+        except OSError as e:
+            log('connect failed (%s); device off/out of range? retrying in 10s' % e)
+            STATE.link_up = False
+            fall_back_to_usb()
+            time.sleep(10)
+            continue
+
+        log('rfcomm open')
+        STATE.link_up = True
+        prefer_bluetooth()
+        tunnel = Tunnel(sock)
+        threading.Thread(target=tunnel.heartbeat, daemon=True).start()
+        tunnel.pump_rfcomm()
+        tunnel.close()
+        log('session ended')
+        STATE.link_up = False
+        fall_back_to_usb()
+        time.sleep(10)
+
+
+def main():
+    if not hasattr(socket, 'AF_BLUETOOTH'):
+        log('this Python lacks AF_BLUETOOTH sockets; Bluetooth transport unavailable')
+        sys.exit(1)
+    threading.Thread(target=control_server, daemon=True).start()
+    bridge_loop()
+
+
+if __name__ == '__main__':
+    main()

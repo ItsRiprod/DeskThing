@@ -92,7 +92,18 @@ export class WSPlatform {
     this.setupExpressListeners()
     this.httpServer = this.expressServer.getServer() as HttpServer
 
-    this.server = new WebSocketServer({ server: this.httpServer })
+    // Song-state updates are small and highly repetitive, so deflate with context
+    // takeover shrinks them by roughly an order of magnitude. That matters when a
+    // client is reached over a Bluetooth tunnel, where every frame costs a full
+    // radio packet regardless of how little it carries.
+    this.server = new WebSocketServer({
+      server: this.httpServer,
+      perMessageDeflate: {
+        threshold: 256,
+        zlibDeflateOptions: { level: 3 },
+        concurrencyLimit: 4
+      }
+    })
 
     this.server.on('connection', this.handleConnection.bind(this))
 

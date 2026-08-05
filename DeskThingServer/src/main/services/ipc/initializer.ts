@@ -10,6 +10,7 @@ import {
   IPC_CLIENT_TYPES,
   IPC_UTILITY_TYPES,
   DeviceIPCData,
+  BluetoothIPCData,
   FeedbackIPCData,
   ReleaseIPCData,
   TaskIPCData,
@@ -156,6 +157,23 @@ export const initializeIpcHandlers = async (ipcMain: Electron.IpcMain): Promise<
       }
     }
   )
+
+  // Handle bluetooth-related IPC messages
+  ipcMain.handle(IPC_HANDLERS.BLUETOOTH, async (_event, data: BluetoothIPCData) => {
+    const { bluetoothHandler } = await import('./bluetoothIpc')
+
+    try {
+      return await bluetoothHandler(data)
+    } catch (error) {
+      logger.error(`Error in IPC handler with event ${data.type}: ${error}`, {
+        domain: 'server',
+        source: 'ipcHandlers',
+        function: 'BLUETOOTH',
+        error: error instanceof Error ? error : new Error(String(error))
+      })
+      return undefined
+    }
+  })
 
   // Handle feedback-related IPC messages
   ipcMain.handle(IPC_HANDLERS.FEEDBACK, async (_event, data: FeedbackIPCData) => {

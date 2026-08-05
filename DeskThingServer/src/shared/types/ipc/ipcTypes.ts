@@ -4,6 +4,7 @@ import { UtilityIPCData } from './ipcUtility'
 
 export enum IPC_HANDLERS {
   APPS = 'apps',
+  BLUETOOTH = 'bluetooth',
   CLIENT = 'client',
   DEVICE = 'device',
   FEEDBACK = 'feedback',

@@ -1,5 +1,6 @@
 import { Client, ConnectionState, ClientPlatformIDs } from '@deskthing/types'
 import { FC, useEffect, useState } from 'react'
+import { TransportSelector } from './TransportSelector'
 
 type DeviceDetailsProps = {
   client: Client
@@ -104,6 +105,8 @@ export const DeviceDetails: FC<DeviceDetailsProps> = ({ client }) => {
               </div>
             </section>
           )}
+
+          <TransportSelector />
         </div>
       </div>
     </div>

@@ -3,3 +3,5 @@ dist
 out
 .DS_Store
 *.log*
+bt_source/mac/btbridge
+bt_source/win/btbridge.exe
