@@ -2,6 +2,7 @@
  * Central window management system
  */
 import { app, BrowserWindow } from 'electron'
+import { isDockVisible } from '../system/dockVisibility'
 import { createMainWindow } from './mainWindow'
 import { createClientWindow } from './clientWindow'
 import { createLoadingWindow } from './loadingWindow'
@@ -26,8 +27,13 @@ export function getMainWindow(): BrowserWindow | undefined {
 }
 
 export function buildMainWindow(): BrowserWindow {
-  // ensure the taskbar icon is showing on mac
-  if (process.platform === 'darwin') {
+  // Restore the Dock icon on mac — but only if the user has not deliberately
+  // hidden it. This used to call app.dock.show() unconditionally, so anything
+  // that opened or activated a window (the tray click, 'activate', the
+  // single-instance handler) quietly undid 'Hide Dock Icon' moments after it
+  // was chosen. The toggle appeared not to work; in fact it worked and was
+  // immediately overridden.
+  if (process.platform === 'darwin' && isDockVisible()) {
     app.dock.show()
   }
 

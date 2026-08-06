@@ -101,12 +101,12 @@ export async function initializeAppLifecycle(): Promise<void> {
     const settings = await settingsStore.getSettings()
 
     if (settings?.flag_firstClose === true) {
-      let trayIcon: NativeImage
-      if (process.platform === 'darwin') {
-        trayIcon = nativeImage.createFromPath(join(__dirname, '../../resources/iconTrayMacSm.png'))
-      } else {
-        trayIcon = nativeImage.createFromPath(join(__dirname, '../../resources/iconTray.png'))
-      }
+      // Always the colour asset here, on every platform. The macOS one is a
+      // template image — black plus alpha — and a notification does not apply
+      // the template treatment, so it would render as a black-on-black smudge.
+      const trayIcon: NativeImage = nativeImage.createFromPath(
+        join(__dirname, '../../resources/iconTray.png')
+      )
 
       new Notification({
         title: 'DeskThing is now in the background!',
