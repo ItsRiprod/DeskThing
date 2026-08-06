@@ -19,6 +19,19 @@ type SongCacheEventMap = {
  * Manages the caching of song data and emits events when songs change or end
  */
 export class SongCache extends EventEmitter<SongCacheEventMap> {
+  /**
+   * Progress moves on its own while a track plays. Only a jump bigger than a
+   * poll's worth of playback means the listener actually seeked.
+   */
+  private static readonly SEEK_TOLERANCE_MS = 3000
+
+  /**
+   * Ask for the next track slightly after the current one runs out. Querying
+   * at the exact boundary races the provider, which usually still reports the
+   * track that just finished.
+   */
+  private static readonly END_OF_TRACK_GRACE_MS = 750
+
   private currentSong: SongData | null = null
   private songEndTimeout: NodeJS.Timeout | null = null
   private progressInterval: NodeJS.Timeout | null = null
@@ -44,16 +57,29 @@ export class SongCache extends EventEmitter<SongCacheEventMap> {
       return
     }
 
-    // Check if song has actually changed
-    const hasSongChanged =
+    // A track that is simply playing is not a track that changed. Treating
+    // every progress advance as a change made setNewSong run on each poll,
+    // which tore down and rebuilt the end-of-track timer every time and fired
+    // a redundant SONG_CHANGED broadcast on each one.
+    const isDifferentTrack =
       this.currentSong.track_name !== newSong.track_name ||
       this.currentSong.artist !== newSong.artist ||
       this.currentSong.album !== newSong.album ||
-      this.currentSong.is_playing !== newSong.is_playing ||
-      this.currentSong.track_progress !== newSong.track_progress ||
       this.currentSong.track_duration !== newSong.track_duration
 
-    if (hasSongChanged) {
+    const playbackFlipped = this.currentSong.is_playing !== newSong.is_playing
+
+    // A seek is a progress jump larger than playback alone can explain. The
+    // comparison is against the cached value rather than the last polled one
+    // because the progress interval above keeps the cache advancing in real
+    // time — so this is already "where the track should be by now", and an
+    // ordinary poll lands within the tolerance no matter how long the gap
+    // between polls is.
+    const jumped =
+      Math.abs((newSong.track_progress ?? 0) - (this.currentSong.track_progress ?? 0)) >
+      SongCache.SEEK_TOLERANCE_MS
+
+    if (isDifferentTrack || playbackFlipped || jumped) {
       this.setNewSong(newSong)
     } else {
       // Update progress/state without emitting change
@@ -210,38 +236,41 @@ export class SongCache extends EventEmitter<SongCacheEventMap> {
       this.progressInterval = null
     }
 
-    // Set interval for progress updates and timeout for song end if we have duration and progress
-    if (song.track_duration && song.track_progress && song.is_playing) {
-      const remainingTime = song.track_duration - song.track_progress
-
-      // Update progress every second
+    // Keep the cached progress moving between polls, so a client that connects
+    // mid-track is told where the track actually is. Note this only advances
+    // the cache — it is not what detects the end of the track.
+    if (song.track_duration && song.is_playing) {
       this.progressInterval = setInterval(() => {
-        if (
-          this.currentSong &&
-          this.currentSong.track_progress &&
-          this.currentSong.track_duration
-        ) {
-          this.currentSong.track_progress += 1000
-          if (this.currentSong.track_progress >= this.currentSong.track_duration) {
-            Logger.debug('Song ended based on duration', {
-              source: 'SongCache',
-              function: 'setNewSong'
-            })
-            this.emit(SongCacheEvents.SONG_ENDED)
-            this.clear()
-          }
-        }
+        const current = this.currentSong
+        if (current?.track_duration == null) return
+        current.track_progress = Math.min(
+          (current.track_progress ?? 0) + 1000,
+          current.track_duration
+        )
       }, 1000)
 
-      // Set a backup timeout for song end
-      this.songEndTimeout = setTimeout(() => {
-        Logger.debug('Song ended based on duration (backup timeout)', {
-          source: 'SongCache',
-          function: 'setNewSong'
-        })
-        this.emit(SongCacheEvents.SONG_ENDED)
-        this.clear()
-      }, remainingTime)
+      // The track's own remaining time is the one piece of information that
+      // says exactly when the next track begins, so schedule for it rather
+      // than waiting for the next poll to stumble across the change.
+      //
+      // `track_progress ?? 0` matters: a track first seen at progress 0 is
+      // falsy, and the previous `song.track_progress &&` guard skipped the
+      // timer entirely for it — precisely the track that needed it most.
+      const remainingTime = song.track_duration - (song.track_progress ?? 0)
+
+      if (remainingTime > 0) {
+        this.songEndTimeout = setTimeout(() => {
+          Logger.debug('Song reached the end of its duration', {
+            source: 'SongCache',
+            function: 'setNewSong'
+          })
+          // Deliberately NOT clear() — dropping the cached song here left a
+          // client that connected during the gap with nothing to show, and
+          // killed the progress interval for the track that replaces it. The
+          // refresh this triggers will overwrite the entry a moment later.
+          this.emit(SongCacheEvents.SONG_ENDED)
+        }, remainingTime + SongCache.END_OF_TRACK_GRACE_MS)
+      }
     }
   }
 }
